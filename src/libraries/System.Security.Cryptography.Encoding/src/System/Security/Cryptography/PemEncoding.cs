@@ -11,8 +11,8 @@ namespace System.Security.Cryptography
     /// </summary>
     public static class PemEncoding
     {
-        private const string Preeb = "-----BEGIN ";
-        private const string Posteb = "-----END ";
+        private const string PreEBPrefix = "-----BEGIN ";
+        private const string PostEBPrefix = "-----END ";
         private const string Ending = "-----";
         private const int EncodedLineLength = 64;
 
@@ -56,86 +56,99 @@ namespace System.Security.Cryptography
             // Check for the minimum possible encoded length of a PEM structure
             // and exit early if there is no way the input could contain a well-formed
             // PEM.
-            if (pemData.Length < Preeb.Length + Ending.Length * 2 + Posteb.Length)
+            if (pemData.Length < PreEBPrefix.Length + Ending.Length * 2 + PostEBPrefix.Length)
             {
                 fields = default;
                 return false;
             }
 
-            Span<char> postebShortBuffer = stackalloc char[256];
-            int preebLinePosition = 0;
-            while (TryReadNextLine(pemData, ref preebLinePosition, out Range lineRange))
+            const int PostebStackBufferSize = 256;
+            Span<char> postebStackBuffer = stackalloc char[PostebStackBufferSize];
+            int areaOffset = 0;
+            int preebIndex;
+            ReadOnlySpan<char> pemArea = pemData;
+            while ((preebIndex = pemArea.IndexOf(PreEBPrefix)) >= 0)
             {
-                ReadOnlySpan<char> line = pemData[lineRange];
-                int preebIndex = line.IndexOf(Preeb);
+                int labelStartIndex = preebIndex + PreEBPrefix.Length;
+                int preebIndexInFullData = preebIndex + areaOffset;
 
-                if (preebIndex == -1 ||
-                    (preebIndex > 0 && !line[..preebIndex].IsWhiteSpace())) // can only be preceeded by white space
+                if (preebIndexInFullData > 0 &&
+                    !char.IsWhiteSpace(pemData[preebIndexInFullData - 1]))
                 {
+                    Debug.Assert(labelStartIndex > 0);
+                    areaOffset += labelStartIndex;
+                    pemArea = pemArea[labelStartIndex..];
                     continue;
                 }
 
-                int preebEndingIndex = line[(preebIndex + Preeb.Length)..].IndexOf(Ending);
+                int preebEndIndex = pemArea[labelStartIndex..].IndexOf(Ending);
 
-                if (preebEndingIndex == -1)
+                if (preebEndIndex < 0)
                 {
-                    continue;
+                    fields = default;
+                    return false;
                 }
 
-                (int preebOffset, _) = lineRange.GetOffsetAndLength(pemData.Length);
-                int preebStartIndex = preebOffset + preebIndex;
-                int startLabelIndex = preebStartIndex + Preeb.Length;
-                int endLabelIndex = startLabelIndex + preebEndingIndex;
-                Range labelRange = startLabelIndex..endLabelIndex;
-                ReadOnlySpan<char> label = pemData[labelRange];
+                int labelEndingIndex = labelStartIndex + preebEndIndex;
+                int contentStartIndex = labelEndingIndex + Ending.Length;
+                ReadOnlySpan<char> label = pemArea[labelStartIndex..labelEndingIndex];
 
+                // There could be a preeb that is valid after this one if it has an invalid
+                // label, so move from there.
                 if (!IsValidLabel(label))
                 {
+                    Debug.Assert(labelEndingIndex > 0);
+                    areaOffset += labelEndingIndex;
+                    pemArea = pemArea[labelEndingIndex..];
                     continue;
                 }
 
-                int postebLength = Posteb.Length + label.Length + Ending.Length;
-                Span<char> postebBuffer = postebLength > 256 ? new char[postebLength] : postebShortBuffer;
-                Posteb.AsSpan().CopyTo(postebBuffer);
-                label.CopyTo(postebBuffer[Posteb.Length..]);
-                Ending.AsSpan().CopyTo(postebBuffer[(Posteb.Length + label.Length)..]);
+                Range labelRange = (areaOffset + labelStartIndex)..(areaOffset + labelEndingIndex);
+                int postebLength = PostEBPrefix.Length + label.Length + Ending.Length;
+                Span<char> postebBuffer = postebLength > PostebStackBufferSize ? new char[postebLength] : postebStackBuffer;
+                PostEBPrefix.AsSpan().CopyTo(postebBuffer);
+                label.CopyTo(postebBuffer[PostEBPrefix.Length..]);
+                Ending.AsSpan().CopyTo(postebBuffer[(PostEBPrefix.Length + label.Length)..]);
                 ReadOnlySpan<char> posteb = postebBuffer[..postebLength];
+                int postebStartIndex = pemArea[contentStartIndex..].IndexOf(posteb);
 
-                Range postebLineRange = lineRange;
-                int postebLinePosition = preebLinePosition;
-
-                // in lax decoding a posteb may appear on the same line as the preeb.
-                // start on the current line. We do not need to check that this posteb
-                // comes after the preeb because the preeb's prior content has already
-                // been validated to be white space.
-                do
+                if (postebStartIndex < 0)
                 {
-                    ReadOnlySpan<char> postebLine = pemData[postebLineRange];
-                    int postebIndex = postebLine.IndexOf(posteb);
-
-                    if (postebIndex == -1)
-                    {
-                        continue;
-                    }
-
-                    (int postebOffset, _) = postebLineRange.GetOffsetAndLength(pemData.Length);
-                    int postebEndIndex = postebOffset + postebIndex + posteb.Length;
-                    Range location = preebStartIndex..postebEndIndex;
-                    Range content = (endLabelIndex + Ending.Length)..(postebOffset + postebIndex);
-
-                    if (!postebLine[(postebIndex + posteb.Length)..].IsWhiteSpace())
-                    {
-                        break;
-                    }
-
-                    if (IsValidBase64(pemData, content, out Range base64range, out int decodedBase64Size))
-                    {
-                        fields = new PemFields(labelRange, base64range, location, decodedBase64Size);
-                        return true;
-                    }
-                    break;
+                    Debug.Assert(labelEndingIndex > 0);
+                    areaOffset += labelEndingIndex;
+                    pemArea = pemArea[labelEndingIndex..];
+                    continue;
                 }
-                while (TryReadNextLine(pemData, ref postebLinePosition, out postebLineRange));
+
+                int contentEndIndex = postebStartIndex + contentStartIndex;
+                int pemEndIndex = contentEndIndex + postebLength;
+
+                if (pemEndIndex < pemArea.Length - 1 &&
+                    !char.IsWhiteSpace(pemArea[pemEndIndex]))
+                {
+                    Debug.Assert(labelEndingIndex > 0);
+                    areaOffset += labelEndingIndex;
+                    pemArea = pemArea[labelEndingIndex..];
+                    continue;
+                }
+
+                Range contentRange = (areaOffset + contentStartIndex)..(areaOffset + contentEndIndex);
+
+                if (!IsValidBase64(pemArea[contentStartIndex..contentEndIndex],
+                                   out int base64start,
+                                   out int base64end,
+                                   out int decodedSize))
+                {
+                    Debug.Assert(labelEndingIndex > 0);
+                    areaOffset += labelEndingIndex;
+                    pemArea = pemArea[labelEndingIndex..];
+                    continue;
+                }
+
+                Range pemRange = (areaOffset + preebIndex)..(areaOffset + pemEndIndex);
+                Range base64range = (contentStartIndex + base64start + areaOffset)..(contentEndIndex + base64end + areaOffset);
+                fields = new PemFields(labelRange, base64range, pemRange, decodedSize);
+                return true;
             }
 
             fields = default;
@@ -168,8 +181,8 @@ namespace System.Security.Cryptography
 
         private static bool IsValidBase64(
             ReadOnlySpan<char> data,
-            Range content,
-            out Range base64range,
+            out int base64Start,
+            out int base64End,
             out int decodedSize)
         {
             static bool IsBase64Char(char c) =>
@@ -181,8 +194,7 @@ namespace System.Security.Cryptography
             int base64chars = 0;
             int precedingWhiteSpace = 0;
             int trailingWhiteSpace = 0;
-            (int offset, int length) = content.GetOffsetAndLength(data.Length);
-            for (int index = offset; index < offset + length; index++)
+            for (int index = 0; index < data.Length; index++)
             {
                 char c = data[index];
 
@@ -205,49 +217,17 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    base64range = default;
+                    base64Start = default;
+                    base64End = default;
                     decodedSize = 0;
                     return false;
                 }
             }
 
-            base64range = (offset + precedingWhiteSpace)..(offset + (length - trailingWhiteSpace));
+            base64Start = precedingWhiteSpace;
+            base64End = -trailingWhiteSpace;
             decodedSize = (base64chars * 3) / 4;
             return true;
-        }
-
-        private static bool TryReadNextLine(ReadOnlySpan<char> data, ref int position, out Range nextLineContent)
-        {
-            if (position < 0)
-            {
-                nextLineContent = default;
-                return false;
-            }
-
-            ReadOnlySpan<char> content = data[position..];
-            int newLineIndex = content.IndexOfAny('\n', '\r');
-
-            if (newLineIndex == -1)
-            {
-                nextLineContent = position..;
-                position = -1;
-                return true;
-            }
-            else if (content[newLineIndex] == '\r' &&
-                     newLineIndex < content.Length - 1 &&
-                     content[newLineIndex + 1] == '\n')
-            {
-                // We landed at a Windows new line, we should consume both the \r and \n.
-                nextLineContent = position..(position + newLineIndex);
-                position += newLineIndex + 2;
-                return true;
-            }
-            else
-            {
-                nextLineContent = position..(position + newLineIndex);
-                position += newLineIndex + 1;
-                return true;
-            }
         }
 
         /// <summary>
@@ -307,8 +287,8 @@ namespace System.Security.Cryptography
             if (dataLength > MaxDataLength)
                 throw new ArgumentOutOfRangeException(nameof(dataLength), SR.Argument_PemEncoding_EncodedSizeTooLarge);
 
-            int preebLength = Preeb.Length + labelLength + Ending.Length;
-            int postebLength = Posteb.Length + labelLength + Ending.Length;
+            int preebLength = PreEBPrefix.Length + labelLength + Ending.Length;
+            int postebLength = PostEBPrefix.Length + labelLength + Ending.Length;
             int totalEncapLength = preebLength + postebLength + 1; //Add one for newline after preeb
 
             // dataLength is already known to not overflow here
@@ -385,7 +365,7 @@ namespace System.Security.Cryptography
             }
 
             charsWritten = 0;
-            Write(Preeb, destination, ref charsWritten);
+            Write(PreEBPrefix, destination, ref charsWritten);
             Write(label, destination, ref charsWritten);
             Write(Ending, destination, ref charsWritten);
             Write(NewLine, destination, ref charsWritten);
@@ -407,7 +387,7 @@ namespace System.Security.Cryptography
                 remainingData = default;
             }
 
-            Write(Posteb, destination, ref charsWritten);
+            Write(PostEBPrefix, destination, ref charsWritten);
             Write(label, destination, ref charsWritten);
             Write(Ending, destination, ref charsWritten);
 
