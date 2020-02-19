@@ -48,7 +48,7 @@ namespace System.Drawing
             membmp = new Bitmap(size.Width, size.Height);
         }
 
-        public Graphics? Graphics
+        public Graphics Graphics
         {
             get
             {
@@ -57,7 +57,7 @@ namespace System.Drawing
                     source = Graphics.FromImage(membmp);
                 }
 
-                return source;
+                return source!;
             }
         }
 
@@ -78,7 +78,7 @@ namespace System.Drawing
             _targetGraphics = null;
         }
 
-        public void Render(Graphics target)
+        public void Render(Graphics? target)
         {
             if (target == null)
                 return;

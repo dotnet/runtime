@@ -210,7 +210,7 @@ namespace System.Drawing
         public void Dispose() { }
         ~BufferedGraphics() { }
         public void Render() { }
-        public void Render(System.Drawing.Graphics target) { }
+        public void Render(System.Drawing.Graphics? target) { }
         public void Render(System.IntPtr targetDC) { }
     }
     public sealed partial class BufferedGraphicsContext : System.IDisposable
