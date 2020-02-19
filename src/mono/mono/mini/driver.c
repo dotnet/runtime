@@ -71,6 +71,12 @@
 #   include <sys/resource.h>
 #endif
 
+#ifdef ENABLE_NETCORE
+gboolean mono_enable_netcore = TRUE;
+#else
+gboolean mono_enable_netcore;
+#endif
+
 static FILE *mini_stats_fd;
 
 static void mini_usage (void);
@@ -200,9 +206,8 @@ static gboolean
 parse_debug_options (const char* p)
 {
 	MonoDebugOptions *opt = mini_get_debug_options ();
-#ifdef ENABLE_NETCORE
-	opt->enabled = TRUE;
-#endif
+	if (mono_enable_netcore)
+		opt->enabled = TRUE;
 
 	do {
 		if (!*p) {
@@ -219,11 +224,9 @@ parse_debug_options (const char* p)
 		} else if (!strncmp (p, "gdb", 3)) {
 			opt->gdb = TRUE;
 			p += 3;
-#ifdef ENABLE_NETCORE
-		} else if (!strncmp (p, "ignore", 6)) {
+		} else if (mono_enable_netcore && !strncmp (p, "ignore", 6)) {
 			opt->enabled = FALSE;
 			p += 6;
-#endif
 		} else {
 			fprintf (stderr, "Invalid debug option `%s', use --help-debug for details\n", p);
 			return FALSE;
