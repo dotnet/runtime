@@ -173,6 +173,10 @@ void EventPipe::EnableViaEnvironmentVariables()
                 {
                     cnt -= 1;
                 }
+                else if (!configuration.IsValid()) // exclude invalid provider configurations
+                {
+                    cnt -= 1;
+                }
                 else
                 {
                     pProviders[i++] = EventPipeProviderConfiguration(
@@ -191,17 +195,21 @@ void EventPipe::EnableViaEnvironmentVariables()
             }
         }
 
-        UINT64 sessionID = EventPipe::Enable(
-            eventpipeOutputPath,
-            eventpipeCircularBufferMB,
-            pProviders,
-            cnt,
-            EventPipeSessionType::File,
-            EventPipeSerializationFormat::NetTraceV4,
-            true,
-            nullptr
-        );
-        EventPipe::StartStreaming(sessionID);
+        if (cnt != 0)
+        {
+            UINT64 sessionID = EventPipe::Enable(
+                eventpipeOutputPath,
+                eventpipeCircularBufferMB,
+                pProviders,
+                cnt,
+                EventPipeSessionType::File,
+                EventPipeSerializationFormat::NetTraceV4,
+                true,
+                nullptr
+            );
+            EventPipe::StartStreaming(sessionID);
+        }
+
     }
 }
 

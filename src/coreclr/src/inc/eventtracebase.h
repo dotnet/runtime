@@ -183,7 +183,7 @@ private:
 
     UINT ParseLevel(ComponentSpan const & component) const
     {
-        auto level = 5;
+        auto level = 5; // Verbose
         if ((component.End - component.Start) != 0)
         {
             level = _wtoi(component.Start);
