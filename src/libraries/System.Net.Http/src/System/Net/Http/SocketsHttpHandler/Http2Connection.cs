@@ -255,7 +255,7 @@ namespace System.Net.Http
                 // Keep processing frames as they arrive.
                 for (long frameNum = 1; ; frameNum++)
                 {
-                    await EnsureIncomingBytesAsync(FrameHeader.Size).ConfigureAwait(false); // not functionally necessary, but often ReadFrameAsync yielding/allocating
+                    await EnsureIncomingBytesAsync(FrameHeader.Size).ConfigureAwait(false); // not functionally necessary, but often avoids ReadFrameAsync yielding/allocating
                     frameHeader = await ReadFrameAsync().ConfigureAwait(false);
                     if (NetEventSource.IsEnabled) Trace($"Frame {frameNum}: {frameHeader}.");
 
