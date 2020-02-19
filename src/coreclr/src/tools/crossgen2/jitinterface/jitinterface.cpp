@@ -59,9 +59,3 @@ CORINFO_LOOKUP_KIND JitInterfaceWrapper::getLocationOfThisType(void* context)
     }
     return _ret;
 }
-
-void* JitInterfaceWrapper::getMemoryManager()
-{
-    NotImplemented();
-    return nullptr;
-}

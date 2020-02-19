@@ -245,14 +245,6 @@ virtual bool EnumGcRefs(PREGDISPLAY     pContext,
                         DWORD           relOffsetOverride = NO_OVERRIDE_OFFSET) = 0;
 #endif // !CROSSGEN_COMPILE
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-/*
-    Return the address of the local security object reference
-    (if available).
-*/
-virtual OBJECTREF* GetAddrOfSecurityObject(CrawlFrame *pCF) = 0;
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
-
 #ifndef CROSSGEN_COMPILE
 /*
     For a non-static method, "this" pointer is passed in as argument 0.
@@ -517,22 +509,6 @@ bool EnumGcRefsConservative(PREGDISPLAY     pRD,
                             GCEnumCallback  pCallBack,
                             LPVOID          hCallBack);
 #endif // FEATURE_CONSERVATIVE_GC
-
-#ifdef TARGET_X86
-/*
-   Return the address of the local security object reference
-   using data that was previously cached before in UnwindStackFrame
-   using StackwalkCacheUnwindInfo
-*/
-static OBJECTREF* GetAddrOfSecurityObjectFromCachedInfo(
-        PREGDISPLAY pRD,
-        StackwalkCacheUnwindInfo * stackwalkCacheUnwindInfo);
-#endif // TARGET_X86
-
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-virtual
-OBJECTREF* GetAddrOfSecurityObject(CrawlFrame *pCF) DAC_UNEXPECTED();
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
 #ifndef CROSSGEN_COMPILE
 virtual
