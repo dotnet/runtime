@@ -327,8 +327,8 @@ public class Test
         
         // After all expansions to existing dictionaries, use GenDerived4. GenDerived4 was allocated before any of its
         // base type dictionaries were expanded.
-        Debugger.Break();
-        deriv4.VFunc();
+        for(int i = 0; i < 5; i++)
+            deriv4.VFunc();
 
         return 100;
     }

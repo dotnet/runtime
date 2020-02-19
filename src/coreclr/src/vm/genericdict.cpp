@@ -883,9 +883,6 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT)
         ULONG dictionaryIndex = pMT->GetNumDicts() - 1;
         TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo()->GetValuePtr();
         FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDictionary);
-
-        // Update dictionary pointer on derived types
-        pMT->GetLoaderModule()->UpdateDictionaryOnSharedGenericTypeDependencies(pMT, pDictionary, dictionaryIndex);
     }
 #endif
 

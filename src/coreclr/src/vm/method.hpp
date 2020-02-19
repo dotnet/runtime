@@ -3468,7 +3468,7 @@ public:
     Instantiation IMD_GetMethodInstantiation()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        
+
         // No lock needed here. This is considered a safe operation here because in the case of a generic dictionary
         // expansion, the values of the old dictionary slots are copied to the newly allocated dictionary, and the old
         // dictionary is kept around, so whether IMD_GetMethodDictionary returns the new or old dictionaries, the

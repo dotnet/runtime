@@ -688,10 +688,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     }
 #endif // defined (PROFILING_SUPPORTED) &&!defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
-#ifndef CROSSGEN_COMPILE
-    m_sharedGenericTypeDependencies.Init(GetLoaderAllocator());
-#endif
-
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%ws\".\n", GetDebugName()));
 }
 
@@ -13206,62 +13202,6 @@ void ReflectionModule::ResumeMetadataCapture()
     m_fSuppressMetadataCapture = false;
 
     CaptureModuleMetaDataToMemory();
-}
-
-void Module::RecordSharedGenericTypeDependency(MethodTable* pMT, MethodTable* pDependencyMT)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        PRECONDITION(pMT != pDependencyMT);
-        PRECONDITION(CheckPointer(pMT) && CheckPointer(pDependencyMT));
-        PRECONDITION(pMT->HasInstantiation() && pMT != pMT->GetCanonicalMethodTable());
-        PRECONDITION(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
-    }
-    CONTRACTL_END
-
-#if _DEBUG
-    BOOL isDerived = FALSE;
-    MethodTable* pCurrentMT = pDependencyMT;
-    while (pCurrentMT)
-    {
-        if (pCurrentMT == pMT)
-        {
-            isDerived = TRUE;
-            break;
-        }
-        pCurrentMT = pCurrentMT->GetParentMethodTable();
-    }
-    _ASSERTE(isDerived == TRUE);
-#endif
-
-    GCX_COOP();
-    m_sharedGenericTypeDependencies.Add(pMT, pDependencyMT, pDependencyMT->GetLoaderAllocator());
-}
-
-void Module::UpdateDictionaryOnSharedGenericTypeDependencies(MethodTable* pMT, Dictionary* pDictionary, ULONG dictionaryIndex)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->HasInstantiation() && pMT != pMT->GetCanonicalMethodTable());
-        PRECONDITION(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
-    }
-    CONTRACTL_END
-
-    auto lambda = [pDictionary, dictionaryIndex](OBJECTREF obj, MethodTable* pMTKey, MethodTable* pMTToUpdate)
-    {
-        _ASSERTE(!pMTToUpdate->HasSameTypeDefAs(pMTKey));
-
-        TypeHandle** pPerInstInfo = (TypeHandle**)pMTToUpdate->GetPerInstInfo()->GetValuePtr();
-        FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDictionary);
-        _ASSERTE(pMTToUpdate->GetPerInstInfo()[dictionaryIndex].GetValue() == pDictionary);
-
-        return true;    // Keep walking
-    };
-
-    m_sharedGenericTypeDependencies.VisitValuesOfKey(pMT, lambda);
 }
 
 #endif // !CROSSGEN_COMPILE

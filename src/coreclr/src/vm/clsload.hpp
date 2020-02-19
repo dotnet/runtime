@@ -971,8 +971,6 @@ private:
     // Load exact parents and interfaces and dependent structures (generics dictionary, vtable fixes)
     static void LoadExactParents(MethodTable *pMT);
 
-    static void RecordDependenciesForDictionaryExpansion(MethodTable* pMT);
-
     static void LoadExactParentAndInterfacesTransitively(MethodTable *pMT);
 
     // Create a non-canonical instantiation of a generic type based off the canonical instantiation

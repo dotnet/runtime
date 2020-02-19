@@ -3235,20 +3235,8 @@ public:
     void SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssembly);
 #endif // !defined(DACCESS_COMPILE)
 
-    // For protecting dictionary layout slot additions, and additions to the m_dynamicSlotsHashFor{Types/Methods} below
+    // For protecting dictionary layout slot expansions
     CrstExplicitInit        m_DictionaryCrst;
-
-#ifndef CROSSGEN_COMPILE
-private:
-    class SharedGenericTypeDependencyTrackerHashTraits : public NoRemoveDefaultCrossLoaderAllocatorHashTraits<MethodTable*, MethodTable*> { };
-    typedef CrossLoaderAllocatorHash<SharedGenericTypeDependencyTrackerHashTraits> SharedGenericTypeDependencyTrackerHash;
-
-    SharedGenericTypeDependencyTrackerHash m_sharedGenericTypeDependencies;
-
-public:
-    void RecordSharedGenericTypeDependency(MethodTable* pMT, MethodTable* pDependencyMT);
-    void UpdateDictionaryOnSharedGenericTypeDependencies(MethodTable* pMT, Dictionary* pDictionary, ULONG dictionaryIndex);
-#endif //!CROSSGEN_COMPILE
 };
 
 //

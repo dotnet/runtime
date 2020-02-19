@@ -2936,7 +2936,6 @@ public:
         pInfo->m_wNumDicts  = numDicts;
         pInfo->m_wNumTyPars = numTyPars;
     }
-
 #endif // !DACCESS_COMPILE
     PTR_GenericsDictInfo GetGenericsDictInfo()
     {
