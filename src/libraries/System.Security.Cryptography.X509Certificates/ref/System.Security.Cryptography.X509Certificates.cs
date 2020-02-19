@@ -320,7 +320,7 @@ namespace System.Security.Cryptography.X509Certificates
         public System.IntPtr ChainContext { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509ChainElementCollection ChainElements { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509ChainPolicy ChainPolicy { get { throw null; } set { } }
-        public System.Security.Cryptography.X509Certificates.X509ChainStatus[]? ChainStatus { get { throw null; } }
+        public System.Security.Cryptography.X509Certificates.X509ChainStatus[] ChainStatus { get { throw null; } }
         public Microsoft.Win32.SafeHandles.SafeX509ChainHandle? SafeHandle { get { throw null; } }
         public bool Build(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { throw null; }
         public static System.Security.Cryptography.X509Certificates.X509Chain Create() { throw null; }

@@ -62,14 +62,14 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public X509ChainStatus[]? ChainStatus
+        public X509ChainStatus[] ChainStatus
         {
             get
             {
                 // We give the user a reference to the array since we'll never access it.
                 X509ChainStatus[]? chainStatus = _lazyChainStatus;
                 if (chainStatus == null)
-                    chainStatus = _lazyChainStatus = (_pal == null ? Array.Empty<X509ChainStatus>() : _pal.ChainStatus);
+                    chainStatus = _lazyChainStatus = (_pal == null ? Array.Empty<X509ChainStatus>() : _pal.ChainStatus!);
                 return chainStatus;
             }
         }
