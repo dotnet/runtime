@@ -88,7 +88,7 @@ namespace System.Net
         private StateFlags _flags;
 
 
-        internal ContextAwareResult(object myObject, object myState, AsyncCallback myCallBack) :
+        internal ContextAwareResult(object myObject, object? myState, AsyncCallback? myCallBack) :
             this(false, false, myObject, myState, myCallBack)
         { }
 
@@ -98,11 +98,11 @@ namespace System.Net
         //
         // Setting forceCaptureContext enables the ContextCopy property even when a null callback is specified.  (The context is
         // always captured if a callback is given.)
-        internal ContextAwareResult(bool captureIdentity, bool forceCaptureContext, object myObject, object myState, AsyncCallback myCallBack) :
+        internal ContextAwareResult(bool captureIdentity, bool forceCaptureContext, object myObject, object? myState, AsyncCallback? myCallBack) :
             this(captureIdentity, forceCaptureContext, false, myObject, myState, myCallBack)
         { }
 
-        internal ContextAwareResult(bool captureIdentity, bool forceCaptureContext, bool threadSafeContextCopy, object myObject, object myState, AsyncCallback myCallBack) :
+        internal ContextAwareResult(bool captureIdentity, bool forceCaptureContext, bool threadSafeContextCopy, object myObject, object? myState, AsyncCallback? myCallBack) :
             base(myObject, myState, myCallBack)
         {
             if (forceCaptureContext)

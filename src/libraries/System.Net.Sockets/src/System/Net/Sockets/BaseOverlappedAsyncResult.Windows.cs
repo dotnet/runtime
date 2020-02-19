@@ -19,7 +19,7 @@ namespace System.Net.Sockets
         // The WinNT Completion Port callback.
         private static readonly unsafe IOCompletionCallback s_ioCallback = new IOCompletionCallback(CompletionPortCallback);
 
-        internal BaseOverlappedAsyncResult(Socket socket, object asyncState, AsyncCallback asyncCallback)
+        internal BaseOverlappedAsyncResult(Socket socket, object? asyncState, AsyncCallback? asyncCallback)
             : base(socket, asyncState, asyncCallback)
         {
             _cleanupCount = 1;

@@ -11,7 +11,7 @@ namespace System.Net.Sockets
         private readonly Socket _listenSocket;
         private byte[]? _buffer;
 
-        internal AcceptOverlappedAsyncResult(Socket listenSocket, object asyncState, AsyncCallback asyncCallback) :
+        internal AcceptOverlappedAsyncResult(Socket listenSocket, object? asyncState, AsyncCallback? asyncCallback) :
             base(listenSocket, asyncState, asyncCallback)
         {
             _listenSocket = listenSocket;

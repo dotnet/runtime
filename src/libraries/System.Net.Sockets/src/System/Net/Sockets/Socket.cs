@@ -2385,7 +2385,7 @@ namespace System.Net.Sockets
         // Return Value:
         //
         //    IAsyncResult - Async result used to retrieve result
-        public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback callback, object state)
+        public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
             SocketError errorCode;
             IAsyncResult result = BeginSend(buffer, offset, size, socketFlags, out errorCode, callback, state);
@@ -2396,7 +2396,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state)
+        public IAsyncResult BeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
@@ -2595,7 +2595,7 @@ namespace System.Net.Sockets
             return BeginSendFile(fileName, null, null, TransmitFileOptions.UseDefaultWorkerThread, callback, state);
         }
 
-        public IAsyncResult BeginSendFile(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, AsyncCallback callback, object state)
+        public IAsyncResult BeginSendFile(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -2650,7 +2650,7 @@ namespace System.Net.Sockets
         // Return Value:
         //
         //    IAsyncResult - Async result used to retrieve result
-        public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback callback, object state)
+        public IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
@@ -3244,7 +3244,7 @@ namespace System.Net.Sockets
         // Return Value:
         //
         //    IAsyncResult - Async result used to retrieve result
-        public IAsyncResult BeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback callback, object state)
+        public IAsyncResult BeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -4626,7 +4626,7 @@ namespace System.Net.Sockets
 
         // Implements ConnectEx - this provides completion port IO and support for disconnect and reconnects.
         // Since this is private, the unsafe mode is specified with a flag instead of an overload.
-        private IAsyncResult BeginConnectEx(EndPoint remoteEP, bool flowContext, AsyncCallback callback, object state)
+        private IAsyncResult BeginConnectEx(EndPoint remoteEP, bool flowContext, AsyncCallback? callback, object state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -4728,7 +4728,7 @@ namespace System.Net.Sockets
         {
             private readonly EndPoint _endPoint;
 
-            internal ConnectAsyncResult(object myObject, EndPoint endPoint, object myState, AsyncCallback myCallBack) :
+            internal ConnectAsyncResult(object myObject, EndPoint endPoint, object? myState, AsyncCallback? myCallBack) :
                 base(myObject, myState, myCallBack)
             {
                 _endPoint = endPoint;
@@ -4742,7 +4742,7 @@ namespace System.Net.Sockets
 
         private sealed class MultipleAddressConnectAsyncResult : ContextAwareResult
         {
-            internal MultipleAddressConnectAsyncResult(IPAddress[] addresses, int port, Socket socket, object myState, AsyncCallback myCallBack) :
+            internal MultipleAddressConnectAsyncResult(IPAddress[] addresses, int port, Socket socket, object? myState, AsyncCallback? myCallBack) :
                 base(socket, myState, myCallBack)
             {
                 _addresses = addresses;

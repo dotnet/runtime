@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
+#nullable enable
 using System.Threading.Tasks;
 
 namespace System.Net.Sockets
@@ -13,7 +13,7 @@ namespace System.Net.Sockets
     {
         private const int MaxUDPSize = 0x10000;
 
-        private Socket _clientSocket;
+        private Socket _clientSocket = null!; // initialized by helper called from ctor
         private bool _active;
         private readonly byte[] _buffer = new byte[MaxUDPSize];
         private AddressFamily _family = AddressFamily.InterNetwork;
@@ -243,7 +243,7 @@ namespace System.Net.Sockets
                     // of the Bind() call and free the bound IPEndPoint.
                     chkClientSocket.InternalShutdown(SocketShutdown.Both);
                     chkClientSocket.Dispose();
-                    _clientSocket = null;
+                    _clientSocket = null!;
                 }
 
                 _disposed = true;
@@ -281,7 +281,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public IAsyncResult BeginSend(byte[] datagram, int bytes, IPEndPoint endPoint, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginSend(byte[] datagram, int bytes, IPEndPoint? endPoint, AsyncCallback? requestCallback, object? state)
         {
             ThrowIfDisposed();
 
@@ -312,7 +312,7 @@ namespace System.Net.Sockets
             return _clientSocket.BeginSendTo(datagram, 0, bytes, SocketFlags.None, endPoint, requestCallback, state);
         }
 
-        public IAsyncResult BeginSend(byte[] datagram, int bytes, string hostname, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginSend(byte[] datagram, int bytes, string? hostname, int port, AsyncCallback? requestCallback, object? state)
         {
             if (_active && ((hostname != null) || (port != 0)))
             {
@@ -320,7 +320,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_udpconnected);
             }
 
-            IPEndPoint ipEndPoint = null;
+            IPEndPoint? ipEndPoint = null;
             if (hostname != null && port != 0)
             {
                 IPAddress[] addresses = Dns.GetHostAddresses(hostname);
@@ -342,7 +342,7 @@ namespace System.Net.Sockets
             return BeginSend(datagram, bytes, ipEndPoint, requestCallback, state);
         }
 
-        public IAsyncResult BeginSend(byte[] datagram, int bytes, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginSend(byte[] datagram, int bytes, AsyncCallback? requestCallback, object? state)
         {
             return BeginSend(datagram, bytes, null, requestCallback, state);
         }
@@ -361,7 +361,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public IAsyncResult BeginReceive(AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginReceive(AsyncCallback? requestCallback, object? state)
         {
             // Validate input parameters.
             ThrowIfDisposed();
@@ -382,7 +382,7 @@ namespace System.Net.Sockets
             return _clientSocket.BeginReceiveFrom(_buffer, 0, MaxUDPSize, SocketFlags.None, ref tempRemoteEP, requestCallback, state);
         }
 
-        public byte[] EndReceive(IAsyncResult asyncResult, ref IPEndPoint remoteEP)
+        public byte[] EndReceive(IAsyncResult asyncResult, ref IPEndPoint? remoteEP)
         {
             ThrowIfDisposed();
 
@@ -597,38 +597,38 @@ namespace System.Net.Sockets
         public Task<int> SendAsync(byte[] datagram, int bytes)
         {
             return Task<int>.Factory.FromAsync(
-                (targetDatagram, targetBytes, callback, state) => ((UdpClient)state).BeginSend(targetDatagram, targetBytes, callback, state),
-                asyncResult => ((UdpClient)asyncResult.AsyncState).EndSend(asyncResult),
+                (targetDatagram, targetBytes, callback, state) => ((UdpClient)state!).BeginSend(targetDatagram, targetBytes, callback, state),
+                asyncResult => ((UdpClient)asyncResult.AsyncState!).EndSend(asyncResult),
                 datagram,
                 bytes,
                 state: this);
         }
 
-        public Task<int> SendAsync(byte[] datagram, int bytes, IPEndPoint endPoint)
+        public Task<int> SendAsync(byte[] datagram, int bytes, IPEndPoint? endPoint)
         {
             return Task<int>.Factory.FromAsync(
-                (targetDatagram, targetBytes, targetEndpoint, callback, state) => ((UdpClient)state).BeginSend(targetDatagram, targetBytes, targetEndpoint, callback, state),
-                asyncResult => ((UdpClient)asyncResult.AsyncState).EndSend(asyncResult),
+                (targetDatagram, targetBytes, targetEndpoint, callback, state) => ((UdpClient)state!).BeginSend(targetDatagram, targetBytes, targetEndpoint, callback, state),
+                asyncResult => ((UdpClient)asyncResult.AsyncState!).EndSend(asyncResult),
                 datagram,
                 bytes,
                 endPoint,
                 state: this);
         }
 
-        public Task<int> SendAsync(byte[] datagram, int bytes, string hostname, int port)
+        public Task<int> SendAsync(byte[] datagram, int bytes, string? hostname, int port)
         {
-            Tuple<byte[], string> packedArguments = Tuple.Create(datagram, hostname);
+            Tuple<byte[], string?> packedArguments = Tuple.Create(datagram, hostname);
 
             return Task<int>.Factory.FromAsync(
                 (targetPackedArguments, targetBytes, targetPort, callback, state) =>
                 {
                     byte[] targetDatagram = targetPackedArguments.Item1;
-                    string targetHostname = targetPackedArguments.Item2;
-                    var client = (UdpClient)state;
+                    string? targetHostname = targetPackedArguments.Item2;
+                    var client = (UdpClient)state!;
 
                     return client.BeginSend(targetDatagram, targetBytes, targetHostname, targetPort, callback, state);
                 },
-                asyncResult => ((UdpClient)asyncResult.AsyncState).EndSend(asyncResult),
+                asyncResult => ((UdpClient)asyncResult.AsyncState!).EndSend(asyncResult),
                 packedArguments,
                 bytes,
                 port,
@@ -638,13 +638,13 @@ namespace System.Net.Sockets
         public Task<UdpReceiveResult> ReceiveAsync()
         {
             return Task<UdpReceiveResult>.Factory.FromAsync(
-                (callback, state) => ((UdpClient)state).BeginReceive(callback, state),
+                (callback, state) => ((UdpClient)state!).BeginReceive(callback, state),
                 asyncResult =>
                 {
-                    var client = (UdpClient)asyncResult.AsyncState;
-                    IPEndPoint remoteEP = null;
+                    var client = (UdpClient)asyncResult.AsyncState!;
+                    IPEndPoint? remoteEP = null;
                     byte[] buffer = client.EndReceive(asyncResult, ref remoteEP);
-                    return new UdpReceiveResult(buffer, remoteEP);
+                    return new UdpReceiveResult(buffer, remoteEP!);
                 },
                 state: this);
         }
@@ -699,9 +699,9 @@ namespace System.Net.Sockets
 
             IPAddress[] addresses = Dns.GetHostAddresses(hostname);
 
-            Exception lastex = null;
-            Socket ipv6Socket = null;
-            Socket ipv4Socket = null;
+            Exception? lastex = null;
+            Socket? ipv6Socket = null;
+            Socket? ipv4Socket = null;
 
             try
             {
@@ -841,7 +841,7 @@ namespace System.Net.Sockets
             _active = true;
         }
 
-        public byte[] Receive(ref IPEndPoint remoteEP)
+        public byte[] Receive(ref IPEndPoint? remoteEP)
         {
             ThrowIfDisposed();
 
@@ -878,7 +878,7 @@ namespace System.Net.Sockets
 
 
         // Sends a UDP datagram to the host at the remote end point.
-        public int Send(byte[] dgram, int bytes, IPEndPoint endPoint)
+        public int Send(byte[] dgram, int bytes, IPEndPoint? endPoint)
         {
             ThrowIfDisposed();
 
@@ -904,7 +904,7 @@ namespace System.Net.Sockets
 
 
         // Sends a UDP datagram to the specified port on the specified remote host.
-        public int Send(byte[] dgram, int bytes, string hostname, int port)
+        public int Send(byte[] dgram, int bytes, string? hostname, int port)
         {
             ThrowIfDisposed();
 

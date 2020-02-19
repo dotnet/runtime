@@ -7,7 +7,7 @@ namespace System.Net.Sockets
     // Contains option values for IP multicast packets.
     public class MulticastOption
     {
-        private IPAddress? _group;
+        private IPAddress _group;
         private IPAddress? _localAddress;
         private int _ifIndex;
 
@@ -25,7 +25,7 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(mcint));
             }
 
-            Group = group;
+            _group = group;
             LocalAddress = mcint;
         }
 
@@ -41,7 +41,7 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(interfaceIndex));
             }
 
-            Group = group;
+            _group = group;
             _ifIndex = interfaceIndex;
         }
 
@@ -53,13 +53,13 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(group));
             }
 
-            Group = group;
+            _group = group;
 
             LocalAddress = IPAddress.Any;
         }
 
         // Sets the IP address of a multicast group.
-        public IPAddress? Group
+        public IPAddress Group
         {
             get
             {

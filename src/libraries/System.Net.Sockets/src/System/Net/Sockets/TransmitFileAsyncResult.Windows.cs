@@ -11,7 +11,7 @@ namespace System.Net.Sockets
         private FileStream? _fileStream;
         private bool _doDisconnect;
 
-        internal TransmitFileAsyncResult(Socket socket, object asyncState, AsyncCallback asyncCallback) :
+        internal TransmitFileAsyncResult(Socket socket, object asyncState, AsyncCallback? asyncCallback) :
             base(socket, asyncState, asyncCallback)
         {
         }
