@@ -2,6 +2,7 @@
 <Project DefaultTargets = "GetListOfTestCmds" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <!-- All OS/Arch common excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
+	
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/generics/threadstart/GThread23/*">
             <Issue>https://github.com/dotnet/runtime/issues/10847</Issue>
         </ExcludeList>
@@ -963,5 +964,21 @@
             <Issue>Do not run these scripts separately from superpmicollect test</Issue>
         </ExcludeList>
     </ItemGroup>
+
+
+    <!-- Known failures on the mono runtime -->
+    <ItemGroup Condition="'$(EXCLUDE_MONO_FAILURES)' == 'true'" >
+	<ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/RVAInit/**">
+            <Issue>Mono Issue 1</Issue>
+        </ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/**">
+            <Issue>Mono Issue 2</Issue>
+        </ExcludeList>
+	<ExcludeList Include="$(XunitTestBinBase)/readytorun/**">
+            <Issue>Mono Issue 3</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+
 
 </Project>

@@ -5,6 +5,10 @@ build_test_wrappers()
     if [[ "$__BuildTestWrappers" -ne -0 ]]; then
         echo "${__MsgPrefix}Creating test wrappers..."
 
+	if [[ __Mono=1 ]]; then
+		export EXCLUDE_MONO_FAILURES="true"
+	fi
+
         __Exclude="${__ProjectDir}/tests/issues.targets"
         __BuildLogRootName="Tests_XunitWrapper"
 
@@ -539,6 +543,12 @@ handle_arguments_local() {
             __SkipGenerateLayout=1
             ;;
 
+	mono|-mono)
+	    __Mono=1
+	    ;;
+	coreclr|-coreclr)
+	    __CoreCLR=1
+	    ;;
         *)
             __UnprocessedBuildArgs+=("$1")
             ;;
