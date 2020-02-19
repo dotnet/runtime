@@ -347,6 +347,16 @@ namespace System.Security.Cryptography
         /// This method always wraps the base-64 encoded text to 64 characters, per the
         /// recommended wrapping of RFC-7468. Unix-style line endings are used for line breaks.
         /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="label"/> exceeds the maximum possible label length.
+        ///   <para>
+        ///       -or-
+        ///   </para>
+        ///   <paramref name="data"/> exceeds the maximum possible encoded data length.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The PEM is too large to possibly encode.
+        /// </exception>
         public static bool TryWrite(ReadOnlySpan<char> label, ReadOnlySpan<byte> data, Span<char> destination, out int charsWritten)
         {
             static void Write(ReadOnlySpan<char> str, Span<char> dest, ref int offset)
@@ -420,6 +430,16 @@ namespace System.Security.Cryptography
         /// This method always wraps the base-64 encoded text to 64 characters, per the
         /// recommended wrapping of RFC-7468. Unix-style line endings are used for line breaks.
         /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="label"/> exceeds the maximum possible label length.
+        ///   <para>
+        ///       -or-
+        ///   </para>
+        ///   <paramref name="data"/> exceeds the maximum possible encoded data length.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The PEM is too large to possibly encode.
+        /// </exception>
         public static char[] Write(ReadOnlySpan<char> label, ReadOnlySpan<byte> data)
         {
             int encodedSize = GetEncodedSize(label.Length, data.Length);
