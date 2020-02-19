@@ -33,8 +33,8 @@ namespace LinkerAnalyzer.Core
 {
 	public class SpaceAnalyzer
 	{
-		string assembliesDirectory;
-		List<AssemblyDefinition> assemblies = new List<AssemblyDefinition> ();
+		readonly string assembliesDirectory;
+		readonly List<AssemblyDefinition> assemblies = new List<AssemblyDefinition> ();
 		readonly Dictionary<string, int> sizes = new Dictionary<string, int> ();
 
 		public SpaceAnalyzer (string assembliesDirectory)
@@ -98,7 +98,7 @@ namespace LinkerAnalyzer.Core
 					size += GetMethodSize (method);
 			}
 
-			var resolvedType = type.Resolve ();
+			type.Resolve ();
 			try {
 				sizes.Add (GetTypeKey (type), size);
 			} catch (ArgumentException e) {

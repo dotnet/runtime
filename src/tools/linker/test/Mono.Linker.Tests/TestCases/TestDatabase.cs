@@ -158,9 +158,7 @@ namespace Mono.Linker.Tests.TestCases
 
 		public static TestCaseCollector CreateCollector ()
 		{
-			string rootSourceDirectory;
-			string testCaseAssemblyPath;
-			GetDirectoryPaths (out rootSourceDirectory, out testCaseAssemblyPath);
+			GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyPath);
 			return new TestCaseCollector (rootSourceDirectory, testCaseAssemblyPath);
 		}
 

@@ -193,8 +193,7 @@ namespace Mono.Linker.Steps {
 				var resources = assembly.MainModule.Resources;
 
 				for (int i = 0; i < resources.Count; i++) {
-					var resource = resources [i] as EmbeddedResource;
-					if (resource == null)
+					if (!(resources [i] is EmbeddedResource resource))
 						continue;
 
 					if (resourcesToRemove.Contains (resource.Name))
@@ -546,14 +545,12 @@ namespace Mono.Linker.Steps {
 				return false;
 
 			if (definition.Namespace == "System.Security") {
-				switch (definition.FullName) {
+				return definition.FullName switch {
 					// This seems to be one attribute in the System.Security namespace that doesn't count
 					// as an attribute that requires HasSecurity to be true
-					case "System.Security.SecurityCriticalAttribute":
-						return false;
-				}
-
-				return true;
+					"System.Security.SecurityCriticalAttribute" => false,
+					_ => true,
+				};
 			}
 
 			if (definition.BaseType == null)

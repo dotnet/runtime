@@ -20,8 +20,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			using (var fullTestCaseAssemblyDefinition = AssemblyDefinition.ReadAssembly (testCase.OriginalTestCaseAssemblyPath.ToString ())) {
 				var metadataProvider = _factory.CreateMetadataProvider (testCase, fullTestCaseAssemblyDefinition);
 
-				string ignoreReason;
-				if (metadataProvider.IsIgnored (out ignoreReason))
+				if (metadataProvider.IsIgnored (out string ignoreReason))
 					Assert.Ignore (ignoreReason);
 
 				var sandbox = Sandbox (testCase, metadataProvider);

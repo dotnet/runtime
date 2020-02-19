@@ -48,7 +48,7 @@ namespace Mono.Linker.Steps {
 			Default = 0
 		}
 
-		List<string> assembliesWritten;
+		readonly List<string> assembliesWritten;
 
 		public OutputStep () {
 			assembliesWritten = new List<string> ();
@@ -67,8 +67,7 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
-			TargetArchitecture pureILArch;
-			if (architectureMap.TryGetValue ((ushort) readyToRunArch, out pureILArch)) {
+			if (architectureMap.TryGetValue ((ushort) readyToRunArch, out TargetArchitecture pureILArch)) {
 				return pureILArch;
 			}
 			throw new BadImageFormatException ("unrecognized module attributes");

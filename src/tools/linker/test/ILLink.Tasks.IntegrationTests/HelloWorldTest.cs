@@ -46,7 +46,7 @@ namespace ILLink.Tests
 
 	public class HelloWorldTest : IntegrationTestBase, IClassFixture<HelloWorldFixture>
 	{
-		HelloWorldFixture fixture;
+		readonly HelloWorldFixture fixture;
 
 		public HelloWorldTest(HelloWorldFixture fixture, ITestOutputHelper helper) : base(helper) {
 			this.fixture = fixture;

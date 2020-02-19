@@ -307,8 +307,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		protected virtual NPath SourceFileForAttributeArgumentValue (object value)
 		{
-			var valueAsTypeRef = value as TypeReference;
-			if (valueAsTypeRef != null) {
+			if (value is TypeReference valueAsTypeRef) {
 				// Use the parent type for locating the source file
 				var parentType = ParentMostType (valueAsTypeRef);
 				var pathRelativeToAssembly = $"{parentType.FullName.Substring (parentType.Module.Name.Length - 3).Replace ('.', '/')}.cs".ToNPath ();

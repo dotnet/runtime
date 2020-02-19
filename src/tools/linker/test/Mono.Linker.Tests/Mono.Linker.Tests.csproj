@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <Configurations>Debug;Release</Configurations>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MonoBuild)' == ''">

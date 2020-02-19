@@ -19,6 +19,7 @@
          around this by explicitly including the publish output in the
          package. -->
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_LayoutPackage</TargetsForTfmSpecificContentInPackage>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

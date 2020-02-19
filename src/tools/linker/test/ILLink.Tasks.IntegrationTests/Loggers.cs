@@ -10,7 +10,7 @@ namespace ILLink.Tests
 
 	public class TestLogger : ILogger
 	{
-		private ITestOutputHelper output;
+		private readonly ITestOutputHelper output;
 		public TestLogger (ITestOutputHelper output)
 		{
 			this.output = output;
@@ -23,7 +23,7 @@ namespace ILLink.Tests
 
 	public class FixtureLogger : ILogger
 	{
-		private IMessageSink messageSink;
+		private readonly IMessageSink messageSink;
 		public FixtureLogger (IMessageSink messageSink)
 		{
 			this.messageSink = messageSink;

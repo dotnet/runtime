@@ -57,19 +57,17 @@ namespace ILLink.Tasks
 
 		public override bool Execute ()
 		{
-			string applicationAssemblyAction;
 			string usedApplicationAssemblyAction = UsedApplicationAssemblyAction.ItemSpec;
 			string unusedApplicationAssemblyAction = UnusedApplicationAssemblyAction.ItemSpec;
-			if (!GetAssemblyAction (usedApplicationAssemblyAction.ToLower (), unusedApplicationAssemblyAction.ToLower (), out applicationAssemblyAction)) {
+			if (!GetAssemblyAction (usedApplicationAssemblyAction.ToLower (), unusedApplicationAssemblyAction.ToLower (), out string applicationAssemblyAction)) {
 				Log.LogError ("Unsupported combination of application assembly actions: {0}, {1}.",
 							  usedApplicationAssemblyAction, unusedApplicationAssemblyAction);
 				return false;
 			}
 
-			string platformAssemblyAction;
 			string usedPlatformAssemblyAction = UsedPlatformAssemblyAction.ItemSpec;
 			string unusedPlatformAssemblyAction = UnusedPlatformAssemblyAction.ItemSpec;
-			if (!GetAssemblyAction (usedPlatformAssemblyAction.ToLower (), unusedPlatformAssemblyAction.ToLower (), out platformAssemblyAction)) {
+			if (!GetAssemblyAction (usedPlatformAssemblyAction.ToLower (), unusedPlatformAssemblyAction.ToLower (), out string platformAssemblyAction)) {
 				Log.LogError ("Unsupported combination of platform assembly actions: {0}, {1}.",
 							  usedPlatformAssemblyAction, unusedPlatformAssemblyAction);
 				return false;

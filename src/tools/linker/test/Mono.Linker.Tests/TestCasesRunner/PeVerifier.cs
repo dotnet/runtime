@@ -24,9 +24,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		public virtual void Check (LinkedTestCaseResult linkResult, AssemblyDefinition original)
 		{
-			bool skipCheckEntirely;
-			HashSet<string> assembliesToSkip;
-			ProcessSkipAttributes (linkResult, original, out skipCheckEntirely, out assembliesToSkip);
+			ProcessSkipAttributes (linkResult, original, out bool skipCheckEntirely, out HashSet<string> assembliesToSkip);
 
 			if (skipCheckEntirely)
 				return;
@@ -109,8 +107,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
 				throw new InvalidOperationException ("This method should only be called on windows");
 
-			NPath result;
-			if (TryFindPeExecutableFromRegustrySubfolder ("NETFXSDK", out result))
+			if (TryFindPeExecutableFromRegustrySubfolder ("NETFXSDK", out NPath result))
 				return result;
 			if (TryFindPeExecutableFromRegustrySubfolder ("Windows", out result))
 				return result;

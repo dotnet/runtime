@@ -1656,7 +1656,7 @@ namespace Mono.Linker.Steps {
 
 		protected TypeReference GetOriginalType (TypeReference type)
 		{
-			while (type is TypeSpecification) {
+			while (type is TypeSpecification specification) {
 				if (type is GenericInstanceType git)
 					MarkGenericArguments (git);
 
@@ -1669,7 +1669,7 @@ namespace Mono.Linker.Steps {
 					break; // FunctionPointerType is the original type
 				}
 
-				type = ((TypeSpecification)type).ElementType;
+				type = specification.ElementType;
 			}
 
 			return type;
@@ -1894,11 +1894,11 @@ namespace Mono.Linker.Steps {
 
 		protected MethodReference GetOriginalMethod (MethodReference method)
 		{
-			while (method is MethodSpecification) {
+			while (method is MethodSpecification specification) {
 				if (method is GenericInstanceMethod gim)
 					MarkGenericArguments (gim);
 
-				method = ((MethodSpecification) method).ElementMethod;
+				method = specification.ElementMethod;
 			}
 
 			return method;
@@ -2076,10 +2076,7 @@ namespace Mono.Linker.Steps {
 			MarkType (nse);
 
 			var nseCtor = MarkMethodIf (nse.Methods, KnownMembers.IsNotSupportedExceptionCtorString);
-			if (nseCtor == null)
-				throw new MarkException ($"Could not find constructor on '{nse.FullName}'");
-
-			_context.MarkedKnownMembers.NotSupportedExceptionCtorString = nseCtor;
+			_context.MarkedKnownMembers.NotSupportedExceptionCtorString = nseCtor ?? throw new MarkException ($"Could not find constructor on '{nse.FullName}'");
 
 			var objectType = BCL.FindPredefinedType ("System", "Object", _context);
 			if (objectType == null)
@@ -2088,10 +2085,7 @@ namespace Mono.Linker.Steps {
 			MarkType (objectType);
 
 			var objectCtor = MarkMethodIf (objectType.Methods, MethodDefinitionExtensions.IsDefaultConstructor);
-			if (objectCtor == null)
-				throw new MarkException ($"Could not find constructor on '{objectType.FullName}'");
-
-			_context.MarkedKnownMembers.ObjectCtor = objectCtor;
+			_context.MarkedKnownMembers.ObjectCtor = objectCtor ?? throw new MarkException ($"Could not find constructor on '{objectType.FullName}'");
 		}
 
 		bool MarkDisablePrivateReflectionAttribute ()
@@ -2106,10 +2100,7 @@ namespace Mono.Linker.Steps {
 			MarkType (nse);
 
 			var ctor = MarkMethodIf (nse.Methods, MethodDefinitionExtensions.IsDefaultConstructor);
-			if (ctor == null)
-				throw new MarkException ($"Could not find constructor on '{nse.FullName}'");
-
-			_context.MarkedKnownMembers.DisablePrivateReflectionAttributeCtor = ctor;
+			_context.MarkedKnownMembers.DisablePrivateReflectionAttributeCtor = ctor ?? throw new MarkException ($"Could not find constructor on '{nse.FullName}'");
 			return true;
 		}
 
@@ -2264,10 +2255,10 @@ namespace Mono.Linker.Steps {
 				break;
 			case OperandType.InlineTok:
 				object token = instruction.Operand;
-				if (token is TypeReference)
-					MarkType ((TypeReference) token);
-				else if (token is MethodReference)
-					MarkMethod ((MethodReference) token);
+				if (token is TypeReference typeReference)
+					MarkType (typeReference);
+				else if (token is MethodReference methodReference)
+					MarkMethod (methodReference);
 				else
 					MarkField ((FieldReference) token);
 				break;
