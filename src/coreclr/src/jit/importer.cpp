@@ -9116,6 +9116,8 @@ REDO_RETURN_NODE:
         //     This is not correct when op is a GT_INDEX as the starting offset
         //     for the array elements 'elemOffs' is different for an array of
         //     TYP_REF than an array of TYP_STRUCT (which simply wraps a TYP_REF)
+        // TODO: Delete this? The starting offset of the array elements does not
+        // depend on the array type anymore.
         //
         if ((op1->gtOper == GT_ADDR) && (op1->AsOp()->gtOp1->gtOper != GT_INDEX))
         {
