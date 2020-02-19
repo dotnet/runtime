@@ -677,6 +677,12 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<uint> MaxAcross(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64x2_t vmaxnmq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMAXNM Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MaxNumber(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// uint8x16_t vpmaxq_u8 (uint8x16_t a, uint8x16_t b)
             ///   A64: UMAXP Vd.16B, Vn.16B, Vm.16B
             /// </summary>
@@ -3492,6 +3498,34 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: UMAX Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> Max(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vmaxnm_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMAXNM.F32 Dd, Dn, Dm
+        ///   A64: FMAXNM Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> MaxNumber(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vmaxnmq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMAXNM.F32 Qd, Qn, Qm
+        ///   A64: FMAXNM Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> MaxNumber(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vmaxnm_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VMAXNM.F64 Dd, Dn, Dm
+        ///   A64: FMAXNM Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> MaxNumberScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vmaxnms_f32 (float32_t a, float32_t b)
+        ///   A32: VMAXNM.F32 Sd, Sn, Sm
+        ///   A64: FMAXNM Sd, Sn, Sm
+        /// </summary>
+        public static Vector64<float> MaxNumberScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vpmax_u8 (uint8x8_t a, uint8x8_t b)
