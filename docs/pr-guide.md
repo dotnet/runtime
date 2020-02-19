@@ -39,8 +39,12 @@ Validation may fail for several reasons
 
 ### Option 2: There is a flaky test that is not related to your PR
 
-* Your assumption should be that a failed test indicates a problem in your PR. (If we don't operate this way, chaos ensues.) If the test fails when run again, it is almost surely a failure caused by your PR. However, there are occasions where unrelated failures occur. Perhaps you see the same failure in CI results for unrelated active PR's.
-* In this case, you want to re-run but not necessarily rebase on master.
+* Your assumption should be that a failed test indicates a problem in your PR. (If we don't operate this way, chaos ensues.) If the test fails when run again, it is almost surely a failure caused by your PR. However, there are occasions where unrelated failures occur. Here's some ways to know:
+  * Perhaps you see the same failure in CI results for unrelated active PR's.
+  * It's a known issue listed in our [big tracking issue](https://github.com/dotnet/runtime/issues/702).
+  * Its otherwise beyond doubt that your code changes could not have caused this.
+  * If the tests pass on rerun, that may suggest it's not related.
+* In this situation, you want to re-run but not necessarily rebase on master.
   * To rerun just the failed leg(s):
     * Click on any leg. Navigate through the Azure DevOps UI, find the "..." button and choose "Retry failed legs"
     * Or, on the GitHub Checks tab choose "re-run failed checks". This will not rebase your change.
