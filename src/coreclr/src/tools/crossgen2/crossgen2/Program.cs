@@ -29,6 +29,7 @@ namespace ILCompiler
         public TargetArchitecture _targetArchitecture;
         public OptimizationMode _optimizationMode;
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, string> _unrootedInputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         private Program(CommandLineOptions commandLineOptions)
@@ -102,6 +103,9 @@ namespace ILCompiler
             foreach (var input in _commandLineOptions.InputFilePaths ?? Enumerable.Empty<FileInfo>())
                 Helpers.AppendExpandedPaths(_inputFilePaths, input.FullName, true);
 
+            foreach (var input in _commandLineOptions.UnrootedInputFilePaths ?? Enumerable.Empty<FileInfo>())
+                Helpers.AppendExpandedPaths(_unrootedInputFilePaths, input.FullName, true);
+
             foreach (var reference in _commandLineOptions.Reference ?? Enumerable.Empty<string>())
                 Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
         }
@@ -168,6 +172,7 @@ namespace ILCompiler
                     // When we undo this this hack, replace this foreach with
                     //  typeSystemContext.InputFilePaths = _inputFilePaths;
                     //
+                    Dictionary<string, string> allInputFilePaths = new Dictionary<string, string>();
                     Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
                     List<ModuleDesc> referenceableModules = new List<ModuleDesc>();
                     foreach (var inputFile in _inputFilePaths)
@@ -175,6 +180,7 @@ namespace ILCompiler
                         try
                         {
                             var module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+                            allInputFilePaths.Add(inputFile.Key, inputFile.Value);
                             inputFilePaths.Add(inputFile.Key, inputFile.Value);
                             referenceableModules.Add(module);
                         }
@@ -184,16 +190,37 @@ namespace ILCompiler
                         }
                     }
 
-                    typeSystemContext.InputFilePaths = inputFilePaths;
+                    Dictionary<string, string> unrootedInputFilePaths = new Dictionary<string, string>();
+                    foreach (var unrootedInputFile in _unrootedInputFilePaths)
+                    {
+                        try
+                        {
+                            var module = typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
+                            if (!allInputFilePaths.ContainsKey(unrootedInputFile.Key))
+                            {
+                                allInputFilePaths.Add(unrootedInputFile.Key, unrootedInputFile.Value);
+                                unrootedInputFilePaths.Add(unrootedInputFile.Key, unrootedInputFile.Value);
+                                referenceableModules.Add(module);
+                            }
+                        }
+                        catch (TypeSystemException.BadImageFormatException)
+                        {
+                            // Keep calm and carry on.
+                        }
+                    }
+
+                    typeSystemContext.InputFilePaths = allInputFilePaths;
                     typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
                     List<EcmaModule> inputModules = new List<EcmaModule>();
+                    List<EcmaModule> rootingModules = new List<EcmaModule>();
                     HashSet<ModuleDesc> versionBubbleModulesHash = new HashSet<ModuleDesc>();
 
-                    foreach (var inputFile in typeSystemContext.InputFilePaths)
+                    foreach (var inputFile in inputFilePaths)
                     {
                         EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
                         inputModules.Add(module);
+                        rootingModules.Add(module);
                         versionBubbleModulesHash.Add(module);
 
                         if (!_commandLineOptions.InputBubble)
@@ -202,8 +229,15 @@ namespace ILCompiler
                         }
                     }
 
+                    foreach (var unrootedInputFile in unrootedInputFilePaths)
+                    {
+                        EcmaModule module = typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
+                        inputModules.Add(module);
+                        versionBubbleModulesHash.Add(module);
+                    }
+
                     string systemModuleName = _commandLineOptions.SystemModule ?? DefaultSystemModule;
-                    typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(systemModuleName));
+                    typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
 
                     if (typeSystemContext.InputFilePaths.Count == 0)
                         throw new CommandLineException(SR.NoInputFiles);
@@ -231,6 +265,11 @@ namespace ILCompiler
                         try
                         {
                             EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile);
+                            if (versionBubbleModulesHash.Contains(module))
+                            {
+                                // Ignore reference assemblies that have also been passed as inputs
+                                continue;
+                            }
                             referenceableModules.Add(module);
                             if (_commandLineOptions.InputBubble)
                             {
@@ -243,19 +282,34 @@ namespace ILCompiler
 
                     List<ModuleDesc> versionBubbleModules = new List<ModuleDesc>(versionBubbleModulesHash);
 
+                    if (!_commandLineOptions.Composite && inputModules.Count != 1)
+                    {
+                        throw new Exception(string.Format(SR.ErrorMultipleInputFilesCompositeModeOnly, string.Join("; ", inputModules)));
+                    }
+
                     ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
                     if (singleMethod != null)
                     {
                         // Compiling just a single method
-                        compilationGroup = new SingleMethodCompilationModuleGroup(typeSystemContext, inputModules, versionBubbleModules, _commandLineOptions.CompileBubbleGenerics, singleMethod);
+                        compilationGroup = new SingleMethodCompilationModuleGroup(
+                            typeSystemContext,
+                            _commandLineOptions.Composite,
+                            inputModules,
+                            versionBubbleModules,
+                            _commandLineOptions.CompileBubbleGenerics,
+                            singleMethod);
                         compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                     }
                     else
                     {
                         // Single assembly compilation.
                         compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
-                            typeSystemContext, inputModules, versionBubbleModules, _commandLineOptions.CompileBubbleGenerics);
+                            typeSystemContext,
+                            _commandLineOptions.Composite,
+                            inputModules,
+                            versionBubbleModules,
+                            _commandLineOptions.CompileBubbleGenerics);
                     }
 
                     // Examine profile guided information as appropriate
@@ -277,7 +331,7 @@ namespace ILCompiler
                     if (singleMethod == null)
                     {
                         // For non-single-method compilations add compilation roots.
-                        foreach (var module in inputModules)
+                        foreach (var module in rootingModules)
                         {
                             compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager, _commandLineOptions.Partial));
 
@@ -292,13 +346,8 @@ namespace ILCompiler
                     // Compile
                     //
 
-                    string inputFilePath = "";
-                    foreach (var input in typeSystemContext.InputFilePaths)
-                    {
-                        inputFilePath = input.Value;
-                        break;
-                    }
-                    ReadyToRunCodegenCompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
+                    ReadyToRunCodegenCompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(
+                        typeSystemContext, compilationGroup, allInputFilePaths.Values);
                     string compilationUnitPrefix = "";
                     builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
