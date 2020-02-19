@@ -192,9 +192,16 @@ namespace System.Net.Http.Functional.Tests
                     Content = withResponseContent ? new ByteArrayContent(new byte[1]) : null
                 }))))
             {
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(CreateFakeUri()));
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetByteArrayAsync(CreateFakeUri()));
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync(CreateFakeUri()));
+                HttpRequestException ex;
+
+                ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(CreateFakeUri()));
+                Assert.Equal(HttpStatusCode.BadRequest, ex.StatusCode);
+
+                ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetByteArrayAsync(CreateFakeUri()));
+                Assert.Equal(HttpStatusCode.BadRequest, ex.StatusCode);
+
+                ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync(CreateFakeUri()));
+                Assert.Equal(HttpStatusCode.BadRequest, ex.StatusCode);
             }
         }
 
