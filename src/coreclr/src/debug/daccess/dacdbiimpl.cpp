@@ -927,18 +927,18 @@ void DacDbiInterfaceImpl::ComposeMapping(const InstrumentedILOffsetMapping * pPr
         ULONG32 prevILOffset = (ULONG32)(ICorDebugInfo::MAX_ILNUM);
         for (ULONG32 i = 0; i < entryCount; i++)
         {
-            ULONG32 origILOffset = TranslateInstrumentedILOffsetToOriginal(nativeMap[i].offset.ilOffset, pProfilerILMap);
+            ULONG32 origILOffset = TranslateInstrumentedILOffsetToOriginal(nativeMap[i].ilOffset, pProfilerILMap);
 
             if (origILOffset == prevILOffset)
             {
                 // mark this sequence point as invalid; refer to the comment above
-                nativeMap[i].offset.ilOffset = (ULONG32)(ICorDebugInfo::MAX_ILNUM);
+                nativeMap[i].ilOffset = (ULONG32)(ICorDebugInfo::MAX_ILNUM);
                 cDuplicate += 1;
             }
             else
             {
                 // overwrite the instrumented IL offset with the original IL offset
-                nativeMap[i].offset.ilOffset = origILOffset;
+                nativeMap[i].ilOffset = origILOffset;
                 prevILOffset = origILOffset;
             }
         }
@@ -947,7 +947,7 @@ void DacDbiInterfaceImpl::ComposeMapping(const InstrumentedILOffsetMapping * pPr
         ULONG32 realIndex = 0;
         for (ULONG32 curIndex = 0; curIndex < entryCount; curIndex++)
         {
-            if (nativeMap[curIndex].offset.ilOffset != (ULONG32)(ICorDebugInfo::MAX_ILNUM))
+            if (nativeMap[curIndex].ilOffset != (ULONG32)(ICorDebugInfo::MAX_ILNUM))
             {
                 // This is a valid entry.  Move it up front.
                 nativeMap[realIndex] = nativeMap[curIndex];

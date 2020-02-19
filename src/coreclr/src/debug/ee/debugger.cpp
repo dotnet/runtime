@@ -3020,8 +3020,8 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
             {
                 for (ULONG32 i = 0; i < cMap; ++i)
                 {
-                    map[i].ilOffset = pMap[i].offset.ilOffset;
-                    map[i].nativeStartOffset = pMap[i].offset.nativeOffset;
+                    map[i].ilOffset = pMap[i].ilOffset;
+                    map[i].nativeStartOffset = pMap[i].nativeOffset;
                     if (i > 0)
                     {
                         map[i - 1].nativeEndOffset = map[i].nativeStartOffset;

@@ -6159,8 +6159,8 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
     ULONG32 i;
     for (i = 0; i < *numMap; i++)
     {
-        (*map)[i].ilOffset = mapCopy[i].offset.ilOffset;
-        (*map)[i].nativeStartOffset = mapCopy[i].offset.nativeOffset;
+        (*map)[i].ilOffset = mapCopy[i].ilOffset;
+        (*map)[i].nativeStartOffset = mapCopy[i].nativeOffset;
         if (i > 0)
         {
             (*map)[i - 1].nativeEndOffset = (*map)[i].nativeStartOffset;

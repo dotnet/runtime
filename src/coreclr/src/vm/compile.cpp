@@ -2262,9 +2262,9 @@ class QuickSortILNativeMapByIL : public CQuickSort<ICorDebugInfo::OffsetMapping>
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (pFirst->offset.ilOffset < pSecond->offset.ilOffset)
+        if (pFirst->ilOffset < pSecond->ilOffset)
             return -1;
-        else if (pFirst->offset.ilOffset == pSecond->offset.ilOffset)
+        else if (pFirst->ilOffset == pSecond->ilOffset)
             return 0;
         else
             return 1;
@@ -2290,9 +2290,9 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (pFirst->offset.nativeOffset < pSecond->offset.nativeOffset)
+        if (pFirst->nativeOffset < pSecond->nativeOffset)
             return -1;
-        else if (pFirst->offset.nativeOffset == pSecond->offset.nativeOffset)
+        else if (pFirst->nativeOffset == pSecond->nativeOffset)
             return 0;
         else
             return 1;
@@ -2348,8 +2348,8 @@ class QuickSortMapIndexPairsByNativeOffset : public CQuickSort<MapIndexPair>
         _ASSERTE(pFirst->m_iIlNativeMap < m_cIlNativeMap);
         _ASSERTE(pSecond->m_iIlNativeMap < m_cIlNativeMap);
 
-        DWORD dwFirstNativeOffset = m_rgIlNativeMap[pFirst->m_iIlNativeMap].offset.nativeOffset;
-        DWORD dwSecondNativeOffset = m_rgIlNativeMap[pSecond->m_iIlNativeMap].offset.nativeOffset;
+        DWORD dwFirstNativeOffset = m_rgIlNativeMap[pFirst->m_iIlNativeMap].nativeOffset;
+        DWORD dwSecondNativeOffset = m_rgIlNativeMap[pSecond->m_iIlNativeMap].nativeOffset;
 
         if (dwFirstNativeOffset < dwSecondNativeOffset)
             return -1;
@@ -3505,9 +3505,9 @@ HRESULT NGenMethodLinesPdbWriter::WritePDBData()
 
         // IP addresses that map to "special" places (prolog, epilog, or
         // other hidden code), will just map to 0xFeeFee, as per convention
-        if ((m_rgIlNativeMap[iIlNativeMap].offset.ilOffset == NO_MAPPING) ||
-            (m_rgIlNativeMap[iIlNativeMap].offset.ilOffset == PROLOG) ||
-            (m_rgIlNativeMap[iIlNativeMap].offset.ilOffset == EPILOG))
+        if ((m_rgIlNativeMap[iIlNativeMap].ilOffset == NO_MAPPING) ||
+            (m_rgIlNativeMap[iIlNativeMap].ilOffset == PROLOG) ||
+            (m_rgIlNativeMap[iIlNativeMap].ilOffset == EPILOG))
         {
             rgMapIndexPairs[iMapIndexPairs].m_iIlNativeMap = iIlNativeMap;
             rgMapIndexPairs[iMapIndexPairs].m_iSeqPoints = kUnmappedIP;
@@ -3526,7 +3526,7 @@ HRESULT NGenMethodLinesPdbWriter::WritePDBData()
         if (iSeqPoints >= cSeqPointsReturned)
             break;
 
-        if (m_rgIlNativeMap[iIlNativeMap].offset.ilOffset < m_rgilOffsets[iSeqPoints])
+        if (m_rgIlNativeMap[iIlNativeMap].ilOffset < m_rgilOffsets[iSeqPoints])
         {
             // Our cursor over the ilnative map is behind the sourceil
             // map
@@ -3539,7 +3539,7 @@ HRESULT NGenMethodLinesPdbWriter::WritePDBData()
                 // generated sequence points that surround, without matching, that
                 // previous entry in the sourceil map. So match to that previous
                 // (unmatched) entry in the sourceil map.
-                _ASSERTE(m_rgilOffsets[iSeqPointLastUnmatched] < m_rgIlNativeMap[iIlNativeMap].offset.ilOffset);
+                _ASSERTE(m_rgilOffsets[iSeqPointLastUnmatched] < m_rgIlNativeMap[iIlNativeMap].ilOffset);
                 rgMapIndexPairs[iMapIndexPairs].m_iIlNativeMap = iIlNativeMap;
                 rgMapIndexPairs[iMapIndexPairs].m_iSeqPoints = iSeqPointLastUnmatched;
                 iMapIndexPairs++;
@@ -3550,8 +3550,8 @@ HRESULT NGenMethodLinesPdbWriter::WritePDBData()
             else if (iMapIndexPairs > 0)
             {
                 DWORD lastMatchedilNativeIndex = rgMapIndexPairs[iMapIndexPairs - 1].m_iIlNativeMap;
-                if (m_rgIlNativeMap[iIlNativeMap].offset.ilOffset == m_rgIlNativeMap[lastMatchedilNativeIndex].offset.ilOffset &&
-                    m_rgIlNativeMap[iIlNativeMap].offset.nativeOffset < m_rgIlNativeMap[lastMatchedilNativeIndex].offset.nativeOffset)
+                if (m_rgIlNativeMap[iIlNativeMap].ilOffset == m_rgIlNativeMap[lastMatchedilNativeIndex].ilOffset &&
+                    m_rgIlNativeMap[iIlNativeMap].nativeOffset < m_rgIlNativeMap[lastMatchedilNativeIndex].nativeOffset)
                 {
                     rgMapIndexPairs[iMapIndexPairs - 1].m_iIlNativeMap = iIlNativeMap;
                 }
@@ -3562,7 +3562,7 @@ HRESULT NGenMethodLinesPdbWriter::WritePDBData()
             continue;
         }
 
-        if (m_rgilOffsets[iSeqPoints] < m_rgIlNativeMap[iIlNativeMap].offset.ilOffset)
+        if (m_rgilOffsets[iSeqPoints] < m_rgIlNativeMap[iIlNativeMap].ilOffset)
         {
             // Our cursor over the ilnative map is ahead of the sourceil
             // map, so go to next sourceil map entry.  Remember that we're passing over
@@ -3577,7 +3577,7 @@ HRESULT NGenMethodLinesPdbWriter::WritePDBData()
         }
 
         // At a match
-        _ASSERTE(m_rgilOffsets[iSeqPoints] == m_rgIlNativeMap[iIlNativeMap].offset.ilOffset);
+        _ASSERTE(m_rgilOffsets[iSeqPoints] == m_rgIlNativeMap[iIlNativeMap].ilOffset);
         rgMapIndexPairs[iMapIndexPairs].m_iIlNativeMap = iIlNativeMap;
         rgMapIndexPairs[iMapIndexPairs].m_iSeqPoints = iSeqPoints;
 
@@ -3608,7 +3608,7 @@ HRESULT NGenMethodLinesPdbWriter::WritePDBData()
     ULONG32 iMapIndexPairsFirstEntryInColdSection = cMapIndexPairs;
     for (iMapIndexPairs = 0; iMapIndexPairs < cMapIndexPairs; iMapIndexPairs++)
     {
-        DWORD dwNativeOffset = m_rgIlNativeMap[rgMapIndexPairs[iMapIndexPairs].m_iIlNativeMap].offset.nativeOffset;
+        DWORD dwNativeOffset = m_rgIlNativeMap[rgMapIndexPairs[iMapIndexPairs].m_iIlNativeMap].nativeOffset;
         if (dwNativeOffset >= m_pMethodRegionInfo->hotSize)
         {
             iMapIndexPairsFirstEntryInColdSection = iMapIndexPairs;
@@ -3619,13 +3619,13 @@ HRESULT NGenMethodLinesPdbWriter::WritePDBData()
     // Adjust the cold offsets (if any) to be relative to the cold start
     for (iMapIndexPairs = iMapIndexPairsFirstEntryInColdSection; iMapIndexPairs < cMapIndexPairs; iMapIndexPairs++)
     {
-        DWORD dwNativeOffset = m_rgIlNativeMap[rgMapIndexPairs[iMapIndexPairs].m_iIlNativeMap].offset.nativeOffset;
+        DWORD dwNativeOffset = m_rgIlNativeMap[rgMapIndexPairs[iMapIndexPairs].m_iIlNativeMap].nativeOffset;
         _ASSERTE (dwNativeOffset >= m_pMethodRegionInfo->hotSize);
 
         // Adjust offset so it's relative to the cold region start
         dwNativeOffset -= DWORD(m_pMethodRegionInfo->hotSize);
         _ASSERTE(dwNativeOffset < m_pMethodRegionInfo->coldSize);
-        m_rgIlNativeMap[rgMapIndexPairs[iMapIndexPairs].m_iIlNativeMap].offset.nativeOffset = dwNativeOffset;
+        m_rgIlNativeMap[rgMapIndexPairs[iMapIndexPairs].m_iIlNativeMap].nativeOffset = dwNativeOffset;
     }
 
     // Write out the hot region into its own lines-file subsection
@@ -3673,7 +3673,7 @@ HRESULT NGenMethodLinesPdbWriter::WriteNativeILMapPDBData()
     ULONG32 ilNativeMapFirstEntryInColdeSection = m_cIlNativeMap;
     for (iIlNativeMap = 0; iIlNativeMap < m_cIlNativeMap; iIlNativeMap++)
     {
-        if (m_rgIlNativeMap[iIlNativeMap].offset.nativeOffset >= m_pMethodRegionInfo->hotSize)
+        if (m_rgIlNativeMap[iIlNativeMap].nativeOffset >= m_pMethodRegionInfo->hotSize)
         {
             ilNativeMapFirstEntryInColdeSection = iIlNativeMap;
             break;
@@ -3684,14 +3684,14 @@ HRESULT NGenMethodLinesPdbWriter::WriteNativeILMapPDBData()
     // Adjust the cold offsets (if any) to be relative to the cold start
     for (iIlNativeMap = ilNativeMapFirstEntryInColdeSection; iIlNativeMap < m_cIlNativeMap; iIlNativeMap++)
     {
-        DWORD dwNativeOffset = m_rgIlNativeMap[iIlNativeMap].offset.nativeOffset;
+        DWORD dwNativeOffset = m_rgIlNativeMap[iIlNativeMap].nativeOffset;
         _ASSERTE(dwNativeOffset >= m_pMethodRegionInfo->hotSize);
 
         // Adjust offset so it's relative to the cold region start
         dwNativeOffset -= DWORD(m_pMethodRegionInfo->hotSize);
         _ASSERTE(dwNativeOffset < m_pMethodRegionInfo->coldSize);
-        coldRgIlNativeMap[iIlNativeMap - ilNativeMapFirstEntryInColdeSection].offset.ilOffset = m_rgIlNativeMap[iIlNativeMap].offset.ilOffset;
-        coldRgIlNativeMap[iIlNativeMap - ilNativeMapFirstEntryInColdeSection].offset.nativeOffset = dwNativeOffset;
+        coldRgIlNativeMap[iIlNativeMap - ilNativeMapFirstEntryInColdeSection].ilOffset = m_rgIlNativeMap[iIlNativeMap].ilOffset;
+        coldRgIlNativeMap[iIlNativeMap - ilNativeMapFirstEntryInColdeSection].nativeOffset = dwNativeOffset;
         coldRgIlNativeMap[iIlNativeMap - ilNativeMapFirstEntryInColdeSection].source = m_rgIlNativeMap[iIlNativeMap].source;
     }
 
@@ -3892,7 +3892,7 @@ HRESULT NGenMethodLinesPdbWriter::WriteDebugSLinesSubsection(
         // offset mapping. PDB format frowns on that. Since rgMapIndexPairs is being
         // iterated in native offset order, it's easy to find these dupes right now, and
         // skip all but the first map containing a given IP offset.
-        if (pLinePrev != NULL && m_rgIlNativeMap[iIlNativeMap].offset.nativeOffset == pLinePrev->offset)
+        if (pLinePrev != NULL && m_rgIlNativeMap[iIlNativeMap].nativeOffset == pLinePrev->offset)
         {
             if (ilOffsetPrev == kUnmappedIP)
             {
@@ -4017,7 +4017,7 @@ HRESULT NGenMethodLinesPdbWriter::WriteDebugSLinesSubsection(
         }
 
 
-        pLineCur->offset = m_rgIlNativeMap[iIlNativeMap].offset.nativeOffset;
+        pLineCur->offset = m_rgIlNativeMap[iIlNativeMap].nativeOffset;
         pLineCur->linenumStart =
             (iSeqPoints == kUnmappedIP) ?
             kUnmappedIP :
@@ -4169,11 +4169,11 @@ HRESULT NGenMethodLinesPdbWriter::WriteDebugSILLinesSubsection(
 
     for (ULONG32 iINativeMap = 0;iINativeMap < rgILNativeMapAdjustSize; iINativeMap++)
     {
-        if ((rgIlNativeMap[iINativeMap].offset.ilOffset == NO_MAPPING) ||
-            (rgIlNativeMap[iINativeMap].offset.ilOffset == PROLOG) ||
-            (rgIlNativeMap[iINativeMap].offset.ilOffset == EPILOG))
+        if ((rgIlNativeMap[iINativeMap].ilOffset == NO_MAPPING) ||
+            (rgIlNativeMap[iINativeMap].ilOffset == PROLOG) ||
+            (rgIlNativeMap[iINativeMap].ilOffset == EPILOG))
         {
-            rgIlNativeMap[iINativeMap].offset.ilOffset = kUnmappedIP;
+            rgIlNativeMap[iINativeMap].ilOffset = kUnmappedIP;
         }
 
         // Sometimes the JIT manager will give us duplicate native offset in the IL-to-native
@@ -4181,15 +4181,15 @@ HRESULT NGenMethodLinesPdbWriter::WriteDebugSILLinesSubsection(
         // iterated in native offset order, it's easy to find these dupes right now, and
         // skip all but the first map containing a given IP offset.
         if (pLinePrev != NULL &&
-            rgIlNativeMap[iINativeMap].offset.nativeOffset == pLinePrev->offset)
+            rgIlNativeMap[iINativeMap].nativeOffset == pLinePrev->offset)
         {
             if (pLinePrev->linenumStart == kUnmappedIP)
             {
                 // if the previous IL offset is kUnmappedIP, then we should rewrite it.
                 pLineCur = pLinePrev;
             }
-            else if (rgIlNativeMap[iINativeMap].offset.ilOffset != kUnmappedIP &&
-                rgIlNativeMap[iINativeMap].offset.ilOffset < pLinePrev->linenumStart)
+            else if (rgIlNativeMap[iINativeMap].ilOffset != kUnmappedIP &&
+                rgIlNativeMap[iINativeMap].ilOffset < pLinePrev->linenumStart)
             {
                 pLineCur = pLinePrev;
             }
@@ -4200,9 +4200,9 @@ HRESULT NGenMethodLinesPdbWriter::WriteDebugSILLinesSubsection(
             }
         }
 
-        pLineCur->linenumStart = rgIlNativeMap[iINativeMap].offset.ilOffset;
+        pLineCur->linenumStart = rgIlNativeMap[iINativeMap].ilOffset;
 
-        pLineCur->offset = rgIlNativeMap[iINativeMap].offset.nativeOffset;
+        pLineCur->offset = rgIlNativeMap[iINativeMap].nativeOffset;
         pLineCur->fStatement = 1;
         pLineCur->deltaLineEnd = 0;
         pLinePrev = pLineCur;
