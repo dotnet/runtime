@@ -71,12 +71,12 @@ namespace System.Net.Sockets
         /// <returns>true if obj is an instance of <see cref="UdpReceiveResult"/> and equals the value of the instance; otherwise, false</returns>
         public override bool Equals(object obj)
         {
-            if (!(obj is UdpReceiveResult))
+            if (!(obj is UdpReceiveResult other))
             {
                 return false;
             }
 
-            return Equals((UdpReceiveResult)obj);
+            return Equals(other);
         }
 
         /// <summary>

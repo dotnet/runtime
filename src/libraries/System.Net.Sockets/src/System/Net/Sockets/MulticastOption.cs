@@ -67,6 +67,11 @@ namespace System.Net.Sockets
             }
             set
             {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
                 _group = value;
             }
         }

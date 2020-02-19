@@ -44,7 +44,7 @@ namespace System.Net.Sockets
 
         public override bool Equals(object comparand)
         {
-            return comparand is IPPacketInformation && this == (IPPacketInformation)comparand;
+            return comparand is IPPacketInformation other && this == other;
         }
 
         public override int GetHashCode()
