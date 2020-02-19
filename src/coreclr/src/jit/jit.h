@@ -707,6 +707,13 @@ private:
 #include "target.h"
 
 #if FEATURE_TAILCALL_OPT
+// Enable tail call opt for the following IL pattern
+//
+//     call someFunc
+//     jmp/jcc RetBlock
+//     ...
+//  RetBlock:
+//     ret
 #define FEATURE_TAILCALL_OPT_SHARED_RETURN 1
 #else // !FEATURE_TAILCALL_OPT
 #define FEATURE_TAILCALL_OPT_SHARED_RETURN 0
