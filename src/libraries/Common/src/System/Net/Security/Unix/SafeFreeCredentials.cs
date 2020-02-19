@@ -39,7 +39,7 @@ namespace System.Net.Security
         //
         internal SafeFreeCredentials Target;
 
-        internal static SafeCredentialReference CreateReference(SafeFreeCredentials target)
+        internal static SafeCredentialReference? CreateReference(SafeFreeCredentials target)
         {
             SafeCredentialReference result = new SafeCredentialReference(target);
             if (result.IsInvalid)
@@ -67,7 +67,7 @@ namespace System.Net.Security
                 target.DangerousRelease();
             }
 
-            Target = null;
+            Target = null!;
             return true;
         }
     }

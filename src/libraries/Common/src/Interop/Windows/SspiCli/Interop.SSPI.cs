@@ -307,7 +307,7 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern unsafe int AcquireCredentialsHandleW(
-                  [In] string principal,
+                  [In] string? principal,
                   [In] string moduleName,
                   [In] int usage,
                   [In] void* logonID,
@@ -320,7 +320,7 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern unsafe int AcquireCredentialsHandleW(
-                  [In] string principal,
+                  [In] string? principal,
                   [In] string moduleName,
                   [In] int usage,
                   [In] void* logonID,
@@ -333,7 +333,7 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern unsafe int AcquireCredentialsHandleW(
-                  [In] string principal,
+                  [In] string? principal,
                   [In] string moduleName,
                   [In] int usage,
                   [In] void* logonID,

@@ -20,7 +20,7 @@ namespace System.Net.Security
         {
             try
             {
-                SafeCredentialReference newRef = SafeCredentialReference.CreateReference(newHandle);
+                SafeCredentialReference? newRef = SafeCredentialReference.CreateReference(newHandle);
 
                 if (newRef == null)
                 {

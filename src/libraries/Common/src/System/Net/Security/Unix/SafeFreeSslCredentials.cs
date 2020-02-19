@@ -15,8 +15,8 @@ namespace System.Net.Security
 {
     internal sealed class SafeFreeSslCredentials : SafeFreeCredentials
     {
-        private SafeX509Handle _certHandle;
-        private SafeEvpPKeyHandle _certKeyHandle;
+        private SafeX509Handle _certHandle = null!;
+        private SafeEvpPKeyHandle _certKeyHandle = null!;
         private SslProtocols _protocols = SslProtocols.None;
         private EncryptionPolicy _policy;
         private bool _isInvalid = false;
@@ -41,14 +41,14 @@ namespace System.Net.Security
             get { return _policy; }
         }
 
-        public SafeFreeSslCredentials(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy)
+        public SafeFreeSslCredentials(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy)
             : base(IntPtr.Zero, true)
         {
             Debug.Assert(
                 certificate == null || certificate is X509Certificate2,
                 "Only X509Certificate2 certificates are supported at this time");
 
-            X509Certificate2 cert = (X509Certificate2)certificate;
+            X509Certificate2? cert = (X509Certificate2?)certificate;
 
             if (cert != null)
             {

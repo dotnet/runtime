@@ -36,7 +36,7 @@ namespace System.Net.Http
                 // required extension.
                 if (!foundEku)
                 {
-                    X509EnhancedKeyUsageExtension enhancedUsageExt = extension as X509EnhancedKeyUsageExtension;
+                    X509EnhancedKeyUsageExtension? enhancedUsageExt = extension as X509EnhancedKeyUsageExtension;
                     if (enhancedUsageExt != null)
                     {
                         foundEku = true;
@@ -56,7 +56,7 @@ namespace System.Net.Http
                 // No point going over it if we have already established that our cert has digital signature
                 if (!foundKeyUsages)
                 {
-                    X509KeyUsageExtension usageExt = extension as X509KeyUsageExtension;
+                    X509KeyUsageExtension? usageExt = extension as X509KeyUsageExtension;
                     if (usageExt != null)
                     {
                         foundKeyUsages = true;
@@ -73,7 +73,7 @@ namespace System.Net.Http
             return isClientAuth && isDigitalSignature;
         }
 
-        internal static X509Chain BuildNewChain(X509Certificate2 certificate, bool includeClientApplicationPolicy)
+        internal static X509Chain? BuildNewChain(X509Certificate2 certificate, bool includeClientApplicationPolicy)
         {
             var chain = new X509Chain();
             chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
@@ -100,8 +100,8 @@ namespace System.Net.Http
         /// </summary>
         internal static bool TryFindClientCertificate(this X509Certificate2Collection certificates,
                                                       ISet<string> allowedIssuers,
-                                                      out X509Certificate2 clientCertificate,
-                                                      out X509Chain clientCertChain)
+                                                      out X509Certificate2? clientCertificate,
+                                                      out X509Chain? clientCertChain)
         {
             clientCertificate = null;
             clientCertChain = null;
@@ -124,7 +124,7 @@ namespace System.Net.Http
                             return true;
                         }
 
-                        X509Chain chain = BuildNewChain(cert, includeClientApplicationPolicy: true);
+                        X509Chain? chain = BuildNewChain(cert, includeClientApplicationPolicy: true);
                         if (chain == null)
                         {
                             continue;

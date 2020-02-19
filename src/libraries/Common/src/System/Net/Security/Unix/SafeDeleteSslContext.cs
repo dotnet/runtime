@@ -63,7 +63,7 @@ namespace System.Net.Security
                 if (null != _sslContext)
                 {
                     _sslContext.Dispose();
-                    _sslContext = null;
+                    _sslContext = null!;
                 }
             }
 

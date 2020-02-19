@@ -14,8 +14,8 @@ namespace System.Net
         internal short Version = 0;
         internal short RPCID = 0;
         internal int MaxToken = 0;
-        internal string Name = null;
-        internal string Comment = null;
+        internal string? Name = null;
+        internal string? Comment = null;
 
         /*
             This is to support SSL with no client cert.

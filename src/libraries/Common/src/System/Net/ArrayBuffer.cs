@@ -45,7 +45,7 @@ namespace System.Net
             if (_usePool)
             {
                 byte[] array = _bytes;
-                _bytes = null;
+                _bytes = null!;
 
                 if (array != null)
                 {

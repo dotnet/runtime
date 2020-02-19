@@ -13,7 +13,7 @@ namespace System.Net
     //
     internal abstract class DebugCriticalHandleZeroOrMinusOneIsInvalid : CriticalHandleZeroOrMinusOneIsInvalid
     {
-        private string _trace;
+        private string _trace = null!;
 
         protected DebugCriticalHandleZeroOrMinusOneIsInvalid() : base()
         {

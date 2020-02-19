@@ -82,7 +82,7 @@ namespace System.Net.Security
         protected override bool ReleaseHandle()
         {
             _credential.DangerousRelease();
-            _credential = null;
+            _credential = null!;
             return true;
         }
     }

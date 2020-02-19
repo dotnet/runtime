@@ -301,8 +301,8 @@ internal static partial class Interop
 
         internal static unsafe void SslCtxSetAlpnProtos(SafeSslHandle ctx, List<SslApplicationProtocol> protocols)
         {
-            SafeCreateHandle cfProtocolsRefs = null;
-            SafeCreateHandle[] cfProtocolsArrayRef = null;
+            SafeCreateHandle? cfProtocolsRefs = null;
+            SafeCreateHandle[]? cfProtocolsArrayRef = null;
             try
             {
                 if (protocols.Count == 1 && protocols[0] == SslApplicationProtocol.Http2)
@@ -353,7 +353,7 @@ internal static partial class Interop
             }
         }
 
-        internal static byte[] SslGetAlpnSelected(SafeSslHandle ssl)
+        internal static byte[]? SslGetAlpnSelected(SafeSslHandle ssl)
         {
             SafeCFDataHandle protocol;
 

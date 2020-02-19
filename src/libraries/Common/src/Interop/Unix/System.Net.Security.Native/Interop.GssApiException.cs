@@ -43,14 +43,14 @@ internal static partial class Interop
                 _minorStatus = minorStatus;
             }
 
-            private static string GetGssApiDisplayStatus(Status majorStatus, Status minorStatus, string helpText)
+            private static string GetGssApiDisplayStatus(Status majorStatus, Status minorStatus, string? helpText)
             {
-                string majorError = GetGssApiDisplayStatus(majorStatus, isMinor: false);
+                string? majorError = GetGssApiDisplayStatus(majorStatus, isMinor: false);
                 string errorMessage;
 
                 if (minorStatus != Status.GSS_S_COMPLETE)
                 {
-                    string minorError = GetGssApiDisplayStatus(minorStatus, isMinor: true);
+                    string? minorError = GetGssApiDisplayStatus(minorStatus, isMinor: true);
                     errorMessage = (majorError != null && minorError != null) ?
                         SR.Format(SR.net_gssapi_operation_failed_detailed, majorError, minorError) :
                         SR.Format(SR.net_gssapi_operation_failed, majorStatus.ToString("x"), minorStatus.ToString("x"));
@@ -70,7 +70,7 @@ internal static partial class Interop
                 return errorMessage;
             }
 
-            private static string GetGssApiDisplayStatus(Status status, bool isMinor)
+            private static string? GetGssApiDisplayStatus(Status status, bool isMinor)
             {
                 GssBuffer displayBuffer = default(GssBuffer);
 

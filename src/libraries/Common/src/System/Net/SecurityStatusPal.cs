@@ -7,9 +7,9 @@ namespace System.Net
     internal readonly struct SecurityStatusPal
     {
         public readonly SecurityStatusPalErrorCode ErrorCode;
-        public readonly Exception Exception;
+        public readonly Exception? Exception;
 
-        public SecurityStatusPal(SecurityStatusPalErrorCode errorCode, Exception exception = null)
+        public SecurityStatusPal(SecurityStatusPalErrorCode errorCode, Exception? exception = null)
         {
             ErrorCode = errorCode;
             Exception = exception;

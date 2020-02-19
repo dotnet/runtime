@@ -7,6 +7,8 @@ using System.Diagnostics;
 namespace System.Collections.Generic
 {
     internal sealed class BidirectionalDictionary<T1, T2> : IEnumerable<KeyValuePair<T1, T2>>
+            where T1 : notnull
+            where T2 : notnull
     {
         private readonly Dictionary<T1, T2> _forward;
         private readonly Dictionary<T2, T1> _backward;

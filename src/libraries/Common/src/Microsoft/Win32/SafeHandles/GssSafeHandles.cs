@@ -76,7 +76,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public static SafeGssCredHandle CreateAcceptor()
         {
-            SafeGssCredHandle retHandle = null;
+            SafeGssCredHandle? retHandle = null;
             Interop.NetSecurityNative.Status status;
             Interop.NetSecurityNative.Status minorStatus;
 
@@ -108,7 +108,7 @@ namespace Microsoft.Win32.SafeHandles
                 return new SafeGssCredHandle();
             }
 
-            SafeGssCredHandle retHandle = null;
+            SafeGssCredHandle? retHandle = null;
             using (SafeGssNameHandle userHandle = SafeGssNameHandle.CreateUser(username))
             {
                 Interop.NetSecurityNative.Status status;

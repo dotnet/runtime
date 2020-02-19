@@ -10,7 +10,7 @@ namespace System.Net
     // Kerberos are used in the context of a Negotiate handshake
     internal static partial class NegotiationInfoClass
     {
-        internal static string GetAuthenticationPackageName(SafeHandle safeHandle, int negotiationState)
+        internal static string? GetAuthenticationPackageName(SafeHandle safeHandle, int negotiationState)
         {
             if (safeHandle.IsInvalid)
             {
@@ -31,7 +31,7 @@ namespace System.Net
                     string name;
                     unsafe
                     {
-                        name = Marshal.PtrToStringUni(((SecurityPackageInfo*)packageInfo)->Name);
+                        name = Marshal.PtrToStringUni(((SecurityPackageInfo*)packageInfo)->Name)!;
                     }
 
                     if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"packageInfo:{packageInfo} negotiationState:{negotiationState:x} name:{name}");
