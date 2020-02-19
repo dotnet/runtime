@@ -186,16 +186,6 @@ This size check is **not** done unconditionally every time we need to read a val
 
 Dictionaries on types and methods are expanded by the `Dictionary::GetTypeDictionaryWithSizeCheck()` and `Dictionary::GetMethodDictionaryWithSizeCheck()` helper functions in [genericdict.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/genericdict.cpp).
 
-One thing to note regarding types is that they can inherit dictionary pointers from their base types. This means that if we resize the generic dictionary on any given generic type, we will need to propagate the new dictionary pointer to all of its derived types. To do that, we keep track of such dependencies using a hash-table where the key is the MethodTable pointer of the generic base types with dictionaries, and the values are the MethodTable pointers of all types that derive from these base types. See: `Module::RecordSharedGenericTypeDependency()` and `Module::UpdateDictionaryOnSharedGenericTypeDependencies()` in [ceeload.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/ceeload.cpp).
+One thing to note regarding types is that they can inherit dictionary pointers from their base types. This means that if we resize the generic dictionary on any given generic type, we will need to propagate the new dictionary pointer to all of its derived types. This propagation is also done in a lazy way whenever the code calls into the `JIT_GenericHandleWorker` helper function with a derived type MethodTable pointer. In that helper, if we find that the dictionary pointer on the base type has been updated, we copy it to the derived type.
 
 Old dictionaries are not deallocated after resizing, but once a new dictionary gets published on a MethodTable or MethodDesc, any subsequent dictionary lookup by generic code will make use of that newly allocated dictionary. Deallocating old dictionaries would be extremely complicated, especially in a multi-threaded environment, and won't give any useful benefit.
-
-
-### Diagnostics
-
-To help diagnose runtime failures caused by the expandable nature of generic dictionaries, each dynamically allocated dictionary will have a pointer to its predecessor. Tracking back dictionaries using these pointers can help in diagnosing  memory access issues if for any reason a value is read from an old dictionary of smaller size.
-
-These predecessor pointers are allocated at the beginning of each dynamically allocated dictionary, but are not part of the dictionary itself (so think of it as slot[-1]). 
-
-The plan is to also add an SOS command that could help diagnose dictionary contents across the chain of dynamically allocated dictionaries (dotnet/diagnostics#588).
-
