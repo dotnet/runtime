@@ -9116,7 +9116,6 @@ REDO_RETURN_NODE:
         //     This is not correct when op is a GT_INDEX as the starting offset
         //     for the array elements 'elemOffs' is different for an array of
         //     TYP_REF than an array of TYP_STRUCT (which simply wraps a TYP_REF)
-        //     Also refer to the GTF_INX_REFARR_LAYOUT flag
         //
         if ((op1->gtOper == GT_ADDR) && (op1->AsOp()->gtOp1->gtOper != GT_INDEX))
         {
