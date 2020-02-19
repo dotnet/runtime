@@ -746,7 +746,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
-            assert(id->idOpSize() == EA_4BYTE);
+            assert(id->idOpSize() == EA_16BYTE);
             assert(id->idInsOpt() == INS_OPTS_4S);
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
@@ -4355,7 +4355,7 @@ void emitter::emitIns_R_R(
         case INS_fmaxv:
         case INS_fminnmv:
         case INS_fminv:
-            assert(size == EA_4BYTE);
+            assert(size == EA_16BYTE);
             assert(opt == INS_OPTS_4S);
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
