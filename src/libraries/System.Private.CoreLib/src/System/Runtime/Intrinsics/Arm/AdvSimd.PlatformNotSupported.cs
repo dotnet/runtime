@@ -864,6 +864,12 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> MinNumber(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float32_t vminnmvq_f32 (float32x4_t a)
+            ///   A64: FMINNMV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<float> MinNumberAcross(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float32x2_t vpminnm_f32 (float32x2_t a, float32x2_t b)
             ///   A64: FMINNMP Vd.2S, Vn.2S, Vm.2S
             /// </summary>
