@@ -21,8 +21,6 @@
 #define RETURN_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { _ASSERTE(false && #exp); return hr; } }
 #define RETURN_VOID_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { _ASSERTE(false && #exp); return; } }
 
-#define FEATURE_COMWRAPPERS
-
 #endif // _WIN32
 
 #define ABI_ASSERT(abi_definition) static_assert((abi_definition), "ABI is being invalidated.")

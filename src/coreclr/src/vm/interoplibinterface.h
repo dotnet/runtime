@@ -6,7 +6,7 @@
 // Interface between the VM and Interop library.
 //
 
-#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
 
 // Native calls for the managed ComWrappers API
 class ComWrappersNative
@@ -34,7 +34,7 @@ public: // Lifetime management for COM Wrappers
     static void MarkExternalComObjectContextCollected(_In_ void* context);
 };
 
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 
 class Interop
 {

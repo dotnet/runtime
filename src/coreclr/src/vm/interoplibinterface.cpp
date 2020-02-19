@@ -1033,7 +1033,7 @@ namespace InteropLibImports
     }
 }
 
-#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
 
 void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
@@ -1176,7 +1176,7 @@ void ComWrappersNative::MarkExternalComObjectContextCollected(_In_ void* context
     }
 }
 
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 
 void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
 {
@@ -1199,7 +1199,9 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
     // 2. Dependent handles
     //
     RCWWalker::OnGCStarted(nCondemnedGeneration);
+#endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_COMWRAPPERS
     //
     // Note that we could get nested GCStart/GCEnd calls, such as :
     // GCStart for Gen 2 background GC
@@ -1231,8 +1233,7 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
             refCache->ShrinkDependentHandles();
         }
     }
-
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 }
 
 void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
@@ -1249,7 +1250,9 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
     // Tell Jupiter GC has finished
     //
     RCWWalker::OnGCFinished(nCondemnedGeneration);
+#endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_COMWRAPPERS
     //
     // Note that we could get nested GCStart/GCEnd calls, such as :
     // GCStart for Gen 2 background GC
@@ -1270,6 +1273,5 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
             STRESS_LOG0(LF_INTEROP, LL_INFO10000, "End Reference Tracking\n");
         }
     }
-
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 }

@@ -991,13 +991,15 @@ FCFuncStart(gWinRTTypeNameConverterFuncs)
     FCFuncElement("GetTypeFromWinRTTypeName", StubHelpers::WinRTTypeNameConverter__GetTypeFromWinRTTypeName)
 FCFuncEnd()
 
+#endif // FEATURE_COMINTEROP
+
+#ifdef FEATURE_COMWRAPPERS
 FCFuncStart(gComWrappersFuncs)
     QCFuncElement("GetIUnknownImplInternal", ComWrappersNative::GetIUnknownImpl)
     QCFuncElement("GetOrCreateComInterfaceForObjectInternal", ComWrappersNative::GetOrCreateComInterfaceForObject)
     QCFuncElement("GetOrCreateObjectForComInstanceInternal", ComWrappersNative::GetOrCreateObjectForComInstance)
 FCFuncEnd()
-
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 
 FCFuncStart(gMngdRefCustomMarshalerFuncs)
     FCFuncElement("CreateMarshaler", MngdRefCustomMarshaler::CreateMarshaler)

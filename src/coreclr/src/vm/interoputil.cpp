@@ -1938,9 +1938,11 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     if (pRCW)
         pRCW->MinorCleanup();
 
+#ifdef FEATURE_COMWRAPPERS
     void* eoc;
     if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
         ComWrappersNative::MarkExternalComObjectContextCollected(eoc);
+#endif // FEATURE_COMWRAPPERS
 }
 
 void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
@@ -1982,6 +1984,7 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         pCCW->Cleanup();
     }
 
+#ifdef FEATURE_COMWRAPPERS
     void* mocw;
     if (pInteropInfo->TryGetManagedObjectComWrapper(&mocw))
     {
@@ -1995,6 +1998,7 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         (void)pInteropInfo->TrySetExternalComObjectContext(NULL, eoc);
         ComWrappersNative::DestroyExternalComObjectContext(eoc);
     }
+#endif // FEATURE_COMWRAPPERS
 }
 
 void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie)
