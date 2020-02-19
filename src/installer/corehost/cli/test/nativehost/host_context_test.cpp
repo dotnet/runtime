@@ -42,6 +42,13 @@ namespace
             }
             else
             {
+                if (value != nullptr)
+                {
+                    test_output << log_prefix << _X("hostfxr_get_runtime_property_value failed to get property: ")
+                        << key << _X(" -- but value was not set to nullptr") << std::endl;
+                    continue;
+                }
+
                 test_output << log_prefix << _X("hostfxr_get_runtime_property_value failed for property: ") << key
                     << _X(" - ") << std::hex << std::showbase << rc << std::endl;
             }
