@@ -12,7 +12,7 @@ namespace System.Net.Sockets
     public partial class SocketAsyncEventArgs : EventArgs, IDisposable
     {
         // AcceptSocket property variables.
-        private Socket _acceptSocket;
+        private Socket? _acceptSocket;
         private Socket _connectSocket;
 
         // Single buffer.
@@ -98,7 +98,7 @@ namespace System.Net.Sockets
             InitializeInternals();
         }
 
-        public Socket AcceptSocket
+        public Socket? AcceptSocket
         {
             get { return _acceptSocket; }
             set { _acceptSocket = value; }

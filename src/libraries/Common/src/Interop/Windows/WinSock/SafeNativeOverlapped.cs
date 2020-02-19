@@ -59,7 +59,7 @@ namespace System.Net.Sockets
                 {
                     Debug.Assert(_socketHandle != null, "_socketHandle is null.");
 
-                    ThreadPoolBoundHandle boundHandle = _socketHandle.IOCPBoundHandle;
+                    ThreadPoolBoundHandle? boundHandle = _socketHandle.IOCPBoundHandle;
                     Debug.Assert(boundHandle != null, "SafeNativeOverlapped::FreeNativeOverlapped - boundHandle is null");
 
                     // FreeNativeOverlapped will be called even if boundHandle was previously disposed.

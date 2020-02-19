@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
+#nullable enable
 using System.Threading.Tasks;
 
 namespace System.Net.Sockets
@@ -12,7 +12,7 @@ namespace System.Net.Sockets
     public class TcpListener
     {
         private readonly IPEndPoint _serverSocketEP;
-        private Socket _serverSocket;
+        private Socket? _serverSocket;
         private bool _active;
         private bool _exclusiveAddressUse;
         private bool? _allowNatTraversal;
@@ -68,7 +68,7 @@ namespace System.Net.Sockets
             get
             {
                 CreateNewSocketIfNeeded();
-                return _serverSocket;
+                return _serverSocket!;
             }
         }
 
@@ -87,7 +87,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                return _active ? _serverSocket.LocalEndPoint : _serverSocketEP;
+                return _active ? _serverSocket!.LocalEndPoint : _serverSocketEP;
             }
         }
 
@@ -153,7 +153,7 @@ namespace System.Net.Sockets
 
             CreateNewSocketIfNeeded();
 
-            _serverSocket.Bind(_serverSocketEP);
+            _serverSocket!.Bind(_serverSocketEP);
             try
             {
                 _serverSocket.Listen(backlog);
@@ -189,7 +189,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_stopped);
             }
 
-            return _serverSocket.Poll(0, SelectMode.SelectRead);
+            return _serverSocket!.Poll(0, SelectMode.SelectRead);
         }
 
         // Accept the first pending connection
@@ -202,7 +202,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_stopped);
             }
 
-            Socket socket = _serverSocket.Accept();
+            Socket socket = _serverSocket!.Accept();
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this, socket);
             return socket;
@@ -217,7 +217,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_stopped);
             }
 
-            Socket acceptedSocket = _serverSocket.Accept();
+            Socket acceptedSocket = _serverSocket!.Accept();
             TcpClient returnValue = new TcpClient(acceptedSocket);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this, returnValue);
@@ -233,7 +233,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_stopped);
             }
 
-            IAsyncResult result = _serverSocket.BeginAccept(callback, state);
+            IAsyncResult result = _serverSocket!.BeginAccept(callback, state);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return result;
@@ -248,8 +248,8 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(asyncResult));
             }
 
-            LazyAsyncResult lazyResult = asyncResult as LazyAsyncResult;
-            Socket asyncSocket = lazyResult == null ? null : lazyResult.AsyncObject as Socket;
+            LazyAsyncResult? lazyResult = asyncResult as LazyAsyncResult;
+            Socket? asyncSocket = lazyResult == null ? null : lazyResult.AsyncObject as Socket;
             if (asyncSocket == null)
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
@@ -271,7 +271,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_stopped);
             }
 
-            IAsyncResult result = _serverSocket.BeginAccept(callback, state);
+            IAsyncResult result = _serverSocket!.BeginAccept(callback, state);
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this, result);
             return result;
         }
@@ -285,8 +285,8 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(asyncResult));
             }
 
-            LazyAsyncResult lazyResult = asyncResult as LazyAsyncResult;
-            Socket asyncSocket = lazyResult == null ? null : lazyResult.AsyncObject as Socket;
+            LazyAsyncResult? lazyResult = asyncResult as LazyAsyncResult;
+            Socket? asyncSocket = lazyResult == null ? null : lazyResult.AsyncObject as Socket;
             if (asyncSocket == null)
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
@@ -301,16 +301,16 @@ namespace System.Net.Sockets
         public Task<Socket> AcceptSocketAsync()
         {
             return Task<Socket>.Factory.FromAsync(
-                (callback, state) => ((TcpListener)state).BeginAcceptSocket(callback, state),
-                asyncResult => ((TcpListener)asyncResult.AsyncState).EndAcceptSocket(asyncResult),
+                (callback, state) => ((TcpListener)state!).BeginAcceptSocket(callback, state),
+                asyncResult => ((TcpListener)asyncResult.AsyncState!).EndAcceptSocket(asyncResult),
                 state: this);
         }
 
         public Task<TcpClient> AcceptTcpClientAsync()
         {
             return Task<TcpClient>.Factory.FromAsync(
-                (callback, state) => ((TcpListener)state).BeginAcceptTcpClient(callback, state),
-                asyncResult => ((TcpListener)asyncResult.AsyncState).EndAcceptTcpClient(asyncResult),
+                (callback, state) => ((TcpListener)state!).BeginAcceptTcpClient(callback, state),
+                asyncResult => ((TcpListener)asyncResult.AsyncState!).EndAcceptTcpClient(asyncResult),
                 state: this);
         }
 

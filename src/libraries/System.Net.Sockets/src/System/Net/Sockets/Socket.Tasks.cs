@@ -52,7 +52,7 @@ namespace System.Net.Sockets
 
         private CachedEventArgs EventArgs => LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs, () => new CachedEventArgs());
 
-        internal Task<Socket> AcceptAsync(Socket acceptSocket)
+        internal Task<Socket> AcceptAsync(Socket? acceptSocket)
         {
             // Get any cached SocketAsyncEventArg we may have.
             TaskSocketAsyncEventArgs<Socket> saea = Interlocked.Exchange(ref EventArgs.TaskAccept, s_rentedSocketSentinel);
@@ -105,7 +105,7 @@ namespace System.Net.Sockets
         }
 
         /// <summary>Implements Task-returning AcceptAsync on top of Begin/EndAsync.</summary>
-        private Task<Socket> AcceptAsyncApm(Socket acceptSocket)
+        private Task<Socket> AcceptAsyncApm(Socket? acceptSocket)
         {
             var tcs = new TaskCompletionSource<Socket>(this);
             BeginAccept(acceptSocket, 0, iar =>

@@ -3463,7 +3463,7 @@ namespace System.Net.Sockets
         }
 
         // This is the truly async version that uses AcceptEx.
-        public IAsyncResult BeginAccept(Socket acceptSocket, int receiveSize, AsyncCallback callback, object state)
+        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback callback, object state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
@@ -3488,7 +3488,7 @@ namespace System.Net.Sockets
             return asyncResult;
         }
 
-        private void DoBeginAccept(Socket acceptSocket, int receiveSize, AcceptOverlappedAsyncResult asyncResult)
+        private void DoBeginAccept(Socket? acceptSocket, int receiveSize, AcceptOverlappedAsyncResult asyncResult)
         {
             if (_rightEndPoint == null)
             {
