@@ -679,6 +679,66 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<uint> MaxAcross(Vector128<uint> value) => MaxAcross(value);
 
             /// <summary>
+            /// uint8x16_t vpmaxq_u8 (uint8x16_t a, uint8x16_t b)
+            ///   A64: UMAXP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<byte> MaxPairwise(Vector128<byte> left, Vector128<byte> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// float64x2_t vpmaxq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMAXP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MaxPairwise(Vector128<double> left, Vector128<double> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// int16x8_t vpmaxq_s16 (int16x8_t a, int16x8_t b)
+            ///   A64: SMAXP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<short> MaxPairwise(Vector128<short> left, Vector128<short> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// int32x4_t vpmaxq_s32 (int32x4_t a, int32x4_t b)
+            ///   A64: SMAXP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<int> MaxPairwise(Vector128<int> left, Vector128<int> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// int8x16_t vpmaxq_s8 (int8x16_t a, int8x16_t b)
+            ///   A64: SMAXP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> MaxPairwise(Vector128<sbyte> left, Vector128<sbyte> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// float32x4_t vpmaxq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FMAXP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> MaxPairwise(Vector128<float> left, Vector128<float> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// uint16x8_t vpmaxq_u16 (uint16x8_t a, uint16x8_t b)
+            ///   A64: UMAXP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<ushort> MaxPairwise(Vector128<ushort> left, Vector128<ushort> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// uint32x4_t vpmaxq_u32 (uint32x4_t a, uint32x4_t b)
+            ///   A64: UMAXP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<uint> MaxPairwise(Vector128<uint> left, Vector128<uint> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// float32_t vpmaxs_f32 (float32x2_t a)
+            ///   A64: FMAXP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> MaxPairwiseScalar(Vector64<float> value) => MaxPairwiseScalar(value);
+
+            /// <summary>
+            /// float64_t vpmaxqd_f64 (float64x2_t a)
+            ///   A64: FMAXP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> MaxPairwiseScalar(Vector128<double> value) => MaxPairwiseScalar(value);
+
+            /// <summary>
             /// float64x1_t vmax_f64 (float64x1_t a, float64x1_t b)
             ///   A64: FMAX Dd, Dn, Dm
             /// </summary>
@@ -3374,6 +3434,55 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: UMAX Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> Max(Vector128<uint> left, Vector128<uint> right) => Max(left, right);
+
+        /// <summary>
+        /// uint8x8_t vpmax_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VPMAX.U8 Dd, Dn, Dm
+        ///   A64: UMAXP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> MaxPairwise(Vector64<byte> left, Vector64<byte> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// int16x4_t vpmax_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VPMAX.S16 Dd, Dn, Dm
+        ///   A64: SMAXP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MaxPairwise(Vector64<short> left, Vector64<short> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// int32x2_t vpmax_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VPMAX.S32 Dd, Dn, Dm
+        ///   A64: SMAXP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MaxPairwise(Vector64<int> left, Vector64<int> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// int8x8_t vpmax_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VPMAX.S8 Dd, Dn, Dm
+        ///   A64: SMAXP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> MaxPairwise(Vector64<sbyte> left, Vector64<sbyte> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// float32x2_t vpmax_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VPMAX.F32 Dd, Dn, Dm
+        ///   A64: FMAXP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> MaxPairwise(Vector64<float> left, Vector64<float> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// uint16x4_t vpmax_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VPMAX.U16 Dd, Dn, Dm
+        ///   A64: UMAXP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> MaxPairwise(Vector64<ushort> left, Vector64<ushort> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// uint32x2_t vpmax_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VPMAX.U32 Dd, Dn, Dm
+        ///   A64: UMAXP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> MaxPairwise(Vector64<uint> left, Vector64<uint> right) => MaxPairwise(left, right);
 
         /// <summary>
         /// uint8x8_t vmin_u8 (uint8x8_t a, uint8x8_t b)
