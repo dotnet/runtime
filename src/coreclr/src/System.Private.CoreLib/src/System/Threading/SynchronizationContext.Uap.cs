@@ -51,7 +51,7 @@ namespace System.Threading
         // This is necessary because linker can't add new assemblies to the closure when recognizing Type.GetType
         // so even though the GetType call below is analyzable, the PreserveDependency is still necessary to actually include
         // the assembly in the trimmed closure.
-        [PreserveDependency(".ctor()", "System.Threading.WinRTSynchronizationContextFactory", "System.Runtime.WindowsRuntime")]
+        [PreserveDependency("Create", "System.Threading.WinRTSynchronizationContextFactory", "System.Runtime.WindowsRuntime")]
         private static SynchronizationContext GetWinRTSynchronizationContext(object dispatcher)
         {
             //
