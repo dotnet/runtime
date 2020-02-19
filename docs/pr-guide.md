@@ -38,7 +38,7 @@ In case CI indicates failures which are **highly unlikely** to be caused by chan
 * An existing issue in the repository should be searched for. Usually the test method's or the test assembly's name (in case of a crash) are good parameters.
 * If there's an existing issue, a comment should be placed that includes a) the link to the build, b) the affected configuration (ie `netcoreapp-Windows_NT-Release-x64-Windows.81.Amd64.Open`) and c) the Error message and Stack trace. This is necessary as retention policies are in place that recycle _old_ builds. In case the issue is already closed, it should be reopened and labels should be updated to reflect the current failure state. 
 * If there's no existing issue, an issue should be created with the same information outlined above.
-* In a follow-up Pull Request, the failing test(s) should be disabled with the corresponding issue number, e.g. `[ActiveIssue(x)]`, and the tracking issue should be labeled as `disabled-test`.
+* In a follow-up Pull Request, the failing test(s) should be disabled with the corresponding issue link, e.g. `[ActiveIssue(x)]`, and the tracking issue should be labeled as `disabled-test`.
 * A comment should be placed in the original Pull Request that links to the created or updated issues.
 
 There are plenty of possible bugs, e.g. race conditions, where a failure might highlight a real problem and it won't manifest again on a retry. Therefore these steps should be followed for every iteration of the PR build, e.g. before retrying/rebuilding.
