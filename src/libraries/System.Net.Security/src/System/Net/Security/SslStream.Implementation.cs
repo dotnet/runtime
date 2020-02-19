@@ -193,9 +193,9 @@ namespace System.Net.Security
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
         //
-        private Task? ProcessAuthentication(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
+        private Task ProcessAuthentication(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
         {
-            Task? result = null;
+            Task result;
 
             ThrowIfExceptional();
 
@@ -206,6 +206,7 @@ namespace System.Net.Security
             else
             {
                 ForceAuthenticationAsync(new SyncSslIOAdapter(this), _context!.IsServer, null).GetAwaiter().GetResult();
+                result = Task.CompletedTask;
             }
 
             return result;
