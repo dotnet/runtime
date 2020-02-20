@@ -16,7 +16,11 @@ namespace System.Collections.Immutable
     /// <typeparam name="T">The type of elements in the set.</typeparam>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-    public sealed partial class ImmutableHashSet<T> : IImmutableSet<T>, IReadOnlySet<T>, IHashKeyCollection<T>, IReadOnlyCollection<T>, ICollection<T>, ISet<T>, ICollection, IStrongEnumerable<T, ImmutableHashSet<T>.Enumerator>
+#if !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
+    public sealed partial class ImmutableHashSet<T> : IImmutableSet<T>, IHashKeyCollection<T>, IReadOnlyCollection<T>, ICollection<T>, ISet<T>, IReadOnlySet<T>, ICollection, IStrongEnumerable<T, ImmutableHashSet<T>.Enumerator>
+#else
+    public sealed partial class ImmutableHashSet<T> : IImmutableSet<T>, IHashKeyCollection<T>, IReadOnlyCollection<T>, ICollection<T>, ISet<T>, ICollection, IStrongEnumerable<T, ImmutableHashSet<T>.Enumerator>
+#endif
     {
         /// <summary>
         /// An empty immutable hash set with the default comparer for <typeparamref name="T"/>.
@@ -99,7 +103,7 @@ namespace System.Collections.Immutable
             get { return this.Count == 0; }
         }
 
-        #region IHashKeyCollection<T> Properties
+#region IHashKeyCollection<T> Properties
 
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
@@ -109,9 +113,9 @@ namespace System.Collections.Immutable
             get { return _equalityComparer; }
         }
 
-        #endregion
+#endregion
 
-        #region IImmutableSet<T> Properties
+#region IImmutableSet<T> Properties
 
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
@@ -122,9 +126,9 @@ namespace System.Collections.Immutable
             return this.Clear();
         }
 
-        #endregion
+#endregion
 
-        #region ICollection Properties
+#region ICollection Properties
 
         /// <summary>
         /// See <see cref="ICollection"/>.
@@ -148,7 +152,7 @@ namespace System.Collections.Immutable
             }
         }
 
-        #endregion
+#endregion
 
         /// <summary>
         /// Gets the root node (for testing purposes).
@@ -166,7 +170,7 @@ namespace System.Collections.Immutable
             get { return new MutationInput(this); }
         }
 
-        #region Public methods
+#region Public methods
 
         /// <summary>
         /// Creates a collection with the same contents as this collection that
@@ -362,9 +366,9 @@ namespace System.Collections.Immutable
             return Overlaps(other, this.Origin);
         }
 
-        #endregion
+#endregion
 
-        #region IImmutableSet<T> Methods
+#region IImmutableSet<T> Methods
 
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
@@ -454,9 +458,9 @@ namespace System.Collections.Immutable
             }
         }
 
-        #endregion
+#endregion
 
-        #region ISet<T> Members
+#region ISet<T> Members
 
         /// <summary>
         /// See <see cref="ISet{T}"/>
@@ -498,9 +502,9 @@ namespace System.Collections.Immutable
             throw new NotSupportedException();
         }
 
-        #endregion
+#endregion
 
-        #region ICollection<T> members
+#region ICollection<T> members
 
         /// <summary>
         /// See the <see cref="ICollection{T}"/> interface.
@@ -549,9 +553,9 @@ namespace System.Collections.Immutable
             throw new NotSupportedException();
         }
 
-        #endregion
+#endregion
 
-        #region ICollection Methods
+#region ICollection Methods
 
         /// <summary>
         /// Copies the elements of the <see cref="ICollection"/> to an <see cref="Array"/>, starting at a particular <see cref="Array"/> index.
@@ -570,9 +574,9 @@ namespace System.Collections.Immutable
             }
         }
 
-        #endregion
+#endregion
 
-        #region IEnumerable<T> Members
+#region IEnumerable<T> Members
 
         /// <summary>
         /// Returns an enumerator that iterates through the collection.
@@ -595,9 +599,9 @@ namespace System.Collections.Immutable
                 this.GetEnumerator();
         }
 
-        #endregion
+#endregion
 
-        #region IEnumerable Members
+#region IEnumerable Members
 
         /// <summary>
         /// Returns an enumerator that iterates through a collection.
@@ -610,9 +614,9 @@ namespace System.Collections.Immutable
             return this.GetEnumerator();
         }
 
-        #endregion
+#endregion
 
-        #region Static query and manipulator methods
+#region Static query and manipulator methods
 
         /// <summary>
         /// Performs the set operation on a given data structure.
@@ -969,7 +973,7 @@ namespace System.Collections.Immutable
             return matches == origin.Count;
         }
 
-        #endregion
+#endregion
 
         /// <summary>
         /// Wraps the specified data structure with an immutable collection wrapper.
