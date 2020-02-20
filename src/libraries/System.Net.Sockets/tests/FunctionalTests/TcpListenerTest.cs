@@ -45,6 +45,30 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void AllowNatTraversal_NotStarted_SetSuccessfully()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.AllowNatTraversal(true);
+        }
+
+        [Fact]
+        public void AllowNatTraversal_Started_ThrowsException()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            Assert.Throws<InvalidOperationException>(() => listener.AllowNatTraversal(true));
+        }
+
+        [Fact]
+        public void AllowNatTraversal_StartedAndStopped_SetSuccessfully()
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            listener.Stop();
+            listener.AllowNatTraversal(true);
+        }
+
+        [Fact]
         public void Start_InvalidArgs_Throws()
         {
             var listener = new DerivedTcpListener(IPAddress.Loopback, 0);
