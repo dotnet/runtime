@@ -173,6 +173,7 @@ typedef struct {
 	gboolean llvm_only;
 	gboolean has_got_access;
 	gboolean emit_dummy_arg;
+	gboolean has_safepoints;
 	int this_arg_pindex, rgctx_arg_pindex;
 	LLVMValueRef imt_rgctx_loc;
 	GHashTable *llvm_types;
@@ -3559,7 +3560,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 #ifdef TARGET_WASM
 		// For GC stack scanning to work, have to spill all reference variables to the stack
 		// Some ref variables have type intptr
-		if (MONO_TYPE_IS_REFERENCE (var->inst_vtype) || var->inst_vtype->type == MONO_TYPE_I)
+		if (ctx->has_safepoints && (MONO_TYPE_IS_REFERENCE (var->inst_vtype) || var->inst_vtype->type == MONO_TYPE_I))
 			var->flags |= MONO_INST_INDIRECT;
 #endif
 
@@ -8624,6 +8625,20 @@ emit_method_inner (EmitContext *ctx)
 			}
 		}
 	}
+	if (cfg->method->wrapper_type) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
+
+		switch (info->subtype) {
+		case WRAPPER_SUBTYPE_GSHAREDVT_IN:
+		case WRAPPER_SUBTYPE_GSHAREDVT_OUT:
+		case WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG:
+		case WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG:
+			/* Arguments are not used after the call */
+			requires_safepoint = FALSE;
+			break;
+		}
+	}
+	ctx->has_safepoints = requires_safepoint;
 
 #ifndef MONO_LLVM_LOADED
 	if (!cfg->llvm_only && mono_threads_are_safepoints_enabled () && requires_safepoint) {
