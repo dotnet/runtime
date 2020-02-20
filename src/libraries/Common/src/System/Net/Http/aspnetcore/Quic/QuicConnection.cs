@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic
 {
-    public sealed class QuicConnection : IDisposable
+    internal sealed class QuicConnection : IDisposable
     {
         private readonly QuicConnectionProvider _provider;
 

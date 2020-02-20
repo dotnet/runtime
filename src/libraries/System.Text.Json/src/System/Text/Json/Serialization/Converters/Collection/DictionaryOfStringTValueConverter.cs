@@ -62,7 +62,8 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     string key = GetKeyName(enumerator.Current.Key, ref state, options);
                     writer.WritePropertyName(key);
-                    converter.Write(writer, enumerator.Current.Value, options);
+                    // TODO: https://github.com/dotnet/runtime/issues/32523
+                    converter.Write(writer, enumerator.Current.Value!, options);
                 } while (enumerator.MoveNext());
             }
             else

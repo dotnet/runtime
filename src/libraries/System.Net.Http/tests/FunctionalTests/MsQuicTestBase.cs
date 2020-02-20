@@ -22,24 +22,24 @@ namespace System.Net.Quic.Tests
             };
         }
 
-        public QuicConnection CreateQuicConnection(IPEndPoint endpoint)
+        internal QuicConnection CreateQuicConnection(IPEndPoint endpoint)
         {
             return new QuicConnection(QuicImplementationProviders.MsQuic, endpoint, GetSslClientAuthenticationOptions());
         }
 
-        public QuicListener CreateQuicListener()
+        internal QuicListener CreateQuicListener()
         {
             return CreateQuicListener(new IPEndPoint(IPAddress.Loopback, 0));
         }
 
-        public QuicListener CreateQuicListener(IPEndPoint endpoint)
+        internal QuicListener CreateQuicListener(IPEndPoint endpoint)
         {
             QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, endpoint, GetSslServerAuthenticationOptions());
             listener.Start();
             return listener;
         }
 
-        public async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int millisecondsTimeout = 10_000)
+        internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int millisecondsTimeout = 10_000)
         {
             using QuicListener listener = CreateQuicListener();
 
