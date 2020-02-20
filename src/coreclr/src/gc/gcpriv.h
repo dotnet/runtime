@@ -3829,6 +3829,12 @@ protected:
 
     PER_HEAP
     size_t          c_mark_list_index;
+
+    PER_HEAP_ISOLATED
+    uint8_t**       c_mark_list_statics_start;
+
+    PER_HEAP_ISOLATED
+    size_t          c_mark_list_statics_count;
 #endif //BACKGROUND_GC
 
 #ifdef MARK_LIST

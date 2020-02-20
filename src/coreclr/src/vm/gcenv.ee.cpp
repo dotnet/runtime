@@ -161,30 +161,33 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
     // In server GC, we should be competing for marking the statics
     if (GCHeapUtilities::MarkShouldCompeteForStatics())
     {
-        if (condemned == max_gen && sc->promotion)
+        if (condemned == max_gen && sc->promotion && sc->scanStatics)
         {
             SystemDomain::EnumAllStaticGCRefs(fn, sc);
         }
     }
 
-    Thread* pThread = NULL;
-    while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
+    if (!sc->scanStatics)
     {
-        STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p ID = %x\n", pThread, pThread->GetThreadId());
-
-        if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(
-            pThread->GetAllocContext(), sc->thread_number))
+        Thread* pThread = NULL;
+        while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
         {
-            sc->thread_under_crawl = pThread;
-#ifdef FEATURE_EVENT_TRACE
-            sc->dwEtwRootKind = kEtwGCRootKindStack;
-#endif // FEATURE_EVENT_TRACE
-            ScanStackRoots(pThread, fn, sc);
-#ifdef FEATURE_EVENT_TRACE
-            sc->dwEtwRootKind = kEtwGCRootKindOther;
-#endif // FEATURE_EVENT_TRACE
+            STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p ID = %x\n", pThread, pThread->GetThreadId());
+
+            if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(
+                pThread->GetAllocContext(), sc->thread_number))
+            {
+                sc->thread_under_crawl = pThread;
+    #ifdef FEATURE_EVENT_TRACE
+                sc->dwEtwRootKind = kEtwGCRootKindStack;
+    #endif // FEATURE_EVENT_TRACE
+                ScanStackRoots(pThread, fn, sc);
+    #ifdef FEATURE_EVENT_TRACE
+                sc->dwEtwRootKind = kEtwGCRootKindOther;
+    #endif // FEATURE_EVENT_TRACE
+            }
+            STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "Ending scan of Thread %p ID = 0x%x }\n", pThread, pThread->GetThreadId());
         }
-        STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "Ending scan of Thread %p ID = 0x%x }\n", pThread, pThread->GetThreadId());
     }
 }
 

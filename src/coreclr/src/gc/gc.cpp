@@ -795,6 +795,7 @@ enum gc_join_stage
     gc_join_expand_loh_no_gc = 36,
     gc_join_final_no_gc = 37,
     gc_join_disable_software_write_watch = 38,
+    gc_r_join_scan_statics,
     gc_join_max = 39
 };
 
@@ -2617,6 +2618,10 @@ size_t      gc_heap::ephemeral_fgc_counts[max_generation];
 BOOL        gc_heap::alloc_wait_event_p = FALSE;
 
 VOLATILE(c_gc_state) gc_heap::current_c_gc_state = c_gc_state_free;
+
+uint8_t**   gc_heap::c_mark_list_statics_start;
+
+size_t      gc_heap::c_mark_list_statics_count;
 
 #endif //BACKGROUND_GC
 
@@ -27157,12 +27162,50 @@ void gc_heap::background_mark_phase ()
         GCScan::GcScanRoots(background_promote_callback,
                                 max_generation, max_generation,
                                 &sc);
+
     }
 
     {
         dprintf(3,("BGC: finalization marking"));
         finalize_queue->GcScanRoots(background_promote_callback, heap_number, 0);
     }
+
+#ifdef MULTIPLE_HEAPS
+    if (bgc_t_join.r_join(this, gc_r_join_scan_statics))
+    {
+        size_t start_static_index = c_mark_list_index;
+        sc.scanStatics = true;
+        GCScan::GcScanRoots(background_promote_callback,
+            max_generation, max_generation,
+            &sc);
+        size_t end_static_index = c_mark_list_index;
+
+        c_mark_list_statics_start = &c_mark_list[start_static_index];
+        c_mark_list_statics_count = end_static_index - start_static_index;
+        sc.scanStatics = false;
+        bgc_t_join.r_restart();
+    }
+    else
+    {
+        // copy the global statics list to our c_mark_list
+        uint8_t** statics_start = c_mark_list_statics_start;
+        size_t statics_count = c_mark_list_statics_count;
+        while (statics_count > 0)
+        {
+            if (c_mark_list_index >= c_mark_list_length)
+            {
+                background_grow_c_mark_list();
+                assert(c_mark_list_index < c_mark_list_length);
+            }
+            size_t available_count = c_mark_list_length - c_mark_list_index;
+            size_t copy_count = min(statics_count, available_count);
+            memcpy (&c_mark_list[c_mark_list_index], statics_start, copy_count*sizeof(uint8_t**));
+            c_mark_list_index += copy_count;
+            statics_start += copy_count;
+            statics_count -= copy_count;
+        }
+    }
+#endif // MULTIPLE_HEAPS
 
     size_t total_soh_size = generation_sizes (generation_of (max_generation));
     size_t total_loh_size = generation_size (loh_generation);
@@ -27227,6 +27270,9 @@ void gc_heap::background_mark_phase ()
             restart_vm();
             GCToOSInterface::YieldThread (0);
 #ifdef MULTIPLE_HEAPS
+            // re-initialize the r_join used above
+            bgc_t_join.r_init();
+
             dprintf(3, ("Starting all gc threads for gc"));
             bgc_t_join.restart();
 #endif //MULTIPLE_HEAPS
@@ -27464,6 +27510,19 @@ void gc_heap::background_mark_phase ()
         GCScan::GcScanHandles(background_promote,
                                   max_generation, max_generation,
                                   &sc);
+
+#ifdef MULTIPLE_HEAPS
+        if (bgc_t_join.r_join(this, gc_r_join_scan_statics))
+        {
+            sc.scanStatics = true;
+            GCScan::GcScanRoots(background_promote_callback,
+                max_generation, max_generation,
+                &sc);
+            sc.scanStatics = false;
+            bgc_t_join.r_restart();
+        }
+#endif // MULTIPLE_HEAPS
+
         //concurrent_print_time_delta ("nonconcurrent marking handle table");
         concurrent_print_time_delta ("NRH");
 
@@ -27483,6 +27542,9 @@ void gc_heap::background_mark_phase ()
             SoftwareWriteWatch::DisableForGCHeap();
 
 #ifdef MULTIPLE_HEAPS
+            // re-initialize the r_join used above
+            bgc_t_join.r_init();
+
             dprintf(3, ("Restarting BGC threads after disabling software write watch"));
             bgc_t_join.restart();
 #endif // MULTIPLE_HEAPS

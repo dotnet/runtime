@@ -942,6 +942,7 @@ struct ScanContext
     uintptr_t stack_limit; // Lowest point on the thread stack that the scanning logic is permitted to read
     bool promotion; //TRUE: Promotion, FALSE: Relocation.
     bool concurrent; //TRUE: concurrent scanning
+    bool scanStatics; //TRUE: scan statics, not stack
     void* _unused1;
     void* pMD;
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
@@ -959,6 +960,7 @@ struct ScanContext
         stack_limit = 0;
         promotion = false;
         concurrent = false;
+        scanStatics = false;
         pMD = NULL;
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
         dwEtwRootKind = kEtwGCRootKindOther;
