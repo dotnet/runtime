@@ -205,6 +205,19 @@ namespace System.Buffers.Tests
             Assert.Equal(sizeHint <= 256 ? 256 : sizeHint, memory.Length);
         }
 
+        // NOTE: GetMemory_ExceedMaximumBufferSize test is constrained to run on Windows and MacOSX because it causes 
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can 
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the 
+        //       time the memory is accessed which triggers the full memory allocation. 
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalFact(nameof(IsX64))]
+        [OuterLoop]
+        public void GetMemory_ExceedMaximumBufferSize()
+        {
+            var output = new ArrayBufferWriter<T>(256);
+            Assert.Throws<OutOfMemoryException>(() => output.GetMemory(int.MaxValue));
+        }
+
         [Fact]
         public void GetMemory_InitSizeCtor()
         {

@@ -167,14 +167,24 @@ namespace System.Buffers
 
             if (sizeHint > FreeCapacity)
             {
-                int growBy = Math.Max(sizeHint, _buffer.Length);
+                int currentLength = _buffer.Length;
+                int growBy = Math.Max(sizeHint, currentLength);
 
-                if (_buffer.Length == 0)
+                if (currentLength == 0)
                 {
                     growBy = Math.Max(growBy, DefaultInitialBufferSize);
                 }
 
-                int newSize = checked(_buffer.Length + growBy);
+                int newSize = currentLength + growBy;
+
+                if ((uint)newSize > int.MaxValue)
+                {
+                    newSize = currentLength + sizeHint;
+                    if ((uint)newSize > int.MaxValue)
+                    {
+                        newSize = int.MaxValue;
+                    }
+                }
 
                 Array.Resize(ref _buffer, newSize);
             }
