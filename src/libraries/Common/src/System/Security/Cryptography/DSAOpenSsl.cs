@@ -328,11 +328,16 @@ namespace System.Security.Cryptography
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
             protected override bool VerifySignatureCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
+#else
+            public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+#endif
             {
                 SafeDsaHandle key = GetKey();
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
                 {
+#endif
                     int expectedSignatureBytes = Interop.Crypto.DsaSignatureFieldSize(key) * 2;
                     if (signature.Length != expectedSignatureBytes)
                     {
@@ -341,15 +346,15 @@ namespace System.Security.Cryptography
                     }
 
                     signature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 }
                 else if (signatureFormat != DSASignatureFormat.Rfc3279DerSequence)
                 {
                     throw new ArgumentOutOfRangeException(nameof(signatureFormat));
                 }
-
+#endif
                 return Interop.Crypto.DsaVerify(key, hash, signature);
             }
-#endif
 
             private void ThrowIfDisposed()
             {
