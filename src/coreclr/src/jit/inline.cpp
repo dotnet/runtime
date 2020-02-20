@@ -1176,6 +1176,8 @@ InlineContext* InlineStrategy::NewRoot()
 
     rootContext->m_methodToken = m_Compiler->info.compCompHnd->getMethodDefFromMethod(m_Compiler->info.compMethodHnd);
 
+    rootContext->m_moduleToken = m_Compiler->info.compCompHnd->getMdModuleFromMethod(m_Compiler->info.compMethodHnd);
+
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     rootContext->m_Callee = m_Compiler->info.compMethodHnd;
@@ -1223,8 +1225,7 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     calleeContext->m_Unboxed        = originalCall->IsUnboxed();
     calleeContext->m_ImportedILSize = inlineInfo->inlineResult->GetImportedILSize();
     calleeContext->m_methodToken    = m_Compiler->info.compCompHnd->getMethodDefFromMethod(inlineInfo->fncHandle);
-    // MethodDesc methodDsc            = GetMethod(inlineInfo->fncHandle);
-    calleeContext->m_moduleToken    = 0;
+    calleeContext->m_moduleToken    = m_Compiler->info.compCompHnd->getMdModuleFromMethod(inlineInfo->fncHandle);
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 

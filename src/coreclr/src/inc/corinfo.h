@@ -2896,6 +2896,12 @@ public:
             CORINFO_METHOD_HANDLE hMethod
             ) = 0;
 
+    // this function is for debugging only. Returns module token.
+    // Returns mdModuleDefNil for dynamic methods.
+    virtual mdModule getMdModuleFromMethod(
+            CORINFO_METHOD_HANDLE hMethod
+            ) = 0;
+
     // this function is for debugging only.  It returns the method name
     // and if 'moduleName' is non-null, it sets it to something that will
     // says which method (a class name, or a module name)

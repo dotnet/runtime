@@ -455,6 +455,11 @@ public:
         DWORD        sizeInBytes   /* IN: The size of the buffer. Note that this is effectively a
                                           version number for the CORJIT_FLAGS value. */
         ) = 0;
+
+    virtual mdModule getMdModuleFromMethod(CORINFO_METHOD_HANDLE hMethod)
+    {
+        return mdModuleNil;
+    };
 };
 
 /**********************************************************************************/

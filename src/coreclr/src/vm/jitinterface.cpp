@@ -2117,6 +2117,35 @@ CEEInfo::getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
     return result;
 }
 
+mdModule CEEInfo::getMdModuleFromMethod(CORINFO_METHOD_HANDLE hMethod)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    mdModule result = 0;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    MethodDesc* pMD = GetMethod(hMethod);
+
+    if (pMD->IsDynamicMethod() || pMD->GetModule() == nullptr)
+    {
+        // Dynamic methods do not have tokens
+        result = mdModuleNil;
+    }
+    else
+    {
+        result = pMD->GetModule()->GetModuleRef();
+    }
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
 BOOL CEEInfo::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod,
                                   LPCSTR modifier,
                                   BOOL fOptional)

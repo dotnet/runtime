@@ -472,6 +472,7 @@ public:
     CORINFO_FIELD_HANDLE getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num);
 
     mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod);
+    mdModule getMdModuleFromMethod(CORINFO_METHOD_HANDLE hMethod);
     BOOL checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, BOOL fOptional);
 
     unsigned getClassGClayout (CORINFO_CLASS_HANDLE cls, BYTE* gcPtrs); /* really GCType* gcPtrs */
