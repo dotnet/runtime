@@ -44,7 +44,7 @@ namespace System.Collections.Immutable
         System.Collections.Immutable.IImmutableQueue<T> Enqueue(T value);
         T Peek();
     }
-    public partial interface IImmutableSet<T> : System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.IEnumerable
+    public partial interface IImmutableSet<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.IEnumerable
     {
         System.Collections.Immutable.IImmutableSet<T> Add(T value);
         System.Collections.Immutable.IImmutableSet<T> Clear();
