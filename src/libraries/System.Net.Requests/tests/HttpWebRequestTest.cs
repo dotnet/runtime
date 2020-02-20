@@ -1448,7 +1448,7 @@ namespace System.Net.Tests
             Assert.NotNull(request.Proxy);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/42323")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31380")]
         [OuterLoop("Uses external server")]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // The default proxy is resolved via WinINet on Windows.
         [Fact]
@@ -1713,7 +1713,7 @@ namespace System.Net.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19083")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21418")]
         [Fact]
         public async Task Abort_BeginGetRequestStreamThenAbort_EndGetRequestStreamThrowsWebException()
         {
@@ -1753,7 +1753,7 @@ namespace System.Net.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18800")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21291")]
         [Fact]
         public async Task Abort_BeginGetResponseThenAbort_EndGetResponseThrowsWebException()
         {

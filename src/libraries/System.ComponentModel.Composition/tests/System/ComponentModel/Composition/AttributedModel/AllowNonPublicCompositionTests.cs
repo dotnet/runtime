@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.ComponentModel.Composition
 {
-    // [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class AllowNonPublicCompositionTests
     {
         [Fact]
@@ -98,7 +97,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestPublicImportsExpectingPublicExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -107,7 +106,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestInternalImportsExpectingPublicExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -116,7 +115,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestPublicImportsExpectingInternalExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -125,7 +124,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestInternalImportsExpectingInternalExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -134,7 +133,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestPublicImportsExpectingProtectedExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -143,7 +142,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestInternalImportsExpectingProtectedExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -152,7 +151,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestPublicImportsExpectingProtectedInternalExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -161,7 +160,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestInternalImportsExpectingProtectedInternalExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -170,7 +169,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestPublicImportsExpectingPrivateExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -179,7 +178,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void TestInternalImportsExpectingPrivateExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();

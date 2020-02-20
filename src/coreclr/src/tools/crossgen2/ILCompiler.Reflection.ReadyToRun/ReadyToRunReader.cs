@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -355,7 +356,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 int runtimeFunctionSize = CalculateRuntimeFunctionSize();
                 uint nRuntimeFunctions = (uint)(runtimeFunctionSection.Size / runtimeFunctionSize);
-                int runtimeFunctionOffset = GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
+                int runtimeFunctionOffset = PEReader.GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
                 bool[] isEntryPoint = new bool[nRuntimeFunctions];
 
                 // initialize R2RMethods

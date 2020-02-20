@@ -185,7 +185,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/29742", TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26189", TestPlatforms.Windows)]
         [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
         [InlineData(5000, 1, 1)]
         [InlineData(500, 18, 21)]
@@ -249,7 +249,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/29742", TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26189", TestPlatforms.Windows)]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ConcurrentSendReceive(bool forceNonBlocking)

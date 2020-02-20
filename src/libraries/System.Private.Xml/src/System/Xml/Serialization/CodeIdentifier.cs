@@ -191,7 +191,7 @@ namespace System.Xml.Serialization
             {
                 EscapeKeywords(name.Substring(0, nameEnd), sb);
                 sb.Append('<');
-                int arguments = int.Parse(name.Substring(nameEnd + 1), CultureInfo.InvariantCulture) + index;
+                int arguments = int.Parse(name.AsSpan(nameEnd + 1), provider: CultureInfo.InvariantCulture) + index;
                 for (; index < arguments; index++)
                 {
                     sb.Append(GetCSharpName(parameters[index]));

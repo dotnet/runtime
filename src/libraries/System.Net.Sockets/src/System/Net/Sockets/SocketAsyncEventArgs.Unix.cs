@@ -348,28 +348,6 @@ namespace System.Net.Sockets
             }
         }
 
-        internal void LogSendPacketsBuffers(int size)
-        {
-            foreach (SendPacketsElement spe in _sendPacketsElements)
-            {
-                if (spe != null)
-                {
-                    if (spe.Buffer != null && spe.Count > 0)
-                    {
-                        NetEventSource.DumpBuffer(this, spe.Buffer, spe.Offset, Math.Min(spe.Count, size));
-                    }
-                    else if (spe.FilePath != null)
-                    {
-                        NetEventSource.NotLoggedFile(spe.FilePath, _currentSocket, _completedOperation);
-                    }
-                    else if (spe.FileStream != null)
-                    {
-                        NetEventSource.NotLoggedFile(spe.FileStream.Name, _currentSocket, _completedOperation);
-                    }
-                }
-            }
-        }
-
         private SocketError FinishOperationAccept(Internals.SocketAddress remoteSocketAddress)
         {
             System.Buffer.BlockCopy(_acceptBuffer, 0, remoteSocketAddress.Buffer, 0, _acceptAddressBufferCount);

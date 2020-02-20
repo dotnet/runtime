@@ -385,7 +385,7 @@ namespace System.Collections.Tests
             }
         }
 
-        // https://github.com/dotnet/corefx/issues/39929
+        // https://github.com/dotnet/runtime/issues/30440
         [Fact]
         public static void CopyToByteArray_Regression39929()
         {

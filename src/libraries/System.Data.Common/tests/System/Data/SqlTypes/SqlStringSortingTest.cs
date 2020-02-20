@@ -37,7 +37,7 @@ namespace System.Data.SqlTypes.Tests
 
         private static readonly UnicodeEncoding s_unicodeEncoding = new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: true);
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/12518", TestPlatforms.AnyUnix)] // TODO: Add this to the theory below when the issue is addressed on Unix
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18912", TestPlatforms.AnyUnix)] // TODO: Add this to the theory below when the issue is addressed on Unix
         [Theory]
         [InlineData("ja-JP", 0x0411)] // Japanese - Japan
         public static void SqlStringValidComparisonTest_Windows(string cultureName, int localeId) => SqlStringValidComparisonTest(cultureName, localeId);

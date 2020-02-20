@@ -2401,7 +2401,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // Actual:   typeof(System.Reflection.ReflectionTypeLoadException)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // Actual:   typeof(System.Reflection.ReflectionTypeLoadException)
         public void TryGetValueWithCatalogVerifyExecptionDuringGet()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();

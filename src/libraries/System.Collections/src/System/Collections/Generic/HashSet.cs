@@ -287,7 +287,7 @@ namespace System.Collections.Generic
                     else
                     {
                         // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                        // https://github.com/dotnet/coreclr/issues/17273
+                        // https://github.com/dotnet/runtime/issues/10050
                         // So cache in a local rather than get EqualityComparer per loop iteration
                         EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
 
@@ -388,7 +388,7 @@ namespace System.Collections.Generic
                     else
                     {
                         // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                        // https://github.com/dotnet/coreclr/issues/17273
+                        // https://github.com/dotnet/runtime/issues/10050
                         // So cache in a local rather than get EqualityComparer per loop iteration
                         EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
 
@@ -1361,7 +1361,7 @@ namespace System.Collections.Generic
                 else
                 {
                     // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                    // https://github.com/dotnet/coreclr/issues/17273
+                    // https://github.com/dotnet/runtime/issues/10050
                     // So cache in a local rather than get EqualityComparer per loop iteration
                     EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
 
@@ -1598,7 +1598,7 @@ namespace System.Collections.Generic
                 else
                 {
                     // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                    // https://github.com/dotnet/coreclr/issues/17273
+                    // https://github.com/dotnet/runtime/issues/10050
                     // So cache in a local rather than get EqualityComparer per loop iteration
                     EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
 

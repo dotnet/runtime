@@ -29,6 +29,6 @@ namespace Internal.Cryptography
         DateTime NotAfter { get; }
         DateTime NotBefore { get; }
         byte[] RawData { get; }
-        byte[] Export(X509ContentType contentType, SafePasswordHandle password);
+        byte[]? Export(X509ContentType contentType, SafePasswordHandle password);
     }
 }
