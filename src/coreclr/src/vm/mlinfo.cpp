@@ -2793,7 +2793,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                 if (!m_pMT->HasLayout())
                 {
-                    m_resID = IDS_CANNOT_MARSHAL;
+                    m_resID = IDS_EE_BADMARSHAL_AUTOLAYOUT;
                     IfFailGoto(E_FAIL, lFail);
                 }
 
