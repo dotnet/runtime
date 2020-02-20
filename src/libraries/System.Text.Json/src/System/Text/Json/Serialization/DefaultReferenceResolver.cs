@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization
             if (writing)
             {
                 // Comparer used here to always do a Reference Equality comparison on serialization which is where we use the objects as the TKey in our dictionary.
-                _objectToReferenceIdMap = new Dictionary<object, string>(ReferenceEqualsEqualityComparer<object>.Comparer);
+                _objectToReferenceIdMap = new Dictionary<object, string>(ReferenceEqualityComparer.Instance);
                 _referenceIdToObjectMap = null;
             }
             else

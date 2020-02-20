@@ -12,5 +12,8 @@ internal static partial class Interop
     {
         [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICU")]
         internal static extern int LoadICU();
+
+        [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetICUVersion")]
+        internal static extern int GetICUVersion();
     }
 }

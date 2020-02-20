@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public X509Certificate2 Current
         {
-            get { return (X509Certificate2)_enumerator.Current; }
+            get { return (X509Certificate2)_enumerator.Current!; }
         }
 
         object IEnumerator.Current

@@ -36,6 +36,10 @@ runtime:
 patch-mono-dotnet:
 	$(DOTNET) msbuild /t:PatchLocalMonoDotnet $(MONO_PROJ)
 
+# copy mono runtime bits from artifacts to $(DST)
+copy-runtime-files-to:
+	$(DOTNET) msbuild /t:CopyMonoRuntimeFilesFromArtifactsToDestination /p:Destination=$(DST) $(MONO_PROJ)
+
 # run specific coreclr test, e.g.:
 # make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"
 run-tests-coreclr:

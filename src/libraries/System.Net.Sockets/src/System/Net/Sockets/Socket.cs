@@ -152,6 +152,15 @@ namespace System.Net.Sockets
             }
         }
 
+        public static bool OSSupportsUnixDomainSockets
+        {
+            get
+            {
+                InitializeSockets();
+                return SocketProtocolSupportPal.OSSupportsUnixDomainSockets;
+            }
+        }
+
         // Gets the amount of data pending in the network's input buffer that can be
         // read from the socket.
         public int Available

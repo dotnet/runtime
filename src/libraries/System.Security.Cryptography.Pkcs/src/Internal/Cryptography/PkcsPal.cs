@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
@@ -76,12 +77,12 @@ namespace Internal.Cryptography
         /// <summary>
         /// Retrieve a private key object for the certificate to use with signing.
         /// </summary>
-        public abstract T GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent) where T : AsymmetricAlgorithm;
+        public abstract T? GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent) where T : AsymmetricAlgorithm;
 
         /// <summary>
         /// Retrieve a private key object for the certificate to use with decryption.
         /// </summary>
-        public abstract T GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent) where T : AsymmetricAlgorithm;
+        public abstract T? GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent) where T : AsymmetricAlgorithm;
 
         /// <summary>
         /// Get the one instance of PkcsPal.

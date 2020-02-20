@@ -717,6 +717,7 @@ FCFuncEnd()
 FCFuncStart(gCastHelpers)
     FCFuncElement("IsInstanceOfAny_NoCacheLookup", ::IsInstanceOfAny_NoCacheLookup)
     FCFuncElement("ChkCastAny_NoCacheLookup", ::ChkCastAny_NoCacheLookup)
+    FCFuncElement("Unbox_Helper", ::Unbox_Helper)
 FCFuncEnd()
 
 FCFuncStart(gArrayFuncs)
@@ -1225,6 +1226,11 @@ FCClassElement("FileLoadException", "System.IO", gFileLoadExceptionFuncs)
 FCClassElement("GC", "System", gGCInterfaceFuncs)
 FCClassElement("GCHandle", "System.Runtime.InteropServices", gGCHandleFuncs)
 FCClassElement("GCSettings", "System.Runtime", gGCSettingsFuncs)
+#ifdef TARGET_UNIX
+#ifndef CROSSGEN_COMPILE
+FCClassElement("Globalization", "", gPalGlobalizationNative)
+#endif
+#endif
 #ifdef FEATURE_COMINTEROP
 FCClassElement("IEnumerable", "System.Collections", gStdMngIEnumerableFuncs)
 FCClassElement("IEnumerator", "System.Collections", gStdMngIEnumeratorFuncs)

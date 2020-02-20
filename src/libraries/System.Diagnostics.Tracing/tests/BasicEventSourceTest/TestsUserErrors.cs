@@ -64,7 +64,7 @@ namespace BasicEventSourceTests
         /// <summary>
         /// Test the
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/corefx/issues/29754
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/runtime/issues/26197
         public void Test_BadEventSource_MismatchedIds()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");

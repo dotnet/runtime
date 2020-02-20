@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -48,6 +49,13 @@ namespace ILCompiler.Reflection.ReadyToRun
 
     public sealed class ReadyToRunReader
     {
+        private const string SystemModuleName = "System.Private.CoreLib";
+
+        /// <summary>
+        /// MetadataReader for the system module (normally System.Private.CoreLib)
+        /// </summary>
+        private MetadataReader _systemModuleReader;
+
         private readonly IAssemblyResolver _assemblyResolver;
 
         /// <summary>
@@ -348,7 +356,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 int runtimeFunctionSize = CalculateRuntimeFunctionSize();
                 uint nRuntimeFunctions = (uint)(runtimeFunctionSection.Size / runtimeFunctionSize);
-                int runtimeFunctionOffset = GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
+                int runtimeFunctionOffset = PEReader.GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
                 bool[] isEntryPoint = new bool[nRuntimeFunctions];
 
                 // initialize R2RMethods
@@ -372,6 +380,18 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return true;
             }
             return false;
+        }
+
+        private MetadataReader GetSystemModuleMetadataReader()
+        {
+            if (_systemModuleReader == null)
+            {
+                if (_assemblyResolver != null)
+                {
+                    _systemModuleReader = _assemblyResolver.FindAssembly(SystemModuleName, Filename);
+                }
+            }
+            return _systemModuleReader;
         }
 
         public MetadataReader GetGlobalMetadataReader()
@@ -616,11 +636,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                 uint methodFlags = decoder.ReadUInt();
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
                 {
-                    mdReader = decoder.GetMetadataReaderFromModuleOverride();
-                    if (mdReader == null)
+                    mdReader = decoder.GetMetadataReaderFromModuleOverride() ?? mdReader;
+                    if (_composite)
                     {
-                        // The only types that don't have module overrides on them in composite images are primitive types within System.Private.CoreLib
-                        mdReader = _assemblyResolver.FindAssembly("System.Private.CoreLib", Filename);
+                        // The only types that don't have module overrides on them in composite images are primitive types within the system module
+                        mdReader = GetSystemModuleMetadataReader();
                     }
                     owningType = decoder.ReadTypeSignatureNoEmit();
                 }

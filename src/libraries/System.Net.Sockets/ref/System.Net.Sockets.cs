@@ -241,6 +241,7 @@ namespace System.Net.Sockets
         public bool NoDelay { get { throw null; } set { } }
         public static bool OSSupportsIPv4 { get { throw null; } }
         public static bool OSSupportsIPv6 { get { throw null; } }
+        public static bool OSSupportsUnixDomainSockets { get { throw null; } }
         public System.Net.Sockets.ProtocolType ProtocolType { get { throw null; } }
         public int ReceiveBufferSize { get { throw null; } set { } }
         public int ReceiveTimeout { get { throw null; } set { } }

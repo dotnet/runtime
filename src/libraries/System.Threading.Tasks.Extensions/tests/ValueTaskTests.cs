@@ -13,6 +13,8 @@ namespace System.Threading.Tasks.Tests
 {
     public class ValueTaskTests
     {
+        private static readonly TimeSpan ExpectedSuccessTimeout = TimeSpan.FromSeconds(60);
+
         public enum CtorMode
         {
             Result,
@@ -784,7 +786,7 @@ namespace System.Threading.Tasks.Tests
 
                     var mres = new ManualResetEventSlim();
                     t.GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(10000));
+                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
                     Assert.Equal(1, tsc.Posts);
                 }
                 finally
@@ -815,7 +817,7 @@ namespace System.Threading.Tasks.Tests
 
                     var mres = new ManualResetEventSlim();
                     t.GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(10000));
+                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
                     Assert.Equal(1, tsc.Posts);
                 }
                 finally
@@ -851,7 +853,7 @@ namespace System.Threading.Tasks.Tests
 
                     var mres = new ManualResetEventSlim();
                     t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(10000));
+                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
                     Assert.Equal(continueOnCapturedContext ? 1 : 0, tsc.Posts);
                 }
                 finally
@@ -887,7 +889,7 @@ namespace System.Threading.Tasks.Tests
 
                     var mres = new ManualResetEventSlim();
                     t.ConfigureAwait(continueOnCapturedContext).GetAwaiter().OnCompleted(() => mres.Set());
-                    Assert.True(mres.Wait(10000));
+                    Assert.True(mres.Wait(ExpectedSuccessTimeout));
                     Assert.Equal(continueOnCapturedContext ? 1 : 0, tsc.Posts);
                 }
                 finally

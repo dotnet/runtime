@@ -8,7 +8,7 @@ namespace System.Data.Odbc.Tests
 {
     public class CommandBuilderTests : IntegrationTestBase
     {
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/runtime/issues/20097.")]
         public void QuoteIdentifier_UseConnection()
         {
             var commandBuilder = new OdbcCommandBuilder();
@@ -37,7 +37,7 @@ namespace System.Data.Odbc.Tests
             Assert.Throws<InvalidOperationException>(() => commandBuilder.UnquoteIdentifier("Test"));
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/runtime/issues/20097.")]
         public void QuoteIdentifier_CustomPrefixSuffix()
         {
             var commandBuilder = new OdbcCommandBuilder();

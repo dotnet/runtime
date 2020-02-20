@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
+    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
+  </PropertyGroup>
+
+</Project>

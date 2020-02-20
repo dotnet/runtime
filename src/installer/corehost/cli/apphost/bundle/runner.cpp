@@ -50,14 +50,12 @@ StatusCode runner_t::extract()
         m_extraction_dir = extractor.extraction_dir();
 
         // Determine if embedded files are already extracted, and available for reuse
-        if (extractor.can_reuse_extraction())
+        if (!extractor.can_reuse_extraction())
         {
-            return StatusCode::Success;
+            manifest_t manifest = manifest_t::read(reader, header.num_embedded_files());
+
+            extractor.extract(manifest, reader);
         }
-
-        manifest_t manifest = manifest_t::read(reader, header.num_embedded_files());
-
-        extractor.extract(manifest, reader);
 
         unmap_host();
 

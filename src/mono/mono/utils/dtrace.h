@@ -38,10 +38,10 @@
 #define MONO_VES_INIT_END_ENABLED() (0)
 
 
-#define MONO_PROBE_METHOD_COMPILE_BEGIN(method)
+#define MONO_PROBE_METHOD_COMPILE_BEGIN(method) do { } while (0) /* non-empty to avoid warning */
 #define MONO_METHOD_COMPILE_BEGIN_ENABLED() (0)
 
-#define MONO_PROBE_METHOD_COMPILE_END(method, success)
+#define MONO_PROBE_METHOD_COMPILE_END(method, success) do { } while (0) /* non-empty to avoid warning */
 #define MONO_METHOD_COMPILE_END_ENABLED() (0)
 
 
