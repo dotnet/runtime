@@ -1639,7 +1639,7 @@ namespace System.Text.Json.Serialization.Tests
 
         // https://github.com/dotnet/runtime/issues/29933
         [Fact]
-        public static void Serialize_WithCamelCase()
+        public static void Serialize_IDictionaryOfPoco()
         {
             // Arrange
             var value = new AllSingleUpperPropertiesParent()
@@ -1667,7 +1667,7 @@ namespace System.Text.Json.Serialization.Tests
 
         // https://github.com/dotnet/runtime/issues/29933
         [Fact]
-        public static void Deserialize_WithCamelCase_LowerCasePayload()
+        public static void Deserialize_IDictionaryOfPoco()
         {
             // Arrange
             string json = "{\"child\":{\"1\":{\"a\":\"1\",\"b\":\"\",\"c\":[],\"d\":[],\"e\":null,\"f\":[],\"g\":null,\"h\":null,\"i\":null,\"j\":null,\"k\":[]}}}";

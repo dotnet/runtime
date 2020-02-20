@@ -149,7 +149,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        // https://github.com/dotnet/runtime/issues/30095.
+        // https://github.com/dotnet/runtime/issues/30095
         public static void TestingDateTimeMinValue_UtcOffsetGreaterThan0()
         {
             string jsonString = @"""0001-01-01T00:00:00""";
