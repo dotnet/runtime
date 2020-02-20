@@ -101,9 +101,7 @@ void EventPipe::Initialize()
         if (tracingInitialized)
             s_state = EventPipeState::Initialized;
     }
-#ifdef FEATURE_EVENTPIPE_STARTUP
     EnableViaEnvironmentVariables();
-#endif // FEATURE_EVENTPIPE_STARTUP
 }
 
 //
@@ -143,7 +141,7 @@ void EventPipe::EnableViaEnvironmentVariables()
         {
             // Count how many providers there are to parse
             static WCHAR comma = W(',');
-            while(configToParse != nullptr)
+            while (*configToParse != '\0')
             {
                 providerCnt += 1;
                 auto end = wcschr(configToParse, comma);
@@ -156,7 +154,7 @@ void EventPipe::EnableViaEnvironmentVariables()
             configToParse = eventpipeConfig;
             pProviders = new EventPipeProviderConfiguration[providerCnt];
             int i = 0;
-            while (configToParse != nullptr)
+            while (*configToParse != '\0')
             {
                 auto end = wcschr(configToParse, comma);
                 configuration.Parse(configToParse);
