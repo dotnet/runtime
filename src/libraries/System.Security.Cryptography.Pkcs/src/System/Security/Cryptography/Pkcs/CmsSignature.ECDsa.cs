@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
 
@@ -23,9 +24,9 @@ namespace System.Security.Cryptography.Pkcs
         private partial class ECDsaCmsSignature : CmsSignature
         {
             private readonly HashAlgorithmName _expectedDigest;
-            private readonly string _signatureAlgorithm;
+            private readonly string? _signatureAlgorithm;
 
-            internal ECDsaCmsSignature(string signatureAlgorithm, HashAlgorithmName expectedDigest)
+            internal ECDsaCmsSignature(string? signatureAlgorithm, HashAlgorithmName expectedDigest)
             {
                 _signatureAlgorithm = signatureAlgorithm;
                 _expectedDigest = expectedDigest;
@@ -44,7 +45,7 @@ namespace System.Security.Cryptography.Pkcs
                 byte[] valueHash,
                 byte[] signature,
 #endif
-                string digestAlgorithmOid,
+                string? digestAlgorithmOid,
                 HashAlgorithmName digestAlgorithmName,
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
@@ -105,10 +106,10 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
-                AsymmetricAlgorithm certKey,
+                AsymmetricAlgorithm? certKey,
                 bool silent,
-                out Oid signatureAlgorithm,
-                out byte[] signatureValue)
+                [NotNullWhen(true)] out Oid? signatureAlgorithm,
+                [NotNullWhen(true)] out byte[]? signatureValue)
             {
                 // If there's no private key, fall back to the public key for a "no private key" exception.
                 ECDsa key = certKey as ECDsa ??
@@ -122,7 +123,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                string oidValue =
+                string? oidValue =
                     hashAlgorithmName == HashAlgorithmName.SHA1 ? Oids.ECDsaWithSha1 :
                     hashAlgorithmName == HashAlgorithmName.SHA256 ? Oids.ECDsaWithSha256 :
                     hashAlgorithmName == HashAlgorithmName.SHA384 ? Oids.ECDsaWithSha384 :

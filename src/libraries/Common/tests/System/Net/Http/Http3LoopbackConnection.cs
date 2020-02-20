@@ -8,10 +8,11 @@ using System.Globalization;
 using System.Net.Quic;
 using System.Text;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace System.Net.Test.Common
 {
-    public sealed class Http3LoopbackConnection : GenericLoopbackConnection
+    internal sealed class Http3LoopbackConnection : GenericLoopbackConnection
     {
         public const long H3_NO_ERROR = 0x100;
         public const long H3_GENERAL_PROTOCOL_ERROR = 0x101;
@@ -49,10 +50,10 @@ namespace System.Net.Test.Common
 
             if (!_closed)
             {
-                CloseAsync(H3_INTERNAL_ERROR).GetAwaiter().GetResult();
+            //    CloseAsync(H3_INTERNAL_ERROR).GetAwaiter().GetResult();
             }
 
-            _connection.Dispose();
+            //_connection.Dispose();
         }
 
         public async Task CloseAsync(long errorCode)
@@ -115,7 +116,14 @@ namespace System.Net.Test.Common
 
         public override async Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
         {
-            await SendResponseHeadersAsync(statusCode, headers, requestId).ConfigureAwait(false);
+            IEnumerable<HttpHeaderData> newHeaders = headers ?? Enumerable.Empty<HttpHeaderData>();
+
+            if (content != null && !newHeaders.Any(x => x.Name == "Content-Length"))
+            {
+                newHeaders = newHeaders.Append(new HttpHeaderData("Content-Length", content.Length.ToString(CultureInfo.InvariantCulture)));
+            }
+
+            await SendResponseHeadersAsync(statusCode, newHeaders, requestId).ConfigureAwait(false);
             await SendResponseBodyAsync(Encoding.UTF8.GetBytes(content ?? ""), isFinal, requestId).ConfigureAwait(false);
         }
 
@@ -140,18 +148,19 @@ namespace System.Net.Test.Common
             return SendResponseHeadersAsync(statusCode, headers, requestId);
         }
 
-        private async Task SendResponseHeadersAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        private async Task SendResponseHeadersAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IEnumerable<HttpHeaderData> headers = null, int requestId = 0)
         {
-            var allHeaders = new List<HttpHeaderData>((headers?.Count ?? 0) + 1);
+            headers ??= Enumerable.Empty<HttpHeaderData>();
+
+            // Some tests use Content-Length with a null value to indicate Content-Length should not be set.
+            headers = headers.Where(x => x.Name != "Content-Length" || x.Value != null);
 
             if (statusCode != null)
             {
-                allHeaders.Add(new HttpHeaderData(":status", ((int)statusCode).ToString(CultureInfo.InvariantCulture)));
+                headers = headers.Prepend(new HttpHeaderData(":status", ((int)statusCode).ToString(CultureInfo.InvariantCulture)));
             }
 
-            allHeaders.AddRange(headers);
-
-            await GetOpenRequest(requestId).SendHeadersFrameAsync(allHeaders).ConfigureAwait(false);
+            await GetOpenRequest(requestId).SendHeadersFrameAsync(headers).ConfigureAwait(false);
         }
 
         public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)

@@ -37,6 +37,7 @@ namespace System.Reflection.Tests
             new object[] { typeof(Test<>).GetGenericArguments()[0].GetTypeInfo(), 0x2A }
         };
 
+        [ActiveIssue("https://github.com/mono/mono/issues/15194", TestRuntimes.Mono)]
         [ConditionalTheory(nameof(GetMetadataTokenSupported))]
         [MemberData(nameof(MembersWithExpectedTableIndex))]
         public void SuccessImpliesNonNilWithCorrectTable(MemberInfo member, int expectedTableIndex)

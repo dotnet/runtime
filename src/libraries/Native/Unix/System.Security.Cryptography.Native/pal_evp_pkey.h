@@ -11,7 +11,7 @@ Shims the EVP_PKEY_new method.
 
 Returns the new EVP_PKEY instance.
 */
-DLLEXPORT EVP_PKEY* CryptoNative_EvpPkeyCreate(void);
+PALEXPORT EVP_PKEY* CryptoNative_EvpPkeyCreate(void);
 
 /*
 Cleans up and deletes a EVP_PKEY instance.
@@ -22,7 +22,7 @@ No-op if pkey is null.
 The given EVP_PKEY pointer is invalid after this call.
 Always succeeds.
 */
-DLLEXPORT void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey);
+PALEXPORT void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey);
 
 /*
 Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateReader when
@@ -31,4 +31,4 @@ duplicating a private key context as part of duplicating the Pal object.
 Returns the number (as of this call) of references to the EVP_PKEY. Anything less than
 2 is an error, because the key is already in the process of being freed.
 */
-DLLEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey);
+PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey);

@@ -1528,7 +1528,7 @@ namespace System.Tests
         }
 
         [Fact]
-        // Regression test for https://github.com/dotnet/coreclr/issues/15896
+        // Regression test for https://github.com/dotnet/runtime/issues/9565
         public static void TryParseExact_EmptyAMPMDesignator()
         {
             var englishCulture = new CultureInfo("en-US");

@@ -8,7 +8,7 @@ namespace System.Data.Odbc.Tests
 {
     public class SmokeTest : IntegrationTestBase
     {
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/runtime/issues/20097.")]
         public void CreateInsertSelectTest()
         {
             command.CommandText =

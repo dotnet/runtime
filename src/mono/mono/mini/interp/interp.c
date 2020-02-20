@@ -301,14 +301,6 @@ static gboolean interp_init_done = FALSE;
 
 static void interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error);
 
-static MONO_NEVER_INLINE void
-interp_exec_method_newobj_vtst_fast (InterpFrame *frame, ThreadContext *context, MonoError *error)
-// This function makes WebAsssembly stacks clearer, so you can see which recursion
-// is occuring, in the absence of line numbers in the debugger.
-{
-	interp_exec_method_full (frame, context, NULL, error);
-}
-
 static InterpMethod* lookup_method_pointer (gpointer addr);
 
 typedef void (*ICallMethod) (InterpFrame *frame);
@@ -1165,15 +1157,6 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 			MonoException *exc = mono_thread_interruption_checkpoint ();	\
 			if (exc)							\
 				THROW_EX (exc, ip);					\
-		}									\
-	} while (0)
-
-#define EXCEPTION_CHECKPOINT_IN_HELPER_FUNCTION	\
-	do {										\
-		if (mono_thread_interruption_request_flag && !mono_threads_is_critical_method (frame->imethod->method)) { \
-			MonoException *exc = mono_thread_interruption_checkpoint ();	\
-			if (exc)							\
-				return exc;						\
 		}									\
 	} while (0)
 
@@ -3224,118 +3207,6 @@ mono_interp_leave (InterpFrame* child_frame)
 }
 
 static MONO_NEVER_INLINE void
-mono_interp_newobj_vt (
-	// Parameters are sorted by name and parameter list is minimized
-	// to reduce stack use in caller, on e.g. NT/AMD64 (up to 4 parameters
-	// use no stack in caller).
-	InterpFrame* child_frame,
-	ThreadContext* context,
-	MonoError* error)
-{
-	stackval* const sp = child_frame->stack_args;
-
-	stackval valuetype_this;
-
-	memset (&valuetype_this, 0, sizeof (stackval));
-	sp->data.p = &valuetype_this;
-
-	// FIXME remove recursion
-	//
-	// FIXME It is unfortunate to outline a recursive case as it
-	// increases its stack usage. We do this however as it conserves
-	// stack for all the other recursive cases.
-	interp_exec_method (child_frame, context, error);
-
-	CHECK_RESUME_STATE (context);
-
-	*sp = valuetype_this;
-resume:
-	;
-}
-
-static MONO_NEVER_INLINE MonoException*
-mono_interp_newobj (
-	// Parameters are sorted by name and parameter list is minimized
-	// to reduce stack use in caller, on e.g. NT/AMD64 (up to 4 parameters
-	// use no stack in caller).
-	InterpFrame* child_frame,
-	ThreadContext* context,
-	MonoError* error,
-	guchar* vt_sp)
-{
-	InterpFrame* const frame = child_frame->parent;
-	InterpMethod* const imethod = frame->imethod;
-	stackval* const sp = child_frame->stack_args;
-
-	MonoObject* o = NULL; // See the comment about GC safety.
-	stackval valuetype_this;
-	stackval retval;
-
-	MonoClass * const newobj_class = child_frame->imethod->method->klass;
-	/*if (profiling_classes) {
-		guint count = GPOINTER_TO_UINT (g_hash_table_lookup (profiling_classes, newobj_class));
-		count++;
-		g_hash_table_insert (profiling_classes, newobj_class, GUINT_TO_POINTER (count));
-	}*/
-
-	/*
-	 * First arg is the object.
-	 */
-	if (m_class_is_valuetype (newobj_class)) {
-		MonoType *t = m_class_get_byval_arg (newobj_class);
-		memset (&valuetype_this, 0, sizeof (stackval));
-		if (!m_class_is_enumtype (newobj_class) && (t->type == MONO_TYPE_VALUETYPE || (t->type == MONO_TYPE_GENERICINST && mono_type_generic_inst_is_valuetype (t)))) {
-			sp->data.p = vt_sp;
-			valuetype_this.data.p = vt_sp;
-		} else {
-			sp->data.p = &valuetype_this;
-		}
-	} else {
-		if (newobj_class != mono_defaults.string_class) {
-			MonoVTable *vtable = mono_class_vtable_checked (imethod->domain, newobj_class, error);
-			if (!is_ok (error) || !mono_runtime_class_init_full (vtable, error)) {
-				MonoException* const exc = mono_error_convert_to_exception (error);
-				g_assert (exc);
-				return exc;
-			}
-			ERROR_DECL (error);
-			OBJREF (o) = mono_object_new_checked (imethod->domain, newobj_class, error);
-			mono_error_cleanup (error); // FIXME: do not swallow the error
-			EXCEPTION_CHECKPOINT_IN_HELPER_FUNCTION;
-			sp->data.o = o;
-#ifndef DISABLE_REMOTING
-			if (mono_object_is_transparent_proxy (o)) {
-				MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (child_frame->imethod->method, error);
-				mono_error_assert_ok (error);
-				child_frame->imethod = mono_interp_get_imethod (imethod->domain, remoting_invoke_method, error);
-				mono_error_assert_ok (error);
-			}
-#endif
-		} else {
-			sp->data.p = NULL;
-			child_frame->retval = &retval;
-		}
-	}
-
-	interp_exec_method (child_frame, context, error);
-
-	CHECK_RESUME_STATE (context);
-
-	/*
-	 * a constructor returns void, but we need to return the object we created
-	 */
-	if (m_class_is_valuetype (newobj_class) && !m_class_is_enumtype (newobj_class)) {
-		*sp = valuetype_this;
-	} else if (newobj_class == mono_defaults.string_class) {
-		*sp = retval;
-	} else {
-		sp->data.o = o;
-	}
-resume:
-	return NULL;
-}
-
-static MONO_NEVER_INLINE void
 mono_interp_enum_hasflag (stackval* sp, MonoClass* klass)
 {
 	guint64 a_val = 0, b_val = 0;
@@ -5079,57 +4950,54 @@ call:;
 			} else {
 				cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
 				frame->ip = ip - 4;
-				is_void = TRUE;
-				retval = NULL;
-				++sp; // Point sp at this, after return value.
-				goto call;
+				goto call_newobj;
 			}
 
 			MINT_IN_BREAK;
 		}
+
 		MINT_IN_CASE(MINT_NEWOBJ_VT_FAST)
 		MINT_IN_CASE(MINT_NEWOBJ_VTST_FAST) {
-			int dummy;
-			// This is split up to:
-			//  - conserve stack
-			//  - keep exception handling and resume mostly in the main function
 
 			frame->ip = ip;
-			child_frame = alloc_frame (context, &dummy, frame, (InterpMethod*) frame->imethod->data_items [ip [1]], NULL, NULL);
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
 			guint16 const param_count = ip [2];
 
+			// Make room for extra parameter and result.
 			if (param_count) {
 				sp -= param_count;
-				memmove (sp + 1, sp, param_count * sizeof (stackval));
+				memmove (sp + 2, sp, param_count * sizeof (stackval));
 			}
-			child_frame->stack_args = sp;
+
 			gboolean const vtst = *ip == MINT_NEWOBJ_VTST_FAST;
 			if (vtst) {
 				memset (vt_sp, 0, ip [3]);
-				sp->data.p = vt_sp;
 				ip += 4;
-
-				// FIXME remove recursion
-				interp_exec_method_newobj_vtst_fast (child_frame, context, error);
-
-				CHECK_RESUME_STATE (context);
-				sp->data.p = vt_sp;
-
+				// Put extra parameter and result on stack, before other parameters,
+				// and point stack to extra parameter, after result.
+				// This pattern occurs for newobj_vt_fast and newobj_fast.
+				sp [1].data.p = vt_sp;
+				sp [0].data.p = vt_sp;
 			} else {
 				ip += 3;
-				// FIXME remove recursion
-				mono_interp_newobj_vt (child_frame, context, error);
-				CHECK_RESUME_STATE (context);
+				// Like newobj_fast, add valuetype_this parameter
+				// and result and point stack to this after result.
+				memset (sp, 0, sizeof (*sp));
+				sp [1].data.p = &sp [0].data; // valuetype_this == result
 			}
-			++sp;
-			MINT_IN_BREAK;
-		}
+			}
+			// call_newobj captures the pattern where the return value is placed
+			// on the stack before the call, instead of the call forming it.
+call_newobj:
+			++sp; // Point sp at added extra param, after return value.
+			is_void = TRUE;
+			retval = NULL;
+			goto call;
 
 		MINT_IN_CASE(MINT_NEWOBJ) {
 			int dummy;
-			// This is split up to:
-			//  - conserve stack
-			//  - keep exception handling and resume mostly in the main function
+
+			// FIXME: Clean this up and make it not recursive.
 
 			frame->ip = ip;
 
@@ -5147,11 +5015,75 @@ call:;
 
 			child_frame->stack_args = sp;
 
-			// FIXME remove recursion
-			MonoException* const exc = mono_interp_newobj (child_frame, context, error, vt_sp);
-			if (exc)
-				THROW_EX (exc, ip);
+			MonoException *exc = NULL;
+
+			InterpMethod* const imethod = frame->imethod;
+
+			MonoObject* o = NULL; // See the comment about GC safety.
+			stackval valuetype_this;
+			stackval retval;
+
+			MonoClass * const newobj_class = child_frame->imethod->method->klass;
+			/*if (profiling_classes) {
+				guint count = GPOINTER_TO_UINT (g_hash_table_lookup (profiling_classes, newobj_class));
+				count++;
+				g_hash_table_insert (profiling_classes, newobj_class, GUINT_TO_POINTER (count));
+			}*/
+
+			/*
+			 * First arg is the object.
+			 */
+			if (m_class_is_valuetype (newobj_class)) {
+				MonoType *t = m_class_get_byval_arg (newobj_class);
+				memset (&valuetype_this, 0, sizeof (stackval));
+				if (!m_class_is_enumtype (newobj_class) && (t->type == MONO_TYPE_VALUETYPE || (t->type == MONO_TYPE_GENERICINST && mono_type_generic_inst_is_valuetype (t)))) {
+					sp->data.p = vt_sp;
+					valuetype_this.data.p = vt_sp;
+				} else {
+					sp->data.p = &valuetype_this;
+				}
+			} else {
+				if (newobj_class != mono_defaults.string_class) {
+					MonoVTable *vtable = mono_class_vtable_checked (imethod->domain, newobj_class, error);
+					if (!is_ok (error) || !mono_runtime_class_init_full (vtable, error)) {
+						exc = mono_error_convert_to_exception (error);
+						g_assert (exc);
+						THROW_EX (exc, ip);
+					}
+					ERROR_DECL (error);
+					OBJREF (o) = mono_object_new_checked (imethod->domain, newobj_class, error);
+					mono_error_cleanup (error); // FIXME: do not swallow the error
+					EXCEPTION_CHECKPOINT;
+					sp->data.o = o;
+#ifndef DISABLE_REMOTING
+					if (mono_object_is_transparent_proxy (o)) {
+						MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (child_frame->imethod->method, error);
+						mono_error_assert_ok (error);
+						child_frame->imethod = mono_interp_get_imethod (imethod->domain, remoting_invoke_method, error);
+						mono_error_assert_ok (error);
+					}
+#endif
+				} else {
+					sp->data.p = NULL;
+					child_frame->retval = &retval;
+				}
+			}
+
+			interp_exec_method (child_frame, context, error);
+
 			CHECK_RESUME_STATE (context);
+
+			/*
+			 * a constructor returns void, but we need to return the object we created
+			 */
+			if (m_class_is_valuetype (newobj_class) && !m_class_is_enumtype (newobj_class)) {
+				*sp = valuetype_this;
+			} else if (newobj_class == mono_defaults.string_class) {
+				*sp = retval;
+			} else {
+				sp->data.o = o;
+			}
+
 			++sp;
 			MINT_IN_BREAK;
 		}
@@ -7189,7 +7121,7 @@ interp_parse_options (const char *options)
  *   Set the state the interpeter will continue to execute from after execution returns to the interpreter.
  */
 static void
-interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip)
+interp_set_resume_state (MonoJitTlsData *jit_tls, MonoObject *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip)
 {
 	ThreadContext *context;
 
@@ -7205,7 +7137,7 @@ interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExce
 	context->exc_gchandle = mono_gchandle_new_internal ((MonoObject*)ex, FALSE);
 	/* Ditto */
 	if (ei)
-		*(MonoException**)(frame_locals (context->handler_frame) + ei->exvar_offset) = ex;
+		*(MonoObject**)(frame_locals (context->handler_frame) + ei->exvar_offset) = ex;
 	context->handler_ip = (const guint16*)handler_ip;
 }
 

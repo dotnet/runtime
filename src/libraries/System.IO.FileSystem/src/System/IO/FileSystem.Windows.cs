@@ -223,7 +223,7 @@ namespace System.IO
             // into them. Surrogates should just be detached.
             //
             // See
-            // https://github.com/dotnet/corefx/issues/24250
+            // https://github.com/dotnet/runtime/issues/23646
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365511.aspx
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365197.aspx
 

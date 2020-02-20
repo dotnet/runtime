@@ -180,6 +180,12 @@ namespace System.Net.Http
                     break;
             }
 
+            if (!_http3Enabled)
+            {
+                // Avoid parsing Alt-Svc headers if they won't be used.
+                _altSvcEnabled = false;
+            }
+
             string hostHeader = null;
             if (_originAuthority != null)
             {

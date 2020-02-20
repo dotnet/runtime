@@ -205,7 +205,7 @@ namespace System.DirectoryServices.Protocols
                         temp.Append(servers[i]);
                         if (i < servers.Length - 1)
                         {
-                            temp.Append(" ");
+                            temp.Append(' ');
                         }
                     }
                 }

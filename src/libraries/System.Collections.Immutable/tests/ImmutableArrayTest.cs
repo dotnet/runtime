@@ -1978,7 +1978,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void IStructuralEquatableEqualsNullComparerInvalid()
         {
-            // This was not fixed for compatability reasons. See https://github.com/dotnet/corefx/issues/13410
+            // This was not fixed for compatability reasons. See https://github.com/dotnet/runtime/issues/19265
             Assert.Throws<NullReferenceException>(() => ((IStructuralEquatable)ImmutableArray.Create(1, 2, 3)).Equals(ImmutableArray.Create(1, 2, 3), comparer: null));
             Assert.Throws<NullReferenceException>(() => ((IStructuralEquatable)s_emptyDefault).Equals(other: null, comparer: null));
         }
@@ -2105,7 +2105,7 @@ namespace System.Collections.Immutable.Tests
 
         public static IEnumerable<object[]> IStructuralComparableCompareToNullComparerNullReferenceInvalidData()
         {
-            // This was not fixed for compatability reasons. See https://github.com/dotnet/corefx/issues/13410
+            // This was not fixed for compatability reasons. See https://github.com/dotnet/runtime/issues/19265
             yield return new object[] { new[] { 1, 2, 3 }, new[] { 1, 2, 3 } };
             yield return new object[] { new[] { 1, 2, 3 }, ImmutableArray.Create(1, 2, 3) };
             // Cache this into a local so the comparands are reference-equal.
@@ -2320,7 +2320,7 @@ namespace System.Collections.Immutable.Tests
             // The reason is since they are contiguous in memory, they call Array.Copy
             // if the source is an array as an optimization, which throws if the types
             // of the arrays do not exactly match up.
-            // More info here: https://github.com/dotnet/corefx/issues/2241
+            // More info here: https://github.com/dotnet/runtime/issues/14794
 
             if (!(source is T[]) || source.GetType() == typeof(T[]))
             {

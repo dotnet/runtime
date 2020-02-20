@@ -89,8 +89,8 @@ namespace System.ComponentModel
 
                         if (commaIndex != -1)
                         {
-                            className = _tabClassNames[i].Substring(0, commaIndex).Trim();
-                            assemblyName = _tabClassNames[i].Substring(commaIndex + 1).Trim();
+                            className = _tabClassNames[i].AsSpan(0, commaIndex).Trim().ToString();
+                            assemblyName = _tabClassNames[i].AsSpan(commaIndex + 1).Trim().ToString();
                         }
                         else
                         {

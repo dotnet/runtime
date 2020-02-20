@@ -10,20 +10,18 @@ namespace AppWithSubDirs
         {
             Console.Write("Hello ");
 
-            // If the caller wants the app to start and wait,
-            // it provides the name of a lock-file to write.
-            // In this case, this test app creates the lock file
-            // and waits until the file is deleted.
-            if (args.Length > 0)
+            // If the caller wants the app to start and wait, it provides the names of two files.
+            // In this case, this test app creates the waitFile, and waits until resumeFile is created
+            if (args.Length == 2)
             {
-                string writeFile = args[0];
+                string waitFile = args[0];
+                string resumeFile = args[1];
 
-                var fs = File.Create(writeFile);
-                fs.Close();
+                File.Create(waitFile).Close();
 
                 Thread.Sleep(200);
 
-                while (File.Exists(writeFile))
+                while (!File.Exists(resumeFile))
                 {
                     Thread.Sleep(100);
                 }

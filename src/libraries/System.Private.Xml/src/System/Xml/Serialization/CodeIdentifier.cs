@@ -179,7 +179,7 @@ namespace System.Xml.Serialization
             if (t.DeclaringType != null && t.DeclaringType != t)
             {
                 index = GetCSharpName(t.DeclaringType, parameters, index, sb);
-                sb.Append(".");
+                sb.Append('.');
             }
             string name = t.Name;
             int nameEnd = name.IndexOf('`');
@@ -190,17 +190,17 @@ namespace System.Xml.Serialization
             if (nameEnd > 0)
             {
                 EscapeKeywords(name.Substring(0, nameEnd), sb);
-                sb.Append("<");
-                int arguments = int.Parse(name.Substring(nameEnd + 1), CultureInfo.InvariantCulture) + index;
+                sb.Append('<');
+                int arguments = int.Parse(name.AsSpan(nameEnd + 1), provider: CultureInfo.InvariantCulture) + index;
                 for (; index < arguments; index++)
                 {
                     sb.Append(GetCSharpName(parameters[index]));
                     if (index < arguments - 1)
                     {
-                        sb.Append(",");
+                        sb.Append(',');
                     }
                 }
-                sb.Append(">");
+                sb.Append('>');
             }
             else
             {
@@ -226,7 +226,7 @@ namespace System.Xml.Serialization
                 for (int i = 0; i < parts.Length; i++)
                 {
                     EscapeKeywords(parts[i], sb);
-                    sb.Append(".");
+                    sb.Append('.');
                 }
             }
 
