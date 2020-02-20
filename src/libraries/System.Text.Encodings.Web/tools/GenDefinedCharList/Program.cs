@@ -36,7 +36,7 @@ namespace GenDefinedCharList
             // <value>;<name>;<category>;...
             foreach (string line in allLines)
             {
-                string[] splitLine = line.Split(new char[] { ';' }, 4);
+                string[] splitLine = line.Split(';', 4);
                 uint codepoint = uint.Parse(splitLine[0], NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
                 string rawName = splitLine[1];
                 string category = splitLine[2];

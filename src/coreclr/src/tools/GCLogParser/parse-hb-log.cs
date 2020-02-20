@@ -800,8 +800,8 @@ namespace parse_hb_log
         static void ParseGCRange(string _strGCRange)
         {
             strGCRange = _strGCRange;
-            int dashIndex= strGCRange.IndexOf('-');
-            if (dashIndex== -1)
+            int dashIndex = strGCRange.IndexOf('-');
+            if (dashIndex == -1)
             {
                 Console.WriteLine("Invalid GC range {0}", strGCRange);
                 return;
@@ -949,7 +949,7 @@ namespace parse_hb_log
                                 budgetMB = Int32.Parse(strTemp);
                                 string strAllocLine = s.Substring(7);
                                 //Console.WriteLine("spliting {0}", strAllocLine);
-                                string[] fieldsAlloc = strAllocLine.Split(new Char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                                string[] fieldsAlloc = strAllocLine.Split(',', StringSplitOptions.RemoveEmptyEntries);
                                 for (int fieldIndex = 0; fieldIndex < procsPerNode; fieldIndex++)
                                 {
                                     AllocMB[procIndexBase + fieldIndex] = Int32.Parse(fieldsAlloc[fieldIndex]);

@@ -406,6 +406,7 @@ namespace System.Net.NetworkInformation
         {
             using (StreamReader sr = new StreamReader(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0x1000, useAsync: false)))
             {
+                char[] separator = new char[] { ' ', ':' };
                 sr.ReadLine();
                 sr.ReadLine();
                 int index = 0;
@@ -414,7 +415,7 @@ namespace System.Net.NetworkInformation
                     string line = sr.ReadLine();
                     if (line.Contains(name))
                     {
-                        string[] pieces = line.Split(new char[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);
+                        string[] pieces = line.Split(separator, StringSplitOptions.RemoveEmptyEntries);
 
                         return new IPInterfaceStatisticsTable()
                         {
