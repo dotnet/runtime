@@ -3662,6 +3662,27 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             op1 = impPopStack().val;
             if (opts.OptimizationEnabled())
             {
+                if (op1->OperIs(GT_CNS_STR))
+                {
+                    // Optimize `ldstr + String::get_Length()` to CNS_INT
+                    // e.g. "Hello".Length => 5
+                    int     length = -1;
+                    LPCWSTR str    = info.compCompHnd->getStringLiteral(op1->AsStrCon()->gtScpHnd,
+                                                                     op1->AsStrCon()->gtSconCPX, &length);
+                    if (length >= 0)
+                    {
+                        retNode = gtNewIconNode(length);
+                        if (str != nullptr) // can be NULL for dynamic context
+                        {
+                            JITDUMP("Optimizing '\"%ws\".Length' to just '%d'\n", str, length);
+                        }
+                        else
+                        {
+                            JITDUMP("Optimizing 'CNS_STR.Length' to just '%d'\n", length);
+                        }
+                        break;
+                    }
+                }
                 GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
                 op1                   = arrLen;
             }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -75,7 +76,7 @@ namespace System
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int CompareTo(T other) => _comparer.Compare(_value, other);
+            public int CompareTo([AllowNull] T other) => _comparer.Compare(_value, other);
         }
     }
 }

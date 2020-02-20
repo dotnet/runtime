@@ -200,12 +200,12 @@ namespace System.Net.Mime
 
             // TryParse will parse in base 10 by default.  do not allow any styles of input beyond the default
             // which is numeric values only
-            if (!int.TryParse(offset.Substring(1, 2), NumberStyles.None, CultureInfo.InvariantCulture, out hours))
+            if (!int.TryParse(offset.AsSpan(1, 2), NumberStyles.None, CultureInfo.InvariantCulture, out hours))
             {
                 throw new FormatException(SR.MailDateInvalidFormat);
             }
 
-            if (!int.TryParse(offset.Substring(3, 2), NumberStyles.None, CultureInfo.InvariantCulture, out minutes))
+            if (!int.TryParse(offset.AsSpan(3, 2), NumberStyles.None, CultureInfo.InvariantCulture, out minutes))
             {
                 throw new FormatException(SR.MailDateInvalidFormat);
             }
@@ -273,7 +273,7 @@ namespace System.Net.Mime
             }
 
             // extract the time portion and remove all leading and trailing whitespace
-            string date = data.Substring(0, indexOfTimeZoneSeparator).Trim();
+            string date = data.AsSpan(0, indexOfTimeZoneSeparator).Trim().ToString();
 
             // attempt to parse the DateTime component.
             DateTime dateValue;
@@ -287,7 +287,7 @@ namespace System.Net.Mime
 
             // extract the second half of the string. This will start with at least one whitespace character.
             // Trim the string to remove these characters.
-            string timeZoneString = data.Substring(indexOfTimeZoneSeparator).Trim();
+            string timeZoneString = data.AsSpan(indexOfTimeZoneSeparator).Trim().ToString();
 
             // find, if any, the first whitespace character after the timezone.
             // These will be CFWS and must be ignored. Remove them.

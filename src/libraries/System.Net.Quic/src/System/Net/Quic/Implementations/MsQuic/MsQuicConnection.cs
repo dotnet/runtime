@@ -86,9 +86,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal async ValueTask SetSecurityConfigForConnection(X509Certificate cert)
+        internal async ValueTask SetSecurityConfigForConnection(X509Certificate cert, string certFilePath, string privateKeyFilePath)
         {
-            _securityConfig = await MsQuicApi.Api.CreateSecurityConfig(cert);
+            _securityConfig = await MsQuicApi.Api.CreateSecurityConfig(cert, certFilePath, privateKeyFilePath);
             // TODO this isn't being set correctly
             MsQuicParameterHelpers.SetSecurityConfig(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.SEC_CONFIG, _securityConfig.NativeObjPtr);
         }

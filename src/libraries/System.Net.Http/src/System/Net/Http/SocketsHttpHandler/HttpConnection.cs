@@ -266,7 +266,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(Kind == HttpConnectionKind.Proxy);
 
-                // TODO https://github.com/dotnet/corefx/issues/28863:
+                // TODO https://github.com/dotnet/runtime/issues/25782:
                 // Uri.IdnHost is missing '[', ']' characters around IPv6 address.
                 // So, we need to add them manually for now.
                 if (uri.HostNameType == UriHostNameType.IPv6)
@@ -356,7 +356,7 @@ namespace System.Net.Http
                         Debug.Assert(request.RequestUri.Scheme == Uri.UriSchemeHttp);
                         await WriteBytesAsync(s_httpSchemeAndDelimiter).ConfigureAwait(false);
 
-                        // TODO https://github.com/dotnet/corefx/issues/28863:
+                        // TODO https://github.com/dotnet/runtime/issues/25782:
                         // Uri.IdnHost is missing '[', ']' characters around IPv6 address.
                         // So, we need to add them manually for now.
                         if (request.RequestUri.HostNameType == UriHostNameType.IPv6)

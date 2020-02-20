@@ -26,12 +26,12 @@ namespace Internal.Cryptography.Pal
             ICertificatePalCore certificatePal,
             ReadOnlySpan<char> password)
         {
-            AsymmetricAlgorithm alg = null;
-            SafeEvpPKeyHandle privateKey = ((OpenSslX509CertificateReader)certificatePal).PrivateKeyHandle;
+            AsymmetricAlgorithm? alg = null;
+            SafeEvpPKeyHandle? privateKey = ((OpenSslX509CertificateReader)certificatePal).PrivateKeyHandle;
 
             try
             {
-                alg = new RSAOpenSsl(privateKey);
+                alg = new RSAOpenSsl(privateKey!);
             }
             catch (CryptographicException)
             {
@@ -41,7 +41,7 @@ namespace Internal.Cryptography.Pal
             {
                 try
                 {
-                    alg = new ECDsaOpenSsl(privateKey);
+                    alg = new ECDsaOpenSsl(privateKey!);
                 }
                 catch (CryptographicException)
                 {
@@ -52,7 +52,7 @@ namespace Internal.Cryptography.Pal
             {
                 try
                 {
-                    alg = new DSAOpenSsl(privateKey);
+                    alg = new DSAOpenSsl(privateKey!);
                 }
                 catch (CryptographicException)
                 {
@@ -83,7 +83,7 @@ namespace Internal.Cryptography.Pal
             // then free the PKCS7*, since we don't need it any more.
             using (SafeX509StackHandle certs = Interop.Crypto.NewX509Stack())
             {
-                foreach (X509Certificate2 cert in _certs)
+                foreach (X509Certificate2 cert in _certs!)
                 {
                     PushHandle(cert.Handle, certs);
                     GC.KeepAlive(cert); // ensure cert's safe handle isn't finalized while raw handle is in use

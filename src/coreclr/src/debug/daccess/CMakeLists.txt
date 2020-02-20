@@ -41,7 +41,9 @@ target_precompile_header(TARGET daccess HEADER stdafx.h)
 
 add_dependencies(daccess eventing_headers)
 
-if(CLR_CMAKE_HOST_UNIX)
+if(CLR_CMAKE_HOST_DARWIN OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
+  add_definitions(-DUSE_DAC_TABLE_RVA)
+
   add_custom_command(
     OUTPUT  ${GENERATED_INCLUDE_DIR}/dactablerva.h
     DEPENDS coreclr
@@ -61,4 +63,4 @@ if(CLR_CMAKE_HOST_UNIX)
   )
 
   add_dependencies(daccess dactablerva_header)
-endif(CLR_CMAKE_HOST_UNIX)
+endif(CLR_CMAKE_HOST_DARWIN OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)

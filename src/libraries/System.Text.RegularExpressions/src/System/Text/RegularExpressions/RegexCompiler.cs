@@ -2569,7 +2569,7 @@ namespace System.Text.RegularExpressions
                 // the amount of IL and asm that results from this unrolling. Also, this optimization
                 // is subject to endianness issues if the generated code is used on a machine with a
                 // different endianness; for now, we simply disable the optimization if the generated
-                // code is being saved. TODO https://github.com/dotnet/corefx/issues/39227.
+                // code is being saved. TODO https://github.com/dotnet/runtime/issues/30153.
                 if (!caseInsensitive && !_persistsAssembly)
                 {
                     // On 64-bit, process 4 characters at a time until the string isn't at least 4 characters long.

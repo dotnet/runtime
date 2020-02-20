@@ -11,11 +11,13 @@ namespace System.Text.Json.Serialization.Converters
         private const string KeyName = "Key";
         private const string ValueName = "Value";
 
-        // todo: move these to JsonSerializerOptions and use the proper encoding.
+        // todo: https://github.com/dotnet/runtime/issues/1197
+        // move these to JsonSerializerOptions and use the proper encoding.
         private static readonly JsonEncodedText _keyName = JsonEncodedText.Encode(KeyName, encoder: null);
         private static readonly JsonEncodedText _valueName = JsonEncodedText.Encode(ValueName, encoder: null);
 
-        // todo: it is possible to cache the underlying converters since this is an internal converter and
+        // todo: https://github.com/dotnet/runtime/issues/32352
+        // it is possible to cache the underlying converters since this is an internal converter and
         // an instance is created only once for each JsonSerializerOptions instance.
 
         internal override bool OnTryRead(

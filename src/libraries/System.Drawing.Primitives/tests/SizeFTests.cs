@@ -111,7 +111,7 @@ namespace System.Drawing.PrimitivesTest
 
             // If SizeF implements IEquatable<SizeF> (e.g in .NET Core), then classes that are implicitly
             // convertible to SizeF can potentially be equal.
-            // See https://github.com/dotnet/corefx/issues/5255.
+            // See https://github.com/dotnet/runtime/issues/16050.
             bool expectsImplicitCastToSizeF = typeof(IEquatable<SizeF>).IsAssignableFrom(size.GetType());
             Assert.Equal(expectsImplicitCastToSizeF, size.Equals(new Size(0, 0)));
 

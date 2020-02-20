@@ -1,6 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -9,7 +9,6 @@
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <ProjectReference Include="..\..\System.Memory\ref\System.Memory.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Text.Encodings.Web\ref\System.Text.Encodings.Web.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
     <Reference Include="mscorlib" />
@@ -17,6 +16,10 @@
     <Reference Include="System.Memory" />
     <Reference Include="System.Threading.Tasks.Extensions" />
     <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
+  </ItemGroup>
+  <!-- Since S.T.E.W continues to be built live within this repo (as both an in-box library and a standalone netstandard2.0 assembly),
+    we should use ProjectReference instead of Reference to make sure that its ref assembly gets built first before S.T.Json, regardless of the TFM. -->
+  <ItemGroup>
     <ProjectReference Include="..\..\System.Text.Encodings.Web\ref\System.Text.Encodings.Web.csproj" />
   </ItemGroup>
 </Project>

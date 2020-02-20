@@ -2551,7 +2551,11 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
 
     unsigned alignment = CODE_SIZE_ALIGN;
 
-    if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+    if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+    {
+        alignment = max(alignment, 32);
+    }
+    else if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
     {
         alignment = max(alignment, 16);
     }

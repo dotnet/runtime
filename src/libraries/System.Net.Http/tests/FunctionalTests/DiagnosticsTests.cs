@@ -175,7 +175,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString()).Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/23771", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1477", TestPlatforms.AnyUnix)]
         [OuterLoop("Uses external server")]
         [Theory]
         [InlineData(false)]
@@ -270,7 +270,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString()).Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/23209")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23167")]
         [OuterLoop("Uses external server")]
         [Fact]
         public void SendAsync_ExpectedDiagnosticCancelledLogging()
@@ -1046,7 +1046,7 @@ namespace System.Net.Http.Functional.Tests
             }, switchValue.ToString()).Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/23209")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23167")]
         [OuterLoop("Uses external server")]
         [Fact]
         public void SendAsync_ExpectedDiagnosticCancelledActivityLogging()

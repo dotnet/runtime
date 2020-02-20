@@ -517,6 +517,17 @@ BOOL interceptor_ICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
     return temp;
 }
 
+LPCWSTR interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,  /* IN  */
+                                           unsigned              metaTOK, /* IN  */
+                                           int*                  length   /* OUT */
+                                           )
+{
+    mc->cr->AddCall("getStringLiteral");
+    LPCWSTR temp = original_ICorJitInfo->getStringLiteral(module, metaTOK, length);
+    mc->recGetStringLiteral(module, metaTOK, *length, temp);
+    return temp;
+}
+
 BOOL interceptor_ICJI::shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope)
 {
     mc->cr->AddCall("shouldEnforceCallvirtRestriction");

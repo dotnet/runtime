@@ -46,7 +46,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void Constructor3_ArrayWithNullAsCatalogsArgument_ShouldThrowArgument()
         {
             var catalogs = new ComposablePartCatalog[] { null };
@@ -95,7 +95,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void GetExports_NullAsConstraintArgument_ShouldThrowArgumentNull()
         {
             var catalog = CreateAggregateCatalog();

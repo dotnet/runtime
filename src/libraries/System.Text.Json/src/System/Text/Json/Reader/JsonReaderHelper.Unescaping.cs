@@ -39,7 +39,7 @@ namespace System.Text.Json
         // Reject any invalid UTF-8 data rather than silently replacing.
         public static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-        // TODO: Similar to escaping, replace the unescaping logic with publicly shipping APIs from https://github.com/dotnet/corefx/issues/33509
+        // TODO: Similar to escaping, replace the unescaping logic with publicly shipping APIs from https://github.com/dotnet/runtime/issues/27919
         public static string GetUnescapedString(ReadOnlySpan<byte> utf8Source, int idx)
         {
             byte[]? unescapedArray = null;

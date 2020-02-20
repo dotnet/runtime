@@ -10,7 +10,7 @@
 #else
     #include "pal_types.h"
     #include "pal_compiler.h"
-    #define FUNCTIONEXPORT DLLEXPORT
+    #define FUNCTIONEXPORT PALEXPORT
     #define FUNCTIONCALLINGCONVENCTION
 #endif
 

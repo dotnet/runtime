@@ -144,7 +144,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/17209", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
         public async Task Accept_WithTargetSocket_Success()
         {
             if (!SupportsAcceptIntoExistingSocket)
@@ -166,7 +166,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/17209", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
         [OuterLoop]
         [Theory]
         [InlineData(false)]
@@ -221,7 +221,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/17209", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
         public void Accept_WithAlreadyBoundTargetSocket_Fails()
         {
             if (!SupportsAcceptIntoExistingSocket)
@@ -242,7 +242,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/17209", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
         public async Task Accept_WithInUseTargetSocket_Fails()
         {
             if (!SupportsAcceptIntoExistingSocket)

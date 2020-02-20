@@ -730,6 +730,35 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2()));
             break;
 
+        case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Sd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
+                       // fminp - scalar)
+            if (id->idOpSize() == EA_8BYTE)
+            {
+                assert(id->idInsOpt() == INS_OPTS_2D);
+            }
+            else
+            {
+                assert(id->idOpSize() == EA_4BYTE);
+                assert(id->idInsOpt() == INS_OPTS_2S);
+            }
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
+
+        case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
+            assert(id->idOpSize() == EA_4BYTE);
+            assert(id->idInsOpt() == INS_OPTS_4S);
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
+
+        case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
+            assert(id->idOpSize() == EA_8BYTE);
+            assert(id->idInsOpt() == INS_OPTS_2D);
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
+
         case IF_DV_3A: // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
             assert(isValidVectorDatasize(id->idOpSize()));
             assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
@@ -894,6 +923,11 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn      (abs, neg - vector)
         case IF_DV_2P: // DV_2P   ................ ......nnnnnddddd      Vd Vn      (aes*, sha1su1) - Vd both source and
                        // destination
+
+        case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Sd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
+                       // fminp - scalar)
+        case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
+        case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
 
         case IF_DV_3A:  // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
         case IF_DV_3AI: // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector)
@@ -1527,7 +1561,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode2M[2] = {IF_DV_3A, IF_DV_3AI};
     const static insFormat formatEncode2N[2] = {IF_DV_2N, IF_DV_2O};
     const static insFormat formatEncode2O[2] = {IF_DV_3E, IF_DV_3A};
-    const static insFormat formatEncode2P[2] = {IF_DV_2G, IF_DV_3B};
+    const static insFormat formatEncode2P[2] = {IF_DV_2Q, IF_DV_3B};
+    const static insFormat formatEncode2Q[2] = {IF_DV_2S, IF_DV_3A};
 
     code_t    code           = BAD_CODE;
     insFormat insFmt         = emitInsFormat(ins);
@@ -1976,6 +2011,17 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             }
             break;
 
+        case IF_EN2Q:
+            for (index = 0; index < 2; index++)
+            {
+                if (fmt == formatEncode2Q[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
+            break;
+
         case IF_BI_0A:
         case IF_BI_0B:
         case IF_BI_0C:
@@ -2038,6 +2084,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case IF_DV_2N:
         case IF_DV_2O:
         case IF_DV_2P:
+        case IF_DV_2R:
         case IF_DV_3A:
         case IF_DV_3AI:
         case IF_DV_3B:
@@ -4293,12 +4340,34 @@ void emitter::emitIns_R_R(
             break;
 
         case INS_faddp:
+        case INS_fmaxnmp:
+        case INS_fmaxp:
+        case INS_fminnmp:
+        case INS_fminp:
             // Scalar operation
-            assert(insOptsNone(opt));
-            assert(isValidVectorElemsizeFloat(size));
+            assert(((size == EA_4BYTE) && (opt == INS_OPTS_2S)) || ((size == EA_8BYTE) && (opt == INS_OPTS_2D)));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
-            fmt = IF_DV_2G;
+            fmt = IF_DV_2Q;
+            break;
+
+        case INS_fmaxnmv:
+        case INS_fmaxv:
+        case INS_fminnmv:
+        case INS_fminv:
+            assert(size == EA_4BYTE);
+            assert(opt == INS_OPTS_4S);
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            fmt = IF_DV_2R;
+            break;
+
+        case INS_addp:
+            assert(size == EA_8BYTE);
+            assert(opt == INS_OPTS_2D);
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            fmt = IF_DV_2S;
             break;
 
         case INS_fcvt:
@@ -5304,14 +5373,19 @@ void emitter::emitIns_R_R_R(
         case INS_saba:
         case INS_sabd:
         case INS_smax:
+        case INS_smaxp:
         case INS_smin:
+        case INS_sminp:
         case INS_uaba:
         case INS_uabd:
         case INS_umax:
+        case INS_umaxp:
         case INS_umin:
+        case INS_uminp:
             assert(elemsize != EA_8BYTE); // can't use 2D or 1D
             __fallthrough;
 
+        case INS_addp:
         case INS_uzp1:
         case INS_uzp2:
         case INS_zip1:
@@ -5393,7 +5467,9 @@ void emitter::emitIns_R_R_R(
         case INS_fsub:
         case INS_fdiv:
         case INS_fmax:
+        case INS_fmaxnm:
         case INS_fmin:
+        case INS_fminnm:
         case INS_fabd:
         case INS_fmul:
         case INS_fmulx:
@@ -5432,6 +5508,11 @@ void emitter::emitIns_R_R_R(
             break;
 
         case INS_faddp:
+        case INS_fmaxnmp:
+        case INS_fmaxp:
+        case INS_fminnmp:
+        case INS_fminp:
+
         case INS_fmla:
         case INS_fmls:
             assert(isVectorRegister(reg1));
@@ -10074,7 +10155,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_DV_2G: // DV_2G   .........X...... ......nnnnnddddd      Vd Vn      (fmov,fcvtXX - register)
+        case IF_DV_2G: // DV_2G   .........X...... ......nnnnnddddd      Vd Vn      (fmov, fcvtXX - register)
+        case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Vd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
+                       // fminp - scalar)
             elemsize = id->idOpSize();
             code     = emitInsCode(ins, fmt);
             code |= insEncodeFloatElemsize(elemsize); // X
@@ -10119,6 +10202,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DV_2L: // DV_2L   ........XX...... ......nnnnnddddd      Vd Vn      (abs, neg - scalar)
+        case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
             elemsize = id->idOpSize();
             code     = emitInsCode(ins, fmt);
             code |= insEncodeElemsize(elemsize);   // XX
@@ -10162,6 +10246,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code     = emitInsCode(ins, fmt);
             code |= insEncodeReg_Vd(id->idReg1()); // ddddd
             code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn     (fmaxnmv, fmaxv, fminnmv, fminv)
+            code     = emitInsCode(ins, fmt);
+            datasize = optGetDatasize(id->idInsOpt());
+            elemsize = optGetElemsize(id->idInsOpt());
+            code |= insEncodeVectorsize(datasize);    // Q
+            code |= insEncodeFloatElemsize(elemsize); // X
+            code |= insEncodeReg_Vd(id->idReg1());    // ddddd
+            code |= insEncodeReg_Vn(id->idReg2());    // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -11713,6 +11808,15 @@ void emitter::emitDispIns(
             emitDispReg(id->idReg2(), srcsize, false);
             break;
 
+        case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Sd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
+                       // fminp - scalar)
+        case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
+        case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
+            elemsize = id->idOpSize();
+            emitDispReg(id->idReg1(), elemsize, true);
+            emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            break;
+
         case IF_DV_3A: // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm  (vector)
         case IF_DV_3B: // DV_3B   .Q.........mmmmm ......nnnnnddddd      Vd Vn Vm  (vector)
             emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
@@ -12699,7 +12803,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_DV_2G: // fmov, fabs, fneg, fsqrt, faddp, fcmXX, fcvtXX, frintX, scvtf, ucvtf (scalar)
+        case IF_DV_2G: // fmov, fabs, fneg, fsqrt, fcmXX, fcvtXX, frintX, scvtf, ucvtf (scalar)
             switch (ins)
             {
                 case INS_fmov:
@@ -12710,7 +12814,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
                 case INS_fabs:
                 case INS_fneg:
-                case INS_faddp:
 
                 case INS_fcvtas:
                 case INS_fcvtau:
@@ -12764,19 +12867,47 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_DV_3B: // fadd, fsub, fdiv, fmul, fmulx, fmla, fmls, fmin, fmax, fabd, faddp, fcmXX (vector)
+        case IF_DV_2Q: // faddp, fmaxnmp, fmaxp, fminnmp, fminp (scalar)
+        case IF_DV_2R: // fmaxnmv, fmaxv, fminnmv, fminv
+        case IF_DV_2S: // addp (scalar)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_4C;
+            break;
+
+        case IF_DV_3B: // fadd, fsub, fdiv, fmul, fmulx, fmla, fmls, fmin, fminnm, fmax, fmaxnm, fabd, fcmXX
+                       // faddp, fmaxnmp, fmaxp, fminnmp, fminp, addp (vector)
             switch (ins)
             {
                 case INS_fmin:
+                case INS_fminnm:
                 case INS_fmax:
+                case INS_fmaxnm:
                 case INS_fabd:
                 case INS_fadd:
                 case INS_fsub:
-                case INS_faddp:
                 case INS_fmul:
                 case INS_fmulx:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_faddp:
+                case INS_fmaxnmp:
+                case INS_fmaxp:
+                case INS_fminnmp:
+                case INS_fminp:
+                case INS_addp:
+                    if (id->idOpSize() == EA_16BYTE)
+                    {
+                        // Q-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    else
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
                     break;
 
                 case INS_facge:
@@ -12833,13 +12964,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_4C;
             break;
 
-        case IF_DV_3D: // fadd, fsub, fdiv, fmul, fmulx, fmla, fmls, fmin, fmax, fabd, faddp, fcmXX (scalar)
+        case IF_DV_3D: // fadd, fsub, fdiv, fmul, fmulx, fmla, fmls, fmin, fminnm, fmax, fmaxnm, fabd, fcmXX (scalar)
             switch (ins)
             {
                 case INS_fadd:
                 case INS_fsub:
                 case INS_fmin:
+                case INS_fminnm:
                 case INS_fmax:
+                case INS_fmaxnm:
                 case INS_fmul:
                 case INS_fmulx:
                 case INS_fnmul:
@@ -12948,7 +13081,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_DV_3A: // (vector)
             // add, sub, mul, mla, mls, cmeq, cmge, cmgt, cmhi, cmhs, ctst,
-            // pmul, saba, uaba, sabd, uabd, umin, umax, smin, smax,
+            // pmul, saba, uaba, sabd, uabd, umin, uminp, umax, umaxp, smin, sminp, smax, smaxp
             switch (ins)
             {
                 case INS_add:
@@ -12958,10 +13091,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_cmgt:
                 case INS_cmhi:
                 case INS_cmhs:
-                case INS_umin:
-                case INS_umax:
-                case INS_smin:
                 case INS_smax:
+                case INS_smaxp:
+                case INS_smin:
+                case INS_sminp:
+                case INS_umax:
+                case INS_umaxp:
+                case INS_umin:
+                case INS_uminp:
                 case INS_uzp1:
                 case INS_uzp2:
                 case INS_zip1:

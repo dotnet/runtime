@@ -38,7 +38,7 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void SampleServicesCorrectlyImported()
         {
             var container = new ContainerConfiguration()

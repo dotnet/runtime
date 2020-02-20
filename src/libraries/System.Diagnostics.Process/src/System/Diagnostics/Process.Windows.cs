@@ -691,7 +691,7 @@ namespace System.Diagnostics
 
             if (!string.IsNullOrEmpty(arguments))
             {
-                commandLine.Append(" ");
+                commandLine.Append(' ');
                 commandLine.Append(arguments);
             }
 
