@@ -96,7 +96,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 }
                 else
                 {
-                    using (RSA rsa = cert.GetRSAPrivateKey())
+                    using (RSA? rsa = cert!.GetRSAPrivateKey())
                     {
                         return DecryptKey(rsa, encryptionPadding, encryptedKey, out exception);
                     }
@@ -168,7 +168,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 throw new CryptographicException(SR.Cryptography_Cms_UnknownAlgorithm);
             }
 
-            using (RSA rsa = recipient.Certificate.GetRSAPublicKey())
+            using (RSA rsa = recipient.Certificate.GetRSAPublicKey()!)
             {
                 ktri.EncryptedKey = rsa.Encrypt(cek, padding);
             }
@@ -178,7 +178,7 @@ namespace Internal.Cryptography.Pal.AnyOS
         }
 
         private static byte[]? DecryptKey(
-            RSA privateKey,
+            RSA? privateKey,
             RSAEncryptionPadding encryptionPadding,
             ReadOnlySpan<byte> encryptedKey,
             out Exception? exception)

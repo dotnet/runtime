@@ -59,7 +59,7 @@ namespace System.Security.Cryptography.Pkcs
                             _signatureAlgorithm));
                 }
 
-                ECDsa key = certificate.GetECDsaPublicKey();
+                ECDsa? key = certificate.GetECDsaPublicKey();
 
                 if (key == null)
                 {
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Pkcs
                 [NotNullWhen(true)] out byte[]? signatureValue)
             {
                 // If there's no private key, fall back to the public key for a "no private key" exception.
-                ECDsa key = certKey as ECDsa ??
+                ECDsa? key = certKey as ECDsa ??
                     PkcsPal.Instance.GetPrivateKeyForSigning<ECDsa>(certificate, silent) ??
                     certificate.GetECDsaPublicKey();
 
@@ -157,7 +157,7 @@ namespace System.Security.Cryptography.Pkcs
                     {
                         var signedHash = new ReadOnlySpan<byte>(rented, 0, bytesWritten);
 
-                        if (key != null && !certificate.GetECDsaPublicKey().VerifyHash(dataHash, signedHash))
+                        if (key != null && !certificate.GetECDsaPublicKey()!.VerifyHash(dataHash, signedHash))
                         {
                             // key did not match certificate
                             signatureValue = null;

@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Pkcs
                     digestAlgorithmName,
                     valueHash.Length);
 
-                RSA publicKey = certificate.GetRSAPublicKey();
+                RSA? publicKey = certificate.GetRSAPublicKey();
 
                 if (publicKey == null)
                 {
@@ -136,10 +136,10 @@ namespace System.Security.Cryptography.Pkcs
                 [NotNullWhen(true)] out Oid? signatureAlgorithm,
                 [NotNullWhen(true)] out byte[]? signatureValue)
             {
-                RSA certPublicKey = certificate.GetRSAPublicKey();
+                RSA certPublicKey = certificate.GetRSAPublicKey()!;
 
                 // If there's no private key, fall back to the public key for a "no private key" exception.
-                RSA privateKey = key as RSA ??
+                RSA? privateKey = key as RSA ??
                     PkcsPal.Instance.GetPrivateKeyForSigning<RSA>(certificate, silent) ??
                     certPublicKey;
 
