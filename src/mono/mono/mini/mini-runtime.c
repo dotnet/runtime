@@ -3693,8 +3693,6 @@ mini_parse_debug_option (const char *option)
 		mini_debug_options.gdb = TRUE;
 	else if (!strcmp (option, "lldb"))
 		mini_debug_options.lldb = TRUE;
-	else if (!strcmp (option, "llvm-disable-self-init"))
-		mini_debug_options.llvm_disable_self_init = TRUE;
 	else if (!strcmp (option, "llvm-disable-inlining"))
 		mini_debug_options.llvm_disable_inlining = TRUE;
 	else if (!strcmp (option, "llvm-disable-implicit-null-checks"))
@@ -4015,7 +4013,7 @@ llvm_init_inner (void)
 	if (!mono_llvm_load (NULL))
 		return FALSE;
 
-	mono_llvm_init ();
+	mono_llvm_init (!mono_compile_aot);
 	return TRUE;
 }
 #endif
@@ -4270,7 +4268,7 @@ mini_init (const char *filename, const char *runtime_version)
 		}
 	}
 	if (mono_use_llvm)
-		mono_llvm_init ();
+		mono_llvm_init (!mono_compile_aot);
 #endif
 
 	mono_trampolines_init ();

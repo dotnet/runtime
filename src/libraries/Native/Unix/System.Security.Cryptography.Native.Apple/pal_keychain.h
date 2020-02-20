@@ -18,7 +18,7 @@ Errors of the item having no keychain are suppressed, returning success (0) with
 
 For all other situations, see SecKeychainItemCopyKeychain documentation.
 */
-DLLEXPORT int32_t AppleCryptoNative_SecKeychainItemCopyKeychain(SecKeychainItemRef item, SecKeychainRef* pKeychainOut);
+PALEXPORT int32_t AppleCryptoNative_SecKeychainItemCopyKeychain(SecKeychainItemRef item, SecKeychainRef* pKeychainOut);
 
 /*
 Create a keychain at the specified location with a given (UTF-8 encoded) lock passphrase.
@@ -28,7 +28,7 @@ Returns the result of SecKeychainCreate.
 Output:
 pKeychainOut: The SecKeychainRef created by this function
 */
-DLLEXPORT int32_t AppleCryptoNative_SecKeychainCreate(const char* pathName,
+PALEXPORT int32_t AppleCryptoNative_SecKeychainCreate(const char* pathName,
                                                       uint32_t passphraseLength,
                                                       const uint8_t* passphraseUtf8,
                                                       SecKeychainRef* pKeychainOut);
@@ -38,7 +38,7 @@ Delete a keychain, including the file on disk.
 
 Returns the result of SecKeychainDelete
 */
-DLLEXPORT int32_t AppleCryptoNative_SecKeychainDelete(SecKeychainRef keychain);
+PALEXPORT int32_t AppleCryptoNative_SecKeychainDelete(SecKeychainRef keychain);
 
 /*
 Open the default keychain.
@@ -49,7 +49,7 @@ Returns the result of SecKeychainCopyDefault.
 Output:
 pKeyChainOut: Receives the SecKeychainRef for the default keychain.
 */
-DLLEXPORT int32_t AppleCryptoNative_SecKeychainCopyDefault(SecKeychainRef* pKeychainOut);
+PALEXPORT int32_t AppleCryptoNative_SecKeychainCopyDefault(SecKeychainRef* pKeychainOut);
 
 /*
 Open the named keychain (full path to the file).
@@ -59,14 +59,14 @@ Returns the result of SecKeychainOpen.
 Output:
 pKeychainOut: Receives the SecKeychainRef for the named keychain.
 */
-DLLEXPORT int32_t AppleCryptoNative_SecKeychainOpen(const char* pszKeychainPath, SecKeychainRef* pKeychainOut);
+PALEXPORT int32_t AppleCryptoNative_SecKeychainOpen(const char* pszKeychainPath, SecKeychainRef* pKeychainOut);
 
 /*
 Unlock an opened keychain with a given (UTF-8 encoded) lock passphrase.
 
 Returns the result of SecKeychainUnlock.
 */
-DLLEXPORT int32_t AppleCryptoNative_SecKeychainUnlock(SecKeychainRef keychain,
+PALEXPORT int32_t AppleCryptoNative_SecKeychainUnlock(SecKeychainRef keychain,
                                                       uint32_t passphraseLength,
                                                       const uint8_t* passphraseUtf8);
 
@@ -75,7 +75,7 @@ Set a keychain to never (automatically) lock.
 
 Returns the result of SecKeychainSetSettings to a never-auto-lock policy.
 */
-DLLEXPORT int32_t AppleCryptoNative_SetKeychainNeverLock(SecKeychainRef keychain);
+PALEXPORT int32_t AppleCryptoNative_SetKeychainNeverLock(SecKeychainRef keychain);
 
 /*
 Enumerate the certificate objects within the given keychain.
@@ -87,7 +87,7 @@ pCertsOut: When the return value is not 1, NULL. Otherwise NULL on "no certs fou
 (including a single match).
 pOSStatus: Receives the last OSStatus value.
 */
-DLLEXPORT int32_t
+PALEXPORT int32_t
 AppleCryptoNative_SecKeychainEnumerateCerts(SecKeychainRef keychain, CFArrayRef* pCertsOut, int32_t* pOSStatus);
 
 /*
@@ -103,7 +103,7 @@ pCertsOut: When the return value is not 1, NULL. Otherwise NULL on "no certs fou
 (including a single match).
 pOSStatus: Receives the last OSStatus value.
 */
-DLLEXPORT int32_t AppleCryptoNative_SecKeychainEnumerateIdentities(SecKeychainRef keychain,
+PALEXPORT int32_t AppleCryptoNative_SecKeychainEnumerateIdentities(SecKeychainRef keychain,
                                                                    CFArrayRef* pIdentitiesOut,
                                                                    int32_t* pOSStatus);
 
@@ -118,7 +118,7 @@ any other value is invalid
 Output:
 pOSStatus: Receives the last OSStatus value..
 */
-DLLEXPORT int32_t
+PALEXPORT int32_t
 AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, int32_t* pOSStatus);
 
 /*
@@ -135,5 +135,5 @@ any other value is invalid
 Output:
 pOSStatus: Receives the last OSStatus value..
 */
-DLLEXPORT int32_t
+PALEXPORT int32_t
 AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, uint8_t isReadOnlyMode, int32_t* pOSStatus);

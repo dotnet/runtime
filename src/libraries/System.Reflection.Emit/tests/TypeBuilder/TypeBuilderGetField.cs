@@ -33,12 +33,14 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void GetField_TypeNotTypeBuilder_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>(null, () => TypeBuilder.GetField(typeof(int), typeof(int).GetField("MaxValue")));
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void GetField_DeclaringTypeOfFieldNotGenericTypeDefinitionOfType_ThrowsArgumentException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -56,6 +58,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void GetField_TypeNotGeneric_ThrowsArgumentException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);

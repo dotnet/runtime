@@ -162,6 +162,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/mono/mono/issues/14918", TestRuntimes.Mono)]
         public void ConstantField(bool useInterpreter)
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.ConstantString))[0];

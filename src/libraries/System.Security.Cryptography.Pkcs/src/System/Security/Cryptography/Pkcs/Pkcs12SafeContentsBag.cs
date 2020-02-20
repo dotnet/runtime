@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Pkcs
 {
     public sealed class Pkcs12SafeContentsBag : Pkcs12SafeBag
     {
-        public Pkcs12SafeContents SafeContents { get; private set; }
+        public Pkcs12SafeContents? SafeContents { get; private set; }
 
         private Pkcs12SafeContentsBag(ReadOnlyMemory<byte> encoded)
             : base(Oids.Pkcs12SafeContentsBag, encoded)

@@ -15,7 +15,7 @@ internal partial class Interop
             SafeHashHandle hHash,
             bool Final,
             int dwFlags,
-            byte[] pbData,
+            byte[]? pbData,
             ref int pdwDataLen,
             int dwBufLen);
     }

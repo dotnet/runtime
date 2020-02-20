@@ -95,7 +95,7 @@ namespace System.Security.AccessControl
         {
         }
 
-        private static Exception _HandleErrorCode(int errorCode, string name, SafeHandle handle, object context)
+        private static Exception? _HandleErrorCode(int errorCode, string? name, SafeHandle? handle, object? context)
         {
             return _HandleErrorCodeCore(errorCode, name, handle, context);
         }

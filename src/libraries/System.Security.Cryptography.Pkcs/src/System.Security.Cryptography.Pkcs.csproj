@@ -337,9 +337,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptRc2Version.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.CryptRc2Version.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptReleaseContext.cs">
-      <Link>Common\Interop\Windows\Crypt32\Interop.CryptReleaseContext.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.DATA_BLOB.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs</Link>
     </Compile>

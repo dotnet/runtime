@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Xunit;
 
@@ -107,7 +109,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonElement>(array[0]);
             Assert.Equal(JsonValueKind.Object, ((JsonElement)array[0]).ValueKind);
 
-            // Scenario described in https://github.com/dotnet/corefx/issues/36169
+            // Scenario described in https://github.com/dotnet/runtime/issues/29021
             array = JsonSerializer.Deserialize<object[]>("[1, false]");
             Assert.Equal(2, array.Length);
             Assert.IsType<JsonElement>(array[0]);
@@ -213,22 +215,161 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadObjectFail_ReferenceTypeMissingParameterlessConstructor()
+        public static void ReadObjectFail_ReferenceTypeMissingPublicParameterlessConstructor()
         {
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<PublicParameterizedConstructorTestClass>(@"{""Name"":""Name!""}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithInternalParameterlessCtor>(@"{""Name"":""Name!""}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithPrivateParameterlessCtor>(@"{""Name"":""Name!""}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<CollectionWithoutPublicParameterlessCtor>(@"[""foo"", 1, false]"));
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericClassWithProtectedInternalCtor<string>>("{\"Result\":null}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ConcreteDerivedClassWithNoPublicDefaultCtor>("{\"ErrorString\":\"oops\"}"));
         }
 
-        class PublicParameterizedConstructorTestClass
+        private class PublicParameterizedConstructorTestClass
         {
-            private readonly string _name;
             public PublicParameterizedConstructorTestClass(string name)
             {
-                _name = name;
+                Debug.Fail("The JsonSerializer should not be callin non-public ctors, by default.");
             }
-            public string Name
+
+            private PublicParameterizedConstructorTestClass(int internalId)
             {
-                get { return _name; }
+                Name = internalId.ToString();
             }
+
+            public string Name { get; }
+
+            public static PublicParameterizedConstructorTestClass Instance { get; } = new PublicParameterizedConstructorTestClass(42);
+        }
+
+        private class ClassWithInternalParameterlessCtor
+        {
+            internal ClassWithInternalParameterlessCtor()
+            {
+                Debug.Fail("The JsonSerializer should not be callin non-public ctors, by default.");
+            }
+
+            private ClassWithInternalParameterlessCtor(string name)
+            {
+                Name = name;
+            }
+
+            public string Name { get; set; }
+
+            public static ClassWithInternalParameterlessCtor Instance { get; } = new ClassWithInternalParameterlessCtor("InstancePropertyInternal");
+        }
+
+        private class ClassWithPrivateParameterlessCtor
+        {
+            private ClassWithPrivateParameterlessCtor()
+            {
+                Debug.Fail("The JsonSerializer should not be callin non-public ctors, by default.");
+            }
+
+            private ClassWithPrivateParameterlessCtor(string name)
+            {
+                Name = name;
+            }
+
+            public string Name { get; set; }
+
+            public static ClassWithPrivateParameterlessCtor Instance { get; } = new ClassWithPrivateParameterlessCtor("InstancePropertyPrivate");
+        }
+
+        private class CollectionWithoutPublicParameterlessCtor : IList
+        {
+            private readonly List<object> _list;
+
+            internal CollectionWithoutPublicParameterlessCtor()
+            {
+                Debug.Fail("The JsonSerializer should not be callin non-public ctors, by default.");
+            }
+
+            public CollectionWithoutPublicParameterlessCtor(List<object> list)
+            {
+                _list = list;
+            }
+
+            public object this[int index] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+            public bool IsFixedSize => throw new NotImplementedException();
+
+            public bool IsReadOnly => false;
+
+            public int Count => _list.Count;
+
+            public bool IsSynchronized => throw new NotImplementedException();
+
+            public object SyncRoot => throw new NotImplementedException();
+
+            public int Add(object value)
+            {
+                int pos = _list.Count;
+                _list.Add(value);
+                return pos;
+            }
+
+            public void Clear()
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool Contains(object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void CopyTo(Array array, int index)
+            {
+                throw new NotImplementedException();
+            }
+
+            public IEnumerator GetEnumerator() => _list.GetEnumerator();
+
+            public int IndexOf(object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Insert(int index, object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Remove(object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void RemoveAt(int index)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        private class GenericClassWithProtectedInternalCtor<T>
+        {
+            public T Result { get; set; }
+
+            protected internal GenericClassWithProtectedInternalCtor()
+            {
+                Result = default;
+            }
+        }
+
+        private sealed class ConcreteDerivedClassWithNoPublicDefaultCtor : GenericClassWithProtectedInternalCtor<string>
+        {
+            public string ErrorString { get; set; }
+
+            private ConcreteDerivedClassWithNoPublicDefaultCtor(string error)
+            {
+                ErrorString = error;
+            }
+
+            public static ConcreteDerivedClassWithNoPublicDefaultCtor Ok() => new ConcreteDerivedClassWithNoPublicDefaultCtor("ok");
+            public static GenericClassWithProtectedInternalCtor<T> Ok<T>() => new GenericClassWithProtectedInternalCtor<T>();
+            public static ConcreteDerivedClassWithNoPublicDefaultCtor Error(string error) => new ConcreteDerivedClassWithNoPublicDefaultCtor(error);
         }
 
         [Fact]
@@ -408,7 +549,7 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, int> ParsedDictionary { get; set; }
 
             public IList<int> AnotherSkippedList { get; }
-            public IDictionary<string, string> AnotherSkippedDictionary2 { get; }           
+            public IDictionary<string, string> AnotherSkippedDictionary2 { get; }
             public IDictionary<string, string> SkippedDictionaryNotInJson { get; }
             public SimpleTestClass AnotherSkippedClass { get; }
 

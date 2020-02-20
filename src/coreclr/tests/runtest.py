@@ -801,7 +801,6 @@ def preserve_coredump_file(coredump_name, root_storage_location="/tmp/coredumps_
     if os.path.isfile(coredump_name) and not os.listdir(storage_location):
         print("Copying coredump file %s to %s" % (coredump_name, storage_location))
         shutil.copy2(coredump_name, storage_location)
-        # TODO: Support uploading to dumpling
 
 def inspect_and_delete_coredump_file(host_os, arch, coredump_name):
     """ Prints information from the specified coredump and creates a backup of it
@@ -825,9 +824,7 @@ def inspect_and_delete_coredump_files(host_os, arch, test_location):
         test_location (String)   : the folder under which to search for coredumps
     """
     # This function prints some basic information from core files in the current
-    # directory and deletes them immediately. Based on the state of the system, it may
-    # also upload a core file to the dumpling service.
-    # (see preserve_core_file).
+    # directory and deletes them immediately.
     
     # Depending on distro/configuration, the core files may either be named "core"
     # or "core.<PID>" by default. We will read /proc/sys/kernel/core_uses_pid to 

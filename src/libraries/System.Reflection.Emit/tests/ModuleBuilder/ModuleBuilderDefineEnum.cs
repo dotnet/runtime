@@ -30,6 +30,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(DefineEnum_TestData))]
         public void DefineEnum(string name, TypeAttributes visibility, Type underlyingType)
         {
@@ -77,6 +78,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineEnum_DynamicUnderlyingType_Works()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -159,6 +161,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineEnum_ByRefUnderlyingType_ThrowsCOMExceptionOnCreation()
         {
             ModuleBuilder module = Helpers.DynamicModule();

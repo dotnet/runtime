@@ -15,7 +15,7 @@ namespace System.Tests
         protected abstract string InvariantToStringSingle(float f, string format);
 
         [Theory]
-        [InlineData(1.23E+22, "1.23E+22")] // [ActiveIssue("https://github.com/dotnet/corefx/issues/42576")]
+        [InlineData(1.23E+22, "1.23E+22")] // [ActiveIssue("https://github.com/dotnet/runtime/issues/31483")]
         public void TestFormatterDouble_Shortest(double value, string expectedResult) => TestFormatterDouble_Standard(value, "R", expectedResult);
 
         [Theory]
