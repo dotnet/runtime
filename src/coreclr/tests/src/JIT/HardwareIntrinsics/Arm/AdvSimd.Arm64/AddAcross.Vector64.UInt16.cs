@@ -466,12 +466,21 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            UInt16 temp = 0;
-            for (var i = 0; i < RetElementCount; i++)
+            if (Helpers.AddAcross(firstOp) != result[0])
             {
-                temp += firstOp[i];
+                succeeded = false;
             }
-            succeeded = temp == result[0];
+            else
+            {
+                for (int i = 1; i < RetElementCount; i++)
+                {
+                    if (result[i] != 0)
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+            }
 
             if (!succeeded)
             {
