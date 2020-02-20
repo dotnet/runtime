@@ -199,6 +199,7 @@ IF_DEF(DV_2P, IS_NONE, NONE) // DV_2P   ................ ......nnnnnddddd      V
 IF_DEF(DV_2Q, IS_NONE, NONE) // DV_2Q   .........X...... ......nnnnnddddd      Sd Vn      (faddp, fmaxnmp, fmaxp, fminnmp, fminp - scalar)
 IF_DEF(DV_2R, IS_NONE, NONE) // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
 IF_DEF(DV_2S, IS_NONE, NONE) // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
+IF_DEF(DV_2T, IS_NONE, NONE) // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv, umaxv, uminv)
 
 IF_DEF(DV_3A, IS_NONE, NONE)  // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
 IF_DEF(DV_3AI, IS_NONE, NONE) // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)

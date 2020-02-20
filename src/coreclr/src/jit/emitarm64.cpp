@@ -759,6 +759,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2()));
             break;
 
+        case IF_DV_2T: // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv,
+                       // umaxv, uminv)
+            assert(isValidVectorDatasize(id->idOpSize()));
+            elemsize = optGetElemsize(id->idInsOpt());
+            assert((elemsize != EA_8BYTE) && (id->idInsOpt() != INS_OPTS_2S)); // can't use 2D or 1D or 2S
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
+
         case IF_DV_3A: // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
             assert(isValidVectorDatasize(id->idOpSize()));
             assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
@@ -2085,6 +2094,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case IF_DV_2O:
         case IF_DV_2P:
         case IF_DV_2R:
+        case IF_DV_2T:
         case IF_DV_3A:
         case IF_DV_3AI:
         case IF_DV_3B:
@@ -4071,6 +4081,14 @@ void emitter::emitIns_R_R(
         case INS_uaddlv:
         case INS_umaxv:
         case INS_uminv:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isValidVectorDatasize(size));
+            assert(isValidArrangement(size, opt));
+            assert((opt != INS_OPTS_2S) && (opt != INS_OPTS_1D) && (opt != INS_OPTS_2D)); // Reserved encodings
+            fmt = IF_DV_2T;
+            break;
+
         case INS_rev64:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
@@ -10209,6 +10227,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn      (abs, neg   - vector)
+        case IF_DV_2T: // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv, umaxv, uminv)
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
             code |= insEncodeVectorsize(id->idOpSize()); // Q
@@ -11688,25 +11707,8 @@ void emitter::emitDispIns(
             break;
 
         case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn   (abs, neg - vector)
-            switch (ins)
-            {
-                case INS_addv:
-                case INS_saddlv:
-                case INS_smaxv:
-                case INS_sminv:
-                case INS_uaddlv:
-                case INS_umaxv:
-                case INS_uminv:
-                    elemsize = optGetElemsize(id->idInsOpt());
-                    emitDispReg(id->idReg1(), elemsize, true);
-                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
-                    break;
-
-                default:
-                    emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
-                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
-                    break;
-            }
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             break;
 
         case IF_DV_2N: // DV_2N   .........iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - scalar)
@@ -11828,7 +11830,9 @@ void emitter::emitDispIns(
                        // fminp - scalar)
         case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
         case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
-            elemsize = id->idOpSize();
+        case IF_DV_2T: // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv,
+                       // umaxv, uminv)
+            elemsize = optGetElemsize(id->idInsOpt());
             emitDispReg(id->idReg1(), elemsize, true);
             emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             break;
