@@ -431,17 +431,6 @@ namespace System.IO.Compression
 
             return true;
         }
-
-        private static ulong AsUInt64(Span<uint> bytes, int start)
-        {
-            return (ulong)bytes[start] + (((ulong)bytes[start+1]) << 32);
-        }
-
-        private static bool TestMatch(ZipArchiveEntry entry, uint suspectSignature, uint suspectCrc32, ulong suspectCompressedLength, ulong suspectUncompressedLength)
-        {
-            return (DataDescriptorSignature == suspectSignature && (ulong)entry.CompressedLength == suspectCompressedLength
-                && (ulong)entry.Length == suspectUncompressedLength && entry.Crc32 == suspectCrc32);
-        }
     }
 
     internal struct ZipCentralDirectoryFileHeader
