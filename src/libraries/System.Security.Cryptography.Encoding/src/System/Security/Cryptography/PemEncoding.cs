@@ -349,7 +349,11 @@ namespace System.Security.Cryptography
         ///   <paramref name="data"/> exceeds the maximum possible encoded data length.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// The PEM is too large to possibly encode.
+        /// The resulting PEM-encoded text is larger than <see cref="int.MaxValue"/>.
+        ///   <para>
+        ///       - or -
+        ///   </para>
+        /// <paramref name="label"/> contains invalid characters.
         /// </exception>
         public static bool TryWrite(ReadOnlySpan<char> label, ReadOnlySpan<byte> data, Span<char> destination, out int charsWritten)
         {
@@ -369,7 +373,11 @@ namespace System.Security.Cryptography
                 offset += base64Written;
             }
 
+            if (!IsValidLabel(label))
+                throw new ArgumentException(SR.Argument_PemEncoding_InvalidLabel, nameof(label));
+
             const string NewLine = "\n";
+            const int BytesPerLine = 48;
             int encodedSize = GetEncodedSize(label.Length, data.Length);
 
             if (destination.Length < encodedSize)
@@ -385,14 +393,14 @@ namespace System.Security.Cryptography
             Write(NewLine, destination, ref charsWritten);
 
             ReadOnlySpan<byte> remainingData = data;
-            while (remainingData.Length >= 48)
+            while (remainingData.Length >= BytesPerLine)
             {
-                WriteBase64(remainingData[..48], destination, ref charsWritten);
-                remainingData = remainingData[48..];
+                WriteBase64(remainingData[..BytesPerLine], destination, ref charsWritten);
+                remainingData = remainingData[BytesPerLine..];
                 Write(NewLine, destination, ref charsWritten);
             }
 
-            Debug.Assert(remainingData.Length < 48);
+            Debug.Assert(remainingData.Length < BytesPerLine);
 
             if (remainingData.Length > 0)
             {
@@ -432,7 +440,11 @@ namespace System.Security.Cryptography
         ///   <paramref name="data"/> exceeds the maximum possible encoded data length.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// The PEM is too large to possibly encode.
+        /// The resulting PEM-encoded text is larger than <see cref="int.MaxValue"/>.
+        ///   <para>
+        ///       - or -
+        ///   </para>
+        /// <paramref name="label"/> contains invalid characters.
         /// </exception>
         public static char[] Write(ReadOnlySpan<char> label, ReadOnlySpan<byte> data)
         {

@@ -39,14 +39,29 @@ namespace System.Security.Cryptography.Encoding.Tests
         public static void TryFind_True_CompletePreebPrefixedDifferentLabel()
         {
             string content = "-----BEGIN FAIL----- -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
-            Assert.True(PemEncoding.TryFind(content, out _));
+            Assert.True(PemEncoding.TryFind(content, out PemFields fields));
         }
 
         [Fact]
         public static void TryFind_True_CompletePreebPrefixedSameLabel()
         {
             string content = "-----BEGIN TEST----- -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
-            Assert.True(PemEncoding.TryFind(content, out _));
+            Assert.True(PemEncoding.TryFind(content, out PemFields fields));
+            Assert.Equal(32..36, fields.Label);
+            Assert.Equal(42..46, fields.Base64Data);
+            Assert.Equal(21..65, fields.Location);
+            Assert.Equal(3, fields.DecodedDataLength);
+        }
+
+        [Fact]
+        public static void TryFind_True_PreebEndingOverlap()
+        {
+            string content = "-----BEGIN TEST -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
+            Assert.True(PemEncoding.TryFind(content, out PemFields fields));
+            Assert.Equal(27..31, fields.Label);
+            Assert.Equal(37..41, fields.Base64Data);
+            Assert.Equal(16..60, fields.Location);
+            Assert.Equal(3, fields.DecodedDataLength);
         }
 
         [Fact]
@@ -559,6 +574,14 @@ Zm9v
                 "dkFNgaSB7JlB+krZVVV8T7HZQXVDRA==\n" +
                 "-----END EC PRIVATE KEY-----";
             Assert.Equal(expected, pem);
+        }
+
+        [Fact]
+        public static void TryWrite_Throws_InvalidLabel()
+        {
+            char[] buffer = new char[50];
+            AssertExtensions.Throws<ArgumentException>("label", () =>
+                PemEncoding.TryWrite("\n", default, buffer, out _));
         }
 
         [Fact]
