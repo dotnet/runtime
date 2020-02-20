@@ -3,7 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Statics.DisableBeforeFieldInit
 {
-	[SetupLinkerArgument ("--disable-opt", "BeforeFieldInit")]
+	[SetupLinkerArgument ("--disable-opt", "BeforeFieldInit", "test")]
 	public class UnusedStaticFieldInitializer
 	{
 		public static void Main ()
