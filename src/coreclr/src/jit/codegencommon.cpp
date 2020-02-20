@@ -10869,6 +10869,12 @@ unsigned CodeGen::genIPMappingGenCount()
         }
     }
 
+    // The last IP Mapping could be from other context than the jitted function
+    for (InlineContext* it = lastInlineContext; it != nullptr && !it->IsRoot(); it = it->GetParent())
+    {
+        mappingCnt += 1;
+    }
+
     return mappingCnt;
 }
 
@@ -10885,7 +10891,7 @@ unsigned CodeGen::genIPmappingGenBoundaries(unsigned mappingCnt, ContextList &co
             IL_OFFSETX srcIP = context->GetOffset();
             compiler->eeSetLIinfo(mappingCnt++, nativeOfs, jitGetILoffs(srcIP), jitIsStackEmpty(srcIP), true);
         }
-        compiler->eeSetLIinfoMethod(mappingCnt++, context->GetCalleeAsh(), isOpening);
+        compiler->eeSetLIinfoMethod(mappingCnt++, context->GetMethodToken(), context->GetModuleToken(), isOpening);
     }
 
     return mappingCnt;
@@ -11004,6 +11010,12 @@ void CodeGen::genIPmappingGen()
             // epilog or not based on SetUnmappedStopMask for the stepper.
             compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, jitGetILoffsAny(srcIP), jitIsStackEmpty(srcIP), false);
         }
+    }
+
+    // The last IP Mapping could be from other context than the jitted function
+    for (InlineContext* it = lastInlineContext; it != nullptr && !it->IsRoot(); it = it->GetParent())
+    {
+        compiler->eeSetLIinfoMethod(mappingCnt++, it->GetMethodToken(), it->GetModuleToken(), false);
     }
 
 #if 0

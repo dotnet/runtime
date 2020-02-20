@@ -254,20 +254,11 @@ void DoBounds(
 
         trans.DoEncodedSourceType(pBound->source);
 
-        if ((pBound->source & (ICorDebugInfo::SourceTypes::INLINE_OPEN | ICorDebugInfo::SourceTypes::INLINE_CLOSE)) != 0)
+        if ((pBound->source & (ICorDebugInfo::INLINE_OPEN | ICorDebugInfo::INLINE_CLOSE)) != 0)
         {
             // Brian: actually have no idea if method/module token are created in natural ascending order 0,1,...N
-            // but I am using a pointer to a CORINFO_METHOD_HANDLE so sure its not doing that
-            //trans.DoEncodedDeltaU32(pBound->method.method, dwLastMethodDsc);
-            //dwLastMethodDsc = pBound->method.method;
-            DWORD ldw = pBound->method.method & 0xFFFFFFFF;
-            DWORD hdw = (pBound->method.method >> 32) & 0xFFFFFFFF;
-            trans.DoEncodedU32(ldw);
-            trans.DoEncodedU32(hdw);
-            UINT64 hdw64 = 0L;
-            hdw64 = ((UINT64)hdw) << 32;
-            hdw64 += ldw;
-            pBound->method.method = hdw64;
+            trans.DoEncodedU32(pBound->method.methodToken);
+            trans.DoEncodedU32(pBound->method.moduleToken);
         }
         else
         {
@@ -374,6 +365,27 @@ void DoNativeVarInfo(
 
 
 #ifndef DACCESS_COMPILE
+#ifdef DEBUG
+void CheckBoundariesConsistency(ULONG32 cMap, const ICorDebugInfo::OffsetMapping2 *pMap)
+{
+    UINT32 inlineDepth = 0;
+    for(DWORD i = 0; i < cMap; i++)
+    {
+        ICorDebugInfo::OffsetMapping2 * pBound = &pMap[i];
+        if ((pBound->source & ICorDebugInfo::SourceTypes::INLINE_OPEN) != 0)
+        {
+            inlineDepth += 1;
+        }
+
+        if ((pBound->source & ICorDebugInfo::SourceTypes::INLINE_CLOSE) != 0)
+        {
+            assert(inlineDepth > 0);
+            inlineDepth -= 1;
+        }
+    }
+    assert(inlineDepth == 0);
+}
+#endif // DEBUG
 
 void CompressDebugInfo::CompressBoundaries(
     IN ULONG32                       cMap,
@@ -394,6 +406,9 @@ void CompressDebugInfo::CompressBoundaries(
 
     if (cMap != 0)
     {
+#ifdef DEBUG
+        CheckBoundariesConsistency(cMap, pMap);
+#endif // DEBUG
         pWriter->WriteEncodedU32(cMap);
 
         TransferWriter t(*pWriter);

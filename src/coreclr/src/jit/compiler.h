@@ -7133,7 +7133,8 @@ public:
     // To indicate of which function are we reporint IL
     struct IPMappingMethod
     {
-        UINT64 methodDesc;
+        UINT32 methodToken;
+        UINT32 moduleToken;
     };
 
     struct boundariesDsc
@@ -7148,7 +7149,7 @@ public:
 
     void eeSetLIcount(unsigned count);
     void eeSetLIinfo(unsigned which, UNATIVE_OFFSET offs, IL_OFFSET ilOffset, bool stkEmpty, bool callInstruction);
-    void eeSetLIinfoMethod(unsigned which, CORINFO_METHOD_HANDLE* methodDesc, bool opening);
+    void eeSetLIinfoMethod(unsigned which, mdMethodDef methodToken, mdModule moduleToken, bool opening);
     void eeSetLIdone();
 
 #ifdef DEBUG

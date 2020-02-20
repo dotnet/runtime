@@ -646,25 +646,13 @@ public:
 
     // Dump full subtree in xml format
     void DumpXml(FILE* file = stderr, unsigned indent = 0);
-
-#endif // defined(DEBUG) || defined(INLINE_DATA)
-
+    
     // Get callee handle
     CORINFO_METHOD_HANDLE GetCallee() const
     {
         return m_Callee;
     }
-
-    CORINFO_METHOD_HANDLE * GetCalleeAsh()
-    {
-        return &m_Callee;
-    }
-
-    //// Get inline function MethodDsc*
-    //MethodDesc* GetMethodDsc() const
-    //{
-    //    return m_MethodDsc;
-    //}
+#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     // Get the parent context for this context.
     InlineContext* GetParent() const
@@ -734,6 +722,17 @@ public:
         return m_ImportedILSize;
     }
 
+    mdMethodDef GetMethodToken() const
+    {
+        return m_methodToken;
+    }
+
+    mdModule GetModuleToken() const
+    {
+        return m_moduleToken;
+    }
+
+
 private:
     InlineContext(InlineStrategy* strategy);
 
@@ -752,11 +751,11 @@ private:
     bool              m_Devirtualized : 1; // true if this was a devirtualized call
     bool              m_Guarded : 1;       // true if this was a guarded call
     bool              m_Unboxed : 1;       // true if this call now invokes the unboxed entry
-    //MethodDesc* m_MethodDsc;
-    CORINFO_METHOD_HANDLE m_Callee;  // handle to the method
-
+    mdMethodDef m_methodToken;
+    mdModule m_moduleToken;
+    
 #if defined(DEBUG) || defined(INLINE_DATA)
-
+    CORINFO_METHOD_HANDLE m_Callee;  // handle to the method
     InlinePolicy*         m_Policy;  // policy that evaluated this inline
     unsigned              m_TreeID;  // ID of the GenTreeCall
     unsigned              m_Ordinal; // Ordinal number of this inline

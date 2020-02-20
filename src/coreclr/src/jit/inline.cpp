@@ -340,6 +340,8 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Devirtualized(false)
     , m_Guarded(false)
     , m_Unboxed(false)
+    , m_methodToken(0)
+    , m_moduleToken(0)
 #if defined(DEBUG) || defined(INLINE_DATA)
     , m_Policy(nullptr)
     , m_Callee(nullptr)
@@ -1172,6 +1174,8 @@ InlineContext* InlineStrategy::NewRoot()
 
     rootContext->m_ILSize = m_Compiler->info.compILCodeSize;
 
+    rootContext->m_methodToken = m_Compiler->info.compCompHnd->getMethodDefFromMethod(m_Compiler->info.compMethodHnd);
+
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     rootContext->m_Callee = m_Compiler->info.compMethodHnd;
@@ -1218,7 +1222,10 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     calleeContext->m_Guarded        = originalCall->IsGuarded();
     calleeContext->m_Unboxed        = originalCall->IsUnboxed();
     calleeContext->m_ImportedILSize = inlineInfo->inlineResult->GetImportedILSize();
-    // calleeContext->m_MethodDsc      = GetMethod(inlineInfo->fncHandle);
+    calleeContext->m_methodToken    = m_Compiler->info.compCompHnd->getMethodDefFromMethod(inlineInfo->fncHandle);
+    // MethodDesc methodDsc            = GetMethod(inlineInfo->fncHandle);
+    calleeContext->m_moduleToken    = 0;
+
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     InlinePolicy* policy = inlineInfo->inlineResult->GetPolicy();

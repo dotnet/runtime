@@ -70,7 +70,8 @@ public:
 
     struct MethodMapping
     {
-        UINT64 method;
+        DWORD methodToken;
+        DWORD moduleToken;
     };
 
     struct OffsetMapping2

@@ -933,7 +933,7 @@ void Compiler::eeSetLIcount(unsigned count)
     }
 }
 
-void Compiler::eeSetLIinfoMethod(unsigned which, CORINFO_METHOD_HANDLE* methodDesc, bool opening)
+void Compiler::eeSetLIinfoMethod(unsigned which, mdMethodDef methodToken, mdModule moduleToken, bool opening)
 {
     assert(opts.compDbgInfo);
     assert(eeBoundariesCount > 0);
@@ -941,7 +941,8 @@ void Compiler::eeSetLIinfoMethod(unsigned which, CORINFO_METHOD_HANDLE* methodDe
 
     if (eeBoundaries != nullptr)
     {
-        eeBoundaries[which].method.methodDesc    = ((UINT64) methodDesc);
+        eeBoundaries[which].method.methodToken    = methodToken;
+        eeBoundaries[which].method.moduleToken   = moduleToken;
         eeBoundaries[which].sourceReason = opening ? ICorDebugInfo::INLINE_OPEN : ICorDebugInfo::INLINE_CLOSE;
     }
 }
@@ -1009,8 +1010,7 @@ void Compiler::eeDispLineInfo(const boundariesDsc* line)
 {
     if ((line->sourceReason & (ICorDebugInfo::INLINE_CLOSE | ICorDebugInfo::INLINE_OPEN)) != 0)
     {
-        CORINFO_METHOD_HANDLE* bla = ((CORINFO_METHOD_HANDLE *)line->method.methodDesc);
-        printf("Inline Indicator %s", this->eeGetMethodFullName(*bla));
+        printf("Inline Indicator %d %d", line->method.methodToken, line->method.moduleToken);
     }
     else
     {
