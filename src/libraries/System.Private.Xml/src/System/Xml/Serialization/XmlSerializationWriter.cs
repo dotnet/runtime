@@ -541,7 +541,7 @@ namespace System.Xml.Serialization
                         }
                         if (numeric)
                         {
-                            long index = long.Parse(name.Substring(prefixLength), NumberStyles.Integer, CultureInfo.InvariantCulture);
+                            long index = long.Parse(name.AsSpan(prefixLength), NumberStyles.Integer, CultureInfo.InvariantCulture);
                             if (index <= int.MaxValue)
                             {
                                 int newIndex = (int)index;
