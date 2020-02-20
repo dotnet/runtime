@@ -90,12 +90,12 @@ jobs:
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
-          queue: BuildPool.Windows.10.Amd64.VS2019
+          queue: BuildPool.Windows.10.Amd64.VS2019.Pre
 
         # Public Windows Build Pool
         ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
           name: NetCorePublic-Pool
-          queue: BuildPool.Windows.10.Amd64.VS2019.Open
+          queue: BuildPool.Windows.10.Amd64.VS2019.Pre.Open
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
       ${{ insert }}: ${{ parameters.jobParameters }}
