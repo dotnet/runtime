@@ -4,15 +4,15 @@
 
 namespace System.Net.Quic
 {
-    public class QuicConnectionAbortedException : QuicException
+    internal class QuicStreamAbortedException : QuicException
     {
-        internal QuicConnectionAbortedException(long errorCode)
-            : this(SR.Format(SR.net_quic_connectionaborted, errorCode), errorCode)
+        internal QuicStreamAbortedException(long errorCode)
+            : this(SR.Format(SR.net_quic_streamaborted, errorCode), errorCode)
         {
         }
 
-        public QuicConnectionAbortedException(string message, long errorCode)
-            : base (message)
+        public QuicStreamAbortedException(string message, long errorCode)
+            : base(message)
         {
             ErrorCode = errorCode;
         }

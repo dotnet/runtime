@@ -6,7 +6,7 @@ using System.Net.Security;
 
 namespace System.Net.Quic.Implementations
 {
-    public abstract class QuicImplementationProvider
+    internal abstract class QuicImplementationProvider
     {
         internal QuicImplementationProvider() { }
 
