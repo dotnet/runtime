@@ -245,35 +245,65 @@ namespace System.Security.Cryptography
 #endif
             {
                 SafeDsaHandle key = GetKey();
-                int signatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
+                int derSignatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
+
+                // The biggest key allowed by FIPS 186-4 has N=256 (bit), which
+                // maximally produces a 72-byte DER signature.
+                // If a future version of the standard continues to enhance DSA,
+                // we may want to bump this limit to allow the max-1 (expected size)
+                // TryCreateSignature to pass.
+                Span<byte> signDestination = stackalloc byte[72];
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
                 {
 #endif
+                    int fieldSizeBytes = Interop.Crypto.DsaSignatureFieldSize(key);
+                    int p1363SignatureSize = 2 * fieldSizeBytes;
+
+                    if (destination.Length < p1363SignatureSize)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+
                     byte[] converted;
-                    byte[] signature = CryptoPool.Rent(signatureSize);
+                    byte[] rented = null;
+                    int actualSize = 0;
+
+                    if (derSignatureSize > signDestination.Length)
+                    {
+                        rented = CryptoPool.Rent(derSignatureSize);
+                        signDestination = rented;
+                    }
+
                     try
                     {
-                        bool success = Interop.Crypto.DsaSign(key, hash, new Span<byte>(signature, 0, signatureSize), out signatureSize);
+                        bool success = Interop.Crypto.DsaSign(key, hash, signDestination, out actualSize);
                         if (!success)
                         {
                             throw Interop.Crypto.CreateOpenSslCryptographicException();
                         }
 
                         Debug.Assert(
-                                     signatureSize <= signature.Length,
-                                         "DSA_sign reported an unexpected signature size",
-                                         "DSA_sign reported signatureSize was {0}, when <= {1} was expected",
-                                         signatureSize,
-                                         signature.Length);
+                            actualSize <= derSignatureSize,
+                                "DSA_sign reported an unexpected signature size",
+                                "DSA_sign reported signatureSize was {0}, when <= {1} was expected",
+                                actualSize,
+                                derSignatureSize);
 
-                        int signatureFieldSize = Interop.Crypto.DsaSignatureFieldSize(key) * BitsPerByte;
-                        converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature.AsSpan(0, signatureSize), signatureFieldSize);
+                        int signatureFieldSize = fieldSizeBytes * BitsPerByte;
+
+                        converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
+                            signDestination.Slice(0, actualSize),
+                            signatureFieldSize);
                     }
                     finally
                     {
-                        CryptoPool.Return(signature, signatureSize);
+                        if (rented != null)
+                        {
+                            CryptoPool.Return(rented, actualSize);
+                        }
                     }
 
                     return Helpers.TryCopyToDestination(converted, destination, out bytesWritten);
@@ -281,18 +311,11 @@ namespace System.Security.Cryptography
                 }
                 else if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
                 {
-                    // The biggest key allowed by FIPS 186-4 has N=256 (bit), which
-                    // maximally produces a 72-byte DER signature.
-                    // If a future version of the standard continues to enhance DSA,
-                    // we may want to bump this limit to allow the max-1 (expected size)
-                    // TryCreateSignature to pass.
-                    Span<byte> signDestination = stackalloc byte[72];
-
-                    if (destination.Length >= signatureSize)
+                    if (destination.Length >= derSignatureSize)
                     {
                         signDestination = destination;
                     }
-                    else if (signatureSize > signDestination.Length)
+                    else if (derSignatureSize > signDestination.Length)
                     {
                         bytesWritten = 0;
                         return false;
