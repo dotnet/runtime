@@ -6099,7 +6099,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     }
     else
     {
-        s_compMethodsCount++;
+        InterlockedIncrement(&s_compMethodsCount);
     }
 #endif
 
