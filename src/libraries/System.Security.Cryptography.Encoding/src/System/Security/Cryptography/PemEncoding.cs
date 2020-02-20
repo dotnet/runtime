@@ -308,7 +308,10 @@ namespace System.Security.Cryptography
             // dataLength is already known to not overflow here
             int encodedDataLength = ((dataLength + 2) / 3) << 2;
             int lineCount = Math.DivRem(encodedDataLength, EncodedLineLength, out int remainder);
-            lineCount += ((remainder >> 31) - (-remainder >> 31)); //Increment lineCount if remainder is positive.
+
+            if (remainder > 0)
+                lineCount++;
+
             int encodedDataLengthWithBreaks = encodedDataLength + lineCount;
 
             if (int.MaxValue - encodedDataLengthWithBreaks < totalEncapLength)
