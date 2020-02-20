@@ -54,7 +54,7 @@ namespace Internal.Cryptography.Pal
                     {
                         suppressionFlag = X509VerificationFlags.IgnoreEndRevocationUnknown;
                     }
-                    else if (IsSelfSigned(element.Certificate!))
+                    else if (IsSelfSigned(element.Certificate))
                     {
                         suppressionFlag = X509VerificationFlags.IgnoreRootRevocationUnknown;
                     }

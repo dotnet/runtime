@@ -191,8 +191,8 @@ namespace Internal.Cryptography.Pal
                 // ProviderType being 0 signifies that this is actually a CNG key, not a CAPI key. Crypt32.dll stuffs the CNG Key Storage Provider
                 // name into CRYPT_KEY_PROV_INFO->ProviderName, and the CNG key name into CRYPT_KEY_PROV_INFO->KeyContainerName.
 
-                string keyStorageProvider = cspParameters.ProviderName;
-                string keyName = cspParameters.KeyContainerName;
+                string keyStorageProvider = cspParameters.ProviderName!;
+                string keyName = cspParameters.KeyContainerName!;
                 CngKey cngKey = CngKey.Open(keyName, new CngProvider(keyStorageProvider));
                 return createCng(cngKey);
             }

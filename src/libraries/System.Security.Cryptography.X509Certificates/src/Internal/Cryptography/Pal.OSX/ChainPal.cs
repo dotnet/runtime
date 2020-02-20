@@ -362,7 +362,7 @@ namespace Internal.Cryptography.Pal
 
             ChainElements = elements;
 
-            X509ChainElement rollupElement = BuildElement(null, allStatus);
+            X509ChainElement rollupElement = BuildElement(null!, allStatus);
             ChainStatus = rollupElement.ChainElementStatus;
         }
 
@@ -463,7 +463,7 @@ namespace Internal.Cryptography.Pal
             return X509ChainStatusFlags.UntrustedRoot;
         }
 
-        private X509ChainElement BuildElement(X509Certificate2? cert, int dwStatus)
+        private X509ChainElement BuildElement(X509Certificate2 cert, int dwStatus)
         {
             if (dwStatus == 0)
             {

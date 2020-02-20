@@ -331,7 +331,7 @@ namespace System.Security.Cryptography.X509Certificates
     public partial class X509ChainElement
     {
         internal X509ChainElement() { }
-        public System.Security.Cryptography.X509Certificates.X509Certificate2? Certificate { get { throw null; } }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509ChainStatus[] ChainElementStatus { get { throw null; } }
         public string Information { get { throw null; } }
     }

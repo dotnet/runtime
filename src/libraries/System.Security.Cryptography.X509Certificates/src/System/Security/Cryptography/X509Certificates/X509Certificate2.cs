@@ -621,7 +621,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 for (int i = 0; i < chain.ChainElements.Count; i++)
                 {
-                    chain.ChainElements[i].Certificate!.Dispose();
+                    chain.ChainElements[i].Certificate.Dispose();
                 }
 
                 return verified;

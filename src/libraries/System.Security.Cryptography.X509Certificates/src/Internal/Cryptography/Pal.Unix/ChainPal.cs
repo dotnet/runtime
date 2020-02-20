@@ -102,7 +102,7 @@ namespace Internal.Cryptography.Pal
 #if DEBUG
             if (chainPal.ChainElements!.Length > 0)
             {
-                X509Certificate2? reportedLeaf = chainPal.ChainElements[0].Certificate;
+                X509Certificate2 reportedLeaf = chainPal.ChainElements[0].Certificate;
                 Debug.Assert(reportedLeaf != null, "reportedLeaf != null");
                 Debug.Assert(!ReferenceEquals(cert, reportedLeaf.Pal), "!ReferenceEquals(cert, reportedLeaf.Pal)");
             }

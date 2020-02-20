@@ -339,7 +339,7 @@ namespace Internal.Cryptography.Pal
 
                     for (int i = 0; i < elementCount; i++)
                     {
-                        chain.ChainElements[i].Certificate!.Dispose();
+                        chain.ChainElements[i].Certificate.Dispose();
                     }
 
                     return valid;

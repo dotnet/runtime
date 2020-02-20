@@ -857,7 +857,7 @@ namespace Internal.Cryptography.Pal
 
             foreach (X509ChainElement element in elements)
             {
-                certsToRead.Add(element.Certificate!);
+                certsToRead.Add(element.Certificate);
             }
 
             CertificatePolicyChain policyChain = new CertificatePolicyChain(certsToRead);
