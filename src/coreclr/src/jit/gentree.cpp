@@ -12581,13 +12581,16 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree*  tree,
     return result;
 }
 
-/*****************************************************************************
- *
- *  Some binary operators can be folded even if they have only one
- *  operand constant - e.g. boolean operators, add with 0
- *  multiply with 1, etc
- */
-
+//------------------------------------------------------------------------
+// gtFoldExprSpecial -- optimize binary ops with one constant operand
+//
+// Arguments:
+//   tree - tree to optimize
+//
+// Return value:
+//   Tree (possibly modified at root or below), or a new tree
+//   Any new tree is fully morphed, if necessary.
+//
 GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 {
     GenTree*   op1  = tree->AsOp()->gtOp1;
@@ -12690,7 +12693,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             // Optimize boxed value classes; these are always false.  This IL is
             // generated when a generic value is tested against null:
             //     <T> ... foo(T x) { ... if ((object)x == null) ...
-            if (val == 0 && op->IsBoxedValue())
+            if ((val == 0) && op->IsBoxedValue())
             {
                 JITDUMP("\nAttempting to optimize BOX(valueType) %s null [%06u]\n", GenTree::OpName(oper),
                         dspTreeID(tree));
@@ -12743,6 +12746,10 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                         return NewMorphedIntConNode(compareResult);
                     }
                 }
+            }
+            else
+            {
+                return gtFoldBoxNullable(tree);
             }
 
             break;
@@ -12903,6 +12910,96 @@ DONE_FOLD:
     }
 
     return op;
+}
+
+//------------------------------------------------------------------------
+// gtFoldBoxNullable -- optimize a boxed nullable feeding a compare to zero
+//
+// Arguments:
+//   tree - binop tree to potentially optimize, must be
+//          GT_GT, GT_EQ, or GT_NE
+//
+// Return value:
+//   Tree (possibly modified below the root).
+//
+GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
+{
+    assert(tree->OperKind() & GTK_BINOP);
+    assert(tree->OperIs(GT_GT, GT_EQ, GT_NE));
+
+    genTreeOps const oper = tree->OperGet();
+
+    if ((oper == GT_GT) && !tree->IsUnsigned())
+    {
+        return tree;
+    }
+
+    GenTree* const op1 = tree->AsOp()->gtOp1;
+    GenTree* const op2 = tree->AsOp()->gtOp2;
+    GenTree*       op;
+    GenTree*       cons;
+
+    if (op1->IsCnsIntOrI())
+    {
+        op   = op2;
+        cons = op1;
+    }
+    else if (op2->IsCnsIntOrI())
+    {
+        op   = op1;
+        cons = op2;
+    }
+    else
+    {
+        return tree;
+    }
+
+    ssize_t const val = cons->AsIntConCommon()->IconValue();
+
+    if (val != 0)
+    {
+        return tree;
+    }
+
+    if (!op->IsCall())
+    {
+        return tree;
+    }
+
+    GenTreeCall* const call = op->AsCall();
+
+    if (!call->IsHelperCall(this, CORINFO_HELP_BOX_NULLABLE))
+    {
+        return tree;
+    }
+
+    JITDUMP("\nAttempting to optimize BOX_NULLABLE(&x) %s null [%06u]\n", GenTree::OpName(oper), dspTreeID(tree));
+
+    // Get the address of the struct being boxed
+    GenTree* const arg = call->gtCallArgs->GetNext()->GetNode();
+
+    if (arg->OperIs(GT_ADDR) && ((arg->gtFlags & GTF_LATE_ARG) == 0))
+    {
+        CORINFO_CLASS_HANDLE nullableHnd = gtGetStructHandle(arg->AsOp()->gtOp1);
+        CORINFO_FIELD_HANDLE fieldHnd    = info.compCompHnd->getFieldInClass(nullableHnd, 0);
+
+        // Replace the box with an access of the nullable 'hasValue' field.
+        JITDUMP("\nSuccess: replacing BOX_NULLABLE(&x) [%06u] with x.hasValue\n", dspTreeID(op));
+        GenTree* newOp = gtNewFieldRef(TYP_BOOL, fieldHnd, arg, 0);
+
+        if (op == op1)
+        {
+            tree->AsOp()->gtOp1 = newOp;
+        }
+        else
+        {
+            tree->AsOp()->gtOp2 = newOp;
+        }
+
+        cons->gtType = TYP_INT;
+    }
+
+    return tree;
 }
 
 //------------------------------------------------------------------------
