@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using static System.Data.Common.UnsafeNativeMethods;
 
 namespace System.Data.OleDb
 {
@@ -164,75 +165,6 @@ namespace System.Data.OleDb
             }
             return base.ReleaseHandle();
         }
-    }
-
-    [Guid("0fb15084-af41-11ce-bd2b-204c4f4f5020")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    [ComImport]
-    internal interface ITransaction
-    {
-        [PreserveSig]
-        int Commit
-            (
-            [In] bool fRetaining,
-            [In] uint grfTC,
-            [In] uint grfRM
-            );
-
-        [PreserveSig]
-        int Abort
-            (
-            [In] IntPtr pboidReason,
-            [In]         bool fRetaining,
-            [In]         bool fAsync
-            );
-
-        [PreserveSig]
-        int GetTransactionInfo
-            (
-            [Out] IntPtr pinfo
-            );
-    }
-
-    [Guid("0c733a5f-2a1c-11ce-ade5-00aa0044773d")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    [ComImport]
-    internal unsafe interface ITransactionLocal : ITransaction
-    {
-        [PreserveSig]
-        new int Commit
-            (
-            [In] bool fRetaining,
-            [In] uint grfTC,
-            [In] uint grfRM
-            );
-
-        [PreserveSig]
-        new int Abort
-            (
-            [In] IntPtr pboidReason,
-            [In]         bool fRetaining,
-            [In]         bool fAsync
-            );
-
-        [PreserveSig]
-        new int GetTransactionInfo
-            (
-            [Out] IntPtr pinfo
-            );
-
-        [PreserveSig]
-        int GetOptionsObject(
-            [Out, Optional] IntPtr ppOptions
-        );
-
-        [PreserveSig]
-        int StartTransaction(
-            [In] int isoLevel,
-            [In] uint isoFlags,
-            [In, Optional] IntPtr pOtherOptions,
-            [Out, Optional] uint* pulTransactionLevel
-        );
     }
 
     internal enum XACTTC
