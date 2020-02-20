@@ -5304,7 +5304,8 @@ void ValueNumStore::InitValueNumStoreStatics()
         vnfOpAttribs[vnfNum] |= VNFOA_KnownNonNull;                                                                    \
     if (sharedStatic)                                                                                                  \
         vnfOpAttribs[vnfNum] |= VNFOA_SharedStatic;                                                                    \
-    vnfOpAttribs[vnfNum] |= (arity << VNFOA_ArityShift);                                                               \
+    if (arity > 0)                                                                                                     \
+        vnfOpAttribs[vnfNum] |= (arity << VNFOA_ArityShift);                                                           \
     vnfNum++;
 
 #include "valuenumfuncs.h"
@@ -5316,42 +5317,48 @@ void ValueNumStore::InitValueNumStoreStatics()
     vnfOpAttribs[vnfNum] &= ~VNFOA_ArityMask;           /* clear old arity value   */                                  \
     vnfOpAttribs[vnfNum] |= (arity << VNFOA_ArityShift) /* set the new arity value */
 
-#ifdef FEATURE_SIMD
-    // ValueNumbering encodes an extra result type argument for these
+    for (SIMDIntrinsicID id = SIMDIntrinsicID::SIMDIntrinsicNone; (id < SIMDIntrinsicID::SIMDIntrinsicInvalid);
+         id                 = (SIMDIntrinsicID)(id + 1))
+    {
+        bool encodeResultType = Compiler::vnEncodesResultTypeForSIMDIntrinsic(id);
+
+        if (encodeResultType)
+        {
+            // These SIMDIntrinsic's have an extra VNF_SimdType arg.
+            //
+            VNFunc   func     = VNFunc(VNF_SIMD_FIRST + id);
+            unsigned oldArity = VNFuncArity(func);
+            unsigned newArity = oldArity + 1;
+
+            ValueNumFuncSetArity(func, newArity);
+        }
+    }
+    // SIMDIntrinsicInit has an incorrect entry of 2 for numArgs and also vnEncodesResultTypeForSIMDIntrinsic returns
+    // true
+    // so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
     ValueNumFuncSetArity(VNF_SIMD_Init, 2);
-    ValueNumFuncSetArity(VNF_SIMD_GetItem, 3);
-    ValueNumFuncSetArity(VNF_SIMD_Add, 3);
-    ValueNumFuncSetArity(VNF_SIMD_Sub, 3);
-    ValueNumFuncSetArity(VNF_SIMD_Mul, 3);
-    ValueNumFuncSetArity(VNF_SIMD_Div, 3);
-    ValueNumFuncSetArity(VNF_SIMD_Sqrt, 2);
-    ValueNumFuncSetArity(VNF_SIMD_Min, 3);
-    ValueNumFuncSetArity(VNF_SIMD_Max, 3);
-    ValueNumFuncSetArity(VNF_SIMD_Abs, 2);
-    ValueNumFuncSetArity(VNF_SIMD_Equal, 3);
-    ValueNumFuncSetArity(VNF_SIMD_LessThan, 3);
-    ValueNumFuncSetArity(VNF_SIMD_LessThanOrEqual, 3);
-    ValueNumFuncSetArity(VNF_SIMD_GreaterThan, 3);
-    ValueNumFuncSetArity(VNF_SIMD_GreaterThanOrEqual, 3);
-    ValueNumFuncSetArity(VNF_SIMD_BitwiseAnd, 3);
-    ValueNumFuncSetArity(VNF_SIMD_BitwiseAndNot, 3);
-    ValueNumFuncSetArity(VNF_SIMD_BitwiseOr, 3);
-    ValueNumFuncSetArity(VNF_SIMD_BitwiseXor, 3);
-    ValueNumFuncSetArity(VNF_SIMD_DotProduct, 3);
-    ValueNumFuncSetArity(VNF_SIMD_Cast, 2);
-    ValueNumFuncSetArity(VNF_SIMD_ConvertToSingle, 2);
-    ValueNumFuncSetArity(VNF_SIMD_ConvertToDouble, 2);
-    ValueNumFuncSetArity(VNF_SIMD_ConvertToInt32, 2);
-    ValueNumFuncSetArity(VNF_SIMD_ConvertToInt64, 2);
-    ValueNumFuncSetArity(VNF_SIMD_Narrow, 3);
-    ValueNumFuncSetArity(VNF_SIMD_WidenHi, 2);
-    ValueNumFuncSetArity(VNF_SIMD_WidenLo, 2);
-#endif
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
     // SSE2_Shuffle has a -1 entry for numArgs, but when used as a HWINSTRINSIC always has two operands.
     ValueNumFuncSetArity(VNF_HWI_SSE2_Shuffle, 2);
 #endif
+
+    for (NamedIntrinsic id = (NamedIntrinsic)(NI_HW_INTRINSIC_START + 1); (id < NI_HW_INTRINSIC_END);
+         id                = (NamedIntrinsic)(id + 1))
+    {
+        bool encodeResultType = Compiler::vnEncodesResultTypeForHWIntrinsic(id);
+
+        if (encodeResultType)
+        {
+            // These HW_Intrinsic's have an extra VNF_SimdType arg.
+            //
+            VNFunc   func     = VNFunc(VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1));
+            unsigned oldArity = VNFuncArity(func);
+            unsigned newArity = oldArity + 1;
+
+            ValueNumFuncSetArity(func, newArity);
+        }
+    }
 
 #undef ValueNumFuncSetArity
 
@@ -7103,7 +7110,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             ValueNumPair rhsVNPair = rhs->gtVNPair;
 
             // Is the type being stored different from the type computed by the rhs?
-            if (rhs->TypeGet() != lhs->TypeGet())
+            if ((rhs->TypeGet() != lhs->TypeGet()) && (lhs->OperGet() != GT_BLK))
             {
                 // This means that there is an implicit cast on the rhs value
                 //
@@ -7300,10 +7307,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     noway_assert(!"Phi arg cannot be LHS.");
                     break;
 
-                case GT_BLK:
                 case GT_OBJ:
-                    noway_assert(!"GT_BLK/GT_OBJ can not be LHS when !varTypeIsStruct(tree) is true!");
+                    noway_assert(!"GT_OBJ can not be LHS when (tree->TypeGet() != TYP_STRUCT)!");
                     break;
+
+                case GT_BLK:
+                    __fallthrough;
 
                 case GT_IND:
                 {
@@ -8391,109 +8400,68 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
     }
     else // SIMD unary or binary operator.
     {
-        ValueNumPair resvnp;
+        ValueNumPair resvnp = ValueNumPair();
         ValueNumPair op1vnp;
         ValueNumPair op1Xvnp;
         vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
 
-        bool encodeResultType = false;
-
-        switch (simdNode->gtSIMDIntrinsicID)
+        if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
         {
-            case SIMDIntrinsicInitArray:
+            // rationalize rewrites this as an explicit load with op1 as the base address
+
+            ValueNumPair op2vnp;
+            if (tree->AsOp()->gtOp2 == nullptr)
             {
-                // rationalize rewrites this as an explicit load with op1 as the base address
+                // a nullptr for op2 means that we have an impicit index of zero
+                op2vnp = ValueNumPair(vnStore->VNZeroForType(TYP_INT), vnStore->VNZeroForType(TYP_INT));
 
-                ValueNumPair op2vnp;
-                if (tree->AsOp()->gtOp2 == nullptr)
-                {
-                    // a nullptr for op2 means that we have an impicit index of zero
-                    op2vnp = ValueNumPair(vnStore->VNZeroForType(TYP_INT), vnStore->VNZeroForType(TYP_INT));
+                excSetPair = op1Xvnp;
+            }
+            else // We have an explicit index in op2
+            {
+                ValueNumPair op2Xvnp;
+                vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
 
-                    excSetPair = op1Xvnp;
-                }
-                else // We have an explicit index in op2
-                {
-                    ValueNumPair op2Xvnp;
-                    vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+                excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
+            }
 
-                    excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
-                }
-
-                ValueNum addrVN =
-                    vnStore->VNForFunc(TYP_BYREF, GetVNFuncForNode(tree), op1vnp.GetLiberal(), op2vnp.GetLiberal());
+            ValueNum addrVN =
+                vnStore->VNForFunc(TYP_BYREF, GetVNFuncForNode(tree), op1vnp.GetLiberal(), op2vnp.GetLiberal());
 #ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Treating GT_SIMD InitArray as a ByrefExposed load , addrVN is ");
-                    vnPrint(addrVN, 0);
-                }
+            if (verbose)
+            {
+                printf("Treating GT_SIMD InitArray as a ByrefExposed load , addrVN is ");
+                vnPrint(addrVN, 0);
+            }
 #endif // DEBUG
 
-                // The address points into the heap, so it is an ByrefExposed load.
-                //
-                ValueNum loadVN = fgValueNumberByrefExposedLoad(tree->TypeGet(), addrVN);
-                tree->gtVNPair.SetLiberal(loadVN);
-                tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excSetPair);
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsOp()->gtOp1);
-                return;
-            }
+            // The address points into the heap, so it is an ByrefExposed load.
+            //
+            ValueNum loadVN = fgValueNumberByrefExposedLoad(tree->TypeGet(), addrVN);
+            tree->gtVNPair.SetLiberal(loadVN);
+            tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+            tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excSetPair);
+            fgValueNumberAddExceptionSetForIndirection(tree, tree->AsOp()->gtOp1);
+            return;
+        }
 
-            case SIMDIntrinsicInit:
-            case SIMDIntrinsicGetItem:
-            case SIMDIntrinsicAdd:
-            case SIMDIntrinsicSub:
-            case SIMDIntrinsicMul:
-            case SIMDIntrinsicDiv:
-            case SIMDIntrinsicSqrt:
-            case SIMDIntrinsicMin:
-            case SIMDIntrinsicMax:
-            case SIMDIntrinsicAbs:
-            case SIMDIntrinsicEqual:
-            case SIMDIntrinsicLessThan:
-            case SIMDIntrinsicLessThanOrEqual:
-            case SIMDIntrinsicGreaterThan:
-            case SIMDIntrinsicGreaterThanOrEqual:
-            case SIMDIntrinsicBitwiseAnd:
-            case SIMDIntrinsicBitwiseAndNot:
-            case SIMDIntrinsicBitwiseOr:
-            case SIMDIntrinsicBitwiseXor:
-            case SIMDIntrinsicDotProduct:
-            case SIMDIntrinsicCast:
-            case SIMDIntrinsicConvertToSingle:
-            case SIMDIntrinsicConvertToDouble:
-            case SIMDIntrinsicConvertToInt32:
-            case SIMDIntrinsicConvertToInt64:
-            case SIMDIntrinsicNarrow:
-            case SIMDIntrinsicWidenHi:
-            case SIMDIntrinsicWidenLo:
-            {
-                // Also encodes the resulting type
-                encodeResultType = true;
+        bool encodeResultType = vnEncodesResultTypeForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID);
 
-                ValueNum vnSize     = vnStore->VNForIntCon(simdNode->gtSIMDSize);
-                ValueNum vnBaseType = vnStore->VNForIntCon(INT32(simdNode->gtSIMDBaseType));
-                ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
+        if (encodeResultType)
+        {
+            ValueNum vnSize     = vnStore->VNForIntCon(simdNode->gtSIMDSize);
+            ValueNum vnBaseType = vnStore->VNForIntCon(INT32(simdNode->gtSIMDBaseType));
+            ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
+            resvnp.SetBoth(simdTypeVN);
 
 #ifdef DEBUG
-                if (verbose)
-                {
-                    printf("    simdTypeVN is ");
-                    vnPrint(simdTypeVN, 2);
-                    printf("\n");
-                }
-#endif
-
-                resvnp.SetBoth(simdTypeVN);
-
-                // Handled below as a normal SIMD unary or binary node with an extra resvnp
-                break;
+            if (verbose)
+            {
+                printf("    simdTypeVN is ");
+                vnPrint(simdTypeVN, 2);
+                printf("\n");
             }
-
-            default:
-                // Handled below as a normal SIMD unary or binary node
-                break;
+#endif
         }
 
         VNFunc simdFunc = GetVNFuncForNode(tree);
@@ -8555,21 +8523,21 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
     VNFunc   func          = GetVNFuncForNode(tree);
     unsigned fixedArity    = vnStore->VNFuncArity(func);
     //
-    // fixedArity is the numArgs column in "hwinstrinsiclistxarch.h"
-    // a -1 value is translated into an unsigned value of 7
+    // when the numArgs column in "hwinstrinsiclistxarch.h" is -1
+    // it gets translated into a value of 0
 
-    ValueNumPair excSetPair;
+    ValueNumPair excSetPair = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair normalPair;
 
     // There are some HWINTRINSICS operations that have zero args, i.e.  NI_Vector128_Zero
     if (tree->AsOp()->gtOp1 == nullptr)
     {
         assert(fixedArity == 0);
-        excSetPair = ValueNumStore::VNPForEmptyExcSet();
+
         normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func);
         assert(lookupNumArgs == 0);
     }
-    else if (tree->AsOp()->gtOp1->OperIs(GT_LIST) || (fixedArity == 7))
+    else if (tree->AsOp()->gtOp1->OperIs(GT_LIST) || (fixedArity == 0))
     {
         // We have a HWINTRINSIC node in the GT_LIST form with 3 or more args
         // Or the numArgs was specified as -1 in the numArgs column in "hwinstrinsiclistxarch.h"
@@ -8581,28 +8549,61 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
     }
     else // HWINTRINSIC unary or binary operator.
     {
+        ValueNumPair resvnp           = ValueNumPair();
+        bool         encodeResultType = vnEncodesResultTypeForHWIntrinsic(hwIntrinsicNode->gtHWIntrinsicId);
+
+        if (encodeResultType)
+        {
+            ValueNum vnSize     = vnStore->VNForIntCon(hwIntrinsicNode->gtSIMDSize);
+            ValueNum vnBaseType = vnStore->VNForIntCon(INT32(hwIntrinsicNode->gtSIMDBaseType));
+            ValueNum simdTypeVN = vnStore->VNForFunc(TYP_REF, VNF_SimdType, vnSize, vnBaseType);
+            resvnp.SetBoth(simdTypeVN);
+
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("    simdTypeVN is ");
+                vnPrint(simdTypeVN, 2);
+                printf("\n");
+            }
+#endif
+        }
         ValueNumPair op1vnp;
         ValueNumPair op1Xvnp;
         vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
 
         if (tree->AsOp()->gtOp2 == nullptr)
         {
-            assert(fixedArity == 1);
-            // Unary SIMD nodes have a nullptr for op2.
             excSetPair = op1Xvnp;
-            normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp);
-            assert(lookupNumArgs == 1);
+
+            if (encodeResultType)
+            {
+                normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, resvnp);
+                assert(vnStore->VNFuncArity(func) == 2);
+            }
+            else
+            {
+                normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp);
+                assert(vnStore->VNFuncArity(func) == 1);
+            }
         }
         else
         {
-            assert(fixedArity == 2);
             ValueNumPair op2vnp;
             ValueNumPair op2Xvnp;
             vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
 
             excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
-            normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, op2vnp);
-            assert(lookupNumArgs == 2);
+            if (encodeResultType)
+            {
+                normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, op2vnp, resvnp);
+                assert(vnStore->VNFuncArity(func) == 3);
+            }
+            else
+            {
+                normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, op2vnp);
+                assert(vnStore->VNFuncArity(func) == 2);
+            }
         }
     }
     tree->gtVNPair = vnStore->VNPWithExc(normalPair, excSetPair);

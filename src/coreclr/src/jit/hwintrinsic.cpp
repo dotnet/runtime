@@ -173,6 +173,33 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
     return NO_CLASS_HANDLE;
 }
 
+#ifdef FEATURE_HW_INTRINSICS
+/* static */ bool Compiler::vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID)
+{
+    int numArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicID);
+
+    // Currently we only record sn extra Result Type arg when we have a unary or binary HW Intrinsic node
+    //
+    if ((numArgs < 1) || (numArgs > 2))
+    {
+        return false;
+    }
+
+    // We iterate over all of the instructions in the HWIntrinsicInfo table
+    // if we find more than one then we return true, otherwise false
+    //
+    unsigned insCount = 0;
+    for (var_types baseType = TYP_BYTE; (baseType <= TYP_DOUBLE); baseType = (var_types)(baseType + 1))
+    {
+        if (HWIntrinsicInfo::lookupIns(hwIntrinsicID, baseType) != INS_invalid)
+        {
+            insCount++;
+        }
+    }
+    return (insCount > 1);
+}
+#endif // FEATURE_HW_INTRINSICS
+
 //------------------------------------------------------------------------
 // lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
 //

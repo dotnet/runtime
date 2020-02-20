@@ -8178,6 +8178,13 @@ public:
 #endif // !FEATURE_SIMD
     }
 
+#ifdef FEATURE_SIMD
+    static bool vnEncodesResultTypeForSIMDIntrinsic(SIMDIntrinsicID intrinsicId);
+#endif // !FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+    static bool vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID);
+#endif // FEATURE_HW_INTRINSICS
+
 private:
     // These routines need not be enclosed under FEATURE_SIMD since lvIsSIMDType()
     // is defined for both FEATURE_SIMD and !FEATURE_SIMD apropriately. The use

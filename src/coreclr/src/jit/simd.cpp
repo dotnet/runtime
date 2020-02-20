@@ -1051,6 +1051,46 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
     return nullptr;
 }
 
+/* static */ bool Compiler::vnEncodesResultTypeForSIMDIntrinsic(SIMDIntrinsicID intrinsicId)
+{
+    switch (intrinsicId)
+    {
+        case SIMDIntrinsicInit:
+        case SIMDIntrinsicGetItem:
+        case SIMDIntrinsicAdd:
+        case SIMDIntrinsicSub:
+        case SIMDIntrinsicMul:
+        case SIMDIntrinsicDiv:
+        case SIMDIntrinsicSqrt:
+        case SIMDIntrinsicMin:
+        case SIMDIntrinsicMax:
+        case SIMDIntrinsicAbs:
+        case SIMDIntrinsicEqual:
+        case SIMDIntrinsicLessThan:
+        case SIMDIntrinsicLessThanOrEqual:
+        case SIMDIntrinsicGreaterThan:
+        case SIMDIntrinsicGreaterThanOrEqual:
+        case SIMDIntrinsicBitwiseAnd:
+        case SIMDIntrinsicBitwiseAndNot:
+        case SIMDIntrinsicBitwiseOr:
+        case SIMDIntrinsicBitwiseXor:
+        case SIMDIntrinsicDotProduct:
+        case SIMDIntrinsicCast:
+        case SIMDIntrinsicConvertToSingle:
+        case SIMDIntrinsicConvertToDouble:
+        case SIMDIntrinsicConvertToInt32:
+        case SIMDIntrinsicConvertToInt64:
+        case SIMDIntrinsicNarrow:
+        case SIMDIntrinsicWidenHi:
+        case SIMDIntrinsicWidenLo:
+            return true;
+
+        default:
+            break;
+    }
+    return false;
+}
+
 // Pops and returns GenTree node from importer's type stack.
 // Normalizes TYP_STRUCT value in case of GT_CALL, GT_RET_EXPR and arg nodes.
 //
