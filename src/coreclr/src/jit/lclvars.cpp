@@ -85,6 +85,8 @@ void Compiler::lvaInit()
     lvaCurEpoch = 0;
 
     structPromotionHelper = new (this, CMK_Generic) StructPromotionHelper(this);
+
+    lvaEnregEHVars = (((opts.compFlags & CLFLG_REGVAR) != 0) && JitConfig.EnableEHWriteThru());
 }
 
 /*****************************************************************************/
@@ -2377,9 +2379,11 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum)
 //
 void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
 {
-    LclVarDsc* varDsc = lvaGetDesc(varNum);
+    noway_assert(varNum < lvaCount);
 
-    INDEBUG(varDsc->lvLiveInOutOfHndlr = 1);
+    LclVarDsc* varDsc = &lvaTable[varNum];
+
+    varDsc->lvLiveInOutOfHndlr = 1;
 
     if (varDsc->lvPromoted)
     {
@@ -2388,12 +2392,27 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
         for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
         {
             noway_assert(lvaTable[i].lvIsStructField);
-            INDEBUG(lvaTable[i].lvLiveInOutOfHndlr = 1);
-            lvaSetVarDoNotEnregister(i DEBUGARG(DNER_LiveInOutOfHandler));
+            lvaTable[i].lvLiveInOutOfHndlr = 1;
+            if (!lvaEnregEHVars)
+            {
+                lvaSetVarDoNotEnregister(i DEBUGARG(DNER_LiveInOutOfHandler));
+            }
         }
     }
 
-    lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
+    if (!lvaEnregEHVars)
+    {
+        lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
+    }
+#ifdef JIT32_GCENCODER
+    else if (lvaKeepAliveAndReportThis() && (varNum == info.compThisArg))
+    {
+        // For the JIT32_GCENCODER, when lvaKeepAliveAndReportThis is true, we must either keep the "this" pointer
+        // in the same register for the entire method, or keep it on the stack. If it is EH-exposed, we can't ever
+        // keep it in a register, since it must also be live on the stack. Therefore, we won't attempt to allocate it.
+        lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
+    }
+#endif // JIT32_GCENCODER
 }
 
 /*****************************************************************************
@@ -4107,8 +4126,20 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
                     case GT_STORE_LCL_VAR:
                     case GT_STORE_LCL_FLD:
                     {
-                        const unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
-                        lvaTable[lclNum].incRefCnts(weight, this);
+                        LclVarDsc* varDsc = lvaGetDesc(node->AsLclVarCommon());
+                        // If this is an EH var, use a zero weight for defs, so that we don't
+                        // count those in our heuristic for register allocation, since they always
+                        // must be stored, so there's no value in enregistering them at defs; only
+                        // if there are enough uses to justify it.
+                        if (varDsc->lvLiveInOutOfHndlr && !varDsc->lvDoNotEnregister &&
+                            ((node->gtFlags & GTF_VAR_DEF) != 0))
+                        {
+                            varDsc->incRefCnts(0, this);
+                        }
+                        else
+                        {
+                            varDsc->incRefCnts(weight, this);
+                        }
                         break;
                     }
 
@@ -6826,7 +6857,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         {
             printf("V");
         }
-        if (varDsc->lvLiveInOutOfHndlr)
+        if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
         {
             printf("H");
         }

@@ -199,10 +199,6 @@
 #include "profilinghelper.h"
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_COMINTEROP
-#include "synchronizationcontextnative.h"       // For SynchronizationContextNative::Cleanup
-#endif
-
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
 #endif // FEATURE_INTERPRETER
@@ -1162,41 +1158,6 @@ HRESULT EEStartup(COINITIEE fFlags)
 
 
 #ifndef CROSSGEN_COMPILE
-
-#ifdef FEATURE_COMINTEROP
-
-void InnerCoEEShutDownCOM()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    static LONG AlreadyDone = -1;
-
-    if (g_fEEStarted != TRUE)
-        return;
-
-    if (FastInterlockIncrement(&AlreadyDone) != 0)
-        return;
-
-    g_fShutDownCOM = true;
-
-    // Release IJupiterGCMgr *
-    RCWWalker::OnEEShutdown();
-
-    // Release all of the RCWs in all contexts in all caches.
-    ReleaseRCWsInCaches(NULL);
-
-#ifdef FEATURE_APPX
-    // Cleanup cached factory pointer in SynchronizationContextNative
-    SynchronizationContextNative::Cleanup();
-#endif
-}
-
-#endif // FEATURE_COMINTEROP
 
 // ---------------------------------------------------------------------------
 // %%Function: ForceEEShutdown()

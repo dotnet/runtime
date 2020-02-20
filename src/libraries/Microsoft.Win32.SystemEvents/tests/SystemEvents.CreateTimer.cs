@@ -29,7 +29,7 @@ namespace Microsoft.Win32.SystemEventsTests
             Assert.Throws<ArgumentException>(() => SystemEvents.CreateTimer(int.MinValue));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/29166")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/25920")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TimerElapsedSignaled()
         {

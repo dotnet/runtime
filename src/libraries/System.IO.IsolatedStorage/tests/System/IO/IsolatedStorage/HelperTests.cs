@@ -41,7 +41,7 @@ namespace System.IO.IsolatedStorage.Tests
         public void GetDataDirectory(IsolatedStorageScope scope)
         {
             // Machine scope is behind a policy that isn't enabled by default
-            // https://github.com/dotnet/corefx/issues/19839
+            // https://github.com/dotnet/runtime/issues/21742
             if (scope == IsolatedStorageScope.Machine && PlatformDetection.IsInAppContainer)
                 return;
 

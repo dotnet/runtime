@@ -23,6 +23,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/16686", TestRuntimes.Mono)]
         [MemberData(nameof(ValidOidFriendlyNamePairs))]
         public static void LookupOidByValue_Ctor(string oidValue, string friendlyName)
         {
@@ -33,6 +34,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/16686", TestRuntimes.Mono)]
         [MemberData(nameof(ValidOidFriendlyNamePairs))]
         public static void LookupOidByFriendlyName_Ctor(string oidValue, string friendlyName)
         {
@@ -68,6 +70,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/16686", TestRuntimes.Mono)]
         [MemberData(nameof(ValidOidFriendlyNamePairs))]
         public static void Oid_StringString_NullFriendlyName(string oidValue, string expectedFriendlyName)
         {
@@ -223,6 +226,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/16686", TestRuntimes.Mono)]
         [MemberData(nameof(ValidOidFriendlyNamePairs))]
         public static void LookupOidByFriendlyName_Method_InverseCase(string oidValue, string friendlyName)
         {

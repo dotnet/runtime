@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.ComponentModel.Composition
 {
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class ScopedCompositionServiceTests
     {
         [Export]

@@ -3693,8 +3693,6 @@ mini_parse_debug_option (const char *option)
 		mini_debug_options.gdb = TRUE;
 	else if (!strcmp (option, "lldb"))
 		mini_debug_options.lldb = TRUE;
-	else if (!strcmp (option, "llvm-disable-self-init"))
-		mini_debug_options.llvm_disable_self_init = TRUE;
 	else if (!strcmp (option, "llvm-disable-inlining"))
 		mini_debug_options.llvm_disable_inlining = TRUE;
 	else if (!strcmp (option, "llvm-disable-implicit-null-checks"))
@@ -4015,7 +4013,7 @@ llvm_init_inner (void)
 	if (!mono_llvm_load (NULL))
 		return FALSE;
 
-	mono_llvm_init ();
+	mono_llvm_init (!mono_compile_aot);
 	return TRUE;
 }
 #endif
@@ -4270,7 +4268,7 @@ mini_init (const char *filename, const char *runtime_version)
 		}
 	}
 	if (mono_use_llvm)
-		mono_llvm_init ();
+		mono_llvm_init (!mono_compile_aot);
 #endif
 
 	mono_trampolines_init ();
@@ -4667,6 +4665,7 @@ register_icalls (void)
 	register_icall (mini_llvmonly_init_delegate, mono_icall_sig_void_object, TRUE);
 	register_icall (mini_llvmonly_init_delegate_virtual, mono_icall_sig_void_object_object_ptr, TRUE);
 	register_icall (mini_llvmonly_throw_nullref_exception, mono_icall_sig_void, TRUE);
+	register_icall (mini_llvmonly_throw_missing_method_exception, mono_icall_sig_void, TRUE);
 
 	register_icall (mono_get_assembly_object, mono_icall_sig_object_ptr, TRUE);
 	register_icall (mono_get_method_object, mono_icall_sig_object_ptr, TRUE);

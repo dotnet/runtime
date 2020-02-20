@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Xml
                 "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384" => new RSAPKCS1SHA384SignatureDescription(),
                 "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512" => new RSAPKCS1SHA512SignatureDescription(),
 
-                // workarounds for issue https://github.com/dotnet/corefx/issues/16563
+                // workarounds for issue https://github.com/dotnet/runtime/issues/20374
                 // remove attribute from this method when removing them
                 "http://www.w3.org/2000/09/xmldsig#sha1" => SHA1.Create(),
                 "MD5" => MD5.Create(),

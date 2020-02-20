@@ -843,3 +843,15 @@ mini_llvmonly_throw_nullref_exception (void)
 
 	mono_llvm_throw_corlib_exception (ex_token_index);
 }
+
+static GENERATE_GET_CLASS_WITH_CACHE (missing_method, "System", "MissingMethodException")
+
+void
+mini_llvmonly_throw_missing_method_exception (void)
+{
+	MonoClass *klass = mono_class_get_missing_method_class ();
+
+	guint32 ex_token_index = m_class_get_type_token (klass) - MONO_TOKEN_TYPE_DEF;
+
+	mono_llvm_throw_corlib_exception (ex_token_index);
+}

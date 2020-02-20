@@ -138,6 +138,7 @@ namespace Microsoft.VisualBasic.Tests
         }
         
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2139", TestRuntimes.Mono)]
         public void DeleteSetting()
         {
             if (!PlatformDetection.IsInAppContainer)
@@ -207,6 +208,7 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2139", TestRuntimes.Mono)]
         public void GetAllSettings()
         {
             if (!PlatformDetection.IsInAppContainer)
@@ -221,6 +223,7 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2139", TestRuntimes.Mono)]
         public void GetSetting()
         {
             if (!PlatformDetection.IsInAppContainer)
@@ -301,14 +304,14 @@ namespace Microsoft.VisualBasic.Tests
         {
             Assert.Throws<OverflowException>(() => Interaction.Partition(Number, Start, Stop, Interval));
         }
-                
+
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2139", TestRuntimes.Mono)]
         public void SaveSetting()
         {
             if (!PlatformDetection.IsInAppContainer)
             {
                 Assert.Throws<ArgumentException>(() => Interaction.SaveSetting(AppName: "", Section: "", Key: "", Setting: ""));
-
             }
             else
             {

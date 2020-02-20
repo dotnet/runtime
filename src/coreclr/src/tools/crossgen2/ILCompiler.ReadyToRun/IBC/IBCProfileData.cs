@@ -15,10 +15,10 @@ namespace ILCompiler.IBC
         {
             foreach (MethodProfileData data in methodData)
             {
-                if (_methodData.ContainsKey(data.Method))
-                    throw new Exception("Multiple copies of data for the same method");
-
-                _methodData.Add(data.Method, data);
+                if (!_methodData.ContainsKey(data.Method))
+                {
+                    _methodData.Add(data.Method, data);
+                }
             }
             _partialNGen = partialNGen;
         }

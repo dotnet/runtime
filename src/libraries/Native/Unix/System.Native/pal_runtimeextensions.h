@@ -7,4 +7,4 @@
 #include "pal_compiler.h"
 #include "pal_types.h"
 
-DLLEXPORT int32_t SystemNative_GetNodeName(char* version, int* capacity);
+PALEXPORT int32_t SystemNative_GetNodeName(char* version, int* capacity);

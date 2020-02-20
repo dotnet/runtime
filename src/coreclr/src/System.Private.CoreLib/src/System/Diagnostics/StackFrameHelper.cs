@@ -4,6 +4,7 @@
 
 using System.Threading;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
 {
@@ -82,6 +83,13 @@ namespace System.Diagnostics
         // rgiLineNumber and rgiColumnNumber fields using the portable PDB reader if not already
         // done by GetStackFramesInternal (on Windows for old PDB format).
         //
+
+        // This is necessary because linker can't add new assemblies to the closure when recognizing Type.GetType
+        // so the code below is actually recognized by linker, but fails to resolve the type since the System.Diagnostics.StackTrace
+        // is not always part of the closure linker works on.
+        // PreserveDependencyAttribute on the other hand can pull in additional assemblies.
+        [PreserveDependency("GetSourceLineInfo", "System.Diagnostics.StackTraceSymbols", "System.Diagnostics.StackTrace")]
+        [PreserveDependency(".ctor()", "System.Diagnostics.StackTraceSymbols", "System.Diagnostics.StackTrace")]
         internal void InitializeSourceInfo(int iSkip, bool fNeedFileInfo, Exception? exception)
         {
             StackTrace.GetStackFramesInternal(this, iSkip, fNeedFileInfo, exception);

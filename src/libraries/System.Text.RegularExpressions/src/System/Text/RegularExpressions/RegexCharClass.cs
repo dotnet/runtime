@@ -1110,24 +1110,13 @@ namespace System.Text.RegularExpressions
                 // Otherwise, compute it normally.
                 bool isInClass = CharInClass(ch, set);
 
-                // Determine which bits to write back to the array.
+                // Determine which bits to write back to the array and "or" the bits back in a thread-safe manner.
                 int bitsToSet = knownBit;
                 if (isInClass)
                 {
                     bitsToSet |= valueBit;
                 }
-
-                // "or" the bits back in a thread-safe manner.
-                while (true)
-                {
-                    int oldValue = Interlocked.CompareExchange(ref slot, current | bitsToSet, current);
-                    if (oldValue == current)
-                    {
-                        break;
-                    }
-
-                    current = oldValue;
-                }
+                Interlocked.Or(ref slot, bitsToSet);
 
                 // Return the computed value.
                 return isInClass;

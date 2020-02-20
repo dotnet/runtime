@@ -19,7 +19,6 @@ namespace System.Text.Json
             throw new ArgumentException(SR.Format(SR.DeserializeWrongType, type, value.GetType()));
         }
 
-        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static NotSupportedException GetNotSupportedException_SerializationNotSupported(Type propertyType, Type? parentType, MemberInfo? memberInfo)
         {

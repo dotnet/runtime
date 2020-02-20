@@ -304,15 +304,15 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal ulong TotalBufferLength;
             internal QuicBuffer* Buffers;
             internal uint BufferCount;
-            internal byte Flags;
+            internal uint Flags;
         }
 
         [StructLayout(LayoutKind.Explicit)]
         internal struct StreamEventDataSendComplete
         {
-            [FieldOffset(7)]
+            [FieldOffset(0)]
             internal byte Canceled;
-            [FieldOffset(8)]
+            [FieldOffset(1)]
             internal IntPtr ClientContext;
 
             internal bool IsCanceled()
@@ -336,7 +336,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataSendShutdownComplete
         {
-            internal bool Graceful;
+            internal byte Graceful;
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -476,6 +476,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             internal uint Length;
             internal byte* Buffer;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct CertFileParams
+        {
+            internal IntPtr CertificateFilePath;
+            internal IntPtr PrivateKeyFilePath;
         }
     }
 }

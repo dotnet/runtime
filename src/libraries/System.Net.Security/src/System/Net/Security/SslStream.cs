@@ -741,7 +741,7 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateParameters(buffer, offset, count);
-            SslReadSync reader = new SslReadSync(this);
+            SyncSslIOAdapter reader = new SyncSslIOAdapter(this);
             ValueTask<int> vt = ReadAsyncInternal(reader, new Memory<byte>(buffer, offset, count));
             Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
             return vt.GetAwaiter().GetResult();
@@ -754,7 +754,7 @@ namespace System.Net.Security
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateParameters(buffer, offset, count);
 
-            SslWriteSync writeAdapter = new SslWriteSync(this);
+            SyncSslIOAdapter writeAdapter = new SyncSslIOAdapter(this);
             ValueTask vt = WriteAsyncInternal(writeAdapter, new ReadOnlyMemory<byte>(buffer, offset, count));
             Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
             vt.GetAwaiter().GetResult();
@@ -794,7 +794,7 @@ namespace System.Net.Security
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            SslWriteAsync writeAdapter = new SslWriteAsync(this, cancellationToken);
+            AsyncSslIOAdapter writeAdapter = new AsyncSslIOAdapter(this, cancellationToken);
             return WriteAsyncInternal(writeAdapter, buffer);
         }
 
@@ -802,14 +802,14 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateParameters(buffer, offset, count);
-            SslReadAsync read = new SslReadAsync(this, cancellationToken);
+            AsyncSslIOAdapter read = new AsyncSslIOAdapter(this, cancellationToken);
             return ReadAsyncInternal(read, new Memory<byte>(buffer, offset, count)).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            SslReadAsync read = new SslReadAsync(this, cancellationToken);
+            AsyncSslIOAdapter read = new AsyncSslIOAdapter(this, cancellationToken);
             return ReadAsyncInternal(read, buffer);
         }
 

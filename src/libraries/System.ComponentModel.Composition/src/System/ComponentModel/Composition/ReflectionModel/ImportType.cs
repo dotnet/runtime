@@ -23,13 +23,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private readonly bool _isOpenGeneric = false;
 
         [ThreadStatic]
-        internal static Dictionary<Type, Func<Export, object>>? _castSingleValueCache;
+        internal static Dictionary<Type, Func<Export, object>?>? _castSingleValueCache;
 
-        private static Dictionary<Type, Func<Export, object>> CastSingleValueCache
+        private static Dictionary<Type, Func<Export, object>?> CastSingleValueCache
         {
             get
             {
-                return _castSingleValueCache = _castSingleValueCache ?? new Dictionary<Type, Func<Export, object>>();
+                return _castSingleValueCache = _castSingleValueCache ?? new Dictionary<Type, Func<Export, object>?>();
             }
         }
 
@@ -170,7 +170,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return (genericType == LazyOfTType) || (genericType == LazyOfTMType);
         }
 
-        private static bool TryGetCastFunction(Type genericType, bool isOpenGeneric, Type[] arguments, [NotNullWhen(true)] out Func<Export, object>? castFunction)
+        private static bool TryGetCastFunction(Type genericType, bool isOpenGeneric, Type[] arguments, out Func<Export, object>? castFunction)
         {
             castFunction = null;
 

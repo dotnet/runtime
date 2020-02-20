@@ -10,7 +10,7 @@
 #ifdef MONO_LLVM_LOADED
 
 typedef struct {
-	void (*init)(void);
+	void (*init)(gboolean);
 	void (*cleanup)(void);
 	void (*emit_method)(MonoCompile *cfg);
 	void (*emit_call)(MonoCompile *cfg, MonoCallInst *call);
@@ -28,9 +28,9 @@ typedef struct {
 static LoadedBackend backend;
 
 void
-mono_llvm_init (void)
+mono_llvm_init (gboolean enable_jit)
 {
-	backend.init ();
+	backend.init (enable_jit);
 }
 
 void

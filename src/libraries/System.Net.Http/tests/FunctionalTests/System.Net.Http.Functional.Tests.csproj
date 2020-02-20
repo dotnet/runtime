@@ -224,11 +224,11 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\HPackEncoder.cs">
       <Link>Common\System\Net\Http\HPackEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)System\Net\Http\QPackDecoder.cs">
-      <Link>Common\System\Net\Http\QPackDecoder.cs</Link>
+    <Compile Include="$(CommonTestPath)System\Net\Http\QPackTestDecoder.cs">
+      <Link>Common\System\Net\Http\QPackTestDecoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)System\Net\Http\QPackEncoder.cs">
-      <Link>Common\System\Net\Http\QPackEncoder.cs</Link>
+    <Compile Include="$(CommonTestPath)System\Net\Http\QPackTestEncoder.cs">
+      <Link>Common\System\Net\Http\QPackTestEncoder.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\Http2LoopbackServer.cs">
       <Link>Common\System\Net\Http\Http2LoopbackServer.cs</Link>

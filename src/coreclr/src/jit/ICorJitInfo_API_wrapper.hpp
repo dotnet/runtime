@@ -367,6 +367,17 @@ BOOL WrapICorJitInfo::isValidStringRef(
     return temp;
 }
 
+LPCWSTR WrapICorJitInfo::getStringLiteral(
+            CORINFO_MODULE_HANDLE       module,     /* IN  */
+            unsigned                    metaTOK,    /* IN  */
+            int*                        length      /* OUT */)
+{
+    API_ENTER(getStringLiteral);
+    LPCWSTR temp = wrapHnd->getStringLiteral(module, metaTOK, length);
+    API_LEAVE(getStringLiteral);
+    return temp;
+}
+
 BOOL WrapICorJitInfo::shouldEnforceCallvirtRestriction(
             CORINFO_MODULE_HANDLE   scope)
 {

@@ -1090,7 +1090,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/corefx/issues/32780
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/runtime/issues/27615
         public void GetProcessesByName_ProcessName_ReturnsExpected()
         {
             // Get the current process using its name
@@ -1111,7 +1111,7 @@ namespace System.Diagnostics.Tests
             Assert.All(processes, process => Assert.Equal(".", process.MachineName));
             return;
 
-            // Outputs a list of active processes in case of failure: https://github.com/dotnet/corefx/issues/35783
+            // Outputs a list of active processes in case of failure: https://github.com/dotnet/runtime/issues/28874
             string PrintProcesses(Process currentProcess)
             {
                 StringBuilder builder = new StringBuilder();
@@ -1244,7 +1244,7 @@ namespace System.Diagnostics.Tests
 
             // .NET Core fixes a bug where Process.StartInfo for a unrelated process would
             // return information about the current process, not the unrelated process.
-            // See https://github.com/dotnet/corefx/issues/1100.
+            // See https://github.com/dotnet/runtime/issues/14329.
             Assert.Throws<InvalidOperationException>(() => process.StartInfo = new ProcessStartInfo());
 
             process.Kill();
@@ -1272,7 +1272,7 @@ namespace System.Diagnostics.Tests
 
             // .NET Core fixes a bug where Process.StartInfo for an unrelated process would
             // return information about the current process, not the unrelated process.
-            // See https://github.com/dotnet/corefx/issues/1100.
+            // See https://github.com/dotnet/runtime/issues/14329.
             Assert.Throws<InvalidOperationException>(() => process.StartInfo);
         }
 
@@ -1844,7 +1844,7 @@ namespace System.Diagnostics.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/37054", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/29330", TestPlatforms.OSX)]
         [Fact]
         public void LongProcessNamesAreSupported()
         {

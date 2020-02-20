@@ -17,6 +17,16 @@ namespace System.Net.Quic
         public SslServerAuthenticationOptions ServerAuthenticationOptions { get; set; }
 
         /// <summary>
+        /// Optional path to certificate file to configure the security configuration.
+        /// </summary>
+        public string CertificateFilePath { get; set; }
+
+        /// <summary>
+        /// Optional path to private key file to configure the security configuration.
+        /// </summary>
+        public string PrivateKeyFilePath { get; set; }
+
+        /// <summary>
         /// The endpoint to listen on.
         /// </summary>
         public IPEndPoint ListenEndPoint { get; set; }
