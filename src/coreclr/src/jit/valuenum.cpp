@@ -5317,6 +5317,7 @@ void ValueNumStore::InitValueNumStoreStatics()
     vnfOpAttribs[vnfNum] &= ~VNFOA_ArityMask;           /* clear old arity value   */                                  \
     vnfOpAttribs[vnfNum] |= (arity << VNFOA_ArityShift) /* set the new arity value */
 
+#ifdef FEATURE_SIMD
     for (SIMDIntrinsicID id = SIMDIntrinsicID::SIMDIntrinsicNone; (id < SIMDIntrinsicID::SIMDIntrinsicInvalid);
          id                 = (SIMDIntrinsicID)(id + 1))
     {
@@ -5336,15 +5337,20 @@ void ValueNumStore::InitValueNumStoreStatics()
     // SIMDIntrinsicInit has an incorrect entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns true
     // so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
     ValueNumFuncSetArity(VNF_SIMD_Init, 2);
+    // SIMDIntrinsicWidenHi has an incorrect entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns
+    // true, so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
+    ValueNumFuncSetArity(VNF_SIMD_WidenHi, 2);
     // SIMDIntrinsicWidenLo has an incorrect entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns
-    // true
-    // so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
+    // true, so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
     ValueNumFuncSetArity(VNF_SIMD_WidenLo, 2);
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+#ifdef TARGET_XARCH
     // SSE2_Shuffle has a -1 entry for numArgs, but when used as a HWINSTRINSIC always has two operands.
     ValueNumFuncSetArity(VNF_HWI_SSE2_Shuffle, 2);
-#endif
+#endif // TARGET_XARCH
 
     for (NamedIntrinsic id = (NamedIntrinsic)(NI_HW_INTRINSIC_START + 1); (id < NI_HW_INTRINSIC_END);
          id                = (NamedIntrinsic)(id + 1))
@@ -5362,6 +5368,7 @@ void ValueNumStore::InitValueNumStoreStatics()
             ValueNumFuncSetArity(func, newArity);
         }
     }
+#endif // FEATURE_HW_INTRINSICS
 
 #undef ValueNumFuncSetArity
 
