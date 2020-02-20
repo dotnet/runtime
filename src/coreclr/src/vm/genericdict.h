@@ -318,8 +318,8 @@ private:
     static DWORD GetDictionarySlotsSizeForType(MethodTable* pMT);
     static DWORD GetDictionarySlotsSizeForMethod(MethodDesc* pMD);
 
-    static Dictionary* GetTypeDictionaryWithSizeCheck(MethodTable* pMT);
-    static Dictionary* GetMethodDictionaryWithSizeCheck(MethodDesc* pMD);
+    static Dictionary* GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG slotIndex);
+    static Dictionary* GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG slotIndex);
 
 #endif // #ifndef DACCESS_COMPILE
 
