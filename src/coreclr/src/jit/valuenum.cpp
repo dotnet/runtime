@@ -5336,7 +5336,7 @@ void ValueNumStore::InitValueNumStoreStatics()
     // SIMDIntrinsicInit has an incorrect entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns true
     // so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
     ValueNumFuncSetArity(VNF_SIMD_Init, 2);
-    // SIMDIntrinsicWidenLo has an incorrect entry of 2 for numArgsm also vnEncodesResultTypeForSIMDIntrinsic returns
+    // SIMDIntrinsicWidenLo has an incorrect entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns
     // true
     // so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
     ValueNumFuncSetArity(VNF_SIMD_WidenLo, 2);
