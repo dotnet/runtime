@@ -96,7 +96,8 @@ namespace Internal.Cryptography.Pal.AnyOS
                 }
                 else
                 {
-                    using (RSA? rsa = cert!.GetRSAPrivateKey())
+                    Debug.Assert(cert != null);
+                    using (RSA? rsa = cert.GetRSAPrivateKey())
                     {
                         return DecryptKey(rsa, encryptionPadding, encryptedKey, out exception);
                     }
