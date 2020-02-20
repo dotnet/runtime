@@ -9,7 +9,7 @@ Debugging CoreCLR on Windows
 ============================
 
 1. Perform a build of the repo.
-2. Open solution \<reporoot\>\artifacts\obj\Windows_NT.\<platform\>.\<configuration\>\CoreCLR.sln in Visual Studio. \<platform\> and \<configuration\> are based
+2. Open solution \<reporoot\>\artifacts\obj\coreclr\Windows_NT.\<platform\>.\<configuration\>\CoreCLR.sln in Visual Studio. \<platform\> and \<configuration\> are based
     on type of build you did. By default they are 'x64' and 'Debug'.
 3. Right-click the INSTALL project and choose ‘Set as StartUp Project’
 4. Bring up the properties page for the INSTALL project
