@@ -268,7 +268,7 @@ namespace System.Net.Http
                             if (bytesRead == 0)
                             {
                                 string message = _incomingBuffer.ActiveLength == 0 ?
-                                    SR.net_http_invalid_response_missing_frame) :
+                                    SR.net_http_invalid_response_missing_frame :
                                     SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, FrameHeader.Size - _incomingBuffer.ActiveLength);
                                 throw new IOException(message);
                             }
