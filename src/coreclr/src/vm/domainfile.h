@@ -818,7 +818,7 @@ public:
     bool TestAndClearRunEagerFixups();
 
     uint32_t GetComponentAssemblyCount() const { return m_componentAssemblyCount; }
-    const ReadyToRunInfo *GetReadyToRunInfo() const { return m_readyToRunInfo; }
+    ReadyToRunInfo *GetReadyToRunInfo() const { return m_readyToRunInfo; }
     IMDInternalImport *GetManifestMetadata() const { return m_manifestMetadata; }
 
     Assembly *LoadComponentAssembly(uint32_t rowid);

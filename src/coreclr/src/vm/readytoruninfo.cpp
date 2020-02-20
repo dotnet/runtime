@@ -69,10 +69,7 @@ MethodDesc * ReadyToRunInfo::GetMethodDescForEntryPoint(PCODE entryPoint)
         return NULL;
 #endif
 
-    TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint));
-    if (val == (TADDR)INVALIDENTRY)
-        return NULL;
-    return dac_cast<PTR_MethodDesc>(val);
+    return m_compositeInfo->TryGetMethodDescForEntryPoint(entryPoint);
 }
 
 BOOL ReadyToRunInfo::HasHashtableOfTypes()
@@ -344,7 +341,40 @@ PTR_BYTE ReadyToRunInfo::GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction)
     return dac_cast<PTR_BYTE>(m_composite->GetLayout()->GetBase()) + debugInfoOffset;
 }
 
+MethodDesc *ReadyToRunInfo::TryGetMethodDescForEntryPoint(TADDR entryPointRVA)
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        NOTHROW;
+        SUPPORTS_DAC;
+        PRECONDITION(!m_isComponentAssembly);
+    }
+    CONTRACTL_END;
+
+    TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPointRVA), (LPVOID)PCODEToPINSTR(entryPointRVA));
+    if (val == (TADDR)INVALIDENTRY)
+        return NULL;
+    return dac_cast<PTR_MethodDesc>(val);
+}
+
 #ifndef DACCESS_COMPILE
+
+void ReadyToRunInfo::SetMethodDescForEntryPoint(TADDR entryPointRVA, MethodDesc *methodDesc)
+{
+    CONTRACTL
+    {
+        PRECONDITION(!m_isComponentAssembly);
+    }
+    CONTRACTL_END;
+
+    CrstHolder ch(&m_Crst);
+
+    if (m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPointRVA), (LPVOID)PCODEToPINSTR(entryPointRVA)) == (LPVOID)INVALIDENTRY)
+    {
+        m_entryPointToMethodDescMap.InsertValue(PCODEToPINSTR(entryPointRVA), methodDesc);
+    }
+}
 
 BOOL ReadyToRunInfo::IsReadyToRunEnabled()
 {
@@ -596,13 +626,24 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     if (compositeImage != NULL)
     {
         // In multi-assembly composite images, per assembly sections are stored next to their core headers.
-        m_composite = compositeImage->GetReadyToRunInfo()->GetComposite();
+        m_compositeInfo = compositeImage->GetReadyToRunInfo();
+        m_composite = m_compositeInfo->GetComposite();
         SString componentAssemblyName(SString::Utf8, pModule->GetSimpleName());
-        m_component = ReadyToRunCoreInfo(m_composite->GetLayout(), compositeImage->GetComponentAssemblyHeader(componentAssemblyName));
+        if (compositeImage->GetComponentAssemblyCount() == 1)
+        {
+            // When there's just 1 component assembly in the composite image, we're skipping the
+            // assembly headers and store all sections directly in the main R2R header.
+            m_component = *m_composite;
+        }
+        else
+        {
+            m_component = ReadyToRunCoreInfo(m_composite->GetLayout(), compositeImage->GetComponentAssemblyHeader(componentAssemblyName));
+        }
         m_isComponentAssembly = true;
     }
     else
     {
+        m_compositeInfo = this;
         m_component = ReadyToRunCoreInfo(pLayout, &pHeader->CoreHeader);
         m_composite = &m_component;
         m_isComponentAssembly = false;
@@ -652,7 +693,11 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
         m_availableTypesHashtable = NativeHashtable(parser);
     }
 
+    if (!m_isComponentAssembly)
     {
+        // For component assemblies we don't initialize the reverse lookup map mapping entry points to MethodDescs;
+        // we need to use the global map in the composite image ReadyToRunInfo instance to be able to reverse translate
+        // all methods within the composite image.
         LockOwner lock = {&m_Crst, IsOwnerOfCrst};
         m_entryPointToMethodDescMap.Init(TRUE, &lock);
     }
@@ -854,13 +899,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 
     _ASSERTE(id < m_nRuntimeFunctions);
     pEntryPoint = dac_cast<TADDR>(GetComposite()->GetLayout()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
-
-    {
-        CrstHolder ch(&m_Crst);
-
-        if (m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(pEntryPoint), (LPVOID)PCODEToPINSTR(pEntryPoint)) == (LPVOID)INVALIDENTRY)
-            m_entryPointToMethodDescMap.InsertValue(PCODEToPINSTR(pEntryPoint), pMD);
-    }
+    m_compositeInfo->SetMethodDescForEntryPoint(pEntryPoint, pMD);
 
 #ifndef CROSSGEN_COMPILE
 #ifdef PROFILING_SUPPORTED

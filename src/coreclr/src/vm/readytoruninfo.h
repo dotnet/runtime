@@ -50,6 +50,7 @@ class ReadyToRunInfo
     PTR_READYTORUN_HEADER           m_pHeader;
     bool                            m_isComponentAssembly;
     DomainCompositeImage*           m_compositeImage;
+    ReadyToRunInfo*                 m_compositeInfo;
 
     ReadyToRunCoreInfo              m_component;
     const ReadyToRunCoreInfo*       m_composite;
@@ -193,7 +194,10 @@ private:
     BOOL GetTypeNameFromToken(IMDInternalImport * pImport, mdToken mdType, LPCUTF8 * ppszName, LPCUTF8 * ppszNameSpace);
     BOOL GetEnclosingToken(IMDInternalImport * pImport, mdToken mdType, mdToken * pEnclosingToken);
     BOOL CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, mdToken mdToken2, IMDInternalImport * pImport2);
-	BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
+    BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
+
+    MethodDesc *TryGetMethodDescForEntryPoint(TADDR entryPointRVA);
+    void SetMethodDescForEntryPoint(TADDR entryPointRVA, MethodDesc *methodDesc);
 };
 
 class DynamicHelpers
