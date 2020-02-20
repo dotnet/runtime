@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs.Asn1;
@@ -27,7 +28,7 @@ namespace System.Security.Cryptography.Pkcs
             bool isOrdering = false,
             ReadOnlyMemory<byte>? nonce = null,
             ReadOnlyMemory<byte>? tsaName = null,
-            X509ExtensionCollection extensions = null)
+            X509ExtensionCollection? extensions = null)
         {
             _encodedBytes = Encode(
                 policyId,
@@ -134,12 +135,12 @@ namespace System.Security.Cryptography.Pkcs
 
         public static bool TryDecode(
             ReadOnlyMemory<byte> source,
-            out Rfc3161TimestampTokenInfo timestampTokenInfo,
+            [NotNullWhen(true)] out Rfc3161TimestampTokenInfo? timestampTokenInfo,
             out int bytesConsumed)
         {
-            if (TryDecode(source, false, out Rfc3161TstInfo tstInfo, out bytesConsumed, out byte[] copiedBytes))
+            if (TryDecode(source, false, out Rfc3161TstInfo tstInfo, out bytesConsumed, out byte[]? copiedBytes))
             {
-                timestampTokenInfo = new Rfc3161TimestampTokenInfo(copiedBytes, tstInfo);
+                timestampTokenInfo = new Rfc3161TimestampTokenInfo(copiedBytes!, tstInfo);
                 return true;
             }
 
@@ -153,7 +154,7 @@ namespace System.Security.Cryptography.Pkcs
             bool ownsMemory,
             out Rfc3161TstInfo tstInfo,
             out int bytesConsumed,
-            out byte[] copiedBytes)
+            out byte[]? copiedBytes)
         {
             // https://tools.ietf.org/html/rfc3161#section-2.4.2
             // The eContent SHALL be the DER-encoded value of TSTInfo.
@@ -216,7 +217,7 @@ namespace System.Security.Cryptography.Pkcs
             long? accuracyInMicroseconds,
             ReadOnlyMemory<byte>? nonce,
             ReadOnlyMemory<byte>? tsaName,
-            X509ExtensionCollection extensions)
+            X509ExtensionCollection? extensions)
         {
             if (policyId == null)
                 throw new ArgumentNullException(nameof(policyId));
