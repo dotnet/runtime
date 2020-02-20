@@ -14,7 +14,7 @@ namespace System.Net.Sockets
         private IntPtr _acceptedFileDescriptor;
         private int _socketAddressSize;
         private SocketFlags _receivedFlags;
-        private Action<int, byte[], int, SocketFlags, SocketError>? _transferCompletionCallback;
+        private Action<int, byte[]?, int, SocketFlags, SocketError>? _transferCompletionCallback;
 
         private void InitializeInternals()
         {
@@ -112,10 +112,10 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        private Action<int, byte[], int, SocketFlags, SocketError> TransferCompletionCallback =>
+        private Action<int, byte[]?, int, SocketFlags, SocketError> TransferCompletionCallback =>
             _transferCompletionCallback ?? (_transferCompletionCallback = TransferCompletionCallbackCore);
 
-        private void TransferCompletionCallbackCore(int bytesTransferred, byte[] socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError socketError)
+        private void TransferCompletionCallbackCore(int bytesTransferred, byte[]? socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError socketError)
         {
             CompleteTransferOperation(bytesTransferred, socketAddress, socketAddressSize, receivedFlags, socketError);
 

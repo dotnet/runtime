@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
+#nullable enable
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -18,7 +18,7 @@ namespace System.Net.Sockets
         //
         public readonly struct Token
         {
-            private readonly SocketAsyncEngine _engine;
+            private readonly SocketAsyncEngine? _engine;
             private readonly IntPtr _handle;
 
             public Token(SocketAsyncContext context)
@@ -35,14 +35,14 @@ namespace System.Net.Sockets
             {
                 if (WasAllocated)
                 {
-                    _engine.FreeHandle(_handle);
+                    _engine!.FreeHandle(_handle);
                 }
             }
 
             public bool TryRegister(SafeSocketHandle socket, out Interop.Error error)
             {
                 Debug.Assert(WasAllocated, "Expected WasAllocated to be true");
-                return _engine.TryRegister(socket, _handle, out error);
+                return _engine!.TryRegister(socket, _handle, out error);
             }
         }
 
@@ -70,7 +70,7 @@ namespace System.Net.Sockets
         // The current engines. We replace an engine when it runs out of "handle" values.
         // Must be accessed under s_lock.
         //
-        private static readonly SocketAsyncEngine[] s_currentEngines = new SocketAsyncEngine[s_engineCount];
+        private static readonly SocketAsyncEngine?[] s_currentEngines = new SocketAsyncEngine?[s_engineCount];
         private static int s_allocateFromEngine = 0;
 
         private readonly IntPtr _port;
@@ -149,7 +149,7 @@ namespace System.Net.Sockets
         //
         // Allocates a new {SocketAsyncEngine, handle} pair.
         //
-        private static void AllocateToken(SocketAsyncContext context, out SocketAsyncEngine engine, out IntPtr handle)
+        private static void AllocateToken(SocketAsyncContext context, out SocketAsyncEngine? engine, out IntPtr handle)
         {
             lock (s_lock)
             {
@@ -159,7 +159,7 @@ namespace System.Net.Sockets
                     // We minimize the number of engines on applications that have a low number of concurrent sockets.
                     for (int i = 0; i < s_allocateFromEngine; i++)
                     {
-                        var previousEngine = s_currentEngines[i];
+                        SocketAsyncEngine? previousEngine = s_currentEngines[i];
                         if (previousEngine == null || previousEngine.HasLowNumberOfSockets)
                         {
                             s_allocateFromEngine = i;
@@ -285,7 +285,7 @@ namespace System.Net.Sockets
                 {
                     if (suppressFlow) ExecutionContext.SuppressFlow();
                     Task.Factory.StartNew(
-                        s => ((SocketAsyncEngine)s).EventLoop(),
+                        s => ((SocketAsyncEngine)s!).EventLoop(),
                         this,
                         CancellationToken.None,
                         TaskCreationOptions.LongRunning,
@@ -330,7 +330,7 @@ namespace System.Net.Sockets
                         else
                         {
                             Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
-                            _handleToContextMap.TryGetValue(handle, out SocketAsyncContext context);
+                            _handleToContextMap.TryGetValue(handle, out SocketAsyncContext? context);
                             if (context != null)
                             {
                                 context.HandleEvents(_buffer[i].Events);
