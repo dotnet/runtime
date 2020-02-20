@@ -153,15 +153,15 @@ namespace System.Collections.Immutable
         {
             get
             {
-                #if !NETSTANDARD1_0
+#if !NETSTANDARD1_0
                 return _root.ItemRef(index);
-                #else
+#else
                 return _root[index];
-                #endif
+#endif
             }
         }
 
-        #if !NETSTANDARD1_0
+#if !NETSTANDARD1_0
         /// <summary>
         /// Gets a read-only reference of the element of the set at the given index.
         /// </summary>
@@ -171,7 +171,7 @@ namespace System.Collections.Immutable
         {
             return ref _root.ItemRef(index);
         }
-        #endif
+#endif
 
         #endregion
 
