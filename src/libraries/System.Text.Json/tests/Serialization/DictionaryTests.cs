@@ -619,7 +619,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DictionaryOfObject_37569()
+        public static void DictionaryOfObject_NonPrimitiveTypes()
         {
             // https://github.com/dotnet/runtime/issues/29504
             Dictionary<string, object> dictionary = new Dictionary<string, object>
@@ -1637,15 +1637,16 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(obj.MyDictionary);
         }
 
+        // https://github.com/dotnet/runtime/issues/29933
         [Fact]
-        public static void Regression38643_Serialize()
+        public static void Serialize_IDictionaryOfPoco()
         {
             // Arrange
-            var value = new Regression38643_Parent()
+            var value = new AllSingleUpperPropertiesParent()
             {
-                Child = new Dictionary<string, Regression38643_Child>()
+                Child = new Dictionary<string, AllSingleUpperProperties_Child>()
                 {
-                    ["1"] = new Regression38643_Child()
+                    ["1"] = new AllSingleUpperProperties_Child()
                     {
                         A = "1",
                         B = string.Empty,
@@ -1664,13 +1665,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotEmpty(actual);
         }
 
+        // https://github.com/dotnet/runtime/issues/29933
         [Fact]
-        public static void Regression38643_Deserialize()
+        public static void Deserialize_IDictionaryOfPoco()
         {
             // Arrange
             string json = "{\"child\":{\"1\":{\"a\":\"1\",\"b\":\"\",\"c\":[],\"d\":[],\"e\":null,\"f\":[],\"g\":null,\"h\":null,\"i\":null,\"j\":null,\"k\":[]}}}";
 
-            var actual = JsonSerializer.Deserialize<Regression38643_Parent>(json, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            var actual = JsonSerializer.Deserialize<AllSingleUpperPropertiesParent>(json, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
             // Assert
             Assert.NotNull(actual);
@@ -1680,24 +1682,26 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("1", actual.Child["1"].A);
         }
 
+        // https://github.com/dotnet/runtime/issues/29893
         [Fact]
-        public static void Regression38565_Serialize()
+        public static void ShouldHandleNullInDictionaries_Serialize()
         {
-            var value = new Regression38565_Parent()
+            var value = new ClassWithDictionaryOfString_ChildWithDictionaryOfString()
             {
                 Test = "value1",
-                Child = new Regression38565_Child()
+                Child = new ClassWithDictionaryOfString()
             };
 
             var actual = JsonSerializer.Serialize(value);
             Assert.Equal("{\"Test\":\"value1\",\"Dict\":null,\"Child\":{\"Test\":null,\"Dict\":null}}", actual);
         }
 
+        // https://github.com/dotnet/runtime/issues/29893
         [Fact]
-        public static void Regression38565_Deserialize()
+        public static void ShouldHandleNullInDictionaries_Deserialize()
         {
             var json = "{\"Test\":\"value1\",\"Dict\":null,\"Child\":{\"Test\":null,\"Dict\":null}}";
-            Regression38565_Parent actual = JsonSerializer.Deserialize<Regression38565_Parent>(json);
+            ClassWithDictionaryOfString_ChildWithDictionaryOfString actual = JsonSerializer.Deserialize<ClassWithDictionaryOfString_ChildWithDictionaryOfString>(json);
 
             Assert.Equal("value1", actual.Test);
             Assert.Null(actual.Dict);
@@ -1706,24 +1710,26 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(actual.Child.Test);
         }
 
+        // https://github.com/dotnet/runtime/issues/29893
         [Fact]
-        public static void Regression38565_Serialize_IgnoreNullValues()
+        public static void ShouldHandleNullInDictionaries_Serialize_IgnoreNullValues()
         {
-            var value = new Regression38565_Parent()
+            var value = new ClassWithDictionaryOfString_ChildWithDictionaryOfString()
             {
                 Test = "value1",
-                Child = new Regression38565_Child()
+                Child = new ClassWithDictionaryOfString()
             };
 
             var actual = JsonSerializer.Serialize(value, new JsonSerializerOptions { IgnoreNullValues = true });
             Assert.Equal("{\"Test\":\"value1\",\"Child\":{}}", actual);
         }
 
+        // https://github.com/dotnet/runtime/issues/29893
         [Fact]
-        public static void Regression38565_Deserialize_IgnoreNullValues()
+        public static void ShouldHandleNullInDictionaries_Deserialize_IgnoreNullValues()
         {
             var json = "{\"Test\":\"value1\",\"Child\":{}}";
-            Regression38565_Parent actual = JsonSerializer.Deserialize<Regression38565_Parent>(json);
+            ClassWithDictionaryOfString_ChildWithDictionaryOfString actual = JsonSerializer.Deserialize<ClassWithDictionaryOfString_ChildWithDictionaryOfString>(json);
 
             Assert.Equal("value1", actual.Test);
             Assert.Null(actual.Dict);
@@ -1732,10 +1738,11 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(actual.Child.Test);
         }
 
+        // https://github.com/dotnet/runtime/issues/29888
         [Fact]
-        public static void Regression38557_Serialize()
+        public static void DictionaryWithNullShouldPreserveOrder_Serialize()
         {
-            var dictionaryFirst = new Regression38557_DictionaryFirst()
+            var dictionaryFirst = new ClassWithDictionaryAndProperty_DictionaryFirst()
             {
                 Test = "value1"
             };
@@ -1743,7 +1750,7 @@ namespace System.Text.Json.Serialization.Tests
             var actual = JsonSerializer.Serialize(dictionaryFirst);
             Assert.Equal("{\"Dict\":null,\"Test\":\"value1\"}", actual);
 
-            var dictionaryLast = new Regression38557_DictionaryLast()
+            var dictionaryLast = new ClassWithDictionaryAndProperty_DictionaryLast()
             {
                 Test = "value1"
             };
@@ -1752,26 +1759,28 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("{\"Test\":\"value1\",\"Dict\":null}", actual);
         }
 
+        // https://github.com/dotnet/runtime/issues/29888
         [Fact]
-        public static void Regression38557_Deserialize()
+        public static void DictionaryWithNullShouldPreserveOrder_Deserialize()
         {
             var json = "{\"Dict\":null,\"Test\":\"value1\"}";
-            Regression38557_DictionaryFirst dictionaryFirst = JsonSerializer.Deserialize<Regression38557_DictionaryFirst>(json);
+            ClassWithDictionaryAndProperty_DictionaryFirst dictionaryFirst = JsonSerializer.Deserialize<ClassWithDictionaryAndProperty_DictionaryFirst>(json);
 
             Assert.Equal("value1", dictionaryFirst.Test);
             Assert.Null(dictionaryFirst.Dict);
 
             json = "{\"Test\":\"value1\",\"Dict\":null}";
-            Regression38557_DictionaryLast dictionaryLast = JsonSerializer.Deserialize<Regression38557_DictionaryLast>(json);
+            ClassWithDictionaryAndProperty_DictionaryLast dictionaryLast = JsonSerializer.Deserialize<ClassWithDictionaryAndProperty_DictionaryLast>(json);
 
             Assert.Equal("value1", dictionaryLast.Test);
             Assert.Null(dictionaryLast.Dict);
         }
 
+        // https://github.com/dotnet/runtime/issues/29888
         [Fact]
-        public static void Regression38557_Serialize_IgnoreNullValues()
+        public static void DictionaryWithNullShouldPreserveOrder_Serialize_IgnoreNullValues()
         {
-            var dictionaryFirst = new Regression38557_DictionaryFirst()
+            var dictionaryFirst = new ClassWithDictionaryAndProperty_DictionaryFirst()
             {
                 Test = "value1"
             };
@@ -1779,7 +1788,7 @@ namespace System.Text.Json.Serialization.Tests
             var actual = JsonSerializer.Serialize(dictionaryFirst, new JsonSerializerOptions { IgnoreNullValues = true });
             Assert.Equal("{\"Test\":\"value1\"}", actual);
 
-            var dictionaryLast = new Regression38557_DictionaryLast()
+            var dictionaryLast = new ClassWithDictionaryAndProperty_DictionaryLast()
             {
                 Test = "value1"
             };
@@ -1788,17 +1797,18 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("{\"Test\":\"value1\"}", actual);
         }
 
+        // https://github.com/dotnet/runtime/issues/29888
         [Fact]
-        public static void Regression38557_Deserialize_IgnoreNullValues()
+        public static void DictionaryWithNullShouldPreserveOrder_Deserialize_IgnoreNullValues()
         {
             var json = "{\"Test\":\"value1\"}";
-            Regression38557_DictionaryFirst dictionaryFirst = JsonSerializer.Deserialize<Regression38557_DictionaryFirst>(json);
+            ClassWithDictionaryAndProperty_DictionaryFirst dictionaryFirst = JsonSerializer.Deserialize<ClassWithDictionaryAndProperty_DictionaryFirst>(json);
 
             Assert.Equal("value1", dictionaryFirst.Test);
             Assert.Null(dictionaryFirst.Dict);
 
             json = "{\"Test\":\"value1\"}";
-            Regression38557_DictionaryLast dictionaryLast = JsonSerializer.Deserialize<Regression38557_DictionaryLast>(json);
+            ClassWithDictionaryAndProperty_DictionaryLast dictionaryLast = JsonSerializer.Deserialize<ClassWithDictionaryAndProperty_DictionaryLast>(json);
 
             Assert.Equal("value1", dictionaryLast.Test);
             Assert.Null(dictionaryLast.Dict);
@@ -1844,12 +1854,12 @@ namespace System.Text.Json.Serialization.Tests
             [JsonIgnore] public Dictionary<int, int> MyDictionary { get; set; }
         }
 
-        public class Regression38643_Parent
+        public class AllSingleUpperPropertiesParent
         {
-            public IDictionary<string, Regression38643_Child> Child { get; set; }
+            public IDictionary<string, AllSingleUpperProperties_Child> Child { get; set; }
         }
 
-        public class Regression38643_Child
+        public class AllSingleUpperProperties_Child
         {
             public string A { get; set; }
             public string B { get; set; }
@@ -1864,26 +1874,26 @@ namespace System.Text.Json.Serialization.Tests
             public string[] K { get; set; }
         }
 
-        public class Regression38565_Parent
+        public class ClassWithDictionaryOfString_ChildWithDictionaryOfString
         {
             public string Test { get; set; }
             public Dictionary<string, string> Dict { get; set; }
-            public Regression38565_Child Child { get; set; }
+            public ClassWithDictionaryOfString Child { get; set; }
         }
 
-        public class Regression38565_Child
-        {
-            public string Test { get; set; }
-            public Dictionary<string, string> Dict { get; set; }
-        }
-
-        public class Regression38557_DictionaryLast
+        public class ClassWithDictionaryOfString
         {
             public string Test { get; set; }
             public Dictionary<string, string> Dict { get; set; }
         }
 
-        public class Regression38557_DictionaryFirst
+        public class ClassWithDictionaryAndProperty_DictionaryLast
+        {
+            public string Test { get; set; }
+            public Dictionary<string, string> Dict { get; set; }
+        }
+
+        public class ClassWithDictionaryAndProperty_DictionaryFirst
         {
             public Dictionary<string, string> Dict { get; set; }
             public string Test { get; set; }
