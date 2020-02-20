@@ -732,13 +732,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Sd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
                        // fminp - scalar)
-            if (id->idOpSize() == EA_8BYTE)
+            if (id->idOpSize() == EA_16BYTE)
             {
                 assert(id->idInsOpt() == INS_OPTS_2D);
             }
             else
             {
-                assert(id->idOpSize() == EA_4BYTE);
+                assert(id->idOpSize() == EA_8BYTE);
                 assert(id->idInsOpt() == INS_OPTS_2S);
             }
             assert(isVectorRegister(id->idReg1()));
@@ -4345,7 +4345,7 @@ void emitter::emitIns_R_R(
         case INS_fminnmp:
         case INS_fminp:
             // Scalar operation
-            assert(((size == EA_4BYTE) && (opt == INS_OPTS_2S)) || ((size == EA_8BYTE) && (opt == INS_OPTS_2D)));
+            assert(((size == EA_8BYTE) && (opt == INS_OPTS_2S)) || ((size == EA_16BYTE) && (opt == INS_OPTS_2D)));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             fmt = IF_DV_2Q;
@@ -10156,8 +10156,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DV_2G: // DV_2G   .........X...... ......nnnnnddddd      Vd Vn      (fmov, fcvtXX - register)
-        case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Vd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
-                       // fminp - scalar)
             elemsize = id->idOpSize();
             code     = emitInsCode(ins, fmt);
             code |= insEncodeFloatElemsize(elemsize); // X
@@ -10246,6 +10244,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code     = emitInsCode(ins, fmt);
             code |= insEncodeReg_Vd(id->idReg1()); // ddddd
             code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Vd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
+           // fminp - scalar)
+            elemsize = optGetElemsize(id->idInsOpt());
+            code = emitInsCode(ins, fmt);
+            code |= insEncodeFloatElemsize(elemsize); // X
+            code |= insEncodeReg_Vd(id->idReg1());    // ddddd
+            code |= insEncodeReg_Vn(id->idReg2());    // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
