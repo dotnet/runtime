@@ -1003,7 +1003,7 @@ namespace System.DirectoryServices
                         _propertyCollection.valueTable.Remove(name);
 
                         // also need to consider the range retrieval case
-                        string[] results = name.Split(new char[] { ';' });
+                        string[] results = name.Split(';');
                         if (results.Length != 1)
                         {
                             string rangeName = "";
