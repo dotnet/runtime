@@ -110,7 +110,7 @@ namespace System
     public sealed partial class AppDomain : System.MarshalByRefObject
     {
         internal AppDomain() { }
-        public string? BaseDirectory { get { throw null; } }
+        public string BaseDirectory { get { throw null; } }
         public static System.AppDomain CurrentDomain { get { throw null; } }
         public string? DynamicDirectory { get { throw null; } }
         public string FriendlyName { get { throw null; } }

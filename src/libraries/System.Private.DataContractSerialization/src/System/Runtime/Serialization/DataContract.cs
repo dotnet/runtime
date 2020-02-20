@@ -1586,11 +1586,11 @@ namespace System.Runtime.Serialization
                 startIndex = typeName.IndexOf('.', endIndex);
                 if (startIndex < 0)
                 {
-                    nestedParamCounts.Add(int.Parse(typeName.Substring(endIndex + 1), CultureInfo.InvariantCulture));
+                    nestedParamCounts.Add(int.Parse(typeName.AsSpan(endIndex + 1), provider: CultureInfo.InvariantCulture));
                     break;
                 }
                 else
-                    nestedParamCounts.Add(int.Parse(typeName.Substring(endIndex + 1, startIndex - endIndex - 1), CultureInfo.InvariantCulture));
+                    nestedParamCounts.Add(int.Parse(typeName.AsSpan(endIndex + 1, startIndex - endIndex - 1), provider: CultureInfo.InvariantCulture));
             }
             if (localName != null)
                 localName.Append("Of");
@@ -1931,7 +1931,7 @@ namespace System.Runtime.Serialization
                     else
                     {
                         int paramIndex;
-                        if (!int.TryParse(format.Substring(start, i - start), out paramIndex) || paramIndex < 0 || paramIndex >= genericNameProvider.GetParameterCount())
+                        if (!int.TryParse(format.AsSpan(start, i - start), out paramIndex) || paramIndex < 0 || paramIndex >= genericNameProvider.GetParameterCount())
                             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.GenericParameterNotValid, format.Substring(start, i - start), genericNameProvider.GetGenericTypeName(), genericNameProvider.GetParameterCount() - 1)));
                         typeName.Append(genericNameProvider.GetParameterName(paramIndex));
                     }

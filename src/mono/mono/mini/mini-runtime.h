@@ -179,13 +179,6 @@ typedef struct MonoDebugOptions {
 	gboolean lldb;
 
 	/*
-	 * With LLVM codegen, this option will cause methods to be called indirectly through the
-	 * PLT (As they are in other FullAOT modes, without LLVM). 
-	 *
-	 * Enable this to debug problems with direct calls in llvm
-	 */
-	gboolean llvm_disable_self_init;
-	/*
 	 * Prevent LLVM from inlining any methods
 	 */
 	gboolean llvm_disable_inlining;

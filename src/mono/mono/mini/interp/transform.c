@@ -6956,7 +6956,7 @@ retry:
 					if (replace_op) {
 						int stored_local = prev_ins->data [0];
 						sp->ins = NULL;
-						if (sp->val.type == STACK_VALUE_NONE) {
+						if (sp->val.type == STACK_VALUE_NONE && !(td->locals [stored_local].flags & INTERP_LOCAL_FLAG_INDIRECT)) {
 							// We know what local is on the stack now. Track it
 							sp->val.type = STACK_VALUE_LOCAL;
 							sp->val.local = stored_local;
@@ -6976,11 +6976,12 @@ retry:
 					}
 				}
 			} else if (locals [loaded_local].type == STACK_VALUE_LOCAL) {
-				g_assert (locals [loaded_local].type == STACK_VALUE_LOCAL);
 				g_assert (!(td->locals [loaded_local].flags & INTERP_LOCAL_FLAG_INDIRECT));
 				// do copy propagation of the original source
 				mono_interp_stats.copy_propagations++;
 				local_ref_count [loaded_local]--;
+				// We can't propagate a local that has its address taken
+				g_assert (!(td->locals [locals [loaded_local].local].flags & INTERP_LOCAL_FLAG_INDIRECT));
 				ins->data [0] = locals [loaded_local].local;
 				local_ref_count [ins->data [0]]++;
 				if (td->verbose_level) {
