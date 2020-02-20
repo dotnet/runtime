@@ -682,41 +682,54 @@ namespace System.Net.Security
             {
                 while (true)
                 {
-                    int copyBytes;
                     if (_decryptedBytesCount != 0)
                     {
-                        copyBytes = CopyDecryptedData(buffer);
-
-                        return copyBytes;
+                        return CopyDecryptedData(buffer);
                     }
 
-                    copyBytes = await adapter.ReadLockAsync(buffer).ConfigureAwait(false);
+                    int copyBytes = await adapter.ReadLockAsync(buffer).ConfigureAwait(false);
                     if (copyBytes > 0)
                     {
                         return copyBytes;
                     }
 
                     ResetReadBuffer();
-                    int readBytes = await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
-                    if (readBytes == 0)
-                    {
-                        return 0;
-                    }
 
-                    int payloadBytes = GetFrameSize(new ReadOnlySpan<byte>(_internalBuffer, _internalOffset, readBytes));
+                    // Read the next frame header.
+                    if (_internalBufferCount < SecureChannel.ReadHeaderSize)
+                    {
+                        // We don't have enough bytes buffered, so issue an initial read to try to get enough.  This is
+                        // done in this method both to better consolidate error handling logic (the first read is the special
+                        // case that needs to differentiate reading 0 from > 0, and everything else needs to throw if it
+                        // doesn't read enough), and to minimize the chances that in the common case the FillBufferAsync
+                        // helper needs to yield and allocate a state machine.
+                        int readBytes = await adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount)).ConfigureAwait(false);
+                        if (readBytes == 0)
+                        {
+                            return 0;
+                        }
+
+                        _internalBufferCount += readBytes;
+                        if (_internalBufferCount < SecureChannel.ReadHeaderSize)
+                        {
+                            await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
+                        }
+                    }
+                    Debug.Assert(_internalBufferCount >= SecureChannel.ReadHeaderSize);
+
+                    // Parse the frame header to determine the payload size (which includes the header size).
+                    int payloadBytes = GetFrameSize(_internalBuffer.AsSpan(_internalOffset));
                     if (payloadBytes < 0)
                     {
                         throw new IOException(SR.net_frame_read_size);
                     }
 
-                    readBytes = await FillBufferAsync(adapter, payloadBytes).ConfigureAwait(false);
-                    Debug.Assert(readBytes >= 0);
-                    if (readBytes == 0)
+                    // Read in the rest of the payload if we don't have it.
+                    if (_internalBufferCount < payloadBytes)
                     {
-                        throw new IOException(SR.net_io_eof);
+                        await FillBufferAsync(adapter, payloadBytes).ConfigureAwait(false);
                     }
 
-                    // At this point, readBytes contains the size of the header plus body.
                     // Set _decrytpedBytesOffset/Count to the current frame we have (including header)
                     // DecryptData will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
                     _decryptedBytesOffset = _internalOffset;
@@ -725,7 +738,7 @@ namespace System.Net.Security
 
                     // Treat the bytes we just decrypted as consumed
                     // Note, we won't do another buffer read until the decrypted bytes are processed
-                    ConsumeBufferedBytes(readBytes);
+                    ConsumeBufferedBytes(payloadBytes);
 
                     if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                     {
@@ -826,68 +839,26 @@ namespace System.Net.Security
                         return minSize;
                     }
 
-                    int bytesNeeded = minSize - _handshakeBuffer.ActiveLength;
                     task = adap.ReadAsync(_handshakeBuffer.AvailableMemory);
                 }
             }
         }
 
-        private ValueTask<int> FillBufferAsync<TIOAdapter>(TIOAdapter adapter, int minSize)
+        private async ValueTask FillBufferAsync<TIOAdapter>(TIOAdapter adapter, int numBytesRequired)
             where TIOAdapter : ISslIOAdapter
         {
-            if (_internalBufferCount >= minSize)
-            {
-                return new ValueTask<int>(minSize);
-            }
+            Debug.Assert(_internalBufferCount > 0);
+            Debug.Assert(_internalBufferCount < numBytesRequired);
 
-            int initialCount = _internalBufferCount;
-            do
+            while (_internalBufferCount < numBytesRequired)
             {
-                ValueTask<int> t = adapter.ReadAsync(new Memory<byte>(_internalBuffer, _internalBufferCount, _internalBuffer.Length - _internalBufferCount));
-                if (!t.IsCompletedSuccessfully)
+                int bytesRead = await adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount)).ConfigureAwait(false);
+                if (bytesRead == 0)
                 {
-                    return InternalFillBufferAsync(adapter, t, minSize, initialCount);
-                }
-                int bytes = t.Result;
-                if (bytes == 0)
-                {
-                    if (_internalBufferCount != initialCount)
-                    {
-                        // We read some bytes, but not as many as we expected, so throw.
-                        throw new IOException(SR.net_io_eof);
-                    }
-
-                    return new ValueTask<int>(0);
+                    throw new IOException(SR.net_io_eof);
                 }
 
-                _internalBufferCount += bytes;
-            } while (_internalBufferCount < minSize);
-
-            return new ValueTask<int>(minSize);
-
-            async ValueTask<int> InternalFillBufferAsync(TIOAdapter adap, ValueTask<int> task, int min, int initial)
-            {
-                while (true)
-                {
-                    int b = await task.ConfigureAwait(false);
-                    if (b == 0)
-                    {
-                        if (_internalBufferCount != initial)
-                        {
-                            throw new IOException(SR.net_io_eof);
-                        }
-
-                        return 0;
-                    }
-
-                    _internalBufferCount += b;
-                    if (_internalBufferCount >= min)
-                    {
-                        return min;
-                    }
-
-                    task = adap.ReadAsync(new Memory<byte>(_internalBuffer, _internalBufferCount, _internalBuffer.Length - _internalBufferCount));
-                }
+                _internalBufferCount += bytesRead;
             }
         }
 
@@ -949,7 +920,7 @@ namespace System.Net.Security
             int copyBytes = Math.Min(_decryptedBytesCount, buffer.Length);
             if (copyBytes != 0)
             {
-                new Span<byte>(_internalBuffer, _decryptedBytesOffset, copyBytes).CopyTo(buffer.Span);
+                new ReadOnlySpan<byte>(_internalBuffer, _decryptedBytesOffset, copyBytes).CopyTo(buffer.Span);
 
                 _decryptedBytesOffset += copyBytes;
                 _decryptedBytesCount -= copyBytes;
@@ -1168,10 +1139,7 @@ namespace System.Net.Security
             return Framing.Unified; // Will use Ssl2 just for this frame.
         }
 
-        //
-        // This is called from SslStream class too.
         // Returns TLS Frame size.
-        //
         private int GetFrameSize(ReadOnlySpan<byte> buffer)
         {
             if (NetEventSource.IsEnabled)
@@ -1184,7 +1152,7 @@ namespace System.Net.Security
                 case Framing.BeforeSSL3:
                     if (buffer.Length < 2)
                     {
-                        throw new System.IO.IOException(SR.net_ssl_io_frame);
+                        throw new IOException(SR.net_ssl_io_frame);
                     }
                     // Note: Cannot detect version mismatch for <= SSL2
 
@@ -1203,7 +1171,7 @@ namespace System.Net.Security
                 case Framing.SinceSSL3:
                     if (buffer.Length < 5)
                     {
-                        throw new System.IO.IOException(SR.net_ssl_io_frame);
+                        throw new IOException(SR.net_ssl_io_frame);
                     }
 
                     payloadSize = ((buffer[3] << 8) | buffer[4]) + 5;
