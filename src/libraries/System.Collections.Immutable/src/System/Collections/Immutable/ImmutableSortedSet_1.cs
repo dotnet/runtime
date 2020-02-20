@@ -21,11 +21,11 @@ namespace System.Collections.Immutable
     /// </devremarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-#if !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
+    #if !NETSTANDARD1_0 && !NETSTANDARD1_3 && !NETSTANDARD2_0
     public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlySet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
-#else
+    #else
     public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
-#endif
+    #endif
     {
         /// <summary>
         /// This is the factor between the small collection's size and the large collection's size in a bulk operation,
@@ -102,7 +102,7 @@ namespace System.Collections.Immutable
             get { return _root.Min; }
         }
 
-#region IImmutableSet<T> Properties
+        #region IImmutableSet<T> Properties
 
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
@@ -120,9 +120,9 @@ namespace System.Collections.Immutable
             get { return _root.Count; }
         }
 
-#endregion
+        #endregion
 
-#region ISortKeyCollection<T> Properties
+        #region ISortKeyCollection<T> Properties
 
         /// <summary>
         /// See the <see cref="ISortKeyCollection{T}"/> interface.
@@ -132,7 +132,7 @@ namespace System.Collections.Immutable
             get { return _comparer; }
         }
 
-#endregion
+        #endregion
 
         /// <summary>
         /// Gets the root node (for testing purposes).
@@ -142,7 +142,7 @@ namespace System.Collections.Immutable
             get { return _root; }
         }
 
-#region IReadOnlyList<T> Indexers
+        #region IReadOnlyList<T> Indexers
 
         /// <summary>
         /// Gets the element of the set at the given index.
@@ -153,15 +153,15 @@ namespace System.Collections.Immutable
         {
             get
             {
-#if !NETSTANDARD1_0
+                #if !NETSTANDARD1_0
                 return _root.ItemRef(index);
-#else
+                #else
                 return _root[index];
-#endif
+                #endif
             }
         }
 
-#if !NETSTANDARD1_0
+        #if !NETSTANDARD1_0
         /// <summary>
         /// Gets a read-only reference of the element of the set at the given index.
         /// </summary>
@@ -171,11 +171,11 @@ namespace System.Collections.Immutable
         {
             return ref _root.ItemRef(index);
         }
-#endif
+        #endif
 
-#endregion
+        #endregion
 
-#region Public methods
+        #region Public methods
 
         /// <summary>
         /// Creates a collection with the same contents as this collection that
@@ -609,9 +609,9 @@ namespace System.Collections.Immutable
             return _root.IndexOf(item, _comparer);
         }
 
-#endregion
+        #endregion
 
-#region IImmutableSet<T> Members
+        #region IImmutableSet<T> Members
 
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
@@ -686,9 +686,9 @@ namespace System.Collections.Immutable
             return this.Union(other);
         }
 
-#endregion
+        #endregion
 
-#region ISet<T> Members
+        #region ISet<T> Members
 
         /// <summary>
         /// See <see cref="ISet{T}"/>
@@ -730,9 +730,9 @@ namespace System.Collections.Immutable
             throw new NotSupportedException();
         }
 
-#endregion
+        #endregion
 
-#region ICollection<T> members
+        #region ICollection<T> members
 
         /// <summary>
         /// See the <see cref="ICollection{T}"/> interface.
@@ -774,9 +774,9 @@ namespace System.Collections.Immutable
             throw new NotSupportedException();
         }
 
-#endregion
+        #endregion
 
-#region IList<T> methods
+        #region IList<T> methods
 
         /// <summary>
         /// See the <see cref="IList{T}"/> interface.
@@ -803,9 +803,9 @@ namespace System.Collections.Immutable
             throw new NotSupportedException();
         }
 
-#endregion
+        #endregion
 
-#region IList properties
+        #region IList properties
 
         /// <summary>
         /// Gets a value indicating whether the <see cref="IList"/> has a fixed size.
@@ -826,9 +826,9 @@ namespace System.Collections.Immutable
             get { return true; }
         }
 
-#endregion
+        #endregion
 
-#region ICollection Properties
+        #region ICollection Properties
 
         /// <summary>
         /// See <see cref="ICollection"/>.
@@ -852,9 +852,9 @@ namespace System.Collections.Immutable
             }
         }
 
-#endregion
+        #endregion
 
-#region IList methods
+        #region IList methods
 
         /// <summary>
         /// Adds an item to the <see cref="IList"/>.
@@ -947,9 +947,9 @@ namespace System.Collections.Immutable
             set { throw new NotSupportedException(); }
         }
 
-#endregion
+        #endregion
 
-#region ICollection Methods
+        #region ICollection Methods
 
         /// <summary>
         /// Copies the elements of the <see cref="ICollection"/> to an <see cref="Array"/>, starting at a particular <see cref="Array"/> index.
@@ -961,9 +961,9 @@ namespace System.Collections.Immutable
             _root.CopyTo(array, index);
         }
 
-#endregion
+        #endregion
 
-#region IEnumerable<T> Members
+        #region IEnumerable<T> Members
 
         /// <summary>
         /// Returns an enumerator that iterates through the collection.
@@ -979,9 +979,9 @@ namespace System.Collections.Immutable
                 this.GetEnumerator();
         }
 
-#endregion
+        #endregion
 
-#region IEnumerable Members
+        #region IEnumerable Members
 
         /// <summary>
         /// Returns an enumerator that iterates through a collection.
@@ -995,7 +995,7 @@ namespace System.Collections.Immutable
             return this.GetEnumerator();
         }
 
-#endregion
+        #endregion
 
         /// <summary>
         /// Returns an enumerator that iterates through the collection.
