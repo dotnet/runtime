@@ -346,7 +346,7 @@ namespace Mono.Linker.Steps {
 			if (IsInterfaceOverrideThatDoesNotNeedMarked (overrideInformation, isInstantiated))
 				return;
 
-			if (!isInstantiated && !@base.IsAbstract && _context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval))
+			if (!isInstantiated && !@base.IsAbstract && _context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval, method))
 				return;
 
 			MarkMethod (method);
@@ -650,7 +650,7 @@ namespace Mono.Linker.Steps {
 			if (Annotations.HasPreservedStaticCtor (type))
 				return false;
 			
-			if (type.IsBeforeFieldInit && _context.IsOptimizationEnabled (CodeOptimizations.BeforeFieldInit))
+			if (type.IsBeforeFieldInit && _context.IsOptimizationEnabled (CodeOptimizations.BeforeFieldInit, type))
 				return false;
 
 			return true;
@@ -2198,7 +2198,7 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void MarkMethodBody (MethodBody body)
 		{
-			if (_context.IsOptimizationEnabled (CodeOptimizations.UnreachableBodies) && IsUnreachableBody (body)) {
+			if (_context.IsOptimizationEnabled (CodeOptimizations.UnreachableBodies, body.Method) && IsUnreachableBody (body)) {
 				MarkAndCacheConvertToThrowExceptionCtor ();
 				_unreachableBodies.Add (body);
 				return;
@@ -2299,7 +2299,7 @@ namespace Mono.Linker.Steps {
 			if (Annotations.IsMarked (resolvedInterfaceType))
 				return true;
 
-			if (!_context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces))
+			if (!_context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type))
 				return true;
 
 			// It's hard to know if a com or windows runtime interface will be needed from managed code alone,

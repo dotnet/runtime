@@ -172,8 +172,7 @@ namespace Mono.Linker {
 #endif
 				var custom_steps = new List<string> ();
 				var excluded_features = new HashSet<string> (StringComparer.Ordinal);
-				var disabled_optimizations = new HashSet<string> (StringComparer.Ordinal);
-				var enabled_optimizations = new HashSet<string> (StringComparer.Ordinal);
+				var set_optimizations = new List<(CodeOptimizations, string, bool)> ();
 				bool dumpDependencies = false;
 				string dependenciesFileName = null;
 				bool ignoreDescriptors = false;
@@ -297,9 +296,11 @@ namespace Mono.Linker {
 
 						case "--disable-opt":
 							if (!GetStringParam (token, l => {
-								var opt = l.ToLowerInvariant ();
-								if (!disabled_optimizations.Contains (opt))
-									disabled_optimizations.Add (opt);
+								if (!GetOptimizationName (l, out var opt))
+									return;
+
+								string assemblyName = GetNextStringValue ();
+								set_optimizations.Add ((opt, assemblyName, false));
 							}))
 								return false;
 
@@ -307,9 +308,11 @@ namespace Mono.Linker {
 
 						case "--enable-opt":
 							if (!GetStringParam (token, l => {
-								var opt = l.ToLowerInvariant ();
-								if (!enabled_optimizations.Contains (opt))
-									enabled_optimizations.Add (opt);
+								if (!GetOptimizationName (l, out var opt))
+									return;
+
+								string assemblyName = GetNextStringValue ();
+								set_optimizations.Add ((opt, assemblyName, true));
 							}))
 								return false;
 
@@ -490,41 +493,12 @@ namespace Mono.Linker {
 				if (dumpDependencies)
 					context.Tracer.AddRecorder (new XmlDependencyRecorder (context, dependenciesFileName));
 
-				if (disabled_optimizations.Count > 0) {
-					foreach (var item in disabled_optimizations) {
-						switch (item) {
-						case "beforefieldinit":
-							context.DisabledOptimizations |= CodeOptimizations.BeforeFieldInit;
-							break;
-						case "overrideremoval":
-							context.DisabledOptimizations |= CodeOptimizations.OverrideRemoval;
-							break;
-						case "unreachablebodies":
-							context.DisabledOptimizations |= CodeOptimizations.UnreachableBodies;
-							break;
-						case "unusedinterfaces":
-							context.DisabledOptimizations |= CodeOptimizations.UnusedInterfaces;
-							break;
-						case "ipconstprop":
-							context.DisabledOptimizations |= CodeOptimizations.IPConstantPropagation;
-							break;
-						}
-					}
-				}
-
-				if (enabled_optimizations.Count > 0) {
-					foreach (var item in enabled_optimizations) {
-						switch (item) {
-						case "unreachablebodies":
-							context.DisabledOptimizations &= ~CodeOptimizations.UnreachableBodies;
-							break;
-						case "clearinitlocals":
-							context.DisabledOptimizations &= ~CodeOptimizations.ClearInitLocals;
-							break;
-						case "ipconstprop":
-							context.DisabledOptimizations &= ~CodeOptimizations.IPConstantPropagation;
-							break;
-						}
+				if (set_optimizations.Count > 0) {
+					foreach (var item in set_optimizations) {
+						if (item.Item3)
+							context.Optimizations.Enable (item.Item1, item.Item2);
+						else
+							context.Optimizations.Disable (item.Item1, item.Item2);
 					}
 				}
 
@@ -571,10 +545,7 @@ namespace Mono.Linker {
 				}
 
 				p.AddStepBefore (typeof (MarkStep), new RemoveUnreachableBlocksStep ());
-
-				if (context.IsOptimizationEnabled (CodeOptimizations.ClearInitLocals))
-					p.AddStepBefore (typeof (OutputStep), new ClearInitLocalsStep ());
-
+				p.AddStepBefore (typeof (OutputStep), new ClearInitLocalsStep ());
 
 				//
 				// Pipeline setup with all steps enabled
@@ -594,7 +565,7 @@ namespace Mono.Linker {
 				// CodeRewriterStep
 				// CleanStep
 				// RegenerateGuidStep [optional]
-				// ClearInitLocalsStep [optional]
+				// ClearInitLocalsStep
 				// OutputStep
 				//
 
@@ -732,6 +703,34 @@ namespace Mono.Linker {
 			return assemblyAction;
 		}
 
+		static bool GetOptimizationName (string text, out CodeOptimizations optimization)
+		{
+			switch (text.ToLowerInvariant ()) {
+			case "beforefieldinit":
+				optimization = CodeOptimizations.BeforeFieldInit;
+				return true;
+			case "overrideremoval":
+				optimization = CodeOptimizations.OverrideRemoval;
+				return true;
+			case "unreachablebodies":
+				optimization = CodeOptimizations.UnreachableBodies;
+				return true;
+			case "clearinitlocals":
+				optimization = CodeOptimizations.ClearInitLocals;
+				return true;
+			case "unusedinterfaces":
+				optimization = CodeOptimizations.UnusedInterfaces;
+				return true;
+			case "ipconstprop":
+				optimization = CodeOptimizations.IPConstantPropagation;
+				return true;
+			}
+
+			Console.WriteLine ($"Invalid optimization value '{text}'");
+			optimization = 0;
+			return false;
+		}
+
 		bool GetBoolParam (string token, Action<bool> action)
 		{
 			if (arguments.Count == 0) {
@@ -772,6 +771,18 @@ namespace Mono.Linker {
 			return false;
 		}
 
+		string GetNextStringValue ()
+		{
+			if (arguments.Count < 1)
+				return null;
+
+			var arg = arguments.Peek ();
+			if (arg.StartsWith ("-") || arg.StartsWith ("/"))
+				return null;
+
+			arguments.Dequeue ();
+			return arg;
+		}
 
 		protected virtual LinkContext GetDefaultContext (Pipeline pipeline)
 		{
@@ -800,40 +811,40 @@ namespace Mono.Linker {
 #endif
 			Console.WriteLine ("  -r                  Link from a list of assemblies using roots visible outside of the assembly");
 			Console.WriteLine ("  -x                  Link from XML descriptor");
-			Console.WriteLine ("  -d <path>           Specify additional directories to search in for references");
-			Console.WriteLine ("  -reference <file>   Specify additional assemblies to use as references");
+			Console.WriteLine ("  -d PATH             Specify additional directories to search in for references");
+			Console.WriteLine ("  -reference FILE     Specify additional assemblies to use as references");
 			Console.WriteLine ("  -b                  Update debug symbols for each linked module. Defaults to false");
 			Console.WriteLine ("  -v                  Keep members and types used by debugger. Defaults to false");
 #if !FEATURE_ILLINK
 			Console.WriteLine ("  -l <name>,<name>    List of i18n assemblies to copy to the output directory. Defaults to 'all'");
 			Console.WriteLine ("                        Valid names are 'none', 'all', 'cjk', 'mideast', 'other', 'rare', 'west'");
 #endif
-			Console.WriteLine ("  -out <path>         Specify the output directory. Defaults to 'output'");
+			Console.WriteLine ("  -out PATH           Specify the output directory. Defaults to 'output'");
 			Console.WriteLine ("  --about             About the {0}", _linker);
 			Console.WriteLine ("  --verbose           Log messages indicating progress and warnings");
 			Console.WriteLine ("  --version           Print the version number of the {0}", _linker);
 			Console.WriteLine ("  -help               Lists all linker options");
-			Console.WriteLine ("  @<file>             Read response file for more options");
+			Console.WriteLine ("  @FILE               Read response file for more options");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Actions");
-			Console.WriteLine ("  -c <action>         Action on the framework assemblies. Defaults to 'skip'");
+			Console.WriteLine ("  -c ACTION           Action on the framework assemblies. Defaults to 'skip'");
 			Console.WriteLine ("                        copy: Copy the assembly into the output (it can be updated when any of its dependencies is removed)");
 			Console.WriteLine ("                        copyused: Same as copy but only for assemblies which are needed");
 			Console.WriteLine ("                        link: Remove any ununsed code or metadata from the assembly");
 			Console.WriteLine ("                        skip: Do not process the assembly");
 			Console.WriteLine ("                        addbypassngen: Add BypassNGenAttribute to unused methods");
 			Console.WriteLine ("                        addbypassngenused: Same as addbypassngen but unused assemblies are removed");
-			Console.WriteLine ("  -u <action>         Action on the user assemblies. Defaults to 'link'");
-			Console.WriteLine ("  -p <action> <name>  Overrides the default action for an assembly");
+			Console.WriteLine ("  -u ACTION           Action on the user assemblies. Defaults to 'link'");
+			Console.WriteLine ("  -p ACTION ASM       Overrides the default action for an assembly");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Advanced");
-			Console.WriteLine ("  --custom-step <config>    Add a custom step <config> to the existing pipeline");
+			Console.WriteLine ("  --custom-step CFG         Add a custom step <config> to the existing pipeline");
 			Console.WriteLine ("                            Step can use one of following configurations");
-			Console.WriteLine ("                            <type>: Add user defined type <type> as last step to the pipeline");
-			Console.WriteLine ("                            +<stepname:type>: Inserts step <type> before existing <stepname>");
-			Console.WriteLine ("                            -<stepname:type>: Add step <type> after existing step");
+			Console.WriteLine ("                            TYPE: Add user defined type as last step to the pipeline");
+			Console.WriteLine ("                            +NAME:TYPE: Inserts step type before existing step with name");
+			Console.WriteLine ("                            -NAME:TYPE: Add step type after existing step");
 			Console.WriteLine ("  --ignore-descriptors      Skips reading embedded descriptors (short -z). Defaults to false");
 			Console.WriteLine ("  --keep-facades            Keep assemblies with type-forwarders (short -t). Defaults to false");
 			Console.WriteLine ("  --skip-unresolved         Ignore unresolved types, methods, and assemblies. Defaults to false");
@@ -841,15 +852,15 @@ namespace Mono.Linker {
 			Console.WriteLine ();
 			Console.WriteLine ("Linking");
 			Console.WriteLine ("  --deterministic           Produce a deterministic output for linked assemblies");
-			Console.WriteLine ("  --disable-opt <name>      Disable one of the default optimizations");
+			Console.WriteLine ("  --disable-opt NAME [ASM]  Disable one of the default optimizations globaly or for a specific assembly name");
 			Console.WriteLine ("                              beforefieldinit: Unused static fields are removed if there is no static ctor");
 			Console.WriteLine ("                              ipconstprop: Interprocedural constant propagation on return values");
 			Console.WriteLine ("                              overrideremoval: Overrides of virtual methods on types that are never instantiated are removed");
 			Console.WriteLine ("                              unreachablebodies: Instance methods that are marked but not executed are converted to throws");
 			Console.WriteLine ("                              unusedinterfaces: Removes interface types from declaration when not used");
-			Console.WriteLine ("  --enable-opt <name>       Enable one of the non-default optimizations");
+			Console.WriteLine ("  --enable-opt NAME [ASM]   Enable one of the additional optimizations globaly or for a specific assembly name");
 			Console.WriteLine ("                              clearinitlocals: Remove initlocals");
-			Console.WriteLine ("  --exclude-feature <name>  Any code which has a feature <name> in linked assemblies will be removed");
+			Console.WriteLine ("  --exclude-feature NAME    Any code which has a feature <name> in linked assemblies will be removed");
 			Console.WriteLine ("                              com: Support for COM Interop");
 			Console.WriteLine ("                              etw: Event Tracing for Windows");
 #if !FEATURE_ILLINK
@@ -862,12 +873,12 @@ namespace Mono.Linker {
 			Console.WriteLine ("  --new-mvid                Generate a new guid for each linked assembly (short -g). Defaults to true");
 			Console.WriteLine ("  --strip-resources         Remove XML descriptor resources for linked assemblies. Defaults to true");
 			Console.WriteLine ("  --strip-security          Remove metadata and code related to Code Access Security. Defaults to true");
-			Console.WriteLine ("  --substitutions <file>    Configuration file with field or methods substitution rules");
+			Console.WriteLine ("  --substitutions FILE      Configuration file with field or methods substitution rules");
 			Console.WriteLine ("  --used-attrs-only         Attribute usage is removed if the attribute type is not used. Defaults to false");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Analyzer");
-			Console.WriteLine ("  --dependencies-file <path> Specify the dependencies output. Defaults to 'output/linker-dependencies.xml.gz'");
+			Console.WriteLine ("  --dependencies-file PATH   Specify the dependencies output. Defaults to 'output/linker-dependencies.xml.gz'");
 			Console.WriteLine ("  --dump-dependencies        Dump dependencies for the linker analyzer tool");
 			Console.WriteLine ("  --reduced-tracing          Reduces dependency output related to assemblies that will not be modified");
 			Console.WriteLine ("");

@@ -1,8 +1,5 @@
 using System;
 using System.Collections.Generic;
-
-using Mono.Linker;
-using Mono.Linker.Steps;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -36,7 +33,8 @@ namespace Mono.Linker.Steps
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
-			if ((_assemblies != null) && (!_assemblies.Contains (assembly.Name.Name))) {
+			if (!Context.IsOptimizationEnabled (CodeOptimizations.ClearInitLocals, assembly) &&
+				_assemblies?.Contains (assembly.Name.Name) != true) {
 				return;
 			}
 
