@@ -228,6 +228,18 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Equal(label, content[fields.Label]);
         }
 
+        [Theory]
+        [InlineData("H E L L O")]
+        [InlineData("H-E-L-L-O")]
+        [InlineData("H-E-L-L-O ")]
+        [InlineData("HEL-LO")]
+        public static void TryFind_True_LabelsWithHyphenSpace(string label)
+        {
+            string content = $"-----BEGIN {label}-----\nZm9v\n-----END {label}-----";
+            Assert.True(PemEncoding.TryFind(content, out PemFields fields));
+            Assert.Equal(label, content[fields.Label]);
+        }
+
         [Fact]
         public static void TryFind_True_LabelCharacterBoundaries()
         {
@@ -309,6 +321,8 @@ Zm9v
         [InlineData("-OOPS")]
         [InlineData("te\x7fst")]
         [InlineData("te\x19st")]
+        [InlineData("te  st")] //two spaces
+        [InlineData("te- st")]
         public static void TryFind_False_InvalidLabel(string label)
         {
             string content = $"-----BEGIN {label}-----\nZm9v\n-----END {label}-----";

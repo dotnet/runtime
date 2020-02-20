@@ -11,9 +11,9 @@ namespace System.Security.Cryptography
     /// </summary>
     public static class PemEncoding
     {
-        private static readonly ReadOnlySpan<char> s_PreEBPrefix = "-----BEGIN ";
-        private static readonly ReadOnlySpan<char> s_PostEBPrefix = "-----END ";
-        private static readonly ReadOnlySpan<char> s_Ending = "-----";
+        private const string PreEBPrefix = "-----BEGIN ";
+        private const string PostEBPrefix = "-----END ";
+        private const string Ending = "-----";
         private const int EncodedLineLength = 64;
 
         /// <summary>
@@ -103,9 +103,9 @@ namespace System.Security.Cryptography
                 Range labelRange = (areaOffset + labelStartIndex)..(areaOffset + labelEndingIndex);
                 int postebLength = PostEBPrefix.Length + label.Length + Ending.Length;
                 Span<char> postebBuffer = postebLength > postebStackBufferSize ? new char[postebLength] : postebStackBuffer;
-                PostEBPrefix.CopyTo(postebBuffer);
+                PostEBPrefix.AsSpan().CopyTo(postebBuffer);
                 label.CopyTo(postebBuffer[PostEBPrefix.Length..]);
-                Ending.CopyTo(postebBuffer[(PostEBPrefix.Length + label.Length)..]);
+                Ending.AsSpan().CopyTo(postebBuffer[(PostEBPrefix.Length + label.Length)..]);
                 ReadOnlySpan<char> posteb = postebBuffer[..postebLength];
                 int postebStartIndex = pemArea[contentStartIndex..].IndexOf(posteb);
 
@@ -142,7 +142,14 @@ namespace System.Security.Cryptography
                 return true;
 
                 next_after_label:
-                Debug.Assert(labelEndingIndex > 0);
+                if (labelEndingIndex == 0)
+                {
+                    // We somehow ended up in a situation where we will advance 0 characters, which means we'll
+                    // we'll probably end up here again in a loop. To avoid getting stuck in a loop, detect this
+                    // situation and return.
+                    fields = default;
+                    return false;
+                }
                 areaOffset += labelEndingIndex;
                 pemArea = pemArea[labelEndingIndex..];
             }
@@ -153,24 +160,35 @@ namespace System.Security.Cryptography
 
         private static bool IsValidLabel(ReadOnlySpan<char> data)
         {
-            static bool IsInRange(char c, char min) => (uint)(c - min) <= (uint)('\x7E' - min);
+            static bool IsLabelChar(char c) => (uint)(c - 0x21u) <= 0x5du && c != '-';
 
-            if (data.Length == 0)
+            // Empty labels are permitted per RFC 7468.
+            if (data.IsEmpty)
                 return true;
 
             // First character of label must be a labelchar, which is a character
             // in 0x21..0x7e (both inclusive), except hyphens.
-            char firstChar = data[0];
-            if (!IsInRange(firstChar, '\x21') || firstChar == '-')
+            if (!IsLabelChar(data[0]))
                 return false;
 
+            bool previousSpaceOrHyphen = false;
             for (int index = 1; index < data.Length; index++)
             {
-                // Characters after the first are permitted to be spaces and hyphens
-                if (!IsInRange(data[index], '\x20'))
+                char c = data[index];
+
+                if (IsLabelChar(c))
                 {
-                    return false;
+                    previousSpaceOrHyphen = false;
+                    continue;
                 }
+
+                bool isSpaceOrHyphen = c == ' ' || c == '-';
+
+                if (!isSpaceOrHyphen || previousSpaceOrHyphen)
+                    return false;
+
+                previousSpaceOrHyphen = true;
+
             }
             return true;
         }
