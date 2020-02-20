@@ -138,6 +138,8 @@ namespace PInvokeTests
 
         [DllImport("SimpleStructNative")]
         private static extern void Invalid(AutoStruct s);
+        [DllImport("SimpleStructNative")]
+        private static extern AutoStruct InvalidReturn();
 
         #endregion
 
@@ -479,19 +481,30 @@ namespace PInvokeTests
 
         public static bool AutoStructNegativeTest()
         {
+            bool pass = false;
             try
             {
                 Invalid(new AutoStruct());
             }
             catch (MarshalDirectiveException)
             {
-                return true;
+                pass = true;
             }
             catch (Exception)
             {
-                return false;
             }
-            return false;
+            try
+            {
+                _ = InvalidReturn();
+            }
+            catch (MarshalDirectiveException)
+            {
+                pass &= true;
+            }
+            catch (Exception)
+            {
+            }
+            return pass;
         }
 
         #endregion

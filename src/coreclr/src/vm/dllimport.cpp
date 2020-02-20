@@ -4810,7 +4810,9 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
             MethodTable *pRetMT = msig.GetRetTypeHandleThrowing().AsMethodTable();
             // The System.DateTime type itself technically doesn't have a native representation,
             // so we have to special-case it here.
-            if (pRetMT != MscorlibBinder::GetClass(CLASS__DATE_TIME) && IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
+            // If a type doesn't have a native representation, we won't set this flag.
+            // We'll throw an exception later when setting up the marshalling.
+            if (pRetMT != MscorlibBinder::GetClass(CLASS__DATE_TIME) && pRetMT->HasLayout() && IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
             {
                 ndirectflags |= NDirectMethodDesc::kStdCallWithRetBuf;
             }

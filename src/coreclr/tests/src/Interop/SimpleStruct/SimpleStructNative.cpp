@@ -116,3 +116,5 @@ extern "C" DLL_EXPORT void Invalid(AutoStruct s)
 {
 
 }
+
+extern "C" DLL_EXPORT AutoStruct InvalidReturn();
