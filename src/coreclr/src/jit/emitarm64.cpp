@@ -10093,6 +10093,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DV_2A: // DV_2A   .Q.......X...... ......nnnnnddddd      Vd Vn      (fabs, fcvt - vector)
+        case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
             code |= insEncodeVectorsize(id->idOpSize()); // Q
@@ -10268,18 +10269,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Vd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
            // fminp - scalar)
             elemsize = optGetElemsize(id->idInsOpt());
-            code = emitInsCode(ins, fmt);
-            code |= insEncodeFloatElemsize(elemsize); // X
-            code |= insEncodeReg_Vd(id->idReg1());    // ddddd
-            code |= insEncodeReg_Vn(id->idReg2());    // nnnnn
-            dst += emitOutput_Instr(dst, code);
-            break;
-
-        case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn     (fmaxnmv, fmaxv, fminnmv, fminv)
             code     = emitInsCode(ins, fmt);
-            datasize = optGetDatasize(id->idInsOpt());
-            elemsize = optGetElemsize(id->idInsOpt());
-            code |= insEncodeVectorsize(datasize);    // Q
             code |= insEncodeFloatElemsize(elemsize); // X
             code |= insEncodeReg_Vd(id->idReg1());    // ddddd
             code |= insEncodeReg_Vn(id->idReg2());    // nnnnn
