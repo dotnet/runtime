@@ -80,12 +80,11 @@
     <!-- TODO: remove when rsp files are removed: https://github.com/dotnet/runtime/issues/1980. -->
     <ItemGroup>
       <_rspFile Include="$(TestRspFile)" Condition="'$(TestRspFile)' != ''" />
-      <_rspFile Include="$(MonoProjectRoot)netcore\CoreFX.issues_mac.rsp" Condition="'$(TargetOS)' == 'OSX'" />
       <_rspFile Include="$(MonoProjectRoot)netcore\CoreFX.issues_linux.rsp" Condition="'$(TargetOS)' == 'Linux'" />
       <_rspFile Include="$(MonoProjectRoot)netcore\CoreFX.issues_windows.rsp" Condition="'$(TargetOS)' == 'Windows_NT'" />
     </ItemGroup>
     <ItemGroup>
-      <_rspFileContent Include="$([System.IO.File]::ReadAllText(%(_rspFile.Identity)))" />
+      <_rspFileContent Include="$([System.IO.File]::ReadAllText(%(_rspFile.Identity)))" Condition="'$(TargetOS)' != 'OSX'" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(MonoRspFile)" Lines="@(_rspFileContent)" Overwrite="true" />
