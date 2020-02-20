@@ -313,7 +313,13 @@ namespace System.Text.Json.Serialization.Tests
             public string GetName20 => s_name;
         }
 
-        [ConditionalFact(nameof(IsX64)), OuterLoop]
+        // NOTE: SerializeExceedMaximumBufferSize test is constrained to run on Windows and MacOSX because it causes 
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can 
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the 
+        //       time the memory is accessed which triggers the full memory allocation. 
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalFact(nameof(IsX64))]
+        [OuterLoop]
         public static void SerializeExceedMaximumBufferSize()
         {
             CustomClassToExceedMaxBufferSize temp = new CustomClassToExceedMaxBufferSize();
