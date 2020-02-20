@@ -1,15 +1,19 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Runtime.CompilerServices;
 
 public class ArrayLengthArithmeticTests
 {
-    static int returnCode = 100;
+    private static int returnCode = 100;
 
-    static int Main(string[] args)
+    public static int Main(string[] args)
     {
         for (int arrayLength = 0; arrayLength < 100; arrayLength++)
         {
-            int[] array = new int[arrayLength];
+            var array = new int[arrayLength];
 
             if (arrayLength == 0)
             {
@@ -52,66 +56,66 @@ public class ArrayLengthArithmeticTests
     }
 
     // Array.Length / cns
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_cns0(int[] array) => array.Length / 0;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_cns1(int[] array) => array.Length / 1;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_cns2(int[] array) => array.Length / 2;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_cns3(int[] array) => array.Length / 3;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_cns4(int[] array) => array.Length / 4;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_cns5(int[] array) => array.Length / 5;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_cns8(int[] array) => array.Length / 8;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_cns10(int[] array) => array.Length / 10;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_cnsMaxValuen1(int[] array) => array.Length / (int.MaxValue - 1);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_cnsMaxValue(int[] array) => array.Length / int.MaxValue;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_cnsn1(int[] array) => array.Length / -1;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_cnsn2(int[] array) => array.Length / -2;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_cnsMinValue(int[] array) => array.Length / int.MinValue;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_cns0(int[] array) => array.Length / 0;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_cns1(int[] array) => array.Length / 1;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_cns2(int[] array) => array.Length / 2;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_cns3(int[] array) => array.Length / 3;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_cns4(int[] array) => array.Length / 4;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_cns5(int[] array) => array.Length / 5;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_cns8(int[] array) => array.Length / 8;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_cns10(int[] array) => array.Length / 10;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_cnsMaxValuen1(int[] array) => array.Length / (int.MaxValue - 1);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_cnsMaxValue(int[] array) => array.Length / int.MaxValue;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_cnsn1(int[] array) => array.Length / -1;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_cnsn2(int[] array) => array.Length / -2;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_cnsMinValue(int[] array) => array.Length / int.MinValue;
 
     // Array.Length / variable
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_var0(int[] array) => array.Length / ToVar(0);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_var1(int[] array) => array.Length / ToVar(1);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_var2(int[] array) => array.Length / ToVar(2);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_var3(int[] array) => array.Length / ToVar(3);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_var4(int[] array) => array.Length / ToVar(4);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_var5(int[] array) => array.Length / ToVar(5);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_var8(int[] array) => array.Length / ToVar(8);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_var10(int[] array) => array.Length / ToVar(10);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_varMaxValuen1(int[] array) => array.Length / ToVar(int.MaxValue - 1);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_varMaxValue(int[] array) => array.Length / ToVar(int.MaxValue);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_varn1(int[] array) => array.Length / ToVar(-1);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_varn2(int[] array) => array.Length / ToVar(-2);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthDiv_varMinValue(int[] array) => array.Length / ToVar(int.MinValue);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_var0(int[] array) => array.Length / ToVar(0);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_var1(int[] array) => array.Length / ToVar(1);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_var2(int[] array) => array.Length / ToVar(2);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_var3(int[] array) => array.Length / ToVar(3);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_var4(int[] array) => array.Length / ToVar(4);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_var5(int[] array) => array.Length / ToVar(5);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_var8(int[] array) => array.Length / ToVar(8);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_var10(int[] array) => array.Length / ToVar(10);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_varMaxValuen1(int[] array) => array.Length / ToVar(int.MaxValue - 1);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_varMaxValue(int[] array) => array.Length / ToVar(int.MaxValue);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_varn1(int[] array) => array.Length / ToVar(-1);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_varn2(int[] array) => array.Length / ToVar(-2);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthDiv_varMinValue(int[] array) => array.Length / ToVar(int.MinValue);
 
     // Array.Length % cns
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_cns0(int[] array) => array.Length % 0;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_cns1(int[] array) => array.Length % 1;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_cns2(int[] array) => array.Length % 2;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_cns3(int[] array) => array.Length % 3;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_cns4(int[] array) => array.Length % 4;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_cns5(int[] array) => array.Length % 5;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_cns8(int[] array) => array.Length % 8;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_cns10(int[] array) => array.Length % 10;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_cnsMaxValuen1(int[] array) => array.Length % (int.MaxValue - 1);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_cnsMaxValue(int[] array) => array.Length % int.MaxValue;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_cnsn1(int[] array) => array.Length % -1;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_cnsn2(int[] array) => array.Length % -2;
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_cnsMinValue(int[] array) => array.Length % int.MinValue;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_cns0(int[] array) => array.Length % 0;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_cns1(int[] array) => array.Length % 1;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_cns2(int[] array) => array.Length % 2;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_cns3(int[] array) => array.Length % 3;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_cns4(int[] array) => array.Length % 4;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_cns5(int[] array) => array.Length % 5;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_cns8(int[] array) => array.Length % 8;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_cns10(int[] array) => array.Length % 10;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_cnsMaxValuen1(int[] array) => array.Length % (int.MaxValue - 1);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_cnsMaxValue(int[] array) => array.Length % int.MaxValue;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_cnsn1(int[] array) => array.Length % -1;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_cnsn2(int[] array) => array.Length % -2;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_cnsMinValue(int[] array) => array.Length % int.MinValue;
 
     // Array.Length % variable
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_var0(int[] array) => array.Length % ToVar(0);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_var1(int[] array) => array.Length % ToVar(1);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_var2(int[] array) => array.Length % ToVar(2);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_var3(int[] array) => array.Length % ToVar(3);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_var4(int[] array) => array.Length % ToVar(4);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_var5(int[] array) => array.Length % ToVar(5);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_var8(int[] array) => array.Length % ToVar(8);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_var10(int[] array) => array.Length % ToVar(10);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_varMaxValuen1(int[] array) => array.Length % ToVar(int.MaxValue - 1);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_varMaxValue(int[] array) => array.Length % ToVar(int.MaxValue);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_varn1(int[] array) => array.Length % ToVar(-1);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_varn2(int[] array) => array.Length % ToVar(-2);
-    [MethodImpl(MethodImplOptions.NoInlining)] static int ArrayLengthMod_varMinValue(int[] array) => array.Length % ToVar(int.MinValue);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_var0(int[] array) => array.Length % ToVar(0);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_var1(int[] array) => array.Length % ToVar(1);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_var2(int[] array) => array.Length % ToVar(2);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_var3(int[] array) => array.Length % ToVar(3);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_var4(int[] array) => array.Length % ToVar(4);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_var5(int[] array) => array.Length % ToVar(5);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_var8(int[] array) => array.Length % ToVar(8);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_var10(int[] array) => array.Length % ToVar(10);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_varMaxValuen1(int[] array) => array.Length % ToVar(int.MaxValue - 1);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_varMaxValue(int[] array) => array.Length % ToVar(int.MaxValue);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_varn1(int[] array) => array.Length % ToVar(-1);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_varn2(int[] array) => array.Length % ToVar(-2);
+    [MethodImpl(MethodImplOptions.NoInlining)] private static int ArrayLengthMod_varMinValue(int[] array) => array.Length % ToVar(int.MinValue);
 
-    static void Expect<T>(Action action, [CallerLineNumber] int line = 0) where T : Exception
+    private static void Expect<T>(Action action, [CallerLineNumber] int line = 0) where T : Exception
     {
         try
         {
@@ -125,7 +129,7 @@ public class ArrayLengthArithmeticTests
         returnCode++;
     }
 
-    static void CompareResults(int a, int b, [CallerLineNumber] int line = 0)
+    private static void CompareResults(int a, int b, [CallerLineNumber] int line = 0)
     {
         if (a != b)
         {
@@ -135,5 +139,5 @@ public class ArrayLengthArithmeticTests
     }
 
     // cns to var
-    [MethodImpl(MethodImplOptions.NoInlining)] static T ToVar<T>(T t) => t;
+    [MethodImpl(MethodImplOptions.NoInlining)] private static T ToVar<T>(T t) => t;
 }
