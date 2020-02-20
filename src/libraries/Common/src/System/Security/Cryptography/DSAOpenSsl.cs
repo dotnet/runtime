@@ -235,13 +235,22 @@ namespace System.Security.Cryptography
             }
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-            protected override bool TryCreateSignatureCore(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat, out int bytesWritten)
+            protected override bool TryCreateSignatureCore(
+                ReadOnlySpan<byte> hash,
+                Span<byte> destination,
+                DSASignatureFormat signatureFormat,
+                out int bytesWritten)
+#else
+            public override bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
+#endif
             {
                 SafeDsaHandle key = GetKey();
                 int signatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
                 {
+#endif
                     byte[] converted;
                     byte[] signature = CryptoPool.Rent(signatureSize);
                     try
@@ -268,6 +277,7 @@ namespace System.Security.Cryptography
                     }
 
                     return Helpers.TryCopyToDestination(converted, destination, out bytesWritten);
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 }
                 else if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
                 {
@@ -311,10 +321,13 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    throw new ArgumentOutOfRangeException(nameof(signatureFormat));
+                    Debug.Fail($"Missing internal implementation handler for signature format {signatureFormat}");
+                    throw new CryptographicException(
+                        SR.Cryptography_UnknownSignatureFormat,
+                        signatureFormat.ToString());
                 }
-            }
 #endif
+            }
 
             public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
             {
@@ -327,7 +340,10 @@ namespace System.Security.Cryptography
             }
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-            protected override bool VerifySignatureCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
+            protected override bool VerifySignatureCore(
+                ReadOnlySpan<byte> hash,
+                ReadOnlySpan<byte> signature,
+                DSASignatureFormat signatureFormat)
 #else
             public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
 #endif
@@ -350,7 +366,10 @@ namespace System.Security.Cryptography
                 }
                 else if (signatureFormat != DSASignatureFormat.Rfc3279DerSequence)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(signatureFormat));
+                    Debug.Fail($"Missing internal implementation handler for signature format {signatureFormat}");
+                    throw new CryptographicException(
+                        SR.Cryptography_UnknownSignatureFormat,
+                        signatureFormat.ToString());
                 }
 #endif
                 return Interop.Crypto.DsaVerify(key, hash, signature);
