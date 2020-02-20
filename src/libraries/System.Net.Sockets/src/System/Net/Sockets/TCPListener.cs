@@ -121,9 +121,12 @@ namespace System.Net.Sockets
 
             if (_serverSocket != null)
             {
-                SetIPProtectionLevel(allowed);
+                SetIPProtectionLevel(allowed); // Set it only for the current socket to preserve existing behavior
             }
-            _allowNatTraversal = allowed;
+            else
+            {
+                _allowNatTraversal = allowed;
+            }
         }
 
         // Starts listening to network requests.
@@ -355,6 +358,7 @@ namespace System.Net.Sockets
             if (_allowNatTraversal != null)
             {
                 SetIPProtectionLevel(_allowNatTraversal.GetValueOrDefault());
+                _allowNatTraversal = null; //Reset value to avoid affecting more sockets
             }
         }
     }
