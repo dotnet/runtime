@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
             HashAlgorithmName hashAlgorithm;
             int expectedOutputSize;
 
-            string algorithmValue = MacData.Value.Mac.DigestAlgorithm.Algorithm.Value;
+            string? algorithmValue = MacData.Value.Mac.DigestAlgorithm.Algorithm.Value;
 
             switch (algorithmValue)
             {

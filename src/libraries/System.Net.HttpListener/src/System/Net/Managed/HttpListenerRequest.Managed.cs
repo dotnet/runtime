@@ -99,7 +99,7 @@ namespace System.Net
             }
 
             _rawUrl = parts[1];
-            if (parts[2].Length != 8 || !parts[2].StartsWith("HTTP/"))
+            if (parts[2].Length != 8 || !parts[2].StartsWith("HTTP/", StringComparison.Ordinal))
             {
                 _context.ErrorMessage = "Invalid request line (version).";
                 return;
@@ -251,8 +251,8 @@ namespace System.Net
                 return;
             }
 
-            string name = header.Substring(0, colon).Trim();
-            string val = header.Substring(colon + 1).Trim();
+            string name = header.AsSpan(0, colon).Trim().ToString();
+            string val = header.AsSpan(colon + 1).Trim().ToString();
             if (name.Equals("content-length", StringComparison.OrdinalIgnoreCase))
             {
                 // To match Windows behavior:

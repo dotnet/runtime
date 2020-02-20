@@ -26,9 +26,9 @@ namespace System.Security.Cryptography
             return new RC2Implementation();
         }
 
-        public static new RC2 Create(string AlgName)
+        public static new RC2? Create(string AlgName)
         {
-            return (RC2)CryptoConfig.CreateFromName(AlgName);
+            return (RC2?)CryptoConfig.CreateFromName(AlgName);
         }
 
 

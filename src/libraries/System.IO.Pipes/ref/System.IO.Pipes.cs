@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace Microsoft.Win32.SafeHandles
@@ -111,8 +111,8 @@ namespace System.IO.Pipes
         public virtual System.IO.Pipes.PipeTransmissionMode ReadMode { get { throw null; } set { } }
         public Microsoft.Win32.SafeHandles.SafePipeHandle SafePipeHandle { get { throw null; } }
         public virtual System.IO.Pipes.PipeTransmissionMode TransmissionMode { get { throw null; } }
-        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { throw null; }
-        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object state) { throw null; }
+        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
+        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         protected internal virtual void CheckPipePropertyOperations() { }
         protected internal void CheckReadOperations() { }
         protected internal void CheckWriteOperations() { }
@@ -120,7 +120,8 @@ namespace System.IO.Pipes
         public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
         public override void EndWrite(System.IAsyncResult asyncResult) { }
         public override void Flush() { }
-        protected void InitializeHandle(Microsoft.Win32.SafeHandles.SafePipeHandle handle, bool isExposed, bool isAsync) { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected void InitializeHandle(Microsoft.Win32.SafeHandles.SafePipeHandle? handle, bool isExposed, bool isAsync) { }
         public override int Read(byte[] buffer, int offset, int count) { throw null; }
         public override int Read(System.Span<byte> buffer) { throw null; }
         public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }

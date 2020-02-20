@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Text.Encodings.Web;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -20,13 +19,14 @@ namespace System.Text.Json
         internal static readonly JsonSerializerOptions s_defaultOptions = new JsonSerializerOptions();
 
         private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
-        private static readonly ConcurrentDictionary<string, ImmutableCollectionCreator> s_createRangeDelegates = new ConcurrentDictionary<string, ImmutableCollectionCreator>();
+
         private MemberAccessor? _memberAccessorStrategy;
         private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandling _referenceHandling = ReferenceHandling.Default;
-        private JavaScriptEncoder? _encoder;
+        private JavaScriptEncoder? _encoder = null;
+
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
         private bool _allowTrailingCommas;
@@ -307,6 +307,7 @@ namespace System.Text.Json
             set
             {
                 VerifyMutable();
+
                 _referenceHandling = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
@@ -317,10 +318,9 @@ namespace System.Text.Json
             {
                 if (_memberAccessorStrategy == null)
                 {
-#if BUILDING_INBOX_LIBRARY
+#if NETFRAMEWORK || NETCOREAPP
                     _memberAccessorStrategy = new ReflectionEmitMemberAccessor();
 #else
-                    // todo: should we attempt to detect here, or at least have a #define like #SUPPORTS_IL_EMIT
                     _memberAccessorStrategy = new ReflectionMemberAccessor();
 #endif
                 }
@@ -334,6 +334,7 @@ namespace System.Text.Json
             _haveTypesBeenCreated = true;
 
             // todo: for performance and reduced instances, consider using the converters and JsonClassInfo from s_defaultOptions by cloning (or reference directly if no changes).
+            // https://github.com/dotnet/runtime/issues/32357
             if (!_classes.TryGetValue(classType, out JsonClassInfo? result))
             {
                 result = _classes.GetOrAdd(classType, new JsonClassInfo(classType, this));
@@ -362,21 +363,6 @@ namespace System.Text.Json
                 SkipValidation = true
 #endif
             };
-        }
-
-        internal bool CreateRangeDelegatesContainsKey(string key)
-        {
-            return s_createRangeDelegates.ContainsKey(key);
-        }
-
-        internal bool TryGetCreateRangeDelegate(string delegateKey, [NotNullWhen(true)] out ImmutableCollectionCreator? createRangeDelegate)
-        {
-            return s_createRangeDelegates.TryGetValue(delegateKey, out createRangeDelegate) && createRangeDelegate != null;
-        }
-
-        internal bool TryAddCreateRangeDelegate(string key, ImmutableCollectionCreator createRangeDelegate)
-        {
-            return s_createRangeDelegates.TryAdd(key, createRangeDelegate);
         }
 
         internal void VerifyMutable()

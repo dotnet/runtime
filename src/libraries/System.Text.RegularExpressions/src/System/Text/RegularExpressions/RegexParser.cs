@@ -1750,7 +1750,7 @@ namespace System.Text.RegularExpressions
             ch switch
             {
                 'b' => UseOptionE() ? RegexNode.ECMABoundary : RegexNode.Boundary,
-                'B' => UseOptionE() ? RegexNode.NonECMABoundary : RegexNode.Nonboundary,
+                'B' => UseOptionE() ? RegexNode.NonECMABoundary : RegexNode.NonBoundary,
                 'A' => RegexNode.Beginning,
                 'G' => RegexNode.Start,
                 'Z' => RegexNode.EndZ,

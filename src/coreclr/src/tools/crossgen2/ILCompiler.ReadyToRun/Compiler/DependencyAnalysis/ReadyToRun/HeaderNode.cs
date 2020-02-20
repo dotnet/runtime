@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
     }
 
-    public class HeaderNode : ObjectNode, ISymbolDefinitionNode
+    public abstract class HeaderNode : ObjectNode, ISymbolDefinitionNode
     {
         struct HeaderItem
         {
@@ -73,15 +73,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _items.Add(new HeaderItem(id, node, startSymbol));
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunHeader");
-        }
         public int Offset => 0;
         public override bool IsShareable => false;
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+        protected abstract void AppendMangledHeaderName(NameMangler nameMangler, Utf8StringBuilder sb);
+
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb) => AppendMangledHeaderName(nameMangler, sb);
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -102,23 +101,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.RequireInitialPointerAlignment();
             builder.AddSymbol(this);
 
+            EmitHeaderPrefix(ref builder);
+
             // Don't bother sorting if we're not emitting the contents
             if (!relocsOnly)
                 _items.Sort((x, y) => Comparer<int>.Default.Compare((int)x.Id, (int)y.Id));
-
-            // ReadyToRunHeader.Magic
-            builder.EmitInt((int)(ReadyToRunHeaderConstants.Signature));
-
-            // ReadyToRunHeader.MajorVersion
-            builder.EmitShort((short)(ReadyToRunHeaderConstants.CurrentMajorVersion));
-            builder.EmitShort((short)(ReadyToRunHeaderConstants.CurrentMinorVersion));
 
             // ReadyToRunHeader.Flags
             builder.EmitInt((int)_flags);
 
             // ReadyToRunHeader.NumberOfSections
             ObjectDataBuilder.Reservation sectionCountReservation = builder.ReserveInt();
-            
+
             int count = 0;
             foreach (var item in _items)
             {
@@ -127,20 +121,75 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     continue;
 
                 builder.EmitInt((int)item.Id);
-                
+
                 builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB);
                 builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_SYMBOL_SIZE);
-                
+
                 count++;
             }
 
             builder.EmitInt(sectionCountReservation, count);
-            
+
             return builder.ToObjectData();
         }
 
+        protected abstract void EmitHeaderPrefix(ref ObjectDataBuilder builder);
+
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+    }
+
+    public class GlobalHeaderNode : HeaderNode
+    {
+        public GlobalHeaderNode(TargetDetails target, ReadyToRunFlags flags)
+            : base(target, flags)
+        {
+        }
+
+        protected override void AppendMangledHeaderName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.CompilationUnitPrefix);
+            sb.Append("__ReadyToRunHeader");
+        }
+
+        protected override void EmitHeaderPrefix(ref ObjectDataBuilder builder)
+        {
+            // ReadyToRunHeader.Magic
+            builder.EmitInt((int)(ReadyToRunHeaderConstants.Signature));
+
+            // ReadyToRunHeader.MajorVersion
+            builder.EmitShort((short)(ReadyToRunHeaderConstants.CurrentMajorVersion));
+            builder.EmitShort((short)(ReadyToRunHeaderConstants.CurrentMinorVersion));
+        }
 
         public override int ClassCode => (int)ObjectNodeOrder.ReadyToRunHeaderNode;
+    }
+
+    public class AssemblyHeaderNode : HeaderNode
+    {
+        private readonly int _index;
+
+        public AssemblyHeaderNode(TargetDetails target, ReadyToRunFlags flags, int index)
+            : base(target, flags)
+        {
+            _index = index;
+        }
+
+        protected override void EmitHeaderPrefix(ref ObjectDataBuilder builder)
+        {
+        }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return _index - ((AssemblyHeaderNode)other)._index;
+        }
+
+        protected override void AppendMangledHeaderName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.CompilationUnitPrefix);
+            sb.Append("__ReadyToRunAssemblyHeader__");
+            sb.Append(_index.ToString());
+        }
+
+        public override int ClassCode => (int)ObjectNodeOrder.ReadyToRunAssemblyHeaderNode;
     }
 }

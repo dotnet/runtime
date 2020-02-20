@@ -25,9 +25,9 @@ namespace Internal.NativeCrypto
         /// <param name="dwProvType">provider type</param>
         /// <param name="wszProvider">provider name</param>
         /// <returns>Returns upgrade CSP name</returns>
-        public static string UpgradeDSS(int dwProvType, string wszProvider)
+        public static string? UpgradeDSS(int dwProvType, string wszProvider)
         {
-            string wszUpgrade = null;
+            string? wszUpgrade = null;
             if (string.Equals(wszProvider, MS_DEF_DSS_DH_PROV, StringComparison.Ordinal))
             {
                 SafeProvHandle safeProvHandle;

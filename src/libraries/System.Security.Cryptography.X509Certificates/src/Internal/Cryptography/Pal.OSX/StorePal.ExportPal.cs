@@ -34,7 +34,7 @@ namespace Internal.Cryptography.Pal
                 }
                 else
                 {
-                    certHandles = new IntPtr[_certs.Count];
+                    certHandles = new IntPtr[_certs!.Count];
 
                     for (int i = 0; i < _certs.Count; i++)
                     {

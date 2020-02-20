@@ -4522,6 +4522,37 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     EndPhase(PHASE_CLONE_FINALLY);
 
+#if DEBUG
+    if (lvaEnregEHVars)
+    {
+        unsigned methHash   = info.compMethodHash();
+        char*    lostr      = getenv("JitEHWTHashLo");
+        unsigned methHashLo = 0;
+        bool     dump       = false;
+        if (lostr != nullptr)
+        {
+            sscanf_s(lostr, "%x", &methHashLo);
+            dump = true;
+        }
+        char*    histr      = getenv("JitEHWTHashHi");
+        unsigned methHashHi = UINT32_MAX;
+        if (histr != nullptr)
+        {
+            sscanf_s(histr, "%x", &methHashHi);
+            dump = true;
+        }
+        if (methHash < methHashLo || methHash > methHashHi)
+        {
+            lvaEnregEHVars = false;
+        }
+        else if (dump)
+        {
+            printf("Enregistering EH Vars for method %s, hash = 0x%x.\n", info.compFullName, info.compMethodHash());
+            printf(""); // flush
+        }
+    }
+#endif
+
     // Compute bbNum, bbRefs and bbPreds
     //
     JITDUMP("\nRenumbering the basic blocks for fgComputePreds\n");
@@ -9101,6 +9132,21 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     if (call->gtCallMoreFlags & GTF_CALL_M_PINVOKE)
                     {
                         chars += printf("[CALL_M_PINVOKE]");
+                    }
+
+                    if (call->IsFatPointerCandidate())
+                    {
+                        chars += printf("[CALL_FAT_POINTER_CANDIDATE]");
+                    }
+
+                    if (call->IsGuarded())
+                    {
+                        chars += printf("[CALL_GUARDED]");
+                    }
+
+                    if (call->IsExpRuntimeLookup())
+                    {
+                        chars += printf("[CALL_EXP_RUNTIME_LOOKUP]");
                     }
                 }
                 break;

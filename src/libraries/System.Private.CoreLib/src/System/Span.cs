@@ -50,7 +50,7 @@ namespace System
                 this = default;
                 return; // returns default
             }
-            if (default(T) == null && array.GetType() != typeof(T[]))
+            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
             _pointer = new ByReference<T>(ref MemoryMarshal.GetArrayDataReference(array));
@@ -79,7 +79,7 @@ namespace System
                 this = default;
                 return; // returns default
             }
-            if (default(T) == null && array.GetType() != typeof(T[]))
+            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 #if TARGET_64BIT
             // See comment in Span<T>.Slice for how this works.
@@ -167,7 +167,7 @@ namespace System
         public bool IsEmpty
         {
             [NonVersionable]
-            get => 0 >= (uint)_length; // Workaround for https://github.com/dotnet/coreclr/issues/19620
+            get => 0 >= (uint)_length; // Workaround for https://github.com/dotnet/runtime/issues/10950
         }
 
         /// <summary>

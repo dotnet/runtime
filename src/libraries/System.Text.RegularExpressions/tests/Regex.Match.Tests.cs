@@ -96,6 +96,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { Case("(?>hi|hello|hey)hi"), "hellohi", options, 0, 0, false, string.Empty };
                 yield return new object[] { Case("(?:hi|hello|hey)hi"), "hellohi", options, 0, 7, true, "hellohi" }; // allow backtracking and it succeeds
                 yield return new object[] { Case("(?>hi|hello|hey)hi"), "hihi", options, 0, 4, true, "hihi" };
+                yield return new object[] { Case(@"a[^wyz]*w"), "abczw", RegexOptions.IgnoreCase, 0, 0, false, string.Empty };
             }
 
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
@@ -322,7 +323,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"[a-[a-f]]", "abcdefghijklmnopqrstuvwxyz", RegexOptions.None, 0, 26, false, string.Empty };
 
             // \c
-            if (!PlatformDetection.IsNetFramework) // missing fix for https://github.com/dotnet/corefx/issues/26501
+            if (!PlatformDetection.IsNetFramework) // missing fix for https://github.com/dotnet/runtime/issues/24759
             {
                 yield return new object[] { @"(cat)(\c[*)(dog)", "asdlkcat\u00FFdogiwod", RegexOptions.None, 0, 15, false, string.Empty };
             }
@@ -918,8 +919,8 @@ namespace System.Text.RegularExpressions.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // times out on ARM
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.Compiled)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/corefx/issues/26484")]
-        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/18912", RuntimeConfiguration.Checked, RuntimeTestModes.JitMinOpts)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/runtime/issues/24749")]
+        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", RuntimeConfiguration.Checked, RuntimeTestModes.JitMinOpts)]
         public void Match_ExcessPrefix(RegexOptions options)
         {
             RemoteExecutor.Invoke(optionsString =>

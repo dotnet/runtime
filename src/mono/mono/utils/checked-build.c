@@ -46,7 +46,7 @@ mono_check_mode_enabled (MonoCheckMode query)
 			gchar **env_split = g_strsplit (env_string, ",", 0);
 			for (gchar **env_component = env_split; *env_component; env_component++)
 			{
-				mono_bool check_all = g_str_equal (*env_component, "all");
+				mono_bool G_GNUC_UNUSED check_all = g_str_equal (*env_component, "all");
 #ifdef ENABLE_CHECKED_BUILD_GC
 				if (check_all || g_str_equal (*env_component, "gc"))
 					env_check_mode |= MONO_CHECK_MODE_GC;

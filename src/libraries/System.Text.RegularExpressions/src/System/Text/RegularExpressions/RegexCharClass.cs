@@ -820,17 +820,21 @@ namespace System.Text.RegularExpressions
         /// <param name="chars">The span into which the chars should be stored.</param>
         /// <returns>
         /// The number of stored chars.  If they won't all fit, 0 is returned.
+        /// If 0 is returned, no assumptions can be made about the characters.
         /// </returns>
         /// <remarks>
-        /// Only considers character classes that only contain sets (no categories), no negation,
+        /// Only considers character classes that only contain sets (no categories)
         /// and no subtraction... just simple sets containing starting/ending pairs.
+        /// The returned characters may be negated: if IsNegated(set) is false, then
+        /// the returned characters are the only ones that match; if it returns true,
+        /// then the returned characters are the only ones that don't match.
         /// </remarks>
         public static int GetSetChars(string set, Span<char> chars)
         {
             // If the set is negated, it's likely to contain a large number of characters,
             // so we don't even try.  We also get the characters by enumerating the set
             // portion, so we validate that it's set up to enable that, e.g. no categories.
-            if (IsNegated(set) || !CanEasilyEnumerateSetContents(set))
+            if (!CanEasilyEnumerateSetContents(set))
             {
                 return 0;
             }
@@ -1106,24 +1110,13 @@ namespace System.Text.RegularExpressions
                 // Otherwise, compute it normally.
                 bool isInClass = CharInClass(ch, set);
 
-                // Determine which bits to write back to the array.
+                // Determine which bits to write back to the array and "or" the bits back in a thread-safe manner.
                 int bitsToSet = knownBit;
                 if (isInClass)
                 {
                     bitsToSet |= valueBit;
                 }
-
-                // "or" the bits back in a thread-safe manner.
-                while (true)
-                {
-                    int oldValue = Interlocked.CompareExchange(ref slot, current | bitsToSet, current);
-                    if (oldValue == current)
-                    {
-                        break;
-                    }
-
-                    current = oldValue;
-                }
+                Interlocked.Or(ref slot, bitsToSet);
 
                 // Return the computed value.
                 return isInClass;
@@ -1528,7 +1521,6 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        public static readonly char[] Hex = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
         public static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
 
         private static string[] PopulateCategoryIdToName()
@@ -1673,7 +1665,7 @@ namespace System.Text.RegularExpressions
             while (shift > 0)
             {
                 shift -= 4;
-                sb.Append(Hex[(ch >> shift) & 0xF]);
+                sb.Append(HexConverter.ToCharLower(ch >> shift));
             }
 
             return sb.ToString();

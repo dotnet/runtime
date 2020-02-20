@@ -17,8 +17,11 @@ endif
 MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:Configuration=$(MONO_RUNTIME_CONFIG) ../mono.proj
 
 # run sample using local .dotnet-mono
+# build it with .dotnet first in order to be able to use LLVM only for the actual sample
 run-sample: patch-mono-dotnet
-	COMPlus_DebugWriteToStdErr=1 $(DOTNET_MONO) run -c Debug -p sample/HelloWorld
+	$(DOTNET) build -c Release sample/HelloWorld
+	MONO_ENV_OPTIONS="" COMPlus_DebugWriteToStdErr=1 \
+	$(DOTNET_MONO) sample/HelloWorld/bin/HelloWorld.dll
 
 run-sample-coreclr:
 	$(DOTNET) run -c Debug -p sample/HelloWorld
@@ -32,6 +35,10 @@ runtime:
 # call it if you want to use $(DOTNET_MONO) in this Makefile
 patch-mono-dotnet:
 	$(DOTNET) msbuild /t:PatchLocalMonoDotnet $(MONO_PROJ)
+
+# copy mono runtime bits from artifacts to $(DST)
+copy-runtime-files-to:
+	$(DOTNET) msbuild /t:CopyMonoRuntimeFilesFromArtifactsToDestination /p:Destination=$(DST) $(MONO_PROJ)
 
 # run specific coreclr test, e.g.:
 # make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"

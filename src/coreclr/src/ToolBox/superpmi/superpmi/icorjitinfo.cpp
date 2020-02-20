@@ -408,6 +408,15 @@ BOOL MyICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
     return jitInstance->mc->repIsValidStringRef(module, metaTOK);
 }
 
+LPCWSTR MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,  /* IN  */
+                                 unsigned              metaTOK, /* IN  */
+                                 int*                  length   /* OUT */
+                                 )
+{
+    jitInstance->mc->cr->AddCall("getStringLiteral");
+    return jitInstance->mc->repGetStringLiteral(module, metaTOK, length);
+}
+
 BOOL MyICJI::shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope)
 {
     jitInstance->mc->cr->AddCall("shouldEnforceCallvirtRestriction");

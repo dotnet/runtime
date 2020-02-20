@@ -479,7 +479,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <value>
         ///     A <see cref="string"/> containing a human-readable display name of the <see cref="AssemblyCatalog"/>.
         /// </value>
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
         string ICompositionElement.DisplayName
         {
             get { return GetDisplayName(); }
@@ -491,7 +490,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <value>
         ///     This property always returns <see langword="null"/>.
         /// </value>
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
         ICompositionElement? ICompositionElement.Origin
         {
             get { return null; }
@@ -570,7 +568,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 return Assembly.Load(assemblyName);
             }
-            //fallback attempt issue https://github.com/dotnet/corefx/issues/27433
+            //fallback attempt issue https://github.com/dotnet/runtime/issues/25177
             catch (FileNotFoundException)
             {
                 return Assembly.LoadFrom(codeBase);

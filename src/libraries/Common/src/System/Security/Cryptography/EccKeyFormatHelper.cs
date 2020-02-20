@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
@@ -138,7 +139,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                domainParameters = ECDomainParameters.Decode(algId.Parameters.Value, AsnEncodingRules.DER);
+                domainParameters = ECDomainParameters.Decode(algId.Parameters!.Value, AsnEncodingRules.DER);
             }
 
             ret = new ECParameters
@@ -488,10 +489,11 @@ namespace System.Security.Cryptography
                 // On Windows the FriendlyName is populated in places where the Value mightn't be.
                 if (string.IsNullOrEmpty(oid.Value))
                 {
+                    Debug.Assert(oid.FriendlyName != null);
                     oid = Oid.FromFriendlyName(oid.FriendlyName, OidGroup.All);
                 }
 
-                writer.WriteObjectIdentifier(oid.Value);
+                writer.WriteObjectIdentifier(oid.Value!);
             }
             else if (ecParameters.Curve.IsExplicit)
             {
@@ -605,7 +607,7 @@ namespace System.Security.Cryptography
             ref int k2,
             ref int k3)
         {
-            byte[] polynomial = ecParameters.Curve.Polynomial;
+            byte[] polynomial = ecParameters.Curve.Polynomial!;
             int lastIndex = polynomial.Length - 1;
 
             // The most significant byte needs a set bit, and the least significant bit must be set.
@@ -691,8 +693,8 @@ namespace System.Security.Cryptography
         private static void WriteCurve(in ECCurve curve, AsnWriter writer)
         {
             writer.PushSequence();
-            WriteFieldElement(curve.A, writer);
-            WriteFieldElement(curve.B, writer);
+            WriteFieldElement(curve.A!, writer);
+            WriteFieldElement(curve.B!, writer);
 
             if (curve.Seed != null)
             {
@@ -716,7 +718,7 @@ namespace System.Security.Cryptography
 
         private static void WriteUncompressedBasePoint(in ECParameters ecParameters, AsnWriter writer)
         {
-            int basePointLength = ecParameters.Curve.G.X.Length * 2 + 1;
+            int basePointLength = ecParameters.Curve.G.X!.Length * 2 + 1;
             byte[] tmp = CryptoPool.Rent(basePointLength);
             tmp[0] = 0x04;
             ecParameters.Curve.G.X.CopyTo(tmp.AsSpan(1));
@@ -728,7 +730,7 @@ namespace System.Security.Cryptography
 
         private static void WriteUncompressedPublicKey(in ECParameters ecParameters, AsnWriter writer)
         {
-            int publicKeyLength = ecParameters.Q.X.Length * 2 + 1;
+            int publicKeyLength = ecParameters.Q.X!.Length * 2 + 1;
 
             writer.WriteBitString(
                 publicKeyLength,
@@ -737,7 +739,7 @@ namespace System.Security.Cryptography
                 {
                     publicKeyBytes[0] = 0x04;
                     point.X.AsSpan().CopyTo(publicKeyBytes.Slice(1));
-                    point.Y.AsSpan().CopyTo(publicKeyBytes.Slice(1 + point.X.Length));
+                    point.Y.AsSpan().CopyTo(publicKeyBytes.Slice(1 + point.X!.Length));
                 });
         }
 

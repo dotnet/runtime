@@ -27,7 +27,7 @@ namespace System.Net.NetworkInformation.Tests
             _log = output;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void IPGlobalProperties_AccessAllMethods_NoErrors()
         {
@@ -52,7 +52,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.NotNull(gp.GetUdpIPv6Statistics());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [MemberData(nameof(Loopbacks))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void IPGlobalProperties_TcpListeners_Succeed(IPAddress address)
@@ -78,7 +78,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [MemberData(nameof(Loopbacks))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task IPGlobalProperties_TcpActiveConnections_Succeed(IPAddress address)
@@ -109,7 +109,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void IPGlobalProperties_TcpActiveConnections_NotListening()
         {

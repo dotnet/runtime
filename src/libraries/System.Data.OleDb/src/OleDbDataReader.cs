@@ -1927,7 +1927,7 @@ namespace System.Data.OleDb
             }
 
             // via case insensitive search, first match with lowest ordinal matches
-            string tmp = name.ToLower(CultureInfo.InvariantCulture);
+            string tmp = name.ToLowerInvariant();
             index = hash[tmp]; // match via lowercase
             return ((null != index) ? (int)index : -1);
         }
@@ -2027,7 +2027,7 @@ namespace System.Data.OleDb
                 string basecolumname = _metadata[i].baseColumnName;
                 if (!ADP.IsEmpty(basecolumname))
                 {
-                    basecolumname = basecolumname.ToLower(CultureInfo.InvariantCulture);
+                    basecolumname = basecolumname.ToLowerInvariant();
                     if (!baseColumnNames.Contains(basecolumname))
                     {
                         baseColumnNames[basecolumname] = i;

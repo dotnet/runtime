@@ -889,7 +889,7 @@ namespace System.DirectoryServices.Protocols
 
                 var target = new StringBuilder();
                 target.Append(HostName);
-                target.Append(":");
+                target.Append(':');
                 target.Append(PortNumber);
                 var identifier = new LdapDirectoryIdentifier(target.ToString());
 
@@ -956,7 +956,7 @@ namespace System.DirectoryServices.Protocols
 
                 var target = new StringBuilder();
                 target.Append(hostName);
-                target.Append(":");
+                target.Append(':');
                 target.Append(portNumber);
                 var identifier = new LdapDirectoryIdentifier(target.ToString());
 

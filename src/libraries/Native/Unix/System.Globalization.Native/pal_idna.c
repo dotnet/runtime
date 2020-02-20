@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 
-#include "pal_icushim.h"
+#include "pal_icushim_internal.h"
 #include "pal_idna.h"
 
 static const uint32_t AllowUnassigned = 0x1;

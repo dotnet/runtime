@@ -1021,7 +1021,11 @@ namespace System
             do
             {
                 index = ci.IndexOf(this, oldValue, startIndex, this.Length - startIndex, options, &matchLength);
-                if (index >= 0)
+
+                // There's the possibility that 'oldValue' has zero collation weight (empty string equivalent).
+                // If this is the case, we behave as if there are no more substitutions to be made.
+
+                if (index >= 0 && matchLength > 0)
                 {
                     // append the unmodified portion of string
                     result.Append(this.AsSpan(startIndex, index - startIndex));
@@ -1690,7 +1694,7 @@ namespace System
         // Creates a copy of this string in lower case based on invariant culture.
         public string ToLowerInvariant()
         {
-            return CultureInfo.InvariantCulture.TextInfo.ToLower(this);
+            return TextInfo.Invariant.ToLower(this);
         }
 
         public string ToUpper() => ToUpper(null);
@@ -1705,7 +1709,7 @@ namespace System
         // Creates a copy of this string in upper case based on invariant culture.
         public string ToUpperInvariant()
         {
-            return CultureInfo.InvariantCulture.TextInfo.ToUpper(this);
+            return TextInfo.Invariant.ToUpper(this);
         }
 
         // Trims the whitespace from both ends of the string.  Whitespace is defined by

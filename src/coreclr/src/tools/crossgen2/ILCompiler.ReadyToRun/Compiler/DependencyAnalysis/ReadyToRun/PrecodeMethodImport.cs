@@ -22,16 +22,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             MethodWithToken method,
             MethodWithGCInfo localMethod,
             bool isUnboxingStub,
-            bool isInstantiatingStub,
-            SignatureContext signatureContext) :
+            bool isInstantiatingStub) :
             base (
                 factory,
                 factory.MethodSignature(
                       fixupKind,
                       method,
                       isUnboxingStub,
-                      isInstantiatingStub,
-                      signatureContext)
+                      isInstantiatingStub)
             )
         {
             _localMethod = localMethod;

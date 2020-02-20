@@ -125,7 +125,7 @@ namespace System.Diagnostics
 
         private static bool IsRemoteMachineCore(string machineName)
         {
-            ReadOnlySpan<char> baseName = machineName.AsSpan(machineName.StartsWith("\\", StringComparison.Ordinal) ? 2 : 0);
+            ReadOnlySpan<char> baseName = machineName.AsSpan(machineName.StartsWith('\\') ? 2 : 0);
             return
                 !baseName.Equals(".", StringComparison.Ordinal) &&
                 !baseName.Equals(Interop.Kernel32.GetComputerName(), StringComparison.OrdinalIgnoreCase);
@@ -360,7 +360,7 @@ namespace System.Diagnostics
             {
                 try
                 {
-                    byte[] dataPtr = library.GetPerformanceData(PerfCounterQueryString);
+                    byte[]? dataPtr = library.GetPerformanceData(PerfCounterQueryString);
                     processInfos = GetProcessInfos(library, ProcessPerfCounterId, ThreadPerfCounterId, dataPtr);
                 }
                 catch (Exception e)

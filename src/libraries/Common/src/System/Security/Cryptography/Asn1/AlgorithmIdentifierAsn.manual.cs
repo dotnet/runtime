@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Asn1
                 return true;
             }
 
-            return Parameters.Value.Span.SequenceEqual(other.Parameters.Value.Span);
+            return Parameters!.Value.Span.SequenceEqual(other.Parameters!.Value.Span);
         }
 
         internal bool HasNullEquivalentParameters()
