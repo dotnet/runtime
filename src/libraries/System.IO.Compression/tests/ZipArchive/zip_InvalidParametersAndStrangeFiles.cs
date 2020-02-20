@@ -129,40 +129,6 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for .NET Framework.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32316", TestRuntimes.Mono)]
-        public static void ZipArchiveEntry_AppContext_Switch_SuppressHeaderValidation(bool suppressValidation)
-        {
-            RemoteExecutor.Invoke((suppressString) =>
-            {
-                bool suppress = bool.Parse(suppressString);
-                MemoryStream stream = populateStream().Result;
-                PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
-                using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
-                {
-                    // Set the AppContext Switch
-                    AppContext.SetSwitch("System.Compression.ZipArchiveEntry.SuppressHeaderValidation", suppress);
-                    ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
-                    if (suppress)
-                    {
-                        using (MemoryStream ms = new MemoryStream())
-                        using (Stream source = e.Open())
-                        {
-                            source.CopyTo(ms);
-                            Assert.Equal(ms.Position, ms.Length);  // Just making sure it was readable
-                        }
-                    }
-                    else
-                    {
-                        Assert.Throws<InvalidDataException>(() => e.Open());
-                    }
-                }
-            }, suppressValidation.ToString()).Dispose();
-        }
-
         [Fact]
         public static async Task LargeArchive_DataDescriptor_Read_NonZip64_FileLengthGreaterThanIntMax()
         {
@@ -254,7 +220,6 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-
         public static void ZipArchiveEntry_CorruptedStream_EnsureNoExtraBytesReadOrOverWritten()
         {
             MemoryStream stream = populateStream().Result;
@@ -391,55 +356,6 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for .NET Framework.")]
-        public static async Task ZipArchive_CorruptedLocalHeader_UncompressedSize_NotMatchWithCentralDirectory()
-        {
-            MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
-
-            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
-
-            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
-            {
-                ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
-                Assert.Throws<InvalidDataException>(() => e.Open());
-            }
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for .NET Framework.")]
-        public static async Task ZipArchive_CorruptedLocalHeader_CompressedSize_NotMatchWithCentralDirectory()
-        {
-            MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
-
-            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 12);  // patch compressed size in file header
-
-            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
-            {
-                ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
-                Assert.Throws<InvalidDataException>(() => e.Open());
-            }
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not allow unseekable streams.")]
-        public static async Task ZipArchive_Unseekable_Corrupted_FileDescriptor_NotMatchWithCentralDirectory()
-        {
-            using (var s = new MemoryStream())
-            {
-                var testStream = new WrappedStream(s, false, true, false, null);
-                await CreateFromDir(zfolder("normal"), testStream, ZipArchiveMode.Create);
-
-                PatchDataDescriptorRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), s, 8);  // patch uncompressed size in file descriptor
-
-                using (ZipArchive archive = new ZipArchive(s, ZipArchiveMode.Read))
-                {
-                    ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
-                    Assert.Throws<InvalidDataException>(() => e.Open());
-                }
-            }
-        }
-
-        [Fact]
         public static async Task UpdateZipArchive_AppendTo_CorruptedFileEntry()
         {
             MemoryStream stream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
@@ -568,23 +484,6 @@ namespace System.IO.Compression.Tests
                     }
                 }
             }
-        }
-
-        private static int PatchDataDescriptorRelativeToFileName(byte[] fileNameInBytes, MemoryStream packageStream, int distance, int start = 0)
-        {
-            byte[] dataDescriptorSignature = BitConverter.GetBytes(0x08074B50);
-            byte[] buffer = packageStream.GetBuffer();
-            int startOfName = FindSequenceIndex(fileNameInBytes, buffer, start);
-            int startOfDataDescriptor = FindSequenceIndex(dataDescriptorSignature, buffer, startOfName);
-            var startOfUpdatingData = startOfDataDescriptor + distance;
-
-            // updating 4 byte data
-            buffer[startOfUpdatingData] = 0;
-            buffer[startOfUpdatingData + 1] = 1;
-            buffer[startOfUpdatingData + 2] = 20;
-            buffer[startOfUpdatingData + 3] = 0;
-
-            return startOfName;
         }
 
         private static int PatchDataRelativeToFileName(byte[] fileNameInBytes, MemoryStream packageStream, int distance, int start = 0)

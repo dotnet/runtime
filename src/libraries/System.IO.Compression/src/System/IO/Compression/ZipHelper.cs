@@ -17,7 +17,6 @@ namespace System.IO.Compression
         internal const int ValidZipDate_YearMax = 2107;
 
         private static readonly DateTime s_invalidDateIndicator = new DateTime(ValidZipDate_YearMin, 1, 1, 0, 0, 0);
-        internal static bool s_validateHeader = !GetSuppressHeaderValidation();
 
         internal static bool RequiresUnicode(string test)
         {
@@ -189,16 +188,6 @@ namespace System.IO.Compression
                 bufferPointer = bytesToRead - 1;
                 return true;
             }
-        }
-
-        private static bool GetSuppressHeaderValidation()
-        {
-            if (AppContext.TryGetSwitch("System.Compression.ZipArchiveEntry.SuppressHeaderValidation", out bool suppressValidation))
-            {
-                return suppressValidation;
-            }
-
-            return false;
         }
     }
 }
