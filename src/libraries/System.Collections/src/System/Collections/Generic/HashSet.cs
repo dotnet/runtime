@@ -49,7 +49,7 @@ namespace System.Collections.Generic
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, ISerializable, IDeserializationCallback
+    public class HashSet<T> : IReadOnlySet<T>, ICollection<T>, ISet<T>, IReadOnlyCollection<T>, ISerializable, IDeserializationCallback
     {
         // store lower 31 bits of hash code
         private const int Lower31BitMask = 0x7FFFFFFF;
@@ -566,6 +566,22 @@ namespace System.Collections.Generic
             _version = _siInfo.GetInt32(VersionName);
             _siInfo = null;
         }
+
+        #endregion
+        #region IReadOnlySetMethods
+        public bool IReadOnlySet<T>.Contains(T item) => this.Contains(item);
+
+        public bool IReadOnlySet<T>.IsProperSubsetOf(IEnumerable<T> other) => this.IsProperSubsetOf(other);
+
+        public bool IReadOnlySet<T>.IsProperSupersetOf(IEnumerable<T> other) => this.IsProperSupersetOf(other);
+
+        public bool IReadOnlySet<T>.IsSubsetOf(IEnumerable<T> other) => this.IsSupersetOf(other);
+
+        public bool IReadOnlySet<T>.IsSupersetOf(IEnumerable<T> other) => this.IsSupersetOf(other);
+
+        public bool IReadOnlySet<T>.Overlaps(IEnumerable<T> other) => this.Overlaps(other);
+
+        public bool IReadOnlySet<T>.SetEquals(IEnumerable<T> other) => this.SetEquals(other);
 
         #endregion
 

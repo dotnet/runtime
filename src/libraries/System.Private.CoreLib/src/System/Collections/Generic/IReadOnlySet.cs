@@ -4,10 +4,8 @@
 
 namespace System.Collections.Generic
 {
-    // Provides a read-only, covariant view of a generic list.
-    public interface IReadOnlySet<out T> : IReadOnlyCollection<T>, IEnumerable<T>
+    public interface IReadOnlySet<T> : IReadOnlyCollection<T>
     {
-        int Count { get; }
         bool Contains(T item);
         bool IsProperSubsetOf(IEnumerable<T> other);
         bool IsProperSupersetOf(IEnumerable<T> other);

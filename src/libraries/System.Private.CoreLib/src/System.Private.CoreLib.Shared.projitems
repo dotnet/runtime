@@ -149,6 +149,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IReadOnlyDictionary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IReadOnlyList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ISet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IReadOnlySet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\KeyNotFoundException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\KeyValuePair.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\List.cs" />
@@ -968,7 +969,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\UnauthorizedAccessException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\UnhandledExceptionEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\UnhandledExceptionEventHandler.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\UnitySerializationHolder.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\UnitySerializationHolder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ValueTuple.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Version.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Void.cs" />
@@ -1546,7 +1547,7 @@
     </Compile>
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
-    </Compile>      
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Variables.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Semaphore.Windows.cs" />
