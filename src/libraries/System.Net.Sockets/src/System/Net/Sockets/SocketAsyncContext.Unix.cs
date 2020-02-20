@@ -147,6 +147,8 @@ namespace System.Net.Sockets
 
             public bool IsCancelled => Volatile.Read(ref _state) == (int)State.Cancelled;
 
+            public bool IsWaiting => Volatile.Read(ref _state) == (int)State.Waiting;
+
             public AsyncOperation(SocketAsyncContext context)
             {
                 AssociatedContext = context;
@@ -1364,43 +1366,26 @@ namespace System.Net.Sockets
                         Debug.Assert(_tail == null);
                         return;
                     }
+
+                    if (op.IsWaiting)
+                    {
+                        _state = QueueState.Waiting;
+                    }
+                    else if (op == _tail)
+                    {
+                        // No more operations to process
+                        _tail = null;
+                        _state = QueueState.Ready;
+                        _sequenceNumber++;
+                    }
+                    else if (_tail.Next == op)
+                    {
+                        // Pop current operation and advance to next
+                        _tail.Next = op.Next;
+                    }
                     else
                     {
-                        Debug.Assert(_state == QueueState.Processing, $"_state={_state} while processing queue!");
-                        Debug.Assert(_tail != null, "Unexpected empty queue while processing I/O");
-                        Debug.Assert(op == _tail.Next, "Operation is not at head of queue???");
-                    }
-
-                    if (op == _tail)
-                    {
-                        _tail = _tail == _tail.Next ? null : _tail.Next;
-                    }
-                    else
-                    {
-                        AsyncOperation current = _tail;
-                        while (current != null)
-                        {
-                            if (current.Next == op)
-                            {
-                                current.Next = op != op.Next ? op.Next : current;
-                                break;
-                            }
-
-                            current = current != current.Next ? current.Next : null;
-                        }
-                    }
-
-                    if (_batchedOperationsCount == 0)
-                    {
-                        if (op.IsCompleted || op.IsCancelled)
-                        {
-                            _state = QueueState.Ready;
-                            _sequenceNumber++;
-                        }
-                        else
-                        {
-                            _state = QueueState.Waiting;
-                        }
+                        throw new Exception($"Something went wrong, {_batchedOperationsCount}");
                     }
                 }
 

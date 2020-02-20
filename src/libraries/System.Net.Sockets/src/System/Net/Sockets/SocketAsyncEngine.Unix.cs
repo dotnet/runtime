@@ -283,23 +283,23 @@ namespace System.Net.Sockets
                     throw new InternalException(err);
                 }
 
-                fixed (Interop.Sys.AioContext* address = &_aioContext)
+                Interop.Sys.AioContext aioContext;
+                if (Interop.Sys.IoSetup(EventBufferCount, &aioContext) == 0)
                 {
-                    if (Interop.Sys.IoSetup(EventBufferCount, address) == 0)
+                    _aioEvents = (Interop.Sys.IoEvent*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoEvent) * EventBufferCount);
+                    _aioBlocks = (Interop.Sys.IoControlBlock*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock) * EventBufferCount);
+                    _aioBlocksPointers = (Interop.Sys.IoControlBlock**)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock*) * EventBufferCount);
+
+                    // Marshal.AllocHGlobal allocated memory might contain some garbage
+                    new Span<Interop.Sys.IoEvent>(_aioEvents, EventBufferCount).Clear();
+                    new Span<Interop.Sys.IoControlBlock>(_aioBlocks, EventBufferCount).Clear();
+
+                    for (int i = 0; i < EventBufferCount; i++)
                     {
-                        _aioEvents = (Interop.Sys.IoEvent*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoEvent) * EventBufferCount);
-                        _aioBlocks = (Interop.Sys.IoControlBlock*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock) * EventBufferCount);
-                        _aioBlocksPointers = (Interop.Sys.IoControlBlock**)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock*) * EventBufferCount);
-
-                        // Marshal.AllocHGlobal allocated memory might contain some garbage
-                        new Span<Interop.Sys.IoEvent>(_aioEvents, EventBufferCount).Clear();
-                        new Span<Interop.Sys.IoControlBlock>(_aioBlocks, EventBufferCount).Clear();
-
-                        for (int i = 0; i < EventBufferCount; i++)
-                        {
-                            _aioBlocksPointers[i] = &_aioBlocks[i];
-                        }
+                        _aioBlocksPointers[i] = &_aioBlocks[i];
                     }
+
+                    _aioContext = aioContext;
                 }
 
                 //
