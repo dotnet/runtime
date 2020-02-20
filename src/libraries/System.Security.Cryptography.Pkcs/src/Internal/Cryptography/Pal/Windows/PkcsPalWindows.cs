@@ -98,9 +98,10 @@ namespace Internal.Cryptography.Pal.Windows
             return GetPrivateKey<T>(certificate, silent, preferNCrypt: true);
         }
 
+        [return: MaybeNull]
         public override T GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent)
         {
-            return GetPrivateKey<T>(certificate, silent, preferNCrypt: false)!;
+            return GetPrivateKey<T>(certificate, silent, preferNCrypt: false);
         }
 
         private T? GetPrivateKey<T>(X509Certificate2 certificate, bool silent, bool preferNCrypt) where T : AsymmetricAlgorithm
