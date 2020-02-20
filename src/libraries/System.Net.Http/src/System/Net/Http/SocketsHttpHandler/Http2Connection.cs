@@ -265,7 +265,13 @@ namespace System.Net.Http
                             int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
                             Debug.Assert(bytesRead >= 0);
                             _incomingBuffer.Commit(bytesRead);
-                            if (bytesRead == 0) throw new IOException(SR.net_http_invalid_response_missing_frame);
+                            if (bytesRead == 0)
+                            {
+                                string message = _incomingBuffer.ActiveLength == 0 ?
+                                    SR.net_http_invalid_response_missing_frame) :
+                                    SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, FrameHeader.Size - _incomingBuffer.ActiveLength);
+                                throw new IOException(message);
+                            }
                         }
                         while (_incomingBuffer.ActiveLength < FrameHeader.Size);
                     }
