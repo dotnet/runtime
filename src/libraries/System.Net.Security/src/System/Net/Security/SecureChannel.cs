@@ -461,7 +461,7 @@ namespace System.Net.Security
                                 int elementsCount = chain.ChainElements.Count;
                                 for (int ii = 0; ii < elementsCount; ++ii)
                                 {
-                                    string issuer = chain.ChainElements[ii].Certificate.Issuer;
+                                    string issuer = chain.ChainElements[ii].Certificate!.Issuer;
                                     found = Array.IndexOf(issuers, issuer) != -1;
                                     if (found)
                                     {
@@ -488,7 +488,7 @@ namespace System.Net.Security
                                 int elementsCount = chain.ChainElements.Count;
                                 for (int element = 0; element < elementsCount; element++)
                                 {
-                                    chain.ChainElements[element].Certificate.Dispose();
+                                    chain.ChainElements[element].Certificate!.Dispose();
                                 }
                             }
 
@@ -650,7 +650,7 @@ namespace System.Net.Security
             else if (_sslAuthenticationOptions.CertSelectionDelegate != null)
             {
                 X509CertificateCollection tempCollection = new X509CertificateCollection();
-                tempCollection.Add(_sslAuthenticationOptions.ServerCertificate);
+                tempCollection.Add(_sslAuthenticationOptions.ServerCertificate!);
                 // We pass string.Empty here to maintain strict compatability with .NET Framework.
                 localCertificate = _sslAuthenticationOptions.CertSelectionDelegate(string.Empty, tempCollection, null, Array.Empty<string>());
                 if (NetEventSource.IsEnabled)
@@ -1040,7 +1040,7 @@ namespace System.Net.Security
                     int elementsCount = chain.ChainElements.Count;
                     for (int i = 0; i < elementsCount; i++)
                     {
-                        chain.ChainElements[i].Certificate.Dispose();
+                        chain.ChainElements[i].Certificate!.Dispose();
                     }
 
                     chain.Dispose();

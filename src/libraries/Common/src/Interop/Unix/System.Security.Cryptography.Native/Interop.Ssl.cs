@@ -178,7 +178,7 @@ internal static partial class Interop
             // Don't include the first item (the cert whose private key we have)
             for (int i = 1; i < stop; i++)
             {
-                SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain.ChainElements[i].Certificate.Handle);
+                SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain.ChainElements[i].Certificate!.Handle);
                 Crypto.CheckValidOpenSslHandle(dupCertHandle);
                 if (!SslAddExtraChainCert(sslContext, dupCertHandle))
                 {

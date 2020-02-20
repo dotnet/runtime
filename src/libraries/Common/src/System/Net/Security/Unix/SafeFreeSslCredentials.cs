@@ -54,7 +54,7 @@ namespace System.Net.Security
             {
                 Debug.Assert(cert.HasPrivateKey, "cert.HasPrivateKey");
 
-                using (RSAOpenSsl rsa = (RSAOpenSsl)cert.GetRSAPrivateKey())
+                using (RSAOpenSsl? rsa = (RSAOpenSsl?)cert.GetRSAPrivateKey())
                 {
                     if (rsa != null)
                     {
@@ -65,7 +65,7 @@ namespace System.Net.Security
 
                 if (_certKeyHandle == null)
                 {
-                    using (ECDsaOpenSsl ecdsa = (ECDsaOpenSsl)cert.GetECDsaPrivateKey())
+                    using (ECDsaOpenSsl? ecdsa = (ECDsaOpenSsl?)cert.GetECDsaPrivateKey())
                     {
                         if (ecdsa != null)
                         {

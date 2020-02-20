@@ -222,7 +222,7 @@ internal static partial class Interop
                                         int elementsCount = chain.ChainElements.Count;
                                         for (int i = 0; i < elementsCount; i++)
                                         {
-                                            chain.ChainElements[i].Certificate.Dispose();
+                                            chain.ChainElements[i].Certificate!.Dispose();
                                         }
 
                                         chain.Dispose();

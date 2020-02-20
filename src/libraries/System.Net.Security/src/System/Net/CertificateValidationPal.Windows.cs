@@ -25,7 +25,7 @@ namespace System.Net
 
             bool chainBuildResult = chain.Build(remoteCertificate);
             if (!chainBuildResult       // Build failed on handle or on policy.
-                && chain.SafeHandle.DangerousGetHandle() == IntPtr.Zero)   // Build failed to generate a valid handle.
+                && chain.SafeHandle!.DangerousGetHandle() == IntPtr.Zero)   // Build failed to generate a valid handle.
             {
                 throw new CryptographicException(Marshal.GetLastWin32Error());
             }
@@ -59,7 +59,7 @@ namespace System.Net
                             (Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_ALL &
                              ~Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG);
 
-                        SafeX509ChainHandle chainContext = chain.SafeHandle;
+                        SafeX509ChainHandle chainContext = chain.SafeHandle!;
                         status = Verify(chainContext, ref cppStruct);
                         if (status == Interop.Crypt32.CertChainPolicyErrors.CERT_E_CN_NO_MATCH)
                         {

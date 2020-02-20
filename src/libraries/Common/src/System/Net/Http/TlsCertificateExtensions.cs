@@ -143,7 +143,7 @@ namespace System.Net.Http
 
                         if (chain.ChainElements.Count > 0 && isComplete)
                         {
-                            X509Certificate2 trustAnchor = chain.ChainElements[chain.ChainElements.Count - 1].Certificate;
+                            X509Certificate2 trustAnchor = chain.ChainElements[chain.ChainElements.Count - 1].Certificate!;
                             if (allowedIssuers.Contains(trustAnchor.SubjectName.Name))
                             {
                                 clientCertificate = cert;
