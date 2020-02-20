@@ -262,8 +262,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/17547", TestPlatforms.OSX, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void DroppedWatcher_Collectible()
         {
             WeakReference watcher = CreateEnabledWatcher(TestDirectory);
