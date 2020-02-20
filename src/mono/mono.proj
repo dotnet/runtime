@@ -124,12 +124,8 @@
   <!-- Precompile (AssembliesToPrecompile) using (MonoExec) -->
   <Target Name="PrecompileAssembly">
    <PropertyGroup>
-      <EnvVars Condition="'$(OS)' != 'Windows_NT'">
-      <![CDATA[MONO_ENV_OPTIONS="--aot=mcpu=native"]]>
-      </EnvVars>
-      <EnvVars Condition="'$(OS)' == 'Windows_NT'">
-      <![CDATA[set "MONO_ENV_OPTIONS=--aot=mcpu=native"]]>
-      </EnvVars>
+      <EnvVars Condition="'$(OS)' == 'Windows_NT'">set MONO_ENV_OPTIONS=--aot=mcpu=native &amp; $(EnvVars)</EnvVars>
+      <EnvVars Condition="'$(OS)' != 'Windows_NT'">export MONO_ENV_OPTIONS=--aot=mcpu=native &amp;&amp; $(EnvVars)</EnvVars>
     </PropertyGroup>
     <Exec Command="$(EnvVars) $(MonoExec) %(AssembliesToPrecompile.Identity)" ContinueOnError="WarnAndContinue" />
   </Target>
@@ -159,8 +155,7 @@
     </PropertyGroup>
     <ItemGroup>
       <AssembliesToPrecompile
-          Include="$(ArtifactsDir)bin\**\*Tests\**\System.*.dll"
-          Exclude="$(ArtifactsDir)bin\**\System.Utf8String.Experimental.Tests.dll" />
+          Include="$(ArtifactsDir)bin\**\*Tests\**\System.*.dll" />
     </ItemGroup>
   </Target>
 
