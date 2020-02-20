@@ -33,6 +33,8 @@ namespace System.Net.Sockets
 
             if (errorCode == SocketError.Success)
             {
+                Debug.Assert(_listenSocket._rightEndPoint != null);
+
                 Internals.SocketAddress remoteSocketAddress = IPEndPointExtensions.Serialize(_listenSocket._rightEndPoint);
                 System.Buffer.BlockCopy(socketAddress, 0, remoteSocketAddress.Buffer, 0, socketAddressLen);
 

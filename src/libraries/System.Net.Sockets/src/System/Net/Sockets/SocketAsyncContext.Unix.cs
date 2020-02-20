@@ -128,7 +128,7 @@ namespace System.Net.Sockets
             public AsyncOperation Next;
             protected object CallbackOrEvent;
             public SocketError ErrorCode;
-            public byte[] SocketAddress;
+            public byte[]? SocketAddress;
             public int SocketAddressLen;
             public CancellationTokenRegistration CancellationRegistration;
 
@@ -1850,7 +1850,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError SendToAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[], int, SocketFlags, SocketError> callback)
+        public SocketError SendToAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[], int, SocketFlags, SocketError> callback)
         {
             SetNonBlocking();
 

@@ -26,7 +26,7 @@ namespace System.Net.Sockets
                 if (NetEventSource.IsEnabled) LogBuffer(numBytes);
 
                 // get the endpoint
-                remoteSocketAddress = IPEndPointExtensions.Serialize(_listenSocket._rightEndPoint);
+                remoteSocketAddress = IPEndPointExtensions.Serialize(_listenSocket._rightEndPoint!);
 
                 IntPtr localAddr;
                 int localAddrLength;
@@ -87,7 +87,7 @@ namespace System.Net.Sockets
                 return null;
             }
 
-            return _listenSocket.UpdateAcceptSocket(_acceptSocket!, _listenSocket._rightEndPoint.Create(remoteSocketAddress!));
+            return _listenSocket.UpdateAcceptSocket(_acceptSocket!, _listenSocket._rightEndPoint!.Create(remoteSocketAddress!));
         }
 
         // SetUnmanagedStructures

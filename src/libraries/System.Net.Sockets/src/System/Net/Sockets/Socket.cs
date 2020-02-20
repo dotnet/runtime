@@ -24,8 +24,8 @@ namespace System.Net.Sockets
 
         // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
         // correct type (IPEndPoint, etc).
-        internal EndPoint _rightEndPoint;
-        internal EndPoint _remoteEndPoint;
+        internal EndPoint? _rightEndPoint;
+        internal EndPoint? _remoteEndPoint;
 
         // These flags monitor if the socket was ever connected at any time and if it still is.
         private bool _isConnected;
