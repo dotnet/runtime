@@ -354,7 +354,7 @@ namespace System.Net.Sockets
 
             if (_allowNatTraversal != null)
             {
-                SetIPProtectionLevel(_allowNatTraversal.Value);
+                SetIPProtectionLevel(_allowNatTraversal.GetValueOrDefault());
             }
         }
     }
