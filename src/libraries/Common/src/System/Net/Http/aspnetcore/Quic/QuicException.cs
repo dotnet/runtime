@@ -4,7 +4,7 @@
 
 namespace System.Net.Quic
 {
-    public class QuicException : Exception
+    internal class QuicException : Exception
     {
         public QuicException(string message)
             : base (message)
