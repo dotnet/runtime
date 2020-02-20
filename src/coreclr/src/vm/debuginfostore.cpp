@@ -371,7 +371,7 @@ void CheckBoundariesConsistency(ULONG32 cMap, const ICorDebugInfo::OffsetMapping
     UINT32 inlineDepth = 0;
     for(DWORD i = 0; i < cMap; i++)
     {
-        ICorDebugInfo::OffsetMapping2 * pBound = &pMap[i];
+        const ICorDebugInfo::OffsetMapping2 * pBound = &pMap[i];
         if ((pBound->source & ICorDebugInfo::SourceTypes::INLINE_OPEN) != 0)
         {
             inlineDepth += 1;
