@@ -84,7 +84,8 @@ internal class Program
 
     public static bool CompileWithSeed(int seed, string coreRootPath, string compilationInputFolder, string outDir)
     {
-        string superIlcPath = Path.Combine(coreRootPath, "ReadyToRun.SuperIlc", OSExeSuffix("ReadyToRun.SuperIlc"));
+        string superIlcPath = Path.Combine(coreRootPath, "ReadyToRun.SuperIlc", "ReadyToRun.SuperIlc.dll");
+        string coreRunPath = Path.Combine(coreRootPath, OSExeSuffix("corerun"));
 
         Console.WriteLine($"================================== Compiling with seed {seed} ==================================");
         Environment.SetEnvironmentVariable("CoreRT_DeterminismSeed", seed.ToString());
@@ -93,7 +94,7 @@ internal class Program
             Directory.Delete(outDir, true);
         }
         Directory.CreateDirectory(outDir);
-        ProcessStartInfo processStartInfo = new ProcessStartInfo(superIlcPath, $"compile-directory -cr {coreRootPath} -in {compilationInputFolder} --nojit --noexe --large-bubble --release --nocleanup -out {outDir}");
+        ProcessStartInfo processStartInfo = new ProcessStartInfo(coreRunPath, $"{superIlcPath} compile-directory -cr {coreRootPath} -in {compilationInputFolder} --nojit --noexe --large-bubble --release --nocleanup -out {outDir}");
         var process = Process.Start(processStartInfo);
         process.WaitForExit();
         if (process.ExitCode != 0)
