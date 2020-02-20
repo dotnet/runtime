@@ -312,6 +312,8 @@ public:
 
     size_t GetLastGCGenerationSize(int gen);
 
+    size_t GetTotalGenFragmentation(int gen);
+
     virtual void Shutdown();
 };
 

@@ -110,6 +110,7 @@ public:
     static FCDECL0(UINT64,  GetSegmentSize);
     static FCDECL0(int,     GetLastGCPercentTimeInGC);
     static FCDECL1(UINT64,  GetGenerationSize, int gen);
+    static FCDECL1(UINT64,  GetTotalGenFragmentation, int gen);
     static
     INT64 QCALLTYPE GetTotalMemory();
 

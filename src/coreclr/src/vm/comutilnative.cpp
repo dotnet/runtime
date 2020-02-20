@@ -943,6 +943,16 @@ FCIMPL1(UINT64, GCInterface::GetGenerationSize, int gen)
 }
 FCIMPLEND
 
+
+FCIMPL1(UINT64, GCInterface::GetTotalGenFragmentation, int gen)
+{
+    FCALL_CONTRACT;
+
+    return (UINT64)(GCHeapUtilities::GetGCHeap()->GetTotalGenFragmentation(gen));
+}
+FCIMPLEND
+
+
 /*================================GetTotalMemory================================
 **Action: Returns the total number of bytes in use
 **Returns: The total number of bytes in use

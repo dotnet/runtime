@@ -2855,8 +2855,6 @@ protected:
     PER_HEAP_ISOLATED
     size_t get_total_fragmentation();
     PER_HEAP_ISOLATED
-    size_t get_total_gen_fragmentation (int gen_number);
-    PER_HEAP_ISOLATED
     size_t get_total_gen_estimated_reclaim (int gen_number);
     PER_HEAP_ISOLATED
     void get_memory_info (uint32_t* memory_load,
@@ -2873,6 +2871,8 @@ protected:
     size_t get_current_allocated();
     PER_HEAP_ISOLATED
     size_t get_total_allocated();
+    PER_HEAP_ISOLATED
+    size_t get_total_gen_fragmentation (int gen_number);
 #ifdef BGC_SERVO_TUNING
     PER_HEAP_ISOLATED
     size_t get_total_generation_size (int gen_number);

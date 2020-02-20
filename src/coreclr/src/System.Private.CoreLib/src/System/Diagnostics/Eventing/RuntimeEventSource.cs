@@ -32,6 +32,10 @@ namespace System.Diagnostics.Tracing
         private IncrementingPollingCounter? _allocRateCounter;
         private PollingCounter? _assemblyCounter;
         private PollingCounter? _timerCounter;
+        private PollingCounter? _gen0FragmentationCounter;
+        private PollingCounter? _gen1FragmentationCounter;
+        private PollingCounter? _gen2FragmentationCounter;
+        private PollingCounter? _lohFragmentationCounter;
 
         public static void Initialize()
         {
@@ -70,6 +74,10 @@ namespace System.Diagnostics.Tracing
                 _allocRateCounter ??= new IncrementingPollingCounter("alloc-rate", this, () => GC.GetTotalAllocatedBytes()) { DisplayName = "Allocation Rate", DisplayUnits = "B", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _assemblyCounter ??= new PollingCounter("assembly-count", this, () => System.Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
                 _timerCounter ??= new PollingCounter("active-timer-count", this, () => Timer.ActiveCount) { DisplayName = "Number of Active Timers" };
+                _gen0FragmentationCounter ??= new PollingCounter("gen-0-fragmentation", this, () => GC.GetTotalGenFragmentation(0)) { DisplayName = "Gen 0 Fragmentation", DisplayUnits = "B" };
+                _gen1FragmentationCounter ??= new PollingCounter("gen-1-fragmentation", this, () => GC.GetTotalGenFragmentation(1)) { DisplayName = "Gen 1 Fragmentation", DisplayUnits = "B" };
+                _gen2FragmentationCounter ??= new PollingCounter("gen-2-fragmentation", this, () => GC.GetTotalGenFragmentation(2)) { DisplayName = "Gen 2 Fragmentation", DisplayUnits = "B" };
+                _lohFragmentationCounter ??= new PollingCounter("loh-fragmentation", this, () => GC.GetTotalGenFragmentation(3)) { DisplayName = "LOH Fragmentation", DisplayUnits = "B" };
             }
         }
     }

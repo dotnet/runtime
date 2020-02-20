@@ -215,6 +215,11 @@ size_t GCHeap::GetLastGCGenerationSize(int gen)
     return g_GenerationSizes[gen];
 }
 
+size_t GCHeap::GetTotalGenFragmentation(int gen)
+{
+    return gc_heap::get_total_gen_fragmentation(gen);
+}
+
 size_t GCHeap::GetCurrentObjSize()
 {
     return (totalSurvivedSize + gc_heap::get_total_allocated());

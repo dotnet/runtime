@@ -111,6 +111,9 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern ulong GetGenerationSize(int gen);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int GetTotalGenFragmentation(int gen);
+
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _AddMemoryPressure(ulong bytesAllocated);
 

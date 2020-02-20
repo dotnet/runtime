@@ -679,6 +679,8 @@ public:
 
     virtual size_t GetLastGCGenerationSize(int gen) = 0;
 
+    virtual size_t GetTotalGenFragmentation(int gen) = 0;
+
     /*
     ===========================================================================
     Miscellaneous routines used by the VM.
