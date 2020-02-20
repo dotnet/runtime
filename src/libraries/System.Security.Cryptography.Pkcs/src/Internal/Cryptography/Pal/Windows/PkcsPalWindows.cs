@@ -14,6 +14,7 @@ using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
 using static Interop.Crypt32;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Internal.Cryptography.Pal.Windows
 {
@@ -91,9 +92,10 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
+        [return: MaybeNull]
         public override T GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent)
         {
-            return GetPrivateKey<T>(certificate, silent, preferNCrypt: true)!; // It seems we can add 'where T : AsymmetricAlgorithm' and return nullable
+            return GetPrivateKey<T>(certificate, silent, preferNCrypt: true);
         }
 
         public override T GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent)

@@ -81,7 +81,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                     if (rid.RKeyId.Value.Other.Value.KeyAttr != null)
                     {
-                        rawData = rid.RKeyId.Value.Other.Value.KeyAttr!.Value.ToArray(); // TODO bug?
+                        rawData = rid.RKeyId.Value.Other.Value.KeyAttr!.Value.ToArray();
                     }
 
                     Pkcs9AttributeObject pkcs9AttributeObject = new Pkcs9AttributeObject(oid, rawData);
