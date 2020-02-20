@@ -32,7 +32,7 @@ namespace Internal.Cryptography.Pal
             public void Dispose()
             {
                 _keychainHandle?.Dispose();
-                _keychainHandle = null;
+                _keychainHandle = null!;
             }
 
             public void CloneTo(X509Certificate2Collection collection)
@@ -62,7 +62,7 @@ namespace Internal.Cryptography.Pal
 
                 AppleCertificatePal applePal = (AppleCertificatePal)cert;
 
-                var handle = (SafeKeychainItemHandle)applePal.IdentityHandle ?? applePal.CertificateHandle;
+                var handle = (SafeKeychainItemHandle?)applePal.IdentityHandle ?? applePal.CertificateHandle;
                 Interop.AppleCrypto.X509StoreAddCertificate(handle, _keychainHandle);
             }
 
@@ -70,7 +70,7 @@ namespace Internal.Cryptography.Pal
             {
                 AppleCertificatePal applePal = (AppleCertificatePal)cert;
 
-                var handle = (SafeKeychainItemHandle)applePal.IdentityHandle ?? applePal.CertificateHandle;
+                var handle = (SafeKeychainItemHandle?)applePal.IdentityHandle ?? applePal.CertificateHandle;
                 Interop.AppleCrypto.X509StoreRemoveCertificate(handle, _keychainHandle, _readonly);
             }
 

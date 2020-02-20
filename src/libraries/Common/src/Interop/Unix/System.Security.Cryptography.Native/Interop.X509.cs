@@ -218,7 +218,7 @@ internal static partial class Interop
 
         internal static string GetX509VerifyCertErrorString(X509VerifyStatusCode n)
         {
-            return Marshal.PtrToStringAnsi(X509VerifyCertErrorString(n));
+            return Marshal.PtrToStringAnsi(X509VerifyCertErrorString(n))!;
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509VerifyCertErrorString")]

@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             get
             {
-                string name = _lazyDistinguishedName;
+                string? name = _lazyDistinguishedName;
                 if (name == null)
                 {
                     name = _lazyDistinguishedName = Decode(X500DistinguishedNameFlags.Reversed);
@@ -85,6 +85,6 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, "flag"));
         }
 
-        private volatile string _lazyDistinguishedName;
+        private volatile string? _lazyDistinguishedName;
     }
 }
