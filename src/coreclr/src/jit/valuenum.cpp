@@ -5333,10 +5333,13 @@ void ValueNumStore::InitValueNumStoreStatics()
             ValueNumFuncSetArity(func, newArity);
         }
     }
-    // SIMDIntrinsicInit has an incorrect entry of 2 for numArgs and also vnEncodesResultTypeForSIMDIntrinsic returns
-    // true
+    // SIMDIntrinsicInit has an incorrect entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns true
     // so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
     ValueNumFuncSetArity(VNF_SIMD_Init, 2);
+    // SIMDIntrinsicWidenLo has an incorrect entry of 2 for numArgsm also vnEncodesResultTypeForSIMDIntrinsic returns
+    // true
+    // so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
+    ValueNumFuncSetArity(VNF_SIMD_WidenLo, 2);
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
     // SSE2_Shuffle has a -1 entry for numArgs, but when used as a HWINSTRINSIC always has two operands.
