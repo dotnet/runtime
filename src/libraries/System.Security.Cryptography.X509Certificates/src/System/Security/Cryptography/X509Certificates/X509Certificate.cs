@@ -271,12 +271,12 @@ namespace System.Security.Cryptography.X509Certificates
             return true;
         }
 
-        public virtual byte[]? Export(X509ContentType contentType)
+        public virtual byte[] Export(X509ContentType contentType)
         {
             return Export(contentType, (string?)null);
         }
 
-        public virtual byte[]? Export(X509ContentType contentType, string? password)
+        public virtual byte[] Export(X509ContentType contentType, string? password)
         {
             VerifyContentType(contentType);
 
@@ -290,7 +290,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [System.CLSCompliantAttribute(false)]
-        public virtual byte[]? Export(X509ContentType contentType, SecureString? password)
+        public virtual byte[] Export(X509ContentType contentType, SecureString? password)
         {
             VerifyContentType(contentType);
 

@@ -158,10 +158,10 @@ namespace System.Security.Cryptography.X509Certificates
         protected virtual void Dispose(bool disposing) { }
         public override bool Equals(object? obj) { throw null; }
         public virtual bool Equals(System.Security.Cryptography.X509Certificates.X509Certificate? other) { throw null; }
-        public virtual byte[]? Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType) { throw null; }
+        public virtual byte[] Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public virtual byte[]? Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, System.Security.SecureString? password) { throw null; }
-        public virtual byte[]? Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, string? password) { throw null; }
+        public virtual byte[] Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, System.Security.SecureString? password) { throw null; }
+        public virtual byte[] Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, string? password) { throw null; }
         protected static string FormatDate(System.DateTime date) { throw null; }
         public virtual byte[] GetCertHash() { throw null; }
         public virtual byte[] GetCertHash(System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
