@@ -326,6 +326,7 @@ jobs:
     - Windows_NT_x86
     jobParameters:
       liveRuntimeBuildConfig: release
+      useVsPreviewPool: true
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -339,6 +340,7 @@ jobs:
     - Windows_NT_x64
     jobParameters:
       liveRuntimeBuildConfig: release
+      useVsPreviewPool: true
 #
 # Libraries Build that only run when libraries is changed
 #
@@ -352,6 +354,7 @@ jobs:
       - Windows_NT_x86
     jobParameters:
       liveRuntimeBuildConfig: release
+      useVsPreviewPool: true
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -367,6 +370,7 @@ jobs:
       - Windows_NT_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
+      useVsPreviewPool: true
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: net472
       runTests: true
@@ -384,6 +388,7 @@ jobs:
     - Windows_NT_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
+      useVsPreviewPool: true
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: allConfigurations
       runTests: true
