@@ -39,6 +39,10 @@
 #include "icall-signatures.h"
 #include "mono/utils/mono-tls-inline.h"
 
+#if _MSC_VER
+#pragma warning(disable:4312) // FIXME pointer cast to different size
+#endif
+
 #ifdef HEAVY_STATISTICS
 static guint64 stat_wbarrier_set_arrayref = 0;
 static guint64 stat_wbarrier_value_copy = 0;
@@ -2160,7 +2164,7 @@ mono_gc_thread_detach (SgenThreadInfo *info)
 void
 mono_gc_thread_detach_with_lock (SgenThreadInfo *info)
 {
-	return sgen_thread_detach_with_lock (info);
+	sgen_thread_detach_with_lock (info);
 }
 
 void
@@ -2615,7 +2619,7 @@ mono_gc_make_descr_for_string (gsize *bitmap, int numbits)
 void
 mono_gc_register_obj_with_weak_fields (void *obj)
 {
-	return sgen_register_obj_with_weak_fields ((MonoObject*)obj);
+	sgen_register_obj_with_weak_fields ((MonoObject*)obj);
 }
 
 void*

@@ -88,10 +88,6 @@ g_mkdtemp (char *tmp_template)
 	g_free (utf16_template);
 	return NULL;
 }
-	     
-#ifdef _MSC_VER
-#pragma warning(disable:4701)
-#endif
 
 gboolean
 g_file_test (const gchar *filename, GFileTest test)
