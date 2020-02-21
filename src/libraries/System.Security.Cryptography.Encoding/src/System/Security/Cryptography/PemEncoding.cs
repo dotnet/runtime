@@ -7,7 +7,9 @@ using System.Diagnostics;
 namespace System.Security.Cryptography
 {
     /// <summary>
-    /// RFC-7468 PEM (Privacy-Enhanced Mail) parsing and encoding.
+    /// Provides methods for reading and writing the IETF RFC 7468
+    /// subset of PEM (Privacy-Enhanced Mail) textual encodings.
+    /// This class cannot be inherited.
     /// </summary>
     public static class PemEncoding
     {
@@ -20,14 +22,14 @@ namespace System.Security.Cryptography
         /// Finds the first PEM-encoded data.
         /// </summary>
         /// <param name="pemData">
-        /// A span containing the PEM encoded data.
+        /// The text containing the PEM-encoded data.
         /// </param>
         /// <exception cref="ArgumentException">
-        /// <paramref name="pemData"/> does not contain a well-formed PEM encoded value.
+        /// <paramref name="pemData"/> does not contain a well-formed PEM-encoded value.
         /// </exception>
         /// <returns>
-        /// A <see cref="PemFields"/> structure that contains the location, label, and
-        /// data location of the encoded data.
+        /// A value that specifies the location, label, and data location of
+        /// the encoded data.
         /// </returns>
         public static PemFields Find(ReadOnlySpan<char> pemData)
         {
@@ -42,14 +44,16 @@ namespace System.Security.Cryptography
         /// Attempts to find the first PEM-encoded data.
         /// </summary>
         /// <param name="pemData">
-        /// A span containing the PEM encoded data.
+        /// The text containing the PEM-encoded data.
         /// </param>
         /// <param name="fields">
-        /// When this method returns <c>true</c>, the found <see cref="PemFields"/> structure
-        /// that contains the location, label, and data location of the encoded data.
+        /// When this method returns, contains a value
+        /// that specifies the location, label, and data location of the encoded data;
+        /// or that specifies those locations as empty if no PEM-encoded data is found.
+        /// This parameter is treated as uninitialized.
         /// </param>
         /// <returns>
-        /// <c>true</c> if PEM encoded data was found; otherwise <c>false</c>.
+        /// <c>true</c> if PEM-encoded data was found; otherwise <c>false</c>.
         /// </returns>
         public static bool TryFind(ReadOnlySpan<char> pemData, out PemFields fields)
         {
@@ -245,8 +249,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Given the length of a label and binary data, determines the
-        /// length of an encoded PEM in characters.
+        /// Determines the length of a PEM-encoded value, in characters,
+        /// given the length of a label and binary data.
         /// </summary>
         /// <param name="labelLength">
         /// The length of the label, in characters.
@@ -273,7 +277,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="dataLength"/> exceeds the maximum possible encoded data length.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// The PEM is too large to encode in a signed 32-bit integer.
+        /// The length of the PEM-encoded value is larger than <see cref="int.MaxValue"/>.
         /// </exception>
         public static int GetEncodedSize(int labelLength, int dataLength)
         {
@@ -321,28 +325,30 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Tries to write PEM encoded data to <paramref name="destination" />.
+        /// Tries to write the provided data and label as PEM-encoded data into
+        /// a provided buffer.
         /// </summary>
         /// <param name="label">
-        /// The label to encode.
+        /// The label to write.
         /// </param>
         /// <param name="data">
-        /// The data to encode.
+        /// The data to write.
         /// </param>
         /// <param name="destination">
-        /// The destination to write the PEM encoded data to.
+        /// The buffer to receive the PEM-encoded text.
         /// </param>
         /// <param name="charsWritten">
-        /// When this method returns <c>true</c>, this parameter contains the number of characters
-        /// written to the buffer.
+        /// When this method returns, this parameter contains the number of characters
+        /// written to <paramref name="destination"/>. This parameter is treated
+        /// as uninitialized.
         /// </param>
         /// <returns>
-        /// <c>true</c> if the <paramref name="charsWritten"/> buffer is large enough to contain
-        /// the encoded PEM, otherwise <c>false</c>.
+        /// <c>true</c> if <paramref name="destination"/> is large enough to contain
+        /// the PEM-encoded text, otherwise <c>false</c>.
         /// </returns>
         /// <remarks>
         /// This method always wraps the base-64 encoded text to 64 characters, per the
-        /// recommended wrapping of RFC-7468. Unix-style line endings are used for line breaks.
+        /// recommended wrapping of IETF RFC 7468. Unix-style line endings are used for line breaks.
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="label"/> exceeds the maximum possible label length.
@@ -371,7 +377,10 @@ namespace System.Security.Cryptography
                 bool success = Convert.TryToBase64Chars(bytes, dest[offset..], out int base64Written);
 
                 if (!success)
+                {
+                    Debug.Fail("Convert.TryToBase64Chars failed with a pre-sized buffer");
                     throw new CryptographicException();
+                }
 
                 offset += base64Written;
             }
