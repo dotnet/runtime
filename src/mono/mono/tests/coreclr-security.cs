@@ -149,7 +149,7 @@ public delegate void MethodDelegate ();
 
 public delegate Object InvokeDelegate (Object obj, Object[] parms);
 
-// the 0.1% case from http://blogs.msdn.com/shawnfa/archive/2007/05/11/silverlight-security-iii-inheritance.aspx
+// the 0.1% case from https://docs.microsoft.com/en-us/archive/blogs/shawnfa/silverlight-security-iii-inheritance
 public class TransparentClassWithSafeCriticalDefaultConstructor {
 
 	[SecuritySafeCritical]

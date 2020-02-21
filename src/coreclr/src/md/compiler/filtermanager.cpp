@@ -135,7 +135,7 @@ HRESULT FilterManager::MarkAssembly(mdAssembly as)
 {
     HRESULT         hr = NOERROR;
 
-    if (hasAssemblyBeenMarked == false)
+    if (!hasAssemblyBeenMarked)
     {
         hasAssemblyBeenMarked = true;
         IfFailGo( MarkCustomAttributesWithParentToken(as) );
@@ -153,7 +153,7 @@ HRESULT FilterManager::MarkModule(mdModule mo)
 {
     HRESULT         hr = NOERROR;
 
-    if (hasModuleBeenMarked == false)
+    if (!hasModuleBeenMarked)
     {
         hasModuleBeenMarked = true;
         IfFailGo( MarkCustomAttributesWithParentToken(mo) );

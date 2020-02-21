@@ -16,8 +16,6 @@ namespace System.Collections.Immutable
     /// <typeparam name="T">The type of element stored by the stack.</typeparam>
     [DebuggerDisplay("IsEmpty = {IsEmpty}; Top = {_head}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
-    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix", Justification = "Ignored")]
     public sealed partial class ImmutableStack<T> : IImmutableStack<T>
     {
         /// <summary>
@@ -184,7 +182,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// A stack; never <c>null</c>
         /// </returns>
-        [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "0#")]
         [Pure]
         public ImmutableStack<T> Pop(out T value)
         {

@@ -27,7 +27,7 @@ namespace System.Runtime.CompilerServices
 
             (int offset, int length) = range.GetOffsetAndLength(array.Length);
 
-            if (default(T) != null || typeof(T[]) == array.GetType())
+            if (typeof(T).IsValueType || typeof(T[]) == array.GetType())
             {
                 // We know the type of the array to be exactly T[].
 

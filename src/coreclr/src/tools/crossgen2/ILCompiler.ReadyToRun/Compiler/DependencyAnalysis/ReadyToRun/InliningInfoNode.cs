@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -20,22 +20,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public class InliningInfoNode : HeaderTableNode
     {
-        private readonly EcmaModule _globalContext;
+        private readonly EcmaModule _module;
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 
         public override int ClassCode => (int)ObjectNodeOrder.InliningInfoNode;
 
-        public InliningInfoNode(TargetDetails target, EcmaModule globalContext)
+        public InliningInfoNode(TargetDetails target, EcmaModule module)
             : base(target)
         {
-            _globalContext = globalContext;
+            _module = module;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunInliningInfoTable");
+            sb.Append("__ReadyToRunInliningInfoTable__");
+            sb.Append(_module.Assembly.GetName().Name);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -52,7 +53,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 MethodDesc[] inlinees = methodNode.InlinedMethods;
                 MethodDesc inliner = methodNode.Method;
-                MethodDesc inlinerDefinition = inliner.GetTypicalMethodDefinition();
+                EcmaMethod inlinerDefinition = (EcmaMethod)inliner.GetTypicalMethodDefinition();
+                if (inlinerDefinition.Module != _module)
+                {
+                    // Only encode inlining info for inliners within the active module
+                    continue;
+                }
 
                 foreach (MethodDesc inlinee in inlinees)
                 {
@@ -95,7 +101,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 var sig = new VertexSequence();
 
-                bool isForeignInlinee = inlinee.Module != _globalContext;
+                bool isForeignInlinee = inlinee.Module != _module;
                 sig.Append(new UnsignedConstant((uint)(inlineeRid << 1 | (isForeignInlinee ? 1 : 0))));
                 if (isForeignInlinee)
                 {
@@ -127,7 +133,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     int ridDelta = inlinerRid - baseRid;
                     baseRid = inlinerRid;
                     Debug.Assert(ridDelta >= 0);
-                    bool isForeignInliner = inliner.Module != _globalContext;
+                    bool isForeignInliner = inliner.Module != _module;
                     sig.Append(new UnsignedConstant((uint)(ridDelta << 1 | (isForeignInliner ? 1 : 0))));
                     if (isForeignInliner)
                     {
@@ -146,6 +152,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 relocs: null,
                 alignment: 8,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
+        }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            InliningInfoNode otherInliningInfo = (InliningInfoNode)other;
+            return _module.Assembly.GetName().Name.CompareTo(otherInliningInfo._module.Assembly.GetName().Name);
         }
     }
 }

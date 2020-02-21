@@ -73,6 +73,7 @@ public:
     // jit interface api
     virtual OBJECTHANDLE ConstructStringLiteral(mdToken metaTok) = 0;
     virtual BOOL IsValidStringRef(mdToken metaTok) = 0;
+    virtual int GetStringLiteralLength(mdToken metaTok) = 0;
     virtual void ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD) = 0;
     virtual SigPointer ResolveSignature(mdToken token) = 0;
     virtual SigPointer ResolveSignatureForVarArg(mdToken token) = 0;
@@ -122,6 +123,7 @@ public:
 
     OBJECTHANDLE ConstructStringLiteral(mdToken metaTok);
     BOOL IsValidStringRef(mdToken metaTok);
+    int GetStringLiteralLength(mdToken metaTok);
     void ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD);
     SigPointer ResolveSignature(mdToken token);
     SigPointer ResolveSignatureForVarArg(mdToken token);

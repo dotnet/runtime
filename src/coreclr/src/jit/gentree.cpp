@@ -2755,6 +2755,13 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
         return false;
     }
 
+    // If this is an EH-live var, return false if it is a def,
+    // as it will have to go to memory.
+    if (varDsc->lvLiveInOutOfHndlr && ((tree->gtFlags & GTF_VAR_DEF) != 0))
+    {
+        return false;
+    }
+
     // Be pessimistic if ref counts are not yet set up.
     //
     // Perhaps we should be optimistic though.
@@ -3035,7 +3042,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
             }
         }
 #else
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
 
         assert(addr->gtOper == GT_ADD);
@@ -3333,7 +3340,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_CNS_LNG:
             case GT_CNS_STR:
             case GT_CNS_INT:
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
 
             COMMON_CNS:
@@ -3532,7 +3539,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz = 6;
                     }
 #else
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
 
                     /* Overflow casts are a lot more expensive */
@@ -5670,11 +5677,11 @@ GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, 
     return node;
 }
 
-GenTree* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTree* colon)
+GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTree* colon)
 {
     compQmarkUsed = true;
     cond->gtFlags |= GTF_RELOP_QMARK;
-    GenTree* result = new (this, GT_QMARK) GenTreeQmark(type, cond, colon, this);
+    GenTreeQmark* result = new (this, GT_QMARK) GenTreeQmark(type, cond, colon, this);
 #ifdef DEBUG
     if (compQmarkRationalized)
     {
@@ -12574,13 +12581,16 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree*  tree,
     return result;
 }
 
-/*****************************************************************************
- *
- *  Some binary operators can be folded even if they have only one
- *  operand constant - e.g. boolean operators, add with 0
- *  multiply with 1, etc
- */
-
+//------------------------------------------------------------------------
+// gtFoldExprSpecial -- optimize binary ops with one constant operand
+//
+// Arguments:
+//   tree - tree to optimize
+//
+// Return value:
+//   Tree (possibly modified at root or below), or a new tree
+//   Any new tree is fully morphed, if necessary.
+//
 GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 {
     GenTree*   op1  = tree->AsOp()->gtOp1;
@@ -12683,7 +12693,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             // Optimize boxed value classes; these are always false.  This IL is
             // generated when a generic value is tested against null:
             //     <T> ... foo(T x) { ... if ((object)x == null) ...
-            if (val == 0 && op->IsBoxedValue())
+            if ((val == 0) && op->IsBoxedValue())
             {
                 JITDUMP("\nAttempting to optimize BOX(valueType) %s null [%06u]\n", GenTree::OpName(oper),
                         dspTreeID(tree));
@@ -12736,6 +12746,10 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                         return NewMorphedIntConNode(compareResult);
                     }
                 }
+            }
+            else
+            {
+                return gtFoldBoxNullable(tree);
             }
 
             break;
@@ -12896,6 +12910,96 @@ DONE_FOLD:
     }
 
     return op;
+}
+
+//------------------------------------------------------------------------
+// gtFoldBoxNullable -- optimize a boxed nullable feeding a compare to zero
+//
+// Arguments:
+//   tree - binop tree to potentially optimize, must be
+//          GT_GT, GT_EQ, or GT_NE
+//
+// Return value:
+//   Tree (possibly modified below the root).
+//
+GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
+{
+    assert(tree->OperKind() & GTK_BINOP);
+    assert(tree->OperIs(GT_GT, GT_EQ, GT_NE));
+
+    genTreeOps const oper = tree->OperGet();
+
+    if ((oper == GT_GT) && !tree->IsUnsigned())
+    {
+        return tree;
+    }
+
+    GenTree* const op1 = tree->AsOp()->gtOp1;
+    GenTree* const op2 = tree->AsOp()->gtOp2;
+    GenTree*       op;
+    GenTree*       cons;
+
+    if (op1->IsCnsIntOrI())
+    {
+        op   = op2;
+        cons = op1;
+    }
+    else if (op2->IsCnsIntOrI())
+    {
+        op   = op1;
+        cons = op2;
+    }
+    else
+    {
+        return tree;
+    }
+
+    ssize_t const val = cons->AsIntConCommon()->IconValue();
+
+    if (val != 0)
+    {
+        return tree;
+    }
+
+    if (!op->IsCall())
+    {
+        return tree;
+    }
+
+    GenTreeCall* const call = op->AsCall();
+
+    if (!call->IsHelperCall(this, CORINFO_HELP_BOX_NULLABLE))
+    {
+        return tree;
+    }
+
+    JITDUMP("\nAttempting to optimize BOX_NULLABLE(&x) %s null [%06u]\n", GenTree::OpName(oper), dspTreeID(tree));
+
+    // Get the address of the struct being boxed
+    GenTree* const arg = call->gtCallArgs->GetNext()->GetNode();
+
+    if (arg->OperIs(GT_ADDR) && ((arg->gtFlags & GTF_LATE_ARG) == 0))
+    {
+        CORINFO_CLASS_HANDLE nullableHnd = gtGetStructHandle(arg->AsOp()->gtOp1);
+        CORINFO_FIELD_HANDLE fieldHnd    = info.compCompHnd->getFieldInClass(nullableHnd, 0);
+
+        // Replace the box with an access of the nullable 'hasValue' field.
+        JITDUMP("\nSuccess: replacing BOX_NULLABLE(&x) [%06u] with x.hasValue\n", dspTreeID(op));
+        GenTree* newOp = gtNewFieldRef(TYP_BOOL, fieldHnd, arg, 0);
+
+        if (op == op1)
+        {
+            tree->AsOp()->gtOp1 = newOp;
+        }
+        else
+        {
+            tree->AsOp()->gtOp2 = newOp;
+        }
+
+        cons->gtType = TYP_INT;
+    }
+
+    return tree;
 }
 
 //------------------------------------------------------------------------
@@ -14849,7 +14953,7 @@ GenTree* Compiler::gtNewTempAssign(
     }
 
 #ifdef DEBUG
-    /* Make sure the actual types match               */
+    // Make sure the actual types match.
     if (genActualType(valTyp) != genActualType(dstTyp))
     {
         // Plus some other exceptions that are apparently legal:
@@ -14867,6 +14971,12 @@ GenTree* Compiler::gtNewTempAssign(
         // 3) TYP_BYREF = TYP_REF when object stack allocation is enabled
         else if (JitConfig.JitObjectStackAllocation() && (dstTyp == TYP_BYREF) && (valTyp == TYP_REF))
         {
+            ok = true;
+        }
+        else if (!varTypeIsGC(dstTyp) && (genTypeSize(valTyp) == genTypeSize(dstTyp)))
+        {
+            // We can have assignments that require a change of register file, e.g. for arguments
+            // and call returns. Lowering and Codegen will handle these.
             ok = true;
         }
 
@@ -14898,7 +15008,7 @@ GenTree* Compiler::gtNewTempAssign(
     // internal trees use SIMD types that are not used by the input IL. In this case, we allow
     // a null type handle and derive the necessary information about the type from its varType.
     CORINFO_CLASS_HANDLE structHnd = gtGetStructHandleIfPresent(val);
-    if (varTypeIsStruct(valTyp) && ((structHnd != NO_CLASS_HANDLE) || (varTypeIsSIMD(valTyp))))
+    if (varTypeIsStruct(varDsc) && ((structHnd != NO_CLASS_HANDLE) || (varTypeIsSIMD(valTyp))))
     {
         // The struct value may be be a child of a GT_COMMA.
         GenTree* valx = val->gtEffectiveVal(/*commaOnly*/ true);
@@ -14917,6 +15027,11 @@ GenTree* Compiler::gtNewTempAssign(
     }
     else
     {
+        // We may have a scalar type variable assigned a struct value, e.g. a 'genReturnLocal'
+        // when the ABI calls for returning a struct as a primitive type.
+        // TODO-1stClassStructs: When we stop "lying" about the types for ABI purposes, the
+        // 'genReturnLocal' should be the original struct type.
+        assert(!varTypeIsStruct(valTyp) || typGetObjLayout(structHnd)->GetSize() == genTypeSize(varDsc));
         asg = gtNewAssignNode(dest, val);
     }
 
@@ -16759,7 +16874,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                 }
                 break;
 
-#if defined(_TARGET_XARCH4_) && defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
             case TYP_SIMD32:
                 switch (baseType)
                 {
@@ -16858,6 +16973,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
             case GT_OBJ:
                 structHnd = tree->AsObj()->GetLayout()->GetClassHandle();
                 break;
+            case GT_BLK:
+                structHnd = tree->AsBlk()->GetLayout()->GetClassHandle();
+                break;
             case GT_CALL:
                 structHnd = tree->AsCall()->gtRetClsHnd;
                 break;
@@ -16932,6 +17050,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                                     assert(fieldCorType == CORINFO_TYPE_VALUECLASS);
                                 }
                             }
+                        }
+                        else if (addr->OperGet() == GT_LCL_VAR)
+                        {
+                            structHnd = gtGetStructHandleIfPresent(addr);
                         }
                     }
                 }
@@ -18490,7 +18612,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
                 m_regType[i] = comp->getJitGCType(gcPtrs[i]);
             }
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
             // This target needs support here!
             //

@@ -9,7 +9,6 @@ namespace System.Composition
     /// <summary>
     ///     Specifies that a property, field, or parameter imports a particular set of exports.
     /// </summary>
-    [SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter,
                     AllowMultiple = false, Inherited = false)]
     public class ImportManyAttribute : Attribute

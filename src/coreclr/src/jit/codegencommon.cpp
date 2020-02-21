@@ -243,8 +243,8 @@ int CodeGenInterface::genCallerSPtoFPdelta() const
     //     pushed ebp
     callerSPtoFPdelta -= 2 * REGSIZE_BYTES;
 #else
-#error "Unknown _TARGET_"
-#endif // _TARGET_*
+#error "Unknown TARGET"
+#endif // TARGET*
 
     assert(callerSPtoFPdelta <= 0);
     return callerSPtoFPdelta;
@@ -273,8 +273,8 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
         callerSPtoSPdelta -= REGSIZE_BYTES;
     }
 #else
-#error "Unknown _TARGET_"
-#endif // _TARGET_*
+#error "Unknown TARGET"
+#endif // TARGET*
 
     assert(callerSPtoSPdelta <= 0);
     return callerSPtoSPdelta;
@@ -504,7 +504,10 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
     }
     else
     {
-        assert((regSet.GetMaskVars() & regMask) == 0);
+        // If this is going live, the register must not have a variable in it, except
+        // in the case of an exception variable, which may be already treated as live
+        // in the register.
+        assert(varDsc->lvLiveInOutOfHndlr || ((regSet.GetMaskVars() & regMask) == 0));
         regSet.AddMaskVars(regMask);
     }
 }
@@ -681,12 +684,14 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
     unsigned        deadVarIndex = 0;
     while (deadIter.NextElem(&deadVarIndex))
     {
-        unsigned   varNum  = lvaTrackedIndexToLclNum(deadVarIndex);
-        LclVarDsc* varDsc  = lvaGetDesc(varNum);
-        bool       isGCRef = (varDsc->TypeGet() == TYP_REF);
-        bool       isByRef = (varDsc->TypeGet() == TYP_BYREF);
+        unsigned   varNum     = lvaTrackedIndexToLclNum(deadVarIndex);
+        LclVarDsc* varDsc     = lvaGetDesc(varNum);
+        bool       isGCRef    = (varDsc->TypeGet() == TYP_REF);
+        bool       isByRef    = (varDsc->TypeGet() == TYP_BYREF);
+        bool       isInReg    = varDsc->lvIsInReg();
+        bool       isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr;
 
-        if (varDsc->lvIsInReg())
+        if (isInReg)
         {
             // TODO-Cleanup: Move the code from compUpdateLifeVar to genUpdateRegLife that updates the
             // gc sets
@@ -701,8 +706,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             }
             codeGen->genUpdateRegLife(varDsc, false /*isBorn*/, true /*isDying*/ DEBUGARG(nullptr));
         }
-        // This isn't in a register, so update the gcVarPtrSetCur.
-        else if (isGCRef || isByRef)
+        // Update the gcVarPtrSetCur if it is in memory.
+        if (isInMemory && (isGCRef || isByRef))
         {
             VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, deadVarIndex);
             JITDUMP("\t\t\t\t\t\t\tV%02u becoming dead\n", varNum);
@@ -724,13 +729,18 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
 
         if (varDsc->lvIsInReg())
         {
-#ifdef DEBUG
-            if (VarSetOps::IsMember(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex))
+            // If this variable is going live in a register, it is no longer live on the stack,
+            // unless it is an EH var, which always remains live on the stack.
+            if (!varDsc->lvLiveInOutOfHndlr)
             {
-                JITDUMP("\t\t\t\t\t\t\tRemoving V%02u from gcVarPtrSetCur\n", varNum);
-            }
+#ifdef DEBUG
+                if (VarSetOps::IsMember(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex))
+                {
+                    JITDUMP("\t\t\t\t\t\t\tRemoving V%02u from gcVarPtrSetCur\n", varNum);
+                }
 #endif // DEBUG
-            VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex);
+                VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex);
+            }
             codeGen->genUpdateRegLife(varDsc, true /*isBorn*/, false /*isDying*/ DEBUGARG(nullptr));
             regMaskTP regMask = varDsc->lvRegMask();
             if (isGCRef)
@@ -742,9 +752,9 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
                 codeGen->gcInfo.gcRegByrefSetCur |= regMask;
             }
         }
-        // This isn't in a register, so update the gcVarPtrSetCur
         else if (lvaIsGCTracked(varDsc))
         {
+            // This isn't in a register, so update the gcVarPtrSetCur to show that it's live on the stack.
             VarSetOps::AddElemD(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex);
             JITDUMP("\t\t\t\t\t\t\tV%02u becoming live\n", varNum);
         }
@@ -1509,7 +1519,7 @@ AGAIN:
             break;
 
 #endif // SCALED_ADDR_MODES
-#endif // !_TARGET_ARMARCH
+#endif // !TARGET_ARMARCH
 
         case GT_NOP:
 
@@ -1587,7 +1597,7 @@ AGAIN:
             break;
 
 #endif // SCALED_ADDR_MODES
-#endif // !_TARGET_ARMARCH
+#endif // !TARGET_ARMARCH
 
         case GT_NOP:
 
@@ -3269,6 +3279,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                           // 1 means the first part of a register argument
                           // 2, 3 or 4  means the second,third or fourth part of a multireg argument
         bool stackArg;    // true if the argument gets homed to the stack
+        bool writeThru;   // true if the argument gets homed to both stack and register
         bool processed;   // true after we've processed the argument (and it is in its final location)
         bool circular;    // true if this register participates in a circular dependency loop.
 
@@ -3605,6 +3616,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             }
 
             regArgTab[regArgNum + i].processed = false;
+            regArgTab[regArgNum + i].writeThru = (varDsc->lvIsInReg() && varDsc->lvLiveInOutOfHndlr);
 
             /* mark stack arguments since we will take care of those first */
             regArgTab[regArgNum + i].stackArg = (varDsc->lvIsInReg()) ? false : true;
@@ -3765,9 +3777,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     noway_assert(((regArgMaskLive & RBM_FLTARG_REGS) == 0) &&
                  "Homing of float argument registers with circular dependencies not implemented.");
 
-    /* Now move the arguments to their locations.
-     * First consider ones that go on the stack since they may
-     * free some registers. */
+    // Now move the arguments to their locations.
+    // First consider ones that go on the stack since they may free some registers.
+    // Also home writeThru args, since they're also homed to the stack.
 
     regArgMaskLive = regState->rsCalleeRegArgMaskLiveIn; // reset the live in to what it was at the start
     for (argNum = 0; argNum < argMax; argNum++)
@@ -3805,7 +3817,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // If this arg is never on the stack, go to the next one.
         if (varDsc->lvType == TYP_LONG)
         {
-            if (regArgTab[argNum].slot == 1 && !regArgTab[argNum].stackArg)
+            if (regArgTab[argNum].slot == 1 && !regArgTab[argNum].stackArg && !regArgTab[argNum].writeThru)
             {
                 continue;
             }
@@ -3839,7 +3851,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
         noway_assert(varDsc->lvIsParam);
         noway_assert(varDsc->lvIsRegArg);
-        noway_assert(varDsc->lvIsInReg() == false ||
+        noway_assert(varDsc->lvIsInReg() == false || varDsc->lvLiveInOutOfHndlr ||
                      (varDsc->lvType == TYP_LONG && varDsc->GetOtherReg() == REG_STK && regArgTab[argNum].slot == 2));
 
         var_types storeType = TYP_UNDEF;
@@ -3906,13 +3918,17 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #endif // USING_SCOPE_INFO
         }
 
-        /* mark the argument as processed */
-
-        regArgTab[argNum].processed = true;
-        regArgMaskLive &= ~genRegMask(srcRegNum);
+        // Mark the argument as processed, and set it as no longer live in srcRegNum,
+        // unless it is a writeThru var, in which case we home it to the stack, but
+        // don't mark it as processed until below.
+        if (!regArgTab[argNum].writeThru)
+        {
+            regArgTab[argNum].processed = true;
+            regArgMaskLive &= ~genRegMask(srcRegNum);
+        }
 
 #if defined(TARGET_ARM)
-        if (storeType == TYP_DOUBLE)
+        if ((storeType == TYP_DOUBLE) && !regArgTab[argNum].writeThru)
         {
             regArgTab[argNum + 1].processed = true;
             regArgMaskLive &= ~genRegMask(REG_NEXT(srcRegNum));
@@ -4363,8 +4379,18 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     size = EA_8BYTE;
                 }
 #endif
-
-                GetEmitter()->emitIns_R_R(ins_Copy(destMemType), size, destRegNum, regNum);
+                instruction copyIns = ins_Copy(regNum, destMemType);
+#if defined(TARGET_XARCH)
+                // For INS_mov_xmm2i, the source xmm reg comes first.
+                if (copyIns == INS_mov_xmm2i)
+                {
+                    GetEmitter()->emitIns_R_R(copyIns, size, regNum, destRegNum);
+                }
+                else
+#endif // TARGET_XARCH
+                {
+                    GetEmitter()->emitIns_R_R(copyIns, size, destRegNum, regNum);
+                }
 #ifdef USING_SCOPE_INFO
                 psiMoveToReg(varNum);
 #endif // USING_SCOPE_INFO
@@ -4608,7 +4634,7 @@ void CodeGen::genCheckUseBlockInit()
                     {
                         if (!varDsc->lvRegister)
                         {
-                            if (!varDsc->lvIsInReg())
+                            if (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr)
                             {
                                 // Var is on the stack at entry.
                                 initStkLclCnt +=
@@ -4656,6 +4682,9 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
+// TODO-Review: The code below is currently unreachable. We are guaranteed to execute one of the
+// 'continue' statements above.
+#if 0
         /* If we don't know lifetimes of variables, must be conservative */
         if (!compiler->backendRequiresLocalVarLifetimes())
         {
@@ -4690,6 +4719,7 @@ void CodeGen::genCheckUseBlockInit()
         {
             largeGcStructs++;
         }
+#endif
     }
 
     /* Don't forget about spill temps that hold pointers */
@@ -4718,6 +4748,11 @@ void CodeGen::genCheckUseBlockInit()
     // Secondary factor is the presence of large structs that
     // potentially only need some fields set to zero. We likely don't
     // model this very well, but have left the logic as is for now.
+
+    // Compiler::fgVarNeedsExplicitZeroInit relies on this logic to
+    // find structs that are guaranteed to be block initialized.
+    // If this logic changes, Compiler::fgVarNeedsExplicitZeroInit needs
+    // to be modified.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_64BIT
@@ -5383,7 +5418,7 @@ void          CodeGen::genPushCalleeSavedRegisters()
 
 #else
     assert(!"Unknown TARGET");
-#endif // _TARGET_*
+#endif // TARGET*
 }
 
 #if defined(TARGET_ARM)
@@ -5622,7 +5657,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
 #elif defined(TARGET_ARM64)
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
                 GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, reg, 0x00, INS_OPTS_16B);
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
 #endif
                 fltInitReg = reg;
@@ -5657,7 +5692,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
 #elif defined(TARGET_ARM64)
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
                 GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, reg, 0x00, INS_OPTS_16B);
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
 #endif
                 dblInitReg = reg;
@@ -6071,7 +6106,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     noway_assert(compiler->compCalleeRegsPushed == popCount);
 }
 
-#endif // _TARGET_*
+#endif // TARGET*
 
 // We need a register with value zero. Zero the initReg, if necessary, and set *pInitRegZeroed if so.
 // Return the register to use. On ARM64, we never touch the initReg, and always just return REG_ZR.
@@ -6353,9 +6388,9 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         }
 #endif // !UNIX_AMD64_ABI
 
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
     }
     else if (genInitStkLclCnt > 0)
     {
@@ -7214,7 +7249,9 @@ void CodeGen::genFnProlog()
             continue;
         }
 
-        if (varDsc->lvIsInReg())
+        bool isInReg    = varDsc->lvIsInReg();
+        bool isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr;
+        if (isInReg)
         {
             regMaskTP regMask = genRegMask(varDsc->GetRegNum());
             if (!varDsc->IsFloatRegType())
@@ -7245,7 +7282,7 @@ void CodeGen::genFnProlog()
                 initFltRegs |= regMask;
             }
         }
-        else
+        if (isInMemory)
         {
         INIT_STK:
 
@@ -8249,7 +8286,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 regSet.verifyRegUsed(REG_ECX);
             }
             else
-#endif // _TARGET_X86
+#endif // TARGET_X86
             {
                 /* Add 'compiler->compLclFrameSize' to ESP */
                 /* Generate "add esp, <stack-size>" */
@@ -8319,7 +8356,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 inst_RV(INS_pop, REG_ECX, TYP_I_IMPL);
                 regSet.verifyRegUsed(REG_ECX);
             }
-#endif // _TARGET_X86
+#endif // TARGET_X86
             else
             {
                 // We need to make ESP point to the callee-saved registers
@@ -8547,9 +8584,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 }
 
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
 
 #if defined(FEATURE_EH_FUNCLETS)
 
@@ -9239,7 +9276,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     }
 }
 
-#else // _TARGET_*
+#else // TARGET*
 
 /*****************************************************************************
  *
@@ -9274,7 +9311,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     }
 }
 
-#endif // _TARGET_*
+#endif // TARGET*
 
 /*-----------------------------------------------------------------------------
  *
@@ -9423,11 +9460,11 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 
     GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaPSPSym, 0);
 
-#else // _TARGET_*
+#else // TARGET*
 
     NYI("Set function PSP sym");
 
-#endif // _TARGET_*
+#endif // TARGET*
 }
 
 #endif // FEATURE_EH_FUNCLETS
@@ -9866,7 +9903,7 @@ unsigned CodeGen::getFirstArgWithStackSlot()
     return baseVarNum;
 #elif defined(TARGET_AMD64)
     return 0;
-#else  // _TARGET_X86
+#else  // TARGET_X86
     // Not implemented for x86.
     NYI_X86("getFirstArgWithStackSlot not yet implemented for x86.");
     return BAD_VAR_NUM;

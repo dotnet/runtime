@@ -2833,7 +2833,7 @@ CORCOMPILE_METHOD_PROFILE_LIST *PEDecoder::GetNativeProfileDataList(COUNT_T * pS
 
 #endif // FEATURE_PREJIT
 
-PTR_IMAGE_DATA_DIRECTORY PEDecoder::GetReadyToRunSection(DWORD section) const
+PTR_IMAGE_DATA_DIRECTORY PEDecoder::GetReadyToRunSection(ReadyToRunSectionType section) const
 {
     CONTRACT(PTR_IMAGE_DATA_DIRECTORY)
     {
@@ -2887,9 +2887,9 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
     else
 #endif
     {
-        pDir = GetReadyToRunSection(READYTORUN_SECTION_MANIFEST_METADATA);
+        pDir = GetReadyToRunSection(ReadyToRunSectionType::ManifestMetadata);
 
-        // ReadyToRun file without large version bubble support doesn't have the READYTORUN_SECTION_MANIFEST_METADATA
+        // ReadyToRun file without large version bubble support doesn't have the ManifestMetadata
         if (pDir == NULL)
         {
             if (pSize != NULL)
@@ -3120,8 +3120,6 @@ BOOL PEDecoder::GetForceRelocs()
 
 BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 {
-    // Use static contracts to avoid recursion, as the dynamic contracts
-    // do WszLoadLibrary(MSCOREE_SHIM_W).
 #ifdef _DEBUG
 		STATIC_CONTRACT_NOTHROW;                                        \
 		ANNOTATION_DEBUG_ONLY;                                          \
@@ -3131,11 +3129,6 @@ BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 #if defined(DACCESS_COMPILE) || defined(TARGET_UNIX)
     return TRUE;
 #else
-
-    // Contracts in ConfigDWORD do WszLoadLibrary(MSCOREE_SHIM_W).
-    // This check prevents recursion.
-    if (wcsstr(lpFileName, MSCOREE_SHIM_W) != 0)
-        return TRUE;
 
     if (!GetForceRelocs())
         return TRUE;

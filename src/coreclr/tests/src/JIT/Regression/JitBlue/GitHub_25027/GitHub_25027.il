@@ -5,12 +5,12 @@
 // GitHub 25027: Tail call stress shouldn't cause asserts 
 // in the presence of invalid IL
 
-.assembly extern System.Private.CoreLib { auto }
+.assembly extern System.Runtime { auto }
 .assembly extern mscorlib { auto }
 .assembly GitHub_25027 {}
 
 .class private auto ansi beforefieldinit X
-       extends [System.Private.CoreLib]System.Object
+       extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {
@@ -26,7 +26,7 @@
       leave.s    join
 
     }
-    catch [System.Private.CoreLib]System.InvalidProgramException 
+    catch [System.Runtime]System.InvalidProgramException 
     {
       pop
       ldc.i4.s   100

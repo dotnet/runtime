@@ -244,7 +244,7 @@ namespace System.Net
             {
                 if (cookie.Domain[0] == '.')
                 {
-                    uriSb.Append("0"); // URI cctor should consume this faked host.
+                    uriSb.Append('0'); // URI cctor should consume this faked host.
                 }
             }
             uriSb.Append(cookie.Domain);
@@ -253,7 +253,7 @@ namespace System.Net
             // Either keep Port as implicit or set it according to original cookie.
             if (cookie.PortList != null)
             {
-                uriSb.Append(":").Append(cookie.PortList[0]);
+                uriSb.Append(':').Append(cookie.PortList[0]);
             }
 
             // Path must be present, set to root by default.
@@ -772,9 +772,10 @@ namespace System.Net
                 }
             }
 
-            foreach (Cookie c in cookies)
+            int cookiesCount = cookies.Count;
+            for (int i = 0; i < cookiesCount; i++)
             {
-                Add(c, isThrow);
+                Add((Cookie)cookies[i], isThrow);
             }
 
             return cookies;
@@ -880,14 +881,14 @@ namespace System.Net
 
                 lock (pathList.SyncRoot)
                 {
-                    // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
-                    IDictionaryEnumerator e = pathList.GetEnumerator();
-                    while (e.MoveNext())
+                    SortedList list = pathList.List;
+                    int listCount = list.Count;
+                    for (int e = 0; e < listCount; e++)
                     {
-                        string path = (string)e.Key;
-                        if (uri.AbsolutePath.StartsWith(CookieParser.CheckQuoted(path)))
+                        string path = (string)list.GetKey(e);
+                        if (uri.AbsolutePath.StartsWith(CookieParser.CheckQuoted(path), StringComparison.Ordinal))
                         {
-                            CookieCollection cc = (CookieCollection)e.Value;
+                            CookieCollection cc = (CookieCollection)list.GetByIndex(e);
                             cc.TimeStamp(CookieCollection.Stamp.Set);
                             MergeUpdateCollections(ref cookies, cc, port, isSecure, matchOnlyPlainCookie);
                         }
@@ -1041,9 +1042,11 @@ namespace System.Net
             int count = 0;
             lock (SyncRoot)
             {
-                foreach (CookieCollection cc in m_list.Values)
+                IList list = m_list.GetValueList();
+                int listCount = list.Count;
+                for (int i = 0; i < listCount; i++)
                 {
-                    count += cc.Count;
+                    count += ((CookieCollection)list[i]).Count;
                 }
             }
             return count;
@@ -1091,6 +1094,8 @@ namespace System.Net
                 m_list.Remove(key);
             }
         }
+
+        internal SortedList List => m_list;
 
         internal object SyncRoot => m_list.SyncRoot;
 

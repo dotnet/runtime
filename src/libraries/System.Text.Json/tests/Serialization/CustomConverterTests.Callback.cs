@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -23,14 +24,22 @@ namespace System.Text.Json.Serialization.Tests
                 // The options are not passed here as that would cause an infinite loop.
                 Customer value = JsonSerializer.Deserialize<Customer>(ref reader);
 
-                value.Name = value.Name + "Hello!";
+                value.Name += "Hello!";
                 return value;
             }
 
             public override void Write(Utf8JsonWriter writer, Customer value, JsonSerializerOptions options)
             {
-                // todo: there is no WriteValue yet.
-                throw new NotSupportedException();
+                writer.WriteStartArray();
+
+                long bytesWrittenSoFar = writer.BytesCommitted + writer.BytesPending;
+
+                JsonSerializer.Serialize(writer, value);
+
+                Debug.Assert(writer.BytesPending == 0);
+                long payloadLength =  writer.BytesCommitted - bytesWrittenSoFar;
+                writer.WriteNumberValue(payloadLength);
+                writer.WriteEndArray();
             }
         }
 
@@ -44,6 +53,10 @@ namespace System.Text.Json.Serialization.Tests
 
             Customer customer = JsonSerializer.Deserialize<Customer>(json, options);
             Assert.Equal("MyNameHello!", customer.Name);
+
+            string result = JsonSerializer.Serialize(customer, options);
+            int expectedLength = JsonSerializer.Serialize(customer).Length;
+            Assert.Equal(@"[{""CreditLimit"":0,""Name"":""MyNameHello!"",""Address"":{""City"":null}}," + $"{expectedLength}]", result);
         }
     }
 }

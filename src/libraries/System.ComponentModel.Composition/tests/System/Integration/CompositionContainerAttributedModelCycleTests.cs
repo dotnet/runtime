@@ -30,6 +30,7 @@ namespace Tests.Integration
         //
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void APrerequisiteDependsOnBPrerequisite_ShouldThrowComposition()
         {
             AssertCycle(typeof(APrerequisiteDependsOnBPrerequisite),
@@ -37,6 +38,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void APrerequisiteDependsOnBPost_ShouldThrowComposition()
         {
             AssertCycle(typeof(APrerequisiteDependsOnBPost),
@@ -44,7 +46,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void APrerequisiteDependsOnBNone_ShouldNotThrow()
         {
             AssertNotCycle(typeof(APrerequisiteDependsOnBNone),
@@ -52,6 +54,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void APostDependsOnBPrerequisite_ShouldThrowComposition()
         {
             AssertCycle(typeof(APostDependsOnBPrerequisite),
@@ -59,7 +62,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void APostDependsOnBPost_ShouldNotThrow()
         {
             AssertNotCycle(typeof(APostDependsOnBPost),
@@ -67,7 +70,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void APostDependsOnBNone_ShouldNotThrow()
         {
             AssertNotCycle(typeof(APostDependsOnBNone),
@@ -75,7 +78,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void BPrerequisiteDependsOnANone_ShouldNotThrow()
         {
             AssertNotCycle(typeof(ANone),
@@ -83,7 +86,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void BPostDependsOnANone_ShouldNotThrow()
         {
             AssertNotCycle(typeof(ANone),
@@ -91,7 +94,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void ANoneWithBNone_ShouldNotThrow()
         {
             AssertNotCycle(typeof(ANone),
@@ -99,7 +102,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void PartWithHasPrerequisteImportThatIsInAPostCycle_ShouldNotThrow()
         {
             AssertNotCycle(typeof(PartWithHasPrerequisteImportThatIsInAPostCycle)

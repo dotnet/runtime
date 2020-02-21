@@ -156,6 +156,9 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #define ANALYZER_NORETURN
 #endif
 
+#define EMPTY_BASES_DECL
+
+
 #if !defined(_MSC_VER) || defined(SOURCE_FORMATTING)
 #define __assume(x) (void)0
 #define __annotation(x)
@@ -2374,11 +2377,13 @@ typedef struct _CRITICAL_SECTION {
     LONG LockCount;
     LONG RecursionCount;
     HANDLE OwningThread;
-    HANDLE LockSemaphore;
     ULONG_PTR SpinCount;
 
+#ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
     BOOL bInternal;
+#endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
     volatile DWORD dwInitState;
+
     union CSNativeDataStorage
     {
         BYTE rgNativeDataStorage[PAL_CS_NATIVE_DATA_SIZE];

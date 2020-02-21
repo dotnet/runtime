@@ -149,7 +149,7 @@ public class JsonBenchmarks
         for (int i = 0; i < Iterations; i++)
         {
             var s = new Newtonsoft.Json.JsonSerializer();
-            var w = new BsonWriter(ms);
+            var w = new BsonDataWriter(ms);
             s.Serialize(w, o);
             Escape(w);
             w.Flush();

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -78,27 +78,19 @@ namespace ILCompiler
         public ReadyToRunTableManager(CompilerTypeSystemContext typeSystemContext)
             : base(typeSystemContext) {}
 
-        public IEnumerable<TypeInfo<TypeDefinitionHandle>> GetDefinedTypes()
+        public IEnumerable<TypeInfo<TypeDefinitionHandle>> GetDefinedTypes(EcmaModule module)
         {
-            foreach (string inputFile in _typeSystemContext.InputFilePaths.Values)
+            foreach (TypeDefinitionHandle typeDefHandle in module.MetadataReader.TypeDefinitions)
             {
-                EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFile);
-                foreach (TypeDefinitionHandle typeDefHandle in module.MetadataReader.TypeDefinitions)
-                {
-                    yield return new TypeInfo<TypeDefinitionHandle>(module.MetadataReader, typeDefHandle);
-                }
+                yield return new TypeInfo<TypeDefinitionHandle>(module.MetadataReader, typeDefHandle);
             }
         }
 
-            public IEnumerable<TypeInfo<ExportedTypeHandle>> GetExportedTypes()
+        public IEnumerable<TypeInfo<ExportedTypeHandle>> GetExportedTypes(EcmaModule module)
         {
-            foreach (string inputFile in _typeSystemContext.InputFilePaths.Values)
+            foreach (ExportedTypeHandle exportedTypeHandle in module.MetadataReader.ExportedTypes)
             {
-                EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFile);
-                foreach (ExportedTypeHandle exportedTypeHandle in module.MetadataReader.ExportedTypes)
-                {
-                    yield return new TypeInfo<ExportedTypeHandle>(module.MetadataReader, exportedTypeHandle);
-                }
+                yield return new TypeInfo<ExportedTypeHandle>(module.MetadataReader, exportedTypeHandle);
             }
         }
     }

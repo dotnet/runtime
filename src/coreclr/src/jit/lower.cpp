@@ -98,8 +98,14 @@ bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode)
 }
 
 //------------------------------------------------------------------------
-
-// This is the main entry point for Lowering.
+// LowerNode: this is the main entry point for Lowering.
+//
+// Arguments:
+//    node - the node we are lowering.
+//
+// Returns:
+//    next node in the transformed node sequence that needs to be lowered.
+//
 GenTree* Lowering::LowerNode(GenTree* node)
 {
     assert(node != nullptr);
@@ -128,8 +134,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_ADD:
-            LowerAdd(node->AsOp());
-            break;
+        {
+            GenTree* next = LowerAdd(node->AsOp());
+            if (next != nullptr)
+            {
+                return next;
+            }
+        }
+        break;
 
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
@@ -190,7 +202,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_RETURN:
-            LowerRet(node);
+            LowerRet(node->AsUnOp());
             break;
 
         case GT_RETURNTRAP:
@@ -286,16 +298,25 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_STORE_LCL_FLD:
         {
-#if defined(TARGET_AMD64) && defined(FEATURE_SIMD)
             GenTreeLclVarCommon* const store = node->AsLclVarCommon();
-            if ((store->TypeGet() == TYP_SIMD8) != (store->gtOp1->TypeGet() == TYP_SIMD8))
+            GenTree*                   op1   = store->gtGetOp1();
+            if ((varTypeUsesFloatReg(store) != varTypeUsesFloatReg(op1)) && !store->IsPhiDefn() &&
+                (op1->TypeGet() != TYP_STRUCT))
             {
-                GenTreeUnOp* bitcast =
-                    new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, store->TypeGet(), store->gtOp1, nullptr);
-                store->gtOp1 = bitcast;
-                BlockRange().InsertBefore(store, bitcast);
+                if (m_lsra->isRegCandidate(comp->lvaGetDesc(store->GetLclNum())))
+                {
+                    GenTreeUnOp* bitcast =
+                        new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, store->TypeGet(), store->gtOp1, nullptr);
+                    store->gtOp1 = bitcast;
+                    BlockRange().InsertBefore(store, bitcast);
+                    ContainCheckBitCast(bitcast);
+                }
+                else
+                {
+                    // This is an actual store, we'll just retype it.
+                    store->gtType = op1->TypeGet();
+                }
             }
-#endif // TARGET_AMD64
             // TODO-1stClassStructs: Once we remove the requirement that all struct stores
             // are block stores (GT_STORE_BLK or GT_STORE_OBJ), here is where we would put the local
             // store under a block store if codegen will require it.
@@ -2306,7 +2327,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 
 #else
     NYI("LowerTailCallViaHelper");
-#endif // _TARGET_*
+#endif // TARGET*
 
     // Transform this call node into a call to Jit tail call helper.
     call->gtCallType    = CT_HELPER;
@@ -3075,7 +3096,7 @@ void Lowering::LowerJmpMethod(GenTree* jmp)
 }
 
 // Lower GT_RETURN node to insert PInvoke method epilog if required.
-void Lowering::LowerRet(GenTree* ret)
+void Lowering::LowerRet(GenTreeUnOp* ret)
 {
     assert(ret->OperGet() == GT_RETURN);
 
@@ -3083,22 +3104,22 @@ void Lowering::LowerRet(GenTree* ret)
     DISPNODE(ret);
     JITDUMP("============");
 
-#if defined(TARGET_AMD64) && defined(FEATURE_SIMD)
-    GenTreeUnOp* const unOp = ret->AsUnOp();
-    if ((unOp->TypeGet() == TYP_LONG) && (unOp->gtOp1->TypeGet() == TYP_SIMD8))
+    GenTree* op1 = ret->gtGetOp1();
+    if ((ret->TypeGet() != TYP_VOID) && (ret->TypeGet() != TYP_STRUCT) &&
+        (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(ret->gtGetOp1())))
     {
-        GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, TYP_LONG, unOp->gtOp1, nullptr);
-        unOp->gtOp1          = bitcast;
-        BlockRange().InsertBefore(unOp, bitcast);
+        GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, ret->TypeGet(), ret->gtGetOp1(), nullptr);
+        ret->gtOp1           = bitcast;
+        BlockRange().InsertBefore(ret, bitcast);
+        ContainCheckBitCast(bitcast);
     }
-#endif // TARGET_AMD64
 
     // Method doing PInvokes has exactly one return block unless it has tail calls.
     if (comp->compMethodRequiresPInvokeFrame() && (comp->compCurBB == comp->genReturnBB))
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
     }
-    ContainCheckRet(ret->AsOp());
+    ContainCheckRet(ret);
 }
 
 GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
@@ -3240,8 +3261,8 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 #else  // !TARGET_X86
         // In case of helper dispatched tail calls, "thisptr" will be the third arg.
         // The first two args are: real call target and addr of args copy routine.
-        const unsigned    argNum  = 2;
-#endif // !_TARGET_X86_
+        const unsigned argNum  = 2;
+#endif // !TARGET_X86
 
         fgArgTabEntry* thisArgTabEntry = comp->gtArgEntryByArgNum(call, argNum);
         thisArgNode                    = thisArgTabEntry->GetNode();
@@ -3507,7 +3528,7 @@ void Lowering::InsertPInvokeMethodProlog()
 #if defined(TARGET_X86) || defined(TARGET_ARM)
     GenTreeCall::Use* argList = comp->gtNewCallArgs(frameAddr);
 #else
-    GenTreeCall::Use*     argList = comp->gtNewCallArgs(frameAddr, PhysReg(REG_SECRET_STUB_PARAM));
+    GenTreeCall::Use*  argList = comp->gtNewCallArgs(frameAddr, PhysReg(REG_SECRET_STUB_PARAM));
 #endif
 
     GenTree* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL, argList);
@@ -3688,18 +3709,9 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         GenTree* frameAddr =
             new (comp, GT_LCL_VAR_ADDR) GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar);
 
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-        // On x86 targets, PInvoke calls need the size of the stack args in InlinedCallFrame.m_Datum.
-        // This is because the callee pops stack arguments, and we need to keep track of this during stack
-        // walking
-        const unsigned    numStkArgBytes = call->fgArgInfo->GetNextSlotNum() * TARGET_POINTER_SIZE;
-        GenTree*          stackBytes     = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
-        GenTreeCall::Use* args           = comp->gtNewCallArgs(frameAddr, stackBytes);
-#else
-        GenTreeCall::Use* args    = comp->gtNewCallArgs(frameAddr);
-#endif
         // Insert call to CORINFO_HELP_JIT_PINVOKE_BEGIN
-        GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, args);
+        GenTree* helperCall =
+            comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, comp->gtNewCallArgs(frameAddr));
 
         comp->fgMorphTree(helperCall);
         BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, helperCall));
@@ -4498,12 +4510,43 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable)
 // Arguments:
 //    node - the node we care about
 //
-void Lowering::LowerAdd(GenTreeOp* node)
+// Returns:
+//    nullptr if no transformation was done, or the next node in the transformed node sequence that
+//    needs to be lowered.
+//
+GenTree* Lowering::LowerAdd(GenTreeOp* node)
 {
-#ifndef TARGET_ARMARCH
     if (varTypeIsIntegralOrI(node->TypeGet()))
     {
+        GenTree* op1 = node->gtGetOp1();
+        GenTree* op2 = node->gtGetOp2();
         LIR::Use use;
+
+        // It is not the best place to do such simple arithmetic optimizations,
+        // but it allows us to avoid `LEA(addr, 0)` nodes and doing that in morph
+        // requires more changes. Delete that part if we get an expression optimizer.
+        if (op2->IsIntegralConst(0))
+        {
+            JITDUMP("Lower: optimize val + 0: ");
+            DISPNODE(node);
+            JITDUMP("Replaced with: ");
+            DISPNODE(op1);
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                use.ReplaceWith(comp, op1);
+            }
+            else
+            {
+                op1->SetUnusedValue();
+            }
+            GenTree* next = node->gtNext;
+            BlockRange().Remove(op2);
+            BlockRange().Remove(node);
+            JITDUMP("Remove [06%u], [06%u]\n", op2->gtTreeID, node->gtTreeID);
+            return next;
+        }
+
+#ifndef TARGET_ARMARCH
         if (BlockRange().TryGetUse(node, &use))
         {
             // If this is a child of an indir, let the parent handle it.
@@ -4514,13 +4557,14 @@ void Lowering::LowerAdd(GenTreeOp* node)
                 TryCreateAddrMode(node, false);
             }
         }
-    }
 #endif // !TARGET_ARMARCH
+    }
 
     if (node->OperIs(GT_ADD))
     {
         ContainCheckBinary(node);
     }
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -5326,19 +5370,6 @@ void Lowering::DoPhase()
     // impact of any dead code removal. Note this may leave us with
     // tracked vars that have zero refs.
     comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
-
-#ifdef DEBUG
-    JITDUMP("Liveness pass finished after lowering, IR:\n");
-    if (VERBOSE)
-    {
-        comp->fgDispBasicBlocks(true);
-    }
-
-    for (BasicBlock* block = comp->fgFirstBB; block; block = block->bbNext)
-    {
-        assert(LIR::AsRange(block).CheckLIR(comp, true));
-    }
-#endif
 }
 
 #ifdef DEBUG
@@ -5777,7 +5808,7 @@ void Lowering::ContainCheckLclHeap(GenTreeOp* node)
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckRet(GenTreeOp* ret)
+void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 {
     assert(ret->OperIs(GT_RETURN));
 
@@ -5823,4 +5854,39 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
     GenTree* cmp = node->gtGetOp1();
     cmp->gtType  = TYP_VOID;
     cmp->gtFlags |= GTF_SET_FLAGS;
+}
+
+//------------------------------------------------------------------------
+// ContainCheckBitCast: determine whether the source of a BITCAST should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckBitCast(GenTree* node)
+{
+    GenTree* const op1 = node->AsOp()->gtOp1;
+    if (op1->isMemoryOp())
+    {
+        op1->SetContained();
+    }
+    else if (op1->OperIs(GT_LCL_VAR))
+    {
+        if (!m_lsra->willEnregisterLocalVars())
+        {
+            op1->SetContained();
+        }
+        LclVarDsc* varDsc = &comp->lvaTable[op1->AsLclVar()->GetLclNum()];
+        if (!m_lsra->isRegCandidate(varDsc))
+        {
+            op1->SetContained();
+        }
+        else
+        {
+            op1->SetRegOptional();
+        }
+    }
+    else if (op1->IsLocal())
+    {
+        op1->SetContained();
+    }
 }

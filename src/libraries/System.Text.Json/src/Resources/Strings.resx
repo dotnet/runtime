@@ -354,11 +354,11 @@
   <data name="SerializationDuplicateTypeAttribute" xml:space="preserve">
     <value>The type '{0}' cannot have more than one property that has the attribute '{1}'.</value>
   </data>
-  <data name="SerializationNotSupportedCollectionType" xml:space="preserve">
-    <value>The collection type '{0}' is not supported.</value>
+  <data name="SerializationNotSupportedType" xml:space="preserve">
+    <value>The type '{0}' is not supported.</value>
   </data>
-  <data name="SerializationNotSupportedCollection" xml:space="preserve">
-    <value>The collection type '{0}' on '{1}' is not supported.</value>
+  <data name="SerializationNotSupported" xml:space="preserve">
+    <value>The type '{0}' on '{1}' is not supported.</value>
   </data>
   <data name="InvalidCharacterAtStartOfComment" xml:space="preserve">
     <value>'{0}' is invalid after '/' at the beginning of the comment. Expected either '/' or '*'.</value>

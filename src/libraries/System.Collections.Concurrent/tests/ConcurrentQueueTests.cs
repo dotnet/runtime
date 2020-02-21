@@ -212,6 +212,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16413", TestRuntimes.Mono)]
         public void ReferenceTypes_NulledAfterDequeue()
         {
             int iterations = 10; // any number <32 will do

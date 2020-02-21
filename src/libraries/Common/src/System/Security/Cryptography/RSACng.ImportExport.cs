@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using Internal.Cryptography;
 using Internal.NativeCrypto;
@@ -104,8 +105,8 @@ namespace System.Security.Cryptography
                                parameters.Modulus.Length;
                 if (includePrivate)
                 {
-                    blobSize += parameters.P.Length +
-                                parameters.Q.Length;
+                    blobSize += parameters.P!.Length +
+                                parameters.Q!.Length;
                 }
 
                 byte[] rsaBlob = new byte[blobSize];
@@ -120,8 +121,8 @@ namespace System.Security.Cryptography
 
                     if (includePrivate)
                     {
-                        pBcryptBlob->cbPrime1 = parameters.P.Length;
-                        pBcryptBlob->cbPrime2 = parameters.Q.Length;
+                        pBcryptBlob->cbPrime1 = parameters.P!.Length;
+                        pBcryptBlob->cbPrime2 = parameters.Q!.Length;
                     }
 
                     int offset = sizeof(BCRYPT_RSAKEY_BLOB);
@@ -131,8 +132,8 @@ namespace System.Security.Cryptography
 
                     if (includePrivate)
                     {
-                        Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.P);
-                        Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.Q);
+                        Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.P!);
+                        Interop.BCrypt.Emit(rsaBlob, ref offset, parameters.Q!);
                     }
 
                     // We better have computed the right allocation size above!

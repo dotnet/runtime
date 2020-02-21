@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 
 namespace System.Net
@@ -9,13 +10,13 @@ namespace System.Net
     internal static class DebugThreadTracking
     {
         [ThreadStatic]
-        private static Stack<ThreadKinds> t_threadKindStack;
+        private static Stack<ThreadKinds>? t_threadKindStack;
 
         private static Stack<ThreadKinds> ThreadKindStack => t_threadKindStack ?? (t_threadKindStack = new Stack<ThreadKinds>());
 
         internal static ThreadKinds CurrentThreadKind => ThreadKindStack.Count > 0 ? ThreadKindStack.Peek() : ThreadKinds.Other;
 
-        internal static IDisposable SetThreadKind(ThreadKinds kind)
+        internal static IDisposable? SetThreadKind(ThreadKinds kind)
         {
             if ((kind & ThreadKinds.SourceMask) != ThreadKinds.Unknown)
             {

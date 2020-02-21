@@ -302,7 +302,7 @@ class PEDecoder
     // Debug directory access, returns NULL if no such entry
     PTR_IMAGE_DEBUG_DIRECTORY GetDebugDirectoryEntry(UINT index) const;
 
-    PTR_IMAGE_DATA_DIRECTORY GetReadyToRunSection(DWORD section) const;
+    PTR_IMAGE_DATA_DIRECTORY GetReadyToRunSection(ReadyToRunSectionType section) const;
 
     PTR_CVOID GetNativeManifestMetadata(COUNT_T* pSize = NULL) const;
 

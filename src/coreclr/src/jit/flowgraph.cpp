@@ -22617,8 +22617,10 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             JITDUMP(" ... found foldable jtrue at [%06u] in BB%02u\n", dspTreeID(tree), block->bbNum);
             noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
 
-            // Had hoped to assert here that we are not losing any
-            // side effects, but can't find a way to express it properly.
+            // We have a constant operand, and should have the all clear to optimize.
+            // Update side effects on the tree, assert there aren't any, and bash to nop.
+            comp->gtUpdateNodeSideEffects(tree);
+            assert((tree->gtFlags & GTF_SIDE_EFFECT) == 0);
             tree->gtBashToNOP();
 
             BasicBlock* bTaken    = nullptr;
@@ -23579,10 +23581,15 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
     CORINFO_METHOD_INFO* InlineeMethodInfo = InlineeCompiler->info.compMethodInfo;
 
-    unsigned lclCnt = InlineeMethodInfo->locals.numArgs;
+    unsigned lclCnt     = InlineeMethodInfo->locals.numArgs;
+    bool     bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+    bool     bbIsReturn = block->bbJumpKind == BBJ_RETURN;
 
-    // Does callee contain any zero-init local?
-    if ((lclCnt != 0) && (InlineeMethodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0)
+    // If the callee contains zero-init locals, we need to explicitly initialize them if we are
+    // in a loop or if the caller doesn't have compInitMem set. Otherwise we can rely on the
+    // normal logic in the caller to insert zero-init in the prolog if necessary.
+    if ((lclCnt != 0) && ((InlineeMethodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0) &&
+        ((bbInALoop && !bbIsReturn) || !info.compInitMem))
     {
 
 #ifdef DEBUG
@@ -23596,9 +23603,20 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         {
             unsigned tmpNum = inlineInfo->lclTmpNum[lclNum];
 
-            // Is the local used at all?
+            // If the local is used check whether we need to insert explicit zero initialization.
             if (tmpNum != BAD_VAR_NUM)
             {
+                if (!fgVarNeedsExplicitZeroInit(lvaGetDesc(tmpNum), bbInALoop, bbIsReturn))
+                {
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        printf("\nSkipping zero initialization of V%02u\n", tmpNum);
+                    }
+#endif // DEBUG
+                    continue;
+                }
+
                 var_types lclTyp = (var_types)lvaTable[tmpNum].lvType;
                 noway_assert(lclTyp == lclVarInfo[lclNum + inlineInfo->argCnt].lclTypeInfo);
 
@@ -23613,18 +23631,14 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 {
                     CORINFO_CLASS_HANDLE structType =
                         lclVarInfo[lclNum + inlineInfo->argCnt].lclVerTypeInfo.GetClassHandle();
+                    tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), // Dest
+                                          gtNewIconNode(0),              // Value
+                                          false,                         // isVolatile
+                                          false);                        // not copyBlock
 
-                    if (fgStructTempNeedsExplicitZeroInit(lvaTable + tmpNum, block))
-                    {
-                        tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), // Dest
-                                              gtNewIconNode(0),              // Value
-                                              false,                         // isVolatile
-                                              false);                        // not copyBlock
-
-                        newStmt = gtNewStmt(tree, callILOffset);
-                        fgInsertStmtAfter(block, afterStmt, newStmt);
-                        afterStmt = newStmt;
-                    }
+                    newStmt = gtNewStmt(tree, callILOffset);
+                    fgInsertStmtAfter(block, afterStmt, newStmt);
+                    afterStmt = newStmt;
                 }
 
 #ifdef DEBUG

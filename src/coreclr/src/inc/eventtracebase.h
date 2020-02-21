@@ -75,7 +75,7 @@ enum EtwThreadFlags
 #define EVENT_PIPE_ENABLED() (FALSE)
 #endif
 
-#if  !defined(TARGET_UNIX)
+#if  !defined(HOST_UNIX)
 
 //
 // Use this macro at the least before calling the Event Macros
@@ -105,7 +105,7 @@ enum EtwThreadFlags
         ((ProviderSymbol##_Context.IsEnabled) || EVENT_PIPE_ENABLED())
 
 
-#else //!defined(TARGET_UNIX)
+#else //!defined(HOST_UNIX)
 #if defined(FEATURE_PERFTRACING)
 #define ETW_INLINE
 #define ETWOnStartup(StartEventName, EndEventName)
@@ -132,7 +132,7 @@ enum EtwThreadFlags
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (ETW_CATEGORY_ENABLED(Context, Level, Keyword))
 #define ETW_PROVIDER_ENABLED(ProviderSymbol) (XplatEventLogger::IsProviderEnabled(Context))
 #endif // defined(FEATURE_PERFTRACING)
-#endif // !defined(TARGET_UNIX)
+#endif // !defined(HOST_UNIX)
 
 #else // FEATURE_EVENT_TRACE
 
@@ -170,7 +170,7 @@ public:
 #ifdef FEATURE_EVENT_TRACE
 
 class Object;
-#if !defined(TARGET_UNIX)
+#if !defined(HOST_UNIX)
 
 /***************************************/
 /* Tracing levels supported by CLR ETW */
@@ -214,7 +214,7 @@ struct ProfilingScanContext;
 #include <evntrace.h>
 #include <evntprov.h>
 #endif //!FEATURE_REDHAWK
-#endif //!defined(TARGET_UNIX)
+#endif //!defined(HOST_UNIX)
 
 
 #else // FEATURE_EVENT_TRACE
@@ -231,7 +231,7 @@ struct ProfilingScanContext;
 extern UINT32 g_nClrInstanceId;
 
 #define GetClrInstanceId()  (static_cast<UINT16>(g_nClrInstanceId))
-#if defined(TARGET_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+#if defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
 #define KEYWORDZERO 0x0
 
 /***************************************/
@@ -503,7 +503,7 @@ public:
 };
 
 
-#endif  // defined(TARGET_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+#endif  // defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
 
 #if defined(FEATURE_EVENT_TRACE)
 
@@ -545,7 +545,7 @@ VOID EventPipeEtwCallbackDotNETRuntimePrivate(
     _In_opt_ EventFilterDescriptor* FilterData,
     _Inout_opt_ PVOID CallbackContext);
 
-#ifndef  TARGET_UNIX
+#ifndef  HOST_UNIX
 // Callback and stack support
 #if !defined(DONOT_DEFINE_ETW_CALLBACK) && !defined(DACCESS_COMPILE)
 extern "C" {
@@ -595,7 +595,7 @@ extern "C" {
         EtwCallout(RegHandle, Descriptor, NumberOfArguments, EventData)
 #endif //!DONOT_DEFINE_ETW_CALLBACK && !DACCESS_COMPILE
 
-#endif //!TARGET_UNIX
+#endif //!HOST_UNIX
 #include "clretwallmain.h"
 
 #if defined(FEATURE_PERFTRACING)
@@ -653,7 +653,7 @@ class Thread;
 namespace ETW
 {
     // Class to wrap the ETW infrastructure logic
-#if  !defined(TARGET_UNIX)
+#if  !defined(HOST_UNIX)
     class CEtwTracer
     {
 #if defined(FEATURE_EVENT_TRACE)
@@ -678,7 +678,7 @@ namespace ETW
         }
 #endif // FEATURE_EVENT_TRACE
     };
-#endif // !defined(TARGET_UNIX)
+#endif // !defined(HOST_UNIX)
 
     class LoaderLog;
     class MethodLog;
@@ -749,7 +749,7 @@ namespace ETW
 
     class SamplingLog
     {
-#if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
+#if defined(FEATURE_EVENT_TRACE) && !defined(HOST_UNIX)
     public:
         typedef enum _EtwStackWalkStatus
         {
@@ -766,7 +766,7 @@ namespace ETW
     public:
         static ULONG SendStackTrace(MCGEN_TRACE_CONTEXT TraceContext, PCEVENT_DESCRIPTOR Descriptor, LPCGUID EventGuid);
         EtwStackWalkStatus GetCurrentThreadsCallStack(UINT32 *frameCount, PVOID **Stack);
-#endif // FEATURE_EVENT_TRACE && !defined(TARGET_UNIX)
+#endif // FEATURE_EVENT_TRACE && !defined(HOST_UNIX)
     };
 
     // Class to wrap all Loader logic for ETW
@@ -1246,7 +1246,7 @@ namespace ETW
 #define ETWLoaderStaticLoad 0 // Static reference load
 #define ETWLoaderDynamicLoad 1 // Dynamic assembly load
 
-#if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
+#if defined(FEATURE_EVENT_TRACE) && !defined(HOST_UNIX)
 //
 // The ONE and only ONE global instantiation of this class
 //
@@ -1413,7 +1413,7 @@ typedef struct _MCGEN_TRACE_BUFFER {
     return Result;
 };
 
-#endif // FEATURE_EVENT_TRACE && !defined(TARGET_UNIX)
+#endif // FEATURE_EVENT_TRACE && !defined(HOST_UNIX)
 #ifdef FEATURE_EVENT_TRACE
 #ifdef TARGET_X86
 struct CallStackFrame
@@ -1424,7 +1424,7 @@ struct CallStackFrame
 #endif // TARGET_X86
 #endif // FEATURE_EVENT_TRACE
 
-#if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
+#if defined(FEATURE_EVENT_TRACE) && !defined(HOST_UNIX)
 FORCEINLINE
 BOOLEAN __stdcall
 McGenEventProviderEnabled(
@@ -1459,7 +1459,7 @@ McGenEventProviderEnabled(
     }
     return FALSE;
 }
-#endif // FEATURE_EVENT_TRACE && !defined(TARGET_UNIX)
+#endif // FEATURE_EVENT_TRACE && !defined(HOST_UNIX)
 
 
 #endif // !FEATURE_REDHAWK

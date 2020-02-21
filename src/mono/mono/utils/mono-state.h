@@ -18,7 +18,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/utils/json.h>
 
-#define MONO_NATIVE_STATE_PROTOCOL_VERSION "0.0.5"
+#define MONO_NATIVE_STATE_PROTOCOL_VERSION "0.0.6"
 
 typedef enum {
 	MonoSummaryNone = 0,
@@ -116,6 +116,12 @@ mono_state_alloc_mem (MonoStateMem *mem, long tag, size_t size);
 
 void
 mono_state_free_mem (MonoStateMem *mem);
+
+char*
+mono_crash_save_failfast_msg (char *msg);
+
+const char*
+mono_crash_get_failfast_msg (void);
 
 #endif // DISABLE_CRASH_REPORTING
 

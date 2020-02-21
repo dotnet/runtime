@@ -16,7 +16,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
     public class ReflectionComposablePartTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types.Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types.Retrieve the LoaderExceptions property for more information.
         public void Constructor1_DefinitionAsDefinitionArgument_ShouldSetOriginProperty()
         {
             var expectations = Expectations.GetAttributedDefinitions();
@@ -141,6 +141,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void OnComposed_MissingPostImportsOnInstance_ShouldThrowComposition()
         {
             var part = CreatePart(new MySharedPartExport());
@@ -153,6 +154,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void OnComposed_ProperlyComposed_ShouldSucceed()
         {
             var import = new TrivialImporter();
@@ -167,6 +169,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void OnComposed_UnhandledExceptionThrowInOnImportsSatisfied_ShouldThrowComposablePart()
         {
             var part = CreatePart(typeof(ExceptionDuringINotifyImport));
@@ -180,6 +183,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SetImport_WhenDisposed_ShouldThrowObjectDisposed()
         {
             var part = CreateDefaultDisposablePart();
@@ -205,6 +209,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SetImport_NullAsExportsArgument_ShouldThrowArgumentNull()
         {
             var part = CreatePart(typeof(MySharedPartExport));
@@ -217,6 +222,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SetImport_ExportsArrayWithNullElementAsExportsArgument_ShouldThrowArgument()
         {
             var part = CreatePart(typeof(MySharedPartExport));
@@ -242,6 +248,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SetImport_SetNonRecomposableDefinitionAsDefinitionArgumentAfterOnComposed_ShouldThrowInvalidOperation()
         {
             var part = CreatePartWithNonRecomposableImport();
@@ -257,6 +264,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SetImport_ZeroOrOneDefinitionAsDefinitionArgumentAndTwoExportsAsExportsArgument_ShouldThrowArgument()
         {
             var part = CreatePartWithZeroOrOneImport();
@@ -271,6 +279,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SetImport_ExactlyOneDefinitionAsDefinitionArgumentAndTwoExportsAsExportsArgument_ShouldThrowArgument()
         {
             var part = CreatePartWithExactlyOneImport();
@@ -285,6 +294,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SetImport_ExactlyOneDefinitionAsDefinitionArgumentAndEmptyExportsAsExportsArgument_ShouldThrowArgument()
         {
             var part = CreatePartWithExactlyOneImport();
@@ -299,6 +309,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SetImport_WrongTypeExportGiven_ShouldThrowComposablePart()
         {
             var part = CreatePart(new MySharedPartExport());
@@ -311,6 +322,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SetImport_SetPostValueAndSetAgainOnInstance_ShouldSetProperty()
         {
             var import = new MySharedPartExport();
@@ -334,6 +346,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetExportedValue_WhenDisposed_ShouldThrowObjectDisposed()
         {
             var part = CreateDefaultDisposablePart();
@@ -371,6 +384,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetExportedValue_MissingPrerequisiteImport_ShouldThrowInvalidOperation()
         {
             var part = CreatePart(typeof(SimpleConstructorInjectedObject));
@@ -409,6 +423,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetExportedValue_GetObjectAfterSetPreImport_ShouldGetValue()
         {
             var part = CreatePart(typeof(SimpleConstructorInjectedObject));
@@ -425,6 +440,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetExportedValue_GetObjectAfterSetPostImport_ShouldGetValue()
         {
             var part = CreatePart(typeof(MySharedPartExport));
@@ -442,6 +458,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetExportedValue_CallMultipleTimes_ShouldReturnSame()
         {
             var part = CreatePart(typeof(MySharedPartExport));
@@ -471,6 +488,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetExportedValue_OptionalPostNotGiven_ShouldReturnValidObject()
         {
             var part = CreatePart(typeof(ClassWithOptionalPostImport));
@@ -483,6 +501,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetExportedValue_OptionalPreNotGiven_ShouldReturnValidObject()
         {
             var part = CreatePart(typeof(ClassWithOptionalPreImport));
@@ -495,7 +514,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types.Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types.Retrieve the LoaderExceptions property for more information.
         public void ICompositionElementDisplayName_ShouldReturnTypeDisplayName()
         {
             var expectations = Expectations.GetAttributedTypes();
@@ -508,7 +527,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ToString_ShouldReturnICompositionElementDisplayName()
         {
             var expectations = Expectations.GetAttributedTypes();
@@ -548,6 +567,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetExportedObjectAlwaysReturnsSameReference_ForProperty()
         {
             var cp = CreatePart(new PropertyExporter());
@@ -558,6 +578,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetExportedObjectAlwaysReturnsSameReference_ForField()
         {
             var exporter = new FieldExporter();
@@ -628,6 +649,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportDefinitions_ImportWithCustomAttributeImports()
         {
             var part = CreatePart(typeof(ImportWithCustomImport));
@@ -661,6 +683,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportDefinitions_ImportManyWithCustomAttributeImportManys()
         {
             var part = CreatePart(typeof(ImportManyWithCustomImportMany));
@@ -729,6 +752,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportDefinitions_ImportingConstructorWithCustomAttributeImportingConstructors()
         {
             var part = CreatePart(typeof(ImportingConstructorWithCustomImportingConstructor));
@@ -741,6 +765,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportDefinitions_ImportingConstructorWithCustomAttributeImportingConstructorsWithAllowMultiple_ShouldNotThrowInvalidOperation()
         {
             var part = CreatePart(typeof(ImportingConstructorWithCustomImportingConstructorAllowMultiple));

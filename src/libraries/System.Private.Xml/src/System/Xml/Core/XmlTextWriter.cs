@@ -142,10 +142,11 @@ namespace System.Xml
         private char[] _indentChars;
         private static readonly char[] s_defaultIndentChars = CreateDefaultIndentChars();
 
-        // This method is needed as the native code compiler fails when this initialization is inline
         private static char[] CreateDefaultIndentChars()
         {
-            return new string(DefaultIndentChar, IndentArrayLength).ToCharArray();
+            var result = new char[IndentArrayLength];
+            result.AsSpan().Fill(DefaultIndentChar);
+            return result;
         }
 
         // element stack
@@ -1519,7 +1520,7 @@ namespace System.Xml
             else if (nsIndex == MaxNamespacesWalkCount)
             {
                 // add all
-                _nsHashtable = new Dictionary<string, int>(new SecureStringHasher());
+                _nsHashtable = new Dictionary<string, int>();
                 for (int i = 0; i <= nsIndex; i++)
                 {
                     AddToNamespaceHashtable(i);

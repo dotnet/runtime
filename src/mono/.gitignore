@@ -1,6 +1,7 @@
 Makefile.in
 
 /aclocal.m4
+/autom4te.cache
 /compile
 /config.guess
 /config.h.in
@@ -11,3 +12,5 @@ Makefile.in
 /install-sh
 /ltmain.sh
 /missing
+
+mono_crash*

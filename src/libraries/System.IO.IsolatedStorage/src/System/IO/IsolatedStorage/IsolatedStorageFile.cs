@@ -14,7 +14,7 @@ namespace System.IO.IsolatedStorage
         internal const string s_files = "Files";
         internal const string s_assemFiles = "AssemFiles";
         internal const string s_appFiles = "AppFiles";
-        private string _rootDirectory;
+        private string _rootDirectory = null!; // Initialized in helper
 
         private bool _disposed;
         private bool _closed;
@@ -223,7 +223,7 @@ namespace System.IO.IsolatedStorage
             {
                 // FileSystem APIs return the complete path of the matching directories however Iso store only provided the directory name
                 // and hid the IsoStore root. Hence we find all the matching directories from the fileSystem and simply return their names.
-                return Directory.EnumerateDirectories(RootDirectory, searchPattern).Select(m => m.Substring(Path.GetDirectoryName(m).Length + 1)).ToArray();
+                return Directory.EnumerateDirectories(RootDirectory, searchPattern).Select(m => m.Substring(Path.GetDirectoryName(m)!.Length + 1)).ToArray();
             }
             catch (UnauthorizedAccessException e)
             {
@@ -469,7 +469,7 @@ namespace System.IO.IsolatedStorage
 
         public static IEnumerator GetEnumerator(IsolatedStorageScope scope)
         {
-            // Not currently supported: https://github.com/dotnet/corefx/issues/10936
+            // Not currently supported: https://github.com/dotnet/runtime/issues/18209
 
             // Implementing this would require serializing/deserializing identity objects which is particularly
             // complicated given the normal identity objects used by .NET Framework aren't available on .NET Core.
@@ -609,31 +609,31 @@ namespace System.IO.IsolatedStorage
         //
         // "Known" types are Publisher, StrongName, Url, Site, and Zone.
 
-        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Type applicationEvidenceType)
+        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Type? applicationEvidenceType)
         {
             // Scope MUST be Application
-            return (applicationEvidenceType == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
+            return (applicationEvidenceType == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
         }
 
-        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, object applicationIdentity)
+        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, object? applicationIdentity)
         {
             // Scope MUST be Application
-            return (applicationIdentity == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
+            return (applicationIdentity == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
         }
 
-        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Type domainEvidenceType, Type assemblyEvidenceType)
+        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Type? domainEvidenceType, Type? assemblyEvidenceType)
         {
             // Scope MUST NOT be Application (assembly is assumed otherwise)
-            return (domainEvidenceType == null && assemblyEvidenceType == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
+            return (domainEvidenceType == null && assemblyEvidenceType == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
         }
 
-        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, object domainIdentity, object assemblyIdentity)
+        public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, object? domainIdentity, object? assemblyIdentity)
         {
             // Scope MUST NOT be Application (assembly is assumed otherwise)
-            return (domainIdentity == null && assemblyIdentity == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
+            return (domainIdentity == null && assemblyIdentity == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
         }
 
-        // https://github.com/dotnet/corefx/issues/10935
+        // https://github.com/dotnet/runtime/issues/18208
         // Evidence isn't currently available
         // public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Evidence domainEvidence, Type domainEvidenceType, Evidence assemblyEvidence, Type assemblyEvidenceType) { return default(IsolatedStorageFile); }
 
@@ -734,7 +734,8 @@ namespace System.IO.IsolatedStorage
 
             Close();
 
-            string parentDirectory = Path.GetDirectoryName(RootDirectory.TrimEnd(Path.DirectorySeparatorChar));
+            string? parentDirectory = Path.GetDirectoryName(RootDirectory.TrimEnd(Path.DirectorySeparatorChar));
+            Debug.Assert(parentDirectory != null);
 
             if (ContainsUnknownFiles(parentDirectory))
                 return;
@@ -753,6 +754,7 @@ namespace System.IO.IsolatedStorage
             if (Helper.IsDomain(Scope))
             {
                 parentDirectory = Path.GetDirectoryName(parentDirectory);
+                Debug.Assert(parentDirectory != null);
 
                 if (ContainsUnknownFiles(parentDirectory))
                     return;

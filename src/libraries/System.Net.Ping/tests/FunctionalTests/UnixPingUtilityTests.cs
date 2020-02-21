@@ -53,7 +53,7 @@ namespace System.Net.NetworkInformation.Tests
             p.BeginOutputReadLine();
             p.BeginErrorReadLine();
 
-            // There are multiple issues with ping6 in macOS 10.12 (Sierra), see https://github.com/dotnet/corefx/issues/26358.
+            // There are multiple issues with ping6 in macOS 10.12 (Sierra), see https://github.com/dotnet/runtime/issues/24682.
             bool isPing6OnMacSierra = utilityPath.Equals(UnixCommandLinePing.Ping6UtilityPath) &&
                     RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
                     !PlatformDetection.IsMacOsHighSierraOrHigher;

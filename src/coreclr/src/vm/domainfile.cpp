@@ -570,7 +570,7 @@ void DomainAssembly::VerifyReadyToRunImageDependencies()
         PTR_PEImage pImage = GetFile()->GetILimage();
 
         PTR_PEImageLayout pLayout = pImage->GetLayout(PEImageLayout::LAYOUT_ANY, 0);
-        PTR_IMAGE_DATA_DIRECTORY pDependencyDirectory = pLayout->GetReadyToRunSection(READYTORUN_SECTION_NATIVE_DEPENDENCIES);
+        PTR_IMAGE_DATA_DIRECTORY pDependencyDirectory = pLayout->GetReadyToRunSection(ReadyToRunSectionType::NativeDependencies);
         if (pDependencyDirectory != NULL)
         {
             READYTORUN_DEPENDENCY* pDependencies = (READYTORUN_DEPENDENCY*)pLayout->GetDirectoryData(pDependencyDirectory);

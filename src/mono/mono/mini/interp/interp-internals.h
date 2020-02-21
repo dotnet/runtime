@@ -94,8 +94,7 @@ mono_interp_objref (MonoObject **o)
 
 /*
  * Value types are represented on the eval stack as pointers to the
- * actual storage. The size field tells how much storage is allocated.
- * A value type can't be larger than 16 MB.
+ * actual storage. A value type cannot be larger than 16 MB.
  */
 typedef struct {
 	union {
@@ -184,7 +183,7 @@ struct _StackFragment {
 };
 
 typedef struct {
-	StackFragment *first, *last, *current;
+	StackFragment *first, *current;
 	/* For GC sync */
 	int inited;
 } FrameStack;
@@ -200,6 +199,7 @@ typedef struct {
 	const unsigned short  *ip;
 	GSList *finally_ips;
 	FrameClauseArgs *clause_args;
+	gboolean is_void : 1;
 } InterpState;
 
 struct _InterpFrame {

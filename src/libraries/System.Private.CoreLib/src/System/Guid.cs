@@ -957,20 +957,13 @@ namespace System
             return ToString(format, null);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static char HexToChar(int a)
-        {
-            a &= 0xf;
-            return (char)((a > 9) ? a - 10 + 0x61 : a + 0x30);
-        }
-
         private static unsafe int HexsToChars(char* guidChars, int a, int b)
         {
-            guidChars[0] = HexToChar(a >> 4);
-            guidChars[1] = HexToChar(a);
+            guidChars[0] = HexConverter.ToCharLower(a >> 4);
+            guidChars[1] = HexConverter.ToCharLower(a);
 
-            guidChars[2] = HexToChar(b >> 4);
-            guidChars[3] = HexToChar(b);
+            guidChars[2] = HexConverter.ToCharLower(b >> 4);
+            guidChars[3] = HexConverter.ToCharLower(b);
 
             return 4;
         }
@@ -980,15 +973,15 @@ namespace System
             guidChars[0] = '0';
             guidChars[1] = 'x';
 
-            guidChars[2] = HexToChar(a >> 4);
-            guidChars[3] = HexToChar(a);
+            guidChars[2] = HexConverter.ToCharLower(a >> 4);
+            guidChars[3] = HexConverter.ToCharLower(a);
 
             guidChars[4] = ',';
             guidChars[5] = '0';
             guidChars[6] = 'x';
 
-            guidChars[7] = HexToChar(b >> 4);
-            guidChars[8] = HexToChar(b);
+            guidChars[7] = HexConverter.ToCharLower(b >> 4);
+            guidChars[8] = HexConverter.ToCharLower(b);
 
             return 9;
         }

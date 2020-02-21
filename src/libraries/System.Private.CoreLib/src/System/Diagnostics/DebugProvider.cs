@@ -5,6 +5,8 @@
 // Do not remove this, it is needed to retain calls to these conditional methods in release builds
 #define DEBUG
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Diagnostics
 {
     /// <summary>
@@ -12,6 +14,7 @@ namespace System.Diagnostics
     /// </summary>
     public partial class DebugProvider
     {
+        [DoesNotReturn]
         public virtual void Fail(string? message, string? detailMessage)
         {
             string stackTrace;
@@ -25,7 +28,9 @@ namespace System.Diagnostics
             }
             WriteAssert(stackTrace, message, detailMessage);
             FailCore(stackTrace, message, detailMessage, "Assertion failed.");
+#pragma warning disable 8763 // "A method marked [DoesNotReturn] should not return."
         }
+#pragma warning restore 8763
 
         internal void WriteAssert(string stackTrace, string? message, string? detailMessage)
         {
@@ -52,7 +57,7 @@ namespace System.Diagnostics
                     _needIndent = false;
                 }
                 WriteCore(message);
-                if (message.EndsWith(Environment.NewLineConst))
+                if (message.EndsWith(Environment.NewLineConst, StringComparison.Ordinal))
                 {
                     _needIndent = true;
                 }

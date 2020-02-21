@@ -191,7 +191,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Null check not present in .NET Framework. See https://github.com/dotnet/corefx/issues/25495")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Null check not present in .NET Framework. See https://github.com/dotnet/runtime/issues/24237")]
         public void TryValidateObject_IValidatableObject_Null()
         {
             var instance = new ValidatableNull();
@@ -358,7 +358,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Null check not present in .NET Framework. See https://github.com/dotnet/corefx/issues/25495")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Null check not present in .NET Framework. See https://github.com/dotnet/runtime/issues/24237")]
         public void ValidateObject_IValidatableObject_Null()
         {
             var instance = new ValidatableNull();

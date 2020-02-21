@@ -425,7 +425,7 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset)
+        protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8)
         {
         }
 
@@ -433,8 +433,6 @@ namespace Internal.TypeSystem
         {
             // For types inheriting from another type, field offsets continue on from where they left off
             LayoutInt cumulativeInstanceFieldPos = ComputeBytesUsedInParentType(type);
-
-            AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos);
 
             var layoutMetadata = type.GetClassLayout();
 
@@ -459,6 +457,7 @@ namespace Internal.TypeSystem
                     continue;
 
                 TypeDesc fieldType = field.FieldType;
+
                 if (IsByValueClass(fieldType))
                 {
                     instanceValueClassFieldCount++;
@@ -495,6 +494,7 @@ namespace Internal.TypeSystem
             // Reset the counters to be used later as the index to insert into the array
             instanceGCPointerFieldsCount = 0;
             instanceValueClassFieldCount = 0;
+            LayoutInt largestAlignmentRequired = LayoutInt.One;
 
             // Iterate over all fields and do the following
             //   - Add instance fields to the appropriate array (while maintaining the enumerated order)
@@ -506,6 +506,9 @@ namespace Internal.TypeSystem
 
                 TypeDesc fieldType = field.FieldType;
 
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize);
+                largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
+
                 if (IsByValueClass(fieldType))
                 {
                     instanceValueClassFieldsArr[instanceValueClassFieldCount++] = field;
@@ -516,11 +519,13 @@ namespace Internal.TypeSystem
                 }
                 else
                 {
-                    var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize);
                     int log2size = CalculateLog2(fieldSizeAndAlignment.Size.AsInt);
                     instanceNonGCPointerFieldsArr[log2size][instanceNonGCPointerFieldsCount[log2size]++] = field;
                 }
             }
+
+            largestAlignmentRequired = type.Context.Target.GetObjectAlignment(largestAlignmentRequired);
+            AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, largestAlignmentRequired.AsInt > 4);
 
             // We've finished placing the fields into their appropriate arrays
             // The next optimization may place non-GC Pointers, so repurpose our

@@ -3386,7 +3386,7 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 	is_open = (i < type_argc);
 
 	ginst = (MonoGenericInst *)g_alloca (size);
-	memset (ginst, 0, sizeof (MonoGenericInst));
+	memset (ginst, 0, MONO_SIZEOF_GENERIC_INST);
 	ginst->is_open = is_open;
 	ginst->type_argc = type_argc;
 	memcpy (ginst->type_argv, type_argv, type_argc * sizeof (MonoType *));

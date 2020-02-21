@@ -200,8 +200,10 @@ namespace System.Net
             if (isStrict)
             {
                 int idx = 0;
-                foreach (Cookie c in m_list)
+                int listCount = m_list.Count;
+                for (int i = 0; i < listCount; i++)
                 {
+                    Cookie c = (Cookie)m_list[i];
                     if (CookieComparer.Compare(cookie, c) == 0)
                     {
                         ret = 0; // Will replace or reject

@@ -145,7 +145,6 @@ namespace System.Drawing.Imaging
             return _guid.GetHashCode();
         }
 
-#if !FEATURE_PAL
         // Find any random encoder which supports this format
         internal ImageCodecInfo FindEncoder()
         {
@@ -157,7 +156,6 @@ namespace System.Drawing.Imaging
             }
             return null;
         }
-#endif
 
         /// <summary>
         /// Converts this <see cref='System.Drawing.Imaging.ImageFormat'/> to a human-readable string.
