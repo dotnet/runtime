@@ -3,10 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Sources;
 
 namespace System.Net.Http
 {
@@ -18,7 +16,7 @@ namespace System.Net.Http
         private bool _disposed;
         /// <summary>Circular singly-linked list of active waiters.</summary>
         /// <remarks>If null, the list is empty.  If non-null, this is the tail.  If the list has one item, its Next is itself.</remarks>
-        private Waiter _waitersTail;
+        private CreditWaiter _waitersTail;
 
         public CreditManager(IHttpTrace owner, string name, int initialCredit)
         {
@@ -33,12 +31,9 @@ namespace System.Net.Http
 
         private object SyncObject
         {
-            get
-            {
-                // Generally locking on "this" is considered poor form, but this type is internal,
-                // and it's unnecessary overhead to allocate another object just for this purpose.
-                return this;
-            }
+            // Generally locking on "this" is considered poor form, but this type is internal,
+            // and it's unnecessary overhead to allocate another object just for this purpose.
+            get => this;
         }
 
         public ValueTask<int> RequestCreditAsync(int amount, CancellationToken cancellationToken)
@@ -64,9 +59,10 @@ namespace System.Net.Http
                 if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, no credit available.");
 
                 // Otherwise, create a new waiter.
-                Waiter waiter = cancellationToken.CanBeCanceled ?
-                    new CancelableWaiter(amount, SyncObject, cancellationToken) :
-                    new Waiter(amount);
+                CreditWaiter waiter = cancellationToken.CanBeCanceled ?
+                    new CancelableCreditWaiter(SyncObject, cancellationToken) :
+                    new CreditWaiter();
+                waiter.Amount = amount;
 
                 // Add the waiter at the tail of the queue.
                 if (_waitersTail is null)
@@ -106,7 +102,7 @@ namespace System.Net.Http
                 while (_current > 0 && _waitersTail != null)
                 {
                     // Get the waiter from the head of the queue.
-                    Waiter waiter = _waitersTail.Next;
+                    CreditWaiter waiter = _waitersTail.Next;
                     int granted = Math.Min(waiter.Amount, _current);
 
                     // Remove the waiter from the list.
@@ -143,12 +139,12 @@ namespace System.Net.Http
 
                 _disposed = true;
 
-                Waiter waiter = _waitersTail;
+                CreditWaiter waiter = _waitersTail;
                 if (waiter != null)
                 {
                     do
                     {
-                        Waiter next = waiter.Next;
+                        CreditWaiter next = waiter.Next;
                         waiter.Next = null;
                         waiter.Dispose();
                         waiter = next;
@@ -157,89 +153,6 @@ namespace System.Net.Http
 
                     _waitersTail = null;
                 }
-            }
-        }
-
-        /// <summary>Represents a waiter for credit.</summary>
-        /// <remarks>All of the public members on the instance must only be accessed while holding the CreditManager's lock.</remarks>
-        private class Waiter : IValueTaskSource<int>
-        {
-            public readonly int Amount;
-            public Waiter Next;
-            protected ManualResetValueTaskSourceCore<int> _source;
-
-            public Waiter(int amount)
-            {
-                Amount = amount;
-                _source.RunContinuationsAsynchronously = true;
-            }
-
-            public ValueTask<int> AsValueTask() => new ValueTask<int>(this, _source.Version);
-
-            public bool IsPending => _source.GetStatus(_source.Version) == ValueTaskSourceStatus.Pending;
-
-            public bool TrySetResult(int result)
-            {
-                if (IsPending)
-                {
-                    _source.SetResult(result);
-                    return true;
-                }
-
-                return false;
-            }
-
-            public virtual void Dispose()
-            {
-                if (IsPending)
-                {
-                    _source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(CreditManager), SR.net_http_disposed_while_in_use)));
-                }
-            }
-
-            int IValueTaskSource<int>.GetResult(short token) =>
-                _source.GetResult(token);
-            ValueTaskSourceStatus IValueTaskSource<int>.GetStatus(short token) =>
-                _source.GetStatus(token);
-            void IValueTaskSource<int>.OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags) =>
-                _source.OnCompleted(continuation, state, token, flags);
-        }
-
-        private sealed class CancelableWaiter : Waiter
-        {
-            private readonly object _syncObj;
-            private CancellationTokenRegistration _registration;
-
-            public CancelableWaiter(int amount, object syncObj, CancellationToken cancellationToken) : base(amount)
-            {
-                _syncObj = syncObj;
-                _registration = cancellationToken.UnsafeRegister(s =>
-                {
-                    CancelableWaiter thisRef = (CancelableWaiter)s!;
-                    lock (thisRef._syncObj)
-                    {
-                        if (thisRef.IsPending)
-                        {
-                            thisRef._source.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(thisRef._registration.Token)));
-                            thisRef._registration = default; // benign race with setting in the ctor
-
-                            // We don't remove it from the list as we lack a prev pointer that would enable us to do so correctly,
-                            // and it's not worth adding a prev pointer for the rare case of cancellation.  We instead just
-                            // check when completing a waiter whether it's already been canceled.  As such, we also do not
-                            // dispose it here.
-                        }
-                    }
-                }, this);
-            }
-
-            public override void Dispose()
-            {
-                Monitor.IsEntered(_syncObj);
-
-                _registration.Dispose();
-                _registration = default;
-
-                base.Dispose();
             }
         }
     }

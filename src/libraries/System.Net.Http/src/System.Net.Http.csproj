@@ -12,7 +12,6 @@
   <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
-  <!-- Common -->
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="System\Net\Http\ByteArrayHelpers.cs" />
@@ -44,11 +43,6 @@
     <Compile Include="System\Net\Http\NetEventSource.Http.cs" />
     <Compile Include="System\Net\Http\ReadOnlyMemoryContent.cs" />
     <Compile Include="System\Net\Http\RequestRetryType.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3Connection.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ConnectionException.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ProtocolException.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3RequestStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthority.cs" />
     <Compile Include="System\Net\Http\StreamContent.cs" />
     <Compile Include="System\Net\Http\StreamToStreamCopy.cs" />
     <Compile Include="System\Net\Http\StringContent.cs" />
@@ -94,7 +88,6 @@
     <Compile Include="System\Net\Http\Headers\UriHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\WarningHeaderValue.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
@@ -140,15 +133,22 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\ContentLengthWriteStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\CookieHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\CreditManager.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\CreditWaiter.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\DecompressionHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\EmptyReadStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Connection.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ConnectionException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ProtocolErrorCode.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ProtocolException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Stream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3Connection.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ConnectionException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ProtocolException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3RequestStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthenticatedConnectionHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthority.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpBaseStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnection.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionBase.cs" />
@@ -162,12 +162,12 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentWriteStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\IHttpTrace.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpHandler.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\RawConnectionStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\RedirectHandler.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\FailedProxyCache.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\MultiProxy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\RawConnectionStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\RedirectHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
     <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs">
       <Link>Common\System\Net\NTAuthentication.Common.cs</Link>
     </Compile>
