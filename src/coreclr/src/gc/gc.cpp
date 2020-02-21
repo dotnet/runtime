@@ -27255,7 +27255,6 @@ void gc_heap::background_mark_phase ()
         GCScan::GcScanRoots(background_promote_callback,
                                 max_generation, max_generation,
                                 &sc);
-
     }
 
     {
