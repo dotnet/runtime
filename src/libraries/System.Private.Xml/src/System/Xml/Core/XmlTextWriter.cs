@@ -142,10 +142,11 @@ namespace System.Xml
         private char[] _indentChars;
         private static readonly char[] s_defaultIndentChars = CreateDefaultIndentChars();
 
-        // This method is needed as the native code compiler fails when this initialization is inline
         private static char[] CreateDefaultIndentChars()
         {
-            return new string(DefaultIndentChar, IndentArrayLength).ToCharArray();
+            var result = new char[IndentArrayLength];
+            result.AsSpan().Fill(DefaultIndentChar);
+            return result;
         }
 
         // element stack

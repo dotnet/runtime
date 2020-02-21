@@ -69,12 +69,12 @@ namespace System
 
         public override string ToString()
         {
-            return Number.FormatInt32(m_value, null, null);
+            return Number.Int32ToDecStr(m_value);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatInt32(m_value, null, provider);
+            return ToString(null, provider);
         }
 
         public string ToString(string? format)
@@ -84,23 +84,12 @@ namespace System
 
         public string ToString(string? format, IFormatProvider? provider)
         {
-            if (m_value < 0 && format != null && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
-            {
-                uint temp = (uint)(m_value & 0x0000FFFF);
-                return Number.FormatUInt32(temp, format, provider);
-            }
-
-            return Number.FormatInt32(m_value, format, provider);
+            return Number.FormatInt32(m_value, 0x0000FFFF, format, provider);
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            if (m_value < 0 && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
-            {
-                uint temp = (uint)(m_value & 0x0000FFFF);
-                return Number.TryFormatUInt32(temp, format, provider, destination, out charsWritten);
-            }
-            return Number.TryFormatInt32(m_value, format, provider, destination, out charsWritten);
+            return Number.TryFormatInt32(m_value, 0x0000FFFF, format, provider, destination, out charsWritten);
         }
 
         public static short Parse(string s)

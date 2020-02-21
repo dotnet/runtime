@@ -332,85 +332,85 @@ typedef enum
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-DLLEXPORT int32_t SystemNative_FStat(intptr_t fd, FileStatus* output);
+PALEXPORT int32_t SystemNative_FStat(intptr_t fd, FileStatus* output);
 
 /**
  * Get file status from a full path. Implemented as shim to stat(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-DLLEXPORT int32_t SystemNative_Stat(const char* path, FileStatus* output);
+PALEXPORT int32_t SystemNative_Stat(const char* path, FileStatus* output);
 
 /**
  * Get file stats from a full path. Implemented as shim to lstat(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-DLLEXPORT int32_t SystemNative_LStat(const char* path, FileStatus* output);
+PALEXPORT int32_t SystemNative_LStat(const char* path, FileStatus* output);
 
 /**
  * Open or create a file or device. Implemented as shim to open(2).
  *
  * Returns file descriptor or -1 for failure. Sets errno on failure.
  */
-DLLEXPORT intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode);
+PALEXPORT intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode);
 
 /**
  * Close a file descriptor. Implemented as shim to open(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-DLLEXPORT int32_t SystemNative_Close(intptr_t fd);
+PALEXPORT int32_t SystemNative_Close(intptr_t fd);
 
 /**
  * Duplicates a file descriptor.
  *
  * Returns the duplication descriptor for success, -1 for failure. Sets errno on failure.
  */
-DLLEXPORT intptr_t SystemNative_Dup(intptr_t oldfd);
+PALEXPORT intptr_t SystemNative_Dup(intptr_t oldfd);
 
 /**
  * Delete an entry from the file system. Implemented as shim to unlink(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-DLLEXPORT int32_t SystemNative_Unlink(const char* path);
+PALEXPORT int32_t SystemNative_Unlink(const char* path);
 
 /**
  * Open or create a shared memory object. Implemented as shim to shm_open(3).
  *
  * Returns file descriptor or -1 on fiailure. Sets errno on failure.
  */
-DLLEXPORT intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode);
+PALEXPORT intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode);
 
 /**
  * Unlink a shared memory object. Implemented as shim to shm_unlink(3).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-DLLEXPORT int32_t SystemNative_ShmUnlink(const char* name);
+PALEXPORT int32_t SystemNative_ShmUnlink(const char* name);
 
 /**
  * Returns the size of the dirent struct on the current architecture
  */
-DLLEXPORT int32_t SystemNative_GetReadDirRBufferSize(void);
+PALEXPORT int32_t SystemNative_GetReadDirRBufferSize(void);
 
 /**
  * Re-entrant readdir that will retrieve the next dirent from the directory stream pointed to by dir.
  *
  * Returns 0 when data is retrieved; returns -1 when end-of-stream is reached; returns an error code on failure
  */
-DLLEXPORT int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, DirectoryEntry* outputEntry);
+PALEXPORT int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, DirectoryEntry* outputEntry);
 
 /**
  * Returns a DIR struct containing info about the current path or NULL on failure; sets errno on fail.
  */
-DLLEXPORT DIR* SystemNative_OpenDir(const char* path);
+PALEXPORT DIR* SystemNative_OpenDir(const char* path);
 
 /**
  * Closes the directory stream opened by opendir and returns 0 on success. On fail, -1 is returned and errno is set
  */
-DLLEXPORT int32_t SystemNative_CloseDir(DIR* dir);
+PALEXPORT int32_t SystemNative_CloseDir(DIR* dir);
 
 /**
  * Creates a pipe. Implemented as shim to pipe(2) or pipe2(2) if available.
@@ -418,7 +418,7 @@ DLLEXPORT int32_t SystemNative_CloseDir(DIR* dir);
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-DLLEXPORT int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets read end, pipefd[1] gets write end.
+PALEXPORT int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets read end, pipefd[1] gets write end.
                         int32_t flags);    // 0 for defaults or PAL_O_CLOEXEC for close-on-exec
 
 // NOTE: Rather than a general fcntl shim, we opt to export separate functions
@@ -430,21 +430,21 @@ DLLEXPORT int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets 
  *
  * Returns 0 for success; -1 for failure. Sets errno for failure.
  */
-DLLEXPORT int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags);
+PALEXPORT int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags);
 
 /**
  * Gets the flags on a file descriptor.
  *
  * Returns flags for success; -1 for failure. Sets errno for failure.
  */
-DLLEXPORT int32_t SystemNative_FcntlGetFD(intptr_t fd);
+PALEXPORT int32_t SystemNative_FcntlGetFD(intptr_t fd);
 
 /**
  * Determines if the current platform supports getting and setting pipe capacity.
  *
  * Returns true (non-zero) if supported, false (zero) if not.
  */
-DLLEXPORT int32_t SystemNative_FcntlCanGetSetPipeSz(void);
+PALEXPORT int32_t SystemNative_FcntlCanGetSetPipeSz(void);
 
 /**
  * Gets the capacity of a pipe.
@@ -453,7 +453,7 @@ DLLEXPORT int32_t SystemNative_FcntlCanGetSetPipeSz(void);
  *
  * NOTE: Some platforms do not support this operation and will always fail with errno = ENOTSUP.
  */
-DLLEXPORT int32_t SystemNative_FcntlGetPipeSz(intptr_t fd);
+PALEXPORT int32_t SystemNative_FcntlGetPipeSz(intptr_t fd);
 
 /**
  * Sets the capacity of a pipe.
@@ -462,56 +462,56 @@ DLLEXPORT int32_t SystemNative_FcntlGetPipeSz(intptr_t fd);
  *
  * NOTE: Some platforms do not support this operation and will always fail with errno = ENOTSUP.
  */
-DLLEXPORT int32_t SystemNative_FcntlSetPipeSz(intptr_t fd, int32_t size);
+PALEXPORT int32_t SystemNative_FcntlSetPipeSz(intptr_t fd, int32_t size);
 
 /**
  * Sets whether or not a file descriptor is non-blocking.
  *
  * Returns 0 for success, -1 for failure. Sets errno for failure.
  */
-DLLEXPORT int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking);
+PALEXPORT int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking);
 
 /**
  * Create a directory. Implemented as a shim to mkdir(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno for failure.
  */
-DLLEXPORT int32_t SystemNative_MkDir(const char* path, int32_t mode);
+PALEXPORT int32_t SystemNative_MkDir(const char* path, int32_t mode);
 
 /**
  * Change permissions of a file. Implemented as a shim to chmod(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno for failure.
  */
-DLLEXPORT int32_t SystemNative_ChMod(const char* path, int32_t mode);
+PALEXPORT int32_t SystemNative_ChMod(const char* path, int32_t mode);
 
 /**
 * Change permissions of a file. Implemented as a shim to fchmod(2).
 *
 * Returns 0 for success, -1 for failure. Sets errno for failure.
 */
-DLLEXPORT int32_t SystemNative_FChMod(intptr_t fd, int32_t mode);
+PALEXPORT int32_t SystemNative_FChMod(intptr_t fd, int32_t mode);
 
 /**
  * Flushes all modified data and attribtues of the specified File Descriptor to the storage medium.
  *
  * Returns 0 for success; on fail, -1 is returned and errno is set.
  */
-DLLEXPORT int32_t SystemNative_FSync(intptr_t fd);
+PALEXPORT int32_t SystemNative_FSync(intptr_t fd);
 
 /**
  * Changes the advisory lock status on a given File Descriptor
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set
  */
-DLLEXPORT int32_t SystemNative_FLock(intptr_t fd, int32_t operation);
+PALEXPORT int32_t SystemNative_FLock(intptr_t fd, int32_t operation);
 
 /**
  * Changes the current working directory to be the specified path.
  *
  * Returns 0 on success; otherwise, returns -1 and errno is set
  */
-DLLEXPORT int32_t SystemNative_ChDir(const char* path);
+PALEXPORT int32_t SystemNative_ChDir(const char* path);
 
 /**
  * Checks the access permissions of the current calling user on the specified path for the specified mode.
@@ -519,7 +519,7 @@ DLLEXPORT int32_t SystemNative_ChDir(const char* path);
  * Returns -1 if the path cannot be found or the if desired access is not granted and errno is set; otherwise, returns
  * 0.
  */
-DLLEXPORT int32_t SystemNative_Access(const char* path, int32_t mode);
+PALEXPORT int32_t SystemNative_Access(const char* path, int32_t mode);
 
 /**
  * Seek to a specified location within a seekable stream
@@ -527,14 +527,14 @@ DLLEXPORT int32_t SystemNative_Access(const char* path, int32_t mode);
  * On success, the resulting offet, in bytes, from the beginning of the stream; otherwise,
  * returns -1 and errno is set.
  */
-DLLEXPORT int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, int32_t whence);
+PALEXPORT int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, int32_t whence);
 
 /**
  * Creates a hard-link at link pointing to source.
  *
  * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
-DLLEXPORT int32_t SystemNative_Link(const char* source, const char* linkTarget);
+PALEXPORT int32_t SystemNative_Link(const char* source, const char* linkTarget);
 
 /**
  * Creates a file name that adheres to the specified template, creates the file on disk with
@@ -542,7 +542,7 @@ DLLEXPORT int32_t SystemNative_Link(const char* source, const char* linkTarget);
  *
  * Returns a valid File Descriptor on success; otherwise, returns -1 and errno is set.
  */
-DLLEXPORT intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength);
+PALEXPORT intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength);
 
 /**
  * Map file or device into memory. Implemented as shim to mmap(2).
@@ -552,7 +552,7 @@ DLLEXPORT intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLengt
  * Note that null failure result is a departure from underlying
  * mmap(2) using non-null sentinel.
  */
-DLLEXPORT void* SystemNative_MMap(void* address,
+PALEXPORT void* SystemNative_MMap(void* address,
                       uint64_t length,
                       int32_t protection, // bitwise OR of PAL_PROT_*
                       int32_t flags,      // bitwise OR of PAL_MAP_*, but PRIVATE and SHARED are mutually exclusive.
@@ -564,21 +564,21 @@ DLLEXPORT void* SystemNative_MMap(void* address,
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-DLLEXPORT int32_t SystemNative_MUnmap(void* address, uint64_t length);
+PALEXPORT int32_t SystemNative_MUnmap(void* address, uint64_t length);
 
 /**
  * Give advice about use of memory. Implemented as shim to madvise(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-DLLEXPORT int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice);
+PALEXPORT int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice);
 
 /**
  * Sycnhronize a file with a memory map. Implemented as shim to mmap(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-DLLEXPORT int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags);
+PALEXPORT int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags);
 
 /**
  * Get system configuration value. Implemented as shim to sysconf(3).
@@ -589,14 +589,14 @@ DLLEXPORT int32_t SystemNative_MSync(void* address, uint64_t length, int32_t fla
  * note that -1 can also be a meaningful successful return value, in
  * which case errno is unchanged.
  */
-DLLEXPORT int64_t SystemNative_SysConf(int32_t name);
+PALEXPORT int64_t SystemNative_SysConf(int32_t name);
 
 /**
  * Truncate a file to given length. Implemented as shim to ftruncate(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-DLLEXPORT int32_t SystemNative_FTruncate(intptr_t fd, int64_t length);
+PALEXPORT int32_t SystemNative_FTruncate(intptr_t fd, int64_t length);
 
 /**
  * Examines one or more file descriptors for the specified state(s) and blocks until the state(s) occur or the timeout
@@ -605,7 +605,7 @@ DLLEXPORT int32_t SystemNative_FTruncate(intptr_t fd, int64_t length);
  * Returns an error or Error_SUCCESS. `triggered` is set to the number of ready descriptors if any. The number of
  * triggered descriptors may be zero in the event of a timeout.
  */
-DLLEXPORT int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered);
+PALEXPORT int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered);
 
 /**
  * Notifies the OS kernel that the specified file will be accessed in a particular way soon; this allows the kernel to
@@ -613,14 +613,14 @@ DLLEXPORT int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, 
  *
  * Returns 0 on success; otherwise, the error code is returned and errno is NOT set.
  */
-DLLEXPORT int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, int32_t advice);
+PALEXPORT int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, int32_t advice);
 
 /**
 * Reads a line from the provided stream.
 *
 * Returns the read line, or null if no line could be read.  The caller is responsible for freeing the malloc'd line.
 */
-DLLEXPORT char* SystemNative_GetLine(FILE* stream);
+PALEXPORT char* SystemNative_GetLine(FILE* stream);
 
 /**
  * Reads the number of bytes specified into the provided buffer from the specified, opened file descriptor.
@@ -629,7 +629,7 @@ DLLEXPORT char* SystemNative_GetLine(FILE* stream);
  *
  * Note - on fail. the position of the stream may change depending on the platform; consult man 2 read for more info
  */
-DLLEXPORT int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize);
+PALEXPORT int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize);
 
 /**
  * Takes a path to a symbolic link and attempts to place the link target path into the buffer. If the buffer is too
@@ -637,7 +637,7 @@ DLLEXPORT int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSiz
  *
  * Returns the number of bytes placed into the buffer on success; otherwise, -1 is returned and errno is set.
  */
-DLLEXPORT int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize);
+PALEXPORT int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize);
 
 /**
  * Renames a file, moving to the correct destination if necessary. There are many edge cases to this call, check man 2
@@ -645,33 +645,33 @@ DLLEXPORT int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t 
  *
  * Returns 0 on succes; otherwise, returns -1 and errno is set.
  */
-DLLEXPORT int32_t SystemNative_Rename(const char* oldPath, const char* newPath);
+PALEXPORT int32_t SystemNative_Rename(const char* oldPath, const char* newPath);
 
 /**
  * Deletes the specified empty directory.
  *
  * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
-DLLEXPORT int32_t SystemNative_RmDir(const char* path);
+PALEXPORT int32_t SystemNative_RmDir(const char* path);
 
 /**
  * Forces a write of all modified I/O buffers to their storage mediums.
  */
-DLLEXPORT void SystemNative_Sync(void);
+PALEXPORT void SystemNative_Sync(void);
 
 /**
  * Writes the specified buffer to the provided open file descriptor
  *
  * Returns the number of bytes written on success; otherwise, returns -1 and sets errno
  */
-DLLEXPORT int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize);
+PALEXPORT int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize);
 
 /**
  * Copies all data from the source file descriptor/path to the destination file path.
  *
  * Returns 0 on success; otherwise, returns -1 and sets errno.
  */
-DLLEXPORT int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char* destPath, int32_t overwrite);
+PALEXPORT int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char* destPath, int32_t overwrite);
 
 /**
 * Initializes a new inotify instance and returns a file
@@ -680,7 +680,7 @@ DLLEXPORT int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, 
 * Returns a new file descriptor on success.
 * On error, -1 is returned, and errno is set to indicate the error.
 */
-DLLEXPORT intptr_t SystemNative_INotifyInit(void);
+PALEXPORT intptr_t SystemNative_INotifyInit(void);
 
 /**
 * Adds a new watch, or modifies an existing watch,
@@ -689,7 +689,7 @@ DLLEXPORT intptr_t SystemNative_INotifyInit(void);
 * Returns a nonnegative watch descriptor on success.
 * On error -1 is returned and errno is set appropriately.
 */
-DLLEXPORT int32_t SystemNative_INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t mask);
+PALEXPORT int32_t SystemNative_INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t mask);
 
 /**
 * Removes the watch associated with the watch descriptor wd
@@ -697,21 +697,21 @@ DLLEXPORT int32_t SystemNative_INotifyAddWatch(intptr_t fd, const char* pathName
 *
 * Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
 */
-DLLEXPORT int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd);
+PALEXPORT int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd);
 
 /**
 * Expands all symbolic links and expands all paths to return an absolute path
 *
 * Returns the result absolute path on success or null on error with errno set appropriately.
 */
-DLLEXPORT char* SystemNative_RealPath(const char* path);
+PALEXPORT char* SystemNative_RealPath(const char* path);
 
 /**
 * Attempts to retrieve the ID of the process at the end of the given socket
 *
 * Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
 */
-DLLEXPORT int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid);
+PALEXPORT int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid);
 
 /**
 * Attempts to lock/unlock the region of the file "fd" specified by the offset and length. lockType
@@ -719,18 +719,18 @@ DLLEXPORT int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid);
 *
 * Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
 */
-DLLEXPORT int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType);
+PALEXPORT int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType);
 
 /**
 * Changes the file flags of the file whose location is specified in path
 *
 * Returns 0 for success, -1 for failure. Sets errno for failure.
 */
-DLLEXPORT int32_t SystemNative_LChflags(const char* path, uint32_t flags);
+PALEXPORT int32_t SystemNative_LChflags(const char* path, uint32_t flags);
 
 /**
  * Determines if the current platform supports setting UF_HIDDEN (0x8000) flag
  *
  * Returns true (non-zero) if supported, false (zero) if not.
  */
-DLLEXPORT int32_t SystemNative_LChflagsCanSetHiddenFlag(void);
+PALEXPORT int32_t SystemNative_LChflagsCanSetHiddenFlag(void);

@@ -2771,6 +2771,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [ActiveIssue("https://github.com/mono/mono/issues/14930", TestRuntimes.Mono)]
         [ClassData(typeof(CompilationTypes))]
         public static void NonZeroBasedOneDimensionalArrayIndex(bool useInterpreter)
         {
@@ -2792,6 +2793,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [ActiveIssue("https://github.com/mono/mono/issues/14930", TestRuntimes.Mono)]
         [ClassData(typeof(CompilationTypes))]
         public static void NonZeroBasedOneDimensionalArrayIndexMethod(bool useInterpreter)
         {

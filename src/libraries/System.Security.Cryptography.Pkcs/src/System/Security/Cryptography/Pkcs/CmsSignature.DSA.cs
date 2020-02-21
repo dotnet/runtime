@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using Internal.Cryptography;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography.Pkcs
 {
@@ -23,9 +24,9 @@ namespace System.Security.Cryptography.Pkcs
         private class DSACmsSignature : CmsSignature
         {
             private readonly HashAlgorithmName _expectedDigest;
-            private readonly string _signatureAlgorithm;
+            private readonly string? _signatureAlgorithm;
 
-            internal DSACmsSignature(string signatureAlgorithm, HashAlgorithmName expectedDigest)
+            internal DSACmsSignature(string? signatureAlgorithm, HashAlgorithmName expectedDigest)
             {
                 _signatureAlgorithm = signatureAlgorithm;
                 _expectedDigest = expectedDigest;
@@ -44,7 +45,7 @@ namespace System.Security.Cryptography.Pkcs
                 byte[] valueHash,
                 byte[] signature,
 #endif
-                string digestAlgorithmOid,
+                string? digestAlgorithmOid,
                 HashAlgorithmName digestAlgorithmName,
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
@@ -100,10 +101,10 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
-                AsymmetricAlgorithm key,
+                AsymmetricAlgorithm? key,
                 bool silent,
-                out Oid signatureAlgorithm,
-                out byte[] signatureValue)
+                [NotNullWhen(true)] out Oid? signatureAlgorithm,
+                [NotNullWhen(true)] out byte[]? signatureValue)
             {
                 // If there's no private key, fall back to the public key for a "no private key" exception.
                 DSA dsa = key as DSA ??
@@ -117,7 +118,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-                string oidValue =
+                string? oidValue =
                     hashAlgorithmName == HashAlgorithmName.SHA1 ? Oids.DsaWithSha1 :
                     hashAlgorithmName == HashAlgorithmName.SHA256 ? Oids.DsaWithSha256 :
                     hashAlgorithmName == HashAlgorithmName.SHA384 ? Oids.DsaWithSha384 :

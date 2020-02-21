@@ -225,7 +225,7 @@ namespace System.DirectoryServices.ActiveDirectory
             str.Append((int)SystemFlag.SystemFlagNtdsDomain);
             str.Append("))(");
             str.Append(PropertyManager.NCName);
-            str.Append("=");
+            str.Append('=');
             str.Append(Utils.GetEscapedFilterValue(distinguishedName));
             str.Append("))");
 

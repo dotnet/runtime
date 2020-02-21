@@ -1002,6 +1002,26 @@ mono_native_state_add_process_map (MonoStateWriter *writer)
 #endif
 
 static void
+mono_native_state_add_logged_message (MonoStateWriter *writer, const char *object_key, const char *msg)
+{
+	if (msg != NULL) {
+		assert_has_space (writer);
+		mono_state_writer_indent (writer);
+		mono_state_writer_object_key (writer, object_key);
+
+		size_t length;
+		const char *pos;
+		if ((pos = strchr (msg, '\n')) != NULL)
+			length = (size_t)(pos - msg);
+		else
+			length = strlen (msg);
+		length = MIN (length, INT_MAX);
+
+		mono_state_writer_printf(writer, "\"%.*s\",\n", (int)length, msg);
+	}
+}
+
+static void
 mono_native_state_add_prologue (MonoStateWriter *writer)
 {
 	mono_state_writer_printf(writer, "{\n");
@@ -1019,21 +1039,11 @@ mono_native_state_add_prologue (MonoStateWriter *writer)
 	mono_native_state_add_memory (writer);
 
 	const char *assertion_msg = g_get_assertion_message ();
-	if (assertion_msg != NULL) {
-		assert_has_space (writer);
-		mono_state_writer_indent (writer);
-		mono_state_writer_object_key (writer, "assertion_message");
+	mono_native_state_add_logged_message (writer, "assertion_message", assertion_msg);
 
-		size_t length;
-		const char *pos;
-		if ((pos = strchr (assertion_msg, '\n')) != NULL)
-			length = (size_t)(pos - assertion_msg);
-		else
-			length = strlen (assertion_msg);
-		length = MIN (length, INT_MAX);
-
-		mono_state_writer_printf(writer, "\"%.*s\",\n", (int)length, assertion_msg);
-	}
+	const char *failfast_msg = mono_crash_get_failfast_msg ();
+	mono_native_state_add_logged_message (writer, "failfast_message", failfast_msg);
+	
 
 #ifndef MONO_PRIVATE_CRASHES
 	mono_native_state_add_process_map (writer);
@@ -1167,4 +1177,24 @@ gboolean
 mono_dump_complete (void)
 {
 	return (mono_atomic_xchg_i32(&dump_status, 0) == 1);  // return true if we completed the dump
+}
+
+static char *saved_failfast_msg;
+
+/**
+ * mono_crash_save_failfast_msg:
+ * \param msg the message to save.  Takes ownership, caller shouldn't free
+ *
+ * \returns the previous message - caller is responsible for freeing.
+ */
+char*
+mono_crash_save_failfast_msg (char *msg)
+{
+	return (char*) mono_atomic_xchg_ptr ((gpointer*)&saved_failfast_msg, (void*)msg);
+}
+
+const char*
+mono_crash_get_failfast_msg (void)
+{
+	return saved_failfast_msg;
 }

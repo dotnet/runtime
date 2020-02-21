@@ -12,4 +12,4 @@
  *
  * Returns a pointer to the memory.
  */
-DLLEXPORT void* SystemNative_MemSet(void *s, int c, uintptr_t n);
+PALEXPORT void* SystemNative_MemSet(void *s, int c, uintptr_t n);

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
@@ -25,10 +26,10 @@ namespace System.Security.Cryptography.Pkcs
 
         private abstract class RSACmsSignature : CmsSignature
         {
-            private readonly string _signatureAlgorithm;
+            private readonly string? _signatureAlgorithm;
             private readonly HashAlgorithmName? _expectedDigest;
 
-            protected RSACmsSignature(string signatureAlgorithm, HashAlgorithmName? expectedDigest)
+            protected RSACmsSignature(string? signatureAlgorithm, HashAlgorithmName? expectedDigest)
             {
                 _signatureAlgorithm = signatureAlgorithm;
                 _expectedDigest = expectedDigest;
@@ -47,7 +48,7 @@ namespace System.Security.Cryptography.Pkcs
                 byte[] valueHash,
                 byte[] signature,
 #endif
-                string digestAlgorithmOid,
+                string? digestAlgorithmOid,
                 HashAlgorithmName digestAlgorithmName,
                 ReadOnlyMemory<byte>? signatureParameters,
                 X509Certificate2 certificate)
@@ -87,21 +88,21 @@ namespace System.Security.Cryptography.Pkcs
 
             protected abstract RSASignaturePadding GetSignaturePadding(
                 ReadOnlyMemory<byte>? signatureParameters,
-                string digestAlgorithmOid,
+                string? digestAlgorithmOid,
                 HashAlgorithmName digestAlgorithmName,
                 int digestValueLength);
         }
 
         private sealed class RSAPkcs1CmsSignature : RSACmsSignature
         {
-            public RSAPkcs1CmsSignature(string signatureAlgorithm, HashAlgorithmName? expectedDigest)
+            public RSAPkcs1CmsSignature(string? signatureAlgorithm, HashAlgorithmName? expectedDigest)
                 : base(signatureAlgorithm, expectedDigest)
             {
             }
 
             protected override RSASignaturePadding GetSignaturePadding(
                 ReadOnlyMemory<byte>? signatureParameters,
-                string digestAlgorithmOid,
+                string? digestAlgorithmOid,
                 HashAlgorithmName digestAlgorithmName,
                 int digestValueLength)
             {
@@ -130,10 +131,10 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
-                AsymmetricAlgorithm key,
+                AsymmetricAlgorithm? key,
                 bool silent,
-                out Oid signatureAlgorithm,
-                out byte[] signatureValue)
+                [NotNullWhen(true)] out Oid? signatureAlgorithm,
+                [NotNullWhen(true)] out byte[]? signatureValue)
             {
                 RSA certPublicKey = certificate.GetRSAPublicKey();
 
@@ -203,7 +204,7 @@ namespace System.Security.Cryptography.Pkcs
 
             protected override RSASignaturePadding GetSignaturePadding(
                 ReadOnlyMemory<byte>? signatureParameters,
-                string digestAlgorithmOid,
+                string? digestAlgorithmOid,
                 HashAlgorithmName digestAlgorithmName,
                 int digestValueLength)
             {
@@ -274,7 +275,7 @@ namespace System.Security.Cryptography.Pkcs
 #endif
                 HashAlgorithmName hashAlgorithmName,
                 X509Certificate2 certificate,
-                AsymmetricAlgorithm key,
+                AsymmetricAlgorithm? key,
                 bool silent,
                 out Oid signatureAlgorithm,
                 out byte[] signatureValue)

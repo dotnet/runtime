@@ -191,7 +191,7 @@ namespace System.Xml.Schema
                 IEnumerator enumerator = (value as IEnumerable).GetEnumerator();
                 if (enumerator.MoveNext())
                 {
-                    bldr.Append("{");
+                    bldr.Append('{');
                     object cur = enumerator.Current;
                     if (cur is IFormattable)
                     {
@@ -214,7 +214,7 @@ namespace System.Xml.Schema
                             bldr.Append(cur.ToString());
                         }
                     }
-                    bldr.Append("}");
+                    bldr.Append('}');
                     stringValue = bldr.ToString();
                 }
             }

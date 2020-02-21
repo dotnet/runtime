@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -355,7 +356,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 int runtimeFunctionSize = CalculateRuntimeFunctionSize();
                 uint nRuntimeFunctions = (uint)(runtimeFunctionSection.Size / runtimeFunctionSize);
-                int runtimeFunctionOffset = GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
+                int runtimeFunctionOffset = PEReader.GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
                 bool[] isEntryPoint = new bool[nRuntimeFunctions];
 
                 // initialize R2RMethods
@@ -381,8 +382,17 @@ namespace ILCompiler.Reflection.ReadyToRun
             return false;
         }
 
-        private MetadataReader GetSystemModuleMetadataReader() =>
-            _systemModuleReader ??= _assemblyResolver.FindAssembly(SystemModuleName, Filename);
+        private MetadataReader GetSystemModuleMetadataReader()
+        {
+            if (_systemModuleReader == null)
+            {
+                if (_assemblyResolver != null)
+                {
+                    _systemModuleReader = _assemblyResolver.FindAssembly(SystemModuleName, Filename);
+                }
+            }
+            return _systemModuleReader;
+        }
 
         public MetadataReader GetGlobalMetadataReader()
         {
@@ -630,7 +640,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     if (_composite)
                     {
                         // The only types that don't have module overrides on them in composite images are primitive types within the system module
-                        mdReader ??= GetSystemModuleMetadataReader();
+                        mdReader = GetSystemModuleMetadataReader();
                     }
                     owningType = decoder.ReadTypeSignatureNoEmit();
                 }

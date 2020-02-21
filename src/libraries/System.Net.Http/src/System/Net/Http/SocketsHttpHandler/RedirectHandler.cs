@@ -71,7 +71,10 @@ namespace System.Net.Http
 
                     request.Method = HttpMethod.Get;
                     request.Content = null;
-                    request.Headers.TransferEncodingChunked = false;
+                    if (request.Headers.TransferEncodingChunked == true)
+                    {
+                        request.Headers.TransferEncodingChunked = false;
+                    }
                 }
 
                 // Issue the redirected request.

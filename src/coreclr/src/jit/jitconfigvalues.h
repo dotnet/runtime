@@ -244,6 +244,9 @@ CONFIG_INTEGER(EnablePOPCNT, W("EnablePOPCNT"), 1)           // Enable POPCNT
 CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 0)
 #endif                                                       // !defined(TARGET_AMD64) && !defined(TARGET_X86)
 
+CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 0) // Enable the register allocator to support EH-write thru:
+                                                             // partial enregistration of vars exposed on EH boundaries
+
 // clang-format off
 
 #if defined(TARGET_ARM64)

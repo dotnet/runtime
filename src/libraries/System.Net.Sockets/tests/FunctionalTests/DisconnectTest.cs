@@ -44,7 +44,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [OuterLoop("https://github.com/dotnet/corefx/issues/11345")]
+        [OuterLoop("https://github.com/dotnet/runtime/issues/18406")]
         public void Disconnect_Success(bool reuseSocket)
         {
             AutoResetEvent completed = new AutoResetEvent(false);
@@ -87,7 +87,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [OuterLoop("https://github.com/dotnet/corefx/issues/11345")]
+        [OuterLoop("https://github.com/dotnet/runtime/issues/18406")]
         public void DisconnectAsync_Success(bool reuseSocket)
         {
             AutoResetEvent completed = new AutoResetEvent(false);
@@ -134,7 +134,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [OuterLoop("https://github.com/dotnet/corefx/issues/11345")]
+        [OuterLoop("https://github.com/dotnet/runtime/issues/18406")]
         public void BeginDisconnect_Success(bool reuseSocket)
         {
             AutoResetEvent completed = new AutoResetEvent(false);

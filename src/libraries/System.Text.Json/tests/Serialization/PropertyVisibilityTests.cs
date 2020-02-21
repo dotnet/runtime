@@ -74,7 +74,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void PrivateSetterPublicGetter()
         {
-            // https://github.com/dotnet/corefx/issues/37567
+            // https://github.com/dotnet/runtime/issues/29503
             ClassWithPublicGetterAndPrivateSetter obj
                 = JsonSerializer.Deserialize<ClassWithPublicGetterAndPrivateSetter>(@"{ ""Class"": {} }");
 

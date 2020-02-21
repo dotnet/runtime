@@ -321,7 +321,7 @@ namespace System.Tests
         {
             if (PlatformDetection.IsWindowsNanoServer)
             {
-                // https://github.com/dotnet/corefx/issues/19110
+                // https://github.com/dotnet/runtime/issues/21430
                 // On Windows Nano, ShGetKnownFolderPath currently doesn't give
                 // the correct result for SystemDirectory.
                 // Assert that it's wrong, so that if it's fixed, we don't forget to
@@ -433,7 +433,7 @@ namespace System.Tests
         }
 
         // The commented out folders aren't set on all systems.
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/19110
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/runtime/issues/21430
         [InlineData(Environment.SpecialFolder.ApplicationData)]
         [InlineData(Environment.SpecialFolder.CommonApplicationData)]
         [InlineData(Environment.SpecialFolder.LocalApplicationData)]

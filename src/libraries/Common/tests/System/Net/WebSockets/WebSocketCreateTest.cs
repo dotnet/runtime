@@ -45,7 +45,7 @@ namespace System.Net.WebSockets.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                // https://github.com/dotnet/corefx/issues/42339
+                // https://github.com/dotnet/runtime/issues/31382
                 return;
             }
 
@@ -204,7 +204,7 @@ namespace System.Net.WebSockets.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                // https://github.com/dotnet/corefx/issues/42339
+                // https://github.com/dotnet/runtime/issues/31382
                 return;
             }
 
@@ -237,7 +237,7 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/36016")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957")]
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServersAndBoolean))]

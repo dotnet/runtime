@@ -6,6 +6,7 @@
     <OmitResources Condition="'$(TargetsWindows)' == 'true'">true</OmitResources>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />
