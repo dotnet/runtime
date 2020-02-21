@@ -154,11 +154,11 @@ namespace ReadyToRun.SuperIlc
                 // instead of the rewritten ones next to the app.
                 foreach (string exe in s_runtimeExecutables)
                 {
-                    passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, exe.OSExeSuffix()));
+                    passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, exe.AppendOSExeSuffix()));
                 }
                 foreach (string lib in s_runtimeLibraries)
                 {
-                    passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, lib.OSDllSuffix()));
+                    passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, lib.AppendOSDllSuffix()));
                 }
             }
 
