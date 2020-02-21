@@ -9244,7 +9244,7 @@ public:
 public:
     // Set to TRUE if verification cannot be skipped for this method
     // CoreCLR does not ever run IL verification. Compile out the verifier from the JIT by making this a constant.
-    // TODO: Delete the verifier from the JIT?
+    // TODO: Delete the verifier from the JIT? (https://github.com/dotnet/runtime/issues/32648)
     // BOOL tiVerificationNeeded;
     static const BOOL tiVerificationNeeded = FALSE;
 
