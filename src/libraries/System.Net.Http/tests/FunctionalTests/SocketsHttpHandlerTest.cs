@@ -26,6 +26,24 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
 
+        [Fact]
+        public async Task ExecutionContext_Suppressed_Success()
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                uri => Task.Run(() =>
+                {
+                    using (ExecutionContext.SuppressFlow())
+                    using (HttpClient client = CreateHttpClient())
+                    {
+                        client.GetStringAsync(uri).GetAwaiter().GetResult();
+                    }
+                }),
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync();
+                });
+        }
+
         [OuterLoop("Relies on finalization")]
         [Fact]
         public async Task ExecutionContext_HttpConnectionLifetimeDoesntKeepContextAlive()

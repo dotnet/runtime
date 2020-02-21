@@ -650,7 +650,7 @@ interp_pop_lmf (MonoLMFExt *ext)
 	mono_pop_lmf (&ext->lmf);
 }
 
-static MONO_NEVER_INLINE InterpMethod*
+static InterpMethod*
 get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 {
 	MonoMethod *m = imethod->method;
@@ -774,7 +774,7 @@ alloc_method_table (MonoVTable *vtable, int offset)
 	return table;
 }
 
-static MONO_NEVER_INLINE InterpMethod* // Inlining causes additional stack use in caller.
+static InterpMethod* // Inlining causes additional stack use in caller.
 get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 {
 	gpointer *table;
@@ -1227,7 +1227,7 @@ ves_array_get (InterpFrame *frame, stackval *sp, stackval *retval, MonoMethodSig
 	return NULL;
 }
 
-static MONO_NEVER_INLINE MonoException*
+static MonoException*
 ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArray *ao, stackval *sp, gboolean needs_typecheck)
 {
 	MonoClass *ac = ((MonoObject *) ao)->vtable->klass;
@@ -1944,7 +1944,6 @@ interp_entry (InterpEntryData *data)
 	ThreadContext *context;
 	stackval result;
 	stackval *args;
-	stackval *retval;
 	MonoMethod *method;
 	MonoMethodSignature *sig;
 	MonoType *type;
@@ -2003,17 +2002,16 @@ interp_entry (InterpEntryData *data)
 	}
 
 	memset (&result, 0, sizeof (result));
-	retval = &result;
-	frame = alloc_frame (context, &result, NULL, data->rmethod, args, retval);
+	frame = alloc_frame (context, &result, NULL, data->rmethod, args, &result);
 
 	type = rmethod->rtype;
 	switch (type->type) {
 	case MONO_TYPE_GENERICINST:
 		if (!MONO_TYPE_IS_REFERENCE (type))
-			retval->data.vt = data->res;
+			result.data.vt = data->res;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		retval->data.vt = data->res;
+		result.data.vt = data->res;
 		break;
 	default:
 		break;
@@ -2040,11 +2038,11 @@ interp_entry (InterpEntryData *data)
 		break;
 	case MONO_TYPE_OBJECT:
 		/* No need for a write barrier */
-		*(MonoObject**)data->res = (MonoObject*)retval->data.p;
+		*(MonoObject**)data->res = (MonoObject*)result.data.p;
 		break;
 	case MONO_TYPE_GENERICINST:
 		if (MONO_TYPE_IS_REFERENCE (type)) {
-			*(MonoObject**)data->res = (MonoObject*)retval->data.p;
+			*(MonoObject**)data->res = (MonoObject*)result.data.p;
 		} else {
 			/* Already set before the call */
 		}
@@ -2053,7 +2051,7 @@ interp_entry (InterpEntryData *data)
 		/* Already set before the call */
 		break;
 	default:
-		stackval_to_data (type, retval, data->res, FALSE);
+		stackval_to_data (type, &result, data->res, FALSE);
 		break;
 	}
 }
@@ -2505,7 +2503,7 @@ do_transform_method (InterpFrame *frame, ThreadContext *context)
 	return mono_error_convert_to_exception (error);
 }
 
-static MONO_NEVER_INLINE guchar*
+static guchar*
 copy_varargs_vtstack (MonoMethodSignature *csig, stackval *sp, guchar *vt_sp_start)
 {
 	stackval *first_arg = sp - csig->param_count;
@@ -3065,7 +3063,7 @@ static long opcode_counts[MINT_LASTOP];
 		} \
 	} while (0);
 
-static MONO_NEVER_INLINE MonoObject*
+static MonoObject*
 mono_interp_new (MonoDomain* domain, MonoClass* klass)
 {
 	ERROR_DECL (error);
@@ -3074,11 +3072,7 @@ mono_interp_new (MonoDomain* domain, MonoClass* klass)
 	return object;
 }
 
-static
-#ifndef DISABLE_REMOTING
-MONO_NEVER_INLINE // To reduce stack.
-#endif
-void
+static void
 mono_interp_load_remote_field (
 	InterpMethod* imethod,
 	MonoObject* o,
@@ -3104,9 +3098,6 @@ mono_interp_load_remote_field (
 }
 
 static
-#ifndef DISABLE_REMOTING
-MONO_NEVER_INLINE // To reduce stack.
-#endif
 guchar* // Return new vt_sp instead of take-address.
 mono_interp_load_remote_field_vt (
 	InterpMethod* imethod,
@@ -3137,7 +3128,7 @@ mono_interp_load_remote_field_vt (
 	return vt_sp + ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 }
 
-static MONO_NEVER_INLINE gboolean
+static gboolean
 mono_interp_isinst (MonoObject* object, MonoClass* klass)
 {
 	ERROR_DECL (error);
@@ -3152,8 +3143,7 @@ mono_interp_isinst (MonoObject* object, MonoClass* klass)
 	return isinst;
 }
 
-// This function is outlined to help save stack in its caller, on the premise
-// that it is relatively rarely called. This also lets it use alloca.
+// Do not inline use of alloca.
 static MONO_NEVER_INLINE void
 mono_interp_calli_nat_dynamic_pinvoke (
 	// Parameters are sorted by name.
@@ -3190,9 +3180,7 @@ mono_interp_calli_nat_dynamic_pinvoke (
 	interp_exec_method (child_frame, context, error);
 }
 
-// Leave is split into pieces in order to consume less stack,
-// but not have to change how exception handling macros access labels and locals.
-static MONO_NEVER_INLINE MonoException*
+static MonoException*
 mono_interp_leave (InterpFrame* child_frame)
 {
 	stackval tmp_sp;
@@ -3206,7 +3194,7 @@ mono_interp_leave (InterpFrame* child_frame)
 	return (MonoException*)tmp_sp.data.p;
 }
 
-static MONO_NEVER_INLINE void
+static void
 mono_interp_enum_hasflag (stackval* sp, MonoClass* klass)
 {
 	guint64 a_val = 0, b_val = 0;
@@ -3216,7 +3204,7 @@ mono_interp_enum_hasflag (stackval* sp, MonoClass* klass)
 	sp->data.i = (a_val & b_val) == b_val;
 }
 
-static MONO_NEVER_INLINE int
+static int
 mono_interp_box_nullable (InterpFrame* frame, const guint16* ip, stackval* sp, MonoError* error)
 {
 	InterpMethod* const imethod = frame->imethod;
@@ -3233,7 +3221,7 @@ mono_interp_box_nullable (InterpFrame* frame, const guint16* ip, stackval* sp, M
 	return pop_vt_sp ? ALIGN_TO (size, MINT_VT_ALIGNMENT) : 0;
 }
 
-static MONO_NEVER_INLINE int
+static int
 mono_interp_box_vt (InterpFrame* frame, const guint16* ip, stackval* sp)
 {
 	InterpMethod* const imethod = frame->imethod;
@@ -3254,7 +3242,7 @@ mono_interp_box_vt (InterpFrame* frame, const guint16* ip, stackval* sp)
 	return pop_vt_sp ? ALIGN_TO (size, MINT_VT_ALIGNMENT) : 0;
 }
 
-static MONO_NEVER_INLINE void
+static void
 mono_interp_box (InterpFrame* frame, const guint16* ip, stackval* sp)
 {
 	MonoObject *o; // See the comment about GC safety.
@@ -3269,7 +3257,7 @@ mono_interp_box (InterpFrame* frame, const guint16* ip, stackval* sp)
 	sp [-1 - offset].data.p = o;
 }
 
-static MONO_NEVER_INLINE int
+static int
 mono_interp_store_remote_field_vt (InterpFrame* frame, const guint16* ip, stackval* sp, MonoError* error)
 {
 	InterpMethod* const imethod = frame->imethod;
