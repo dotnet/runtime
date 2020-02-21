@@ -29,7 +29,8 @@ namespace AppHost.Bundle.Tests
             var fixture = sharedTestState.TestFixture.Copy();
             string singleFile = BundleHelper.GetPublishedSingleFilePath(fixture);
             string renameFile = Path.Combine(BundleHelper.GetPublishPath(fixture), Path.GetRandomFileName());
-            string writeFile = Path.Combine(BundleHelper.GetPublishPath(fixture), "lock");
+            string waitFile = Path.Combine(BundleHelper.GetPublishPath(fixture), "wait");
+            string resumeFile = Path.Combine(BundleHelper.GetPublishPath(fixture), "resume");
 
             if (!renameFirstRun)
             {
@@ -43,19 +44,19 @@ namespace AppHost.Bundle.Tests
                     .HaveStdOutContaining("Hello World!");
             }
 
-            var singleExe = Command.Create(singleFile, writeFile)
+            // Once the App starts running, it creates the waitFile, and waits until resumeFile file is created.
+            var singleExe = Command.Create(singleFile, waitFile, resumeFile)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Start();
 
-            // Once the App starts running, it creates the writeFile, and waits until the file is deleted.
-            while (!File.Exists(writeFile))
+            while (!File.Exists(waitFile))
             {
                 Thread.Sleep(100);
             }
 
             File.Move(singleFile, renameFile);
-            File.Delete(writeFile);
+            File.Create(resumeFile).Close();
 
             var result = singleExe.WaitForExit(fExpectedToFail: false);
 

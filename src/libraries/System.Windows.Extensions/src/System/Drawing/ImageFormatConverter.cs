@@ -36,7 +36,7 @@ namespace System.Drawing
                 return base.ConvertFrom(context, culture, value);
             }
 
-            if ((strFormat[0] == '[') && (strFormat.Length >= 50) && Guid.TryParse(strFormat.Substring(14, 36), out Guid guid))
+            if ((strFormat[0] == '[') && (strFormat.Length >= 50) && Guid.TryParse(strFormat.AsSpan(14, 36), out Guid guid))
             {
                 // case #2, this is probably a long format (guid)
                 return new ImageFormat(guid);

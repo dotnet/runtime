@@ -311,9 +311,9 @@ namespace System.Net
                                     //length. since j points to the next ; the operation j -i
                                     //gives the length of the charset
                                     if (j > i)
-                                        _characterSet = contentType.Substring(i, j - i).Trim();
+                                        _characterSet = contentType.AsSpan(i, j - i).Trim().ToString();
                                     else
-                                        _characterSet = contentType.Substring(i).Trim();
+                                        _characterSet = contentType.AsSpan(i).Trim().ToString();
 
                                     //done
                                     break;

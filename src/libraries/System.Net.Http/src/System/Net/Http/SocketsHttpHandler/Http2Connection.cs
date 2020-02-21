@@ -159,31 +159,6 @@ namespace System.Net.Http
             _ = ProcessIncomingFramesAsync();
         }
 
-        private async ValueTask EnsureIncomingBytesAsync(int bytesNeeded)
-        {
-            Debug.Assert(bytesNeeded >= 0);
-            if (NetEventSource.IsEnabled) Trace($"{nameof(bytesNeeded)}={bytesNeeded}");
-
-            bytesNeeded -= _incomingBuffer.ActiveLength;
-            if (bytesNeeded > 0)
-            {
-                _incomingBuffer.EnsureAvailableSpace(bytesNeeded);
-                do
-                {
-                    int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
-                    Debug.Assert(bytesRead >= 0);
-                    if (bytesRead == 0)
-                    {
-                        throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, bytesNeeded));
-                    }
-
-                    _incomingBuffer.Commit(bytesRead);
-                    bytesNeeded -= bytesRead;
-                }
-                while (bytesNeeded > 0);
-            }
-        }
-
         private async Task FlushOutgoingBytesAsync()
         {
             if (NetEventSource.IsEnabled) Trace($"{nameof(_outgoingBuffer.ActiveLength)}={_outgoingBuffer.ActiveLength}");
@@ -209,13 +184,21 @@ namespace System.Net.Http
         {
             if (NetEventSource.IsEnabled) Trace($"{nameof(initialFrame)}={initialFrame}");
 
-            // Read frame header
+            // Ensure we've read enough data for the frame header.
             if (_incomingBuffer.ActiveLength < FrameHeader.Size)
             {
-                await EnsureIncomingBytesAsync(FrameHeader.Size).ConfigureAwait(false);
+                _incomingBuffer.EnsureAvailableSpace(FrameHeader.Size - _incomingBuffer.ActiveLength);
+                do
+                {
+                    int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
+                    _incomingBuffer.Commit(bytesRead);
+                    if (bytesRead == 0) ThrowPrematureEOF(FrameHeader.Size);
+                }
+                while (_incomingBuffer.ActiveLength < FrameHeader.Size);
             }
-            FrameHeader frameHeader = FrameHeader.ReadFrom(_incomingBuffer.ActiveSpan);
 
+            // Parse the frame header from our read buffer and validate it.
+            FrameHeader frameHeader = FrameHeader.ReadFrom(_incomingBuffer.ActiveSpan);
             if (frameHeader.Length > FrameHeader.MaxLength)
             {
                 if (initialFrame && NetEventSource.IsEnabled)
@@ -229,19 +212,31 @@ namespace System.Net.Http
             }
             _incomingBuffer.Discard(FrameHeader.Size);
 
-            // Read frame contents
+            // Ensure we've read the frame contents into our buffer.
             if (_incomingBuffer.ActiveLength < frameHeader.Length)
             {
-                await EnsureIncomingBytesAsync(frameHeader.Length).ConfigureAwait(false);
+                _incomingBuffer.EnsureAvailableSpace(frameHeader.Length - _incomingBuffer.ActiveLength);
+                do
+                {
+                    int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
+                    _incomingBuffer.Commit(bytesRead);
+                    if (bytesRead == 0) ThrowPrematureEOF(frameHeader.Length);
+                }
+                while (_incomingBuffer.ActiveLength < frameHeader.Length);
             }
 
+            // Return the read frame header.
             return frameHeader;
+
+            void ThrowPrematureEOF(int requiredBytes) =>
+                throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
         }
 
         private async Task ProcessIncomingFramesAsync()
         {
             try
             {
+                // Read the initial settings frame.
                 FrameHeader frameHeader = await ReadFrameAsync(initialFrame: true).ConfigureAwait(false);
                 if (frameHeader.Type != FrameType.Settings || frameHeader.AckFlag)
                 {
@@ -255,10 +250,37 @@ namespace System.Net.Http
                 // Keep processing frames as they arrive.
                 for (long frameNum = 1; ; frameNum++)
                 {
-                    await EnsureIncomingBytesAsync(FrameHeader.Size).ConfigureAwait(false); // not functionally necessary, but often ReadFrameAsync yielding/allocating
+                    // We could just call ReadFrameAsync here, but we add this code before it for two reasons:
+                    // 1. To provide a better error message when we're unable to read another frame.  We otherwise
+                    //    generally output an error message that's relatively obscure.
+                    // 2. To avoid another state machine allocation in the relatively common case where we
+                    //    currently don't have enough data buffered and issuing a read for the frame header
+                    //    completes asynchronously, but that read ends up also reading enough data to fulfill
+                    //    the entire frame's needs (not just the header).
+                    if (_incomingBuffer.ActiveLength < FrameHeader.Size)
+                    {
+                        _incomingBuffer.EnsureAvailableSpace(FrameHeader.Size - _incomingBuffer.ActiveLength);
+                        do
+                        {
+                            int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
+                            Debug.Assert(bytesRead >= 0);
+                            _incomingBuffer.Commit(bytesRead);
+                            if (bytesRead == 0)
+                            {
+                                string message = _incomingBuffer.ActiveLength == 0 ?
+                                    SR.net_http_invalid_response_missing_frame :
+                                    SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, FrameHeader.Size - _incomingBuffer.ActiveLength);
+                                throw new IOException(message);
+                            }
+                        }
+                        while (_incomingBuffer.ActiveLength < FrameHeader.Size);
+                    }
+
+                    // Read the frame.
                     frameHeader = await ReadFrameAsync().ConfigureAwait(false);
                     if (NetEventSource.IsEnabled) Trace($"Frame {frameNum}: {frameHeader}.");
 
+                    // Process the frame.
                     switch (frameHeader.Type)
                     {
                         case FrameType.Headers:

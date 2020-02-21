@@ -110,7 +110,7 @@ namespace System
     public sealed partial class AppDomain : System.MarshalByRefObject
     {
         internal AppDomain() { }
-        public string? BaseDirectory { get { throw null; } }
+        public string BaseDirectory { get { throw null; } }
         public static System.AppDomain CurrentDomain { get { throw null; } }
         public string? DynamicDirectory { get { throw null; } }
         public string FriendlyName { get { throw null; } }
@@ -1855,12 +1855,12 @@ namespace System
         public static System.Version Version { get { throw null; } }
         public static long WorkingSet { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public static void Exit(int exitCode) { }
+        public static void Exit(int exitCode) { throw null; }
         public static string ExpandEnvironmentVariables(string name) { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public static void FailFast(string? message) { }
+        public static void FailFast(string? message) { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public static void FailFast(string? message, System.Exception? exception) { }
+        public static void FailFast(string? message, System.Exception? exception) { throw null; }
         public static string[] GetCommandLineArgs() { throw null; }
         public static string? GetEnvironmentVariable(string variable) { throw null; }
         public static string? GetEnvironmentVariable(string variable, System.EnvironmentVariableTarget target) { throw null; }

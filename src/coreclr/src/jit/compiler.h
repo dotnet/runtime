@@ -415,6 +415,8 @@ public:
     unsigned char lvDoNotEnregister : 1; // Do not enregister this variable.
     unsigned char lvFieldAccessed : 1;   // The var is a struct local, and a field of the variable is accessed.  Affects
                                          // struct promotion.
+    unsigned char lvLiveInOutOfHndlr : 1; // The variable is live in or out of an exception handler, and therefore must
+                                          // be on the stack (at least at those boundaries.)
 
     unsigned char lvInSsa : 1; // The variable is in SSA form (set by SsaBuilder)
 
@@ -424,9 +426,6 @@ public:
     // also, lvType == TYP_STRUCT prevents enregistration.  At least one of the reasons should be true.
     unsigned char lvVMNeedsStackAddr : 1; // The VM may have access to a stack-relative address of the variable, and
                                           // read/write its value.
-    unsigned char lvLiveInOutOfHndlr : 1; // The variable was live in or out of an exception handler, and this required
-                                          // the variable to be
-                                          // in the stack (at least at those boundaries.)
     unsigned char lvLclFieldExpr : 1;     // The variable is not a struct, but was accessed like one (e.g., reading a
                                           // particular byte from an int).
     unsigned char lvLclBlockOpAddr : 1;   // The variable was written to via a block operation that took its address.
@@ -2773,6 +2772,7 @@ public:
 #endif // __clang__
         gtFoldExprConst(GenTree* tree);
     GenTree* gtFoldExprSpecial(GenTree* tree);
+    GenTree* gtFoldBoxNullable(GenTree* tree);
     GenTree* gtFoldExprCompare(GenTree* tree);
     GenTree* gtCreateHandleCompare(genTreeOps             oper,
                                    GenTree*               op1,
@@ -3004,6 +3004,9 @@ public:
     void lvaSetVarAddrExposed(unsigned varNum);
     void lvaSetVarLiveInOutOfHandler(unsigned varNum);
     bool lvaVarDoNotEnregister(unsigned varNum);
+
+    bool lvaEnregEHVars;
+
 #ifdef DEBUG
     // Reasons why we can't enregister.  Some of these correspond to debug properties of local vars.
     enum DoNotEnregisterReason
@@ -3026,6 +3029,7 @@ public:
         DNER_PinningRef,
 #endif
     };
+
 #endif
     void lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregisterReason reason));
 
@@ -5440,7 +5444,6 @@ private:
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
-    GenTree* fgMorphRecognizeBoxNullable(GenTree* compare);
 
     GenTree* fgMorphToEmulatedFP(GenTree* tree);
     GenTree* fgMorphConst(GenTree* tree);

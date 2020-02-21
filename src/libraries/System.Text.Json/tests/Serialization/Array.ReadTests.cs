@@ -94,7 +94,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DeserializeObjectArray_36167()
+        public static void DeserializeObjectArray()
         {
             // https://github.com/dotnet/runtime/issues/29019
             object[] data = JsonSerializer.Deserialize<object[]>("[1]");

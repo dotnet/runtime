@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Pkcs
 {
     public sealed class Pkcs12CertBag : Pkcs12SafeBag
     {
-        private Oid _certTypeOid;
+        private Oid? _certTypeOid;
         private readonly CertBagAsn _decoded;
 
         public bool IsX509Certificate { get; }

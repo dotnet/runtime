@@ -172,8 +172,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 		return NULL;
 	}
 
-// Temporarily disabled to unblock Roslyn
-#if HOST_WIN32 || HOST_WASM
+#if HOST_WIN32 || HOST_WASM || HAVE_SYS_ZLIB
 	if (ppdb_data) {
 		/* Embedded PPDB data */
 		/* ppdb_size is the uncompressed size */
@@ -436,7 +435,8 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 	}
 
 	location = g_new0 (MonoDebugSourceLocation, 1);
-	location->source_file = docname;
+	if (docname && docname [0])
+		location->source_file = docname;
 	location->row = start_line;
 	location->column = start_col;
 	location->il_offset = iloffset;

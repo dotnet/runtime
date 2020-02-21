@@ -31,7 +31,7 @@ internal static partial class Interop
             SafeCryptMsgHandle hCryptMsg,
             CryptMsgParamType dwParamType,
             int dwIndex,
-            [Out] byte[] pvData,
+            [Out] byte[]? pvData,
             [In, Out] ref int pcbData);
 
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]

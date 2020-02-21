@@ -44,7 +44,7 @@
   <Target Name="BuildAllProjects">
     <MSBuild Targets="Build"
              Projects="@(Project)"
-             Properties="BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration);%(Project.AdditionalProperties)"
+             Properties="BuildAllProjects=true;%(Project.AdditionalProperties)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
 
@@ -59,13 +59,13 @@
     <MSBuild Targets="Test"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)' == 'true' and '%(Identity)' != ''"
-             Properties="TestAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
+             Properties="TestAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="Test"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)' != 'true'"
-             Properties="TestAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
+             Properties="TestAllProjects=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 

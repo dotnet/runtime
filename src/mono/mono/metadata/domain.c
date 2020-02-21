@@ -1026,7 +1026,7 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 void
 mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly)
 {
-	if (!domain->entry_assembly && assembly) {
+	if (!mono_runtime_get_no_exec () && !domain->entry_assembly && assembly) {
 		gchar *str;
 		ERROR_DECL (error);
 
