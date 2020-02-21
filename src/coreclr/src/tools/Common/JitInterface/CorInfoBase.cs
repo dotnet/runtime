@@ -342,8 +342,6 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate ushort __getRelocTypeHint(IntPtr _this, IntPtr* ppException, void* target);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate void __getModuleNativeEntryPointRange(IntPtr _this, IntPtr* ppException, ref void* pStart, ref void* pEnd);
-        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getExpectedTargetArchitecture(IntPtr _this, IntPtr* ppException);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getJitFlags(IntPtr _this, IntPtr* ppException, ref CORJIT_FLAGS flags, uint sizeInBytes);
@@ -2614,19 +2612,6 @@ namespace Internal.JitInterface
             }
         }
 
-        static void _getModuleNativeEntryPointRange(IntPtr thisHandle, IntPtr* ppException, ref void* pStart, ref void* pEnd)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                _this.getModuleNativeEntryPointRange(ref pStart, ref pEnd);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-            }
-        }
-
         static uint _getExpectedTargetArchitecture(IntPtr thisHandle, IntPtr* ppException)
         {
             var _this = GetThis(thisHandle);
@@ -2658,8 +2643,8 @@ namespace Internal.JitInterface
 
         static IntPtr GetUnmanagedCallbacks(out Object keepAlive)
         {
-            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 168);
-            Object[] delegates = new Object[168];
+            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 167);
+            Object[] delegates = new Object[167];
 
             var d0 = new __getMethodAttribs(_getMethodAttribs);
             callbacks[0] = Marshal.GetFunctionPointerForDelegate(d0);
@@ -3156,15 +3141,12 @@ namespace Internal.JitInterface
             var d164 = new __getRelocTypeHint(_getRelocTypeHint);
             callbacks[164] = Marshal.GetFunctionPointerForDelegate(d164);
             delegates[164] = d164;
-            var d165 = new __getModuleNativeEntryPointRange(_getModuleNativeEntryPointRange);
+            var d165 = new __getExpectedTargetArchitecture(_getExpectedTargetArchitecture);
             callbacks[165] = Marshal.GetFunctionPointerForDelegate(d165);
             delegates[165] = d165;
-            var d166 = new __getExpectedTargetArchitecture(_getExpectedTargetArchitecture);
+            var d166 = new __getJitFlags(_getJitFlags);
             callbacks[166] = Marshal.GetFunctionPointerForDelegate(d166);
             delegates[166] = d166;
-            var d167 = new __getJitFlags(_getJitFlags);
-            callbacks[167] = Marshal.GetFunctionPointerForDelegate(d167);
-            delegates[167] = d167;
 
             keepAlive = delegates;
             return (IntPtr)callbacks;

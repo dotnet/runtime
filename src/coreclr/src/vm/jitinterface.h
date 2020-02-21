@@ -1055,11 +1055,6 @@ public:
 
     WORD getRelocTypeHint(void * target);
 
-    void getModuleNativeEntryPointRange(
-            void ** pStart, /* OUT */
-            void ** pEnd    /* OUT */
-            );
-
     DWORD getExpectedTargetArchitecture();
 
     CEEInfo(MethodDesc * fd = NULL, bool fVerifyOnly = false, bool fAllowInlining = true) :
@@ -1260,10 +1255,6 @@ public:
             INT32                    addlDelta);
 
     WORD getRelocTypeHint(void * target);
-
-    void getModuleNativeEntryPointRange(
-            void**                   pStart,
-            void**                   pEnd);
 
     DWORD getExpectedTargetArchitecture();
 

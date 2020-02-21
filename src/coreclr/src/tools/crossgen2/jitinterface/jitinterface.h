@@ -175,7 +175,6 @@ struct JitInterfaceCallbacks
     void (* recordCallSite)(void * thisHandle, CorInfoException** ppException, unsigned int instrOffset, void* callSig, void* methodHandle);
     void (* recordRelocation)(void * thisHandle, CorInfoException** ppException, void* location, void* target, unsigned short fRelocType, unsigned short slotNum, int addlDelta);
     unsigned short (* getRelocTypeHint)(void * thisHandle, CorInfoException** ppException, void* target);
-    void (* getModuleNativeEntryPointRange)(void * thisHandle, CorInfoException** ppException, void** pStart, void** pEnd);
     unsigned int (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoException** ppException);
     unsigned int (* getJitFlags)(void * thisHandle, CorInfoException** ppException, void* flags, unsigned int sizeInBytes);
 
@@ -1608,14 +1607,6 @@ public:
         if (pException != nullptr)
             throw pException;
         return _ret;
-    }
-
-    virtual void getModuleNativeEntryPointRange(void** pStart, void** pEnd)
-    {
-        CorInfoException* pException = nullptr;
-        _callbacks->getModuleNativeEntryPointRange(_thisHandle, &pException, pStart, pEnd);
-        if (pException != nullptr)
-            throw pException;
     }
 
     virtual unsigned int getExpectedTargetArchitecture()

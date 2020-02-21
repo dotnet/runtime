@@ -169,7 +169,6 @@ DEF_CLR_API(getMethodBlockCounts)
 DEF_CLR_API(recordCallSite)
 DEF_CLR_API(recordRelocation)
 DEF_CLR_API(getRelocTypeHint)
-DEF_CLR_API(getModuleNativeEntryPointRange)
 DEF_CLR_API(getExpectedTargetArchitecture)
 DEF_CLR_API(getJitFlags)
 

@@ -437,8 +437,6 @@ public:
 
     WORD getRelocTypeHint(void * target);
 
-    void getModuleNativeEntryPointRange(void** pStart, void** pEnd);
-
     DWORD getExpectedTargetArchitecture();
 
     // ICorJitInfo delegate ctor optimization

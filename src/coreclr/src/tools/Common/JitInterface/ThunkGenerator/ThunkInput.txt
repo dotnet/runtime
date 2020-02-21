@@ -324,6 +324,5 @@ FUNCTIONS
     void recordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
     void recordRelocation(void* location, void* target, WORD fRelocType, WORD slotNum, INT32 addlDelta)
     WORD getRelocTypeHint(void* target)
-    void getModuleNativeEntryPointRange(void** pStart, void** pEnd)
     DWORD getExpectedTargetArchitecture()
     DWORD getJitFlags(CORJIT_FLAGS* flags, DWORD  sizeInBytes)

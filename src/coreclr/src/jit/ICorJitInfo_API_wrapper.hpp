@@ -1641,15 +1641,6 @@ WORD WrapICorJitInfo::getRelocTypeHint(void *target)
     return result;
 }
 
-void WrapICorJitInfo::getModuleNativeEntryPointRange(
-            void **pStart, /* OUT */
-            void **pEnd    /* OUT */)
-{
-    API_ENTER(getModuleNativeEntryPointRange);
-    wrapHnd->getModuleNativeEntryPointRange(pStart, pEnd);
-    API_LEAVE(getModuleNativeEntryPointRange);
-}
-
 DWORD WrapICorJitInfo::getExpectedTargetArchitecture()
 {
     API_ENTER(getExpectedTargetArchitecture);

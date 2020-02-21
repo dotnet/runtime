@@ -1764,18 +1764,6 @@ WORD MyICJI::getRelocTypeHint(void* target)
     return result;
 }
 
-// A callback to identify the range of address known to point to
-// compiler-generated native entry points that call back into
-// MSIL.
-void MyICJI::getModuleNativeEntryPointRange(void** pStart, /* OUT */
-                                            void** pEnd    /* OUT */
-                                            )
-{
-    jitInstance->mc->cr->AddCall("getModuleNativeEntryPointRange");
-    LogError("Hit unimplemented getModuleNativeEntryPointRange");
-    DebugBreakorAV(128);
-}
-
 // For what machine does the VM expect the JIT to generate code? The VM
 // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM
 // is cross-compiling (such as the case for crossgen), it will return a

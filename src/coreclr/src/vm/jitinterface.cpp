@@ -11445,22 +11445,6 @@ WORD CEEJitInfo::getRelocTypeHint(void * target)
     return (WORD)-1;
 }
 
-void CEEJitInfo::getModuleNativeEntryPointRange(void** pStart, void** pEnd)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    *pStart = *pEnd = 0;
-
-    EE_TO_JIT_TRANSITION_LEAF();
-}
-
 DWORD CEEJitInfo::getExpectedTargetArchitecture()
 {
     LIMITED_METHOD_CONTRACT;
@@ -13859,15 +13843,6 @@ WORD CEEInfo::getRelocTypeHint(void * target)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE_RET();      // only called on derived class.
-}
-
-void CEEInfo::getModuleNativeEntryPointRange(
-        void ** pStart, /* OUT */
-        void ** pEnd    /* OUT */
-        )
-{
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE();      // only called on derived class.
 }
 
 DWORD CEEInfo::getExpectedTargetArchitecture()

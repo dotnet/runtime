@@ -2817,13 +2817,6 @@ WORD ZapInfo::getRelocTypeHint(void * target)
 #endif
 }
 
-void ZapInfo::getModuleNativeEntryPointRange(void** pStart, void** pEnd)
-{
-    // Initialize outparams to default range of (0,0).
-    *pStart = 0;
-    *pEnd = 0;
-}
-
 DWORD ZapInfo::getExpectedTargetArchitecture()
 {
     return IMAGE_FILE_MACHINE_NATIVE;

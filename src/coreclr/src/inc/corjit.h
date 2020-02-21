@@ -290,14 +290,6 @@ public:
 
     virtual WORD getRelocTypeHint(void * target) = 0;
 
-    // A callback to identify the range of address known to point to
-    // compiler-generated native entry points that call back into
-    // MSIL.
-    virtual void getModuleNativeEntryPointRange(
-            void ** pStart, /* OUT */
-            void ** pEnd    /* OUT */
-            ) = 0;
-
     // For what machine does the VM expect the JIT to generate code? The VM
     // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM
     // is cross-compiling (such as the case for crossgen), it will return a
