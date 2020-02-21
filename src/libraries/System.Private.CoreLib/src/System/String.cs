@@ -380,8 +380,12 @@ namespace System
                 throw new ArgumentNullException(nameof(str));
 
             string result = FastAllocateString(str.Length);
-            fixed (char* dest = &result._firstChar, src = &str._firstChar)
-                wstrcpy(dest, src, str.Length);
+
+            Buffer.Memmove(
+                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                destination: ref result._firstChar,
+                source: ref str._firstChar);
+
             return result;
         }
 
@@ -403,8 +407,10 @@ namespace System
             if (destinationIndex > destination.Length - count || destinationIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_IndexCount);
 
-            fixed (char* src = &_firstChar, dest = destination)
-                wstrcpy(dest + destinationIndex, src + sourceIndex, count);
+            Buffer.Memmove(
+                destination: ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(destination), destinationIndex),
+                source: ref Unsafe.Add(ref _firstChar, sourceIndex),
+                elementCount: (uint)count);
         }
 
         // Returns the entire string as an array of characters.

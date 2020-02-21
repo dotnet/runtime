@@ -1664,7 +1664,7 @@ namespace System
             return InternalSubString(startIndex, length);
         }
 
-        private unsafe string InternalSubString(int startIndex, int length)
+        private string InternalSubString(int startIndex, int length)
         {
             Debug.Assert(startIndex >= 0 && startIndex <= this.Length, "StartIndex is out of range!");
             Debug.Assert(length >= 0 && startIndex <= this.Length - length, "length is out of range!");
