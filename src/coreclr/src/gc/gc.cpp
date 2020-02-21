@@ -4417,8 +4417,7 @@ typedef struct
 
 initial_memory_details memory_details;
 
-BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p)
-BOOL reserve_initial_memory (size_t normal_size, size_t large_size, int num_heaps, bool use_large_pages_p, uint16_t heap_no_to_numa_node[])
+BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p, uint16_t* heap_no_to_numa_node)
 {
     BOOL reserve_success = FALSE;
 
@@ -4500,7 +4499,7 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, int num_heap
             numa_reserved_block * block = &memory_details.numa_reserved_block_table[heap_numa_node];
 
             // add the size required for this heap
-            block->block_size += normal_size + large_size;
+            block->block_size += normal_size + large_size + pinned_size;
         }
 
         // reserve the appropriate size on each NUMA node
@@ -4574,6 +4573,8 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, int num_heap
                     memory_details.initial_large_heap[heap_no].memory_base = memory_base;
                     memory_base += large_size;
 
+                    memory_details.initial_pinned_heap[heap_no].memory_base = memory_base;
+                    memory_base += pinned_size;
                 }
                 // sanity check - we should be at the end of the memory block for this NUMA node
                 assert (memory_base == block->memory_base + block->block_size);
@@ -4585,7 +4586,7 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, int num_heap
 
     if (!reserve_success)
     {
-        size_t requestedMemory = memory_details.block_count * (normal_size + large_size);
+        size_t requestedMemory = memory_details.block_count * (normal_size + large_size + pinned_size);
 
         uint8_t* allatonce_block = (uint8_t*)virtual_alloc (requestedMemory, use_large_pages_p);
         if (allatonce_block)
@@ -4595,53 +4596,53 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, int num_heap
 
             memory_details.allocation_pattern = initial_memory_details::ALLATONCE;
 
-        for (int i = 0; i < memory_details.block_count; i++)
-        {
-            memory_details.initial_normal_heap[i].memory_base = allatonce_block + 
-                                                             (i * normal_size);
-            memory_details.initial_large_heap[i].memory_base = allatonce_block +
-                (memory_details.block_count * normal_size) + (i * large_size);
-            memory_details.initial_pinned_heap[i].memory_base = allatonce_block +
-                (memory_details.block_count * (normal_size + large_size)) + (i * pinned_size);
-
-            reserve_success = TRUE;
-        }
-    }
-    else
-    {
-        // try to allocate 3 blocks
-        uint8_t* b1 = (uint8_t*)virtual_alloc (memory_details.block_count * normal_size, use_large_pages_p);
-        uint8_t* b2 = (uint8_t*)virtual_alloc (memory_details.block_count * large_size, use_large_pages_p);
-        uint8_t* b3 = (uint8_t*)virtual_alloc (memory_details.block_count * pinned_size, use_large_pages_p);
-
-        if (b1 && b2 && b3)
-        {
-            memory_details.allocation_pattern = initial_memory_details::EACH_GENERATION;
-            g_gc_lowest_address = min (b1, min(b2, b3));
-            g_gc_highest_address = max (b1 + memory_details.block_count * normal_size,
-                                   max (b2 + memory_details.block_count * large_size,
-                                        b3 + memory_details.block_count * pinned_size));
-
             for (int i = 0; i < memory_details.block_count; i++)
             {
-                memory_details.initial_normal_heap[i].memory_base = b1 + (i * normal_size);
-                memory_details.initial_large_heap[i].memory_base = b2 + (i * large_size);
-                memory_details.initial_pinned_heap[i].memory_base = b3 + (i * pinned_size);
-            }
+                memory_details.initial_normal_heap[i].memory_base = allatonce_block + 
+                                                                 (i * normal_size);
+                memory_details.initial_large_heap[i].memory_base = allatonce_block +
+                    (memory_details.block_count * normal_size) + (i * large_size);
+                memory_details.initial_pinned_heap[i].memory_base = allatonce_block +
+                    (memory_details.block_count * (normal_size + large_size)) + (i * pinned_size);
 
-            reserve_success = TRUE;
+                reserve_success = TRUE;
+            }
         }
         else
         {
-            // allocation failed, we'll go on to try allocating each block.
-            // We could preserve the b1 alloc, but code complexity increases
-            if (b1)
-                virtual_free (b1, memory_details.block_count * normal_size);
-            if (b2)
-                virtual_free (b2, memory_details.block_count * large_size);
-            if (b3)
-                virtual_free (b3, memory_details.block_count * pinned_size);
-        }
+            // try to allocate 3 blocks
+            uint8_t* b1 = (uint8_t*)virtual_alloc (memory_details.block_count * normal_size, use_large_pages_p);
+            uint8_t* b2 = (uint8_t*)virtual_alloc (memory_details.block_count * large_size, use_large_pages_p);
+            uint8_t* b3 = (uint8_t*)virtual_alloc (memory_details.block_count * pinned_size, use_large_pages_p);
+
+            if (b1 && b2 && b3)
+            {
+                memory_details.allocation_pattern = initial_memory_details::EACH_GENERATION;
+                g_gc_lowest_address = min (b1, min(b2, b3));
+                g_gc_highest_address = max (b1 + memory_details.block_count * normal_size,
+                                       max (b2 + memory_details.block_count * large_size,
+                                            b3 + memory_details.block_count * pinned_size));
+
+                for (int i = 0; i < memory_details.block_count; i++)
+                {
+                    memory_details.initial_normal_heap[i].memory_base = b1 + (i * normal_size);
+                    memory_details.initial_large_heap[i].memory_base = b2 + (i * large_size);
+                    memory_details.initial_pinned_heap[i].memory_base = b3 + (i * pinned_size);
+                }
+
+                reserve_success = TRUE;
+            }
+            else
+            {
+                // allocation failed, we'll go on to try allocating each block.
+                // We could preserve the b1 alloc, but code complexity increases
+                if (b1)
+                    virtual_free (b1, memory_details.block_count * normal_size);
+                if (b2)
+                    virtual_free (b2, memory_details.block_count * large_size);
+                if (b3)
+                    virtual_free (b3, memory_details.block_count * pinned_size);
+            }
 
             if ((b2 == NULL) && (memory_details.block_count > 1))
             {
@@ -4654,7 +4655,7 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, int num_heap
                     uint16_t numa_node = NUMA_NODE_UNDEFINED;
                     if (heap_no_to_numa_node != nullptr)
                     {
-                        int heap_no = ((i < memory_details.block_count) ? i : i - memory_details.block_count);
+                        int heap_no = i % memory_details.block_count;
                         numa_node = heap_no_to_numa_node[heap_no];
                     }
                     current_block->memory_base =
@@ -4708,10 +4709,9 @@ void destroy_initial_memory()
 
              virtual_free (memory_details.initial_pinned_heap[0].memory_base,
                 memory_details.block_count*memory_details.block_size_pinned);
-       }
-        else
+        }
+        else if (memory_details.allocation_pattern == initial_memory_details::EACH_BLOCK)
         {
-            assert (memory_details.allocation_pattern == initial_memory_details::EACH_BLOCK);
             imemory_data *current_block = memory_details.initial_memory;
             for (int i = 0; i < (memory_details.block_count*(total_generation_count - ephemeral_generation_count)); i++, current_block++)
             {
@@ -5508,7 +5508,7 @@ public:
         // Called right after GCHeap::Init() for each heap
         // For each NUMA node used by the heaps, the
         // numa_node_to_heap_start[numa_node] is set to the first heap number on that node and
-        // numa_node_to_heap_last[numa_node] is set to the first heap number not on that node
+        // numa_node_to_heap_end[numa_node] is set to the first heap number not on that node
         // Set the start of the heap number range for the first NUMA node
         numa_node_to_heap_start[heap_no_to_numa_node[0]] = 0;
         total_numa_nodes = 0;
@@ -10725,8 +10725,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         }
     }
 
-    if (!reserve_initial_memory (soh_segment_size, loh_segment_size, number_of_heaps, use_large_pages_p, do_numa ? heap_no_to_numa_node : nullptr))
-    if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps, use_large_pages_p))
+    if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps, use_large_pages_p, do_numa ? heap_no_to_numa_node : nullptr))
         return E_OUTOFMEMORY;
 
 #ifdef CARD_BUNDLE
