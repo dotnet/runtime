@@ -51,6 +51,7 @@ namespace System.Net.Sockets.Tests
             var listener = new TcpListener(IPAddress.Loopback, 0);
             listener.AllowNatTraversal(true);
             listener.Start();
+            listener.Stop();
         }
 
         [Fact]
@@ -60,6 +61,7 @@ namespace System.Net.Sockets.Tests
             var listener = new TcpListener(IPAddress.Loopback, 0);
             listener.Start();
             Assert.Throws<InvalidOperationException>(() => listener.AllowNatTraversal(true));
+            listener.Stop();
         }
 
         [Fact]
