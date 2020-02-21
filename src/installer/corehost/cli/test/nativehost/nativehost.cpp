@@ -9,6 +9,7 @@
 #include "comhost_test.h"
 #include <hostfxr.h>
 #include "host_context_test.h"
+#include "host_no_context_test.h"
 #include "resolve_component_dependencies_test.h"
 #include "get_native_search_directories_test.h"
 #include <utils.h>
@@ -336,6 +337,21 @@ int main(const int argc, const pal::char_t *argv[])
 
         std::cout << tostr(test_output.str()).data() << std::endl;
         return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    else if (pal::strcmp(command, _X("get_hostfxr_exports_no_context")) == 0)
+    {
+        // args: ... <export_to_test> <hostfxrpath>
+        int min_argc = 4;
+        if (argc < min_argc)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::char_t* export_fn = argv[2];
+        const pal::string_t hostfxr_path = argv[3];
+
+        return host_no_context_test::get_test_result(export_fn, hostfxr_path) ? EXIT_SUCCESS : EXIT_FAILURE;
     }
     else
     {

@@ -22,6 +22,7 @@ set(SOURCES
     ./hostfxr_exports.cpp
     ./hostpolicy_exports.cpp
     ./host_context_test.cpp
+    ./host_no_context_test.cpp
     ./resolve_component_dependencies_test.cpp
     ./nativehost.cpp
 )
@@ -32,6 +33,7 @@ set(HEADERS
     ./hostfxr_exports.h
     ./hostpolicy_exports.h
     ./host_context_test.h
+    ./host_no_context_test.h
     ./resolve_component_dependencies_test.h
 )
 
