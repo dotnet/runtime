@@ -764,40 +764,6 @@ REMOVE_CAST:
 #pragma warning(pop)
 #endif
 
-/*****************************************************************************
- *
- *  Perform an unwrap operation on a Proxy object
- */
-
-GenTree* Compiler::fgUnwrapProxy(GenTree* objRef)
-{
-    assert(info.compIsContextful && info.compUnwrapContextful && impIsThis(objRef));
-
-    CORINFO_EE_INFO* pInfo = eeGetEEInfo();
-    GenTree*         addTree;
-
-    // Perform the unwrap:
-    //
-    //   This requires two extra indirections.
-    //   We mark these indirections as 'invariant' and
-    //   the CSE logic will hoist them when appropriate.
-    //
-    //  Note that each dereference is a GC pointer
-
-    addTree = gtNewOperNode(GT_ADD, TYP_I_IMPL, objRef, gtNewIconNode(pInfo->offsetOfTransparentProxyRP, TYP_I_IMPL));
-
-    objRef = gtNewOperNode(GT_IND, TYP_REF, addTree);
-    objRef->gtFlags |= GTF_IND_INVARIANT;
-
-    addTree = gtNewOperNode(GT_ADD, TYP_I_IMPL, objRef, gtNewIconNode(pInfo->offsetOfRealProxyServer, TYP_I_IMPL));
-
-    objRef = gtNewOperNode(GT_IND, TYP_REF, addTree);
-    objRef->gtFlags |= GTF_IND_INVARIANT;
-
-    // objRef now hold the 'real this' reference (i.e. the unwrapped proxy)
-    return objRef;
-}
-
 #ifdef DEBUG
 void fgArgTabEntry::Dump()
 {
@@ -2648,7 +2614,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         assert(arg2 != nullptr);
         nonStandardArgs.Add(arg2, REG_LNGARG_HI);
     }
-#else // !TARGET_X86
+#else  // !TARGET_X86
     // TODO-X86-CQ: Currently RyuJIT/x86 passes args on the stack, so this is not needed.
     // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
     // convention for x86/SSE.
@@ -2672,22 +2638,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if !defined(FEATURE_CORECLR)
-    if (call->IsUnmanaged() && !opts.ShouldUsePInvokeHelpers())
-    {
-        assert(!call->gtCallCookie);
-        // Add a conservative estimate of the stack size in a special parameter (r11) at the call site.
-        // It will be used only on the intercepted-for-host code path to copy the arguments.
-
-        GenTree* cns     = new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, fgEstimateCallStackSize(call));
-        call->gtCallArgs = gtPrependNewCallArg(cns, call->gtCallArgs);
-        numArgs++;
-
-        nonStandardArgs.Add(cns, REG_PINVOKE_COOKIE_PARAM);
-    }
-    else
-#endif // !defined(FEATURE_CORECLR)
-        if (call->IsVirtualStub())
+    if (call->IsVirtualStub())
     {
         if (!call->IsTailCallViaHelper())
         {
@@ -5373,13 +5324,9 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         elemOffs = OFFSETOF__CORINFO_String__chars;
         tree->gtFlags &= ~GTF_INX_STRING_LAYOUT; // Clear this flag as it is used for GTF_IND_VOLATILE
     }
-    else if (tree->gtFlags & GTF_INX_REFARR_LAYOUT)
+    else
     {
-        lenOffs  = OFFSETOF__CORINFO_Array__length;
-        elemOffs = eeGetEEInfo()->offsetOfObjArrayData;
-    }
-    else // We have a standard array
-    {
+        // We have a standard array
         lenOffs  = OFFSETOF__CORINFO_Array__length;
         elemOffs = OFFSETOF__CORINFO_Array__data;
     }
@@ -5948,13 +5895,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         /* We'll create the expression "*(objRef + mem_offs)" */
 
         noway_assert(varTypeIsGC(objRef->TypeGet()) || objRef->TypeGet() == TYP_I_IMPL);
-
-        // An optimization for Contextful classes:
-        // we unwrap the proxy when we have a 'this reference'
-        if (info.compIsContextful && info.compUnwrapContextful && impIsThis(objRef))
-        {
-            objRef = fgUnwrapProxy(objRef);
-        }
 
         /*
             Now we have a tree like this:
@@ -6542,17 +6482,6 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
     noway_assert(!call->IsTailPrefixedCall());
     noway_assert(!call->IsImplicitTailCall() || !gtIsRecursiveCall(call));
 
-    /* If the caller's stack frame is marked, then we can't do any inlining. Period.
-       Although we have checked this in impCanInline, it is possible that later IL instructions
-       might cause compNeedSecurityCheck to be set. Therefore we need to check it here again.
-    */
-
-    if (opts.compNeedSecurityCheck)
-    {
-        result->NoteFatal(InlineObservation::CALLER_NEEDS_SECURITY_CHECK);
-        return;
-    }
-
     //
     // Calling inlinee's compiler to inline the method.
     //
@@ -6943,12 +6872,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         return nullptr;
     }
 
-    if (opts.compNeedSecurityCheck)
-    {
-        failTailCall("Needs security check");
-        return nullptr;
-    }
-
     if (compLocallocUsed || compLocallocOptimized)
     {
         failTailCall("Localloc used");
@@ -7162,8 +7085,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     // a recursive call into a loop.  Another option is to modify gtIsRecursiveCall() to check that the
     // generic type parameters of both caller and callee generic method are the same.
     if (opts.compTailCallLoopOpt && canFastTailCall && gtIsRecursiveCall(call) && !lvaReportParamTypeArg() &&
-        !lvaKeepAliveAndReportThis() && !call->IsVirtual() && !hasStructParam && !varTypeIsStruct(call->TypeGet()) &&
-        ((info.compClassAttr & CORINFO_FLG_MARSHAL_BYREF) == 0))
+        !lvaKeepAliveAndReportThis() && !call->IsVirtual() && !hasStructParam && !varTypeIsStruct(call->TypeGet()))
     {
         fastTailCallToLoop = true;
     }
@@ -15788,22 +15710,6 @@ void Compiler::fgSetOptions()
         codeGen->setFramePointerRequiredGCInfo(true);
     }
 
-    if (opts.compNeedSecurityCheck)
-    {
-        codeGen->setFramePointerRequiredGCInfo(true);
-
-#ifndef JIT32_GCENCODER
-
-        // The decoder only reports objects in frames with exceptions if the frame
-        // is fully interruptible.
-        // Even if there is no catch or other way to resume execution in this frame
-        // the VM requires the security object to remain alive until later, so
-        // Frames with security objects must be fully interruptible.
-        SetInterruptible(true);
-
-#endif // JIT32_GCENCODER
-    }
-
     if (compIsProfilerHookNeeded())
     {
         codeGen->setFramePointerRequired(true);
@@ -15829,7 +15735,8 @@ GenTree* Compiler::fgInitThisClass()
 {
     noway_assert(!compIsForInlining());
 
-    CORINFO_LOOKUP_KIND kind = info.compCompHnd->getLocationOfThisType(info.compMethodHnd);
+    CORINFO_LOOKUP_KIND kind;
+    info.compCompHnd->getLocationOfThisType(info.compMethodHnd, &kind);
 
     if (!kind.needsRuntimeLookup)
     {
@@ -17574,18 +17481,6 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
 
 #endif // FEATURE_SIMD
 
-#if !defined(FEATURE_CORECLR) && defined(TARGET_AMD64)
-Statement* SkipNopStmts(Statement* stmt)
-{
-    while ((stmt != nullptr) && !stmt->IsNothingNode())
-    {
-        stmt = stmt->GetNextStmt();
-    }
-    return stmt;
-}
-
-#endif // !FEATURE_CORECLR && TARGET_AMD64
-
 //------------------------------------------------------------------------
 // fgCheckStmtAfterTailCall: check that statements after the tail call stmt
 // candidate are in one of expected forms, that are desctibed below.
@@ -17605,54 +17500,6 @@ bool Compiler::fgCheckStmtAfterTailCall()
     Statement* callStmt = fgMorphStmt;
 
     Statement* nextMorphStmt = callStmt->GetNextStmt();
-
-#if !defined(FEATURE_CORECLR) && defined(TARGET_AMD64)
-    // Legacy Jit64 Compat:
-    // There could be any number of GT_NOPs between tail call and GT_RETURN.
-    // That is tail call pattern could be one of the following:
-    //  1) tail.call, nop*, ret
-    //  2) tail.call, nop*, pop, nop*, ret
-    //  3) var=tail.call, nop*, ret(var)
-    //  4) var=tail.call, nop*, pop, ret
-    //  5) comma(tail.call, nop), nop*, ret
-    //
-    // See impIsTailCallILPattern() for details on tail call IL patterns
-    // that are supported.
-    GenTree* callExpr = callStmt->GetRootNode();
-
-    if (callExpr->gtOper != GT_RETURN)
-    {
-        // First skip all GT_NOPs after the call
-        nextMorphStmt = SkipNopStmts(nextMorphStmt);
-
-        // Check to see if there is a pop.
-        // Since tail call is honored, we can get rid of the stmt corresponding to pop.
-        if (nextMorphStmt != nullptr && nextMorphStmt->GetRootNode()->gtOper != GT_RETURN)
-        {
-            // Note that pop opcode may or may not result in a new stmt (for details see
-            // impImportBlockCode()). Hence, it is not possible to assert about the IR
-            // form generated by pop but pop tree must be side-effect free so that we can
-            // delete it safely.
-            Statement* popStmt = nextMorphStmt;
-
-            // Side effect flags on a GT_COMMA may be overly pessimistic, so examine
-            // the constituent nodes.
-            GenTree* popExpr          = popStmt->GetRootNode();
-            bool     isSideEffectFree = (popExpr->gtFlags & GTF_ALL_EFFECT) == 0;
-            if (!isSideEffectFree && (popExpr->OperGet() == GT_COMMA))
-            {
-                isSideEffectFree = ((popExpr->gtGetOp1()->gtFlags & GTF_ALL_EFFECT) == 0) &&
-                                   ((popExpr->gtGetOp2()->gtFlags & GTF_ALL_EFFECT) == 0);
-            }
-            noway_assert(isSideEffectFree);
-
-            nextMorphStmt = popStmt->GetNextStmt();
-        }
-
-        // Next skip any GT_NOP nodes after the pop
-        nextMorphStmt = SkipNopStmts(nextMorphStmt);
-    }
-#endif // !FEATURE_CORECLR && TARGET_AMD64
 
     // Check that the rest stmts in the block are in one of the following pattern:
     //  1) ret(void)

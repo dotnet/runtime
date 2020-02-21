@@ -1211,8 +1211,7 @@ public:
 };
 
 // A JitTimer encapsulates a CompTimeInfo for a single compilation. It also tracks the start of compilation,
-// and when the current phase started.  This is intended to be part of a Compilation object.  This is
-// disabled (FEATURE_JIT_METHOD_PERF not defined) when FEATURE_CORECLR is set, or on non-windows platforms.
+// and when the current phase started.  This is intended to be part of a Compilation object.
 //
 class JitTimer
 {
@@ -3432,7 +3431,6 @@ public:
         return lvaTable[lclNum].lvInSsa;
     }
 
-    unsigned lvaSecurityObject;  // variable representing the security object on the stack
     unsigned lvaStubArgumentVar; // variable representing the secret stub argument coming in EAX
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -4119,12 +4117,8 @@ private:
                                       var_types            calleeRetType,
                                       CORINFO_CLASS_HANDLE calleeRetTypeClass);
 
-    bool impIsTailCallILPattern(bool        tailPrefixed,
-                                OPCODE      curOpcode,
-                                const BYTE* codeAddrOfNextOpcode,
-                                const BYTE* codeEnd,
-                                bool        isRecursive,
-                                bool*       IsCallPopRet = nullptr);
+    bool impIsTailCallILPattern(
+        bool tailPrefixed, OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, bool isRecursive);
 
     bool impIsImplicitTailCallCandidate(
         OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, int prefixFlags, bool isRecursive);
@@ -5396,7 +5390,6 @@ private:
 #endif // FEATURE_SIMD
     GenTree* fgMorphArrayIndex(GenTree* tree);
     GenTree* fgMorphCast(GenTree* tree);
-    GenTree* fgUnwrapProxy(GenTree* objRef);
     GenTreeFieldList* fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl);
     void fgInitArgInfo(GenTreeCall* call);
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
@@ -8444,28 +8437,6 @@ public:
             return jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
         }
 
-        // true if we must generate code compatible with JIT32 quirks
-        bool IsJit32Compat()
-        {
-#if defined(TARGET_X86)
-            return jitFlags->IsSet(JitFlags::JIT_FLAG_DESKTOP_QUIRKS);
-#else
-            return false;
-#endif
-        }
-
-        // true if we must generate code compatible with Jit64 quirks
-        bool IsJit64Compat()
-        {
-#if defined(TARGET_AMD64)
-            return jitFlags->IsSet(JitFlags::JIT_FLAG_DESKTOP_QUIRKS);
-#elif !defined(FEATURE_CORECLR)
-            return true;
-#else
-            return false;
-#endif
-        }
-
         bool compScopeInfo; // Generate the LocalVar info ?
         bool compDbgCode;   // Generate debugger-friendly code?
         bool compDbgInfo;   // Gather debugging info?
@@ -8492,22 +8463,6 @@ public:
         bool compStackCheckOnCall; // Check stack pointer after call to ensure it is correct. Only for x86.
 
 #endif // defined(DEBUG) && defined(TARGET_X86)
-
-        bool compNeedSecurityCheck; // This flag really means where or not a security object needs
-                                    // to be allocated on the stack.
-                                    // It will be set to true in the following cases:
-                                    //   1. When the method being compiled has a declarative security
-                                    //        (i.e. when CORINFO_FLG_NOSECURITYWRAP is reset for the current method).
-                                    //        This is also the case when we inject a prolog and epilog in the method.
-                                    //   (or)
-                                    //   2. When the method being compiled has imperative security (i.e. the method
-                                    //        calls into another method that has CORINFO_FLG_SECURITYCHECK flag set).
-                                    //   (or)
-                                    //   3. When opts.compDbgEnC is true. (See also Compiler::compCompile).
-                                    //
-        // When this flag is set, jit will allocate a gc-reference local variable (lvaSecurityObject),
-        // which gets reported as a GC root to stackwalker.
-        // (See also ICodeManager::GetAddrOfSecurityObject.)
 
         bool compReloc; // Generate relocs for pointers in code, true for all ngen/prejit codegen
 
@@ -8815,9 +8770,7 @@ public:
 
         bool compIsStatic : 1;         // Is the method static (no 'this' pointer)?
         bool compIsVarArgs : 1;        // Does the method have varargs parameters?
-        bool compIsContextful : 1;     // contextful method
         bool compInitMem : 1;          // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
-        bool compUnwrapContextful : 1; // JIT should unwrap proxies when possible
         bool compProfilerCallback : 1; // JIT inserted a profiler Enter callback
         bool compPublishStubParam : 1; // EAX captured in prolog will be available through an instrinsic
         bool compRetBuffDefStack : 1;  // The ret buff argument definitely points into the stack.
@@ -9078,13 +9031,12 @@ public:
                     ULONG*                methodCodeSize,
                     JitFlags*             compileFlags);
     void compCompileFinish();
-    int compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
-                          COMP_HANDLE                      compHnd,
-                          CORINFO_METHOD_INFO*             methodInfo,
-                          void**                           methodCodePtr,
-                          ULONG*                           methodCodeSize,
-                          JitFlags*                        compileFlags,
-                          CorInfoInstantiationVerification instVerInfo);
+    int compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
+                          COMP_HANDLE           compHnd,
+                          CORINFO_METHOD_INFO*  methodInfo,
+                          void**                methodCodePtr,
+                          ULONG*                methodCodeSize,
+                          JitFlags*             compileFlag);
 
     ArenaAllocator* compGetArenaAllocator();
 
@@ -9291,24 +9243,10 @@ public:
 
 public:
     // Set to TRUE if verification cannot be skipped for this method
-    // If we detect unverifiable code, we will lazily check
-    // canSkipMethodVerification() to see if verification is REALLY needed.
-    BOOL tiVerificationNeeded;
-
-    // It it initially TRUE, and it gets set to FALSE if we run into unverifiable code
-    // Note that this is valid only if tiVerificationNeeded was ever TRUE.
-    BOOL tiIsVerifiableCode;
-
-    // Set to TRUE if runtime callout is needed for this method
-    BOOL tiRuntimeCalloutNeeded;
-
-    // Set to TRUE if security prolog/epilog callout is needed for this method
-    // Note: This flag is different than compNeedSecurityCheck.
-    //     compNeedSecurityCheck means whether or not a security object needs
-    //         to be allocated on the stack, which is currently true for EnC as well.
-    //     tiSecurityCalloutNeeded means whether or not security callouts need
-    //         to be inserted in the jitted code.
-    BOOL tiSecurityCalloutNeeded;
+    // CoreCLR does not ever run IL verification. Compile out the verifier from the JIT by making this a constant.
+    // TODO: Delete the verifier from the JIT? (https://github.com/dotnet/runtime/issues/32648)
+    // BOOL tiVerificationNeeded;
+    static const BOOL tiVerificationNeeded = FALSE;
 
     // Returns TRUE if child is equal to or a subtype of parent for merge purposes
     // This support is necessary to suport attributes that are not described in
@@ -9382,7 +9320,6 @@ public:
     typeInfo verGetArrayElemType(const typeInfo& ti);
 
     typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
-    BOOL verNeedsVerification();
     BOOL verIsByRefLike(const typeInfo& ti);
     BOOL verIsSafeToReturnByRef(const typeInfo& ti);
 
@@ -9566,9 +9503,6 @@ public:
 #endif                                      // FUNC_INFO_LOGGING
 
     Compiler* prevCompiler; // Previous compiler on stack for TLS Compiler* linked list for reentrant compilers.
-
-    // Is the compilation in a full trust context?
-    bool compIsFullTrust();
 
 #if MEASURE_NOWAY
     void RecordNowayAssert(const char* filename, unsigned line, const char* condStr);

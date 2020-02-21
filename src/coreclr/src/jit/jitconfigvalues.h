@@ -123,7 +123,6 @@ CONFIG_INTEGER(JitStressFP, W("JitStressFP"), 0)                       // Intern
 CONFIG_INTEGER(JitStressModeNamesOnly, W("JitStressModeNamesOnly"), 0) // Internal Jit stress: if nonzero, only enable
                                                                        // stress modes listed in JitStressModeNames
 CONFIG_INTEGER(JitStressRegs, W("JitStressRegs"), 0)
-CONFIG_INTEGER(JitStrictCheckForNonVirtualCallToVirtualMethod, W("JitStrictCheckForNonVirtualCallToVirtualMethod"), 1)
 CONFIG_INTEGER(JitVNMapSelLimit, W("JitVNMapSelLimit"), 0) // If non-zero, assert if # of VNF_MapSelect applications
                                                            // considered reaches this
 CONFIG_INTEGER(NgenHashDump, W("NgenHashDump"), -1)        // same as JitHashDump, but for ngen
@@ -285,10 +284,7 @@ CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 0)
 CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 1)
 #endif // !defined(DEBUG) && !defined(_DEBUG)
 
-// It was originally intended that JitMinOptsTrackGCrefs only be enabled for amd64 on CoreCLR. A mistake was
-// made, and it was enabled for x86 as well. Whether it should continue to be enabled for x86 should be investigated.
-// This is tracked by issue https://github.com/dotnet/coreclr/issues/12415.
-#if (defined(TARGET_AMD64) && defined(FEATURE_CORECLR)) || defined(TARGET_X86)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 #define JitMinOptsTrackGCrefs_Default 0 // Not tracking GC refs in MinOpts is new behavior
 #else
 #define JitMinOptsTrackGCrefs_Default 1
@@ -376,13 +372,8 @@ CONFIG_INTEGER(JitObjectStackAllocation, W("JitObjectStackAllocation"), 0)
 CONFIG_INTEGER(JitEECallTimingInfo, W("JitEECallTimingInfo"), 0)
 
 #if defined(DEBUG)
-#if defined(FEATURE_CORECLR)
 CONFIG_INTEGER(JitEnableFinallyCloning, W("JitEnableFinallyCloning"), 1)
 CONFIG_INTEGER(JitEnableRemoveEmptyTry, W("JitEnableRemoveEmptyTry"), 1)
-#else
-CONFIG_INTEGER(JitEnableFinallyCloning, W("JitEnableFinallyCloning"), 0)
-CONFIG_INTEGER(JitEnableRemoveEmptyTry, W("JitEnableRemoveEmptyTry"), 0)
-#endif // defined(FEATURE_CORECLR)
 #endif // DEBUG
 
 // Overall master enable for Guarded Devirtualization. Currently not enabled by default.

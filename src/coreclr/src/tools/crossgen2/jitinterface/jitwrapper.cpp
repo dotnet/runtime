@@ -27,11 +27,11 @@ private:
     uint64_t corJitFlags;
 };
 
-static const GUID JITEEVersionIdentifier = { /* 96fc0c0a-9f77-450d-9663-ee33ae0fcae8 */
-    0x96fc0c0a,
-    0x9f77,
-    0x450d,
-    {0x96, 0x63, 0xee, 0x33, 0xae, 0x0f, 0xca, 0xe8}
+static const GUID JITEEVersionIdentifier = { /* 9C412381-94A6-4F35-B2B6-60AFB2495B72 */
+    0x9c412381,
+    0x94a6,
+    0x4f35,
+    { 0xb2, 0xb6, 0x60, 0xaf, 0xb2, 0x49, 0x5b, 0x72 }
 };
 
 class Jit
@@ -44,8 +44,6 @@ public:
         void* entryAddress,
         void* nativeSizeOfCode) = 0;
 
-    virtual void clearCache() = 0;
-    virtual unsigned isCacheCleanupRequired() = 0;
     virtual void ProcessShutdownWork(void* info) = 0;
 
     // The EE asks the JIT for a "version identifier". This represents the version of the JIT/EE interface.

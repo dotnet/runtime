@@ -4377,32 +4377,6 @@ BOOL ExecutionManager::IsReadyToRunCode(PCODE currentPC)
 
 #ifndef DACCESS_COMPILE
 
-//**************************************************************************
-// Clear the caches for all JITs loaded.
-//
-void ExecutionManager::ClearCaches( void )
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    GetEEJitManager()->ClearCache();
-}
-
-//**************************************************************************
-// Check if caches for any JITs loaded need to be cleaned
-//
-BOOL ExecutionManager::IsCacheCleanupRequired( void )
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    return GetEEJitManager()->IsCacheCleanupRequired();
-}
-
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 /*********************************************************************/
 // This static method returns the name of the jit dll

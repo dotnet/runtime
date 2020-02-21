@@ -4817,41 +4817,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             }
             break;
 
-#if !defined(FEATURE_CORECLR)
-            case CEE_CALLI:
-
-                // CEE_CALLI should not be inlined if the call indirect target has a calling convention other than
-                // CORINFO_CALLCONV_DEFAULT. In the case where we have a no-marshal CALLI P/Invoke we end up calling
-                // the IL stub. We don't NGEN these stubs, so we'll have to JIT an IL stub for a trivial func.
-                // It's almost certainly a better choice to leave out the inline candidate so we can generate an inlined
-                // call frame.
-
-                // Consider skipping this bail-out for force inlines.
-                if (makeInlineObservations)
-                {
-                    if (codeAddr > codeEndp - sizeof(DWORD))
-                    {
-                        goto TOO_FAR;
-                    }
-
-                    CORINFO_SIG_INFO calliSig;
-                    eeGetSig(getU4LittleEndian(codeAddr), info.compScopeHnd, impTokenLookupContextHandle, &calliSig);
-
-                    if (calliSig.getCallConv() != CORINFO_CALLCONV_DEFAULT)
-                    {
-                        compInlineResult->Note(InlineObservation::CALLEE_UNSUPPORTED_OPCODE);
-
-                        // Fail fast if we're inlining
-                        if (isInlining)
-                        {
-                            assert(compInlineResult->IsFailure());
-                            return;
-                        }
-                    }
-                }
-                break;
-#endif // FEATURE_CORECLR
-
             case CEE_JMP:
                 retBlocks++;
 
@@ -5588,22 +5553,14 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
                 if (tailCall)
                 {
-                    bool isCallPopAndRet = false;
-
                     // impIsTailCallILPattern uses isRecursive flag to determine whether ret in a fallthrough block is
                     // allowed. We don't know at this point whether the call is recursive so we conservatively pass
                     // false. This will only affect explicit tail calls when IL verification is not needed for the
                     // method.
                     bool isRecursive = false;
-                    if (!impIsTailCallILPattern(tailCall, opcode, codeAddr + sz, codeEndp, isRecursive,
-                                                &isCallPopAndRet))
+                    if (!impIsTailCallILPattern(tailCall, opcode, codeAddr + sz, codeEndp, isRecursive))
                     {
-#if !defined(FEATURE_CORECLR) && defined(TARGET_AMD64)
-                        BADCODE3("tail call not followed by ret or pop+ret", " at offset %04X",
-                                 (IL_OFFSET)(codeAddr - codeBegp));
-#else
                         BADCODE3("tail call not followed by ret", " at offset %04X", (IL_OFFSET)(codeAddr - codeBegp));
-#endif // !FEATURE_CORECLR && TARGET_AMD64
                     }
 
                     if (fgCanSwitchToOptimized() && fgMayExplicitTailCall())
@@ -5613,17 +5570,6 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                         // to avoid stack overflow from recursion
                         fgSwitchToOptimized();
                     }
-
-#if !defined(FEATURE_CORECLR) && defined(TARGET_AMD64)
-                    if (isCallPopAndRet)
-                    {
-                        // By breaking here, we let pop and ret opcodes to be
-                        // imported after tail call.  If tail prefix is honored,
-                        // stmts corresponding to pop and ret will be removed
-                        // in fgMorphCall().
-                        break;
-                    }
-#endif // !FEATURE_CORECLR && TARGET_AMD64
                 }
                 else
                 {
@@ -6915,13 +6861,6 @@ void Compiler::fgImport()
 {
     impImport(fgFirstBB);
 
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION))
-    {
-        CorInfoMethodRuntimeFlags verFlag;
-        verFlag = tiIsVerifiableCode ? CORINFO_FLG_VERIFIABLE : CORINFO_FLG_UNVERIFIABLE;
-        info.compCompHnd->setMethodAttribs(info.compMethodHnd, verFlag);
-    }
-
     // Estimate how much of method IL was actually imported.
     //
     // Note this includes (to some extent) the impact of importer folded
@@ -7849,7 +7788,8 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
 
     GenTree* tree = nullptr;
 
-    CORINFO_LOOKUP_KIND kind = info.compCompHnd->getLocationOfThisType(info.compMethodHnd);
+    CORINFO_LOOKUP_KIND kind;
+    info.compCompHnd->getLocationOfThisType(info.compMethodHnd, &kind);
 
     if (!kind.needsRuntimeLookup)
     {
@@ -8955,15 +8895,6 @@ void Compiler::fgAddInternal()
         }
     }
 
-    // Grab a temp for the security object.
-    // (Note: opts.compDbgEnC currently also causes the security object to be generated. See Compiler::compCompile)
-    if (opts.compNeedSecurityCheck)
-    {
-        noway_assert(lvaSecurityObject == BAD_VAR_NUM);
-        lvaSecurityObject                  = lvaGrabTempWithImplicitUse(false DEBUGARG("security check"));
-        lvaTable[lvaSecurityObject].lvType = TYP_REF;
-    }
-
     // Merge return points if required or beneficial
     MergedReturns merger(this);
 
@@ -9100,43 +9031,6 @@ void Compiler::fgAddInternal()
         fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback));
     }
 
-    /* Do we need to call out for security ? */
-
-    if (tiSecurityCalloutNeeded)
-    {
-        // We must have grabbed this local.
-        noway_assert(opts.compNeedSecurityCheck);
-        noway_assert(lvaSecurityObject != BAD_VAR_NUM);
-
-        GenTree* tree;
-
-        /* Insert the expression "call JIT_Security_Prolog(MethodHnd, &SecurityObject)" */
-
-        tree = gtNewIconEmbMethHndNode(info.compMethodHnd);
-
-        tree = gtNewHelperCallNode(info.compCompHnd->getSecurityPrologHelper(info.compMethodHnd), TYP_VOID,
-                                   gtNewCallArgs(tree, gtNewOperNode(GT_ADDR, TYP_BYREF,
-                                                                     gtNewLclvNode(lvaSecurityObject, TYP_REF))));
-
-        /* Create a new basic block and stick the call in it */
-
-        fgEnsureFirstBBisScratch();
-
-        fgNewStmtAtEnd(fgFirstBB, tree);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\ntiSecurityCalloutNeeded - Add call JIT_Security_Prolog(%08p) statement ",
-                   dspPtr(info.compMethodHnd));
-            printTreeID(tree);
-            printf(" in first basic block %s\n", fgFirstBB->dspToString());
-            gtDispTree(tree);
-            printf("\n");
-        }
-#endif
-    }
-
 #if !defined(FEATURE_EH_FUNCLETS)
 
     /* Is this a 'synchronized' method? */
@@ -9214,35 +9108,6 @@ void Compiler::fgAddInternal()
     }
 
 #endif // !FEATURE_EH_FUNCLETS
-
-    /* Do we need to do runtime call out to check the security? */
-
-    if (tiRuntimeCalloutNeeded)
-    {
-        GenTree* tree;
-
-        /* Insert the expression "call verificationRuntimeCheck(MethodHnd)" */
-
-        tree = gtNewIconEmbMethHndNode(info.compMethodHnd);
-
-        tree = gtNewHelperCallNode(CORINFO_HELP_VERIFICATION_RUNTIME_CHECK, TYP_VOID, gtNewCallArgs(tree));
-
-        /* Create a new basic block and stick the call in it */
-
-        fgEnsureFirstBBisScratch();
-
-        fgNewStmtAtEnd(fgFirstBB, tree);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\ntiRuntimeCalloutNeeded - Call verificationRuntimeCheck(%08p) statement in first basic block %s\n",
-                   dspPtr(info.compMethodHnd), fgFirstBB->dspToString());
-            gtDispTree(tree);
-            printf("\n");
-        }
-#endif
-    }
 
     if (opts.IsReversePInvoke())
     {
@@ -24157,13 +24022,7 @@ void Compiler::fgRemoveEmptyTry()
     // Assume we don't need to update the bbPreds lists.
     assert(!fgComputePredsDone);
 
-#ifdef FEATURE_CORECLR
     bool enableRemoveEmptyTry = true;
-#else
-    // Code in a finally gets special treatment in the presence of
-    // thread abort.
-    bool enableRemoveEmptyTry = false;
-#endif // FEATURE_CORECLR
 
 #ifdef DEBUG
     // Allow override to enable/disable.
@@ -24503,13 +24362,7 @@ void Compiler::fgCloneFinally()
     // Assume we don't need to update the bbPreds lists.
     assert(!fgComputePredsDone);
 
-#ifdef FEATURE_CORECLR
     bool enableCloning = true;
-#else
-    // Finally cloning currently doesn't provide sufficient protection
-    // for the cloned code in the presence of thread abort.
-    bool enableCloning = false;
-#endif // FEATURE_CORECLR
 
 #ifdef DEBUG
     // Allow override to enable/disable.
