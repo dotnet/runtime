@@ -15,8 +15,8 @@ namespace System.Security.Cryptography
 #endif
         public sealed partial class ECDsaOpenSsl : ECDsa
         {
-            // secp521r1 maxes out at 89 bytes, so 128 should always be enough
-            private const int SignatureStackBufSize = 128;
+            // secp521r1 maxes out at 139 bytes, so 256 should always be enough
+            private const int SignatureStackBufSize = 256;
 
             private ECOpenSsl _key;
 
