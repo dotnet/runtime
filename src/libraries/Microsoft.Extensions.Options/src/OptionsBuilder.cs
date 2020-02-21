@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Options
     /// <typeparam name="TOptions">The type of options being requested.</typeparam>
     public class OptionsBuilder<TOptions> where TOptions : class
     {
-        private const string DefaultValidationFailureMessage = "A validation error has occured.";
+        private const string DefaultValidationFailureMessage = "A validation error has occurred.";
 
         /// <summary>
         /// The default name of the <typeparamref name="TOptions"/> instance.

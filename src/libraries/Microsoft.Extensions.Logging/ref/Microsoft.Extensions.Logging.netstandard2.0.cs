@@ -51,17 +51,17 @@ namespace Microsoft.Extensions.Logging
     public partial class LoggerFilterOptions
     {
         public LoggerFilterOptions() { }
-        public bool CaptureScopes { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
-        public Microsoft.Extensions.Logging.LogLevel MinLevel { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
-        public System.Collections.Generic.IList<Microsoft.Extensions.Logging.LoggerFilterRule> Rules { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool CaptureScopes { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public Microsoft.Extensions.Logging.LogLevel MinLevel { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public System.Collections.Generic.IList<Microsoft.Extensions.Logging.LoggerFilterRule> Rules { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
     }
     public partial class LoggerFilterRule
     {
         public LoggerFilterRule(string providerName, string categoryName, Microsoft.Extensions.Logging.LogLevel? logLevel, System.Func<string, string, Microsoft.Extensions.Logging.LogLevel, bool> filter) { }
-        public string CategoryName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public System.Func<string, string, Microsoft.Extensions.Logging.LogLevel, bool> Filter { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public Microsoft.Extensions.Logging.LogLevel? LogLevel { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-        public string ProviderName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public string CategoryName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public System.Func<string, string, Microsoft.Extensions.Logging.LogLevel, bool> Filter { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public Microsoft.Extensions.Logging.LogLevel? LogLevel { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public string ProviderName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
         public override string ToString() { throw null; }
     }
     public static partial class LoggingBuilderExtensions
@@ -74,6 +74,6 @@ namespace Microsoft.Extensions.Logging
     public partial class ProviderAliasAttribute : System.Attribute
     {
         public ProviderAliasAttribute(string alias) { }
-        public string Alias { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public string Alias { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
     }
 }
