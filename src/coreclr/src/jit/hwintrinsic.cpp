@@ -174,29 +174,66 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
 }
 
 #ifdef FEATURE_HW_INTRINSICS
+//------------------------------------------------------------------------
+// vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID):
+//
+// Arguments:
+//    hwIntrinsicID -- The id for the HW intrinsic
+//
+// Return Value:
+//   Returns true if this intrinsic requires value numbering to add an
+//   extra SimdType argument that encode the resuklting type
+//   If we don't do this overloaded versions can return the same VN
+//   leading to incorrect CSE subsitutions.
+//
 /* static */ bool Compiler::vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID)
 {
+    // Currently only use the extra VNF_SimdType arg when we have a unary or
+    // binary HW Intrinsic node.
+
     int numArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicID);
 
-    // Currently we only record sn extra Result Type arg when we have a unary or binary HW Intrinsic node
-    //
-    if ((numArgs < 1) || (numArgs > 2))
+    // HW Instrinsic with -1 for numArgs have a varying number of args
+    // so we value number them, or add an extra argument.
+    if (numArgs == -1)
     {
         return false;
     }
 
-    // We iterate over all of the instructions in the HWIntrinsicInfo table
-    // if we find more than one then we return true, otherwise false
+    // We iterate over all of the different baseType's for this instrinsic in the HWIntrinsicInfo table
+    // insCount is set to 2 if we see two of more different instructions in the table.
+    // insCount is set to 1 if we see only one kind of instruction in the table.
+    // insCount is set to 0 if there are only invalid instructions in the table.
     //
-    unsigned insCount = 0;
+    unsigned    insCount = 0;
+    instruction lastIns  = INS_invalid;
     for (var_types baseType = TYP_BYTE; (baseType <= TYP_DOUBLE); baseType = (var_types)(baseType + 1))
     {
-        if (HWIntrinsicInfo::lookupIns(hwIntrinsicID, baseType) != INS_invalid)
+        instruction curIns = HWIntrinsicInfo::lookupIns(hwIntrinsicID, baseType);
+        if (curIns != INS_invalid)
         {
-            insCount++;
+            if (curIns != lastIns)
+            {
+                insCount++;
+                if (insCount >= 2)
+                {
+                    // We can  early exit the loop now
+                    break;
+                }
+                // remember the last valid instruction that we saw
+                lastIns = curIns;
+            }
         }
     }
-    return (insCount > 1);
+#ifdef TARGET_XARCH
+    // If we see two (or more) different instructions we need the extra
+    return (insCount >= 2);
+#elif defined(TARGET_ARM64)
+    // On ARM64 we use the same instruction and specify an insOpt arrangement
+    // so we return true even when we just see one instruction.
+    //
+    return (insCount >= 1);
+#endif
 }
 #endif // FEATURE_HW_INTRINSICS
 

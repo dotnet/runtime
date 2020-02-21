@@ -5285,7 +5285,7 @@ void ValueNumStore::InitValueNumStoreStatics()
         {
             arity = 2;
         }
-        vnfOpAttribs[i] |= (arity << VNFOA_ArityShift);
+        vnfOpAttribs[i] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);
 
         if (GenTree::OperIsCommutative(gtOper))
         {
@@ -5305,7 +5305,7 @@ void ValueNumStore::InitValueNumStoreStatics()
     if (sharedStatic)                                                                                                  \
         vnfOpAttribs[vnfNum] |= VNFOA_SharedStatic;                                                                    \
     if (arity > 0)                                                                                                     \
-        vnfOpAttribs[vnfNum] |= (arity << VNFOA_ArityShift);                                                           \
+        vnfOpAttribs[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);                                       \
     vnfNum++;
 
 #include "valuenumfuncs.h"
@@ -5314,8 +5314,8 @@ void ValueNumStore::InitValueNumStoreStatics()
     assert(vnfNum == VNF_COUNT);
 
 #define ValueNumFuncSetArity(vnfNum, arity)                                                                            \
-    vnfOpAttribs[vnfNum] &= ~VNFOA_ArityMask;           /* clear old arity value   */                                  \
-    vnfOpAttribs[vnfNum] |= (arity << VNFOA_ArityShift) /* set the new arity value */
+    vnfOpAttribs[vnfNum] &= ~VNFOA_ArityMask;                               /* clear old arity value   */              \
+    vnfOpAttribs[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask) /* set the new arity value */
 
 #ifdef FEATURE_SIMD
     for (SIMDIntrinsicID id = SIMDIntrinsicID::SIMDIntrinsicNone; (id < SIMDIntrinsicID::SIMDIntrinsicInvalid);
@@ -5334,23 +5334,19 @@ void ValueNumStore::InitValueNumStoreStatics()
             ValueNumFuncSetArity(func, newArity);
         }
     }
-    // SIMDIntrinsicInit has an incorrect entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns true
+    // SIMDIntrinsicInit has an entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns true
     // so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
     ValueNumFuncSetArity(VNF_SIMD_Init, 2);
-    // SIMDIntrinsicWidenHi has an incorrect entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns
+    // SIMDIntrinsicWidenHi has an entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns
     // true, so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
     ValueNumFuncSetArity(VNF_SIMD_WidenHi, 2);
-    // SIMDIntrinsicWidenLo has an incorrect entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns
+    // SIMDIntrinsicWidenLo has an entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns
     // true, so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
     ValueNumFuncSetArity(VNF_SIMD_WidenLo, 2);
 
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-#ifdef TARGET_XARCH
-    // SSE2_Shuffle has a -1 entry for numArgs, but when used as a HWINSTRINSIC always has two operands.
-    ValueNumFuncSetArity(VNF_HWI_SSE2_Shuffle, 2);
-#endif // TARGET_XARCH
 
     for (NamedIntrinsic id = (NamedIntrinsic)(NI_HW_INTRINSIC_START + 1); (id < NI_HW_INTRINSIC_END);
          id                = (NamedIntrinsic)(id + 1))
@@ -8468,7 +8464,7 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
             if (verbose)
             {
                 printf("    simdTypeVN is ");
-                vnPrint(simdTypeVN, 2);
+                vnPrint(simdTypeVN, 1);
                 printf("\n");
             }
 #endif
@@ -8529,12 +8525,9 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
         fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
     }
 
-    int      lookupNumArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode);
+    int      lookupNumArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode->gtHWIntrinsicId);
     VNFunc   func          = GetVNFuncForNode(tree);
     unsigned fixedArity    = vnStore->VNFuncArity(func);
-    //
-    // when the numArgs column in "hwinstrinsiclistxarch.h" is -1
-    // it gets translated into a value of 0
 
     ValueNumPair excSetPair = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair normalPair;
@@ -8547,7 +8540,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
         normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func);
         assert(lookupNumArgs == 0);
     }
-    else if (tree->AsOp()->gtOp1->OperIs(GT_LIST) || (fixedArity == 0))
+    else if (tree->AsOp()->gtOp1->OperIs(GT_LIST) || (lookupNumArgs == -1))
     {
         // We have a HWINTRINSIC node in the GT_LIST form with 3 or more args
         // Or the numArgs was specified as -1 in the numArgs column in "hwinstrinsiclistxarch.h"
@@ -8573,7 +8566,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
             if (verbose)
             {
                 printf("    simdTypeVN is ");
-                vnPrint(simdTypeVN, 2);
+                vnPrint(simdTypeVN, 1);
                 printf("\n");
             }
 #endif
