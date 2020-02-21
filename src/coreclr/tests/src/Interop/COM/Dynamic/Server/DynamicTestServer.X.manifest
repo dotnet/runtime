@@ -7,6 +7,11 @@
   version="1.0.0.0" />
 
 <file name = "DynamicTestServer.dll">
+  <!-- Basic Test -->
+  <comClass
+    clsid="{ED349A5B-257B-4349-8CB8-2C30B0C05FC3}"
+    threadingModel="Both" />
+    
   <!-- CollectionTest -->
   <comClass
     clsid="{1FFF64AE-FF9C-41AB-BF80-3ECA831AEC40}"

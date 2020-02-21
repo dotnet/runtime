@@ -5,10 +5,14 @@
 #include <ComHelpers.h>
 #include <Contract.h>
 
+#include "BasicTest.h"
 #include "CollectionTest.h"
 
 STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Out_ LPVOID FAR* ppv)
 {
+    if (rclsid == __uuidof(BasicTest))
+         return ClassFactoryBasic<BasicTest>::Create(riid, ppv);
+
     if (rclsid == __uuidof(CollectionTest))
          return ClassFactoryBasic<CollectionTest>::Create(riid, ppv);
 

@@ -3,6 +3,129 @@ import "ocidl.idl";
 
 [
     object,
+    uuid(DF03C9BC-6836-41C6-A038-024A5E2FF8FC)
+]
+interface IBasicTest : IDispatch
+{
+    [id(DISPID_VALUE)]
+    HRESULT Default(
+        [in] LONG val,
+        [out, retval] LONG *ret);
+
+    [propget] HRESULT Boolean_Property([out, retval] VARIANT_BOOL *ret);
+    [propput] HRESULT Boolean_Property([in] VARIANT_BOOL val);
+    HRESULT Boolean_Inverse_InOut([in, out] VARIANT_BOOL *val);
+    HRESULT Boolean_Inverse_Ret(
+        [in] VARIANT_BOOL val,
+        [out, retval] VARIANT_BOOL *ret);
+
+    [propget] HRESULT SByte_Property([out, retval] signed char *ret);
+    [propput] HRESULT SByte_Property([in] signed char val);
+    HRESULT SByte_Doubled_InOut([in, out] signed char *val);
+    HRESULT SByte_Doubled_Ret(
+        [in] signed char val,
+        [out, retval] signed char *ret);
+
+    [propget] HRESULT Byte_Property([out, retval] unsigned char *ret);
+    [propput] HRESULT Byte_Property([in] unsigned char val);
+    HRESULT Byte_Doubled_InOut([in, out] unsigned char *val);
+    HRESULT Byte_Doubled_Ret(
+        [in] unsigned char val,
+        [out, retval] unsigned char *ret);
+
+    [propget] HRESULT Short_Property([out, retval] short *ret);
+    [propput] HRESULT Short_Property([in] short val);
+    HRESULT Short_Doubled_InOut([in, out] short *val);
+    HRESULT Short_Doubled_Ret(
+        [in] short val,
+        [out, retval] short *ret);
+
+    [propget] HRESULT UShort_Property([out, retval] unsigned short *ret);
+    [propput] HRESULT UShort_Property([in] unsigned short val);
+    HRESULT UShort_Doubled_InOut([in, out] unsigned short *val);
+    HRESULT UShort_Doubled_Ret(
+        [in] unsigned short val,
+        [out, retval] unsigned short *ret);
+
+    [propget] HRESULT Int_Property([out, retval] int *ret);
+    [propput] HRESULT Int_Property([in] int val);
+    HRESULT Int_Doubled_InOut([in, out] int *val);
+    HRESULT Int_Doubled_Ret(
+        [in] int val,
+        [out, retval] int *ret);
+
+    [propget] HRESULT UInt_Property([out, retval] unsigned int *ret);
+    [propput] HRESULT UInt_Property([in] unsigned int val);
+    HRESULT UInt_Doubled_InOut([in, out] unsigned int *val);
+    HRESULT UInt_Doubled_Ret(
+        [in] unsigned int val,
+        [out, retval] unsigned int *ret);
+
+    [propget] HRESULT Int64_Property([out, retval] __int64 *ret);
+    [propput] HRESULT Int64_Property([in] __int64 val);
+    HRESULT Int64_Doubled_InOut([in, out] __int64 *val);
+    HRESULT Int64_Doubled_Ret(
+        [in] __int64 val,
+        [out, retval] __int64 *ret);
+
+    [propget] HRESULT UInt64_Property([out, retval] unsigned __int64 *ret);
+    [propput] HRESULT UInt64_Property([in] unsigned __int64 val);
+    HRESULT UInt64_Doubled_InOut([in, out] unsigned __int64 *val);
+    HRESULT UInt64_Doubled_Ret(
+        [in] unsigned __int64 val,
+        [out, retval] unsigned __int64 *ret);
+
+    [propget] HRESULT Float_Property([out, retval] float *ret);
+    [propput] HRESULT Float_Property([in] float val);
+    HRESULT Float_Ceil_InOut([in, out] float *val);
+    HRESULT Float_Ceil_Ret(
+        [in] float val,
+        [out, retval] float *ret);
+
+    [propget] HRESULT Double_Property([out, retval] double *ret);
+    [propput] HRESULT Double_Property([in] double val);
+    HRESULT Double_Ceil_InOut([in, out] double *val);
+    HRESULT Double_Ceil_Ret(
+        [in] double val,
+        [out, retval] double *ret);
+
+    [propget] HRESULT String_Property([out, retval] BSTR *ret);
+    [propput] HRESULT String_Property([in] BSTR val);
+    HRESULT String_Reverse_InOut([in, out] BSTR *val);
+    HRESULT String_Reverse_Ret(
+        [in] BSTR val,
+        [out, retval] BSTR *ret);
+
+    [propget] HRESULT Date_Property([out, retval] DATE *ret);
+    [propput] HRESULT Date_Property([in] DATE val);
+    HRESULT Date_AddDay_InOut([in, out] DATE *val);
+    HRESULT Date_AddDay_Ret(
+        [in] DATE val,
+        [out, retval] DATE *ret);
+
+    [propget] HRESULT Dispatch_Property([out, retval] IDispatch **ret);
+    [propput] HRESULT Dispatch_Property([in] IDispatch *val);
+    HRESULT Dispatch_InOut([in, out] IDispatch **val);
+    HRESULT Dispatch_Ret(
+        [in] IDispatch *val,
+        [out, retval] IDispatch **ret);
+
+    [propget] HRESULT Variant_Property([out, retval] VARIANT *ret);
+    [propput] HRESULT Variant_Property([in] VARIANT val);
+    HRESULT Variant_InOut([in, out] VARIANT *val);
+    HRESULT Variant_Ret(
+        [in] VARIANT val,
+        [out, retval] VARIANT *ret);
+
+    HRESULT Fail(
+        [in] int errorCode,
+        [in] BSTR message);
+
+    HRESULT Throw();
+};
+
+[
+    object,
     uuid(63FB1677-9409-4DC5-BD4F-A9D8C16BB660)
 ]
 interface IDispatchCollection : IDispatch
@@ -73,6 +196,14 @@ library DynamicTestLib
 {
     importlib("stdole2.tlb");
 
+    [
+        uuid(ED349A5B-257B-4349-8CB8-2C30B0C05FC3)
+    ]
+    coclass BasicTest
+    {
+        interface IBasicTest;
+    }
+    
     [
         uuid(1FFF64AE-FF9C-41AB-BF80-3ECA831AEC40)
     ]

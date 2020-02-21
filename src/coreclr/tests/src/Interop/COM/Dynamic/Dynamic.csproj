@@ -11,6 +11,7 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="BasicTest.cs" />
     <Compile Include="CollectionTest.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ServerGuids.cs" />
