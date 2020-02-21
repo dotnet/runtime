@@ -5322,6 +5322,16 @@ void ValueNumStore::InitValueNumStoreStatics()
     vnfOpAttribs[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask) /* set the new arity value */
 
 #ifdef FEATURE_SIMD
+
+    // SIMDIntrinsicInit has an entry of 2 for numArgs, but it only has one normal arg 
+    ValueNumFuncSetArity(VNF_SIMD_Init, 1);
+    // SIMDIntrinsicWidenHi has an entry of 2 for numArgs, but it only has one normal arg
+    ValueNumFuncSetArity(VNF_SIMD_WidenHi, 1);
+    // SIMDIntrinsicWidenLo has an entry of 2 for numArgs, but it only has one normal arg 
+    ValueNumFuncSetArity(VNF_SIMD_WidenLo, 1);
+
+    // Some SIMD intrinsic nodes have an extra VNF_SimdType arg
+    //
     for (SIMDIntrinsicID id = SIMDIntrinsicID::SIMDIntrinsicNone; (id < SIMDIntrinsicID::SIMDIntrinsicInvalid);
          id                 = (SIMDIntrinsicID)(id + 1))
     {
@@ -5338,15 +5348,6 @@ void ValueNumStore::InitValueNumStoreStatics()
             ValueNumFuncSetArity(func, newArity);
         }
     }
-    // SIMDIntrinsicInit has an entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns true
-    // so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
-    ValueNumFuncSetArity(VNF_SIMD_Init, 2);
-    // SIMDIntrinsicWidenHi has an entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns
-    // true, so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
-    ValueNumFuncSetArity(VNF_SIMD_WidenHi, 2);
-    // SIMDIntrinsicWidenLo has an entry of 2 for numArgs, also vnEncodesResultTypeForSIMDIntrinsic returns
-    // true, so we have to fix the Arity here, so that it has one normal arg and one VNF_SimdType arg.
-    ValueNumFuncSetArity(VNF_SIMD_WidenLo, 2);
 
 #endif // FEATURE_SIMD
 
@@ -5368,6 +5369,7 @@ void ValueNumStore::InitValueNumStoreStatics()
             ValueNumFuncSetArity(func, newArity);
         }
     }
+
 #endif // FEATURE_HW_INTRINSICS
 
 #undef ValueNumFuncSetArity
