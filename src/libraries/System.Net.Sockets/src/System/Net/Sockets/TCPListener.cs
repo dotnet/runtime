@@ -224,7 +224,7 @@ namespace System.Net.Sockets
             return returnValue;
         }
 
-        public IAsyncResult BeginAcceptSocket(AsyncCallback callback, object state)
+        public IAsyncResult BeginAcceptSocket(AsyncCallback? callback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -262,7 +262,7 @@ namespace System.Net.Sockets
             return socket;
         }
 
-        public IAsyncResult BeginAcceptTcpClient(AsyncCallback callback, object state)
+        public IAsyncResult BeginAcceptTcpClient(AsyncCallback? callback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 

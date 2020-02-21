@@ -333,7 +333,7 @@ namespace System.Net.Sockets
             return acceptSocket;
         }
 
-        private void SendFileInternal(string fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
+        private void SendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
         {
             // Open the file, if any
             FileStream? fileStream = OpenFile(fileName);
@@ -363,7 +363,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private IAsyncResult BeginSendFileInternal(string fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
+        private IAsyncResult BeginSendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
         {
             FileStream? fileStream = OpenFile(fileName);
 

@@ -22,7 +22,7 @@ internal static partial class Interop
             [In] SafeSocketHandle socketHandle,
             [In] SocketOptionLevel optionLevel,
             [In] SocketOptionName optionName,
-            [Out] byte[]? optionValue,
+            [Out] byte[] optionValue,
             [In, Out] ref int optionLength);
 
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]

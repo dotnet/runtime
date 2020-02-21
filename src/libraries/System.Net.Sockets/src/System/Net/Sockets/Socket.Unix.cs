@@ -138,7 +138,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private void SendFileInternal(string fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
+        private void SendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
         {
             CheckTransmitFileOptions(flags);
 
@@ -219,7 +219,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private IAsyncResult BeginSendFileInternal(string fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
+        private IAsyncResult BeginSendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
         {
             CheckTransmitFileOptions(flags);
 

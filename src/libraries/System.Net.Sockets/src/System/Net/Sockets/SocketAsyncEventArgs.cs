@@ -318,7 +318,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public void SetBuffer(byte[] buffer, int offset, int count)
+        public void SetBuffer(byte[]? buffer, int offset, int count)
         {
             StartConfiguring();
             try

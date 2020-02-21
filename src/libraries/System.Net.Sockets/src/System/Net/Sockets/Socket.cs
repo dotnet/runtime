@@ -1217,12 +1217,12 @@ namespace System.Net.Sockets
             return bytesTransferred;
         }
 
-        public void SendFile(string fileName)
+        public void SendFile(string? fileName)
         {
             SendFile(fileName, null, null, TransmitFileOptions.UseDefaultWorkerThread);
         }
 
-        public void SendFile(string fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
+        public void SendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -1706,7 +1706,7 @@ namespace System.Net.Sockets
             return ReceiveFrom(buffer, 0, buffer != null ? buffer.Length : 0, SocketFlags.None, ref remoteEP);
         }
 
-        public int IOControl(int ioControlCode, byte[] optionInValue, byte[] optionOutValue)
+        public int IOControl(int ioControlCode, byte[]? optionInValue, byte[]? optionOutValue)
         {
             ThrowIfDisposed();
 
@@ -1729,7 +1729,7 @@ namespace System.Net.Sockets
             return realOptionLength;
         }
 
-        public int IOControl(IOControlCode ioControlCode, byte[] optionInValue, byte[] optionOutValue)
+        public int IOControl(IOControlCode ioControlCode, byte[]? optionInValue, byte[]? optionOutValue)
         {
             return IOControl(unchecked((int)ioControlCode), optionInValue, optionOutValue);
         }
@@ -1856,7 +1856,7 @@ namespace System.Net.Sockets
             return optionValue;
         }
 
-        public void GetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, byte[]? optionValue)
+        public void GetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue)
         {
             ThrowIfDisposed();
 
@@ -1867,7 +1867,7 @@ namespace System.Net.Sockets
                 _handle,
                 optionLevel,
                 optionName,
-                optionValue,
+                optionValue!,
                 ref optionLength);
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.getsockopt returns errorCode:{errorCode}");
@@ -2459,7 +2459,7 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        public IAsyncResult BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback callback, object state)
+        public IAsyncResult BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
             SocketError errorCode;
             IAsyncResult? result = BeginSend(buffers, socketFlags, out errorCode, callback, state);
@@ -2470,7 +2470,7 @@ namespace System.Net.Sockets
             return result!;
         }
 
-        public IAsyncResult? BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state)
+        public IAsyncResult? BeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
@@ -2592,12 +2592,12 @@ namespace System.Net.Sockets
             return bytesTransferred;
         }
 
-        public IAsyncResult BeginSendFile(string fileName, AsyncCallback callback, object state)
+        public IAsyncResult BeginSendFile(string? fileName, AsyncCallback? callback, object? state)
         {
             return BeginSendFile(fileName, null, null, TransmitFileOptions.UseDefaultWorkerThread, callback, state);
         }
 
-        public IAsyncResult BeginSendFile(string fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
+        public IAsyncResult BeginSendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -3040,7 +3040,7 @@ namespace System.Net.Sockets
             return bytesTransferred;
         }
 
-        public IAsyncResult BeginReceiveMessageFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback callback, object state)
+        public IAsyncResult BeginReceiveMessageFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
             if (NetEventSource.IsEnabled)
             {
@@ -3445,7 +3445,7 @@ namespace System.Net.Sockets
         // Return Value:
         //
         //    IAsyncResult - Async result used to retrieve resultant new socket
-        public IAsyncResult BeginAccept(AsyncCallback callback, object state)
+        public IAsyncResult BeginAccept(AsyncCallback? callback, object? state)
         {
             if (!_isDisconnected)
             {
@@ -3459,13 +3459,13 @@ namespace System.Net.Sockets
             return null; // unreachable
         }
 
-        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback callback, object state)
+        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state)
         {
             return BeginAccept(null, receiveSize, callback, state);
         }
 
         // This is the truly async version that uses AcceptEx.
-        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback callback, object state)
+        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
@@ -3864,6 +3864,11 @@ namespace System.Net.Sockets
 
             // Throw if socket disposed
             ThrowIfDisposed();
+
+            if (e == null)
+            {
+                throw new ArgumentNullException(nameof(e));
+            }
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.Disconnect);
@@ -5023,7 +5028,7 @@ namespace System.Net.Sockets
         partial void ValidateForMultiConnect(bool isMultiEndpoint);
 
         // Helper for SendFile implementations
-        private static FileStream? OpenFile(string name) => string.IsNullOrEmpty(name) ? null : File.OpenRead(name);
+        private static FileStream? OpenFile(string? name) => string.IsNullOrEmpty(name) ? null : File.OpenRead(name);
 
         private void UpdateReceiveSocketErrorForDisposed(ref SocketError socketError, int bytesTransferred)
         {
