@@ -55,7 +55,29 @@
       <!-- Include the native hosting layer  -->
       <Crossgen2File Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)" />
       <Crossgen2File Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)" />
+    </ItemGroup>
 
+    <MSBuild Projects="$(CoreClrProjectRoot)src/tools/crossgen2/crossgen2/crossgen2.csproj"
+            Targets="Restore"
+            Properties="
+            SelfContained=true;
+            RuntimeIdentifier=$(PackageRID)">
+    <Output TaskParameter="TargetOutputs" ItemName="Crossgen2File" />
+    </MSBuild>
+
+    <MSBuild Projects="$(CoreClrProjectRoot)src/tools/crossgen2/crossgen2/crossgen2.csproj"
+            Targets="GenerateDepsJsonFile"
+            Properties="
+            GenerateDependencyFile=true;
+            IncludeFileVersionsInDependencyFile=false;
+            SelfContained=true;
+            RemoveLongNameDac=true;
+            RuntimeGraphPath=$(LiveRuntimeIdentifierGraphPath);
+            RuntimeIdentifier=$(PackageRID)">
+    <Output TaskParameter="TargetOutputs" ItemName="Crossgen2File" />
+    </MSBuild>
+
+    <ItemGroup>
       <File Include="@(Crossgen2File)">
         <TargetPath>tools</TargetPath>
       </File>

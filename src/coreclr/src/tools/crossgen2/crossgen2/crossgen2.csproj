@@ -61,4 +61,12 @@
       Link="$(LibraryNamePrefix)clrjitilc$(LibraryNameExtension)"
      />
   </ItemGroup>
+
+  <Target Name="GenerateDepsJsonFile" Returns="$(ProjectDepsFilePath)" DependsOnTargets="GenerateBuildDependencyFile" />
+
+  <Target Name="RemoveLongNameDacFromDepsJson" AfterTargets="ResolveRuntimePackAssets" BeforeTargets="GenerateBuildDependencyFile" Condition="'$(RemoveLongNameDac)' == 'true'">
+    <ItemGroup>
+      <RuntimePackAsset Remove="@(RuntimePackAsset)" Condition="$([System.String]::new('%(FileName)').StartsWith('mscordaccore_'))" />
+    </ItemGroup>
+  </Target>
 </Project>
