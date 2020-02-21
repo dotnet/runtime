@@ -50,8 +50,8 @@ DomainFile::DomainFile(AppDomain *pDomain, PEFile *pFile, LoaderAllocator *loade
     m_pDynamicMethodTable(NULL),
     m_pUMThunkHash(NULL),
     m_bDisableActivationCheck(FALSE),
-    m_dwReasonForRejectingNativeImage(0),
-    m_pLoaderAllocator(loaderAllocator)
+    m_pLoaderAllocator(loaderAllocator),
+    m_dwReasonForRejectingNativeImage(0)
 {
     CONTRACTL
     {
