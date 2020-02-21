@@ -8985,10 +8985,10 @@ private:
 
 public:
 #ifdef DEBUG
-    LONG            compMethodID;
-    unsigned        compGenTreeID;
-    unsigned        compStatementID;
-    unsigned        compBasicBlockID;
+    LONG     compMethodID;
+    unsigned compGenTreeID;
+    unsigned compStatementID;
+    unsigned compBasicBlockID;
 #endif
 
     BasicBlock* compCurBB;   // the current basic block in process

@@ -5759,8 +5759,7 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                 char        blockLabel[64];
                 char        firstLabel[64];
                 sprintf_s(blockLabel, _countof(blockLabel), blockLabelFormat, emitComp->compMethodID, ig->igNum);
-                sprintf_s(firstLabel, _countof(firstLabel), blockLabelFormat, emitComp->compMethodID,
-                          igFirst->igNum);
+                sprintf_s(firstLabel, _countof(firstLabel), blockLabelFormat, emitComp->compMethodID, igFirst->igNum);
 
                 if (isRelative)
                 {
