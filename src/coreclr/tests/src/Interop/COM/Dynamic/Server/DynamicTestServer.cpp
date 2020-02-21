@@ -1,0 +1,16 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+#include <ComHelpers.h>
+#include <Contract.h>
+
+#include "CollectionTest.h"
+
+STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Out_ LPVOID FAR* ppv)
+{
+    if (rclsid == __uuidof(CollectionTest))
+         return ClassFactoryBasic<CollectionTest>::Create(riid, ppv);
+
+    return CLASS_E_CLASSNOTAVAILABLE;
+}

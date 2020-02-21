@@ -1,0 +1,83 @@
+import "oaidl.idl";
+import "ocidl.idl";
+
+[
+    object,
+    uuid(63FB1677-9409-4DC5-BD4F-A9D8C16BB660)
+]
+interface IDispatchCollection : IDispatch
+{
+    [propget]
+    HRESULT Count([out, retval] LONG *ret);
+
+    [id(DISPID_VALUE), propget]
+    HRESULT Item(
+        [in] ULONG index,
+        [out, retval] IDispatch **ret);
+
+    [id(DISPID_VALUE), propput]
+    HRESULT Item(
+        [in] ULONG index,
+        [in] IDispatch *val);
+
+    HRESULT Add([in] IDispatch *val);
+
+    HRESULT Remove([in] ULONG index);
+
+    HRESULT Clear();
+};
+
+[
+    object,
+    uuid(BCA79E47-7CE4-4355-A957-84658536734C)
+]
+interface ICollectionTest : IDispatch
+{
+    [propget]
+    HRESULT Count([out, retval] LONG *ret);
+
+    [id(DISPID_VALUE), propget]
+    HRESULT Item(
+        [in] ULONG index,
+        [out, retval] BSTR *ret);
+
+    [id(DISPID_VALUE), propput]
+    HRESULT Item(
+        [in] ULONG index,
+        [in] BSTR val);
+
+    [id(DISPID_NEWENUM), propget]
+    HRESULT _NewEnum([out, retval] IUnknown** retval);
+
+    HRESULT Add([in] BSTR val);
+    HRESULT Remove([in] ULONG index);
+    HRESULT Clear();
+
+    HRESULT Array_PlusOne_InOut([in, out] SAFEARRAY(int) *ret);
+    HRESULT Array_PlusOne_Ret(
+        [in] SAFEARRAY(int) val,
+        [out, retval] SAFEARRAY(int) *ret);
+
+    HRESULT ArrayVariant_PlusOne_InOut([in, out] VARIANT *ret);
+    HRESULT ArrayVariant_PlusOne_Ret(
+        [in] VARIANT val,
+        [out, retval] VARIANT *ret);
+
+    HRESULT GetDispatchCollection([out, retval] IDispatchCollection **ret);
+};
+
+[
+    uuid(0971AD7E-3D4A-4C44-B0A3-A518AC88DFE1)
+]
+library DynamicTestLib
+{
+    importlib("stdole2.tlb");
+
+    [
+        uuid(1FFF64AE-FF9C-41AB-BF80-3ECA831AEC40)
+    ]
+    coclass CollectionTest
+    {
+        interface ICollectionTest;
+    };
+}
