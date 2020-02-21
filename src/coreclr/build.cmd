@@ -280,7 +280,7 @@ if %__SkipCrossArchNative% EQU 0 (
         if %__BuildCrossArchNative% EQU 0 (
             if /i not "%__BuildArch%"=="x86" (
                 REM Make recursive calls to build the cross OS DAC
-                call :BuildCrossOSDac -alpinedac
+                call :BuildCrossOSDac -linuxdac
                 if not !errorlevel! == 0 (
                     goto ExitWithError
                 )
