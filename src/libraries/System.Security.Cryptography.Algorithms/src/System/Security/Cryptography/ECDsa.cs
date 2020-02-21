@@ -12,6 +12,9 @@ namespace System.Security.Cryptography
 {
     public abstract partial class ECDsa : AsymmetricAlgorithm
     {
+        // secp521r1 maxes out at 139 bytes in the DER format, so 256 should always be enough
+        private const int SignatureStackBufSize = 256;
+
         private static readonly string[] s_validOids =
         {
             Oids.EcPublicKey,
@@ -90,10 +93,18 @@ namespace System.Security.Cryptography
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
-            return SignDataCore(new ReadOnlySpan<byte>(data, offset, count), hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            return SignDataCore(
+                new ReadOnlySpan<byte>(data, offset, count),
+                hashAlgorithm,
+                DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 
-        public byte[] SignData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        public byte[] SignData(
+            byte[] data,
+            int offset,
+            int count,
+            HashAlgorithmName hashAlgorithm,
+            DSASignatureFormat signatureFormat)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -101,50 +112,80 @@ namespace System.Security.Cryptography
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > data.Length - offset)
                 throw new ArgumentOutOfRangeException(nameof(count));
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
             return SignDataCore(new ReadOnlySpan<byte>(data, offset, count), hashAlgorithm, signatureFormat);
         }
 
-        protected virtual byte[] SignDataCore(ReadOnlySpan<byte> data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        protected virtual byte[] SignDataCore(
+            ReadOnlySpan<byte> data,
+            HashAlgorithmName hashAlgorithm,
+            DSASignatureFormat signatureFormat)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+            Span<byte> signature = stackalloc byte[SignatureStackBufSize];
+            int maxSignatureSize = GetMaxSignatureSize(signatureFormat);
+            byte[] rented = null;
+            int bytesWritten = 0;
+
+            if (maxSignatureSize > signature.Length)
             {
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+                // Use the shared pool because the buffer is passed out.
+                rented = ArrayPool<byte>.Shared.Rent(maxSignatureSize);
+                signature = rented;
             }
 
-            int maxSignatureSize = GetMaxSignatureSize(signatureFormat);
-            Debug.Assert(maxSignatureSize <= 256, "GetMaxSignatureSize returned more than expected");
-            Span<byte> signature = stackalloc byte[maxSignatureSize];
-            bool result = TrySignDataCore(data, signature, hashAlgorithm, signatureFormat, out int bytesWritten);
-            Debug.Assert(result, "GetMaxSignatureSize returned insufficient size");
-            return signature.Slice(0, bytesWritten).ToArray();
+            try
+            {
+                if (!TrySignDataCore(data, signature, hashAlgorithm, signatureFormat, out bytesWritten))
+                {
+                    Debug.Fail($"GetMaxSignatureSize returned insufficient size for format {signatureFormat}");
+                    throw new CryptographicException();
+                }
+
+                return signature.Slice(0, bytesWritten).ToArray();
+            }
+            finally
+            {
+                if (rented != null)
+                {
+                    CryptographicOperations.ZeroMemory(rented.AsSpan(0, bytesWritten));
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+            }
         }
 
         public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
             return SignDataCore(data, hashAlgorithm, signatureFormat);
         }
 
         public byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
+
             return SignDataCore(data, hashAlgorithm, signatureFormat);
         }
 
-        protected virtual byte[] SignDataCore(Stream data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        protected virtual byte[] SignDataCore(
+            Stream data,
+            HashAlgorithmName hashAlgorithm,
+            DSASignatureFormat signatureFormat)
         {
-            if (data == null)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
-
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-            {
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
-            }
-
             byte[] hash = HashData(data, hashAlgorithm);
             return SignHashCore(hash, signatureFormat);
         }
@@ -152,62 +193,100 @@ namespace System.Security.Cryptography
         public byte[] SignHash(byte[] hash, DSASignatureFormat signatureFormat)
         {
             if (hash == null)
-            {
                 throw new ArgumentNullException(nameof(hash));
-            }
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
             return SignHashCore(hash, signatureFormat);
         }
 
         protected virtual byte[] SignHashCore(ReadOnlySpan<byte> hash, DSASignatureFormat signatureFormat)
         {
-            int size = GetMaxSignatureSize(signatureFormat);
-            Debug.Assert(size <= 256, "Unexpected max signature size is larger than expected");
-            Span<byte> signature = stackalloc byte[size];
-            bool result = TrySignHashCore(hash, signature, signatureFormat, out int bytesWritten);
-            Debug.Assert(result, "GetMaxSignatureSize returned insufficient buffer size");
-            return signature.Slice(0, bytesWritten).ToArray();
-        }
+            Span<byte> signature = stackalloc byte[SignatureStackBufSize];
+            int maxSignatureSize = GetMaxSignatureSize(signatureFormat);
+            byte[] rented = null;
+            int bytesWritten = 0;
 
-        public virtual bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
-        {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+            if (maxSignatureSize > signature.Length)
             {
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+                // Use the shared pool because the buffer is passed out.
+                rented = ArrayPool<byte>.Shared.Rent(maxSignatureSize);
+                signature = rented;
             }
 
-            return TrySignDataCore(data, destination, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation, out bytesWritten);
+            try
+            {
+                if (!TrySignHashCore(hash, signature, signatureFormat, out bytesWritten))
+                {
+                    Debug.Fail($"GetMaxSignatureSize returned insufficient size for format {signatureFormat}");
+                    throw new CryptographicException();
+                }
+
+                return signature.Slice(0, bytesWritten).ToArray();
+            }
+            finally
+            {
+                if (rented != null)
+                {
+                    CryptographicOperations.ZeroMemory(rented.AsSpan(0, bytesWritten));
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+            }
         }
 
-        public bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat, out int bytesWritten)
+        public virtual bool TrySignData(
+            ReadOnlySpan<byte> data,
+            Span<byte> destination,
+            HashAlgorithmName hashAlgorithm,
+            out int bytesWritten)
         {
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+
+            return TrySignDataCore(data,
+                destination,
+                hashAlgorithm,
+                DSASignatureFormat.IeeeP1363FixedFieldConcatenation,
+                out bytesWritten);
+        }
+
+        public bool TrySignData(
+            ReadOnlySpan<byte> data,
+            Span<byte> destination,
+            HashAlgorithmName hashAlgorithm,
+            DSASignatureFormat signatureFormat,
+            out int bytesWritten)
+        {
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
+
             return TrySignDataCore(data, destination, hashAlgorithm, signatureFormat, out bytesWritten);
         }
 
-        protected virtual bool TrySignDataCore(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat, out int bytesWritten)
+        protected virtual bool TrySignDataCore(
+            ReadOnlySpan<byte> data,
+            Span<byte> destination,
+            HashAlgorithmName hashAlgorithm,
+            DSASignatureFormat signatureFormat,
+            out int bytesWritten)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-            {
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
-            }
+            // SHA-2-512 is the biggest hash we know about.
+            Span<byte> hashSpan = stackalloc byte[512 / 8];
 
-            if (hashAlgorithm.TryGetSizeInBytes(out int hashSize))
+            if (TryHashData(data, hashSpan, hashAlgorithm, out int hashSize))
             {
-                Span<byte> hash = stackalloc byte[hashSize];
-                if (TryHashData(data, hash, hashAlgorithm, out int hashLength))
-                {
-                    return TrySignHashCore(hash.Slice(0, hashLength), destination, signatureFormat, out bytesWritten);
-                }
+                hashSpan = hashSpan.Slice(0, hashSize);
             }
             else
             {
-                // This will likely fail but since HashData is virtual we will attempt the slow path
-                byte[] hash = HashData(data.ToArray(), 0, data.Length, hashAlgorithm);
-                return TrySignHashCore(hash, destination, signatureFormat, out bytesWritten);
+                // TryHashData didn't work, the algorithm must be exotic,
+                // call the array-returning variant.
+                hashSpan = HashData(data.ToArray(), 0, data.Length, hashAlgorithm);
             }
 
-            bytesWritten = 0;
-            return false;
+            return TrySignHashCore(hashSpan, destination, signatureFormat, out bytesWritten);
         }
 
         public virtual byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm)
@@ -239,11 +318,23 @@ namespace System.Security.Cryptography
                 throw new ArgumentOutOfRangeException(nameof(count));
             if (signature == null)
                 throw new ArgumentNullException(nameof(signature));
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
-            return VerifyDataCore(new ReadOnlySpan<byte>(data, offset, count), signature, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            return VerifyDataCore(
+                new ReadOnlySpan<byte>(data, offset, count),
+                signature,
+                hashAlgorithm,
+                DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 
-        public bool VerifyData(byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        public bool VerifyData(
+            byte[] data,
+            int offset,
+            int count,
+            byte[] signature,
+            HashAlgorithmName hashAlgorithm,
+            DSASignatureFormat signatureFormat)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -253,8 +344,16 @@ namespace System.Security.Cryptography
                 throw new ArgumentOutOfRangeException(nameof(count));
             if (signature == null)
                 throw new ArgumentNullException(nameof(signature));
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
-            return VerifyDataCore(new ReadOnlySpan<byte>(data, offset, count), signature, hashAlgorithm, signatureFormat);
+            return VerifyDataCore(
+                new ReadOnlySpan<byte>(data, offset, count),
+                signature,
+                hashAlgorithm,
+                signatureFormat);
         }
 
         public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
@@ -263,39 +362,57 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(data));
             if (signature == null)
                 throw new ArgumentNullException(nameof(signature));
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
             return VerifyDataCore(data, signature, hashAlgorithm, signatureFormat);
         }
 
         public virtual bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm)
         {
-            return VerifyDataCore(data, signature, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
-        }
-
-        public bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
-        {
-            return VerifyDataCore(data, signature, hashAlgorithm, signatureFormat);
-        }
-
-        protected virtual bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
-        {
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
-            if (hashAlgorithm.TryGetSizeInBytes(out int hashSize))
+            return VerifyDataCore(data, signature, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+        }
+
+        public bool VerifyData(
+            ReadOnlySpan<byte> data,
+            ReadOnlySpan<byte> signature,
+            HashAlgorithmName hashAlgorithm,
+            DSASignatureFormat signatureFormat)
+        {
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
+
+            return VerifyDataCore(data, signature, hashAlgorithm, signatureFormat);
+        }
+
+        protected virtual bool VerifyDataCore(
+            ReadOnlySpan<byte> data,
+            ReadOnlySpan<byte> signature,
+            HashAlgorithmName hashAlgorithm,
+            DSASignatureFormat signatureFormat)
+        {
+            // SHA-2-512 is the biggest hash we know about.
+            Span<byte> hashSpan = stackalloc byte[512 / 8];
+
+            if (TryHashData(data, hashSpan, hashAlgorithm, out int bytesWritten))
             {
-                Span<byte> hash = stackalloc byte[hashSize];
-                bool result = TryHashData(data, hash, hashAlgorithm, out int bytesWritten);
-                Debug.Assert(result, $"TryGetSizeInBytes returned insufficient size for {hashAlgorithm.Name}: {hashSize}. TryHashData wrote {bytesWritten}.");
-                Debug.Assert(bytesWritten == hashSize, $"TryGetSizeInBytes returned too large size for {hashAlgorithm.Name}: {hashSize}. TryHashData wrote {bytesWritten}.");
-                return VerifyHashCore(hash, signature, signatureFormat);
+                hashSpan = hashSpan.Slice(0, bytesWritten);
             }
             else
             {
-                // This is expected to fail but we will try it anyway since HashData can be overriden
-                byte[] hash = HashData(data.ToArray(), 0, data.Length, hashAlgorithm);
-                return VerifyHashCore(hash, signature, signatureFormat);
+                // TryHashData didn't work, the algorithm must be exotic,
+                // call the array-returning variant.
+                hashSpan = HashData(data.ToArray(), 0, data.Length, hashAlgorithm);
             }
+
+            return VerifyHashCore(hashSpan, signature, signatureFormat);
         }
 
         public bool VerifyData(Stream data, byte[] signature, HashAlgorithmName hashAlgorithm)
@@ -304,25 +421,32 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(data));
             if (signature == null)
                 throw new ArgumentNullException(nameof(signature));
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
             return VerifyDataCore(data, signature, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 
         public bool VerifyData(Stream data, byte[] signature, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
             if (signature == null)
                 throw new ArgumentNullException(nameof(signature));
+            if (string.IsNullOrEmpty(hashAlgorithm.Name))
+                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
             return VerifyDataCore(data, signature, hashAlgorithm, signatureFormat);
         }
 
-        protected virtual bool VerifyDataCore(Stream data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        protected virtual bool VerifyDataCore(
+            Stream data,
+            ReadOnlySpan<byte> signature,
+            HashAlgorithmName hashAlgorithm,
+            DSASignatureFormat signatureFormat)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
-
             byte[] hash = HashData(data, hashAlgorithm);
             return VerifyHashCore(hash, signature, signatureFormat);
         }
@@ -373,11 +497,17 @@ namespace System.Security.Cryptography
         public virtual bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
             => TrySignHashCore(hash, destination, DSASignatureFormat.IeeeP1363FixedFieldConcatenation, out bytesWritten);
 
-        public bool TrySignHash(ReadOnlySpan<byte> hash,
+        public bool TrySignHash(
+            ReadOnlySpan<byte> hash,
             Span<byte> destination,
             DSASignatureFormat signatureFormat,
             out int bytesWritten)
-            => TrySignHashCore(hash, destination, signatureFormat, out bytesWritten);
+        {
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
+
+            return TrySignHashCore(hash, destination, signatureFormat, out bytesWritten);
+        }
 
         protected virtual bool TrySignHashCore(
             ReadOnlySpan<byte> hash,
@@ -399,20 +529,25 @@ namespace System.Security.Cryptography
         public bool VerifyHash(byte[] hash, byte[] signature, DSASignatureFormat signatureFormat)
         {
             if (hash == null)
-            {
                 throw new ArgumentNullException(nameof(hash));
-            }
-
             if (signature == null)
-            {
                 throw new ArgumentNullException(nameof(signature));
-            }
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
             return VerifyHashCore(hash, signature, signatureFormat);
         }
 
-        public bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
-            => VerifyHashCore(hash, signature, signatureFormat);
+        public bool VerifyHash(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> signature,
+            DSASignatureFormat signatureFormat)
+        {
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
+
+            return VerifyHashCore(hash, signature, signatureFormat);
+        }
 
         protected virtual bool VerifyHashCore(
             ReadOnlySpan<byte> hash,

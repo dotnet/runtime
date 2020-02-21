@@ -84,39 +84,5 @@ namespace Internal.Cryptography
             dest[2] = (byte)((value & 0xFF00) >> 8);
             dest[3] = (byte)(value & 0xFF);
         }
-
-        public static bool TryGetSizeInBytes(this HashAlgorithmName hashName, out int size)
-        {
-            if (hashName.Name == HashAlgorithmName.SHA256.Name)
-            {
-                size = 256 / 8;
-                return true;
-            }
-            else if (hashName.Name == HashAlgorithmName.SHA512.Name)
-            {
-                size = 512 / 8;
-                return true;
-            }
-            else if (hashName.Name == HashAlgorithmName.SHA384.Name)
-            {
-                size = 384 / 8;
-                return true;
-            }
-            else if (hashName.Name == HashAlgorithmName.SHA1.Name)
-            {
-                size = 160 / 8;
-                return true;
-            }
-            else if (hashName.Name == HashAlgorithmName.MD5.Name)
-            {
-                size = 128 / 8;
-                return true;
-            }
-            else
-            {
-                size = -1;
-                return false;
-            }
-        }
     }
 }
