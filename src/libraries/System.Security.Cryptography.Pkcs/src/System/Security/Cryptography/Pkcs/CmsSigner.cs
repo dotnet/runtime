@@ -255,7 +255,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 if (IncludeOption == X509IncludeOption.EndCertOnly)
                 {
-                    certs.Add(Certificate);
+                    certs.Add(Certificate!);
                 }
                 else if (IncludeOption != X509IncludeOption.None)
                 {
@@ -263,7 +263,7 @@ namespace System.Security.Cryptography.Pkcs
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                     chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
 
-                    if (!chain.Build(Certificate))
+                    if (!chain.Build(Certificate!))
                     {
                         foreach (X509ChainStatus status in chain.ChainStatus)
                         {
