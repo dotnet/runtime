@@ -61,7 +61,8 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<InvalidOperationException>(() => listener.AllowNatTraversal(true));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void AllowNatTraversal_StartedAndStopped_SetSuccessfully()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
