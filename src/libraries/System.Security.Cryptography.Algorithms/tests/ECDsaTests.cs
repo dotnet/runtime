@@ -138,6 +138,12 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
             public OverrideAbstractECDsa(ECDsa ecdsa) => _ecdsa = ecdsa;
 
+            public override int KeySize
+            {
+                get => _ecdsa.KeySize;
+                set => _ecdsa.KeySize = value;
+            }
+
             public override byte[] SignHash(byte[] hash) => _ecdsa.SignHash(hash);
 
             public override bool VerifyHash(byte[] hash, byte[] signature) => _ecdsa.VerifyHash(hash, signature);

@@ -690,21 +690,28 @@ namespace System.Security.Cryptography
 
         public int GetMaxSignatureSize(DSASignatureFormat signatureFormat)
         {
-            int pSize = AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
+            int fieldSizeBits = KeySize;
 
-            if (pSize == 0)
+            if (fieldSizeBits == 0)
             {
-                // This check is for compat only
-                // We can only get here when deriving from ECDsa and do not set KeySize
-                return 256;
+                // Coerce the key/key-size into existence
+                ExportParameters(false);
+
+                fieldSizeBits = KeySize;
+
+                // This implementation of ECDsa doesn't set KeySize, we can't
+                if (fieldSizeBits == 0)
+                {
+                    throw new NotSupportedException(SR.Cryptography_InvalidKeySize);
+                }
             }
 
             switch (signatureFormat)
             {
                 case DSASignatureFormat.IeeeP1363FixedFieldConcatenation:
-                    return pSize * 2;
+                    return AsymmetricAlgorithmHelpers.BitsToBytes(fieldSizeBits) * 2;
                 case DSASignatureFormat.Rfc3279DerSequence:
-                    return pSize * 2 + 15;
+                    return AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(fieldSizeBits);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(signatureFormat));
             }

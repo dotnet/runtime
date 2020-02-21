@@ -709,8 +709,7 @@ namespace System.Security.Cryptography
                 case DSASignatureFormat.IeeeP1363FixedFieldConcatenation:
                     return qLength * 2;
                 case DSASignatureFormat.Rfc3279DerSequence:
-                    // Add 15 for extra ASN.1 headers
-                    return qLength * 2 + 15;
+                    return AsymmetricAlgorithmHelpers.GetMaxDerSignatureSize(fieldSizeBits: qLength * 8);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(signatureFormat));
             }
