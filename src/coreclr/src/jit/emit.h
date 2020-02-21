@@ -191,6 +191,8 @@ public:
 
     UNATIVE_OFFSET GetFuncletPrologOffset(emitter* emit) const;
 
+    bool emitLocation::IsPreviousIns(const emitter* emit) const;
+
 #ifdef DEBUG
     void Print() const;
 #endif // DEBUG
@@ -2389,7 +2391,7 @@ inline unsigned emitGetInsOfsFromCodePos(unsigned codePos)
     return (codePos >> 16);
 }
 
-inline unsigned emitter::emitCurOffset()
+inline unsigned emitter::emitCurOffset() const
 {
     unsigned codePos = emitCurIGinsCnt + (emitCurIGsize << 16);
 
