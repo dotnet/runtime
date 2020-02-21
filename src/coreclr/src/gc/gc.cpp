@@ -4784,7 +4784,7 @@ void* virtual_alloc(size_t size, bool use_large_pages_p, uint16_t numa_node)
 #endif // !FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
     void* prgmem = use_large_pages_p ?
-        GCToOSInterface::VirtualReserveAndCommitLargePages(requested_size) :
+        GCToOSInterface::VirtualReserveAndCommitLargePages(requested_size, numa_node) :
         GCToOSInterface::VirtualReserve(requested_size, card_size * card_word_width, flags, numa_node);
     void *aligned_mem = prgmem;
 
