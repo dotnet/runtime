@@ -69,7 +69,7 @@ UNATIVE_OFFSET emitLocation::GetFuncletPrologOffset(emitter* emit) const
 bool emitLocation::IsPreviousIns(const emitter* emit) const
 {
     assert(Valid());
-    bool sameGroup = ig == emit->emitCurIG;
+    bool sameGroup  = ig == emit->emitCurIG;
     bool sameInsNum = emitGetInsNumFromCodePos(codePos) == emitGetInsNumFromCodePos(emit->emitCurOffset()) - 1;
     return sameGroup && sameInsNum;
 }
