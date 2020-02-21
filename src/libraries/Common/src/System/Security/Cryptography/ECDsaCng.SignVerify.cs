@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 
 using Microsoft.Win32.SafeHandles;
 
 using Internal.Cryptography;
 
-using ErrorCode = Interop.NCrypt.ErrorCode;
 using AsymmetricPaddingMode = Interop.NCrypt.AsymmetricPaddingMode;
 
 namespace System.Security.Cryptography
@@ -49,8 +47,17 @@ namespace System.Security.Cryptography
         }
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-        protected override unsafe bool TrySignHashCore(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat, out int bytesWritten)
+        protected override unsafe bool TrySignHashCore(
+            ReadOnlySpan<byte> hash,
+            Span<byte> destination,
+            DSASignatureFormat signatureFormat,
+            out int bytesWritten)
         {
+#else
+        public override unsafe bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            ReadOnlySpan<byte> hash = source;
+#endif
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
                 if (!keyHandle.TrySignHash(hash, destination, AsymmetricPaddingMode.None, null, out bytesWritten))
@@ -60,6 +67,7 @@ namespace System.Security.Cryptography
                 }
             }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
             if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
             {
                 return true;
@@ -67,13 +75,18 @@ namespace System.Security.Cryptography
 
             if (signatureFormat != DSASignatureFormat.Rfc3279DerSequence)
             {
-                throw new ArgumentOutOfRangeException(nameof(signatureFormat));
+                Debug.Fail($"Missing internal implementation handler for signature format {signatureFormat}");
+                throw new CryptographicException(
+                    SR.Cryptography_UnknownSignatureFormat,
+                    signatureFormat.ToString());
             }
 
             byte[] signature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(destination.Slice(0, bytesWritten));
             return Helpers.TryCopyToDestination(signature, destination, out bytesWritten);
-        }
+#else
+            return true;
 #endif
+        }
 
         /// <summary>
         ///     Verifies that alleged signature of a hash is, in fact, a valid signature of that hash.
@@ -87,10 +100,21 @@ namespace System.Security.Cryptography
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
             return VerifyHashCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+#else
+            return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
+#endif
         }
 
-        protected override bool VerifyHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+        protected override bool VerifyHashCore(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> signature,
+            DSASignatureFormat signatureFormat)
+#else
+        public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+#endif
         {
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
             if (signatureFormat != DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
             {
                 signature = this.ConvertSignatureToIeeeP1363(signatureFormat, signature);
