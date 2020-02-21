@@ -214,7 +214,7 @@ namespace System.DirectoryServices.Protocols
                 asyncResult._resultStatus = ResultsStatus.Done;
 
                 // Need to abandon this request.
-                Wldap32.ldap_abandon(connection._ldapHandle, asyncResult._messageID);
+                NativePal.LdapAbandon(connection._ldapHandle, asyncResult._messageID);
             }
         }
 

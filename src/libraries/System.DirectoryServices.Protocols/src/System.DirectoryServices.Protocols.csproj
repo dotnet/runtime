@@ -1,10 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.DirectoryServices.Protocols</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);0649;CA1810</NoWarn>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netstandard2.0;netcoreapp2.0-Windows_NT;_$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Linux;netcoreapp2.0-Linux;$(NetCoreAppCurrent)-Windows_NT;netstandard2.0;netcoreapp2.0-Windows_NT;_$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -36,8 +36,22 @@
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapException.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapPartialResultsProcessor.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\NativeTypes.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\SafeHandles.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="System\DirectoryServices\Protocols\ldap\NativePal.Windows.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Windows.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Windows.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\SafeHandles.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\Wldap32UnsafeMethods.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+    <Compile Include="System\DirectoryServices\Protocols\ldap\NativePal.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\SafeHandles.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\OpenLdapUnsafeMethods.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Security.AccessControl" />
