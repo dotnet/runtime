@@ -879,9 +879,11 @@ public:
     // Prints a representation of the set of exceptions on standard out.
     void vnDumpExcSeq(Compiler* comp, VNFuncApp* excSeq, bool isHead);
 
+#ifdef FEATURE_SIMD
     // Requires "simdType" to be a VNF_SimdType VNFuncApp.
     // Prints a representation (comma-separated list of field names) on standard out.
     void vnDumpSimdType(Compiler* comp, VNFuncApp* simdType);
+#endif // FEATURE_SIMD
 
     // Returns the string name of "vnf".
     static const char* VNFuncName(VNFunc vnf);

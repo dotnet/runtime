@@ -182,58 +182,57 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
 //
 // Return Value:
 //   Returns true if this intrinsic requires value numbering to add an
-//   extra SimdType argument that encode the resuklting type
+//   extra SimdType argument that encodes the resulting type.
 //   If we don't do this overloaded versions can return the same VN
 //   leading to incorrect CSE subsitutions.
 //
 /* static */ bool Compiler::vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID)
 {
-    // Currently only use the extra VNF_SimdType arg when we have a unary or
-    // binary HW Intrinsic node.
-
     int numArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicID);
 
-    // HW Instrinsic with -1 for numArgs have a varying number of args
-    // so we value number them, or add an extra argument.
+    // HW Instrinsic's with -1 for numArgs have a varying number of args, so we currently
+    // give themm a unque value number them, and don't add an extra argument.
+    //
     if (numArgs == -1)
     {
         return false;
     }
 
     // We iterate over all of the different baseType's for this instrinsic in the HWIntrinsicInfo table
-    // insCount is set to 2 if we see two of more different instructions in the table.
-    // insCount is set to 1 if we see only one kind of instruction in the table.
-    // insCount is set to 0 if there are only invalid instructions in the table.
+    // We set  diffInsCount to the number of instructions that can execute differently.
     //
-    unsigned    insCount = 0;
-    instruction lastIns  = INS_invalid;
+    unsigned diffInsCount = 0;
+#ifdef TARGET_XARCH
+    instruction lastIns = INS_invalid;
+#endif
     for (var_types baseType = TYP_BYTE; (baseType <= TYP_DOUBLE); baseType = (var_types)(baseType + 1))
     {
         instruction curIns = HWIntrinsicInfo::lookupIns(hwIntrinsicID, baseType);
         if (curIns != INS_invalid)
         {
+#ifdef TARGET_XARCH
             if (curIns != lastIns)
             {
-                insCount++;
-                if (insCount >= 2)
-                {
-                    // We can  early exit the loop now
-                    break;
-                }
+                diffInsCount++;
                 // remember the last valid instruction that we saw
                 lastIns = curIns;
             }
+#elif defined(TARGET_ARM64)
+            // On ARM64 we use the same instruction and specify an insOpt arrangement
+            // so we always consider the instruction operation to be different
+            //
+            diffInsCount++;
+#endif // TARGET
+            if (diffInsCount >= 2)
+            {
+                // We can  early exit the loop now
+                break;
+            }
         }
     }
-#ifdef TARGET_XARCH
-    // If we see two (or more) different instructions we need the extra
-    return (insCount >= 2);
-#elif defined(TARGET_ARM64)
-    // On ARM64 we use the same instruction and specify an insOpt arrangement
-    // so we return true even when we just see one instruction.
-    //
-    return (insCount >= 1);
-#endif
+
+    // If we see two (or more) different instructions we need the extra VNF_SimdType arg
+    return (diffInsCount >= 2);
 }
 #endif // FEATURE_HW_INTRINSICS
 

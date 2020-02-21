@@ -5073,9 +5073,11 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             case VNF_ValWithExc:
                 vnDumpValWithExc(comp, &funcApp);
                 break;
+#ifdef FEATURE_SIMD
             case VNF_SimdType:
                 vnDumpSimdType(comp, &funcApp);
                 break;
+#endif // FEATURE_SIMD
 
             default:
                 printf("%s(", VNFuncName(funcApp.m_func));
@@ -5229,6 +5231,7 @@ void ValueNumStore::vnDumpMapStore(Compiler* comp, VNFuncApp* mapStore)
     printf("]");
 }
 
+#ifdef FEATURE_SIMD
 void ValueNumStore::vnDumpSimdType(Compiler* comp, VNFuncApp* simdType)
 {
     assert(simdType->m_func == VNF_SimdType); // Preconditions.
@@ -5240,6 +5243,7 @@ void ValueNumStore::vnDumpSimdType(Compiler* comp, VNFuncApp* simdType)
 
     printf("%s(simd%d, %s)", VNFuncName(simdType->m_func), simdSize, varTypeName(baseType));
 }
+#endif // FEATURE_SIMD
 
 #endif // DEBUG
 
