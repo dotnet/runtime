@@ -128,9 +128,11 @@ EVP_CIPHER_CTX* EVP_CIPHER_CTX_new(void);
 int32_t EVP_CIPHER_CTX_reset(EVP_CIPHER_CTX* ctx);
 void EVP_MD_CTX_free(EVP_MD_CTX* ctx);
 EVP_MD_CTX* EVP_MD_CTX_new(void);
+EVP_MD_CTX* EVP_MD_CTX_copy_ex(EVP_MD_CTX* ctx);
 int32_t EVP_PKEY_up_ref(EVP_PKEY* pkey);
 void HMAC_CTX_free(HMAC_CTX* ctx);
 HMAC_CTX* HMAC_CTX_new(void);
+HMAC_CTX* HMAC_CTX_copy(HMAC_CTX* ctx);
 int OPENSSL_init_ssl(uint64_t opts, const OPENSSL_INIT_SETTINGS* settings);
 void OPENSSL_sk_free(OPENSSL_STACK*);
 OPENSSL_STACK* OPENSSL_sk_new_null(void);
@@ -724,13 +726,13 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_des_ede3 EVP_des_ede3_ptr
 #define EVP_des_ede3_cbc EVP_des_ede3_cbc_ptr
 #define EVP_DigestFinal_ex EVP_DigestFinal_ex_ptr
-#define EVP_MD_CTX_copy_ex EVP_MD_CTX_copy_ex_ptr
 #define EVP_DigestInit_ex EVP_DigestInit_ex_ptr
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
 #define EVP_md5 EVP_md5_ptr
 #define EVP_MD_CTX_free EVP_MD_CTX_free_ptr
 #define EVP_MD_CTX_new EVP_MD_CTX_new_ptr
+#define EVP_MD_CTX_copy_ex EVP_MD_CTX_copy_ex_ptr
 #define EVP_MD_size EVP_MD_size_ptr
 #define EVP_PKEY_CTX_free EVP_PKEY_CTX_free_ptr
 #define EVP_PKEY_CTX_new EVP_PKEY_CTX_new_ptr
@@ -1026,6 +1028,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_up_ref local_EVP_PKEY_up_ref
 #define HMAC_CTX_free local_HMAC_CTX_free
 #define HMAC_CTX_new local_HMAC_CTX_new
+#define HMAC_CTX_copy local_HMAC_CTX_copy
 #define OpenSSL_version_num local_OpenSSL_version_num
 #define RSA_get0_crt_params local_RSA_get0_crt_params
 #define RSA_get0_factors local_RSA_get0_factors
