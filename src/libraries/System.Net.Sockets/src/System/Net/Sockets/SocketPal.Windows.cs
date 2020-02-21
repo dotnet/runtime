@@ -287,7 +287,7 @@ namespace System.Net.Sockets
             return SocketError.Success;
         }
 
-        public static unsafe SocketError SendFile(SafeSocketHandle handle, SafeFileHandle fileHandle, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags)
+        public static unsafe SocketError SendFile(SafeSocketHandle handle, SafeFileHandle? fileHandle, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
         {
             fixed (byte* prePinnedBuffer = preBuffer)
             fixed (byte* postPinnedBuffer = postBuffer)
@@ -716,7 +716,7 @@ namespace System.Net.Sockets
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
-        public static SocketError GetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue, ref int optionLength)
+        public static SocketError GetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[]? optionValue, ref int optionLength)
         {
             if (optionLevel == SocketOptionLevel.Tcp &&
                 (optionName == SocketOptionName.TcpKeepAliveTime || optionName == SocketOptionName.TcpKeepAliveInterval) &&
@@ -1070,8 +1070,8 @@ namespace System.Net.Sockets
             SafeHandle socket,
             SafeHandle? fileHandle,
             NativeOverlapped* overlapped,
-            byte[] preBuffer,
-            byte[] postBuffer,
+            byte[]? preBuffer,
+            byte[]? postBuffer,
             TransmitFileOptions flags)
         {
             bool needTransmitFileBuffers = false;
@@ -1097,7 +1097,7 @@ namespace System.Net.Sockets
             return success;
         }
 
-        public static unsafe SocketError SendFileAsync(SafeSocketHandle handle, FileStream? fileStream, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, TransmitFileAsyncResult asyncResult)
+        public static unsafe SocketError SendFileAsync(SafeSocketHandle handle, FileStream? fileStream, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, TransmitFileAsyncResult asyncResult)
         {
             asyncResult.SetUnmanagedStructures(fileStream, preBuffer, postBuffer, (flags & (TransmitFileOptions.Disconnect | TransmitFileOptions.ReuseSocket)) != 0);
             try

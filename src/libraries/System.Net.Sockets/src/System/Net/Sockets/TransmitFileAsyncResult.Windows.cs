@@ -11,12 +11,12 @@ namespace System.Net.Sockets
         private FileStream? _fileStream;
         private bool _doDisconnect;
 
-        internal TransmitFileAsyncResult(Socket socket, object asyncState, AsyncCallback? asyncCallback) :
+        internal TransmitFileAsyncResult(Socket socket, object? asyncState, AsyncCallback? asyncCallback) :
             base(socket, asyncState, asyncCallback)
         {
         }
 
-        internal void SetUnmanagedStructures(FileStream? fileStream, byte[] preBuffer, byte[] postBuffer, bool doDisconnect)
+        internal void SetUnmanagedStructures(FileStream? fileStream, byte[]? preBuffer, byte[]? postBuffer, bool doDisconnect)
         {
             _fileStream = fileStream;
             _doDisconnect = doDisconnect;

@@ -87,7 +87,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                return _active ? _serverSocket!.LocalEndPoint : _serverSocketEP;
+                return _active ? _serverSocket!.LocalEndPoint! : _serverSocketEP;
             }
         }
 

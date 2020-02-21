@@ -23,7 +23,7 @@ namespace System.Net.Sockets
 
         public static bool IsNeeded => !s_supportsKeepAliveViaSocketOption;
 
-        public static SocketError Get(SafeSocketHandle handle, SocketOptionName optionName, byte[] optionValueSeconds, ref int optionLength)
+        public static SocketError Get(SafeSocketHandle handle, SocketOptionName optionName, byte[]? optionValueSeconds, ref int optionLength)
         {
             if (optionValueSeconds == null ||
                 !BitConverter.TryWriteBytes(optionValueSeconds.AsSpan(), Get(handle, optionName)))

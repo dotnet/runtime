@@ -124,7 +124,7 @@ namespace System.Net.Sockets
                 using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
-                    int timeout = (int)_streamSocket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout);
+                    int timeout = (int)_streamSocket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout)!;
                     if (timeout == 0)
                     {
                         return -1;
@@ -161,7 +161,7 @@ namespace System.Net.Sockets
                 using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
-                    int timeout = (int)_streamSocket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout);
+                    int timeout = (int)_streamSocket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout)!;
                     if (timeout == 0)
                     {
                         return -1;

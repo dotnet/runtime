@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 #nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -424,36 +425,37 @@ namespace System.Net.Sockets
         // Gets or sets the size of the receive buffer in bytes.
         public int ReceiveBufferSize
         {
-            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer); }
+            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer)!; }
             set { Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, value); }
         }
 
         // Gets or sets the size of the send buffer in bytes.
         public int SendBufferSize
         {
-            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer); }
+            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer)!; }
             set { Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer, value); }
         }
 
         // Gets or sets the receive time out value of the connection in milliseconds.
         public int ReceiveTimeout
         {
-            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout); }
+            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout)!; }
             set { Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, value); }
         }
 
         // Gets or sets the send time out value of the connection in milliseconds.
         public int SendTimeout
         {
-            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout); }
+            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout)!; }
             set { Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, value); }
         }
 
         // Gets or sets the value of the connection's linger option.
-        public LingerOption LingerState
+        [DisallowNull]
+        public LingerOption? LingerState
         {
             get { return Client.LingerState; }
-            set { Client.LingerState = value; }
+            set { Client.LingerState = value!; }
         }
 
         // Enables or disables delay when send or receive buffers are full.

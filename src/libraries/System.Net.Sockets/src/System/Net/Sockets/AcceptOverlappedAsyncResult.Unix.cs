@@ -16,7 +16,7 @@ namespace System.Net.Sockets
     {
         private Socket? _acceptedSocket;
 
-        internal Socket AcceptSocket
+        internal Socket? AcceptSocket
         {
             set
             {

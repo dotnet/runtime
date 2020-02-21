@@ -66,7 +66,7 @@ namespace System.Net.Sockets
             _acceptAddressBufferCount = socketAddressSize;
         }
 
-        internal unsafe SocketError DoOperationAccept(Socket socket, SafeSocketHandle handle, SafeSocketHandle acceptHandle)
+        internal unsafe SocketError DoOperationAccept(Socket socket, SafeSocketHandle handle, SafeSocketHandle? acceptHandle)
         {
             if (!_buffer.Equals(default))
             {

@@ -48,7 +48,7 @@ namespace System.Net.Sockets
         private static readonly Task<int> s_zeroTask = Task.FromResult(0);
 
         /// <summary>Cached event args used with Task-based async operations.</summary>
-        private CachedEventArgs _cachedTaskEventArgs;
+        private CachedEventArgs? _cachedTaskEventArgs;
 
         private CachedEventArgs EventArgs => LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs, () => new CachedEventArgs());
 
@@ -720,7 +720,7 @@ namespace System.Net.Sockets
         /// <summary>Dispose of any cached <see cref="Int32TaskSocketAsyncEventArgs"/> instances.</summary>
         private void DisposeCachedTaskSocketAsyncEventArgs()
         {
-            CachedEventArgs cea = _cachedTaskEventArgs;
+            CachedEventArgs? cea = _cachedTaskEventArgs;
             if (cea != null)
             {
                 Interlocked.Exchange(ref cea.TaskAccept, s_rentedSocketSentinel)?.Dispose();

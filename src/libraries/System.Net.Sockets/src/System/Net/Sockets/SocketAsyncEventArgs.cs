@@ -495,7 +495,7 @@ namespace System.Net.Sockets
 
         // Prepares for a native async socket call.
         // This method performs the tasks common to all socket operations.
-        internal void StartOperationCommon(Socket socket, SocketAsyncOperation operation)
+        internal void StartOperationCommon(Socket? socket, SocketAsyncOperation operation)
         {
             // Change status to "in-use".
             int status = Interlocked.CompareExchange(ref _operating, InProgress, Free);

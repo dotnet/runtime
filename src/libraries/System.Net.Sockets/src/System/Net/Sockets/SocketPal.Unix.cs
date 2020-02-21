@@ -1316,7 +1316,7 @@ namespace System.Net.Sockets
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
-        public static unsafe SocketError GetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue, ref int optionLength)
+        public static unsafe SocketError GetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[]? optionValue, ref int optionLength)
         {
             int optLen = optionLength;
 
@@ -1820,7 +1820,7 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        public static SocketError AcceptAsync(Socket socket, SafeSocketHandle handle, SafeSocketHandle acceptHandle, int receiveSize, int socketAddressSize, AcceptOverlappedAsyncResult asyncResult)
+        public static SocketError AcceptAsync(Socket socket, SafeSocketHandle handle, SafeSocketHandle? acceptHandle, int receiveSize, int socketAddressSize, AcceptOverlappedAsyncResult asyncResult)
         {
             Debug.Assert(acceptHandle == null, $"Unexpected acceptHandle: {acceptHandle}");
             Debug.Assert(receiveSize == 0, $"Unexpected receiveSize: {receiveSize}");
