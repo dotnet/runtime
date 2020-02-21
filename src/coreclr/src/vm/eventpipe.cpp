@@ -18,7 +18,6 @@
 #include "eventpipesession.h"
 #include "eventpipejsonfile.h"
 #include "eventtracebase.h"
-#include "eventtracebase.h"
 #include "sampleprofiler.h"
 #include "win32threadpool.h"
 #include "ceemain.h"
@@ -165,14 +164,15 @@ void EventPipe::EnableViaEnvironmentVariables()
                 auto end = wcschr(configToParse, comma);
                 configuration.Parse(configToParse);
 
-                // SampleProfiler can't be enabled on startup yet.
-                if (wcscmp(W("Microsoft-DotNETCore-SampleProfiler"), configuration.GetProviderName()) == 0)
-                {
-                    providerCnt -= 1;
-                }
-                else if (!configuration.IsValid()) // if we find any invalid configuration, do not trace.
+                // if we find any invalid configuration, do not trace.
+                if (!configuration.IsValid())
                 {
                     return;
+                }
+                // SampleProfiler can't be enabled on startup yet.
+                else if (wcscmp(W("Microsoft-DotNETCore-SampleProfiler"), configuration.GetProviderName()) == 0)
+                {
+                    providerCnt -= 1;
                 }
                 else
                 {
