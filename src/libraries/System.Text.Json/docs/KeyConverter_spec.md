@@ -180,6 +180,6 @@ Supported types:
 
 ## Notes
 1. `DictionaryKeyPolicy` will apply to the resulting string of the non-string types.
-Should we provide a way to allow users to customize the `EnumKeyConverter` behavior, as it is done in `JsonStringEnumConverter`? As of now `KeyConverter`s are meant to be internal types, to enable the previously described behavior we either pass the options through `JsonSerializerOptions` or through an attribute.
+1. Should we provide a way to allow users to customize the `EnumKeyConverter` behavior, as it is done in `JsonStringEnumConverter`? As of now `KeyConverter`s are meant to be internal types, to enable the previously described behavior we either pass the options through `JsonSerializerOptions` or through an attribute.
 1. Discuss support for `object` as the `TKey` type on deserialization, should we support it in this enhancement? `object` is treated as a `JsonElement` on deserialization and is not part of the supported types on the `Utf8Parser/Formatter`. 
 Consider to defer it when we add support for intuitive types (parse keys as string, etc. instead of JsonElement).
