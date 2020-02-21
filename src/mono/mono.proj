@@ -20,7 +20,8 @@
     <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
     <LibrariesTestConfig Condition="'$(LibrariesTestConfig)' == ''">$(Configuration)</LibrariesTestConfig>
     <CoreClrTestCoreRoot>$(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).$(CoreClrTestConfig)\Tests\Core_Root</CoreClrTestCoreRoot>
-    <LibrariesTestCoreRoot>$(ArtifactsDir)bin\testhost\$(NetCoreAppCurrent)-$(OSGroup)-$(LibrariesTestConfig)-$(Platform)\shared\Microsoft.NETCore.App\$(ProductVersion)\</LibrariesTestCoreRoot>
+    <LibrariesTesthostRoot>$(ArtifactsDir)bin\testhost\$(NetCoreAppCurrent)-$(OSGroup)-$(LibrariesTestConfig)-$(Platform)\</LibrariesTesthostRoot>
+    <LibrariesTesthostRuntimeDir>$(LibrariesTesthostRoot)shared\Microsoft.NETCore.App\$(ProductVersion)\</LibrariesTesthostRuntimeDir>
   </PropertyGroup>
 
   <!-- OSX/Linux Mono runtime build -->
@@ -131,9 +132,7 @@
   </Target>
 
   <!-- Precompile (AOT) managed libs in .dotnet-mono\shared\Microsoft.NETCore.App\**\*.dll -->
-  <Target Name="PrecompileLocalMonoDotnetBcl" DependsOnTargets="PrepareLocalMonoDotnetBclForAot">
-    <CallTarget Targets="PrecompileAssembly"/>
-  </Target>
+  <Target Name="PrecompileLocalMonoDotnetBcl" DependsOnTargets="PrepareLocalMonoDotnetBclForAot;PrecompileAssembly" />
   <Target Name="PrepareLocalMonoDotnetBclForAot" DependsOnTargets="PatchLocalMonoDotnet">
     <PropertyGroup>
       <MonoExec>$(LocalMonoDotnet)</MonoExec>
@@ -146,16 +145,26 @@
   </Target>
 
   <!-- Precompile (AOT) $(ArtifactsDir)bin\**\*Tests\**\System.*.dll -->
-  <Target Name="PrecompileLibrariesTests" DependsOnTargets="PrepareLibrariesTestsForAot">
-    <CallTarget Targets="PrecompileAssembly"/>
-  </Target>
+  <Target Name="PrecompileLibrariesTests" DependsOnTargets="PrepareLibrariesTestsForAot;PrecompileAssembly" />
   <Target Name="PrepareLibrariesTestsForAot" DependsOnTargets="PatchLibrariesTesthost">
     <PropertyGroup>
-      <MonoExec>$(LibrariesTesthost)dotnet</MonoExec>
+      <MonoExec>$(LibrariesTesthostRoot)$(DotNetExec)</MonoExec>
     </PropertyGroup>
     <ItemGroup>
       <AssembliesToPrecompile
           Include="$(ArtifactsDir)bin\**\*Tests\**\System.*.dll" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Precompile (AOT) $(ArtifactsDir)bin\**\*Tests\**\System.*.dll -->
+  <Target Name="PrecompileTesthostLibraries" DependsOnTargets="PrepareTesthostLibrariesForAot;PrecompileAssembly" />
+  <Target Name="PrepareTesthostLibrariesForAot" DependsOnTargets="PatchLibrariesTesthost">
+    <PropertyGroup>
+      <MonoExec>$(LibrariesTesthostRoot)$(DotNetExec)</MonoExec>
+    </PropertyGroup>
+    <ItemGroup>
+      <AssembliesToPrecompile
+          Include="$(LibrariesTesthostRuntimeDir)\System.*.dll" />
     </ItemGroup>
   </Target>
 
@@ -192,15 +201,15 @@
   <!-- Copy Mono runtime bits to the coreclr's Core_Root in order to run runtime tests -->
   <Target Name="PatchCoreClrCoreRoot" DependsOnTargets="ValidateLocalDotnet">
     <MSBuild Projects="$(MSBuildProjectFullPath)"
-            Properties="Destination=$(CoreClrTestCoreRoot)"
-            Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
+             Properties="Destination=$(CoreClrTestCoreRoot)"
+             Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
   </Target>
 
   <!-- Copy Mono runtime bits to the coreclr's Core_Root in order to run runtime tests -->
   <Target Name="PatchLibrariesTesthost" DependsOnTargets="ValidateLocalDotnet">
     <MSBuild Projects="$(MSBuildProjectFullPath)"
-            Properties="Destination=$(LibrariesTestCoreRoot)"
-            Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
+             Properties="Destination=$(LibrariesTesthostRuntimeDir)"
+             Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
   </Target>
 
   <!-- Copy Coreclr runtime bits back to Core_Root -->
@@ -213,15 +222,12 @@
 
   <!-- Run netcore\sample\HelloWorld sample using Mono Runtime -->
   <Target Name="RunSample" DependsOnTargets="PatchLocalMonoDotnet">
-    <PropertyGroup>
-      <EnvVars Condition="'$(OS)' != 'Windows_NT'"><![CDATA[
-      COMPlus_DebugWriteToStdErr=1 \
-      MONO_ENV_OPTIONS="" \
-      ]]>
-      </EnvVars>
+     <PropertyGroup>
+      <SampleDir>$(MonoProjectRoot)netcore\sample\HelloWorld</SampleDir>
+      <EnvVars Condition="'$(OS)' == 'Windows_NT'">set COMPlus_DebugWriteToStdErr=1 &amp; $(EnvVars)</EnvVars>
+      <EnvVars Condition="'$(OS)' != 'Windows_NT'">export COMPlus_DebugWriteToStdErr=1 &amp;&amp; $(EnvVars)</EnvVars>
     </PropertyGroup>
-    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="$(EnvVars) $(LocalMonoDotnet) run -c $(Configuration) -p $(MonoProjectRoot)netcore/sample/HelloWorld" />
-    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(EnvVars) $(LocalMonoDotnet) run -c $(Configuration) -p $(MonoProjectRoot)netcore\sample\HelloWorld" />
+    <Exec Command="$(EnvVars) $(LocalMonoDotnet) run -c $(Configuration) -p $(SampleDir)" />
   </Target>
 
   <!-- Run CoreCLR runtime test using testhost -->

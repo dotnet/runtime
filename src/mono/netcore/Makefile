@@ -2,7 +2,7 @@ DOTNET := $(shell bash init-tools.sh | tail -1)
 # DOTNET_MONO is a copy of DOTNET (local .dotnet) with Mono Runtime bits (see patch-mono-dotnet rule)
 DOTNET_MONO = ../../../.dotnet-mono/dotnet
 
-COREFX_TESTS_CONFIG=Release
+LIBRARIES_TESTS_CONFIG=Release
 CORECLR_TESTS_CONFIG=Release
 MONO_RUNTIME_CONFIG=Release
 
@@ -16,10 +16,10 @@ ifeq ($(words $(wildcard ../../../artifacts/tests/coreclr/*.*.*)), 1)
 endif
 
 ifeq ($(words $(wildcard ../../../artifacts/bin/testhost/*-*-*-*)), 1)
-	COREFX_TESTS_CONFIG := $(word 3,$(subst -, ,$(notdir $(wildcard ../../../artifacts/bin/testhost/*-*-*-*))))
+	LIBRARIES_TESTS_CONFIG := $(word 3,$(subst -, ,$(notdir $(wildcard ../../../artifacts/bin/testhost/*-*-*-*))))
 endif
 
-MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:Configuration=$(MONO_RUNTIME_CONFIG) ../mono.proj
+MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:LibrariesTestConfig=$(LIBRARIES_TESTS_CONFIG) /p:Configuration=$(MONO_RUNTIME_CONFIG) ../mono.proj
 
 # run sample using local .dotnet-mono
 # build it with .dotnet first in order to be able to use LLVM only for the actual sample
@@ -54,6 +54,7 @@ copy-runtime-files-to:
 
 # run specific coreclr test, e.g.:
 # make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"
+# NOTE: make sure you've built them (cd src/coreclr && ./build-test.sh -c release)
 run-tests-coreclr:
 	$(DOTNET) msbuild /t:RunCoreClrTest /p:CoreClrTest="$(CoreClrTest)" $(MONO_PROJ)
 
@@ -61,15 +62,19 @@ run-tests-coreclr:
 run-tests-coreclr-all:
 	$(DOTNET) msbuild /t:RunCoreClrTests $(MONO_PROJ)
 
-# run corefx tests for a bcl lib, e.g.:
+# run tests for a bcl lib, e.g.:
 #   make run-tests-corefx-System.Runtime 
-# for `System.Runtime.Tests`
+# for `System.Runtime.Tests` (the rule builds both the lib and the test if needed)
 run-tests-corefx-%:
-	$(DOTNET) msbuild /t:RunCoreFxTest /p:LibraryToTest=$* $(MONO_PROJ)
+	$(DOTNET) msbuild /t:RunLibrariesTest /p:LibraryToTest=$* $(MONO_PROJ)
 
-# precompile (AOT) all CoreFX tests
-tests-corefx-aot:
-	$(DOTNET) msbuild /t:PrecompileCoreFxTests $(MONO_PROJ)
+# precompile (AOT) all libraries' tests
+aot-tests-corefx:
+	$(DOTNET) msbuild /t:PrecompileLibrariesTests $(MONO_PROJ)
+
+# precompile (AOT) all libraries inside testhost (it's used for libraries' tests)
+aot-testhost-corefx:
+	$(DOTNET) msbuild /t:PrecompileTesthostLibraries $(MONO_PROJ)
 
 # run 'dotnet/performance' benchmarks
 # e.g. 'make run-benchmarks BenchmarksRepo=/prj/performance'
