@@ -153,7 +153,7 @@ namespace Internal.Cryptography.Pal.Windows
                     DATA_BLOB* pCertEncoded = (DATA_BLOB*)(hb.Alloc(numCertificates, sizeof(DATA_BLOB)));
                     for (int i = 0; i < numCertificates; i++)
                     {
-                        byte[] certEncoded = originatorCerts[i].Export(X509ContentType.Cert)!;
+                        byte[] certEncoded = originatorCerts[i].Export(X509ContentType.Cert);
                         pCertEncoded[i].cbData = (uint)(certEncoded.Length);
                         pCertEncoded[i].pbData = hb.AllocBytes(certEncoded);
                     }
