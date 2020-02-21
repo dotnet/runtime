@@ -4516,13 +4516,13 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
         {
             if (opt == INS_OPTS_4S)
             {
-                GetEmitter()->emitIns_R_R_R(INS_faddp, attr, tmpReg, tmpReg, tmpReg, INS_OPTS_4S);
+                GetEmitter()->emitIns_R_R_R(INS_faddp, EA_16BYTE, tmpReg, tmpReg, tmpReg, INS_OPTS_4S);
             }
-            GetEmitter()->emitIns_R_R(INS_faddp, EA_4BYTE, targetReg, tmpReg, INS_OPTS_2S);
+            GetEmitter()->emitIns_R_R(INS_faddp, EA_8BYTE, targetReg, tmpReg, INS_OPTS_2S);
         }
         else
         {
-            GetEmitter()->emitIns_R_R(INS_faddp, EA_8BYTE, targetReg, tmpReg, INS_OPTS_2D);
+            GetEmitter()->emitIns_R_R(INS_faddp, EA_16BYTE, targetReg, tmpReg, INS_OPTS_2D);
         }
     }
     else
@@ -6893,32 +6893,32 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_fabs, EA_16BYTE, REG_V8, REG_V9, INS_OPTS_2D);
 
     // fmaxp scalar
-    theEmitter->emitIns_R_R(INS_fmaxp, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_2S);
-    theEmitter->emitIns_R_R(INS_fmaxp, EA_8BYTE, REG_V2, REG_V3, INS_OPTS_2D);
+    theEmitter->emitIns_R_R(INS_fmaxp, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_fmaxp, EA_16BYTE, REG_V2, REG_V3, INS_OPTS_2D);
 
     // fmaxnmp scalar
-    theEmitter->emitIns_R_R(INS_fmaxnmp, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_2S);
-    theEmitter->emitIns_R_R(INS_fmaxnmp, EA_8BYTE, REG_V2, REG_V3, INS_OPTS_2D);
+    theEmitter->emitIns_R_R(INS_fmaxnmp, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_fmaxnmp, EA_16BYTE, REG_V2, REG_V3, INS_OPTS_2D);
 
     // fmaxnmv vector
-    theEmitter->emitIns_R_R(INS_fmaxnmv, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_fmaxnmv, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S);
 
     // fmaxv vector
-    theEmitter->emitIns_R_R(INS_fmaxv, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_fmaxv, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S);
 
-    // fminp vector
-    theEmitter->emitIns_R_R(INS_fminp, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_2S);
-    theEmitter->emitIns_R_R(INS_fminp, EA_8BYTE, REG_V2, REG_V3, INS_OPTS_2D);
+    // fminp scalar
+    theEmitter->emitIns_R_R(INS_fminp, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_fminp, EA_16BYTE, REG_V2, REG_V3, INS_OPTS_2D);
 
     // fminnmp scalar
-    theEmitter->emitIns_R_R(INS_fminnmp, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_2S);
-    theEmitter->emitIns_R_R(INS_fminnmp, EA_8BYTE, REG_V2, REG_V3, INS_OPTS_2D);
+    theEmitter->emitIns_R_R(INS_fminnmp, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_fminnmp, EA_16BYTE, REG_V2, REG_V3, INS_OPTS_2D);
 
     // fminnmv vector
-    theEmitter->emitIns_R_R(INS_fminnmv, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_fminnmv, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S);
 
     // fminv vector
-    theEmitter->emitIns_R_R(INS_fminv, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_fminv, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S);
 
     // fneg scalar
     theEmitter->emitIns_R_R(INS_fneg, EA_4BYTE, REG_V0, REG_V1);
@@ -7023,7 +7023,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_addv, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_16B);
     theEmitter->emitIns_R_R(INS_addv, EA_8BYTE, REG_V8, REG_V9, INS_OPTS_4H);
     theEmitter->emitIns_R_R(INS_addv, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_8H);
-    theEmitter->emitIns_R_R(INS_addv, EA_8BYTE, REG_V12, REG_V13, INS_OPTS_2S);
     theEmitter->emitIns_R_R(INS_addv, EA_16BYTE, REG_V14, REG_V15, INS_OPTS_4S);
 
     // saddlv vector
@@ -7031,7 +7030,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_saddlv, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_16B);
     theEmitter->emitIns_R_R(INS_saddlv, EA_8BYTE, REG_V8, REG_V9, INS_OPTS_4H);
     theEmitter->emitIns_R_R(INS_saddlv, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_8H);
-    theEmitter->emitIns_R_R(INS_saddlv, EA_8BYTE, REG_V12, REG_V13, INS_OPTS_2S);
     theEmitter->emitIns_R_R(INS_saddlv, EA_16BYTE, REG_V14, REG_V15, INS_OPTS_4S);
 
     // smaxv vector
@@ -7053,7 +7051,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_uaddlv, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_16B);
     theEmitter->emitIns_R_R(INS_uaddlv, EA_8BYTE, REG_V8, REG_V9, INS_OPTS_4H);
     theEmitter->emitIns_R_R(INS_uaddlv, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_8H);
-    theEmitter->emitIns_R_R(INS_uaddlv, EA_8BYTE, REG_V12, REG_V13, INS_OPTS_2S);
     theEmitter->emitIns_R_R(INS_uaddlv, EA_16BYTE, REG_V14, REG_V15, INS_OPTS_4S);
 
     // umaxv vector
@@ -7071,8 +7068,8 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_uminv, EA_16BYTE, REG_V12, REG_V13, INS_OPTS_4S);
 
     // faddp scalar
-    theEmitter->emitIns_R_R(INS_faddp, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_2S);
-    theEmitter->emitIns_R_R(INS_faddp, EA_8BYTE, REG_V2, REG_V3, INS_OPTS_2D);
+    theEmitter->emitIns_R_R(INS_faddp, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_faddp, EA_16BYTE, REG_V2, REG_V3, INS_OPTS_2D);
 
     // INS_fcvtl
     theEmitter->emitIns_R_R(INS_fcvtl, EA_4BYTE, REG_V0, REG_V1);
@@ -7575,7 +7572,7 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_add, EA_16BYTE, REG_V21, REG_V22, REG_V23, INS_OPTS_2D);
 
     // addp
-    theEmitter->emitIns_R_R(INS_addp, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2D); // scalar 8BYTE
+    theEmitter->emitIns_R_R(INS_addp, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_2D); // scalar 16BYTE
     theEmitter->emitIns_R_R_R(INS_addp, EA_8BYTE, REG_V3, REG_V4, REG_V5, INS_OPTS_8B);
     theEmitter->emitIns_R_R_R(INS_addp, EA_8BYTE, REG_V6, REG_V7, REG_V8, INS_OPTS_4H);
     theEmitter->emitIns_R_R_R(INS_addp, EA_8BYTE, REG_V9, REG_V10, REG_V11, INS_OPTS_2S);

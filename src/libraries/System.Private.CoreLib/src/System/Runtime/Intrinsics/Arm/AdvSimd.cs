@@ -197,64 +197,148 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> Add(Vector128<double> left, Vector128<double> right) => Add(left, right);
 
             /// <summary>
-            /// uint8_t vaddv_u8(uint8x8_t a)
+            /// uint8_t vaddv_u8 (uint8x8_t a)
             ///   A64: ADDV Bd, Vn.8B
             /// </summary>
             public static Vector64<byte> AddAcross(Vector64<byte> value) => AddAcross(value);
 
             /// <summary>
-            /// int16_t vaddv_s16(int16x4_t a)
+            /// int16_t vaddv_s16 (int16x4_t a)
             ///   A64: ADDV Hd, Vn.4H
             /// </summary>
             public static Vector64<short> AddAcross(Vector64<short> value) => AddAcross(value);
 
             /// <summary>
-            /// int8_t vaddv_s8(int8x8_t a)
+            /// int8_t vaddv_s8 (int8x8_t a)
             ///   A64: ADDV Bd, Vn.8B
             /// </summary>
             public static Vector64<sbyte> AddAcross(Vector64<sbyte> value) => AddAcross(value);
 
             /// <summary>
-            /// uint16_t vaddv_u16(uint16x4_t a)
+            /// uint16_t vaddv_u16 (uint16x4_t a)
             ///   A64: ADDV Hd, Vn.4H
             /// </summary>
             public static Vector64<ushort> AddAcross(Vector64<ushort> value) => AddAcross(value);
 
             /// <summary>
-            /// uint8_t vaddvq_u8(uint8x16_t a)
+            /// uint8_t vaddvq_u8 (uint8x16_t a)
             ///   A64: ADDV Bd, Vn.16B
             /// </summary>
-            public static Vector128<byte> AddAcross(Vector128<byte> value) => AddAcross(value);
+            public static Vector64<byte> AddAcross(Vector128<byte> value) => AddAcross(value);
 
             /// <summary>
-            /// int16_t vaddvq_s16(int16x8_t a)
+            /// int16_t vaddvq_s16 (int16x8_t a)
             ///   A64: ADDV Hd, Vn.8H
             /// </summary>
-            public static Vector128<short> AddAcross(Vector128<short> value) => AddAcross(value);
+            public static Vector64<short> AddAcross(Vector128<short> value) => AddAcross(value);
 
             /// <summary>
-            /// int32_t vaddvq_s32(int32x4_t a)
+            /// int32_t vaddvq_s32 (int32x4_t a)
             ///   A64: ADDV Sd, Vn.4S
             /// </summary>
-            public static Vector128<int> AddAcross(Vector128<int> value) => AddAcross(value);
+            public static Vector64<int> AddAcross(Vector128<int> value) => AddAcross(value);
 
             /// <summary>
-            /// int8_t vaddvq_s8(int8x16_t a)
+            /// int8_t vaddvq_s8 (int8x16_t a)
             ///   A64: ADDV Bd, Vn.16B
             /// </summary>
-            public static Vector128<sbyte> AddAcross(Vector128<sbyte> value) => AddAcross(value);
+            public static Vector64<sbyte> AddAcross(Vector128<sbyte> value) => AddAcross(value);
 
             /// <summary>
-            /// uint16_t vaddvq_u16(uint16x8_t a)
+            /// uint16_t vaddvq_u16 (uint16x8_t a)
             ///   A64: ADDV Hd, Vn.8H
             /// </summary>
-            public static Vector128<ushort> AddAcross(Vector128<ushort> value) => AddAcross(value);
+            public static Vector64<ushort> AddAcross(Vector128<ushort> value) => AddAcross(value);
 
             /// <summary>
-            /// uint32_t vaddvq_u32(uint32x4_t a)
+            /// uint32_t vaddvq_u32 (uint32x4_t a)
             ///   A64: ADDV Sd, Vn.4S
             /// </summary>
-            public static Vector128<uint> AddAcross(Vector128<uint> value) => AddAcross(value);
+            public static Vector64<uint> AddAcross(Vector128<uint> value) => AddAcross(value);
+
+            /// <summary>
+            /// uint8x16_t vpaddq_u8 (uint8x16_t a, uint8x16_t b)
+            ///   A64: ADDP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<byte> AddPairwise(Vector128<byte> left, Vector128<byte> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// float64x2_t vpaddq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FADDP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> AddPairwise(Vector128<double> left, Vector128<double> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// int16x8_t vpaddq_s16 (int16x8_t a, int16x8_t b)
+            ///   A64: ADDP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<short> AddPairwise(Vector128<short> left, Vector128<short> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// int32x4_t vpaddq_s32 (int32x4_t a, int32x4_t b)
+            ///   A64: ADDP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<int> AddPairwise(Vector128<int> left, Vector128<int> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// int64x2_t vpaddq_s64 (int64x2_t a, int64x2_t b)
+            ///   A64: ADDP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<long> AddPairwise(Vector128<long> left, Vector128<long> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// int8x16_t vpaddq_s8 (int8x16_t a, int8x16_t b)
+            ///   A64: ADDP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> AddPairwise(Vector128<sbyte> left, Vector128<sbyte> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// float32x4_t vpaddq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FADDP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> AddPairwise(Vector128<float> left, Vector128<float> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// uint16x8_t vpaddq_u16 (uint16x8_t a, uint16x8_t b)
+            ///   A64: ADDP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<ushort> AddPairwise(Vector128<ushort> left, Vector128<ushort> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// uint32x4_t vpaddq_u32 (uint32x4_t a, uint32x4_t b)
+            ///   A64: ADDP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<uint> AddPairwise(Vector128<uint> left, Vector128<uint> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// uint64x2_t vpaddq_u64 (uint64x2_t a, uint64x2_t b)
+            ///   A64: ADDP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<ulong> AddPairwise(Vector128<ulong> left, Vector128<ulong> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// float32_t vpadds_f32 (float32x2_t a)
+            ///   A64: FADDP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> AddPairwiseScalar(Vector64<float> value) => AddPairwiseScalar(value);
+
+            /// <summary>
+            /// float64_t vpaddd_f64 (float64x2_t a)
+            ///   A64: FADDP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> AddPairwiseScalar(Vector128<double> value) => AddPairwiseScalar(value);
+
+            /// <summary>
+            /// int64_t vpaddd_s64 (int64x2_t a)
+            ///   A64: ADDP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<long> AddPairwiseScalar(Vector128<long> value) => AddPairwiseScalar(value);
+
+            /// <summary>
+            /// uint64_t vpaddd_u64 (uint64x2_t a)
+            ///   A64: ADDP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<ulong> AddPairwiseScalar(Vector128<ulong> value) => AddPairwiseScalar(value);
 
             /// <summary>
             /// uint64x2_t vceqq_f64 (float64x2_t a, float64x2_t b)
@@ -529,6 +613,174 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> Max(Vector128<double> left, Vector128<double> right) => Max(left, right);
 
             /// <summary>
+            /// uint8_t vmaxv_u8 (uint8x8_t a)
+            ///   A64: UMAXV Bd, Vn.8B
+            /// </summary>
+            public static Vector64<byte> MaxAcross(Vector64<byte> value) => MaxAcross(value);
+
+            /// <summary>
+            /// int16_t vmaxv_s16 (int16x4_t a)
+            ///   A64: SMAXV Hd, Vn.4H
+            /// </summary>
+            public static Vector64<short> MaxAcross(Vector64<short> value) => MaxAcross(value);
+
+            /// <summary>
+            /// int8_t vmaxv_s8 (int8x8_t a)
+            ///   A64: SMAXV Bd, Vn.8B
+            /// </summary>
+            public static Vector64<sbyte> MaxAcross(Vector64<sbyte> value) => MaxAcross(value);
+
+            /// <summary>
+            /// uint16_t vmaxv_u16 (uint16x4_t a)
+            ///   A64: UMAXV Hd, Vn.4H
+            /// </summary>
+            public static Vector64<ushort> MaxAcross(Vector64<ushort> value) => MaxAcross(value);
+
+            /// <summary>
+            /// uint8_t vmaxvq_u8 (uint8x16_t a)
+            ///   A64: UMAXV Bd, Vn.16B
+            /// </summary>
+            public static Vector64<byte> MaxAcross(Vector128<byte> value) => MaxAcross(value);
+
+            /// <summary>
+            /// int16_t vmaxvq_s16 (int16x8_t a)
+            ///   A64: SMAXV Hd, Vn.8H
+            /// </summary>
+            public static Vector64<short> MaxAcross(Vector128<short> value) => MaxAcross(value);
+
+            /// <summary>
+            /// int32_t vmaxvq_s32 (int32x4_t a)
+            ///   A64: SMAXV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<int> MaxAcross(Vector128<int> value) => MaxAcross(value);
+
+            /// <summary>
+            /// int8_t vmaxvq_s8 (int8x16_t a)
+            ///   A64: SMAXV Bd, Vn.16B
+            /// </summary>
+            public static Vector64<sbyte> MaxAcross(Vector128<sbyte> value) => MaxAcross(value);
+
+            /// <summary>
+            /// float32_t vmaxvq_f32 (float32x4_t a)
+            ///   A64: FMAXV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<float> MaxAcross(Vector128<float> value) => MaxAcross(value);
+
+            /// <summary>
+            /// uint16_t vmaxvq_u16 (uint16x8_t a)
+            ///   A64: UMAXV Hd, Vn.8H
+            /// </summary>
+            public static Vector64<ushort> MaxAcross(Vector128<ushort> value) => MaxAcross(value);
+
+            /// <summary>
+            /// uint32_t vmaxvq_u32 (uint32x4_t a)
+            ///   A64: UMAXV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<uint> MaxAcross(Vector128<uint> value) => MaxAcross(value);
+
+            /// <summary>
+            /// float64x2_t vmaxnmq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMAXNM Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MaxNumber(Vector128<double> left, Vector128<double> right) => MaxNumber(left, right);
+
+            /// <summary>
+            /// float32_t vmaxnmvq_f32 (float32x4_t a)
+            ///   A64: FMAXNMV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<float> MaxNumberAcross(Vector128<float> value) => MaxNumberAcross(value);
+
+            /// <summary>
+            /// float32x2_t vpmaxnm_f32 (float32x2_t a, float32x2_t b)
+            ///   A64: FMAXNMP Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> MaxNumberPairwise(Vector64<float> left, Vector64<float> right) => MaxNumberPairwise(left, right);
+
+            /// <summary>
+            /// float64x2_t vpmaxnmq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMAXNMP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MaxNumberPairwise(Vector128<double> left, Vector128<double> right) => MaxNumberPairwise(left, right);
+
+            /// <summary>
+            /// float32x4_t vpmaxnmq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FMAXNMP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> MaxNumberPairwise(Vector128<float> left, Vector128<float> right) => MaxNumberPairwise(left, right);
+
+            /// <summary>
+            /// float32_t vpmaxnms_f32 (float32x2_t a)
+            ///   A64: FMAXNMP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> MaxNumberPairwiseScalar(Vector64<float> value) => MaxNumberPairwiseScalar(value);
+
+            /// <summary>
+            /// float64_t vpmaxnmqd_f64 (float64x2_t a)
+            ///   A64: FMAXNMP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> MaxNumberPairwiseScalar(Vector128<double> value) => MaxNumberPairwiseScalar(value);
+
+            /// <summary>
+            /// uint8x16_t vpmaxq_u8 (uint8x16_t a, uint8x16_t b)
+            ///   A64: UMAXP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<byte> MaxPairwise(Vector128<byte> left, Vector128<byte> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// float64x2_t vpmaxq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMAXP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MaxPairwise(Vector128<double> left, Vector128<double> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// int16x8_t vpmaxq_s16 (int16x8_t a, int16x8_t b)
+            ///   A64: SMAXP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<short> MaxPairwise(Vector128<short> left, Vector128<short> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// int32x4_t vpmaxq_s32 (int32x4_t a, int32x4_t b)
+            ///   A64: SMAXP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<int> MaxPairwise(Vector128<int> left, Vector128<int> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// int8x16_t vpmaxq_s8 (int8x16_t a, int8x16_t b)
+            ///   A64: SMAXP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> MaxPairwise(Vector128<sbyte> left, Vector128<sbyte> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// float32x4_t vpmaxq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FMAXP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> MaxPairwise(Vector128<float> left, Vector128<float> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// uint16x8_t vpmaxq_u16 (uint16x8_t a, uint16x8_t b)
+            ///   A64: UMAXP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<ushort> MaxPairwise(Vector128<ushort> left, Vector128<ushort> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// uint32x4_t vpmaxq_u32 (uint32x4_t a, uint32x4_t b)
+            ///   A64: UMAXP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<uint> MaxPairwise(Vector128<uint> left, Vector128<uint> right) => MaxPairwise(left, right);
+
+            /// <summary>
+            /// float32_t vpmaxs_f32 (float32x2_t a)
+            ///   A64: FMAXP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> MaxPairwiseScalar(Vector64<float> value) => MaxPairwiseScalar(value);
+
+            /// <summary>
+            /// float64_t vpmaxqd_f64 (float64x2_t a)
+            ///   A64: FMAXP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> MaxPairwiseScalar(Vector128<double> value) => MaxPairwiseScalar(value);
+
+            /// <summary>
             /// float64x1_t vmax_f64 (float64x1_t a, float64x1_t b)
             ///   A64: FMAX Dd, Dn, Dm
             /// </summary>
@@ -546,6 +798,174 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: FMIN Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> Min(Vector128<double> left, Vector128<double> right) => Min(left, right);
+
+            /// <summary>
+            /// uint8_t vminv_u8 (uint8x8_t a)
+            ///   A64: UMINV Bd, Vn.8B
+            /// </summary>
+            public static Vector64<byte> MinAcross(Vector64<byte> value) => MinAcross(value);
+
+            /// <summary>
+            /// int16_t vminv_s16 (int16x4_t a)
+            ///   A64: SMINV Hd, Vn.4H
+            /// </summary>
+            public static Vector64<short> MinAcross(Vector64<short> value) => MinAcross(value);
+
+            /// <summary>
+            /// int8_t vminv_s8 (int8x8_t a)
+            ///   A64: SMINV Bd, Vn.8B
+            /// </summary>
+            public static Vector64<sbyte> MinAcross(Vector64<sbyte> value) => MinAcross(value);
+
+            /// <summary>
+            /// uint16_t vminv_u16 (uint16x4_t a)
+            ///   A64: UMINV Hd, Vn.4H
+            /// </summary>
+            public static Vector64<ushort> MinAcross(Vector64<ushort> value) => MinAcross(value);
+
+            /// <summary>
+            /// uint8_t vminvq_u8 (uint8x16_t a)
+            ///   A64: UMINV Bd, Vn.16B
+            /// </summary>
+            public static Vector64<byte> MinAcross(Vector128<byte> value) => MinAcross(value);
+
+            /// <summary>
+            /// int16_t vminvq_s16 (int16x8_t a)
+            ///   A64: SMINV Hd, Vn.8H
+            /// </summary>
+            public static Vector64<short> MinAcross(Vector128<short> value) => MinAcross(value);
+
+            /// <summary>
+            /// int32_t vaddvq_s32 (int32x4_t a)
+            ///   A64: SMINV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<int> MinAcross(Vector128<int> value) => MinAcross(value);
+
+            /// <summary>
+            /// int8_t vminvq_s8 (int8x16_t a)
+            ///   A64: SMINV Bd, Vn.16B
+            /// </summary>
+            public static Vector64<sbyte> MinAcross(Vector128<sbyte> value) => MinAcross(value);
+
+            /// <summary>
+            /// float32_t vminvq_f32 (float32x4_t a)
+            ///   A64: FMINV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<float> MinAcross(Vector128<float> value) => MinAcross(value);
+
+            /// <summary>
+            /// uint16_t vminvq_u16 (uint16x8_t a)
+            ///   A64: UMINV Hd, Vn.8H
+            /// </summary>
+            public static Vector64<ushort> MinAcross(Vector128<ushort> value) => MinAcross(value);
+
+            /// <summary>
+            /// uint32_t vminvq_u32 (uint32x4_t a)
+            ///   A64: UMINV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<uint> MinAcross(Vector128<uint> value) => MinAcross(value);
+
+            /// <summary>
+            /// float64x2_t vminnmq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMINNM Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MinNumber(Vector128<double> left, Vector128<double> right) => MinNumber(left, right);
+
+            /// <summary>
+            /// float32_t vminnmvq_f32 (float32x4_t a)
+            ///   A64: FMINNMV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<float> MinNumberAcross(Vector128<float> value) => MinNumberAcross(value);
+
+            /// <summary>
+            /// float32x2_t vpminnm_f32 (float32x2_t a, float32x2_t b)
+            ///   A64: FMINNMP Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> MinNumberPairwise(Vector64<float> left, Vector64<float> right) => MinNumberPairwise(left, right);
+
+            /// <summary>
+            /// float64x2_t vpminnmq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMINNMP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MinNumberPairwise(Vector128<double> left, Vector128<double> right) => MinNumberPairwise(left, right);
+
+            /// <summary>
+            /// float32x4_t vpminnmq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FMINNMP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> MinNumberPairwise(Vector128<float> left, Vector128<float> right) => MinNumberPairwise(left, right);
+
+            /// <summary>
+            /// float32_t vpminnms_f32 (float32x2_t a)
+            ///   A64: FMINNMP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> MinNumberPairwiseScalar(Vector64<float> value) => MinNumberPairwiseScalar(value);
+
+            /// <summary>
+            /// float64_t vpminnmqd_f64 (float64x2_t a)
+            ///   A64: FMINNMP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> MinNumberPairwiseScalar(Vector128<double> value) => MinNumberPairwiseScalar(value);
+
+            /// <summary>
+            /// uint8x16_t vpminq_u8 (uint8x16_t a, uint8x16_t b)
+            ///   A64: UMINP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<byte> MinPairwise(Vector128<byte> left, Vector128<byte> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// float64x2_t vpminq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMINP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MinPairwise(Vector128<double> left, Vector128<double> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// int16x8_t vpminq_s16 (int16x8_t a, int16x8_t b)
+            ///   A64: SMINP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<short> MinPairwise(Vector128<short> left, Vector128<short> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// int32x4_t vpminq_s32 (int32x4_t a, int32x4_t b)
+            ///   A64: SMINP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<int> MinPairwise(Vector128<int> left, Vector128<int> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// int8x16_t vpminq_s8 (int8x16_t a, int8x16_t b)
+            ///   A64: SMINP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> MinPairwise(Vector128<sbyte> left, Vector128<sbyte> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// float32x4_t vpminq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FMINP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> MinPairwise(Vector128<float> left, Vector128<float> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// uint16x8_t vpminq_u16 (uint16x8_t a, uint16x8_t b)
+            ///   A64: UMINP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<ushort> MinPairwise(Vector128<ushort> left, Vector128<ushort> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// uint32x4_t vpminq_u32 (uint32x4_t a, uint32x4_t b)
+            ///   A64: UMINP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<uint> MinPairwise(Vector128<uint> left, Vector128<uint> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// float32_t vpmins_f32 (float32x2_t a)
+            ///   A64: FMINP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> MinPairwiseScalar(Vector64<float> value) => MinPairwiseScalar(value);
+
+            /// <summary>
+            /// float64_t vpminqd_f64 (float64x2_t a)
+            ///   A64: FMINP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> MinPairwiseScalar(Vector128<double> value) => MinPairwiseScalar(value);
 
             /// <summary>
             /// float64x1_t vmin_f64 (float64x1_t a, float64x1_t b)
@@ -1593,6 +2013,55 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: ADD Vd.2D, Vn.2D, Vm.2D
         /// </summary>
         public static Vector128<ulong> Add(Vector128<ulong> left, Vector128<ulong> right) => Add(left, right);
+
+        /// <summary>
+        /// uint8x8_t vpadd_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VPADD.I8 Dd, Dn, Dm
+        ///   A64: ADDP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> AddPairwise(Vector64<byte> left, Vector64<byte> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// int16x4_t vpadd_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VPADD.I16 Dd, Dn, Dm
+        ///   A64: ADDP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> AddPairwise(Vector64<short> left, Vector64<short> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// int32x2_t vpadd_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VPADD.I32 Dd, Dn, Dm
+        ///   A64: ADDP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> AddPairwise(Vector64<int> left, Vector64<int> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// int8x8_t vpadd_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VPADD.I8 Dd, Dn, Dm
+        ///   A64: ADDP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> AddPairwise(Vector64<sbyte> left, Vector64<sbyte> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// float32x2_t vpadd_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VPADD.F32 Dd, Dn, Dm
+        ///   A64: FADDP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> AddPairwise(Vector64<float> left, Vector64<float> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// uint16x4_t vpadd_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VPADD.I16 Dd, Dn, Dm
+        ///   A64: ADDP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> AddPairwise(Vector64<ushort> left, Vector64<ushort> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// uint32x2_t vpadd_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VPADD.I32 Dd, Dn, Dm
+        ///   A64: ADDP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> AddPairwise(Vector64<uint> left, Vector64<uint> right) => AddPairwise(left, right);
 
         /// <summary>
         /// float64x1_t vadd_f64 (float64x1_t a, float64x1_t b)
@@ -3111,6 +3580,83 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> Max(Vector128<uint> left, Vector128<uint> right) => Max(left, right);
 
         /// <summary>
+        /// float32x2_t vmaxnm_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMAXNM.F32 Dd, Dn, Dm
+        ///   A64: FMAXNM Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> MaxNumber(Vector64<float> left, Vector64<float> right) => MaxNumber(left, right);
+
+        /// <summary>
+        /// float32x4_t vmaxnmq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMAXNM.F32 Qd, Qn, Qm
+        ///   A64: FMAXNM Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> MaxNumber(Vector128<float> left, Vector128<float> right) => MaxNumber(left, right);
+
+        /// <summary>
+        /// float64x1_t vmaxnm_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VMAXNM.F64 Dd, Dn, Dm
+        ///   A64: FMAXNM Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> MaxNumberScalar(Vector64<double> left, Vector64<double> right) => MaxNumberScalar(left, right);
+
+        /// <summary>
+        /// float32_t vmaxnms_f32 (float32_t a, float32_t b)
+        ///   A32: VMAXNM.F32 Sd, Sn, Sm
+        ///   A64: FMAXNM Sd, Sn, Sm
+        /// </summary>
+        public static Vector64<float> MaxNumberScalar(Vector64<float> left, Vector64<float> right) => MaxNumberScalar(left, right);
+
+        /// <summary>
+        /// uint8x8_t vpmax_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VPMAX.U8 Dd, Dn, Dm
+        ///   A64: UMAXP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> MaxPairwise(Vector64<byte> left, Vector64<byte> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// int16x4_t vpmax_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VPMAX.S16 Dd, Dn, Dm
+        ///   A64: SMAXP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MaxPairwise(Vector64<short> left, Vector64<short> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// int32x2_t vpmax_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VPMAX.S32 Dd, Dn, Dm
+        ///   A64: SMAXP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MaxPairwise(Vector64<int> left, Vector64<int> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// int8x8_t vpmax_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VPMAX.S8 Dd, Dn, Dm
+        ///   A64: SMAXP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> MaxPairwise(Vector64<sbyte> left, Vector64<sbyte> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// float32x2_t vpmax_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VPMAX.F32 Dd, Dn, Dm
+        ///   A64: FMAXP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> MaxPairwise(Vector64<float> left, Vector64<float> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// uint16x4_t vpmax_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VPMAX.U16 Dd, Dn, Dm
+        ///   A64: UMAXP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> MaxPairwise(Vector64<ushort> left, Vector64<ushort> right) => MaxPairwise(left, right);
+
+        /// <summary>
+        /// uint32x2_t vpmax_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VPMAX.U32 Dd, Dn, Dm
+        ///   A64: UMAXP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> MaxPairwise(Vector64<uint> left, Vector64<uint> right) => MaxPairwise(left, right);
+
+        /// <summary>
         /// uint8x8_t vmin_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VMIN.U8 Dd, Dn, Dm
         ///   A64: UMIN Vd.8B, Vn.8B, Vm.8B
@@ -3207,6 +3753,83 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: UMIN Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> Min(Vector128<uint> left, Vector128<uint> right) => Min(left, right);
+
+        /// <summary>
+        /// float32x2_t vminnm_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMINNM.F32 Dd, Dn, Dm
+        ///   A64: FMINNM Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> MinNumber(Vector64<float> left, Vector64<float> right) => MinNumber(left, right);
+
+        /// <summary>
+        /// float32x4_t vminnmq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMINNM.F32 Qd, Qn, Qm
+        ///   A64: FMINNM Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> MinNumber(Vector128<float> left, Vector128<float> right) => MinNumber(left, right);
+
+        /// <summary>
+        /// float64x1_t vminnm_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VMINNM.F64 Dd, Dn, Dm
+        ///   A64: FMINNM Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> MinNumberScalar(Vector64<double> left, Vector64<double> right) => MinNumberScalar(left, right);
+
+        /// <summary>
+        /// float32_t vminnms_f32 (float32_t a, float32_t b)
+        ///   A32: VMINNM.F32 Sd, Sn, Sm
+        ///   A64: FMINNM Sd, Sn, Sm
+        /// </summary>
+        public static Vector64<float> MinNumberScalar(Vector64<float> left, Vector64<float> right) => MinNumberScalar(left, right);
+
+        /// <summary>
+        /// uint8x8_t vpmin_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VPMIN.U8 Dd, Dn, Dm
+        ///   A64: UMINP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> MinPairwise(Vector64<byte> left, Vector64<byte> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// int16x4_t vpmin_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VPMIN.S16 Dd, Dn, Dm
+        ///   A64: SMINP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MinPairwise(Vector64<short> left, Vector64<short> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// int32x2_t vpmin_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VPMIN.S32 Dd, Dn, Dm
+        ///   A64: SMINP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MinPairwise(Vector64<int> left, Vector64<int> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// int8x8_t vpmin_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VPMIN.S8 Dd, Dn, Dm
+        ///   A64: SMINP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> MinPairwise(Vector64<sbyte> left, Vector64<sbyte> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// float32x2_t vpmin_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VPMIN.F32 Dd, Dn, Dm
+        ///   A64: FMINP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> MinPairwise(Vector64<float> left, Vector64<float> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// uint16x4_t vpmin_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VPMIN.U16 Dd, Dn, Dm
+        ///   A64: UMINP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> MinPairwise(Vector64<ushort> left, Vector64<ushort> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// uint32x2_t vpmin_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VPMIN.U32 Dd, Dn, Dm
+        ///   A64: UMINP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> MinPairwise(Vector64<uint> left, Vector64<uint> right) => MinPairwise(left, right);
 
         /// <summary>
         /// uint8x8_t vmul_u8 (uint8x8_t a, uint8x8_t b)
