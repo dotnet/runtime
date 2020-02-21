@@ -113,6 +113,7 @@ namespace Internal.Cryptography
                     signatureField[1] <= 0x7F)
                 {
                     // The only way this should be true is if the value required a zero-byte-pad.
+                    Debug.Fail($"A signature field was longer ({signatureField.Length}) than expected ({response.Length})");
                     throw new CryptographicException();
                 }
 
@@ -130,16 +131,21 @@ namespace Internal.Cryptography
         internal static byte[] ConvertSignatureToIeeeP1363(
             this DSA dsa,
             DSASignatureFormat currentFormat,
-            ReadOnlySpan<byte> signature)
+            ReadOnlySpan<byte> signature,
+            int fieldSizeBits = 0)
         {
             try
             {
-                DSAParameters pars = dsa.ExportParameters(false);
+                if (fieldSizeBits == 0)
+                {
+                    DSAParameters pars = dsa.ExportParameters(false);
+                    fieldSizeBits = pars.Q.Length * 8;
+                }
 
                 return ConvertSignatureToIeeeP1363(
                     currentFormat,
                     signature,
-                    pars.Q.Length * 8);
+                    fieldSizeBits);
             }
             catch (CryptographicException)
             {

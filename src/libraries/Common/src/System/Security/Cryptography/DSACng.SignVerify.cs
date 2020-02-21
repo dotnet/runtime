@@ -42,7 +42,14 @@ namespace System.Security.Cryptography
             }
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-            protected override unsafe bool TryCreateSignatureCore(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat, out int bytesWritten)
+            protected override unsafe bool TryCreateSignatureCore(
+                ReadOnlySpan<byte> hash,
+                Span<byte> destination,
+                DSASignatureFormat signatureFormat,
+                out int bytesWritten)
+#else
+            public override unsafe bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
+#endif
             {
                 Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
                 ReadOnlySpan<byte> source = AdjustHashSizeIfNecessary(hash, stackBuf);
@@ -56,6 +63,7 @@ namespace System.Security.Cryptography
                     }
                 }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
                 {
                     return true;
@@ -63,13 +71,18 @@ namespace System.Security.Cryptography
 
                 if (signatureFormat != DSASignatureFormat.Rfc3279DerSequence)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(signatureFormat));
+                    Debug.Fail($"Missing internal implementation handler for signature format {signatureFormat}");
+                    throw new CryptographicException(
+                        SR.Cryptography_UnknownSignatureFormat,
+                        signatureFormat.ToString());
                 }
 
                 byte[] signature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(destination.Slice(0, bytesWritten));
                 return Helpers.TryCopyToDestination(signature, destination, out bytesWritten);
-            }
+#else
+                return true;
 #endif
+            }
 
             public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
             {
@@ -82,30 +95,41 @@ namespace System.Security.Cryptography
                     throw new ArgumentNullException(nameof(rgbSignature));
                 }
 
-#if !INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-                Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
-                ReadOnlySpan<byte> source = AdjustHashSizeIfNecessary(rgbHash, stackBuf);
-                ReadOnlySpan<byte> signature = rgbSignature;
-#else
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 return VerifySignatureCore(rgbHash, rgbSignature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+#else
+                return VerifySignature((ReadOnlySpan<byte>)rgbHash, (ReadOnlySpan<byte>)rgbSignature);
+#endif
             }
 
-            protected override bool VerifySignatureCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+            protected override bool VerifySignatureCore(
+                ReadOnlySpan<byte> hash,
+                ReadOnlySpan<byte> signature,
+                DSASignatureFormat signatureFormat)
             {
+                Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
+                ReadOnlySpan<byte> source = AdjustHashSizeIfNecessary(hash, stackBuf);
+
                 if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
                 {
-                    signature = this.ConvertSignatureToIeeeP1363(signatureFormat, signature);
+                    // source.Length is the field size, in bytes, so just convert to bits.
+                    int fieldSizeBits = source.Length * 8;
+                    signature = this.ConvertSignatureToIeeeP1363(signatureFormat, signature, fieldSizeBits);
                 }
                 else if (signatureFormat != DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
                 {
-                    Debug.Fail($"DSASignatureFormat '{signatureFormat}' was not handled.");
-                    return base.VerifySignatureCore(hash, signature, signatureFormat);
+                    Debug.Fail($"Missing internal implementation handler for signature format {signatureFormat}");
+                    throw new CryptographicException(
+                        SR.Cryptography_UnknownSignatureFormat,
+                        signatureFormat.ToString());
                 }
-
+#else
+            public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+            {
                 Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
                 ReadOnlySpan<byte> source = AdjustHashSizeIfNecessary(hash, stackBuf);
 #endif
-
                 using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {
                     unsafe
