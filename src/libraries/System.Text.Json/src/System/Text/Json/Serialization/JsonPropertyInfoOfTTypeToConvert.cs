@@ -139,8 +139,8 @@ namespace System.Text.Json
             {
                 if (!IgnoreNullValues)
                 {
-                    TTypeToConvert value = default!;
-                    Set!(obj, value);
+                    TTypeToConvert value = default;
+                    Set!(obj, value!);
                 }
 
                 success = true;
