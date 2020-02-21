@@ -14,6 +14,6 @@ namespace System.Net
     {
         Uri GetProxy(Uri destination);
         bool IsBypassed(Uri host);
-        ICredentials Credentials { get; set; }
+        ICredentials? Credentials { get; set; }
     }
 }

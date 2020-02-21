@@ -43,9 +43,9 @@ namespace System.Net
             _family = addressFamily;
         }
 
-        public override bool Equals(object comparand)
+        public override bool Equals(object? comparand)
         {
-            DnsEndPoint dnsComparand = comparand as DnsEndPoint;
+            DnsEndPoint? dnsComparand = comparand as DnsEndPoint;
 
             if (dnsComparand == null)
             {
