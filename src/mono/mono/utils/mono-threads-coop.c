@@ -761,11 +761,42 @@ mono_threads_enter_no_safepoints_region (const char *func)
 	mono_threads_transition_begin_no_safepoints (mono_thread_info_current (), func);
 }
 
+int32_t
+mono_threads_enter_no_safepoints_region_if_unsafe (const char *func)
+{
+	if (!mono_threads_is_runtime_startup_finished ())
+		return 0;
+	if (!mono_thread_info_current_unchecked ())
+		return 0; /* not initialized yet, or already shut down */
+	if (mono_thread_is_gc_unsafe_mode ()) {
+		switch (mono_threads_transition_begin_no_safepoints_nested (mono_thread_info_current (), func)) {
+		case NoSafepointsNestedIgnored:
+			return 0;
+		case NoSafepointsNestedOk:
+			return 1;
+		default:
+			g_assert_not_reached ();
+		}
+	}
+	return 0;
+}
+
 void
 mono_threads_exit_no_safepoints_region (const char *func)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 	mono_threads_transition_end_no_safepoints (mono_thread_info_current (), func);
+}
+
+void
+mono_threads_exit_no_safepoints_region_if_unsafe (const char *func)
+{
+	if (!mono_threads_is_runtime_startup_finished ())
+		return;
+	if (!mono_thread_info_current_unchecked ())
+		return;
+	if (mono_thread_is_gc_unsafe_mode ())
+		mono_threads_transition_end_no_safepoints (mono_thread_info_current (), func);
 }
 
 void
@@ -793,4 +824,12 @@ mono_thread_get_coop_aware (void)
 	MONO_EXIT_GC_UNSAFE;
 
 	return result;
+}
+
+char mono_threads_is_runtime_startup_finished_hidden_dont_modify;
+
+void
+mono_threads_set_runtime_startup_finished (void)
+{
+	mono_threads_is_runtime_startup_finished_hidden_dont_modify = 1;
 }

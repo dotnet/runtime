@@ -41,11 +41,14 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 	ts.tv_sec = timeout_ms / 1000;
 	ts.tv_nsec = (timeout_ms % 1000) * 1000 * 1000;
 
-	res = pthread_cond_timedwait_relative_np (cond, mutex, &ts);
+	int32_t saved_cookie = os_mutex_save_and_reinit_cookie (mutex);
+	res = pthread_cond_timedwait_relative_np (cond, os_mutex_mutex (mutex), &ts);
 	if (G_UNLIKELY (res != 0 && res != ETIMEDOUT)) {
 		g_print ("cond: %p mutex: %p\n", *(gpointer*)cond, *(gpointer*)mutex);
 		g_error ("%s: pthread_cond_timedwait_relative_np failed with \"%s\" (%d) %ld %ld %d", __func__, g_strerror (res), res, ts.tv_sec, ts.tv_nsec, timeout_ms);
 	}
+	if (res == 0)
+		os_mutex_restore_cookie (mutex, saved_cookie);
 	return res != 0 ? -1 : 0;
 #else
 #ifdef BROKEN_CLOCK_SOURCE
@@ -72,11 +75,14 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 		ts.tv_sec ++;
 	}
 
-	res = pthread_cond_timedwait (cond, mutex, &ts);
+	int32_t saved_cookie = os_mutex_save_and_reinit_cookie (mutex);
+	res = pthread_cond_timedwait (cond, os_mutex_mutex (mutex), &ts);
 	if (G_UNLIKELY (res != 0 && res != ETIMEDOUT)) {
 		g_print ("cond: %p mutex: %p\n", *(gpointer*)cond, *(gpointer*)mutex);
 		g_error ("%s: pthread_cond_timedwait failed with \"%s\" (%d) %ld %ld %d", __func__, g_strerror (res), res, ts.tv_sec, ts.tv_nsec, timeout_ms);
 	}
+	if (res == 0)
+		os_mutex_restore_cookie (mutex, saved_cookie);
 	return res != 0 ? -1 : 0;
 #endif /* !HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP */
 }

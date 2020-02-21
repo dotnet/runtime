@@ -4389,6 +4389,7 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_thread_attach (domain);
 	MONO_PROFILER_RAISE (thread_name, (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ()), "Main"));
 #endif
+	mono_threads_set_runtime_startup_finished ();
 
 #ifdef ENABLE_EXPERIMENT_TIERED
 	if (!mono_compile_aot) {

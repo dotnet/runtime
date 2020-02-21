@@ -734,6 +734,10 @@ typedef enum {
 	AbortBlockingWait, //Abort worked, but should wait for resume
 } MonoAbortBlockingResult;
 
+typedef enum {
+	NoSafepointsNestedIgnored, // was already in no safepoints region
+	NoSafepointsNestedOk // ok, did a transition to no safepoints
+} MonoNoSafepointsNestedResult;
 
 void mono_threads_transition_attach (THREAD_INFO_TYPE* info);
 gboolean mono_threads_transition_detach (THREAD_INFO_TYPE *info);
@@ -748,6 +752,7 @@ MonoDoneBlockingResult mono_threads_transition_done_blocking (THREAD_INFO_TYPE* 
 MonoAbortBlockingResult mono_threads_transition_abort_blocking (THREAD_INFO_TYPE* info, const char* func);
 gboolean mono_threads_transition_peek_blocking_suspend_requested (THREAD_INFO_TYPE* info);
 void mono_threads_transition_begin_no_safepoints (THREAD_INFO_TYPE* info, const char *func);
+MonoNoSafepointsNestedResult mono_threads_transition_begin_no_safepoints_nested (THREAD_INFO_TYPE *info, const char *func);
 void mono_threads_transition_end_no_safepoints (THREAD_INFO_TYPE* info, const char *func);
 
 G_EXTERN_C // due to THREAD_INFO_TYPE varying

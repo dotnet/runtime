@@ -49,7 +49,7 @@ static inline void
 mono_coop_mutex_lock (MonoCoopMutex *mutex)
 {
 	/* Avoid thread state switch if lock is not contended */
-	if (mono_os_mutex_trylock (&mutex->m) == 0)
+	if (mono_os_mutex_trylock_from_coop (&mutex->m) == 0)
 		return;
 
 	MONO_ENTER_GC_SAFE;
@@ -62,13 +62,13 @@ mono_coop_mutex_lock (MonoCoopMutex *mutex)
 static inline gint
 mono_coop_mutex_trylock (MonoCoopMutex *mutex)
 {
-	return mono_os_mutex_trylock (&mutex->m);
+	return mono_os_mutex_trylock_from_coop (&mutex->m);
 }
 
 static inline void
 mono_coop_mutex_unlock (MonoCoopMutex *mutex)
 {
-	mono_os_mutex_unlock (&mutex->m);
+	mono_os_mutex_unlock_from_coop (&mutex->m);
 }
 
 static inline void

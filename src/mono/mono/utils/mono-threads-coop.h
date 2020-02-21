@@ -153,4 +153,17 @@ G_EXTERN_C // due to THREAD_INFO_TYPE varying
 gpointer
 mono_threads_enter_gc_unsafe_region_unbalanced_with_info (THREAD_INFO_TYPE *info, MonoStackData *stackdata);
 
+MONO_LLVM_INTERNAL_EXTERN_C_BEGIN
+extern char mono_threads_is_runtime_startup_finished_hidden_dont_modify MONO_LLVM_INTERNAL_NO_EXTERN_C;
+MONO_LLVM_INTERNAL_EXTERN_C_END
+
+static inline gboolean
+mono_threads_is_runtime_startup_finished (void)
+{
+	return mono_threads_is_runtime_startup_finished_hidden_dont_modify != 0;
+}
+
+void
+mono_threads_set_runtime_startup_finished (void);
+
 #endif
