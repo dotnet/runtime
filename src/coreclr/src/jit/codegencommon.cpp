@@ -10509,7 +10509,7 @@ void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel, InlineContext* inl
             break;
     }
 
-    Compiler::IPmappingDsc* lastMapping  = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
+    Compiler::IPmappingDsc* lastMapping = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
     lastMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
     lastMapping->ipmdILoffsx       = offsx;
     lastMapping->ipmdIsLabel       = isLabel;
@@ -10760,8 +10760,8 @@ unsigned CodeGen::genIPMappingGenCount()
 
     /* First count the number of distinct mapping records */
 
-    mappingCnt    = 0;
-    lastNativeOfs = UNATIVE_OFFSET(~0);
+    mappingCnt        = 0;
+    lastNativeOfs     = UNATIVE_OFFSET(~0);
     lastInlineContext = nullptr;
 
     for (prevMapping = nullptr, tmpMapping = compiler->genIPmappingList; tmpMapping != nullptr;
@@ -10786,31 +10786,37 @@ unsigned CodeGen::genIPMappingGenCount()
             if (nextInlineContext != lastInlineContext)
             {
                 ContextList lastInlineContextPath(compiler->getAllocator(CMK_DebugInfo));
-                for (InlineContext* it = lastInlineContext; it != nullptr && it->GetParent() != nullptr; it = it->GetParent())
+                for (InlineContext* it = lastInlineContext; it != nullptr && it->GetParent() != nullptr;
+                     it                = it->GetParent())
                 {
                     lastInlineContextPath.push_back(it);
                 }
 
                 ContextList nextInlineContextPath(compiler->getAllocator(CMK_DebugInfo));
-                for (InlineContext* it = nextInlineContext; it != nullptr && it->GetParent() != nullptr; it = it->GetParent())
+                for (InlineContext* it = nextInlineContext; it != nullptr && it->GetParent() != nullptr;
+                     it                = it->GetParent())
                 {
                     nextInlineContextPath.push_front(it);
                 }
 
-                while (!lastInlineContextPath.empty() && !nextInlineContextPath.empty() && lastInlineContextPath.back() == nextInlineContextPath.front())
+                while (!lastInlineContextPath.empty() && !nextInlineContextPath.empty() &&
+                       lastInlineContextPath.back() == nextInlineContextPath.front())
                 {
                     lastInlineContextPath.pop_back();
                     nextInlineContextPath.pop_front();
                 }
                 // No lastInlineContextPath and nextInlineContextPath contains, from front to back, the InlineContexts
-                // that need to be closed and opened respectively, to follow the call stack from the main jitted function
+                // that need to be closed and opened respectively, to follow the call stack from the main jitted
+                // function
                 // to each of this IPMappingDsc.
 
                 // Create a new ICorDebugInfo::Method per each closing inline context
-                mappingCnt += (unsigned) lastInlineContextPath.size();
-                // Create a ICorDebugInfo::Offset per call statement that caused this inline so we know the call stack, and
-                // a ICorDebugInfo::Method per each new inlined function so we can understand the IL of ICorDebugInfo::Offset.
-                mappingCnt += ((unsigned) nextInlineContextPath.size()) * 2;
+                mappingCnt += (unsigned)lastInlineContextPath.size();
+                // Create a ICorDebugInfo::Offset per call statement that caused this inline so we know the call stack,
+                // and
+                // a ICorDebugInfo::Method per each new inlined function so we can understand the IL of
+                // ICorDebugInfo::Offset.
+                mappingCnt += ((unsigned)nextInlineContextPath.size()) * 2;
             }
 
             mappingCnt++;
@@ -10878,7 +10884,10 @@ unsigned CodeGen::genIPMappingGenCount()
     return mappingCnt;
 }
 
-unsigned CodeGen::genIPmappingGenBoundaries(unsigned mappingCnt, ContextList &contexts, UNATIVE_OFFSET nativeOfs, bool isOpening)
+unsigned CodeGen::genIPmappingGenBoundaries(unsigned       mappingCnt,
+                                            ContextList&   contexts,
+                                            UNATIVE_OFFSET nativeOfs,
+                                            bool           isOpening)
 {
     while (!contexts.empty())
     {
@@ -10932,7 +10941,7 @@ void CodeGen::genIPmappingGen()
     }
 
     // First count the number of distinct mapping records
-    // and tell them how many mapping records we've got 
+    // and tell them how many mapping records we've got
     compiler->eeSetLIcount(genIPMappingGenCount());
 
     Compiler::IPmappingDsc* tmpMapping;
@@ -10963,18 +10972,21 @@ void CodeGen::genIPmappingGen()
         if (nextInlineContext != lastInlineContext)
         {
             ContextList lastInlineContextPath(compiler->getAllocator(CMK_DebugInfo));
-            for (InlineContext* it = lastInlineContext; it != nullptr && it->GetParent() != nullptr; it = it->GetParent())
+            for (InlineContext* it = lastInlineContext; it != nullptr && it->GetParent() != nullptr;
+                 it                = it->GetParent())
             {
                 lastInlineContextPath.push_back(it);
             }
 
             ContextList nextInlineContextPath(compiler->getAllocator(CMK_DebugInfo));
-            for (InlineContext* it = nextInlineContext; it != nullptr && it->GetParent() != nullptr; it = it->GetParent())
+            for (InlineContext* it = nextInlineContext; it != nullptr && it->GetParent() != nullptr;
+                 it                = it->GetParent())
             {
                 nextInlineContextPath.push_front(it);
             }
 
-            while (!lastInlineContextPath.empty() && !nextInlineContextPath.empty() && lastInlineContextPath.back() == nextInlineContextPath.front())
+            while (!lastInlineContextPath.empty() && !nextInlineContextPath.empty() &&
+                   lastInlineContextPath.back() == nextInlineContextPath.front())
             {
                 lastInlineContextPath.pop_back();
                 nextInlineContextPath.pop_front();
@@ -10986,7 +10998,8 @@ void CodeGen::genIPmappingGen()
             // Create a new ICorDebugInfo::Method per each closing inline context
             mappingCnt = genIPmappingGenBoundaries(mappingCnt, lastInlineContextPath, nextNativeOfs, false);
             // Create a ICorDebugInfo::Offset per call statement that caused this inline so we know the call stack, and
-            // a ICorDebugInfo::Method per each new inlined function so we can understand the IL of ICorDebugInfo::Offset.
+            // a ICorDebugInfo::Method per each new inlined function so we can understand the IL of
+            // ICorDebugInfo::Offset.
             mappingCnt = genIPmappingGenBoundaries(mappingCnt, nextInlineContextPath, nextNativeOfs, true);
         }
 

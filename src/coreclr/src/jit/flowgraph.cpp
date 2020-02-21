@@ -22980,7 +22980,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         {
             stmt->SetInlineContext(calleeContext);
 #ifdef DEBUG
-            if(verbose)
+            if (verbose)
             {
                 gtDispStmt(stmt, nullptr);
                 JITDUMP("\ninlined %d from %s\n", stmt->GetILOffsetX(),
@@ -23677,7 +23677,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         assert(addedStmt->GetInlineContext() == nullptr);
         addedStmt->SetInlineContext(context);
 #ifdef DEBUG
-        if(verbose)
+        if (verbose)
         {
             gtDispStmt(addedStmt, nullptr);
             if (addedStmt->GetInlineContext() != nullptr)

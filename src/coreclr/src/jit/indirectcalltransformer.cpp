@@ -340,7 +340,7 @@ private:
             GenTree*   zero            = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, 0);
             GenTree*   fatPointerCmp   = compiler->gtNewOperNode(GT_NE, TYP_INT, fatPointerAnd, zero);
             GenTree*   jmpTree         = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, fatPointerCmp);
-            Statement* jmpStmt         = compiler->fgNewStmtFromTree(jmpTree, stmt->GetILOffsetX(), stmt->GetInlineContext());
+            Statement* jmpStmt = compiler->fgNewStmtFromTree(jmpTree, stmt->GetILOffsetX(), stmt->GetInlineContext());
             compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
         }
 
@@ -568,7 +568,8 @@ private:
                 const unsigned thisTempNum = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt this temp"));
                 // lvaSetClass(thisTempNum, ...);
                 GenTree*   asgTree = compiler->gtNewTempAssign(thisTempNum, thisTree);
-                Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetILOffsetX(), stmt->GetInlineContext());
+                Statement* asgStmt =
+                    compiler->fgNewStmtFromTree(asgTree, stmt->GetILOffsetX(), stmt->GetInlineContext());
                 compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
 
                 thisTree = compiler->gtNewLclvNode(thisTempNum, TYP_REF);
@@ -589,7 +590,7 @@ private:
             // Compare and jump to else (which does the indirect call) if NOT equal
             GenTree*   methodTableCompare = compiler->gtNewOperNode(GT_NE, TYP_INT, targetMethodTable, methodTable);
             GenTree*   jmpTree            = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, methodTableCompare);
-            Statement* jmpStmt            = compiler->fgNewStmtFromTree(jmpTree, stmt->GetILOffsetX(), stmt->GetInlineContext());
+            Statement* jmpStmt = compiler->fgNewStmtFromTree(jmpTree, stmt->GetILOffsetX(), stmt->GetInlineContext());
             compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
         }
 

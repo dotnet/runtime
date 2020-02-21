@@ -549,11 +549,14 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     void genIPmappingListDisp();
 #endif // DEBUG
 
-    unsigned genIPmappingGenBoundaries(unsigned mappingCnt, ContextList& contexts, UNATIVE_OFFSET nativeOfs, bool isOpening);
+    unsigned genIPmappingGenBoundaries(unsigned       mappingCnt,
+                                       ContextList&   contexts,
+                                       UNATIVE_OFFSET nativeOfs,
+                                       bool           isOpening);
     void genIPmappingAdd(IL_OFFSETX offset, bool isLabel, InlineContext* inlineContext);
     void genIPmappingAddToFront(IL_OFFSETX offset);
     unsigned genIPMappingGenCount();
-    void genIPmappingGen();
+    void     genIPmappingGen();
 
     void genEnsureCodeEmitted(IL_OFFSETX offsx);
 

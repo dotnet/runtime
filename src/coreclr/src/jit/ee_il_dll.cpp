@@ -941,9 +941,9 @@ void Compiler::eeSetLIinfoMethod(unsigned which, mdMethodDef methodToken, mdModu
 
     if (eeBoundaries != nullptr)
     {
-        eeBoundaries[which].method.methodToken    = methodToken;
-        eeBoundaries[which].method.moduleToken   = moduleToken;
-        eeBoundaries[which].sourceReason = opening ? ICorDebugInfo::INLINE_OPEN : ICorDebugInfo::INLINE_CLOSE;
+        eeBoundaries[which].method.methodToken = methodToken;
+        eeBoundaries[which].method.moduleToken = moduleToken;
+        eeBoundaries[which].sourceReason       = opening ? ICorDebugInfo::INLINE_OPEN : ICorDebugInfo::INLINE_CLOSE;
     }
 }
 
@@ -956,9 +956,9 @@ void Compiler::eeSetLIinfo(
 
     if (eeBoundaries != nullptr)
     {
-        eeBoundaries[which].offset.nativeIP     = nativeOffset;
-        eeBoundaries[which].offset.ilOffset     = ilOffset;
-        eeBoundaries[which].sourceReason = stkEmpty ? ICorDebugInfo::STACK_EMPTY : 0;
+        eeBoundaries[which].offset.nativeIP = nativeOffset;
+        eeBoundaries[which].offset.ilOffset = ilOffset;
+        eeBoundaries[which].sourceReason    = stkEmpty ? ICorDebugInfo::STACK_EMPTY : 0;
         eeBoundaries[which].sourceReason |= callInstruction ? ICorDebugInfo::CALL_INSTRUCTION : 0;
     }
 }
@@ -977,7 +977,8 @@ void Compiler::eeSetLIdone()
     // necessary but not sufficient condition that the 2 struct definitions overlap
     assert(sizeof(eeBoundaries[0]) == sizeof(ICorDebugInfo::OffsetMapping2));
 
-    info.compCompHnd->setBoundaries(info.compMethodHnd, eeBoundariesCount, (ICorDebugInfo::OffsetMapping2 *)eeBoundaries);
+    info.compCompHnd->setBoundaries(info.compMethodHnd, eeBoundariesCount,
+                                    (ICorDebugInfo::OffsetMapping2*)eeBoundaries);
 
     eeBoundaries = nullptr; // we give up ownership after setBoundaries();
 }
@@ -1052,7 +1053,9 @@ void Compiler::eeDispLineInfo(const boundariesDsc* line)
     printf("\n");
 
     // We don't expect to see any other bits.
-    assert((line->sourceReason & ~(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION | ICorDebugInfo::INLINE_CLOSE | ICorDebugInfo::INLINE_OPEN)) == 0);
+    assert((line->sourceReason &
+            ~(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION | ICorDebugInfo::INLINE_CLOSE |
+              ICorDebugInfo::INLINE_OPEN)) == 0);
 }
 
 void Compiler::eeDispLineInfos()

@@ -646,7 +646,7 @@ public:
 
     // Dump full subtree in xml format
     void DumpXml(FILE* file = stderr, unsigned indent = 0);
-    
+
     // Get callee handle
     CORINFO_METHOD_HANDLE GetCallee() const
     {
@@ -732,7 +732,6 @@ public:
         return m_moduleToken;
     }
 
-
 private:
     InlineContext(InlineStrategy* strategy);
 
@@ -751,9 +750,9 @@ private:
     bool              m_Devirtualized : 1; // true if this was a devirtualized call
     bool              m_Guarded : 1;       // true if this was a guarded call
     bool              m_Unboxed : 1;       // true if this call now invokes the unboxed entry
-    mdMethodDef m_methodToken;
-    mdModule m_moduleToken;
-    
+    mdMethodDef       m_methodToken;
+    mdModule          m_moduleToken;
+
 #if defined(DEBUG) || defined(INLINE_DATA)
     CORINFO_METHOD_HANDLE m_Callee;  // handle to the method
     InlinePolicy*         m_Policy;  // policy that evaluated this inline
@@ -976,6 +975,6 @@ private:
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 };
 
-typedef jitstd::list<InlineContext *> ContextList;
+typedef jitstd::list<InlineContext*> ContextList;
 
 #endif // _INLINE_H_

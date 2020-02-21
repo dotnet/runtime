@@ -7127,7 +7127,6 @@ public:
     {
         UNATIVE_OFFSET nativeIP;
         IL_OFFSET      ilOffset;
-        
     };
 
     // To indicate of which function are we reporint IL
@@ -7139,12 +7138,11 @@ public:
 
     struct boundariesDsc
     {
-        union
-        {
+        union {
             IPMappingOffset offset;
             IPMappingMethod method;
         };
-        unsigned       sourceReason;
+        unsigned sourceReason;
     } * eeBoundaries; // Boundaries to report to EE
 
     void eeSetLIcount(unsigned count);
