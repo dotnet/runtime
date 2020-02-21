@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.IO;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -14,6 +15,9 @@ namespace System.Security.Cryptography
 #endif
         public sealed partial class ECDsaOpenSsl : ECDsa
         {
+            // secp521r1 maxes out at 89 bytes, so 128 should always be enough
+            private const int SignatureStackBufSize = 128;
+
             private ECOpenSsl _key;
 
             /// <summary>
@@ -80,12 +84,11 @@ namespace System.Security.Cryptography
                 ThrowIfDisposed();
                 SafeEcKeyHandle key = _key.Value;
                 int signatureLength = Interop.Crypto.EcDsaSize(key);
-                byte[] signature = new byte[signatureLength];
-                if (!Interop.Crypto.EcDsaSign(hash, signature, out signatureLength, key))
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
 
-                byte[] converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature.AsSpan(0, signatureLength), KeySize);
+                Span<byte> signDestination = stackalloc byte[SignatureStackBufSize];
+                ReadOnlySpan<byte> derSignature = SignHash(hash, signDestination, signatureLength, key);
 
+                byte[] converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, KeySize);
                 return converted;
             }
 
@@ -99,59 +102,41 @@ namespace System.Security.Cryptography
 
                 if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
                 {
-                    byte[] converted;
-                    byte[] signature = CryptoPool.Rent(signatureLength);
-                    try
-                    {
-                        if (!Interop.Crypto.EcDsaSign(hash, new Span<byte>(signature, 0, signatureLength), out signatureLength, key))
-                        {
-                            throw Interop.Crypto.CreateOpenSslCryptographicException();
-                        }
+                    int encodedSize = 2 * AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
 
-                        converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature.AsSpan(0, signatureLength), KeySize);
-                    }
-                    finally
+                    if (destination.Length < encodedSize)
                     {
-                        CryptoPool.Return(signature, signatureLength);
+                        bytesWritten = 0;
+                        return false;
                     }
 
-                    return Helpers.TryCopyToDestination(converted, destination, out bytesWritten);
+                    ReadOnlySpan<byte> derSignature = SignHash(hash, signDestination, signatureLength, key);
+                    AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, KeySize, destination);
+                    bytesWritten = encodedSize;
+                    return true;
                 }
                 else if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
                 {
-                    // secp521r1 maxes out at 89 bytes, so 128 should always be enough
-                    Span<byte> signDestination = stackalloc byte[128];
-
                     if (destination.Length >= signatureLength)
                     {
                         signDestination = destination;
                     }
                     else if (signatureLength > signDestination.Length)
                     {
+                        Debug.Fail($"Stack-based signDestination is insufficient ({signatureLength} needed)");
                         bytesWritten = 0;
                         return false;
                     }
 
-                    bool success = Interop.Crypto.EcDsaSign(hash, signDestination, out bytesWritten, key);
-
-                    if (!success)
-                    {
-                        bytesWritten = 0;
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
+                    ReadOnlySpan<byte> derSignature = SignHash(hash, signDestination, signatureLength, key);
 
                     if (destination == signDestination)
                     {
+                        bytesWritten = derSignature.Length;
                         return true;
                     }
 
-                    if (!signDestination.Slice(0, bytesWritten).TryCopyTo(destination))
-                    {
-                        bytesWritten = 0;
-                        return false;
-                    }
-
-                    return true;
+                    return Helpers.TryCopyToDestination(derSignature, destination, out bytesWritten);
                 }
                 else
                 {
@@ -159,6 +144,33 @@ namespace System.Security.Cryptography
                 }
             }
 #endif
+
+            private static ReadOnlySpan<byte> SignHash(
+                ReadOnlySpan<byte> hash,
+                Span<byte> destination,
+                int signatureLength,
+                SafeEcKeyHandle key)
+            {
+                if (signatureLength > destination.Length)
+                {
+                    Debug.Fail($"Stack-based signDestination is insufficient ({signatureLength} needed)");
+                    destination = new byte[signatureLength];
+                }
+
+                if (!Interop.Crypto.EcDsaSign(hash, destination, out int actualLength, key))
+                {
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                }
+
+                Debug.Assert(
+                    actualLength <= signatureLength,
+                    "ECDSA_sign reported an unexpected signature size",
+                    "ECDSA_sign reported signatureSize was {0}, when <= {1} was expected",
+                    actualLength,
+                    signatureLength);
+
+                return destination.Slice(0, actualLength);
+            }
 
             public override bool VerifyHash(byte[] hash, byte[] signature)
             {

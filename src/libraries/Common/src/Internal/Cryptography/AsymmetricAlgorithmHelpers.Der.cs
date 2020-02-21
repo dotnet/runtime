@@ -41,7 +41,20 @@ namespace Internal.Cryptography
         /// </summary>
         public static byte[] ConvertDerToIeee1363(ReadOnlySpan<byte> input, int fieldSizeBits)
         {
-            int size = BitsToBytes(fieldSizeBits);
+            int fieldSizeBytes = BitsToBytes(fieldSizeBits);
+            int encodedSize = 2 * fieldSizeBytes;
+            byte[] response = new byte[encodedSize];
+
+            ConvertDerToIeee1363(input, fieldSizeBits, response);
+            return response;
+        }
+
+        internal static int ConvertDerToIeee1363(ReadOnlySpan<byte> input, int fieldSizeBits, Span<byte> destination)
+        {
+            int fieldSizeBytes = BitsToBytes(fieldSizeBits);
+            int encodedSize = 2 * fieldSizeBytes;
+
+            Debug.Assert(destination.Length >= encodedSize);
 
             AsnValueReader reader = new AsnValueReader(input, AsnEncodingRules.DER);
             AsnValueReader sequenceReader = reader.ReadSequence();
@@ -50,11 +63,9 @@ namespace Internal.Cryptography
             ReadOnlySpan<byte> sDer = sequenceReader.ReadIntegerBytes();
             sequenceReader.ThrowIfNotEmpty();
 
-            byte[] response = new byte[2 * size];
-            CopySignatureField(rDer, response.AsSpan(0, size));
-            CopySignatureField(sDer, response.AsSpan(size, size));
-
-            return response;
+            CopySignatureField(rDer, destination.Slice(0, fieldSizeBytes));
+            CopySignatureField(sDer, destination.Slice(fieldSizeBytes, fieldSizeBytes));
+            return encodedSize;
         }
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
