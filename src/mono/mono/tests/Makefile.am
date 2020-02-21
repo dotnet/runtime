@@ -610,6 +610,7 @@ TESTS_CS_SRC=		\
 	async-with-cb-throws.cs	\
 	bug-6148.cs	\
 	bug-10127.cs	\
+	bug-10127b.cs	\
 	bug-18026.cs	\
 	allow-synchronous-major.cs	\
 	block_guard_restore_aligment_on_exit.cs	\
