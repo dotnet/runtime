@@ -247,19 +247,19 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
 
     CORINFO_CLASS_HANDLE typeHnd = nullptr;
 
-    if (JITtype2varType(sig->retType) == TYP_STRUCT)
-    {
-        typeHnd = sig->retTypeSigClass;
-    }
-    else if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
+    if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
     {
         typeHnd = comp->info.compCompHnd->getArgClass(sig, sig->args);
     }
-    else
+    else if (HWIntrinsicInfo::BaseTypeFromSecondArg(id))
     {
-        assert(HWIntrinsicInfo::BaseTypeFromSecondArg(id));
         CORINFO_ARG_LIST_HANDLE secondArg = comp->info.compCompHnd->getArgNext(sig->args);
         typeHnd                           = comp->info.compCompHnd->getArgClass(sig, secondArg);
+    }
+    else
+    {
+        assert(JITtype2varType(sig->retType) == TYP_STRUCT);
+        typeHnd = sig->retTypeSigClass;
     }
 
     unsigned  simdSize = 0;

@@ -31,7 +31,6 @@ namespace System.Net.Http
 
             private readonly Http2Connection _connection;
             private readonly int _streamId;
-            private readonly CreditManager _streamWindow;
             private readonly HttpRequestMessage _request;
             private HttpResponseMessage _response;
             /// <summary>Stores any trailers received after returning the response content to the caller.</summary>
@@ -39,6 +38,8 @@ namespace System.Net.Http
 
             private ArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
             private int _pendingWindowUpdate;
+            private CancelableCreditWaiter _creditWaiter;
+            private int _availableCredit;
 
             private StreamCompletionState _requestCompletionState;
             private StreamCompletionState _responseCompletionState;
@@ -104,8 +105,7 @@ namespace System.Net.Http
                 _responseBuffer = new ArrayBuffer(InitialStreamBufferSize, usePool: true);
 
                 _pendingWindowUpdate = 0;
-
-                _streamWindow = new CreditManager(this, nameof(_streamWindow), initialWindowSize);
+                _availableCredit = initialWindowSize;
 
                 _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
 
@@ -135,7 +135,7 @@ namespace System.Net.Http
                 if (NetEventSource.IsEnabled) Trace($"{request}, {nameof(initialWindowSize)}={initialWindowSize}");
             }
 
-            private object SyncObject => _streamWindow;
+            private object SyncObject => this; // this isn't handed out to code that may lock on it
 
             public int StreamId => _streamId;
 
@@ -164,7 +164,9 @@ namespace System.Net.Http
 
                 // Create a linked cancellation token source so that we can cancel the request in the event of receiving RST_STREAM
                 // and similiar situations where we need to cancel the request body (see Cancel method).
-                _requestBodyCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _requestBodyCancellationSource.Token).Token;
+                _requestBodyCancellationToken = cancellationToken.CanBeCanceled ?
+                    CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _requestBodyCancellationSource.Token).Token :
+                    _requestBodyCancellationSource.Token;
 
                 try
                 {
@@ -324,7 +326,15 @@ namespace System.Net.Http
 
                 _connection.RemoveStream(this);
 
-                _streamWindow.Dispose();
+                lock (SyncObject)
+                {
+                    CreditWaiter w = _creditWaiter;
+                    if (w != null)
+                    {
+                        w.Dispose();
+                        _creditWaiter = null;
+                    }
+                }
             }
 
             private void Cancel()
@@ -395,7 +405,21 @@ namespace System.Net.Http
                 return (signalWaiter, sendReset);
             }
 
-            public void OnWindowUpdate(int amount) => _streamWindow.AdjustCredit(amount);
+            public void OnWindowUpdate(int amount)
+            {
+                lock (SyncObject)
+                {
+                    _availableCredit = checked(_availableCredit + amount);
+                    if (_availableCredit > 0 && _creditWaiter != null && _creditWaiter.IsPending)
+                    {
+                        int granted = Math.Min(_availableCredit, _creditWaiter.Amount);
+                        if (_creditWaiter.TrySetResult(granted))
+                        {
+                            _availableCredit -= granted;
+                        }
+                    }
+                }
+            }
 
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
             {
@@ -1009,8 +1033,6 @@ namespace System.Net.Http
 
             private async ValueTask SendDataAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
-                ReadOnlyMemory<byte> remaining = buffer;
-
                 // Deal with [ActiveIssue("https://github.com/dotnet/runtime/issues/17492")]
                 // Custom HttpContent classes do not get passed the cancellationToken.
                 // So, inject the expected CancellationToken here, to ensure we can cancel the request body send if needed.
@@ -1027,17 +1049,48 @@ namespace System.Net.Http
                     cancellationToken = customCancellationSource.Token;
                 }
 
-                using (customCancellationSource)
+                try
                 {
-                    while (remaining.Length > 0)
+                    while (buffer.Length > 0)
                     {
-                        int sendSize = await _streamWindow.RequestCreditAsync(remaining.Length, cancellationToken).ConfigureAwait(false);
+                        int sendSize = -1;
+                        lock (SyncObject)
+                        {
+                            if (_availableCredit > 0)
+                            {
+                                sendSize = Math.Min(buffer.Length, _availableCredit);
+                                _availableCredit -= sendSize;
+                            }
+                            else
+                            {
+                                if (_creditWaiter is null)
+                                {
+                                    _creditWaiter = new CancelableCreditWaiter(SyncObject, cancellationToken);
+                                }
+                                else
+                                {
+                                    Debug.Assert(!_creditWaiter.IsPending);
+                                    _creditWaiter.ResetForAwait(cancellationToken);
+                                }
+                                _creditWaiter.Amount = buffer.Length;
+                            }
+                        }
+
+                        if (sendSize == -1)
+                        {
+                            sendSize = await _creditWaiter.AsValueTask().ConfigureAwait(false);
+                            _creditWaiter.CleanUp();
+                        }
 
                         ReadOnlyMemory<byte> current;
-                        (current, remaining) = SplitBuffer(remaining, sendSize);
+                        (current, buffer) = SplitBuffer(buffer, sendSize);
 
                         await _connection.SendStreamDataAsync(_streamId, current, cancellationToken).ConfigureAwait(false);
                     }
+                }
+                finally
+                {
+                    customCancellationSource?.Dispose();
                 }
             }
 

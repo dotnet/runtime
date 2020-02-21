@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace System.Net.Test.Common
 {
 
-    public sealed class Http3LoopbackStream : IDisposable
+    internal sealed class Http3LoopbackStream : IDisposable
     {
         private const int MaximumVarIntBytes = 8;
         private const long VarIntMax = (1L << 62) - 1;

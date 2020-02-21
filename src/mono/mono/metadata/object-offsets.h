@@ -241,6 +241,14 @@ DECL_OFFSET(DynCallArgs, fpregs)
 DECL_OFFSET(DynCallArgs, n_stackargs)
 DECL_OFFSET(DynCallArgs, n_fpargs)
 DECL_OFFSET(DynCallArgs, n_fpret)
+#elif defined(TARGET_S390X)
+DECL_OFFSET(MonoLMF, pregs)
+DECL_OFFSET(MonoLMF, lmf_addr)
+DECL_OFFSET(MonoLMF, method)
+DECL_OFFSET(MonoLMF, ebp)
+DECL_OFFSET(MonoLMF, eip)
+DECL_OFFSET(MonoLMF, gregs)
+DECL_OFFSET(MonoLMF, fregs)
 #endif
 
 // Shared architecture offfsets

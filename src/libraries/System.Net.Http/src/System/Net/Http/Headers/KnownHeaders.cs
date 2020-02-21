@@ -19,11 +19,11 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader AcceptLanguage = new KnownHeader("Accept-Language", HttpHeaderType.Request, GenericHeaderParser.MultipleValueStringWithQualityParser, null, H2StaticTable.AcceptLanguage, H3StaticTable.AcceptLanguage);
         public static readonly KnownHeader AcceptPatch = new KnownHeader("Accept-Patch");
         public static readonly KnownHeader AcceptRanges = new KnownHeader("Accept-Ranges", HttpHeaderType.Response, GenericHeaderParser.TokenListParser, null, H2StaticTable.AcceptRanges, H3StaticTable.AcceptRangesBytes);
-        public static readonly KnownHeader AccessControlAllowCredentials = new KnownHeader("Access-Control-Allow-Credentials", http3StaticTableIndex: H3StaticTable.AccessControlAllowCredentials);
-        public static readonly KnownHeader AccessControlAllowHeaders = new KnownHeader("Access-Control-Allow-Headers", http3StaticTableIndex: H3StaticTable.AccessControlAllowHeadersCacheControl);
-        public static readonly KnownHeader AccessControlAllowMethods = new KnownHeader("Access-Control-Allow-Methods", http3StaticTableIndex: H3StaticTable.AccessControlAllowMethodsGet);
-        public static readonly KnownHeader AccessControlAllowOrigin = new KnownHeader("Access-Control-Allow-Origin", H2StaticTable.AccessControlAllowOrigin, H3StaticTable.AccessControlAllowOriginAny);
-        public static readonly KnownHeader AccessControlExposeHeaders = new KnownHeader("Access-Control-Expose-Headers", H3StaticTable.AccessControlExposeHeadersContentLength);
+        public static readonly KnownHeader AccessControlAllowCredentials = new KnownHeader("Access-Control-Allow-Credentials", HttpHeaderType.Response, parser: null, new string[] { "true" }, http3StaticTableIndex: H3StaticTable.AccessControlAllowCredentials);
+        public static readonly KnownHeader AccessControlAllowHeaders = new KnownHeader("Access-Control-Allow-Headers", HttpHeaderType.Response, parser: null, new string[] { "*" }, http3StaticTableIndex: H3StaticTable.AccessControlAllowHeadersCacheControl);
+        public static readonly KnownHeader AccessControlAllowMethods = new KnownHeader("Access-Control-Allow-Methods", HttpHeaderType.Response, parser: null, new string[] { "*" }, http3StaticTableIndex: H3StaticTable.AccessControlAllowMethodsGet);
+        public static readonly KnownHeader AccessControlAllowOrigin = new KnownHeader("Access-Control-Allow-Origin", HttpHeaderType.Response, parser: null, new string[] { "*", "null" }, H2StaticTable.AccessControlAllowOrigin, H3StaticTable.AccessControlAllowOriginAny);
+        public static readonly KnownHeader AccessControlExposeHeaders = new KnownHeader("Access-Control-Expose-Headers", HttpHeaderType.Response, parser: null, new string[] { "*" }, H3StaticTable.AccessControlExposeHeadersContentLength);
         public static readonly KnownHeader AccessControlMaxAge = new KnownHeader("Access-Control-Max-Age");
         public static readonly KnownHeader Age = new KnownHeader("Age", HttpHeaderType.Response | HttpHeaderType.NonTrailing, TimeSpanHeaderParser.Parser, null, H2StaticTable.Age, H3StaticTable.Age0);
         public static readonly KnownHeader Allow = new KnownHeader("Allow", HttpHeaderType.Content, GenericHeaderParser.TokenListParser, null, H2StaticTable.Allow);

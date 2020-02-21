@@ -4546,8 +4546,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						// Set the method to be executed as part of newobj instruction
 						newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 					} else {
-						// Runtime (interp_exec_method_full in interp.c) inserts extra stack to hold return value, before call.
-						simulate_runtime_stack_increase (td, 1);
+						// Runtime (interp_exec_method_full in interp.c) inserts
+						// extra stack to hold this and return value, before call.
+						simulate_runtime_stack_increase (td, 2);
 
 						if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT)
 							interp_add_ins (td, MINT_NEWOBJ_VTST_FAST);
@@ -4562,6 +4563,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						}
 					}
 				} else {
+					// Runtime (interp_exec_method_full in interp.c) inserts
+					// extra stack to hold this and return value, before call.
+					simulate_runtime_stack_increase (td, 2);
 					interp_add_ins (td, MINT_NEWOBJ);
 					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 				}
