@@ -114,14 +114,18 @@ void EventPipe::EnableViaEnvironmentVariables()
     STANDARD_VM_CONTRACT;
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableEventPipe) != 0)
     {
-        LPWSTR eventpipeConfig = NULL;
-        CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeConfig, &eventpipeConfig);
-        LPCWSTR eventpipeOutputPath = Configuration::GetKnobStringValue(W("EventPipeOutputPath"));
+        CLRConfigStringHolder eventpipeConfig(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeConfig));
+        CLRConfigStringHolder configOutputPath(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeOutputPath));
         uint32_t eventpipeCircularBufferMB = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeCircularMB);
+        LPCWSTR outputPath = nullptr;
 
-        if (eventpipeOutputPath == NULL)
+        if (configOutputPath == NULL)
         {
-            eventpipeOutputPath = W("trace.nettrace");
+            outputPath = W("trace.nettrace");
+        }
+        else
+        {
+            outputPath = configOutputPath;
         }
         auto configuration = XplatEventLoggerConfiguration();
         LPWSTR configToParse = eventpipeConfig;
@@ -191,7 +195,7 @@ void EventPipe::EnableViaEnvironmentVariables()
         if (providerCnt != 0)
         {
             uint64_t sessionID = EventPipe::Enable(
-                eventpipeOutputPath,
+                outputPath,
                 eventpipeCircularBufferMB,
                 pProviders,
                 providerCnt,
