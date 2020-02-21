@@ -44,7 +44,8 @@ namespace System.Net.Sockets.Tests
             Assert.False(listener.Active);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void AllowNatTraversal_NotStarted_SetSuccessfully()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
