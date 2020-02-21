@@ -72,7 +72,7 @@ jobs:
     - Windows_NT_x86
     jobParameters:
       useVsPreviewPool: true
-      liveRuntimeBuildConfig: Release
+      liveRuntimeBuildConfig: release
 
     
 - template: /eng/pipelines/common/platform-matrix.yml
