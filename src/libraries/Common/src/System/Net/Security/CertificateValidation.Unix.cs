@@ -33,7 +33,7 @@ namespace System.Net.Security
             int hostNameMatch;
             using (SafeX509Handle certHandle = Interop.Crypto.X509UpRef(remoteCertificate.Handle))
             {
-                IPAddress hostnameAsIp;
+                IPAddress? hostnameAsIp;
                 if (IPAddress.TryParse(hostName, out hostnameAsIp))
                 {
                     byte[] addressBytes = hostnameAsIp.GetAddressBytes();
