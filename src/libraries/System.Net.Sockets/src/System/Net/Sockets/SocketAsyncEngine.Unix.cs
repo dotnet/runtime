@@ -301,6 +301,10 @@ namespace System.Net.Sockets
 
                     _aioContext = aioContext;
                 }
+                else
+                {
+                    Debug.Assert(Interop.Sys.IsAioSupported() == false, "When AIO is supported IoSetup should always succeed");
+                }
 
                 //
                 // Start the event loop on its own thread.
@@ -423,7 +427,7 @@ namespace System.Net.Sockets
 
                 if (batchedCount > 0)
                 {
-                    int result = Interop.Sys.IoSubmit(_aioContext, batchedCount, _aioBlocksPointers);
+                    int result = Interop.Sys.IoSubmit(_aioContext.Ring, batchedCount, _aioBlocksPointers);
                     if (result != batchedCount)
                     {
                         Interop.Error lastError = Interop.Sys.GetLastError();
@@ -431,7 +435,7 @@ namespace System.Net.Sockets
                     }
 
                     // todo: perf: avoid the syscall by using a well known pattern that reads from the ring
-                    result = Interop.Sys.IoGetEvents(_aioContext, batchedCount, batchedCount, _aioEvents);
+                    result = Interop.Sys.IoGetEvents(_aioContext.Ring, batchedCount, batchedCount, _aioEvents);
                     if (result != batchedCount)
                     {
                         Interop.Error lastError = Interop.Sys.GetLastError();
@@ -480,7 +484,7 @@ namespace System.Net.Sockets
             }
             if (_aioContext.Ring != null)
             {
-                Interop.Sys.IoDestroy(_aioContext);
+                Interop.Sys.IoDestroy(_aioContext.Ring);
                 Marshal.FreeHGlobal(new IntPtr((void*)_aioEvents));
                 Marshal.FreeHGlobal(new IntPtr((void*)_aioBlocksPointers));
                 Marshal.FreeHGlobal(new IntPtr((void*)_aioBlocks));

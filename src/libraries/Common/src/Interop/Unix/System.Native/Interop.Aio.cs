@@ -111,16 +111,19 @@ internal static partial class Interop
             internal const int IOCB_CMD_PWRITEV = 8;
         }
 
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_IsAioSupported")]
+        internal static extern bool IsAioSupported();
+
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_IoSetup", SetLastError = true)]
-        internal static unsafe extern int IoSetup(uint eventsCount, AioContext* context);
+        internal static extern unsafe int IoSetup(uint eventsCount, AioContext* context);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_IoDestroy", SetLastError = true)]
-        internal static extern int IoDestroy(AioContext context);
+        internal static extern unsafe int IoDestroy(AioRing* ring);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_IoSubmit", SetLastError = true)]
-        internal static unsafe extern int IoSubmit(AioContext context, long controlBlocksCount, IoControlBlock** ioControlBlocks);
+        internal static extern unsafe int IoSubmit(AioRing* ring, long controlBlocksCount, IoControlBlock** ioControlBlocks);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_IoGetEvents", SetLastError = true)]
-        internal static unsafe extern int IoGetEvents(AioContext context, long minimumEventsCount, long maximumEventsCount, IoEvent* ioEvents);
+        internal static extern unsafe int IoGetEvents(AioRing* ring, long minimumEventsCount, long maximumEventsCount, IoEvent* ioEvents);
     }
 }

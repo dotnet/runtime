@@ -466,10 +466,12 @@ DLLEXPORT int32_t SystemNative_Disconnect(intptr_t socket);
 
 DLLEXPORT uint32_t SystemNative_InterfaceNameToIndex(char* interfaceName);
 
+DLLEXPORT int32_t SystemNative_IsAioSupported(void);
+
 DLLEXPORT int32_t SystemNative_IoSetup(uint32_t eventsCount, AioContext* context);
 
-DLLEXPORT int32_t SystemNative_IoDestroy(AioContext context);
+DLLEXPORT int32_t SystemNative_IoDestroy(AioRing* ring);
 
-DLLEXPORT int32_t SystemNative_IoSubmit(AioContext context, int64_t count, IoControlBlock** ioControlBlocks);
+DLLEXPORT int32_t SystemNative_IoSubmit(AioRing* ring, int64_t controlBlocksCount, IoControlBlock** ioControlBlocks);
 
-DLLEXPORT int32_t SystemNative_IoGetEvents(AioContext context, int64_t minNr, int64_t nr, IoEvent* ioEvents);
+DLLEXPORT int32_t SystemNative_IoGetEvents(AioRing* ring, int64_t minEventsCount, int64_t maxEventsCount, IoEvent* ioEvents);
