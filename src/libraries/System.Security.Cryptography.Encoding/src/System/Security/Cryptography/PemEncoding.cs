@@ -31,6 +31,10 @@ namespace System.Security.Cryptography
         /// A value that specifies the location, label, and data location of
         /// the encoded data.
         /// </returns>
+        /// <remarks>
+        /// IETF RFC 7468 permits different decoding rules. This method
+        /// always uses lax rules.
+        /// </remarks>
         public static PemFields Find(ReadOnlySpan<char> pemData)
         {
             if (!TryFind(pemData, out PemFields fields))
@@ -55,6 +59,10 @@ namespace System.Security.Cryptography
         /// <returns>
         /// <c>true</c> if PEM-encoded data was found; otherwise <c>false</c>.
         /// </returns>
+        /// <remarks>
+        /// IETF RFC 7468 permits different decoding rules. This method
+        /// always uses lax rules.
+        /// </remarks>
         public static bool TryFind(ReadOnlySpan<char> pemData, out PemFields fields)
         {
             // Check for the minimum possible encoded length of a PEM structure
@@ -94,7 +102,6 @@ namespace System.Security.Cryptography
                 }
 
                 int labelEndingIndex = labelStartIndex + preebEndIndex;
-                int contentStartIndex = labelEndingIndex + Ending.Length;
                 ReadOnlySpan<char> label = pemArea[labelStartIndex..labelEndingIndex];
 
                 // There could be a preeb that is valid after this one if it has an invalid
@@ -104,13 +111,15 @@ namespace System.Security.Cryptography
                     goto next_after_label;
                 }
 
-                Range labelRange = (areaOffset + labelStartIndex)..(areaOffset + labelEndingIndex);
+                int contentStartIndex = labelEndingIndex + Ending.Length;
+                Range labelRange = (areaOffset + labelStartIndex)..
+                                   (areaOffset + labelEndingIndex);
                 int postebLength = PostEBPrefix.Length + label.Length + Ending.Length;
-                Span<char> postebBuffer = postebLength > postebStackBufferSize ? new char[postebLength] : postebStackBuffer;
-                PostEBPrefix.AsSpan().CopyTo(postebBuffer);
-                label.CopyTo(postebBuffer[PostEBPrefix.Length..]);
-                Ending.AsSpan().CopyTo(postebBuffer[(PostEBPrefix.Length + label.Length)..]);
-                ReadOnlySpan<char> posteb = postebBuffer[..postebLength];
+
+                Span<char> postebBuffer = postebLength > postebStackBufferSize
+                    ? new char[postebLength]
+                    : postebStackBuffer;
+                ReadOnlySpan<char> posteb = WritePostEB(label, postebBuffer);
                 int postebStartIndex = pemArea[contentStartIndex..].IndexOf(posteb);
 
                 if (postebStartIndex < 0)
@@ -127,7 +136,8 @@ namespace System.Security.Cryptography
                     goto next_after_label;
                 }
 
-                Range contentRange = (areaOffset + contentStartIndex)..(areaOffset + contentEndIndex);
+                Range contentRange = (areaOffset + contentStartIndex)..
+                                     (areaOffset + contentEndIndex);
 
                 if (!IsValidBase64(pemArea[contentStartIndex..contentEndIndex],
                                    out int base64start,
@@ -141,16 +151,19 @@ namespace System.Security.Cryptography
                 }
 
                 Range pemRange = (areaOffset + preebIndex)..(areaOffset + pemEndIndex);
-                Range base64range = (contentStartIndex + base64start + areaOffset)..(contentEndIndex + base64end + areaOffset);
+                Range base64range = (contentStartIndex + base64start + areaOffset)..
+                                    (contentEndIndex + base64end + areaOffset);
                 fields = new PemFields(labelRange, base64range, pemRange, decodedSize);
                 return true;
 
                 next_after_label:
-                if (labelEndingIndex == 0)
+                if (labelEndingIndex <= 0)
                 {
-                    // We somehow ended up in a situation where we will advance 0 characters, which means we'll
-                    // we'll probably end up here again in a loop. To avoid getting stuck in a loop, detect this
-                    // situation and return.
+                    // We somehow ended up in a situation where we will advance
+                    // 0 or -1 characters, which means we'll probably end up here again,
+                    // advancing 0 or -1 characters, in a loop. To avoid getting stuck,
+                    // detect this situation and return.
+                    Debug.Assert(labelEndingIndex > 0);
                     fields = default;
                     return false;
                 }
@@ -160,6 +173,16 @@ namespace System.Security.Cryptography
 
             fields = default;
             return false;
+
+            static ReadOnlySpan<char> WritePostEB(ReadOnlySpan<char> label, Span<char> destination)
+            {
+                int size = PostEBPrefix.Length + label.Length + Ending.Length;
+                Debug.Assert(destination.Length >= size);
+                PostEBPrefix.AsSpan().CopyTo(destination);
+                label.CopyTo(destination[PostEBPrefix.Length..]);
+                Ending.AsSpan().CopyTo(destination[(PostEBPrefix.Length + label.Length)..]);
+                return destination[..size];
+            }
         }
 
         private static bool IsValidLabel(ReadOnlySpan<char> data)
