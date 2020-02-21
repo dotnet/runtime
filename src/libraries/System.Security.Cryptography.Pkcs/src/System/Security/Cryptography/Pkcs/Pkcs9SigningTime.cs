@@ -59,7 +59,7 @@ namespace System.Security.Cryptography.Pkcs
         // Private methods.
         //
 
-        private static DateTime Decode(byte[] rawData)
+        private static DateTime Decode(byte[]? rawData)
         {
             if (rawData == null)
                 return default(DateTime);

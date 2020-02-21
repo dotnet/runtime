@@ -2,7 +2,7 @@
   <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
 
   <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
-    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);package-$(Configuration)</AdditionalBuildConfigurations>
+    <AdditionalBuildTargetFrameworks>$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">

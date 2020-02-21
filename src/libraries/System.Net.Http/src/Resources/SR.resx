@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -117,16 +117,43 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="net_quic_connectionaborted" xml:space="preserve">
-    <value>Connection aborted by peer ({0}).</value>
+  <data name="net_http_headers_exceeded_length" xml:space="preserve">
+    <value>The HTTP headers length exceeded the set limit of {0} bytes.</value>
   </data>
-  <data name="net_quic_notsupported" xml:space="preserve">
-    <value>QUIC is not supported on this platform. See http://aka.ms/dotnetquic</value>
+  <data name="net_http_headers_invalid_header_name" xml:space="preserve">
+    <value>The header name format is invalid.</value>
   </data>
-  <data name="net_quic_operationaborted" xml:space="preserve">
-    <value>Operation aborted.</value>
+  <data name="net_http_hpack_bad_integer" xml:space="preserve">
+    <value>HPACK integer exceeds limits or has an overlong encoding.</value>
   </data>
-  <data name="net_quic_streamaborted" xml:space="preserve">
-    <value>Stream aborted by peer ({0}).</value>
+  <data name="net_http_hpack_encode_failure" xml:space="preserve">
+    <value>Failed to HPACK encode the headers.</value>
+  </data>
+  <data name="net_http_hpack_huffman_decode_failed" xml:space="preserve">
+    <value>Huffman-coded literal string failed to decode.</value>
+  </data>
+  <data name="net_http_hpack_incomplete_header_block" xml:space="preserve">
+    <value>Incomplete header block received.</value>
+  </data>
+  <data name="net_http_hpack_invalid_index" xml:space="preserve">
+    <value>Invalid header index: {0} is outside of static table and no dynamic table entry found.</value>
+  </data>
+  <data name="net_http_hpack_large_table_size_update" xml:space="preserve">
+    <value>A dynamic table size update of {0} octets is greater than the configured maximum size of {1} octets.</value>
+  </data>
+  <data name="net_http_hpack_late_dynamic_table_size_update" xml:space="preserve">
+    <value>Dynamic table size update received after beginning of header block.</value>
+  </data>
+  <data name="net_http_hpack_unexpected_end" xml:space="preserve">
+    <value>End of headers reached with incomplete token.</value>
+  </data>
+  <data name="net_http_invalid_header_name" xml:space="preserve">
+    <value>Received an invalid header name: '{0}'.</value>
+  </data>
+  <data name="net_http_qpack_no_dynamic_table" xml:space="preserve">
+    <value>No dynamic table support</value>
+  </data>
+  <data name="net_http_request_invalid_char_encoding" xml:space="preserve">
+    <value>Request headers must contain only ASCII characters.</value>
   </data>
 </root>

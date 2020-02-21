@@ -5388,6 +5388,7 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppD
     // If it doesn't exist, create it.
     if (dmod == NULL)
     {
+        LOG((LF_CORDB, LL_INFO1000, "D::LOCM dmod for m=0x%x ad=0x%x not found, creating.\n", pModule, pAppDomain));
         HRESULT hr = S_OK;
         EX_TRY
         {
@@ -5402,7 +5403,8 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppD
     // The module must be in the AppDomain that was requested
     _ASSERTE( (dmod == NULL) || (dmod->GetAppDomain() == pAppDomain) );
 
-    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=0x%x ad=0x%x -> dm=0x%x\n", pModule, pAppDomain, dmod));
+    LOG((LF_CORDB, LL_INFO1000, "D::LOCM m=0x%x ad=0x%x -> dm=0x%x(Mod=0x%x, DomFile=0x%x, AD=0x%x)\n",
+        pModule, pAppDomain, dmod, dmod->GetRuntimeModule(), dmod->GetDomainFile(), dmod->GetAppDomain()));
     return dmod;
 }
 
@@ -10010,8 +10012,10 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
         }
         _ASSERTE(module != NULL);
 
-        STRESS_LOG3(LF_CORDB, LL_INFO10000, "D::UM: Unloading Mod:%#08x, %#08x, %#08x\n",
-            pRuntimeModule, pAppDomain, pRuntimeModule->IsIStream());
+        STRESS_LOG6(LF_CORDB, LL_INFO10000,
+            "D::UM: Unloading RTMod:%#08x (DomFile: %#08x, IsISStream:%#08x); DMod:%#08x(RTMod:%#08x DomFile: %#08x)\n",
+            pRuntimeModule, pRuntimeModule->GetDomainFile(), pRuntimeModule->IsIStream(),
+            module, module->GetRuntimeModule(), module->GetDomainFile());
 
         // Note: the appdomain the module was loaded in must match the appdomain we're unloading it from. If it doesn't,
         // then we've either found the wrong DebuggerModule in LookupModule or we were passed bad data.

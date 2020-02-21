@@ -35695,34 +35695,7 @@ void
 gc_heap::verify_heap (BOOL begin_gc_p)
 {
     int             heap_verify_level = static_cast<int>(GCConfig::GetHeapVerifyLevel());
-    size_t          last_valid_brick = 0;
-    BOOL            bCurrentBrickInvalid = FALSE;
-    BOOL            large_brick_p = TRUE;
-    size_t          curr_brick = 0;
-    size_t          prev_brick = (size_t)-1;
     
-    // go through all generations starting with the highest
-    int             curr_gen_num = (total_generation_count - 1);    
-    heap_segment*   seg = heap_segment_in_range (generation_start_segment (generation_of (curr_gen_num ) ));
-
-    PREFIX_ASSUME(seg != NULL);
-
-    uint8_t*        curr_object = heap_segment_mem (seg);
-    uint8_t*        prev_object = 0;
-    uint8_t*        begin_youngest = generation_allocation_start(generation_of(0));
-    uint8_t*        end_youngest = heap_segment_allocated (ephemeral_heap_segment);
-    uint8_t*        next_boundary = generation_allocation_start (generation_of (max_generation - 1));
-    int             align_const = get_alignment_constant (FALSE);
-    size_t          total_objects_verified = 0;
-    size_t          total_objects_verified_deep = 0;
-
-#ifdef BACKGROUND_GC
-    BOOL consider_bgc_mark_p    = FALSE;
-    BOOL check_current_sweep_p  = FALSE;
-    BOOL check_saved_sweep_p    = FALSE;
-    should_check_bgc_mark (seg, &consider_bgc_mark_p, &check_current_sweep_p, &check_saved_sweep_p);
-#endif //BACKGROUND_GC
-
 #ifdef MULTIPLE_HEAPS
     t_join* current_join = &gc_t_join;
 #ifdef BACKGROUND_GC
@@ -35831,279 +35804,267 @@ gc_heap::verify_heap (BOOL begin_gc_p)
         }
     }
 
-    while (1)
+    size_t          total_objects_verified = 0;
+    size_t          total_objects_verified_deep = 0;
+
+    BOOL            bCurrentBrickInvalid = FALSE;
+    size_t          last_valid_brick = 0;
+    size_t          curr_brick = 0;
+    size_t          prev_brick = (size_t)-1;
+    uint8_t*        begin_youngest = generation_allocation_start(generation_of(0));
+    uint8_t*        next_boundary = generation_allocation_start (generation_of (max_generation - 1));
+
+    // go through all generations starting with the highest
+    for (int curr_gen_num = total_generation_count - 1; curr_gen_num >= max_generation; curr_gen_num--)
     {
-        // Handle segment transitions
-        if (curr_object >= heap_segment_allocated (seg))
+        int             align_const = get_alignment_constant (curr_gen_num == max_generation);
+        BOOL            large_brick_p = (curr_gen_num != max_generation);
+
+        heap_segment*   seg = heap_segment_in_range (generation_start_segment (generation_of (curr_gen_num) ));
+
+        while (seg)
         {
+            uint8_t*        curr_object = heap_segment_mem (seg);
+            uint8_t*        prev_object = 0;
+
+        #ifdef BACKGROUND_GC
+            BOOL consider_bgc_mark_p    = FALSE;
+            BOOL check_current_sweep_p  = FALSE;
+            BOOL check_saved_sweep_p    = FALSE;
+            should_check_bgc_mark (seg, &consider_bgc_mark_p, &check_current_sweep_p, &check_saved_sweep_p);
+        #endif //BACKGROUND_GC
+
+            while (curr_object < heap_segment_allocated (seg))
+            {
+                 //if (is_mark_set (curr_object))
+                 //{
+                 //        printf ("curr_object: %Ix is marked!",(size_t)curr_object);
+                 //        FATAL_GC_ERROR();
+                 //}
+
+                size_t s = size (curr_object);
+                dprintf (3, ("o: %Ix, s: %d", (size_t)curr_object, s));
+                if (s == 0)
+                {
+                    dprintf (3, ("Verifying Heap: size of current object %Ix == 0", curr_object));
+                    FATAL_GC_ERROR();
+                }
+
+                // handle generation boundaries within ephemeral segment
+                if (seg == ephemeral_heap_segment)
+                {
+                    if ((curr_gen_num > 0) && (curr_object >= next_boundary))
+                    {
+                        curr_gen_num--;
+                        if (curr_gen_num > 0)
+                        {
+                            next_boundary = generation_allocation_start (generation_of (curr_gen_num - 1));
+                        }
+                    }
+                }
+
+                // If object is not in the youngest generation, then lets
+                // verify that the brick table is correct....
+                if (((seg != ephemeral_heap_segment) ||
+                     (brick_of(curr_object) < brick_of(begin_youngest))))
+                {
+                    curr_brick = brick_of(curr_object);
+
+                    // Brick Table Verification...
+                    //
+                    // On brick transition
+                    //     if brick is negative
+                    //          verify that brick indirects to previous valid brick
+                    //     else
+                    //          set current brick invalid flag to be flipped if we
+                    //          encounter an object at the correct place
+                    //
+                    if (curr_brick != prev_brick)
+                    {
+                        // If the last brick we were examining had positive
+                        // entry but we never found the matching object, then
+                        // we have a problem
+                        // If prev_brick was the last one of the segment
+                        // it's ok for it to be invalid because it is never looked at
+                        if (bCurrentBrickInvalid &&
+                            (curr_brick != brick_of (heap_segment_mem (seg))) &&
+                            !heap_segment_read_only_p (seg))
+                        {
+                            dprintf (3, ("curr brick %Ix invalid", curr_brick));
+                            FATAL_GC_ERROR();
+                        }
+
+                        if (large_brick_p)
+                        {
+                            //large objects verify the table only if they are in
+                            //range.
+                            if ((heap_segment_reserved (seg) <= highest_address) &&
+                                (heap_segment_mem (seg) >= lowest_address) &&
+                                brick_table [curr_brick] != 0)
+                            {
+                                dprintf (3, ("curr_brick %Ix for large object %Ix not set to -32768",
+                                        curr_brick, (size_t)curr_object));
+                                FATAL_GC_ERROR();
+                            }
+                            else
+                            {
+                                bCurrentBrickInvalid = FALSE;
+                            }
+                        }
+                        else
+                        {
+                            // If the current brick contains a negative value make sure
+                            // that the indirection terminates at the last  valid brick
+                            if (brick_table [curr_brick] <= 0)
+                            {
+                                if (brick_table [curr_brick] == 0)
+                                {
+                                    dprintf(3, ("curr_brick %Ix for object %Ix set to 0",
+                                            curr_brick, (size_t)curr_object));
+                                    FATAL_GC_ERROR();
+                                }
+                                ptrdiff_t i = curr_brick;
+                                while ((i >= ((ptrdiff_t) brick_of (heap_segment_mem (seg)))) &&
+                                       (brick_table[i] < 0))
+                                {
+                                    i = i + brick_table[i];
+                                }
+                                if (i <  ((ptrdiff_t)(brick_of (heap_segment_mem (seg))) - 1))
+                                {
+                                    dprintf (3, ("ptrdiff i: %Ix < brick_of (heap_segment_mem (seg)):%Ix - 1. curr_brick: %Ix",
+                                            i, brick_of (heap_segment_mem (seg)),
+                                            curr_brick));
+                                    FATAL_GC_ERROR();
+                                }
+                                // if (i != last_valid_brick)
+                                //  FATAL_GC_ERROR();
+                                bCurrentBrickInvalid = FALSE;
+                            }
+                            else if (!heap_segment_read_only_p (seg))
+                            {
+                                bCurrentBrickInvalid = TRUE;
+                            }
+                        }
+                    }
+
+                    if (bCurrentBrickInvalid)
+                    {
+                        if (curr_object == (brick_address(curr_brick) + brick_table[curr_brick] - 1))
+                        {
+                            bCurrentBrickInvalid = FALSE;
+                            last_valid_brick = curr_brick;
+                        }
+                    }
+                }
+
+                if (*((uint8_t**)curr_object) != (uint8_t *) g_gc_pFreeObjectMethodTable)
+                {
+        #ifdef FEATURE_LOH_COMPACTION
+                    if ((curr_gen_num == loh_generation) && (prev_object != 0))
+                    {
+                        assert (method_table (prev_object) == g_gc_pFreeObjectMethodTable);
+                    }
+        #endif //FEATURE_LOH_COMPACTION
+
+                    total_objects_verified++;
+
+                    BOOL can_verify_deep = TRUE;
+        #ifdef BACKGROUND_GC
+                    can_verify_deep = fgc_should_consider_object (curr_object, seg, consider_bgc_mark_p, check_current_sweep_p, check_saved_sweep_p);
+        #endif //BACKGROUND_GC
+
+                    BOOL deep_verify_obj = can_verify_deep;
+                    if ((heap_verify_level & GCConfig::HEAPVERIFY_DEEP_ON_COMPACT) && !settings.compaction)
+                        deep_verify_obj = FALSE;
+
+                    ((CObjectHeader*)curr_object)->ValidateHeap((Object*)curr_object, deep_verify_obj);
+
+                    if (can_verify_deep)
+                    {
+                        if (curr_gen_num > 0)
+                        {
+                            BOOL need_card_p = FALSE;
+                            if (contain_pointers_or_collectible (curr_object))
+                            {
+                                dprintf (4, ("curr_object: %Ix", (size_t)curr_object));
+                                size_t crd = card_of (curr_object);
+                                BOOL found_card_p = card_set_p (crd);
+
+        #ifdef COLLECTIBLE_CLASS
+                                if (is_collectible(curr_object))
+                                {
+                                    uint8_t* class_obj = get_class_object (curr_object);
+                                    if ((class_obj < ephemeral_high) && (class_obj >= next_boundary))
+                                    {
+                                        if (!found_card_p)
+                                        {
+                                            dprintf (3, ("Card not set, curr_object = [%Ix:%Ix pointing to class object %Ix",
+                                                        card_of (curr_object), (size_t)curr_object, class_obj));
+
+                                            FATAL_GC_ERROR();
+                                        }
+                                    }
+                                }
+        #endif //COLLECTIBLE_CLASS
+
+                                if (contain_pointers(curr_object))
+                                {
+                                    go_through_object_nostart
+                                        (method_table(curr_object), curr_object, s, oo,
+                                        {
+                                            if ((crd != card_of ((uint8_t*)oo)) && !found_card_p)
+                                            {
+                                                crd = card_of ((uint8_t*)oo);
+                                                found_card_p = card_set_p (crd);
+                                                need_card_p = FALSE;
+                                            }
+                                            if ((*oo < ephemeral_high) && (*oo >= next_boundary))
+                                            {
+                                                need_card_p = TRUE;
+                                            }
+
+                                        if (need_card_p && !found_card_p)
+                                        {
+
+                                                dprintf (3, ("Card not set, curr_object = [%Ix:%Ix, %Ix:%Ix[",
+                                                            card_of (curr_object), (size_t)curr_object,
+                                                            card_of (curr_object+Align(s, align_const)), (size_t)curr_object+Align(s, align_const)));
+                                                FATAL_GC_ERROR();
+                                            }
+                                        }
+                                            );
+                                }
+                                if (need_card_p && !found_card_p)
+                                {
+                                    dprintf (3, ("Card not set, curr_object = [%Ix:%Ix, %Ix:%Ix[",
+                                            card_of (curr_object), (size_t)curr_object,
+                                            card_of (curr_object+Align(s, align_const)), (size_t)curr_object+Align(s, align_const)));
+                                    FATAL_GC_ERROR();
+                                }
+                            }
+                        }
+                        total_objects_verified_deep++;
+                    }
+                }
+
+                prev_object = curr_object;
+                prev_brick = curr_brick;
+                curr_object = curr_object + Align(s, align_const);
+                if (curr_object < prev_object)
+                {
+                    dprintf (3, ("overflow because of a bad object size: %Ix size %Ix", prev_object, s));
+                    FATAL_GC_ERROR();
+                }
+            }
+
             if (curr_object > heap_segment_allocated(seg))
             {
                 dprintf (3, ("Verifiying Heap: curr_object: %Ix > heap_segment_allocated (seg: %Ix)",
                         (size_t)curr_object, (size_t)seg));
                 FATAL_GC_ERROR();
             }
+
             seg = heap_segment_next_in_range (seg);
-            if (seg)
-            {
-#ifdef BACKGROUND_GC
-                should_check_bgc_mark (seg, &consider_bgc_mark_p, &check_current_sweep_p, &check_saved_sweep_p);
-#endif //BACKGROUND_GC
-                curr_object = heap_segment_mem(seg);
-                prev_object = 0;
-                continue;
-            }
-            else
-            {
-                if (curr_gen_num > max_generation)
-                {
-                    curr_gen_num--;
-                    seg = heap_segment_in_range (generation_start_segment (generation_of (curr_gen_num)));
-
-                    PREFIX_ASSUME(seg != NULL);
-
-#ifdef BACKGROUND_GC
-                    should_check_bgc_mark (seg, &consider_bgc_mark_p, &check_current_sweep_p, &check_saved_sweep_p);
-#endif //BACKGROUND_GC
-                    curr_object = heap_segment_mem (seg);
-                    prev_object = 0;
-                    large_brick_p = FALSE;
-                    align_const = get_alignment_constant (TRUE);
-                }
-                else
-                    break;  // Done Verifying Heap -- no more segments
-            }
-        }
-
-        // Are we at the end of the youngest_generation?
-        if (seg == ephemeral_heap_segment)
-        {
-            if (curr_object >= end_youngest)
-            {
-                // prev_object length is too long if we hit this int3
-                if (curr_object > end_youngest)
-                {
-                    dprintf (3, ("Verifiying Heap: curr_object: %Ix > end_youngest: %Ix",
-                            (size_t)curr_object, (size_t)end_youngest));
-                    FATAL_GC_ERROR();
-                }
-                break;
-            }
-
-            if ((curr_object >= next_boundary) && (curr_gen_num > 0))
-            {
-                curr_gen_num--;
-                if (curr_gen_num > 0)
-                {
-                    next_boundary = generation_allocation_start (generation_of (curr_gen_num - 1));
-                }
-            }
-        }
-
-         //if (is_mark_set (curr_object))
-         //{
-         //        printf ("curr_object: %Ix is marked!",(size_t)curr_object);
-         //        FATAL_GC_ERROR();
-         //}
-
-        size_t s = size (curr_object);
-        dprintf (3, ("o: %Ix, s: %d", (size_t)curr_object, s));
-        if (s == 0)
-        {
-            dprintf (3, ("Verifying Heap: size of current object %Ix == 0", curr_object));
-            FATAL_GC_ERROR();
-        }
-
-        // If object is not in the youngest generation, then lets
-        // verify that the brick table is correct....
-        if (((seg != ephemeral_heap_segment) ||
-             (brick_of(curr_object) < brick_of(begin_youngest))))
-        {
-            curr_brick = brick_of(curr_object);
-
-            // Brick Table Verification...
-            //
-            // On brick transition
-            //     if brick is negative
-            //          verify that brick indirects to previous valid brick
-            //     else
-            //          set current brick invalid flag to be flipped if we
-            //          encounter an object at the correct place
-            //
-            if (curr_brick != prev_brick)
-            {
-                // If the last brick we were examining had positive
-                // entry but we never found the matching object, then
-                // we have a problem
-                // If prev_brick was the last one of the segment
-                // it's ok for it to be invalid because it is never looked at
-                if (bCurrentBrickInvalid &&
-                    (curr_brick != brick_of (heap_segment_mem (seg))) &&
-                    !heap_segment_read_only_p (seg))
-                {
-                    dprintf (3, ("curr brick %Ix invalid", curr_brick));
-                    FATAL_GC_ERROR();
-                }
-
-                if (large_brick_p)
-                {
-                    //large objects verify the table only if they are in
-                    //range.
-                    if ((heap_segment_reserved (seg) <= highest_address) &&
-                        (heap_segment_mem (seg) >= lowest_address) &&
-                        brick_table [curr_brick] != 0)
-                    {
-                        dprintf (3, ("curr_brick %Ix for large object %Ix not set to -32768",
-                                curr_brick, (size_t)curr_object));
-                        FATAL_GC_ERROR();
-                    }
-                    else
-                    {
-                        bCurrentBrickInvalid = FALSE;
-                    }
-                }
-                else
-                {
-                    // If the current brick contains a negative value make sure
-                    // that the indirection terminates at the last  valid brick
-                    if (brick_table [curr_brick] <= 0)
-                    {
-                        if (brick_table [curr_brick] == 0)
-                        {
-                            dprintf(3, ("curr_brick %Ix for object %Ix set to 0",
-                                    curr_brick, (size_t)curr_object));
-                            FATAL_GC_ERROR();
-                        }
-                        ptrdiff_t i = curr_brick;
-                        while ((i >= ((ptrdiff_t) brick_of (heap_segment_mem (seg)))) &&
-                               (brick_table[i] < 0))
-                        {
-                            i = i + brick_table[i];
-                        }
-                        if (i <  ((ptrdiff_t)(brick_of (heap_segment_mem (seg))) - 1))
-                        {
-                            dprintf (3, ("ptrdiff i: %Ix < brick_of (heap_segment_mem (seg)):%Ix - 1. curr_brick: %Ix",
-                                    i, brick_of (heap_segment_mem (seg)),
-                                    curr_brick));
-                            FATAL_GC_ERROR();
-                        }
-                        // if (i != last_valid_brick)
-                        //  FATAL_GC_ERROR();
-                        bCurrentBrickInvalid = FALSE;
-                    }
-                    else if (!heap_segment_read_only_p (seg))
-                    {
-                        bCurrentBrickInvalid = TRUE;
-                    }
-                }
-            }
-
-            if (bCurrentBrickInvalid)
-            {
-                if (curr_object == (brick_address(curr_brick) + brick_table[curr_brick] - 1))
-                {
-                    bCurrentBrickInvalid = FALSE;
-                    last_valid_brick = curr_brick;
-                }
-            }
-        }
-
-        if (*((uint8_t**)curr_object) != (uint8_t *) g_gc_pFreeObjectMethodTable)
-        {
-#ifdef FEATURE_LOH_COMPACTION
-            if ((curr_gen_num == loh_generation) && (prev_object != 0))
-            {
-                assert (method_table (prev_object) == g_gc_pFreeObjectMethodTable);
-            }
-#endif //FEATURE_LOH_COMPACTION
-
-            total_objects_verified++;
-
-            BOOL can_verify_deep = TRUE;
-#ifdef BACKGROUND_GC
-            can_verify_deep = fgc_should_consider_object (curr_object, seg, consider_bgc_mark_p, check_current_sweep_p, check_saved_sweep_p);
-#endif //BACKGROUND_GC
-
-            BOOL deep_verify_obj = can_verify_deep;
-            if ((heap_verify_level & GCConfig::HEAPVERIFY_DEEP_ON_COMPACT) && !settings.compaction)
-                deep_verify_obj = FALSE;
-
-            ((CObjectHeader*)curr_object)->ValidateHeap((Object*)curr_object, deep_verify_obj);
-
-            if (can_verify_deep)
-            {
-                if (curr_gen_num > 0)
-                {
-                    BOOL need_card_p = FALSE;
-                    if (contain_pointers_or_collectible (curr_object))
-                    {
-                        dprintf (4, ("curr_object: %Ix", (size_t)curr_object));
-                        size_t crd = card_of (curr_object);
-                        BOOL found_card_p = card_set_p (crd);
-
-#ifdef COLLECTIBLE_CLASS
-                        if (is_collectible(curr_object))
-                        {
-                            uint8_t* class_obj = get_class_object (curr_object);
-                            if ((class_obj < ephemeral_high) && (class_obj >= next_boundary))
-                            {
-                                if (!found_card_p)
-                                {
-                                    dprintf (3, ("Card not set, curr_object = [%Ix:%Ix pointing to class object %Ix",
-                                                card_of (curr_object), (size_t)curr_object, class_obj));
-
-                                    FATAL_GC_ERROR();
-                                }
-                            }
-                        }
-#endif //COLLECTIBLE_CLASS
-
-                        if (contain_pointers(curr_object))
-                        {
-                            go_through_object_nostart
-                                (method_table(curr_object), curr_object, s, oo,
-                                {
-                                    if ((crd != card_of ((uint8_t*)oo)) && !found_card_p)
-                                    {
-                                        crd = card_of ((uint8_t*)oo);
-                                        found_card_p = card_set_p (crd);
-                                        need_card_p = FALSE;
-                                    }
-                                    if ((*oo < ephemeral_high) && (*oo >= next_boundary))
-                                    {
-                                        need_card_p = TRUE;
-                                    }
-
-                                if (need_card_p && !found_card_p)
-                                {
-
-                                        dprintf (3, ("Card not set, curr_object = [%Ix:%Ix, %Ix:%Ix[",
-                                                    card_of (curr_object), (size_t)curr_object,
-                                                    card_of (curr_object+Align(s, align_const)), (size_t)curr_object+Align(s, align_const)));
-                                        FATAL_GC_ERROR();
-                                    }
-                                }
-                                    );
-                        }
-                        if (need_card_p && !found_card_p)
-                        {
-                            dprintf (3, ("Card not set, curr_object = [%Ix:%Ix, %Ix:%Ix[",
-                                    card_of (curr_object), (size_t)curr_object,
-                                    card_of (curr_object+Align(s, align_const)), (size_t)curr_object+Align(s, align_const)));
-                            FATAL_GC_ERROR();
-                        }
-                    }
-                }
-                total_objects_verified_deep++;
-            }
-        }
-
-        prev_object = curr_object;
-        prev_brick = curr_brick;
-        curr_object = curr_object + Align(s, align_const);
-        if (curr_object < prev_object)
-        {
-            dprintf (3, ("overflow because of a bad object size: %Ix size %Ix", prev_object, s));
-            FATAL_GC_ERROR();
         }
     }
 

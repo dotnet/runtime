@@ -222,7 +222,7 @@ namespace Internal.Cryptography.Pal
 
             int tagStart = -1;
             int tagEnd = -1;
-            Oid tagOid = null;
+            Oid? tagOid = null;
             int valueStart = -1;
             int valueEnd = -1;
             bool hadEscapedQuote = false;

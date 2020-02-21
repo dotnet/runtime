@@ -39,8 +39,6 @@
     <HarvestStablePackage>false</HarvestStablePackage>
     <!-- Validation will fail in case we were relying on harvested assets or assets not built to satisfy stated support -->
     <SkipValidatePackage>true</SkipValidatePackage>
-    <!-- Include All BuildConfigurations in package, so that whatever we're building for source build is included -->
-    <PackageConfigurations>$(BuildConfigurations)</PackageConfigurations>
   </PropertyGroup>
 
   <Import Condition="Exists('$(PkgDir)baseline\baseline.props') and '$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(PkgDir)baseline\baseline.props" />
