@@ -162,31 +162,27 @@ namespace System.Net.Http
 
             if (Interlocked.CompareExchange(ref _networkChangeCleanup, cleanup, null) != null)
             {
-                // We lost a race, someone else already started monitoring.
+                // We lost a race, another thread already started monitoring.
                 GC.SuppressFinalize(cleanup);
                 return;
             }
 
-            bool restoreFlow = false;
-            try
+            if (!ExecutionContext.IsFlowSuppressed())
             {
-                if (!ExecutionContext.IsFlowSuppressed())
+                using (ExecutionContext.SuppressFlow())
                 {
-                    ExecutionContext.SuppressFlow();
-                    restoreFlow = true;
+                    NetworkChange.NetworkAddressChanged += networkChangedDelegate;
                 }
-
-                NetworkChange.NetworkAddressChanged += networkChangedDelegate;
             }
-            finally
+            else
             {
-                if (restoreFlow) ExecutionContext.RestoreFlow();
+                NetworkChange.NetworkAddressChanged += networkChangedDelegate;
             }
         }
 
         private sealed class NetworkChangeCleanup : IDisposable
         {
-            private NetworkAddressChangedEventHandler _handler;
+            private readonly NetworkAddressChangedEventHandler _handler;
 
             public NetworkChangeCleanup(NetworkAddressChangedEventHandler handler)
             {
@@ -194,27 +190,13 @@ namespace System.Net.Http
             }
 
             // If user never disposes the HttpClient, use finalizer to remove from NetworkChange.NetworkAddressChanged.
-            ~NetworkChangeCleanup()
-            {
-                TryDispose();
-            }
+            // _handler will be rooted in NetworkChange, so should be safe to use here.
+            ~NetworkChangeCleanup() => NetworkChange.NetworkAddressChanged -= _handler;
 
             public void Dispose()
             {
-                if (TryDispose()) GC.SuppressFinalize(this);
-            }
-
-            private bool TryDispose()
-            {
-                if (_handler != null)
-                {
-                    // _handler will be rooted in NetworkChange, so should be safe to use in finalizer.
-                    NetworkChange.NetworkAddressChanged -= _handler;
-                    _handler = null;
-                    return true;
-                }
-
-                return false;
+                NetworkChange.NetworkAddressChanged -= _handler;
+                GC.SuppressFinalize(this);
             }
         }
 
