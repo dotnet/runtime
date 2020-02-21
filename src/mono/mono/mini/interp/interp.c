@@ -1944,7 +1944,6 @@ interp_entry (InterpEntryData *data)
 	ThreadContext *context;
 	stackval result;
 	stackval *args;
-	stackval *retval;
 	MonoMethod *method;
 	MonoMethodSignature *sig;
 	MonoType *type;
@@ -2003,17 +2002,16 @@ interp_entry (InterpEntryData *data)
 	}
 
 	memset (&result, 0, sizeof (result));
-	retval = &result;
-	frame = alloc_frame (context, &result, NULL, data->rmethod, args, retval);
+	frame = alloc_frame (context, &result, NULL, data->rmethod, args, &result);
 
 	type = rmethod->rtype;
 	switch (type->type) {
 	case MONO_TYPE_GENERICINST:
 		if (!MONO_TYPE_IS_REFERENCE (type))
-			retval->data.vt = data->res;
+			result.data.vt = data->res;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		retval->data.vt = data->res;
+		result.data.vt = data->res;
 		break;
 	default:
 		break;
@@ -2040,11 +2038,11 @@ interp_entry (InterpEntryData *data)
 		break;
 	case MONO_TYPE_OBJECT:
 		/* No need for a write barrier */
-		*(MonoObject**)data->res = (MonoObject*)retval->data.p;
+		*(MonoObject**)data->res = (MonoObject*)result.data.p;
 		break;
 	case MONO_TYPE_GENERICINST:
 		if (MONO_TYPE_IS_REFERENCE (type)) {
-			*(MonoObject**)data->res = (MonoObject*)retval->data.p;
+			*(MonoObject**)data->res = (MonoObject*)result.data.p;
 		} else {
 			/* Already set before the call */
 		}
@@ -2053,7 +2051,7 @@ interp_entry (InterpEntryData *data)
 		/* Already set before the call */
 		break;
 	default:
-		stackval_to_data (type, retval, data->res, FALSE);
+		stackval_to_data (type, &result, data->res, FALSE);
 		break;
 	}
 }
