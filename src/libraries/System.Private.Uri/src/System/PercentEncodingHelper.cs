@@ -20,7 +20,7 @@ namespace System
 
             int totalCharsConsumed = 0;
             int charsToCopy = 0;
-            int charsConsumed = 0;
+            int bytesConsumed = 0;
 
         RefillBuffer:
             int i = totalCharsConsumed + (bytesLeftInBuffer * 3);
@@ -61,13 +61,12 @@ namespace System
             {
                 fourByteBuffer = (fourByteBuffer << 8) | value;
             }
-            bytesLeftInBuffer++;
 
-            if (bytesLeftInBuffer == 4)
-                goto DecodeRune;
-
-            i += 3;
-            goto ReadByteFromInput;
+            if (++bytesLeftInBuffer != 4)
+            {
+                i += 3;
+                goto ReadByteFromInput;
+            }
 
         DecodeRune:
             Debug.Assert(totalCharsConsumed % 3 == 0);
@@ -77,9 +76,9 @@ namespace System
             Debug.Assert(bytesLeftInBuffer < 3 || (fourByteBuffer & (BitConverter.IsLittleEndian ? 0x00FF0000 : 0x0000FF00)) >= 128);
             Debug.Assert(bytesLeftInBuffer < 4 || (fourByteBuffer & (BitConverter.IsLittleEndian ? 0xFF000000 : 0x000000FF)) >= 128);
 
-            if (Rune.DecodeFromUtf8(fourByteSpan.Slice(0, bytesLeftInBuffer), out Rune rune, out charsConsumed) == OperationStatus.Done)
+            if (Rune.DecodeFromUtf8(fourByteSpan.Slice(0, bytesLeftInBuffer), out Rune rune, out bytesConsumed) == OperationStatus.Done)
             {
-                Debug.Assert(charsConsumed >= 2);
+                Debug.Assert(bytesConsumed >= 2);
 
                 if (!iriParsing || IriHelper.CheckIriUnicodeRange((uint)rune.Value, isQuery))
                 {
@@ -89,7 +88,7 @@ namespace System
                         charsToCopy = 0;
                     }
 
-                    if (charsConsumed == 4)
+                    if (bytesConsumed == 4)
                     {
                         // Surrogate pair
                         Debug.Assert(rune.Utf16SequenceLength == 2);
@@ -106,13 +105,13 @@ namespace System
             }
             else
             {
-                Debug.Assert(charsConsumed > 0);
+                Debug.Assert(bytesConsumed > 0);
             }
-            charsToCopy += charsConsumed * 3;
+            charsToCopy += bytesConsumed * 3;
 
         AfterDecodeRune:
-            bytesLeftInBuffer -= charsConsumed;
-            totalCharsConsumed += charsConsumed * 3;
+            bytesLeftInBuffer -= bytesConsumed;
+            totalCharsConsumed += bytesConsumed * 3;
             goto RefillBuffer;
 
         NoMoreOrInvalidInput:
@@ -120,7 +119,7 @@ namespace System
             if (bytesLeftInBuffer > 1)
             {
                 Debug.Assert(bytesLeftInBuffer == 2 || bytesLeftInBuffer == 3);
-                if (charsConsumed == 1)
+                if (bytesConsumed == 1)
                 {
                     if (BitConverter.IsLittleEndian)
                     {
