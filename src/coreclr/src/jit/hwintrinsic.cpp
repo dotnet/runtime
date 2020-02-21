@@ -191,7 +191,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
     int numArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicID);
 
     // HW Instrinsic's with -1 for numArgs have a varying number of args, so we currently
-    // give themm a unque value number them, and don't add an extra argument.
+    // give themm a unique value number them, and don't add an extra argument.
     //
     if (numArgs == -1)
     {
