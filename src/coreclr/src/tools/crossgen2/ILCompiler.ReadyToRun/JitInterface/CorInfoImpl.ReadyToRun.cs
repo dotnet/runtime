@@ -1011,6 +1011,11 @@ namespace Internal.JitInterface
                     }
                     else
                     {
+                        if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0)
+                        {
+                            throw new RequiresRuntimeJitException("https://github.com/dotnet/runtime/issues/32663: CORINFO_FIELD_STATIC_ADDRESS");
+                        }
+
                         helperId = field.HasGCStaticBase ?
                             ReadyToRunHelperId.GetGCStaticBase :
                             ReadyToRunHelperId.GetNonGCStaticBase;
@@ -1018,13 +1023,16 @@ namespace Internal.JitInterface
                         //
                         // Currently, we only do this optimization for regular statics, but it
                         // looks like it may be permissible to do this optimization for
-                        // thread statics as well.
-                        //
+                        // thread statics as well. Currently there's no reason to do this
+                        // as this code is not reachable until we implement CORINFO_FIELD_STATIC_ADDRESS
+                        // which is something Crossgen1 doesn't do (cf. the above GitHub issue 32663).
+                        /*
                         if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0 &&
                             (fieldAccessor != CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS))
                         {
                             fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN;
                         }
+                        */
                     }
 
                     if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType) &&
@@ -2053,8 +2061,7 @@ namespace Internal.JitInterface
             {
                 if (pMT.IsValueType)
                 {
-                    // ENCODE_CHECK_FIELD_OFFSET
-                    // TODO: root field check import
+                    throw new NotImplementedException("https://github.com/dotnet/runtime/issues/32630: ENCODE_CHECK_FIELD_OFFSET: root field check import");
                 }
                 else
                 {
@@ -2090,6 +2097,7 @@ namespace Internal.JitInterface
                 PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
 
                 // ENCODE_FIELD_BASE_OFFSET
+                Debug.Assert(pResult->offset >= (uint)pMT.BaseType.InstanceByteCount.AsInt);
                 pResult->offset -= (uint)pMT.BaseType.InstanceByteCount.AsInt;
                 pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
                 pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldBaseOffset(field.OwningType));
