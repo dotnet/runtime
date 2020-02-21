@@ -1347,6 +1347,72 @@ namespace System.Diagnostics.Tests
             Assert.Same(started, Activity.Current);
         }
 
+        [Fact]
+        public void TestDispose()
+        {
+            Activity current = Activity.Current;
+            using (Activity activity = new Activity("Mine").Start())
+            {
+                Assert.Same(activity, Activity.Current);
+                Assert.Same(current, activity.Parent);
+            }
+
+            Assert.Same(current, Activity.Current);
+        }
+
+        [Fact]
+        public void TestCustomProperties()
+        {
+            Activity activity = new Activity("Custom");
+            activity.SetCustomProperty("P1", "Prop1");
+            activity.SetCustomProperty("P2", "Prop2");
+            activity.SetCustomProperty("P3", null);
+
+            Assert.Equal("Prop1", activity.GetCustomProperty("P1"));
+            Assert.Equal("Prop2", activity.GetCustomProperty("P2"));
+            Assert.Null(activity.GetCustomProperty("P3"));
+            Assert.Null(activity.GetCustomProperty("P4"));
+
+            activity.SetCustomProperty("P1", "Prop5");
+            Assert.Equal("Prop5", activity.GetCustomProperty("P1"));
+
+        }
+
+        [Fact]
+        public void TestLinks()
+        {
+            Activity activity = new Activity("Links");
+            IEnumerable<ActivityLink> links = activity.Links;
+            Assert.Equal(0, links.Count());
+
+            activity.AddLink(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None)));
+            activity.AddLink(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded)));
+
+            links = activity.Links;
+            Assert.Equal(2, links.Count());
+
+            activity.AddLink(new ActivityLink(new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded, "I=Cool")));
+            links = activity.Links;
+            Assert.Equal(3, links.Count());
+
+            Assert.Equal(ActivityTraceFlags.None, links.ElementAt(2).Context.TraceFlags);
+            Assert.Null(links.ElementAt(2).Context.TraceState);
+            Assert.Equal(ActivityTraceFlags.Recorded, links.ElementAt(1).Context.TraceFlags);
+            Assert.Null(links.ElementAt(1).Context.TraceState);
+            Assert.Equal(ActivityTraceFlags.Recorded, links.ElementAt(0).Context.TraceFlags);
+            Assert.NotNull(links.ElementAt(0).Context.TraceState);
+        }
+
+        [Fact]
+        public void TestKind()
+        {
+            Activity activity = new Activity("Kind");
+            Assert.Equal(ActivityKind.Internal, activity.Kind);
+
+            activity.Kind = ActivityKind.Client;
+            Assert.Equal(ActivityKind.Client, activity.Kind);
+        }
+
         public void Dispose()
         {
             Activity.Current = null;
