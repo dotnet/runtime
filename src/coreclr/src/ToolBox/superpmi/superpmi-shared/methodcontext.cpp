@@ -3854,6 +3854,7 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     value.osPageSize                                 = (DWORD)pEEInfoOut->osPageSize;
     value.maxUncheckedOffsetForNullObject            = (DWORD)pEEInfoOut->maxUncheckedOffsetForNullObject;
     value.targetAbi                                  = (DWORD)pEEInfoOut->targetAbi;
+    value.osType                                     = (DWORD)pEEInfoOut->osType;
 
     GetEEInfo->Add((DWORD)0, value);
     DEBUG_REC(dmpGetEEInfo((DWORD)0, value));
