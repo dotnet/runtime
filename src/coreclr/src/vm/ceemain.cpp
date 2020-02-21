@@ -840,14 +840,13 @@ void EEStartupHelper(COINITIEE fFlags)
 #ifndef CROSSGEN_COMPILE
 
         InitializeGarbageCollector();
-
-        // Initialize remoting
-
+        
         if (!GCHandleUtilities::GetGCHandleManager()->Initialize())
         {
             IfFailGo(E_OUTOFMEMORY);
         }
 
+        // Initialize remoting
         g_pEEShutDownEvent = new CLREvent();
         g_pEEShutDownEvent->CreateManualEvent(FALSE);
 
@@ -946,6 +945,9 @@ void EEStartupHelper(COINITIEE fFlags)
         // of InitJITHelpers1.
         hr = g_pGCHeap->Initialize();
         IfFailGo(hr);
+
+        // Finish setting up rest of EventPipe
+        EventPipe::FinishSetup();
 
         // This isn't done as part of InitializeGarbageCollector() above because thread
         // creation requires AppDomains to have been set up.
