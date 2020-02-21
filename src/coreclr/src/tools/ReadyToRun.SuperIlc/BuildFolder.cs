@@ -23,6 +23,8 @@ namespace ReadyToRun.SuperIlc
             "clrjit",
             "mscorrc",
             "mscorrc.debug",
+            "mscordaccore",
+            "mscordbi",
         };
 
         private List<string> _compilationInputFiles;
