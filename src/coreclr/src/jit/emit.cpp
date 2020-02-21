@@ -66,7 +66,7 @@ UNATIVE_OFFSET emitLocation::GetFuncletPrologOffset(emitter* emit) const
 }
 
 #ifdef DEBUG
-void emitLocation::Print(int compMethodID) const
+void emitLocation::Print(LONG compMethodID) const
 {
     unsigned insNum = emitGetInsNumFromCodePos(codePos);
     unsigned insOfs = emitGetInsOfsFromCodePos(codePos);

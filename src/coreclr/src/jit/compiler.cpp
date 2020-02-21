@@ -1299,7 +1299,7 @@ size_t genFlowNodeCnt;
 
 #ifdef DEBUG
 /* static */
-unsigned Compiler::s_compMethodID = 0; // to produce unique label names
+LONG Compiler::s_compMethodID = 0; // to produce unique label names
 #endif
 
 #if MEASURE_MEM_ALLOC

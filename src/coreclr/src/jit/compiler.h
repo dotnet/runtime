@@ -8979,8 +8979,13 @@ public:
 //-------------------------- Global Compiler Data ------------------------------------
 
 #ifdef DEBUG
-    static unsigned s_compMethodID; // to produce unique label names
-    unsigned        compMethodID;
+private:
+    static LONG s_compMethodID; // to produce unique label names
+#endif
+
+public:
+#ifdef DEBUG
+    LONG            compMethodID;
     unsigned        compGenTreeID;
     unsigned        compStatementID;
     unsigned        compBasicBlockID;
