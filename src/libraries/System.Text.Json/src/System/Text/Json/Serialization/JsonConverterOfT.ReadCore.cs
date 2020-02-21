@@ -2,113 +2,109 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
-using System.Diagnostics;
-using System.Text.Json.Serialization;
-
-namespace System.Text.Json
+namespace System.Text.Json.Serialization
 {
-    /// <summary>
-    /// Provides functionality to serialize objects or value types to JSON and
-    /// deserialize JSON into objects or value types.
-    /// </summary>
-    public static partial class JsonSerializer
+    public partial class JsonConverter<T>
     {
-        private static void ReadCore(
-            JsonSerializerOptions options,
+        internal sealed override object? ReadCoreAsObject(
             ref Utf8JsonReader reader,
+            JsonSerializerOptions options,
+            ref ReadStack state)
+        {
+            return ReadCore(ref reader, options, ref state);
+        }
+
+        internal T ReadCore(
+            ref Utf8JsonReader reader,
+            JsonSerializerOptions options,
             ref ReadStack state)
         {
             try
             {
-                JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo!.PolicyProperty!;
-                JsonConverter converter = jsonPropertyInfo.ConverterBase;
-
                 if (!state.IsContinuation)
                 {
-                    if (!JsonConverter.SingleValueReadWithReadAhead(converter.ClassType, ref reader, ref state))
+                    if (!SingleValueReadWithReadAhead(ClassType, ref reader, ref state))
                     {
-                        // Read more data until we have the full element.
-                        state.BytesConsumed += reader.BytesConsumed;
-                        return;
+                        if (state.SupportContinuation)
+                        {
+                            // If a Stream-based scenaio, return the actual value previously found;
+                            // this may or may not be the final pass through here.
+                            state.BytesConsumed += reader.BytesConsumed;
+                            if (state.Current.ReturnValue == null)
+                            {
+                                // Avoid returning null for value types.
+                                return default!;
+                            }
+
+                            return (T)state.Current.ReturnValue!;
+                        }
+                        else
+                        {
+                            // Read more data until we have the full element.
+                            state.BytesConsumed += reader.BytesConsumed;
+                            return default!;
+                        }
                     }
                 }
                 else
                 {
                     // For a continuation, read ahead here to avoid having to build and then tear
                     // down the call stack if there is more than one buffer fetch necessary.
-                    if (!JsonConverter.SingleValueReadWithReadAhead(ClassType.Value, ref reader, ref state))
+                    if (!SingleValueReadWithReadAhead(ClassType.Value, ref reader, ref state))
                     {
                         state.BytesConsumed += reader.BytesConsumed;
-                        return;
+                        return default!;
                     }
                 }
 
-                bool success = converter.TryReadAsObject(ref reader, jsonPropertyInfo.RuntimePropertyType!, options, ref state, out object? value);
+                JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.PolicyProperty!;
+                bool success = TryRead(ref reader, jsonPropertyInfo.RuntimePropertyType!, options, ref state, out T value);
                 if (success)
                 {
-                    state.Current.ReturnValue = value;
-
-                    // Read any trailing whitespace.
-                    // If additional whitespace exists after this read, the subsequent call to reader.Read() will throw.
-                    reader.Read();
+                    // Read any trailing whitespace. This will throw if JsonCommentHandling=Disallow.
+                    // Avoiding setting ReturnValue for the final block; reader.Read() returns 'false' even when this is the final block.
+                    if (!reader.Read() && !reader.IsFinalBlock)
+                    {
+                        // This method will re-enter if so set `ReturnValue` which will be returned during re-entry.
+                        state.Current.ReturnValue = value;
+                    }
                 }
 
                 state.BytesConsumed += reader.BytesConsumed;
+                return value;
             }
             catch (JsonReaderException ex)
             {
-                // Re-throw with Path information.
                 ThrowHelper.ReThrowWithPath(state, ex);
+                return default;
             }
             catch (FormatException ex) when (ex.Source == ThrowHelper.ExceptionSourceValueToRethrowAsJsonException)
             {
                 ThrowHelper.ReThrowWithPath(state, reader, ex);
+                return default;
             }
             catch (InvalidOperationException ex) when (ex.Source == ThrowHelper.ExceptionSourceValueToRethrowAsJsonException)
             {
                 ThrowHelper.ReThrowWithPath(state, reader, ex);
+                return default;
             }
             catch (JsonException ex)
             {
-                ThrowHelper.AddExceptionInformation(state, reader, ex);
+                ThrowHelper.AddJsonExceptionInformation(state, reader, ex);
                 throw;
             }
-        }
-
-        internal static object? ReadCoreReEntry(
-            JsonSerializerOptions options,
-            ref Utf8JsonReader reader,
-            ref ReadStack state)
-        {
-            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo!;
-            JsonConverter converter = jsonPropertyInfo.ConverterBase;
-            bool success = converter.TryReadAsObject(ref reader, jsonPropertyInfo.RuntimePropertyType!, options, ref state, out object? value);
-            Debug.Assert(success);
-            return value;
-        }
-
-        private static ReadOnlySpan<byte> GetUnescapedString(ReadOnlySpan<byte> utf8Source, int idx)
-        {
-            // The escaped name is always longer than the unescaped, so it is safe to use escaped name for the buffer length.
-            int length = utf8Source.Length;
-            byte[]? pooledName = null;
-
-            Span<byte> unescapedName = length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[length] :
-                (pooledName = ArrayPool<byte>.Shared.Rent(length));
-
-            JsonReaderHelper.Unescape(utf8Source, unescapedName, idx, out int written);
-            ReadOnlySpan<byte> propertyName = unescapedName.Slice(0, written).ToArray();
-
-            if (pooledName != null)
+            catch (NotSupportedException ex)
             {
-                // We clear the array because it is "user data" (although a property name).
-                new Span<byte>(pooledName, 0, written).Clear();
-                ArrayPool<byte>.Shared.Return(pooledName);
-            }
+                // If the message already contains Path, just re-throw. This could occur in serializer re-entry cases.
+                // To get proper Path semantics in re-entry cases, APIs that take 'state' need to be used.
+                if (ex.Message.Contains(" Path: "))
+                {
+                    throw;
+                }
 
-            return propertyName;
+                ThrowHelper.ThrowNotSupportedException(state, reader, ex);
+                return default;
+            }
         }
     }
 }

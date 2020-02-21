@@ -2,26 +2,35 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text.Json.Serialization;
-
-namespace System.Text.Json
+namespace System.Text.Json.Serialization
 {
-    public static partial class JsonSerializer
+    public partial class JsonConverter<T>
     {
-        // There are three conditions to consider for an object (primitive value, enumerable or object) being processed here:
-        // 1) The object type was specified as the root-level return type to a Deserialize method.
-        // 2) The object is a property on a parent object.
-        // 3) The object is an element in an enumerable.
-        private static bool WriteCore(
+        internal sealed override bool WriteCoreAsObject(
             Utf8JsonWriter writer,
             object? value,
             JsonSerializerOptions options,
-            ref WriteStack state,
-            JsonConverter jsonConverter)
+            ref WriteStack state)
+        {
+            // Value types can never have a null except for Nullable<T>.
+            if (value == null && IsValueType && Nullable.GetUnderlyingType(TypeToConvert) == null)
+            {
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+            }
+
+            T actualValue = (T)value!;
+            return WriteCore(writer, actualValue, options, ref state);
+        }
+
+        internal bool WriteCore(
+            Utf8JsonWriter writer,
+            T value,
+            JsonSerializerOptions options,
+            ref WriteStack state)
         {
             try
             {
-                return jsonConverter.TryWriteAsObject(writer, value, options, ref state);
+                return TryWrite(writer, value, options, ref state);
             }
             catch (InvalidOperationException ex) when (ex.Source == ThrowHelper.ExceptionSourceValueToRethrowAsJsonException)
             {
@@ -30,8 +39,20 @@ namespace System.Text.Json
             }
             catch (JsonException ex)
             {
-                ThrowHelper.AddExceptionInformation(state, ex);
+                ThrowHelper.AddJsonExceptionInformation(state, ex);
                 throw;
+            }
+            catch (NotSupportedException ex)
+            {
+                // If the message already contains Path, just re-throw. This could occur in serializer re-entry cases.
+                // To get proper Path semantics in re-entry cases, APIs that take 'state' need to be used.
+                if (ex.Message.Contains(" Path: "))
+                {
+                    throw;
+                }
+
+                ThrowHelper.ThrowNotSupportedException(state, ex);
+                return default;
             }
         }
     }
