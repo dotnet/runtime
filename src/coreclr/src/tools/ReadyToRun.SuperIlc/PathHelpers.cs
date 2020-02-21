@@ -32,6 +32,9 @@ static class PathExtensions
 
     internal static string OSExeSuffix(this string path) => (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? path + ".exe" : path);
 
+    internal static string OSDllSuffix(this string path) => path +
+        (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".dll" : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? ".dylib" : ".so");
+
     internal static string ToAbsolutePath(this string argValue) => Path.GetFullPath(argValue);
 
     internal static string ToAbsoluteDirectoryPath(this string argValue) => argValue.ToAbsolutePath().StripTrailingDirectorySeparators();
