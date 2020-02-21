@@ -840,7 +840,7 @@ namespace System.Net.Sockets
             // No need to call ValidateForMultiConnect(), as the validation
             // will be handled by the delegated Connect overloads.
 
-            IPAddress parsedAddress;
+            IPAddress? parsedAddress;
             if (IPAddress.TryParse(host, out parsedAddress))
             {
                 Connect(parsedAddress, port);
@@ -2089,7 +2089,7 @@ namespace System.Net.Sockets
                 throw new SocketException((int)SocketError.IsConnected);
             }
 
-            IPAddress parsedAddress;
+            IPAddress? parsedAddress;
             if (IPAddress.TryParse(host, out parsedAddress))
             {
                 IAsyncResult r = BeginConnect(parsedAddress, port, requestCallback, state);

@@ -20,7 +20,7 @@ namespace System.Net.Sockets
             {
                 Socket socket = (Socket)AsyncObject;
                 socket.SetToDisconnected();
-                socket._remoteEndPoint = null!;//TODO:eerhardt
+                socket._remoteEndPoint = null;
             }
             return base.PostCompletion(numBytes);
         }

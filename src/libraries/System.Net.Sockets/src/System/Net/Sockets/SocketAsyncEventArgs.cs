@@ -573,7 +573,7 @@ namespace System.Net.Sockets
                     {
                         NetEventSource.Fail(this, "CurrentSocket and MultipleConnect both null!");
                     }
-                    _currentSocket.Dispose();
+                    _currentSocket!.Dispose();
                 }
             }
         }

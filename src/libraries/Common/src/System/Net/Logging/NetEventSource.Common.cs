@@ -11,7 +11,6 @@
 #nullable enable
 using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -279,7 +278,6 @@ namespace System.Net
         /// <param name="message">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        [DoesNotReturn]
         public static void Fail(object? thisOrContextObject, object message, [CallerMemberName] string? memberName = null)
         {
             // Don't call DebugValidateArg on args, as we expect Fail to be used in assert/failure situations

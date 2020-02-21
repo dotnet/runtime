@@ -159,7 +159,7 @@ namespace System.Net.Sockets
                     // We minimize the number of engines on applications that have a low number of concurrent sockets.
                     for (int i = 0; i < s_allocateFromEngine; i++)
                     {
-                        SocketAsyncEngine? previousEngine = s_currentEngines[i];
+                        var previousEngine = s_currentEngines[i];
                         if (previousEngine == null || previousEngine.HasLowNumberOfSockets)
                         {
                             s_allocateFromEngine = i;

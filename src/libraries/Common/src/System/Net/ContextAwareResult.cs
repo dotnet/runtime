@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 #nullable enable
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Net
@@ -159,7 +159,7 @@ namespace System.Net
                     {
                         NetEventSource.Fail(this, "Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling ContextCopy (unless it's only called after FinishPostingAsyncOp).");
                     }
-                    lock (_lock) { }
+                    lock (_lock!) { }
                 }
 
                 if (InternalPeekCompleted)
