@@ -29,7 +29,7 @@
     <DefaultOSGroup Condition="'$(DefaultOSGroup)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</DefaultOSGroup>
     <DefaultOSGroup Condition="'$(DefaultOSGroup)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</DefaultOSGroup>
     <DefaultOSGroup Condition="'$(DefaultOSGroup)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</DefaultOSGroup>
-    <DefaultOSGroup Condition="'$(DefaultOSGroup)' == ''">$(OS)</DefaultOSGroup>
+    <DefaultOSGroup Condition="'$(DefaultOSGroup)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">Windows_NT</DefaultOSGroup>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -168,9 +168,9 @@
 
     <!-- There are no WebAssembly tools, so use the default ones -->
     <_buildingInOSX>$([MSBuild]::IsOSPlatform('OSX'))</_buildingInOSX>
-    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(OS)' == 'Windows_NT'">win-x64</ToolRuntimeRID>
-    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(OS)' != 'Windows_NT' and $(_buildingInOSX)">osx-x64</ToolRuntimeRID>
-    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(OS)' != 'Windows_NT' and !$(_buildingInOSX)">linux-x64</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(OSGroup)' == 'Windows_NT'">win-x64</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(OSGroup)' != 'Windows_NT' and $(_buildingInOSX)">osx-x64</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(OSGroup)' != 'Windows_NT' and !$(_buildingInOSX)">linux-x64</ToolRuntimeRID>
 
     <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
     <_portableOS Condition="'$(OSGroup)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
@@ -222,7 +222,7 @@
     <DebugType>portable</DebugType>
 
     <!-- Empty DebugType when building for netfx and in windows so that it is set to full or pdbonly later -->
-    <DebugType Condition="'$(TargetsNetFx)' == 'true' and '$(OS)' == 'Windows_NT'" />
+    <DebugType Condition="'$(TargetsNetFx)' == 'true' and '$(OSGroup)' == 'Windows_NT'" />
 
     <!-- Workaround for codecov issue https://github.com/tonerdo/coverlet/issues/312 -->
     <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>
