@@ -93,15 +93,25 @@ namespace System.Security.Cryptography
             }
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-            protected override bool TrySignHashCore(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat, out int bytesWritten)
+            protected override bool TrySignHashCore(
+                ReadOnlySpan<byte> hash,
+                Span<byte> destination,
+                DSASignatureFormat signatureFormat,
+                out int bytesWritten)
+#else
+            public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
+#endif
             {
                 ThrowIfDisposed();
                 SafeEcKeyHandle key = _key.Value;
 
                 int signatureLength = Interop.Crypto.EcDsaSize(key);
+                Span<byte> signDestination = stackalloc byte[SignatureStackBufSize];
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
                 {
+#endif
                     int encodedSize = 2 * AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
 
                     if (destination.Length < encodedSize)
@@ -114,6 +124,7 @@ namespace System.Security.Cryptography
                     AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, KeySize, destination);
                     bytesWritten = encodedSize;
                     return true;
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 }
                 else if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
                 {
@@ -142,8 +153,8 @@ namespace System.Security.Cryptography
                 {
                     throw new ArgumentOutOfRangeException(nameof(signatureFormat));
                 }
-            }
 #endif
+            }
 
             private static ReadOnlySpan<byte> SignHash(
                 ReadOnlySpan<byte> hash,
@@ -183,7 +194,10 @@ namespace System.Security.Cryptography
             }
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-            protected override bool VerifyHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
+            protected override bool VerifyHashCore(
+                ReadOnlySpan<byte> hash,
+                ReadOnlySpan<byte> signature,
+                DSASignatureFormat signatureFormat)
 #else
             public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
 #endif
@@ -209,7 +223,10 @@ namespace System.Security.Cryptography
                 }
                 else if (signatureFormat != DSASignatureFormat.Rfc3279DerSequence)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(signatureFormat));
+                    Debug.Fail($"Missing internal implementation handler for signature format {signatureFormat}");
+                    throw new CryptographicException(
+                        SR.Cryptography_UnknownSignatureFormat,
+                        signatureFormat.ToString());
                 }
 #endif
 
