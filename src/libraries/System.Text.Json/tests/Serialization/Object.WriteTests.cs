@@ -129,7 +129,7 @@ namespace System.Text.Json.Serialization.Tests
 
         // https://github.com/dotnet/corefx/issues/40979
         [Fact]
-        public static void EscapingShouldntStackOverflow_40979()
+        public static void EscapingShouldntStackOverflow()
         {
             var test = new { Name = "\u6D4B\u8A6611" };
 

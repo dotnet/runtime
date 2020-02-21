@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
         {
         }
 
-        public CryptographicAttributeObject(Oid oid, AsnEncodedDataCollection values)
+        public CryptographicAttributeObject(Oid oid, AsnEncodedDataCollection? values)
         {
             _oid = new Oid(oid);
             if (values == null)
@@ -28,7 +28,7 @@ namespace System.Security.Cryptography
             {
                 foreach (AsnEncodedData asn in values)
                 {
-                    if (!string.Equals(asn.Oid.Value, oid.Value, StringComparison.Ordinal))
+                    if (!string.Equals(asn.Oid!.Value, oid.Value, StringComparison.Ordinal))
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_WrongOidInAsnCollection, oid.Value, asn.Oid.Value));
                 }
                 Values = values;

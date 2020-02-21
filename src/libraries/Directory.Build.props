@@ -33,16 +33,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!--
-      These *Group properties are only intended to enable passing them individually at the command line to initialize
-      BuildConfiguration. They will be overwritten by our configurations/configuration.props file and defaulted
-      based on Configuration for the individual projects which is selected based on BuildConfiguration.
-
-      See Documentation/coding-guidelines/project-guidelines.md for more details on our configurations.
-    -->
     <OSGroup Condition="'$(OSGroup)' == ''">$(DefaultOSGroup)</OSGroup>
-    <!-- We can remove this after removing this from the Arcade target.-->
-    <BuildOS>$(OSGroup)</BuildOS>
   </PropertyGroup>
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" />
   
@@ -57,12 +48,9 @@
          the build system to use webassembly as the RuntimeOS for produced package RIDs. -->
     <RuntimeOS Condition="'$(OSGroup)' == 'WebAssembly'">$(OSGroup.ToLowerInvariant())</RuntimeOS>
  
-    <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
+    <!-- Initialize BuildSettings from the individual properties if it wasn't already explicitly set -->
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
-    <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(BuildTargetFramework)-$(OSGroup)-$(Configuration)-$(ArchGroup)</BuildConfiguration>
-
-    <!-- if PKGPROJ doesn't set BuildConfigurations, make sure it only builds for TargetGroup=package or BuildAllConfigurations -->
-    <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' and '$(BuildConfigurations)' == ''">package</BuildConfigurations>
+    <BuildSettings Condition="'$(BuildSettings)' == ''">$(BuildTargetFramework)-$(OSGroup)-$(Configuration)-$(ArchGroup)</BuildSettings>
   </PropertyGroup>
   
   <Choose>
@@ -302,9 +290,9 @@
     -->
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 
-    <RuntimePath Condition="'$(RuntimePath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(BuildConfiguration)'))</RuntimePath>
+    <RuntimePath Condition="'$(RuntimePath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(BuildSettings)'))</RuntimePath>
     <RefRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</RefRootPath>
-    <BuildConfigurationRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(BuildTargetFramework)'))</BuildConfigurationRefPath>
+    <BuildTargetFrameworkRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(BuildTargetFramework)'))</BuildTargetFrameworkRefPath>
     <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetFramework)'))</RefPath>
     <NetStandard20RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.0'))</NetStandard20RefPath>
     <NetStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.1'))</NetStandard21RefPath>
@@ -324,7 +312,7 @@
     <NETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\ref</NETCoreAppPackageRefPath>
     <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\lib</NETCoreAppPackageRuntimePath>
 
-    <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildConfiguration)'))</TestHostRootPath>
+    <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildSettings)'))</TestHostRootPath>
 
     <!-- interop is not available on NETStandard1.0 -->
     <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFramework)' == 'netstandard1.0'">false</IncludeDllSafeSearchPathAttribute>

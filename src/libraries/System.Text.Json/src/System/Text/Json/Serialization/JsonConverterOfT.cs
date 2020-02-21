@@ -63,7 +63,8 @@ namespace System.Text.Json.Serialization
         // Provide a default implementation for value converters.
         internal virtual bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
-            Write(writer, value, options);
+            // TODO: https://github.com/dotnet/runtime/issues/32523
+            Write(writer, value!, options);
             return true;
         }
 
@@ -248,7 +249,8 @@ namespace System.Text.Json.Serialization
 
                 int originalPropertyDepth = writer.CurrentDepth;
 
-                Write(writer, value, options);
+                // TODO: https://github.com/dotnet/runtime/issues/32523
+                Write(writer, value!, options);
                 VerifyWrite(originalPropertyDepth, writer);
 
                 return true;

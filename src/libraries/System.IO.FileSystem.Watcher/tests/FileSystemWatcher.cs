@@ -262,7 +262,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void DroppedWatcher_Collectible()
         {
             WeakReference watcher = CreateEnabledWatcher(TestDirectory);

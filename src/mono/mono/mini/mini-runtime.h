@@ -179,13 +179,6 @@ typedef struct MonoDebugOptions {
 	gboolean lldb;
 
 	/*
-	 * With LLVM codegen, this option will cause methods to be called indirectly through the
-	 * PLT (As they are in other FullAOT modes, without LLVM). 
-	 *
-	 * Enable this to debug problems with direct calls in llvm
-	 */
-	gboolean llvm_disable_self_init;
-	/*
 	 * Prevent LLVM from inlining any methods
 	 */
 	gboolean llvm_disable_inlining;
@@ -371,14 +364,18 @@ extern gboolean mono_compile_aot;
 extern gboolean mono_aot_only;
 extern gboolean mono_llvm_only;
 extern MonoAotMode mono_aot_mode;
+MONO_BEGIN_DECLS
 MONO_API_DATA const char *mono_build_date;
+MONO_END_DECLS
 extern gboolean mono_do_signal_chaining;
 extern gboolean mono_do_crash_chaining;
+MONO_BEGIN_DECLS
 MONO_API_DATA gboolean mono_use_llvm;
 MONO_API_DATA gboolean mono_use_fast_math;
 MONO_API_DATA gboolean mono_use_interpreter;
 MONO_API_DATA MonoCPUFeatures mono_cpu_features_enabled;
 MONO_API_DATA MonoCPUFeatures mono_cpu_features_disabled;
+MONO_END_DECLS
 extern const char* mono_interp_opts_string;
 extern gboolean mono_do_single_method_regression;
 extern guint32 mono_single_method_regression_opt;
@@ -516,7 +513,7 @@ gboolean mono_jit_map_is_enabled (void);
 #else
 #define mono_enable_jit_map()
 #define mono_emit_jit_map(ji)
-#define mono_emit_jit_tramp(s,z,d)
+#define mono_emit_jit_tramp(s,z,d) do { } while (0) /* non-empty to avoid warning */
 #define mono_jit_map_is_enabled() (0)
 #endif
 

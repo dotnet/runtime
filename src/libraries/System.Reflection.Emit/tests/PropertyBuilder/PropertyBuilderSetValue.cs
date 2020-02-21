@@ -9,6 +9,7 @@ namespace System.Reflection.Emit.Tests
     public class PropertyBuilderTest16
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void SetValue_ThrowsNotSupportedException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);

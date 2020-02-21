@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 
-#include "pal_icushim.h"
+#include "pal_icushim_internal.h"
 #include "pal_normalization.h"
 
 static const UNormalizer2* GetNormalizerForForm(NormalizationForm normalizationForm, UErrorCode* pErrorCode)

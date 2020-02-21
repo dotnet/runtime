@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace System.Net
 {
@@ -39,7 +40,7 @@ namespace System.Net
     //
     // Used to split a single or multi-cookie (header) string into individual
     // tokens.
-    internal class CookieTokenizer
+    internal struct CookieTokenizer
     {
         private bool _eofCookie;
         private int _index;
@@ -54,7 +55,7 @@ namespace System.Net
         private int _cookieStartIndex;
         private int _cookieLength;
 
-        internal CookieTokenizer(string tokenStream)
+        internal CookieTokenizer(string tokenStream) : this()
         {
             _length = tokenStream.Length;
             _tokenStream = tokenStream;
@@ -506,14 +507,15 @@ namespace System.Net
     // CookieParser
     //
     // Takes a cookie header, makes cookies.
-    internal class CookieParser
+    internal struct CookieParser
     {
-        private readonly CookieTokenizer _tokenizer;
+        private CookieTokenizer _tokenizer;
         private Cookie _savedCookie;
 
         internal CookieParser(string cookieString)
         {
             _tokenizer = new CookieTokenizer(cookieString);
+            _savedCookie = null;
         }
 
 #if SYSTEM_NET_PRIMITIVES_DLL
@@ -529,7 +531,7 @@ namespace System.Net
             {
                 if (s_internalSetNameMethod == null)
                 {
-                    // TODO https://github.com/dotnet/corefx/issues/13607:
+                    // TODO https://github.com/dotnet/runtime/issues/19348:
                     // We need to use Cookie.InternalSetName instead of the Cookie.set_Name wrapped in a try catch block, as
                     // Cookie.set_Name keeps the original name if the string is empty or null.
                     // Unfortunately this API is internal so we use reflection to access it. The method is cached for performance reasons.
@@ -550,7 +552,7 @@ namespace System.Net
             {
                 if (s_isQuotedDomainField == null)
                 {
-                    // TODO https://github.com/dotnet/corefx/issues/13607:
+                    // TODO https://github.com/dotnet/runtime/issues/19348:
                     FieldInfo field = typeof(Cookie).GetField("IsQuotedDomain", BindingFlags.Instance | BindingFlags.NonPublic);
                     Debug.Assert(field != null, "We need to use an internal field named IsQuotedDomain that is declared on Cookie.");
                     s_isQuotedDomainField = field;
@@ -567,7 +569,7 @@ namespace System.Net
             {
                 if (s_isQuotedVersionField == null)
                 {
-                    // TODO https://github.com/dotnet/corefx/issues/13607:
+                    // TODO https://github.com/dotnet/runtime/issues/19348:
                     FieldInfo field = typeof(Cookie).GetField("IsQuotedVersion", BindingFlags.Instance | BindingFlags.NonPublic);
                     Debug.Assert(field != null, "We need to use an internal field named IsQuotedVersion that is declared on Cookie.");
                     s_isQuotedVersionField = field;

@@ -593,14 +593,54 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
-        public void Timeout_TooShort_AllPendingOperationsCanceled()
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public void Timeout_TooShort_AllPendingOperationsCanceled(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
             {
                 client.Timeout = TimeSpan.FromMilliseconds(1);
-                Task<HttpResponseMessage>[] tasks = Enumerable.Range(0, 3).Select(_ => client.GetAsync(CreateFakeUri())).ToArray();
-                Assert.All(tasks, task => Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult()));
+                Task<HttpResponseMessage>[] tasks = Enumerable.Range(0, 3).Select(_ => client.GetAsync(CreateFakeUri(), completionOption)).ToArray();
+                Assert.All(tasks, task => {
+                    OperationCanceledException e = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());
+                    TimeoutException timeoutException = (TimeoutException)e.InnerException;
+                    Assert.NotNull(timeoutException);
+                    Assert.NotNull(timeoutException.InnerException);
+                });
+            }
+        }
+
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public async Task Timeout_CallerCanceledTokenAfterTimeout_TimeoutIsNotDetected(HttpCompletionOption completionOption)
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
+            {
+                client.Timeout = TimeSpan.FromMilliseconds(0.01);
+                CancellationTokenSource cts = new CancellationTokenSource();
+                CancellationToken token = cts.Token;
+                cts.Cancel();
+                Task<HttpResponseMessage> task = client.GetAsync(CreateFakeUri(), completionOption, token);
+                OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task);
+                Assert.Null(e.InnerException);
+            }
+        }
+
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public void Timeout_CallerCanceledTokenBeforeTimeout_TimeoutIsNotDetected(HttpCompletionOption completionOption)
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
+            {
+                client.Timeout = TimeSpan.FromDays(1);
+                CancellationTokenSource cts = new CancellationTokenSource();
+                Task<HttpResponseMessage> task = client.GetAsync(CreateFakeUri(), completionOption, cts.Token);
+                cts.Cancel();
+                OperationCanceledException e = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());
+                Assert.Null(e.InnerException);
             }
         }
 

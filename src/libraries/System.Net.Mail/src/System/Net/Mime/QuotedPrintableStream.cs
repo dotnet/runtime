@@ -34,7 +34,7 @@ namespace System.Net.Mime
         //if we aren't encoding CRLF then it occupies two chars
         private const int SizeOfNonEncodedCRLF = 2;
 
-        private static readonly byte[] s_hexDecodeMap = new byte[]
+        private static ReadOnlySpan<byte> HexDecodeMap => new byte[] // rely on C# compiler optimization to eliminate allocation
         {
             // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0
@@ -55,7 +55,7 @@ namespace System.Net.Mime
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // F
         };
 
-        private static readonly byte[] s_hexEncodeMap = new byte[] { 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70 };
+        private static ReadOnlySpan<byte> HexEncodeMap => new byte[] { 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70 };
 
         private readonly int _lineLength;
         private ReadStateInfo _readState;
@@ -140,8 +140,8 @@ namespace System.Net.Mime
                         // '=\r\n' means a soft (aka. invisible) CRLF sequence...
                         if (source[0] != '\r' || source[1] != '\n')
                         {
-                            byte b1 = s_hexDecodeMap[source[0]];
-                            byte b2 = s_hexDecodeMap[source[1]];
+                            byte b1 = HexDecodeMap[source[0]];
+                            byte b2 = HexDecodeMap[source[1]];
                             if (b1 == 255)
                                 throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
                             if (b2 == 255)
@@ -157,8 +157,8 @@ namespace System.Net.Mime
                         // '=\r\n' means a soft (aka. invisible) CRLF sequence...
                         if (ReadState.Byte != '\r' || *source != '\n')
                         {
-                            byte b1 = s_hexDecodeMap[ReadState.Byte];
-                            byte b2 = s_hexDecodeMap[*source];
+                            byte b1 = HexDecodeMap[ReadState.Byte];
+                            byte b2 = HexDecodeMap[*source];
                             if (b1 == 255)
                                 throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
                             if (b2 == 255)
@@ -202,8 +202,8 @@ namespace System.Net.Mime
                             default:
                                 if (source[1] != '\r' || source[2] != '\n')
                                 {
-                                    byte b1 = s_hexDecodeMap[source[1]];
-                                    byte b2 = s_hexDecodeMap[source[2]];
+                                    byte b1 = HexDecodeMap[source[1]];
+                                    byte b2 = HexDecodeMap[source[2]];
                                     if (b1 == 255)
                                         throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
                                     if (b2 == 255)
@@ -276,9 +276,9 @@ namespace System.Net.Mime
                     //append an = to indicate an encoded character
                     WriteState.Append((byte)'=');
                     //shift 4 to get the first four bytes only and look up the hex digit
-                    WriteState.Append(s_hexEncodeMap[buffer[cur] >> 4]);
+                    WriteState.Append(HexEncodeMap[buffer[cur] >> 4]);
                     //clear the first four bytes to get the last four and look up the hex digit
-                    WriteState.Append(s_hexEncodeMap[buffer[cur] & 0xF]);
+                    WriteState.Append(HexEncodeMap[buffer[cur] & 0xF]);
                 }
                 else
                 {
@@ -299,9 +299,9 @@ namespace System.Net.Mime
                         //append an = to indicate an encoded character
                         WriteState.Append((byte)'=');
                         //shift 4 to get the first four bytes only and look up the hex digit
-                        WriteState.Append(s_hexEncodeMap[buffer[cur] >> 4]);
+                        WriteState.Append(HexEncodeMap[buffer[cur] >> 4]);
                         //clear the first four bytes to get the last four and look up the hex digit
-                        WriteState.Append(s_hexEncodeMap[buffer[cur] & 0xF]);
+                        WriteState.Append(HexEncodeMap[buffer[cur] & 0xF]);
                     }
                     else
                     {
