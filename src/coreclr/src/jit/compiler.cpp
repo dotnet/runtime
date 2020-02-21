@@ -5310,7 +5310,8 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 
     // Set this before the first 'BADCODE'
     // Skip verification where possible
-    tiVerificationNeeded = !compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
+    //.tiVerificationNeeded = !compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
+    assert(compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION));
 
     assert(!compIsForInlining() || !tiVerificationNeeded); // Inlinees must have been verified.
 

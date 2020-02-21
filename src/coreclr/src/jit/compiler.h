@@ -9240,8 +9240,10 @@ public:
 
 public:
     // Set to TRUE if verification cannot be skipped for this method
-    // If we detect unverifiable code, we will lazily check
-    BOOL tiVerificationNeeded;
+    // CoreCLR does not ever run IL verification. Compile out the verifier from the JIT by making this a constant.
+    // TODO: Delete the verifier from the JIT?
+    // BOOL tiVerificationNeeded;
+    static const BOOL tiVerificationNeeded = FALSE;
 
     // Returns TRUE if child is equal to or a subtype of parent for merge purposes
     // This support is necessary to suport attributes that are not described in
