@@ -60,7 +60,7 @@ Below table shows the combined area owners on this repository:
 | area-System.Data | @ajcvickers @cheenamalhotra @david-engel | <ul><li>Odbc, OleDb - [@saurabh500](https://github.com/saurabh500)</li></ul> |
 | area-System.Data.SqlClient | @cheenamalhotra @david-engel @karinazhou @JRahnama | Archived component - limited churn/contributions (see https://devblogs.microsoft.com/dotnet/introducing-the-new-microsoftdatasqlclient/) |
 | area-System.Diagnostics | @tommcdon @krwq | <ul><li>System.Diagnostics.EventLog - [@Anipik](https://github.com/Anipik)</li></ul> |
-| area-System.Diagnostics.Process | @adsitnik @eiriktsarpalis | |
+| area-System.Diagnostics.Process | @adamsitnik @eiriktsarpalis | |
 | area-System.Diagnostics.Tracing | @noahfalk @tommcdon @tarekgh @Anipik | Packages:<ul><li>System.Diagnostics.DiagnosticSource</li><li>System.Diagnostics.PerformanceCounter - [@Anipik](https://github.com/Anipik)</li><li>System.Diagnostics.Tracing</li><li>System.Diagnostics.TraceSource - [@Anipik](https://github.com/Anipik)</li></ul><br/> |
 | area-System.DirectoryServices | @tquerec @josephisenhour | |
 | area-System.Drawing | @JeremyKuhne @safern | |
@@ -73,7 +73,7 @@ Below table shows the combined area owners on this repository:
 | area-System.Linq.Expressions | @cston @333fred | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
 | area-System.Linq.Parallel | @tarekgh @kouvel | |
 | area-System.Management | @Anipik | WMI |
-| area-System.Memory | @GrabYourPitchforks @adsitnik | |
+| area-System.Memory | @GrabYourPitchforks @adamsitnik | |
 | area-System.Net | @dotnet/ncl | Included:<ul><li>System.Uri</li></ul> |
 | area-System.Net.Http | @dotnet/ncl | |
 | area-System.Net.Security | @dotnet/ncl | |
