@@ -112,9 +112,6 @@ typedef struct {
 		mono_u nati;
 		gpointer vt;
 	} data;
-#if defined(__ppc__) || defined(__powerpc__)
-	int pad;
-#endif
 } stackval;
 
 typedef struct _InterpFrame InterpFrame;
