@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Options
     {
         public ConfigurationChangeTokenSource(Microsoft.Extensions.Configuration.IConfiguration config) { }
         public ConfigurationChangeTokenSource(string name, Microsoft.Extensions.Configuration.IConfiguration config) { }
-        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
         public Microsoft.Extensions.Primitives.IChangeToken GetChangeToken() { throw null; }
     }
     public partial class ConfigureFromConfigurationOptions<TOptions> : Microsoft.Extensions.Options.ConfigureOptions<TOptions> where TOptions : class

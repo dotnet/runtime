@@ -44,7 +44,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 var logger = loggerFactory.CreateLogger(testName);
 
                 // TODO refactor deployers to not depend on source code
-                // see https://github.com/aspnet/Extensions/issues/1697 and https://github.com/aspnet/AspNetCore/issues/10268
+                // see https://github.com/dotnet/extensions/issues/1697 and https://github.com/dotnet/aspnetcore/issues/10268
 #pragma warning disable 0618
                 var applicationPath = Path.Combine(TestPathUtilities.GetSolutionRootDirectory("Extensions"),
                     "src", "Hosting", "test", "testassets", "Microsoft.Extensions.Hosting.TestApp");
@@ -55,7 +55,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                     RuntimeFlavor.CoreClr,
                     RuntimeArchitecture.x64)
                 {
-                    TargetFramework = Tfm.NetCoreApp31,
+                    TargetFramework = Tfm.NetCoreApp50,
                     ApplicationType = ApplicationType.Portable,
                     PublishApplicationBeforeDeployment = true,
                     StatusMessagesEnabled = false
