@@ -1299,7 +1299,7 @@ size_t genFlowNodeCnt;
 
 #ifdef DEBUG
 /* static */
-LONG Compiler::s_compMethodID = 0; // to produce unique label names
+LONG Compiler::s_compMethodsCount = 0; // to produce unique label names
 #endif
 
 #if MEASURE_MEM_ALLOC
@@ -6099,7 +6099,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     }
     else
     {
-        compMethodID = InterlockedIncrement(&s_compMethodID);
+        compMethodID = InterlockedIncrement(&s_compMethodsCount);
     }
 #endif
 

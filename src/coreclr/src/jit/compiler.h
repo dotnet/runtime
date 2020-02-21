@@ -8980,7 +8980,7 @@ public:
 
 #ifdef DEBUG
 private:
-    static LONG s_compMethodID; // to produce unique label names
+    static LONG s_compMethodsCount; // to produce unique label names
 #endif
 
 public:
