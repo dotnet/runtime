@@ -995,7 +995,7 @@ namespace System.Runtime.InteropServices
     {
         None = 0,
         TrackerObject = 1,
-        IgnoreCache = 2,
+        UniqueInstance = 2,
     }
     [System.CLSCompliantAttribute(false)]
     public abstract class ComWrappers
@@ -1015,7 +1015,7 @@ namespace System.Runtime.InteropServices
         public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags) { throw null; }
         protected abstract object CreateObject(System.IntPtr externalComObject, System.IntPtr agileObjectRef, CreateObjectFlags flags);
         protected virtual void ReleaseObjects(System.Collections.IEnumerable objects) { throw null; }
-        public void RegisterForReferenceTrackerHost() { }
+        public void RegisterAsGlobalInstance() { }
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
 }

@@ -330,7 +330,7 @@ namespace ComWrappersTests
             // Ownership has been transferred to the wrapper.
             Marshal.Release(trackerObjRaw);
 
-            var trackerObj3 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject | CreateObjectFlags.IgnoreCache);
+            var trackerObj3 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject | CreateObjectFlags.UniqueInstance);
             Assert.AreNotEqual(trackerObj1, trackerObj3);
         }
 
@@ -340,23 +340,23 @@ namespace ComWrappersTests
         static void ValidateGlobalInstanceScenarios()
         {
             Console.WriteLine($"Running {nameof(ValidateGlobalInstanceScenarios)}...");
-            Console.WriteLine($"Validate RegisterForReferenceTrackerHost()...");
+            Console.WriteLine($"Validate RegisterAsGlobalInstance()...");
 
             var wrappers1 = TestComWrappers.Global;
-            wrappers1.RegisterForReferenceTrackerHost();
+            wrappers1.RegisterAsGlobalInstance();
 
             Assert.Throws<InvalidOperationException>(
                 () =>
                 {
-                    wrappers1.RegisterForReferenceTrackerHost();
-                }, "Should not be able to re-register for ReferenceTrackerHost");
+                    wrappers1.RegisterAsGlobalInstance();
+                }, "Should not be able to re-register for global ComWrappers");
 
             var wrappers2 = new TestComWrappers();
             Assert.Throws<InvalidOperationException>(
                 () =>
                 {
-                    wrappers2.RegisterForReferenceTrackerHost();
-                }, "Should not be able to reset for ReferenceTrackerHost");
+                    wrappers2.RegisterAsGlobalInstance();
+                }, "Should not be able to reset for global ComWrappers");
 
             Console.WriteLine($"Validate NotifyEndOfReferenceTrackingOnThread()...");
 

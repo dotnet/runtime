@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
     {
         None = 0,
         TrackerObject = 1,
-        IgnoreCache = 2,
+        UniqueInstance = 2,
     }
 
     [CLSCompliant(false)]
@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
-        public void RegisterForReferenceTrackerHost()
+        public void RegisterAsGlobalInstance()
         {
             throw new PlatformNotSupportedException();
         }

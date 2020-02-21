@@ -63,7 +63,7 @@ namespace InteropLib
         {
             CreateObjectFlags_None = 0,
             CreateObjectFlags_TrackerObject = 1,
-            CreateObjectFlags_IgnoreCache = 2,
+            CreateObjectFlags_UniqueInstance = 2,
         };
 
         // Allocate a wrapper context for an external object.

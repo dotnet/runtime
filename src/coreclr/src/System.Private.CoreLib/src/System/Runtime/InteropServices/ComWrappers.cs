@@ -21,6 +21,12 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// The caller will provide an IUnknown Vtable.
         /// </summary>
+        /// <remarks>
+        /// This is useful in scenarios when the caller has no need to rely on an IUnknown instance
+        /// that is used when running managed code is not possible (i.e. during a GC). In traditional
+        /// COM scenarios this is common, but scenarios involving <see href="https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/nn-windows-ui-xaml-hosting-referencetracker-ireferencetrackertarget">Reference Tracker hosting</see>
+        /// calling of the IUnknown API during a GC is possible.
+        /// </remarks>
         CallerDefinedIUnknown = 1,
 
         /// <summary>
@@ -45,9 +51,9 @@ namespace System.Runtime.InteropServices
         TrackerObject = 1,
 
         /// <summary>
-        /// Ignore the internal cache when creating an object.
+        /// Ignore any internal caching and always create a unique instance.
         /// </summary>
-        IgnoreCache = 2,
+        UniqueInstance = 2,
     }
 
     /// <summary>
@@ -67,8 +73,7 @@ namespace System.Runtime.InteropServices
             public Guid IID;
 
             /// <summary>
-            /// Must be pinned memory that is owned by the implementer of <see cref="ComputeVtables(object, CreateComInterfaceFlags, out int)"/>.
-            /// The memory must live as long as any COM interface consuming the table exists.
+            /// Memory must have the same lifetime as the memory returned from the call to <see cref="ComputeVtables(object, CreateComInterfaceFlags, out int)"/>.
             /// </summary>
             public IntPtr Vtable;
         }
@@ -171,6 +176,8 @@ namespace System.Runtime.InteropServices
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
         /// <remarks>
         /// The <paramref name="agileObjectRef"/> is an <see href="https://docs.microsoft.com/windows/win32/api/objidl/nn-objidl-iagilereference">IAgileReference</see> instance. This type should be used to ensure the associated external object, if not known to be free-threaded, is released from the correct COM apartment.
+        ///
+        /// If the object cannot be created and <code>null</code> is returned, the call to <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags)"/> will throw a <see cref="System.ArgumentNullException"/>.
         /// </remarks>
         protected abstract object CreateObject(IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags);
 
@@ -195,17 +202,21 @@ namespace System.Runtime.InteropServices
             => (comWrappersImpl ?? s_globalInstance!).ReleaseObjects(objects);
 
         /// <summary>
-        /// Register this class's implementation to be used when a Reference Tracker Host instance is requested from another runtime.
+        /// Register this class's implementation to be used as the single global instance.
         /// </summary>
         /// <remarks>
         /// This function can only be called a single time. Subsequent calls to this function will result
         /// in a <see cref="System.InvalidOperationException"/> being thrown.
+        ///
+        /// Scenarios where the global instance may be used are:
+        ///  * Object tracking via the <see cref="CreateComInterfaceFlags.TrackerSupport" /> and <see cref="CreateObjectFlags.TrackerObject" /> flags.
+        ///  * Usage of COM related Marshal APIs.
         /// </remarks>
-        public void RegisterForReferenceTrackerHost()
+        public void RegisterAsGlobalInstance()
         {
             if (null != Interlocked.CompareExchange(ref s_globalInstance, this, null))
             {
-                throw new InvalidOperationException(SR.InvalidOperation_ResetReferenceTrackerHostCallbacks);
+                throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalComWrappersInstance);
             }
         }
 

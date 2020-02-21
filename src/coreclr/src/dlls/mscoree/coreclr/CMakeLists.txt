@@ -104,8 +104,8 @@ set(CORECLR_LIBRARIES
     gcinfo # Condition="'$(TargetCpu)'=='amd64' or '$(TargetCpu)' == 'arm' or '$(TargetCpu)' == 'arm64'"
     ildbsymlib
     utilcode
-    libraries-native
     v3binder
+    libraries-native
     interop
 )
 

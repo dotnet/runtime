@@ -624,9 +624,9 @@ namespace
 
         ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
 
-        // Check if the cache should be queried.
-        bool ignoreCache = !!(flags & CreateObjectFlags::CreateObjectFlags_IgnoreCache);
-        if (!ignoreCache)
+        // Check if the user requested a unique instance.
+        bool uniqueInstance = !!(flags & CreateObjectFlags::CreateObjectFlags_UniqueInstance);
+        if (!uniqueInstance)
         {
             // Query the external object cache
             ExtObjCxtCache::LockHolder lock(cache);
@@ -658,7 +658,7 @@ namespace
             DWORD flags = (resultHolder.Result.FromTrackerRuntime
                             ? ExternalObjectContext::Flags_ReferenceTracker
                             : ExternalObjectContext::Flags_None) |
-                          (ignoreCache
+                          (uniqueInstance
                             ? ExternalObjectContext::Flags_None
                             : ExternalObjectContext::Flags_InCache);
             ExternalObjectContext::Construct(
@@ -668,7 +668,7 @@ namespace
                 gc.objRef->GetSyncBlockIndex(),
                 flags);
 
-            if (ignoreCache)
+            if (uniqueInstance)
             {
                 extObjCxt = resultHolder.GetContext();
             }
@@ -680,7 +680,7 @@ namespace
             }
 
             // If the returned context matches the new context it means the
-            // new context was inserted or the cache is being ignored.
+            // new context was inserted or a unique instance was requested.
             if (extObjCxt == resultHolder.GetContext())
             {
                 // Update the object's SyncBlock with a handle to the context for runtime cleanup.
@@ -691,7 +691,7 @@ namespace
 
                 // Detach from the holder to avoid cleanup.
                 (void)resultHolder.DetachContext();
-                STRESS_LOG2(LF_INTEROP, LL_INFO100, "Created EOC (Ignore Cache: %d): 0x%p\n", (int)ignoreCache, extObjCxt);
+                STRESS_LOG2(LF_INTEROP, LL_INFO100, "Created EOC (Unique Instance: %d): 0x%p\n", (int)uniqueInstance, extObjCxt);
             }
 
             _ASSERTE(extObjCxt->IsActive());
