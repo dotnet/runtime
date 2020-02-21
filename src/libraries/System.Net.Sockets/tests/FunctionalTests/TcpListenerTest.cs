@@ -44,14 +44,14 @@ namespace System.Net.Sockets.Tests
             Assert.False(listener.Active);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public void AllowNatTraversal_NotStarted_SetSuccessfully()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
             listener.AllowNatTraversal(true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public void AllowNatTraversal_Started_ThrowsException()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -59,7 +59,7 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<InvalidOperationException>(() => listener.AllowNatTraversal(true));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public void AllowNatTraversal_StartedAndStopped_SetSuccessfully()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
