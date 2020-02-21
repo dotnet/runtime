@@ -996,7 +996,7 @@ namespace System.Net.Http
             SetRequestHandleRedirectionOptions(state.RequestHandle);
             SetRequestHandleCookieOptions(state.RequestHandle);
             SetRequestHandleTlsOptions(state.RequestHandle);
-            SetRequestHandleClientCertificateOptions(state.RequestHandle, state.RequestMessage.RequestUri);
+            SetRequestHandleClientCertificateOptions(state.RequestHandle, state.RequestMessage.RequestUri, state.RequestMessage.Version);
             SetRequestHandleCredentialsOptions(state);
             SetRequestHandleBufferingOptions(state.RequestHandle);
             SetRequestHandleHttp2Options(state.RequestHandle, state.RequestMessage.Version);
@@ -1153,7 +1153,7 @@ namespace System.Net.Http
             }
         }
 
-        private void SetRequestHandleClientCertificateOptions(SafeWinHttpHandle requestHandle, Uri requestUri)
+        private void SetRequestHandleClientCertificateOptions(SafeWinHttpHandle requestHandle, Uri requestUri, Version requestVersion)
         {
             if (requestUri.Scheme != UriScheme.Https)
             {
@@ -1172,6 +1172,24 @@ namespace System.Net.Http
 
             if (clientCertificate != null)
             {
+                // Newer versions of WinHTTP fully support HTTP/2 with TLS client certificates.
+                // But the support must be opted in.
+                if (requestVersion == HttpVersion20)
+                {
+                    uint optionData = Interop.WinHttp.WINHTTP_HTTP2_PLUS_CLIENT_CERT_FLAG;
+                    if (Interop.WinHttp.WinHttpSetOption(
+                        requestHandle,
+                        Interop.WinHttp.WINHTTP_OPTION_ENABLE_HTTP2_PLUS_CLIENT_CERT,
+                        ref optionData))
+                    {
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HTTP/2 with TLS client cert supported");
+                    }
+                    else
+                    {
+                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "HTTP/2 with TLS client cert not supported");
+                    }
+                }
+
                 SetWinHttpOption(
                     requestHandle,
                     Interop.WinHttp.WINHTTP_OPTION_CLIENT_CERT_CONTEXT,
