@@ -52,7 +52,8 @@ namespace System.Net.Sockets.Tests
             listener.AllowNatTraversal(true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void AllowNatTraversal_Started_ThrowsException()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
