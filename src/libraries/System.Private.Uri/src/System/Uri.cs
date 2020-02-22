@@ -4966,19 +4966,19 @@ namespace System
             char c1 = relativePart[0];
 
             //check a special case for the base as DOS path and a rooted relative string
-            if (basePart.IsDosPath &&
-                (c1 == '/' || c1 == '\\') &&
-                (relativePart.Length == 1 || (relativePart[1] != '/' && relativePart[1] != '\\')))
+            if (basePart.IsDosPath
+                && (c1 == '/' || c1 == '\\')
+                && (relativePart.Length == 1 || (relativePart[1] != '/' && relativePart[1] != '\\')))
             {
                 // take relative part appended to the base string after the drive letter
                 int idx = basePart.OriginalString.IndexOf(':');
-                if (basePart.IsImplicitFile)
+
+                if (!basePart.IsImplicitFile)
                 {
-                    return string.Concat(basePart.OriginalString.AsSpan(0, idx + 1), relativePart);
+                    // The basePart has explicit scheme (could be not file:), take the DOS drive ':' position
+                    idx = basePart.OriginalString.IndexOf(':', idx + 1);
                 }
 
-                // The basePart has explicit scheme (could be not file:), take the DOS drive ':' position
-                idx = basePart.OriginalString.IndexOf(':', idx + 1);
                 return string.Concat(basePart.OriginalString.AsSpan(0, idx + 1), relativePart);
             }
 
@@ -4997,27 +4997,30 @@ namespace System
                     // For compatibility with V1.0 parser we restrict the compression scope to Unc Share, i.e. \\host\share\
                     if (basePart.IsUnc)
                     {
-                        string share = basePart.GetParts(UriComponents.Path | UriComponents.KeepDelimiter,
-                            UriFormat.Unescaped);
+                        ReadOnlySpan<char> share = basePart.GetParts(UriComponents.Path | UriComponents.KeepDelimiter, UriFormat.Unescaped);
                         for (int i = 1; i < share.Length; ++i)
                         {
                             if (share[i] == '/')
                             {
-                                share = share.Substring(0, i);
+                                share = share.Slice(0, i);
                                 break;
                             }
                         }
+
                         if (basePart.IsImplicitFile)
                         {
-                            return @"\\"
-                                    + basePart.GetParts(UriComponents.Host, UriFormat.Unescaped)
-                                    + share
-                                    + relativePart;
+                            return string.Concat(
+                                @"\\",
+                                basePart.GetParts(UriComponents.Host, UriFormat.Unescaped),
+                                share,
+                                relativePart);
                         }
-                        return "file://"
-                                + basePart.GetParts(UriComponents.Host, uriFormat)
-                                + share
-                                + relativePart;
+
+                        return string.Concat(
+                            "file://",
+                            basePart.GetParts(UriComponents.Host, uriFormat),
+                            share,
+                            relativePart);
                     }
                     // It's not obvious but we've checked (for this relativePart format) that baseUti is nor UNC nor DOS path
                     //
@@ -5031,7 +5034,7 @@ namespace System
 
             bool convBackSlashes = basePart.Syntax.InFact(UriSyntaxFlags.ConvertPathSlashes);
 
-            string? left = null;
+            int jointLength = basePart._string.Length + relativePart.Length;
 
             // check for network or local absolute path
             if (c1 == '/' || (c1 == '\\' && convBackSlashes))
@@ -5039,97 +5042,65 @@ namespace System
                 if (relativePart.Length >= 2 && relativePart[1] == '/')
                 {
                     // got an authority in relative path and the base scheme is not file (checked)
-                    return basePart.Scheme + ':' + relativePart;
+                    return string.Concat(basePart.Scheme, ":", relativePart);
                 }
+
+                ValueStringBuilder dest = jointLength <= 256
+                    ? new ValueStringBuilder(stackalloc char[256])
+                    : new ValueStringBuilder(jointLength);
 
                 // Got absolute relative path, and the base is nor FILE nor a DOS path (checked at the method start)
                 if (basePart.HostType == Flags.IPv6HostType)
                 {
-                    left = basePart.GetParts(UriComponents.Scheme | UriComponents.UserInfo, uriFormat)
-                                     + '[' + basePart.DnsSafeHost + ']'
-                                     + basePart.GetParts(UriComponents.KeepDelimiter | UriComponents.Port, uriFormat);
+                    dest.Append(basePart.GetParts(UriComponents.Scheme | UriComponents.UserInfo, uriFormat));
+                    dest.Append('[');
+                    dest.Append(basePart.DnsSafeHost);
+                    dest.Append(']');
+                    dest.Append(basePart.GetParts(UriComponents.KeepDelimiter | UriComponents.Port, uriFormat));
                 }
                 else
                 {
-                    left = basePart.GetParts(UriComponents.SchemeAndServer | UriComponents.UserInfo, uriFormat);
+                    dest.Append(basePart.GetParts(UriComponents.SchemeAndServer | UriComponents.UserInfo, uriFormat));
                 }
 
-                return convBackSlashes && c1 == '\\' ?
-                    string.Concat(left, "/", relativePart.AsSpan(1)) :
-                    left + relativePart;
+                string retVal;
+                if (convBackSlashes && c1 == '\\')
+                {
+                    retVal = string.Concat(dest.AsSpan(), "/", relativePart.AsSpan(1));
+                }
+                else
+                {
+                    retVal = string.Concat(dest.AsSpan(), relativePart);
+                }
+                dest.Dispose();
+                return retVal;
             }
 
             // Here we got a relative path
             // Need to run path Compression because this is how relative Uri combining works
 
-            // Take the base part path up to and including the last slash
-            left = basePart.GetParts(UriComponents.Path | UriComponents.KeepDelimiter,
-                basePart.IsImplicitFile ? UriFormat.Unescaped : uriFormat);
-            int length = left.Length;
-            char[] path = new char[length + relativePart.Length];
+            ValueStringBuilder combined = jointLength <= 256
+                ? new ValueStringBuilder(stackalloc char[256])
+                : new ValueStringBuilder(jointLength);
 
-            if (length > 0)
-            {
-                left.CopyTo(0, path, 0, length);
-                while (length > 0)
-                {
-                    if (path[--length] == '/')
-                    {
-                        ++length;
-                        break;
-                    }
-                }
-            }
-
-            //Append relative path to the result
-            relativePart.CopyTo(0, path, length, relativePart.Length);
-
-            // Split relative on path and extra (for compression)
-            c1 = basePart.Syntax.InFact(UriSyntaxFlags.MayHaveQuery) ? '?' : c_DummyChar;
-
-            // The  implicit file check is to avoid a fragment in the implicit file combined uri.
-            char c2 = (!basePart.IsImplicitFile && basePart.Syntax.InFact(UriSyntaxFlags.MayHaveFragment)) ? '#' :
-                c_DummyChar;
-            ReadOnlySpan<char> extra = string.Empty;
-
-            // assuming c_DummyChar may not happen in an unicode uri string
-            if (!(c1 == c_DummyChar && c2 == c_DummyChar))
-            {
-                int i = 0;
-                for (; i < relativePart.Length; ++i)
-                {
-                    if (path[length + i] == c1 || path[length + i] == c2)
-                    {
-                        break;
-                    }
-                }
-                if (i == 0)
-                {
-                    extra = relativePart;
-                }
-                else if (i < relativePart.Length)
-                {
-                    extra = relativePart.AsSpan(i);
-                }
-                length += i;
-            }
-            else
-            {
-                length += relativePart.Length;
-            }
+            bool isDosFilePath = false;
 
             // Take the base part up to the path
             if (basePart.HostType == Flags.IPv6HostType)
             {
                 if (basePart.IsImplicitFile)
                 {
-                    left = @"\\[" + basePart.DnsSafeHost + ']';
+                    combined.Append(@"\\[");
+                    combined.Append(basePart.DnsSafeHost);
+                    combined.Append(']');
                 }
                 else
                 {
-                    left = basePart.GetParts(UriComponents.Scheme | UriComponents.UserInfo, uriFormat)
-                            + '[' + basePart.DnsSafeHost + ']'
-                            + basePart.GetParts(UriComponents.KeepDelimiter | UriComponents.Port, uriFormat);
+                    combined.Append(basePart.GetParts(UriComponents.Scheme | UriComponents.UserInfo, uriFormat));
+                    combined.Append('[');
+                    combined.Append(basePart.DnsSafeHost);
+                    combined.Append(']');
+                    combined.Append(basePart.GetParts(UriComponents.KeepDelimiter | UriComponents.Port, uriFormat));
                 }
             }
             else
@@ -5138,27 +5109,75 @@ namespace System
                 {
                     if (basePart.IsDosPath)
                     {
-                        // The FILE DOS path comes as /c:/path, we have to exclude first 3 chars from compression
-                        Compress(path, 3, ref length, basePart.Syntax);
-                        return string.Concat(path.AsSpan(1, length - 1), extra);
+                        isDosFilePath = true;
                     }
                     else if (!IsWindowsSystem && basePart.IsUnixPath)
                     {
-                        left = basePart.GetParts(UriComponents.Host, UriFormat.Unescaped);
+                        combined.Append(basePart.GetParts(UriComponents.Host, UriFormat.Unescaped));
                     }
                     else
                     {
-                        left = @"\\" + basePart.GetParts(UriComponents.Host, UriFormat.Unescaped);
+                        combined.Append(@"\\");
+                        combined.Append(basePart.GetParts(UriComponents.Host, UriFormat.Unescaped));
                     }
                 }
                 else
                 {
-                    left = basePart.GetParts(UriComponents.SchemeAndServer | UriComponents.UserInfo, uriFormat);
+                    combined.Append(basePart.GetParts(UriComponents.SchemeAndServer | UriComponents.UserInfo, uriFormat));
                 }
             }
-            //compress the path
-            Compress(path, basePart.SecuredPathIndex, ref length, basePart.Syntax);
-            return string.Concat(left, path.AsSpan(0, length), extra);
+
+            int prePathLength = combined.Length;
+
+            // Take the base part path up to and including the last slash
+            string basePath = basePart.GetParts(UriComponents.Path | UriComponents.KeepDelimiter,
+                basePart.IsImplicitFile ? UriFormat.Unescaped : uriFormat);
+
+            int index = basePath.LastIndexOf('/');
+            if (index != -1)
+            {
+                combined.Append(basePath.AsSpan(0, index + 1));
+            }
+
+            // Split relative on path and extra (for compression)
+            c1 = basePart.Syntax.InFact(UriSyntaxFlags.MayHaveQuery) ? '?' : c_DummyChar;
+
+            // The implicit file check is to avoid a fragment in the implicit file combined uri.
+            char c2 = (!basePart.IsImplicitFile && basePart.Syntax.InFact(UriSyntaxFlags.MayHaveFragment)) ? '#' : c_DummyChar;
+
+            // assuming c_DummyChar may not happen in an unicode uri string
+            index = c1 == c_DummyChar && c2 == c_DummyChar
+                ? -1
+                : relativePart.AsSpan().IndexOfAny(c1, c2);
+
+            ReadOnlySpan<char> extra;
+            if (index == -1)
+            {
+                combined.Append(relativePart);
+                extra = ReadOnlySpan<char>.Empty;
+            }
+            else
+            {
+                combined.Append(relativePart.AsSpan(0, index));
+                extra = relativePart.AsSpan(index);
+            }
+
+            string ret;
+            if (isDosFilePath)
+            {
+                Debug.Assert(prePathLength == 0);
+                // The FILE DOS path comes as /c:/path, we have to exclude first 3 chars from compression
+                int length = Compress(combined.RawChars.Slice(3, combined.Length - 3), basePart.Syntax);
+                ret = string.Concat(combined.AsSpan(1, length + 3 - 1), extra);
+            }
+            else
+            {
+                int offset = prePathLength +  basePart.SecuredPathIndex;
+                int length = Compress(combined.RawChars.Slice(offset, combined.Length - offset), basePart.Syntax);
+                ret = string.Concat(combined.AsSpan(0, offset + length), extra);
+            }
+            combined.Dispose();
+            return ret;
         }
 
         //
