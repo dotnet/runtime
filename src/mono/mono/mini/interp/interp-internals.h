@@ -117,7 +117,7 @@ typedef struct {
 #endif
 } stackval;
 
-typedef struct _InterpFrame InterpFrame;
+typedef struct InterpFrame InterpFrame;
 
 typedef void (*MonoFuncV) (void);
 typedef void (*MonoPIFunc) (void *callme, void *margs);
@@ -202,18 +202,18 @@ typedef struct {
 	gboolean is_void : 1;
 } InterpState;
 
-struct _InterpFrame {
+struct InterpFrame {
 	InterpFrame *parent; /* parent */
+	InterpFrame   *next_free;
 	InterpMethod  *imethod; /* parent */
 	stackval       *retval; /* parent */
 	stackval       *stack_args; /* parent */
 	stackval       *stack;
-	/* An address on the native stack associated with the frame, used during EH */
-	gpointer       native_stack_addr;
 	/* Stack fragments this frame was allocated from */
-	StackFragment *iframe_frag, *data_frag;
+	StackFragment *data_frag;
 	/* exception info */
 	const unsigned short  *ip;
+	gpointer alloca_base; // FIXME Everything about alloca_base is guessing.
 	/* State saved before calls */
 	/* This is valid if state.ip != NULL */
 	InterpState state;
@@ -232,8 +232,6 @@ typedef struct {
 	MonoJitExceptionInfo *handler_ei;
 	/* Exception that is being thrown. Set with rest of resume state */
 	guint32 exc_gchandle;
-	/* Stack of InterpFrames */
-	FrameStack iframe_stack;
 	/* Stack of frame data */
 	FrameStack data_stack;
 } ThreadContext;
