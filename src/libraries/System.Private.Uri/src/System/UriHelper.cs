@@ -816,9 +816,7 @@ namespace System
                 return new string(strToClean, 0, length);
             }
 
-            length -= charsToRemove;
-
-            return string.Create(length, (ip: (IntPtr)strToClean, Length: length), (buffer, state) =>
+            return string.Create(length - charsToRemove, (ip: (IntPtr)strToClean, Length: length), (buffer, state) =>
             {
                 char* source = (char*)state.ip;
                 int destIndex = 0;
