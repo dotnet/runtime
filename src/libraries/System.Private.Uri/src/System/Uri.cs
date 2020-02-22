@@ -5300,11 +5300,16 @@ namespace System
             // to the derived class without any permission demand.
             // Should be deprecated and removed asap.
 
-            char[] dest = new char[path.Length];
-            int count = 0;
-            dest = UriHelper.UnescapeString(path, 0, path.Length, dest, ref count, c_DummyChar, c_DummyChar,
-                c_DummyChar, UnescapeMode.Unescape | UnescapeMode.UnescapeAll, null, false);
-            return new string(dest, 0, count);
+            ValueStringBuilder dest = path.Length <= 256
+                ? new ValueStringBuilder(stackalloc char[256])
+                : new ValueStringBuilder(path.Length);
+
+            UriHelper.UnescapeString(path, 0, path.Length,
+                ref dest, c_DummyChar, c_DummyChar, c_DummyChar,
+                UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
+                syntax: null, isQuery: false);
+
+            return dest.ToString();
         }
 
         [Obsolete("The method has been deprecated. Please use GetComponents() or static EscapeUriString() to escape a Uri component or a string. https://go.microsoft.com/fwlink/?linkid=14202")]
