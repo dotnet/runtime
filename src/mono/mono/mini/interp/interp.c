@@ -3682,7 +3682,6 @@ main_loop:
 			if (csignature->hasthis)
 				--sp;
 
-			// FIXME Free this frame earlier?
 			InterpFrame* const child_frame = alloc_frame (context, &retval, frame, NULL, sp, retval);
 
 			if (frame->imethod->method->dynamic && csignature->pinvoke) {
@@ -3691,6 +3690,9 @@ main_loop:
 				const gboolean save_last_error = ip [-3 + 2];
 				ves_pinvoke_method (child_frame, csignature, (MonoFuncV) code, context, save_last_error);
 			}
+
+			pop_frame (context, child_frame);
+
 			CHECK_RESUME_STATE (context);
 
 			if (csignature->ret->type != MONO_TYPE_VOID) {
@@ -6293,9 +6295,9 @@ call_newobj:
 			gboolean const check = opcode == MINT_LEAVE_CHECK || opcode == MINT_LEAVE_S_CHECK;
 
 			if (check && frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
-				// FIXME Free this frame earlier?
 				InterpFrame* const child_frame = alloc_frame (context, &dummy, frame, NULL, NULL, NULL);
 				MonoException *abort_exc = mono_interp_leave (child_frame);
+				pop_frame (context, child_frame);
 				if (abort_exc)
 					THROW_EX (abort_exc, frame->ip);
 			}
