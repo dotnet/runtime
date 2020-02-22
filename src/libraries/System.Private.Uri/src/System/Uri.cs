@@ -1155,11 +1155,16 @@ namespace System
                     && InFact(Flags.HostNotCanonical | Flags.E_HostNotCanonical))
                 {
                     // Unescape everything
-                    char[] dest = new char[ret.Length];
-                    int count = 0;
-                    UriHelper.UnescapeString(ret, 0, ret.Length, dest, ref count, c_DummyChar, c_DummyChar,
-                        c_DummyChar, UnescapeMode.Unescape | UnescapeMode.UnescapeAll, _syntax, false);
-                    ret = new string(dest, 0, count);
+                    ValueStringBuilder dest = ret.Length <= 256
+                        ? new ValueStringBuilder(stackalloc char[256])
+                        : new ValueStringBuilder(ret.Length);
+
+                    UriHelper.UnescapeString(ret, 0, ret.Length,
+                        ref dest, c_DummyChar, c_DummyChar, c_DummyChar,
+                        UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
+                        _syntax, isQuery: false);
+
+                    ret = dest.ToString();
                 }
 
                 _info.DnsSafeHost = ret;
