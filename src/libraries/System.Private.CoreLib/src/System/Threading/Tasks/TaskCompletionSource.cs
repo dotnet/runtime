@@ -337,5 +337,26 @@ namespace System.Threading.Tasks
             if (!TrySetCanceled())
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
         }
+
+        /// <summary>
+        /// Transitions the underlying
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/> into the
+        /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>
+        /// state, and enables a token to be stored into the canceled
+        /// <see cref="System.Threading.Tasks.Task{TResult}"/>.
+        /// </summary>
+        /// <exception cref="System.InvalidOperationException">
+        /// The underlying <see cref="System.Threading.Tasks.Task{TResult}"/> is already in one
+        /// of the three final states:
+        /// <see cref="System.Threading.Tasks.TaskStatus.RanToCompletion">RanToCompletion</see>,
+        /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">Faulted</see>, or
+        /// <see cref="System.Threading.Tasks.TaskStatus.Canceled">Canceled</see>.
+        /// </exception>
+        /// <exception cref="System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
+        public void SetCanceled(CancellationToken cancellationToken)
+        {
+            if (!TrySetCanceled(cancellationToken))
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
+        }
     }
 }
