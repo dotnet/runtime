@@ -787,6 +787,7 @@ private:
     
     NewHolder<ReadyToRunInfo> m_readyToRunInfo;
     IMDInternalImport *m_manifestMetadata;
+    PEImage *m_peImage;
     
     IMAGE_DATA_DIRECTORY *m_componentAssemblies;
     uint32_t m_componentAssemblyCount;
@@ -795,7 +796,8 @@ private:
 private:
     DomainCompositeImage(
         AppDomain *pDomain,
-        PEFile *pFile,
+        PEFile *peFile,
+        PEImage *peImage,
         READYTORUN_HEADER *header,
         LPCUTF8 compositeImageName,
         uint8_t compositeImageNameLength,
@@ -808,7 +810,8 @@ public:
 public:
     static DomainCompositeImage *Open(
         AppDomain *pDomain,
-        PEFile *pFile,
+        PEFile *peFile,
+        PEImage *peImage,
         LPCUTF8 compositeImageName,
         uint8_t compositeImageNameLength,
         LoaderAllocator *loaderAllocator);

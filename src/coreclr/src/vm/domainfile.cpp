@@ -2351,13 +2351,14 @@ AssemblyNameIndex::AssemblyNameIndex(const SString& name, int32_t index)
 
 DomainCompositeImage::DomainCompositeImage(
     AppDomain *pDomain,
-    PEFile *pFile,
+    PEFile *peFile,
+    PEImage *peImage,
     READYTORUN_HEADER *header,
     LPCUTF8 compositeImageName,
     uint8_t compositeImageNameLength,
     LoaderAllocator *loaderAllocator,
     AllocMemTracker& amTracker)
-  : DomainFile(pDomain, pFile, loaderAllocator)
+  : DomainFile(pDomain, peFile, loaderAllocator)
 {
     CONTRACTL
     {
@@ -2370,15 +2371,16 @@ DomainCompositeImage::DomainCompositeImage(
     LoaderHeap *pHeap = loaderAllocator->GetHighFrequencyHeap();
     m_utf8SimpleName = compositeImageName;
     m_utf8SimpleNameLength = compositeImageNameLength;
+    m_peImage = peImage;
     m_runEagerFixups = true;
     
     m_readyToRunInfo.Assign(new (amTracker.Track(pHeap->AllocMem((S_SIZE_T)sizeof(ReadyToRunInfo))))
-        ReadyToRunInfo(/*pModule*/ NULL, pFile->GetLoaded(), header, /*compositeImage*/ NULL, &amTracker), /*takeOwnership*/ TRUE);
+        ReadyToRunInfo(/*pModule*/ NULL, peImage->GetLoadedLayout(), header, /*compositeImage*/ NULL, &amTracker), /*takeOwnership*/ TRUE);
     m_componentAssemblies = m_readyToRunInfo->GetComposite()->FindSection(ReadyToRunSectionType::ComponentAssemblies);
     m_componentAssemblyCount = m_componentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY);
     
     // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
-    m_manifestMetadata = pFile->GetOpenedILimage()->GetNativeMDImport();
+    m_manifestMetadata = peImage->GetNativeMDImport();
 
     HENUMInternal assemblyEnum;
     HRESULT hr = m_manifestMetadata->EnumAllInit(mdtAssemblyRef, &assemblyEnum);
@@ -2421,12 +2423,13 @@ bool DomainCompositeImage::TestAndClearRunEagerFixups()
 
 DomainCompositeImage *DomainCompositeImage::Open(
     AppDomain *pDomain,
-    PEFile *pFile,
+    PEFile *peFile,
+    PEImage *peImage,
     LPCUTF8 compositeImageName,
     uint8_t compositeImageNameLength,
     LoaderAllocator *loaderAllocator)
 {
-    READYTORUN_HEADER *header = pFile->GetLoaded()->GetReadyToRunHeader();
+    READYTORUN_HEADER *header = peImage->GetLoadedLayout()->GetReadyToRunHeader();
     if (header == NULL)
     {
         return NULL;
@@ -2434,7 +2437,7 @@ DomainCompositeImage *DomainCompositeImage::Open(
     LoaderHeap *pHeap = loaderAllocator->GetHighFrequencyHeap();
     AllocMemTracker amTracker;
     DomainCompositeImage *result = new (amTracker.Track(pHeap->AllocMem((S_SIZE_T)sizeof(DomainCompositeImage))))
-        DomainCompositeImage(pDomain, pFile, header, compositeImageName, compositeImageNameLength, loaderAllocator, amTracker);
+        DomainCompositeImage(pDomain, peFile, peImage, header, compositeImageName, compositeImageNameLength, loaderAllocator, amTracker);
     amTracker.SuppressRelease();
     return result;
 }
@@ -2452,7 +2455,7 @@ PTR_READYTORUN_CORE_HEADER DomainCompositeImage::GetComponentAssemblyHeader(cons
     const AssemblyNameIndex *assemblyNameIndex = m_assemblySimpleNameToIndexMap.Lookup(simpleName);
     if (assemblyNameIndex != NULL)
     {
-        const byte *imageBase = (const byte *)GetFile()->GetLoaded()->GetBase();
+        const byte *imageBase = (const byte *)m_peImage->GetLoadedLayout()->GetBase();
         const READYTORUN_COMPONENT_ASSEMBLIES_ENTRY *componentAssembly =
             (const READYTORUN_COMPONENT_ASSEMBLIES_ENTRY *)&imageBase[m_componentAssemblies->VirtualAddress] + assemblyNameIndex->Index;
         return (PTR_READYTORUN_CORE_HEADER)&imageBase[componentAssembly->ReadyToRunCoreHeader.VirtualAddress];

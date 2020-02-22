@@ -3559,7 +3559,7 @@ DomainCompositeImage *AppDomain::LoadCompositeImage(Module *componentModule, LPC
     PTR_PEImage peImage = PEImage::OpenImage(fullPath);
     PTR_PEFile peFile = PEFile::Open(peImage);
 
-    DomainCompositeImage *compositeImage = DomainCompositeImage::Open(this, peFile, compositeImageName, compositeImageNameLength, moduleLoaderAllocator);
+    DomainCompositeImage *compositeImage = DomainCompositeImage::Open(this, peFile, peImage, compositeImageName, compositeImageNameLength, moduleLoaderAllocator);
     if (compositeImage != NULL)
     {
         CrstHolder ch(GetAssemblyListLock());
