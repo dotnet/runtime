@@ -438,7 +438,8 @@ namespace
         _In_ OBJECTREF* implPROTECTED,
         _In_ IUnknown* externalComObject,
         _In_ IUnknown* agileObjectRef,
-        _In_ INT32 flags)
+        _In_ INT32 flags,
+        _In_ OBJECTREF* targetTypePROTECTED)
     {
         CONTRACTL
         {
@@ -446,17 +447,19 @@ namespace
             MODE_COOPERATIVE;
             PRECONDITION(implPROTECTED != NULL);
             PRECONDITION(externalComObject != NULL);
+            PRECONDITION(targetTypePROTECTED != NULL);
         }
         CONTRACTL_END;
 
         OBJECTREF retObjRef;
 
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__CREATE_OBJECT);
-        DECLARE_ARGHOLDER_ARRAY(args, 4);
+        DECLARE_ARGHOLDER_ARRAY(args, 5);
         args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
         args[ARGNUM_1]  = PTR_TO_ARGHOLDER(externalComObject);
         args[ARGNUM_2]  = PTR_TO_ARGHOLDER(agileObjectRef);
         args[ARGNUM_3]  = DWORD_TO_ARGHOLDER(flags);
+        args[ARGNUM_4]  = OBJECTREF_TO_ARGHOLDER(*targetTypePROTECTED);
         CALL_MANAGED_METHOD(retObjRef, OBJECTREF, args);
 
         return retObjRef;
@@ -598,7 +601,8 @@ namespace
     OBJECTREF GetOrCreateObjectForComInstanceInternal(
         _In_opt_ OBJECTREF impl,
         _In_ IUnknown* identity,
-        _In_ CreateObjectFlags flags)
+        _In_ CreateObjectFlags flags,
+        _In_opt_ OBJECTREF targetType)
     {
         CONTRACT(OBJECTREF)
         {
@@ -615,12 +619,14 @@ namespace
         struct
         {
             OBJECTREF implRef;
+            OBJECTREF targetTypeRef;
             OBJECTREF objRef;
         } gc;
         ::ZeroMemory(&gc, sizeof(gc));
         GCPROTECT_BEGIN(gc);
 
         gc.implRef = impl;
+        gc.targetTypeRef = targetType;
 
         ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
 
@@ -650,7 +656,7 @@ namespace
                 COMPlusThrowHR(hr);
 
             // Call the implementation to create an external object wrapper.
-            gc.objRef = CallGetObject(&gc.implRef, identity, resultHolder.Result.AgileRef, flags);
+            gc.objRef = CallGetObject(&gc.implRef, identity, resultHolder.Result.AgileRef, flags, &gc.targetTypeRef);
             if (gc.objRef == NULL)
                 COMPlusThrow(kArgumentNullException);
 
@@ -924,18 +930,21 @@ namespace InteropLibImports
             struct
             {
                 OBJECTREF implRef;
+                OBJECTREF targetTypeRef;
                 OBJECTREF objRef;
             } gc;
             ::ZeroMemory(&gc, sizeof(gc));
             GCPROTECT_BEGIN(gc);
 
             gc.implRef = NULL; // Use the globally registered implementation.
+            gc.targetTypeRef = NULL; // No target type here.
 
             // Get wrapper for external object
             gc.objRef = GetOrCreateObjectForComInstanceInternal(
                 gc.implRef,
                 externalComObject,
-                externalObjectFlags);
+                externalObjectFlags,
+                gc.targetTypeRef);
 
             // Get wrapper for managed object
             *trackerTarget = GetOrCreateComInterfaceForObjectInternal(
@@ -1066,6 +1075,7 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
     _In_ void* ext,
     _In_ INT32 flags,
+    _In_ QCall::ObjectHandleOnStack targetTypeMaybe,
     _Inout_ QCall::ObjectHandleOnStack retValue)
 {
     QCALL_CONTRACT;
@@ -1089,7 +1099,8 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
         OBJECTREF newObj = GetOrCreateObjectForComInstanceInternal(
             ObjectToOBJECTREF(*comWrappersImpl.m_ppObject),
             identity,
-            (CreateObjectFlags)flags);
+            (CreateObjectFlags)flags,
+            ObjectToOBJECTREF(*targetTypeMaybe.m_ppObject));
 
         // Set the return value
         retValue.Set(newObj);

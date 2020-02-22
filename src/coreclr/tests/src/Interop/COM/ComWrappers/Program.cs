@@ -195,7 +195,7 @@ namespace ComWrappersTests
                 return entryRaw;
             }
 
-            protected override object CreateObject(IntPtr externalComObject, IntPtr agileObj, CreateObjectFlags flags)
+            protected override object? CreateObject(IntPtr externalComObject, IntPtr agileObj, CreateObjectFlags flag, Type? targetType)
             {
                 Assert.AreNotEqual(agileObj, IntPtr.Zero);
 
@@ -271,7 +271,7 @@ namespace ComWrappersTests
             IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
 
             // Create a managed wrapper for the native object.
-            var trackerObj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+            var trackerObj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject, null);
 
             // Ownership has been transferred to the wrapper.
             Marshal.Release(trackerObjRaw);
@@ -323,14 +323,14 @@ namespace ComWrappersTests
             // Get an object from a tracker runtime.
             IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
 
-            var trackerObj1 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
-            var trackerObj2 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+            var trackerObj1 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject, null);
+            var trackerObj2 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject, null);
             Assert.AreEqual(trackerObj1, trackerObj2);
 
             // Ownership has been transferred to the wrapper.
             Marshal.Release(trackerObjRaw);
 
-            var trackerObj3 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject | CreateObjectFlags.UniqueInstance);
+            var trackerObj3 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject | CreateObjectFlags.UniqueInstance, null);
             Assert.AreNotEqual(trackerObj1, trackerObj3);
         }
 
@@ -407,7 +407,7 @@ namespace ComWrappersTests
 
             }
 
-            protected override object CreateObject(IntPtr externalComObject, IntPtr agileObj, CreateObjectFlags flags)
+            protected override object? CreateObject(IntPtr externalComObject, IntPtr agileObj, CreateObjectFlags flags, Type? targetType)
             {
                 switch (CreateObjectMode)
                 {
@@ -451,13 +451,13 @@ namespace ComWrappersTests
                 () =>
                 {
                     wrapper.CreateObjectMode = BadComWrappers.FailureMode.ReturnInvalid;
-                    wrapper.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.None);
+                    wrapper.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.None, null);
                 });
 
             try
             {
                 wrapper.CreateObjectMode = BadComWrappers.FailureMode.ThrowException;
-                wrapper.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.None);
+                wrapper.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.None, null);
             }
             catch (Exception e)
             {
