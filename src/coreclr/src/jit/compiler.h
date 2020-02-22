@@ -2591,6 +2591,8 @@ public:
 
     GenTree* gtNewIndir(var_types typ, GenTree* addr);
 
+    GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
+
     GenTreeArgList* gtNewArgList(GenTree* op);
     GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2);
     GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2, GenTree* op3);

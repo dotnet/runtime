@@ -13276,8 +13276,10 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         if (options == BR_REMOVE_AND_NARROW || options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE)
         {
             JITDUMP(" to read first byte of struct via modified [%06u]\n", dspTreeID(copySrc));
-            copySrc->ChangeOper(GT_IND);
+            copySrc->ChangeOper(GT_NULLCHECK);
             copySrc->gtType = TYP_BYTE;
+            compCurBB->bbFlags |= BBF_HAS_NULLCHECK;
+            optMethodFlags |= OMF_HAS_NULLCHECK;
         }
         else
         {

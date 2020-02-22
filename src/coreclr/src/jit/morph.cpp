@@ -6058,18 +6058,10 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 lclNum = objRef->AsLclVarCommon()->GetLclNum();
             }
 
-            // Create the "nullchk" node.
-            // Make it TYP_BYTE so we only deference it for 1 byte.
             GenTree* lclVar = gtNewLclvNode(lclNum, objRefType);
-            nullchk         = new (this, GT_NULLCHECK) GenTreeIndir(GT_NULLCHECK, TYP_BYTE, lclVar, nullptr);
+            nullchk         = gtNewNullCheck(lclVar, compCurBB);
 
             nullchk->gtFlags |= GTF_DONT_CSE; // Don't try to create a CSE for these TYP_BYTE indirections
-
-            // An indirection will cause a GPF if the address is null.
-            nullchk->gtFlags |= GTF_EXCEPT;
-
-            compCurBB->bbFlags |= BBF_HAS_NULLCHECK;
-            optMethodFlags |= OMF_HAS_NULLCHECK;
 
             if (asg)
             {
@@ -7402,18 +7394,18 @@ void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
                 if (!call->IsVirtualVtable())
                 {
                     // Add an indirection to get the nullcheck
-                    GenTree* tmp = gtNewLclvNode(lclNum, vt);
-                    GenTree* ind = gtNewOperNode(GT_IND, TYP_INT, tmp);
-                    asg          = gtNewOperNode(GT_COMMA, TYP_VOID, asg, ind);
+                    GenTree* tmp       = gtNewLclvNode(lclNum, vt);
+                    GenTree* nullcheck = gtNewNullCheck(tmp, compCurBB);
+                    asg                = gtNewOperNode(GT_COMMA, TYP_VOID, asg, nullcheck);
                 }
                 objp    = gtNewOperNode(GT_COMMA, vt, asg, gtNewLclvNode(lclNum, vt));
                 thisPtr = gtNewLclvNode(lclNum, vt);
             }
             else if (!call->IsVirtualVtable())
             {
-                GenTree* ind = gtNewOperNode(GT_IND, TYP_INT, thisPtr);
-                objp         = gtNewOperNode(GT_COMMA, vt, ind, objp);
-                thisPtr      = gtClone(thisPtr, true);
+                GenTree* nullcheck = gtNewNullCheck(thisPtr, compCurBB);
+                objp               = gtNewOperNode(GT_COMMA, vt, nullcheck, objp);
+                thisPtr            = gtClone(thisPtr, true);
             }
 
             call->gtFlags &= ~GTF_CALL_NULLCHECK;
@@ -7630,9 +7622,9 @@ void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
                 GenTree* asg    = gtNewTempAssign(lclNum, objp);
 
                 // COMMA(tmp = "this", deref(tmp))
-                GenTree* tmp = gtNewLclvNode(lclNum, vt);
-                GenTree* ind = gtNewOperNode(GT_IND, TYP_INT, tmp);
-                asg          = gtNewOperNode(GT_COMMA, TYP_VOID, asg, ind);
+                GenTree* tmp       = gtNewLclvNode(lclNum, vt);
+                GenTree* nullcheck = gtNewNullCheck(tmp, compCurBB);
+                asg                = gtNewOperNode(GT_COMMA, TYP_VOID, asg, nullcheck);
 
                 // COMMA(COMMA(tmp = "this", deref(tmp)), tmp)
                 thisPtr = gtNewOperNode(GT_COMMA, vt, asg, gtNewLclvNode(lclNum, vt));
@@ -7640,8 +7632,8 @@ void Compiler::fgMorphTailCallViaHelper(GenTreeCall* call, void* pfnCopyArgs)
             else
             {
                 // thisPtr = COMMA(deref("this"), "this")
-                GenTree* ind = gtNewOperNode(GT_IND, TYP_INT, thisPtr);
-                thisPtr      = gtNewOperNode(GT_COMMA, vt, ind, gtClone(objp, true));
+                GenTree* nullcheck = gtNewNullCheck(thisPtr, compCurBB);
+                thisPtr            = gtNewOperNode(GT_COMMA, vt, nullcheck, gtClone(objp, true));
             }
 
             call->gtFlags &= ~GTF_CALL_NULLCHECK;
@@ -8145,8 +8137,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
         GenTree* thisPtr = call->gtCallArgs->GetNode();
 
-        GenTree* nullCheck = gtNewOperNode(GT_IND, TYP_I_IMPL, thisPtr);
-        nullCheck->gtFlags |= GTF_EXCEPT;
+        GenTree* nullCheck = gtNewNullCheck(thisPtr, compCurBB);
 
         return fgMorphTree(nullCheck);
     }

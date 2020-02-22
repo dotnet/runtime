@@ -23187,8 +23187,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     if (call->gtFlags & GTF_CALL_NULLCHECK && !inlineInfo->thisDereferencedFirst)
     {
         // Call impInlineFetchArg to "reserve" a temp for the "this" pointer.
-        nullcheck = gtNewOperNode(GT_IND, TYP_INT, impInlineFetchArg(0, inlArgInfo, lclVarInfo));
-        nullcheck->gtFlags |= GTF_EXCEPT;
+        nullcheck = gtNewNullCheck(impInlineFetchArg(0, inlArgInfo, lclVarInfo), block);
 
         // The NULL-check statement will be inserted to the statement list after those statements
         // that assign arguments to temps and before the actual body of the inlinee method.

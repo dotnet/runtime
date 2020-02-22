@@ -5870,10 +5870,8 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
 
                         if (treeToNullcheck != nullptr)
                         {
-                            GenTree* nullcheck = gtNewOperNode(GT_NULLCHECK, TYP_I_IMPL, treeToNullcheck);
-                            compCurBB->bbFlags |= BBF_HAS_NULLCHECK;
-                            optMethodFlags |= OMF_HAS_NULLCHECK;
-                            result = gtNewOperNode(GT_COMMA, TYP_INT, nullcheck, result);
+                            GenTree* nullcheck = gtNewNullCheck(treeToNullcheck, compCurBB);
+                            result             = gtNewOperNode(GT_COMMA, TYP_INT, nullcheck, result);
                         }
 
                         impPushOnStack(result, typeInfo(TI_INT));
@@ -15145,10 +15143,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 GenTree* boxPayloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                                 GenTree* boxPayloadAddress =
                                     gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
-                                GenTree* nullcheck = gtNewOperNode(GT_NULLCHECK, TYP_I_IMPL, op1);
-                                block->bbFlags |= BBF_HAS_NULLCHECK;
-                                optMethodFlags |= OMF_HAS_NULLCHECK;
-                                GenTree* result = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
+                                GenTree* nullcheck = gtNewNullCheck(op1, block);
+                                GenTree* result    = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
                                 impPushOnStack(result, tiRetVal);
                                 break;
                             }
