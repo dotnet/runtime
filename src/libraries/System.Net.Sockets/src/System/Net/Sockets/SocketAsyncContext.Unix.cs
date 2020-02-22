@@ -333,6 +333,7 @@ namespace System.Net.Sockets
                         return SocketError.AddressNotAvailable;
                     case Interop.Error.EAFNOSUPPORT:
                         return SocketError.AddressFamilyNotSupported;
+                    case (Interop.Error)11:
                     case Interop.Error.EAGAIN:
                         return SocketError.WouldBlock;
                     case Interop.Error.EALREADY:
