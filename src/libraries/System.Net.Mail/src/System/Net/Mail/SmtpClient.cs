@@ -1092,8 +1092,10 @@ namespace System.Net.Mail
                     _cancelled = true;
                     Abort();
                 }
-
-                _transport?.ReleaseConnection();
+                else
+                {
+                    _transport?.ReleaseConnection();
+                }
                 _timer?.Dispose();
                 _disposed = true;
             }

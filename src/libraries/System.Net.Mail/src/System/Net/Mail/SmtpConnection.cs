@@ -124,7 +124,7 @@ namespace System.Net.Mail
             _bufferBuilder.Reset();
         }
 
-        internal void ReleaseConnection()
+        private void ShutdownConnection(bool isAbort)
         {
             if (!_isClosed)
             {
@@ -134,16 +134,39 @@ namespace System.Net.Mail
                     {
                         try
                         {
-                            // Gracefully close the transmission channel
-                            _tcpClient.Client.Blocking = false;
-                            QuitCommand.Send(this);
+                            try
+                            {
+                                if (isAbort)
+                                {
+                                    // Must destroy manually since sending a QUIT here might not be
+                                    // interpreted correctly by the server if it's in the middle of a
+                                    // DATA command or some similar situation.  This may send a RST
+                                    // but this is ok in this situation.  Do not reuse this connection
+                                    _tcpClient.LingerState = new LingerOption(true, 0);
+                                }
+                                else
+                                {
+                                    // Gracefully close the transmission channel
+                                    _tcpClient.Client.Blocking = false;
+                                    QuitCommand.Send(this);
+                                }
+                            }
+                            finally
+                            {
+                                //free cbt buffer
+                                _channelBindingToken?.Close();
+                                _networkStream?.Close();
+                                _tcpClient.Dispose();
+                            }
                         }
-                        finally
+                        catch (IOException)
                         {
-                            //free cbt buffer
-                            _channelBindingToken?.Close();
-                            _networkStream?.Close();
-                            _tcpClient.Dispose();
+                            // Network failure
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            // See https://github.com/dotnet/corefx/issues/40711, and potentially
+                            // catch additional exception types here if need demonstrates.
                         }
                     }
 
@@ -154,36 +177,14 @@ namespace System.Net.Mail
             _isConnected = false;
         }
 
+        internal void ReleaseConnection()
+        {
+            ShutdownConnection(false);
+        }
+
         internal void Abort()
         {
-            if (!_isClosed)
-            {
-                try
-                {
-                    lock (this)
-                    {
-                        if (!_isClosed && _tcpClient != null)
-                        {
-                            _channelBindingToken?.Close();
-
-                            // Must destroy manually since sending a QUIT here might not be
-                            // interpreted correctly by the server if it's in the middle of a
-                            // DATA command or some similar situation.  This may send a RST
-                            // but this is ok in this situation.  Do not reuse this connection
-                            _tcpClient.LingerState = new LingerOption(true, 0);
-                            _networkStream?.Close();
-                            _tcpClient.Dispose();
-                        }
-                        _isClosed = true;
-                    }
-                }
-                catch (ObjectDisposedException)
-                {
-                    // See https://github.com/dotnet/runtime/issues/30732, and potentially
-                    // catch additional exception types here if need demonstrates.
-                }
-            }
-            _isConnected = false;
+            ShutdownConnection(true);
         }
 
         internal void GetConnection(string host, int port)
