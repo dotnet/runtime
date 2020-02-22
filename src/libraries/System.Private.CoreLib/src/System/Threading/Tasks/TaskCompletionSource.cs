@@ -334,8 +334,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ObjectDisposedException">The <see cref="Task"/> was disposed.</exception>
         public void SetCanceled()
         {
-            if (!TrySetCanceled())
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
+            SetCanceled(default);
         }
 
         /// <summary>
