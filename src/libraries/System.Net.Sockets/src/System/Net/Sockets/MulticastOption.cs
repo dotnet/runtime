@@ -67,7 +67,7 @@ namespace System.Net.Sockets
             }
             set
             {
-                _group = value;
+                _group = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 
@@ -150,12 +150,7 @@ namespace System.Net.Sockets
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                _group = value;
+                _group = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 
