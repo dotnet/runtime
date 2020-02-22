@@ -283,7 +283,7 @@ namespace System.Net.Sockets
                     throw new InternalException(err);
                 }
 
-                Interop.Sys.AioContext aioContext;
+                Interop.Sys.AioContext aioContext = default;
                 if (Interop.Sys.IoSetup(EventBufferCount, &aioContext) == 0)
                 {
                     _aioEvents = (Interop.Sys.IoEvent*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoEvent) * EventBufferCount);
