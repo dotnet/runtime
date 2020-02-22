@@ -895,98 +895,97 @@ namespace System
                 EnsureHostString(false);
                 Debug.Assert(_info != null);
                 Debug.Assert(_info.Host != null);
+
                 int start;
+                string str = _string;
 
                 // Do we have a valid local path right in m_string?
                 if (NotAny(Flags.HostNotCanonical | Flags.PathNotCanonical | Flags.ShouldBeCompressed))
                 {
                     start = IsUncPath ? _info.Offset.Host - 2 : _info.Offset.Path;
 
-                    string str = (IsImplicitFile && _info.Offset.Host == (IsDosPath ? 0 : 2) &&
-                        _info.Offset.Query == _info.Offset.End)
-                            ? _string
-                            : (IsDosPath && (_string[start] == '/' || _string[start] == '\\'))
-                                ? _string.Substring(start + 1, _info.Offset.Query - start - 1)
-                                : _string.Substring(start, _info.Offset.Query - start);
+                    ValueStringBuilder localPath = str.Length <= 256
+                        ? new ValueStringBuilder(stackalloc char[256])
+                        : new ValueStringBuilder(str.Length);
+
+                    if ((IsImplicitFile
+                        && _info.Offset.Host == (IsDosPath ? 0 : 2)
+                        && _info.Offset.Query == _info.Offset.End))
+                    {
+                        localPath.Append(str);
+                    }
+                    else if (IsDosPath && (str[start] == '/' || str[start] == '\\'))
+                    {
+                        localPath.Append(str.AsSpan(start + 1, _info.Offset.Query - start - 1));
+                    }
+                    else
+                    {
+                        localPath.Append(str.AsSpan(start, _info.Offset.Query - start));
+                    }
 
                     // Should be a rare case, convert c|\ into c:\
-                    if (IsDosPath && str[1] == '|')
+                    if (IsDosPath && localPath[1] == '|')
                     {
-                        // Sadly, today there is no method for replacing just one occurrence
-                        str = str.Remove(1, 1);
-                        str = str.Insert(1, ":");
+                        localPath[1] = ':';
                     }
 
                     // check for all back slashes
-                    for (int i = 0; i < str.Length; ++i)
-                    {
-                        if (str[i] == '/')
-                        {
-                            str = str.Replace('/', '\\');
-                            break;
-                        }
-                    }
+                    localPath.Replace('/', '\\');
 
-                    return str;
+                    return localPath.ToString();
                 }
 
-                char[] result;
-                int count = 0;
                 start = _info.Offset.Path;
 
-                string host = _info.Host;
-                result = new char[host.Length + 3 + _info.Offset.Fragment - _info.Offset.Path];
+                int length = _info.Host.Length + 3 + _info.Offset.Fragment - start;
+                ValueStringBuilder dest = length <= 256
+                    ? new ValueStringBuilder(stackalloc char[256])
+                    : new ValueStringBuilder(length);
 
                 if (IsUncPath)
                 {
-                    result[0] = '\\';
-                    result[1] = '\\';
-                    count = 2;
-
-                    UriHelper.UnescapeString(host, 0, host.Length, result, ref count, c_DummyChar, c_DummyChar,
-                        c_DummyChar, UnescapeMode.CopyOnly, _syntax, false);
+                    dest.Append('\\');
+                    dest.Append('\\');
+                    dest.Append(_info.Host);
                 }
                 else
                 {
                     // Dos path
-                    if (_string[start] == '/' || _string[start] == '\\')
+                    if (str[start] == '/' || str[start] == '\\')
                     {
                         // Skip leading slash for a DOS path
                         ++start;
                     }
                 }
 
-
-                ushort pathStart = (ushort)count; //save for optional Compress() call
+                int pathStart = dest.Length; // save for optional Compress() call
 
                 UnescapeMode mode = (InFact(Flags.PathNotCanonical) && !IsImplicitFile)
                     ? (UnescapeMode.Unescape | UnescapeMode.UnescapeAll) : UnescapeMode.CopyOnly;
-                UriHelper.UnescapeString(_string, start, _info.Offset.Query, result, ref count, c_DummyChar,
-                    c_DummyChar, c_DummyChar, mode, _syntax, true);
+
+                UriHelper.UnescapeString(str, start, _info.Offset.Query,
+                    ref dest, c_DummyChar, c_DummyChar, c_DummyChar,
+                    mode, _syntax, isQuery: true);
 
                 // Possibly convert c|\ into c:\
-                if (result[1] == '|')
-                    result[1] = ':';
+                if (dest[1] == '|')
+                    dest[1] = ':';
 
                 if (InFact(Flags.ShouldBeCompressed))
                 {
                     // suspecting not compressed path
                     // For a dos path we won't compress the "x:" part if found /../ sequences
-                    Compress(result, (ushort)(IsDosPath ? pathStart + 2 : pathStart), ref count, _syntax);
+                    int offset = IsDosPath ? pathStart + 2 : pathStart;
+                    int newLength = Compress(dest.RawChars.Slice(offset, dest.Length - offset), _syntax);
+                    dest.Length = offset + newLength;
                 }
 
                 // We don't know whether all slashes were the back ones
                 // Plus going through Compress will turn them into / anyway
                 // Converting / back into \
-                for (ushort i = 0; i < (ushort)count; ++i)
-                {
-                    if (result[i] == '/')
-                    {
-                        result[i] = '\\';
-                    }
-                }
+                dest.Replace('/', '\\');
 
-                return new string(result, 0, count);
+                return dest.ToString();
             }
             else
             {
