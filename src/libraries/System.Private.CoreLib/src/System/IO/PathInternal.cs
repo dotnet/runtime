@@ -102,47 +102,34 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Try to remove relative segments from the given path (without combining with a root).
+        /// Tries to remove relative segments from the given path, starting the analysis at the specified location.
         /// </summary>
-        /// <param name="path">Input path</param>
-        /// <param name="rootLength">The length of the root of the given path</param>
-        internal static string RemoveRelativeSegments(string path, int rootLength)
+        /// <param name="path">The input path.</param>
+        /// <param name="charactersToSkip">The number of characters to ignore from the beginning of the path string. Usually its the length of the path's root.</param>
+        /// <param name="sb">A reference to a value string builder that will store the result.</param>
+        /// <returns><see langword="true" /> if the path was modified; <see langword="false" /> otherwise.</returns>
+        internal static bool TryRemoveRedundantSegments(ReadOnlySpan<char> path, int charactersToSkip, ref ValueStringBuilder sb)
         {
-            var sb = new ValueStringBuilder(stackalloc char[260 /* PathInternal.MaxShortPath */]);
+            Debug.Assert(path.Length > 0);
+            Debug.Assert(charactersToSkip >= 0);
 
-            if (RemoveRelativeSegments(path.AsSpan(), rootLength, ref sb))
-            {
-                path = sb.ToString();
-            }
-
-            sb.Dispose();
-            return path;
-        }
-
-        /// <summary>
-        /// Try to remove relative segments from the given path (without combining with a root).
-        /// </summary>
-        /// <param name="path">Input path</param>
-        /// <param name="rootLength">The length of the root of the given path</param>
-        /// <param name="sb">String builder that will store the result</param>
-        /// <returns>"true" if the path was modified</returns>
-        internal static bool RemoveRelativeSegments(ReadOnlySpan<char> path, int rootLength, ref ValueStringBuilder sb)
-        {
-            Debug.Assert(rootLength > 0);
             bool flippedSeparator = false;
 
-            int skip = rootLength;
-            // We treat "\.." , "\." and "\\" as a relative segment. We want to collapse the first separator past the root presuming
-            // the root actually ends in a separator. Otherwise the first segment for RemoveRelativeSegments
-            // in cases like "\\?\C:\.\" and "\\?\C:\..\", the first segment after the root will be ".\" and "..\" which is not considered as a relative segment and hence not be removed.
-            if (PathInternal.IsDirectorySeparator(path[skip - 1]))
-                skip--;
+            int skip = charactersToSkip;
 
             // Remove "//", "/./", and "/../" from the path by copying each character to the output,
             // except the ones we're removing, such that the builder contains the normalized path
             // at the end.
             if (skip > 0)
             {
+                // We treat "\.." , "\." and "\\" as a relative segment. We want to collapse the first separator past the root presuming
+                // the root actually ends in a separator. Otherwise the first segment for TryRemoveRedundantSegments
+                // in cases like "\\?\C:\.\" and "\\?\C:\..\", the first segment after the root will be ".\" and "..\" which is not considered as a relative segment and hence not be removed.
+                if (IsDirectorySeparator(path[skip - 1]))
+                {
+                    skip--;
+                }
+
                 sb.Append(path.Slice(0, skip));
             }
 
@@ -150,18 +137,18 @@ namespace System.IO
             {
                 char c = path[i];
 
-                if (PathInternal.IsDirectorySeparator(c) && i + 1 < path.Length)
+                if (IsDirectorySeparator(c) && i + 1 < path.Length)
                 {
                     // Skip this character if it's a directory separator and if the next character is, too,
                     // e.g. "parent//child" => "parent/child"
-                    if (PathInternal.IsDirectorySeparator(path[i + 1]))
+                    if (IsDirectorySeparator(path[i + 1]))
                     {
                         continue;
                     }
 
                     // Skip this character and the next if it's referring to the current directory,
                     // e.g. "parent/./child" => "parent/child"
-                    if ((i + 2 == path.Length || PathInternal.IsDirectorySeparator(path[i + 2])) &&
+                    if ((i + 2 == path.Length || IsDirectorySeparator(path[i + 2])) &&
                         path[i + 1] == '.')
                     {
                         i++;
@@ -171,14 +158,14 @@ namespace System.IO
                     // Skip this character and the next two if it's referring to the parent directory,
                     // e.g. "parent/child/../grandchild" => "parent/grandchild"
                     if (i + 2 < path.Length &&
-                        (i + 3 == path.Length || PathInternal.IsDirectorySeparator(path[i + 3])) &&
+                        (i + 3 == path.Length || IsDirectorySeparator(path[i + 3])) &&
                         path[i + 1] == '.' && path[i + 2] == '.')
                     {
                         // Unwind back to the last slash (and if there isn't one, clear out everything).
                         int s;
                         for (s = sb.Length - 1; s >= skip; s--)
                         {
-                            if (PathInternal.IsDirectorySeparator(sb[s]))
+                            if (IsDirectorySeparator(sb[s]))
                             {
                                 sb.Length = (i + 3 >= path.Length && s == skip) ? s + 1 : s; // to avoid removing the complete "\tmp\" segment in cases like \\?\C:\tmp\..\, C:\tmp\..
                                 break;
@@ -195,9 +182,9 @@ namespace System.IO
                 }
 
                 // Normalize the directory separator if needed
-                if (c != PathInternal.DirectorySeparatorChar && c == PathInternal.AltDirectorySeparatorChar)
+                if (c != DirectorySeparatorChar && c == AltDirectorySeparatorChar)
                 {
-                    c = PathInternal.DirectorySeparatorChar;
+                    c = DirectorySeparatorChar;
                     flippedSeparator = true;
                 }
 
@@ -211,9 +198,9 @@ namespace System.IO
             }
 
             // We may have eaten the trailing separator from the root when we started and not replaced it
-            if (skip != rootLength && sb.Length < rootLength)
+            if (skip != charactersToSkip && sb.Length < charactersToSkip)
             {
-                sb.Append(path[rootLength - 1]);
+                sb.Append(path[charactersToSkip - 1]);
             }
 
             return true;

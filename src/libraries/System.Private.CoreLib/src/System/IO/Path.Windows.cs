@@ -130,7 +130,7 @@ namespace System.IO
             // them properly. As such we need to manually remove segments and not use GetFullPath().
 
             return PathInternal.IsDevice(combinedPath.AsSpan())
-                ? PathInternal.RemoveRelativeSegments(combinedPath, PathInternal.GetRootLength(combinedPath.AsSpan()))
+                ? RemoveRedundantSegments(combinedPath.AsSpan())
                 : GetFullPath(combinedPath);
         }
 

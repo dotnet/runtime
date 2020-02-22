@@ -10,6 +10,7 @@
     <Compile Include="System\ApplicationIdTests.cs" />
     <Compile Include="System\Convert.cs" />
     <Compile Include="System\EnvironmentTests.cs" />
+    <Compile Include="System\IO\Path.RemoveRedundantSegments.cs" />
     <Compile Include="System\IO\PathTests.cs" />
     <Compile Include="System\IO\PathTests_Windows.cs" />
     <Compile Include="System\IO\PathTests_Unix.cs" />

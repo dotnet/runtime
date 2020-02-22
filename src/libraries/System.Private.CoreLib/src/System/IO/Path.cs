@@ -926,5 +926,69 @@ namespace System.IO
         /// Returns true if the path ends in a directory separator.
         /// </summary>
         public static bool EndsInDirectorySeparator(string path) => PathInternal.EndsInDirectorySeparator(path);
+
+        /// <summary>
+        /// Removes any redundant segments found in the specified path.
+        /// </summary>
+        /// <param name="path">A string containing an absolute or relative path that may or may not contain redundant segments.</param>
+        /// <returns><paramref name="path" /> without any redundant segments.</returns>
+        [return: NotNullIfNotNull("path")]
+        public static string? RemoveRedundantSegments(string? path)
+        {
+            if (path == null)
+                return null;
+
+            return RemoveRedundantSegments(path.AsSpan());
+        }
+
+        /// <summary>
+        /// Removes any redundant segments found in the specified path.
+        /// </summary>
+        /// <param name="path">A read-only span containing an absolute or relative path that may or may not contain redundant segments.</param>
+        /// <returns><paramref name="path" /> without any redundant segments.</returns>
+        public static string RemoveRedundantSegments(ReadOnlySpan<char> path)
+        {
+            if (PathInternal.IsEffectivelyEmpty(path))
+                return string.Empty;
+
+            ValueStringBuilder sb = new ValueStringBuilder(path.Length);
+            ReadOnlySpan<char> pathRoot = GetPathRoot(path);
+
+            if (!PathInternal.TryRemoveRedundantSegments(path, pathRoot.Length, ref sb))
+                return path.ToString();
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Tries to remove any redundant segments found in the specified path.
+        /// </summary>
+        /// <param name="path">A read-only span containing an absolute or relative path that may or may not contain redundant segments.</param>
+        /// <param name="destination">When the method returns <see langword="true" />, a span containing <paramref name="path" /> without any redundant segments. When the method returns <see langword="false" />, the operation failed.</param>
+        /// <param name="charsWritten">When the method returns <see langword="true" />, contains the total number of characters written in <paramref name="destination" />; when the method returns <see langword="false" />, the value is zero.</param>
+        /// <returns><see langword="true" /> if the operation succeeds; <see langword="false" /> if the operation fails.</returns>
+        /// <remarks>The method returns `false` when the path is empty or when the destination span's length is less than the resulting path's length.</remarks>
+        public static bool TryRemoveRedundantSegments(ReadOnlySpan<char> path, Span<char> destination, out int charsWritten)
+        {
+            charsWritten = 0;
+
+            if (PathInternal.IsEffectivelyEmpty(path))
+                return false;
+
+            ValueStringBuilder sb = new ValueStringBuilder(path.Length);
+            ReadOnlySpan<char> pathRoot = GetPathRoot(path);
+
+            if (PathInternal.TryRemoveRedundantSegments(path, pathRoot.Length, ref sb))
+            {
+                return sb.TryCopyTo(destination, out charsWritten);
+            }
+            else if (path.TryCopyTo(destination))
+            {
+                charsWritten = path.Length;
+                return true;
+            }
+
+            return false;
+        }
     }
 }
