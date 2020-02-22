@@ -53,7 +53,6 @@ Implement an internal custom mechanism that is in charge of converting a defined
   * SByte
   * Single
   * String
-  * TimeSpan
   * UInt16
   * UInt32
   * UInt64
@@ -179,7 +178,6 @@ Supported types:
 * Enum
 
 # Notes
-
 1. `DictionaryKeyPolicy` will apply to the resulting string of the non-string types.
 1. Should we provide a way to allow users to customize the `EnumKeyConverter` behavior, as it is done in `JsonStringEnumConverter`?
 As of now `KeyConverter`s are meant to be internal types, to enable the previously described behavior we either pass the options through `JsonSerializerOptions` or through an attribute.
