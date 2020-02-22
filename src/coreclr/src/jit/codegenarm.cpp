@@ -1702,7 +1702,16 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     bool     r0InUse;
     emitAttr attr = EA_UNKNOWN;
 
-    if (compiler->info.compRetType == TYP_VOID)
+    if (helper == CORINFO_HELP_PROF_FCN_TAILCALL)
+    {
+        // For the tail call case, the helper call is introduced during lower,
+        // so the allocator will arrange things so R0 is not in use here.
+        //
+        // For the tail jump case, all reg args have been spilled via genJmpMethod,
+        // so R0 is likewise not in use.
+        r0InUse = false;
+    }
+    else if (compiler->info.compRetType == TYP_VOID)
     {
         r0InUse = false;
     }
@@ -1718,9 +1727,13 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
     if (r0InUse)
     {
-        if (varTypeIsGC(compiler->info.compRetType))
+        if (varTypeIsGC(compiler->info.compRetNativeType))
         {
-            attr = emitActualTypeSize(compiler->info.compRetType);
+            attr = emitActualTypeSize(compiler->info.compRetNativeType);
+        }
+        else if (compiler->compMethodReturnsRetBufAddr())
+        {
+            attr = EA_BYREF;
         }
         else
         {
