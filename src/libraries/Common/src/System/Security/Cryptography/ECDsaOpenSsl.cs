@@ -204,6 +204,9 @@ namespace System.Security.Cryptography
             {
                 ThrowIfDisposed();
 
+                Span<byte> derSignature = stackalloc byte[SignatureStackBufSize];
+                ReadOnlySpan<byte> toVerify = derSignature;
+
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
                 {
@@ -218,10 +221,21 @@ namespace System.Security.Cryptography
                         return false;
                     }
 
-                    signature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
+                    if (AsymmetricAlgorithmHelpers.TryConvertIeee1363ToDer(signature, derSignature, out int derSize))
+                    {
+                        toVerify = derSignature.Slice(0, derSize);
+                    }
+                    else
+                    {
+                        toVerify = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
+                    }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 }
-                else if (signatureFormat != DSASignatureFormat.Rfc3279DerSequence)
+                else if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
+                {
+                    toVerify = signature;
+                }
+                else
                 {
                     Debug.Fail($"Missing internal implementation handler for signature format {signatureFormat}");
                     throw new CryptographicException(
@@ -231,7 +245,7 @@ namespace System.Security.Cryptography
 #endif
 
                 SafeEcKeyHandle key = _key.Value;
-                int verifyResult = Interop.Crypto.EcDsaVerify(hash, signature, key);
+                int verifyResult = Interop.Crypto.EcDsaVerify(hash, toVerify, key);
                 return verifyResult == 1;
             }
 

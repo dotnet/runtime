@@ -19,6 +19,25 @@ namespace Internal.Cryptography
         /// </summary>
         public static byte[] ConvertIeee1363ToDer(ReadOnlySpan<byte> input)
         {
+            using (AsnWriter writer = WriteIeee1363ToDer(input))
+            {
+                return writer.Encode();
+            }
+        }
+
+        internal static bool TryConvertIeee1363ToDer(
+            ReadOnlySpan<byte> input,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
+            using (AsnWriter writer = WriteIeee1363ToDer(input))
+            {
+                return writer.TryEncode(destination, out bytesWritten);
+            }
+        }
+
+        private static AsnWriter WriteIeee1363ToDer(ReadOnlySpan<byte> input)
+        {
             Debug.Assert(input.Length % 2 == 0);
             Debug.Assert(input.Length > 1);
 
@@ -26,14 +45,12 @@ namespace Internal.Cryptography
             // Output is the DER encoded value of SEQUENCE(INTEGER(r), INTEGER(s)).
             int halfLength = input.Length / 2;
 
-            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
-            {
-                writer.PushSequence();
-                writer.WriteKeyParameterInteger(input.Slice(0, halfLength));
-                writer.WriteKeyParameterInteger(input.Slice(halfLength, halfLength));
-                writer.PopSequence();
-                return writer.Encode();
-            }
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.PushSequence();
+            writer.WriteKeyParameterInteger(input.Slice(0, halfLength));
+            writer.WriteKeyParameterInteger(input.Slice(halfLength, halfLength));
+            writer.PopSequence();
+            return writer;
         }
 
         /// <summary>

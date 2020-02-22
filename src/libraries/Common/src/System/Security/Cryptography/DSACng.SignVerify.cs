@@ -77,8 +77,10 @@ namespace System.Security.Cryptography
                         signatureFormat.ToString());
                 }
 
-                byte[] signature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(destination.Slice(0, bytesWritten));
-                return Helpers.TryCopyToDestination(signature, destination, out bytesWritten);
+                return AsymmetricAlgorithmHelpers.TryConvertIeee1363ToDer(
+                    destination.Slice(0, bytesWritten),
+                    destination,
+                    out bytesWritten);
 #else
                 return true;
 #endif
