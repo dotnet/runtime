@@ -33,10 +33,10 @@ namespace System
         // ASSUMES that strings like http://host/Path/Path/MoreDir/../../  have been canonicalized before going to this method.
         // ASSUMES that back slashes already have been converted if applicable.
         //
-        internal static unsafe bool TestForSubPath(char* selfPtr, ushort selfLength, char* otherPtr, ushort otherLength,
+        internal static unsafe bool TestForSubPath(char* selfPtr, int selfLength, char* otherPtr, int otherLength,
             bool ignoreCase)
         {
-            ushort i = 0;
+            int i = 0;
             char chSelf;
             char chOther;
 

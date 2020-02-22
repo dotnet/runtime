@@ -49,9 +49,9 @@ namespace System
         //
         // Assumption is the caller will check on the resulting name length
         // Remarks:  MUST NOT be used unless all input indexes are verified and trusted.
-        internal static unsafe bool IsValid(char* name, ushort start, ref int returnedEnd, bool notImplicitFile)
+        internal static unsafe bool IsValid(char* name, int start, ref int returnedEnd, bool notImplicitFile)
         {
-            ushort end = (ushort)returnedEnd;
+            int end = returnedEnd;
 
             if (start == end)
                 return false;
@@ -59,24 +59,25 @@ namespace System
             // First segment could consist of only '_' or '-' but it cannot be all digits or empty
             //
             bool validShortName = false;
-            ushort i = start;
+            int i = start;
             for (; i < end; ++i)
             {
-                if (name[i] == '/' || name[i] == '\\' || (notImplicitFile && (name[i] == ':' || name[i] == '?' || name[i] == '#')))
+                char c = name[i];
+                if (c == '/' || c == '\\' || (notImplicitFile && (c == ':' || c == '?' || c == '#')))
                 {
                     end = i;
                     break;
                 }
-                else if (name[i] == '.')
+                else if (c == '.')
                 {
                     ++i;
                     break;
                 }
-                if (char.IsLetter(name[i]) || name[i] == '-' || name[i] == '_')
+                if (char.IsLetter(c) || c == '-' || c == '_')
                 {
                     validShortName = true;
                 }
-                else if (name[i] < '0' || name[i] > '9')
+                else if (c < '0' || c > '9')
                     return false;
             }
 
@@ -89,24 +90,25 @@ namespace System
 
             for (; i < end; ++i)
             {
-                if (name[i] == '/' || name[i] == '\\' || (notImplicitFile && (name[i] == ':' || name[i] == '?' || name[i] == '#')))
+                char c = name[i];
+                if (c == '/' || c == '\\' || (notImplicitFile && (c == ':' || c == '?' || c == '#')))
                 {
                     end = i;
                     break;
                 }
-                else if (name[i] == '.')
+                else if (c == '.')
                 {
                     if (!validShortName || ((i - 1) >= start && name[i - 1] == '.'))
                         return false;
 
                     validShortName = false;
                 }
-                else if (name[i] == '-' || name[i] == '_')
+                else if (c == '-' || c == '_')
                 {
                     if (!validShortName)
                         return false;
                 }
-                else if (char.IsLetter(name[i]) || (name[i] >= '0' && name[i] <= '9'))
+                else if (char.IsLetter(c) || (c >= '0' && c <= '9'))
                 {
                     if (!validShortName)
                         validShortName = true;
