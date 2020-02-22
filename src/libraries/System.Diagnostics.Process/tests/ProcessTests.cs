@@ -1509,6 +1509,38 @@ namespace System.Diagnostics.Tests
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.MainWindowHandle);
         }
+        
+        [Fact(Skip = "Manual test")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
+        {
+            const string exePath = "notepad.exe";
+            Assert.True(IsProgramInstalled(exePath));
+
+            using (Process process = Process.Start(exePath))
+            {
+                try
+                {
+                    for (int attempt = 0; attempt < 50; ++attempt)
+                    {
+                        process.Refresh();
+                        if (process.MainWindowHandle != IntPtr.Zero)
+                        {
+                            break;
+                        }
+
+                        Thread.Sleep(100);
+                    }
+
+                    Assert.NotEqual(IntPtr.Zero, process.MainWindowHandle);
+                }
+                finally
+                {
+                    process.Kill();
+                    Assert.True(process.WaitForExit(WaitInMS));
+                }
+            }
+        }
 
         [Fact]
         public void MainWindowTitle_NoWindow_ReturnsEmpty()

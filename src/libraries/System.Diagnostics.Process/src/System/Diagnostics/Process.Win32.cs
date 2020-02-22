@@ -243,7 +243,7 @@ namespace System.Diagnostics
                     EnsureState(State.IsLocal | State.HaveId);
                     _mainWindowHandle = ProcessManager.GetMainWindowHandle(_processId);
 
-                    _haveMainWindow = true;
+                    _haveMainWindow = _mainWindowHandle != IntPtr.Zero;
                 }
                 return _mainWindowHandle;
             }
