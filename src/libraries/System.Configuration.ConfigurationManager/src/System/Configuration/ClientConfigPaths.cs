@@ -70,7 +70,7 @@ namespace System.Configuration
                     // Try to find the native entry point.
                     using (Process currentProcess = Process.GetCurrentProcess())
                     {
-                        ApplicationUri = currentProcess.MainModule.FileName;
+                        ApplicationUri = currentProcess.MainModule?.FileName;
                     }
                 }
             }
