@@ -169,7 +169,7 @@ namespace System.DirectoryServices.AccountManagement
                             break;
 
                         default:
-                            sb.Append(c.ToString());   //   x  --> x
+                            sb.Append(c);   //   x  --> x
                             break;
                     }
                 }
@@ -197,7 +197,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         default:
                             sb.Append(@"\\");
-                            sb.Append(c.ToString());    //      \x --> \x
+                            sb.Append(c);    //      \x --> \x
                             break;
                     }
                 }
