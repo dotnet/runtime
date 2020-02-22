@@ -794,19 +794,80 @@ namespace System
         //
         internal static unsafe string StripBidiControlCharacter(char* strToClean, int start, int length)
         {
-            if (length <= 0) return "";
+            strToClean += start;
 
-            char[] cleanStr = new char[length];
-            int count = 0;
-            for (int i = 0; i < length; ++i)
+            int charsToRemove = 0;
+            for (int i = 0; i < length; i++)
             {
-                char c = strToClean[start + i];
-                if (c < '\u200E' || c > '\u202E' || !IsBidiControlCharacter(c))
+                char c = strToClean[i];
+                if ((uint)(c - '\u200E') <= ('\u202E' - '\u200E') && IsBidiControlCharacter(c))
                 {
-                    cleanStr[count++] = c;
+                    charsToRemove++;
                 }
             }
-            return new string(cleanStr, 0, count);
+
+            if (charsToRemove == length)
+            {
+                return string.Empty;
+            }
+
+            if (charsToRemove == 0)
+            {
+                return new string(strToClean, 0, length);
+            }
+
+            length -= charsToRemove;
+
+            return string.Create(length, (ip: (IntPtr)strToClean, Length: length), (buffer, state) =>
+            {
+                char* source = (char*)state.ip;
+                int destIndex = 0;
+                for (int i = 0; i < state.Length; i++)
+                {
+                    char c = source[i];
+                    if ((uint)(c - '\u200E') > ('\u202E' - '\u200E') || !IsBidiControlCharacter(c))
+                    {
+                        buffer[destIndex++] = c;
+                    }
+                }
+                Debug.Assert(buffer.Length == destIndex);
+            });
+        }
+        internal static unsafe string StripBidiControlCharacter(string str)
+        {
+            int charsToRemove = 0;
+            for (int i = 0; i < str.Length; i++)
+            {
+                char c = str[i];
+                if ((uint)(c - '\u200E') <= ('\u202E' - '\u200E') && IsBidiControlCharacter(c))
+                {
+                    charsToRemove++;
+                }
+            }
+
+            if (charsToRemove == 0)
+            {
+                return str;
+            }
+
+            if (charsToRemove == str.Length)
+            {
+                return string.Empty;
+            }
+
+            return string.Create(str.Length - charsToRemove, str, (buffer, state) =>
+            {
+                int destIndex = 0;
+                for (int i = 0; i < state.Length; i++)
+                {
+                    char c = state[i];
+                    if ((uint)(c - '\u200E') > ('\u202E' - '\u200E') || !IsBidiControlCharacter(c))
+                    {
+                        buffer[destIndex++] = c;
+                    }
+                }
+                Debug.Assert(buffer.Length == destIndex);
+            });
         }
     }
 }

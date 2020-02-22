@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
@@ -230,14 +229,7 @@ namespace System
                 return hostname.ToLowerInvariant();
             }
 
-            string bidiStrippedHost;
-            unsafe
-            {
-                fixed (char* hostnamePtr = hostname)
-                {
-                    bidiStrippedHost = UriHelper.StripBidiControlCharacter(hostnamePtr, 0, hostname.Length);
-                }
-            }
+            string bidiStrippedHost = UriHelper.StripBidiControlCharacter(hostname);
 
             try
             {
