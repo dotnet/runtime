@@ -8703,7 +8703,7 @@ void Compiler::optBranchlessConditions()
 
         assert(rootSubNode != nullptr);
 
-        if (!varTypeIsIntegral(typ))
+        if (!varTypeIsIntegral(typ) || (rootNode->gtFlags & GTF_ALL_EFFECT))
         {
             continue;
         }
@@ -8724,11 +8724,11 @@ void Compiler::optBranchlessConditions()
             continue;
         }
 
-        // make sure both blocks are single statement
         Statement* trueBbStmt  = trueBb->firstStmt();
         Statement* falseBbStmt = falseBb->firstStmt();
-        if ((trueBbStmt == nullptr) || (trueBbStmt->GetPrevStmt() != trueBbStmt) || (falseBbStmt == nullptr) ||
-            (falseBbStmt->GetPrevStmt() != falseBbStmt))
+        if ((trueBbStmt == nullptr) || (trueBbStmt->GetPrevStmt() != trueBbStmt) ||
+            // make sure both blocks are single statement
+            (falseBbStmt == nullptr) || (falseBbStmt->GetPrevStmt() != falseBbStmt))
         {
             continue;
         }
@@ -8736,8 +8736,11 @@ void Compiler::optBranchlessConditions()
         // make sure both blocks are single `return cns` nodes
         GenTree* retTrueNode  = trueBbStmt->GetRootNode();
         GenTree* retFalseNode = falseBbStmt->GetRootNode();
-        if (!retTrueNode->OperIs(GT_RETURN) || !retFalseNode->OperIs(GT_RETURN) || !retTrueNode->TypeIs(typ) ||
-            !retFalseNode->TypeIs(typ) || !retTrueNode->gtGetOp1()->IsIntegralConst() ||
+        if (!retTrueNode->OperIs(GT_RETURN) || !retFalseNode->OperIs(GT_RETURN) ||
+            // both blocks of the same types
+            !retTrueNode->TypeIs(typ) || !retFalseNode->TypeIs(typ) ||
+            // both blocks are `return cns`
+            !retTrueNode->gtGetOp1()->IsIntegralConst() ||
             !retFalseNode->gtGetOp1()->IsIntegralConst())
         {
             continue;
