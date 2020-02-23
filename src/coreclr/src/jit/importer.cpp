@@ -10278,6 +10278,23 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
         }
         else
         {
+            if (!isCastClass && op1->IsBoxedValue())
+            {
+                TypeHandle fromType(fromClass);
+                TypeHandle toType(toClass);
+
+                if (Nullable::IsNullableForTypeNoGC(fromType, toType.GetMethodTable()))
+                {
+                    JITDUMP("Cast will succeed, optimizing to return has value field\n");
+
+                    CORINFO_CLASS_HANDLE nullableHnd = gtGetStructHandle(op1->AsBox()->BoxOp());
+                    CORINFO_FIELD_HANDLE fieldHnd = info.compCompHnd->getFieldInClass(nullableHnd, 0);
+
+                    gtTryRemoveBoxUpstreamEffects(op1);
+                    return gtNewFieldRef(TYP_BOOL, fieldHnd, arg, 0);
+                }
+            }
+            
             JITDUMP("Result of cast unknown, must generate runtime test\n");
         }
     }
