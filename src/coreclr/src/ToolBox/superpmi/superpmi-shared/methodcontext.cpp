@@ -5501,6 +5501,8 @@ void MethodContext::dmpCompareTypesForEquality(DLDL key, DWORD value)
 }
 TypeCompareState MethodContext::repCompareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
 {
+    AssertCodeMsg(CompareTypesForEquality != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for CompareTypesForEquality");
+
     DLDL key;
     ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
                                     // out padding too
