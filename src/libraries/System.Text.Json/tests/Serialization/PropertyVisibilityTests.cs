@@ -167,6 +167,90 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("ConflictingValue", obj.myString);
         }
 
+        [Fact]
+        public static void Throw_when_public_properties_conflict_due_to_attributes()
+        {
+            // Serialize
+            var obj = new ClassWithPropertyNamingConflictWhichThrows();
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(obj));
+
+            // Deserialize
+            string json = @"{""MyString"":""NewValue""}";
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassWithPropertyNamingConflictWhichThrows>(json));
+        }
+
+        [Fact]
+        public static void Throw_when_public_properties_conflict_due_to_attributes_and_inheritance()
+        {
+            // Serialize
+            var obj = new ClassInheritedWithPropertyNamingConflictWhichThrows();
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(obj));
+
+            // Deserialize
+            string json = @"{""MyString"":""NewValue""}";
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassInheritedWithPropertyNamingConflictWhichThrows>(json));
+        }
+
+        [Fact]
+        public static void Throw_when_public_properties_conflict_due_to_attributes_and_double_inheritance()
+        {
+            // Serialize
+            var obj = new ClassTwiceInheritedWithPropertyNamingConflictWhichThrows();
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(obj));
+
+            // Deserialize
+            string json = @"{""MyString"":""NewValue""}";
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassTwiceInheritedWithPropertyNamingConflictWhichThrows>(json));
+        }
+
+        [Fact]
+        public static void Throw_when_public_properties_conflict_due_to_policy()
+        {
+            // Serialize
+            var obj = new ClassWithPropertyPolicyConflictWhichThrows();
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(obj));
+
+            // Deserialize
+            string json = @"{""MyString"":""NewValue""}";
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassWithPropertyPolicyConflictWhichThrows>(json));
+        }
+
+        [Fact]
+        public static void Throw_when_public_properties_conflict_due_to_policy_and_inheritance()
+        {
+            // Serialize
+            var obj = new ClassInheritedWithPropertyPolicyConflictWhichThrows();
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(obj));
+
+            // Deserialize
+            string json = @"{""MyString"":""NewValue""}";
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassInheritedWithPropertyPolicyConflictWhichThrows>(json));
+        }
+
+        [Fact]
+        public static void Throw_when_public_properties_conflict_due_to_policy_and_double_inheritance()
+        {
+            // Serialize
+            var obj = new ClassTwiceInheritedWithPropertyPolicyConflictWhichThrows();
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Serialize(obj));
+
+            // Deserialize
+            string json = @"{""MyString"":""NewValue""}";
+            Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassTwiceInheritedWithPropertyPolicyConflictWhichThrows>(json));
+        }
+
         public class ClassWithInternalProperty
         {
             internal string MyString { get; set; } = "DefaultValue";
@@ -195,11 +279,57 @@ namespace System.Text.Json.Serialization.Tests
             internal string ConflictingString { get; set; } = "ConflictingValue";
         }
 
+        public class ClassWithPropertyNamingConflictWhichThrows
+        {
+            public string MyString { get; set; } = "DefaultValue";
+
+            [JsonPropertyName(nameof(MyString))]
+            public string ConflictingString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassInheritedWithPropertyNamingConflictWhichThrows : ClassWithPublicProperty
+        {
+            [JsonPropertyName(nameof(MyString))]
+            public string ConflictingString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassTwiceInheritedWithPropertyNamingConflictWhichThrowsDummy : ClassWithPublicProperty
+        {
+
+        }
+
+        public class ClassTwiceInheritedWithPropertyNamingConflictWhichThrows : ClassTwiceInheritedWithPropertyNamingConflictWhichThrowsDummy
+        {
+            [JsonPropertyName(nameof(MyString))]
+            public string ConflictingString { get; set; } = "ConflictingValue";
+        }
+
         public class ClassWithPropertyPolicyConflict
         {
             public string MyString { get; set; } = "DefaultValue";
 
             internal string myString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassWithPropertyPolicyConflictWhichThrows
+        {
+            public string MyString { get; set; } = "DefaultValue";
+
+            public string myString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassInheritedWithPropertyPolicyConflictWhichThrows : ClassWithPublicProperty
+        {
+            public string myString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassInheritedWithPropertyPolicyConflictWhichThrowsDummy : ClassWithPublicProperty
+        {
+        }
+
+        public class ClassTwiceInheritedWithPropertyPolicyConflictWhichThrows : ClassInheritedWithPropertyPolicyConflictWhichThrowsDummy
+        {
+            public string myString { get; set; } = "ConflictingValue";
         }
 
         public class ClassWithIgnoredNewSlotProperty : ClassWithInternalProperty
