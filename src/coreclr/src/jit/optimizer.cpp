@@ -8703,7 +8703,7 @@ void Compiler::optBranchlessConditions()
 
         assert(rootSubNode != nullptr);
 
-        if (!varTypeIsIntegral(typ) || (rootNode->gtFlags & GTF_ALL_EFFECT))
+        if (!varTypeIsIntegral(typ) || (rootNode->gtFlags & GTF_ORDER_SIDEEFF))
         {
             continue;
         }
@@ -8740,8 +8740,7 @@ void Compiler::optBranchlessConditions()
             // both blocks of the same types
             !retTrueNode->TypeIs(typ) || !retFalseNode->TypeIs(typ) ||
             // both blocks are `return cns`
-            !retTrueNode->gtGetOp1()->IsIntegralConst() ||
-            !retFalseNode->gtGetOp1()->IsIntegralConst())
+            !retTrueNode->gtGetOp1()->IsIntegralConst() || !retFalseNode->gtGetOp1()->IsIntegralConst())
         {
             continue;
         }
@@ -8768,7 +8767,8 @@ void Compiler::optBranchlessConditions()
         {
             addValue = cnsForFalse;
             // we need to flip the comparision operator in this case, e.g. `>` -> `<=`
-            rootSubNode->ChangeOper(GenTree::ReverseRelop(rootSubNode->OperGet()));
+            assert(rootSubNode->OperIsCompare());
+            gtReverseCond(rootSubNode);
         }
 
         // unlink both blocks
