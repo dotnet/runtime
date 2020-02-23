@@ -8762,13 +8762,14 @@ void Compiler::optBranchlessConditions()
         if (cnsForFalse > cnsForTrue)
         {
             addValue = cnsForTrue;
+            // cns for true-branch must be greater that cns for false-branch
+            // we need to flip the comparision operator in this case, e.g. `>` -> `<=`
+            assert(rootSubNode->OperIsCompare());
+            gtReverseCond(rootSubNode);
         }
         else
         {
             addValue = cnsForFalse;
-            // we need to flip the comparision operator in this case, e.g. `>` -> `<=`
-            assert(rootSubNode->OperIsCompare());
-            gtReverseCond(rootSubNode);
         }
 
         // unlink both blocks

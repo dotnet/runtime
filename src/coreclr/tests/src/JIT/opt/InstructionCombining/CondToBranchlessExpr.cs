@@ -41,8 +41,6 @@ public class Program
             }
         }
 
-        Console.WriteLine(returnCode);
-        Console.ReadKey();
         return returnCode;
     }
 }
