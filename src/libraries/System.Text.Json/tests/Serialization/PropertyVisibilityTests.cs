@@ -212,43 +212,49 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void Throw_when_public_properties_conflict_due_to_policy()
         {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
             // Serialize
             var obj = new ClassWithPropertyPolicyConflictWhichThrows();
             Assert.Throws<InvalidOperationException>(
-                () => JsonSerializer.Serialize(obj));
+                () => JsonSerializer.Serialize(obj, options));
 
             // Deserialize
             string json = @"{""MyString"":""NewValue""}";
             Assert.Throws<InvalidOperationException>(
-                () => JsonSerializer.Deserialize<ClassWithPropertyPolicyConflictWhichThrows>(json));
+                () => JsonSerializer.Deserialize<ClassWithPropertyPolicyConflictWhichThrows>(json, options));
         }
 
         [Fact]
         public static void Throw_when_public_properties_conflict_due_to_policy_and_inheritance()
         {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
             // Serialize
             var obj = new ClassInheritedWithPropertyPolicyConflictWhichThrows();
             Assert.Throws<InvalidOperationException>(
-                () => JsonSerializer.Serialize(obj));
+                () => JsonSerializer.Serialize(obj, options));
 
             // Deserialize
             string json = @"{""MyString"":""NewValue""}";
             Assert.Throws<InvalidOperationException>(
-                () => JsonSerializer.Deserialize<ClassInheritedWithPropertyPolicyConflictWhichThrows>(json));
+                () => JsonSerializer.Deserialize<ClassInheritedWithPropertyPolicyConflictWhichThrows>(json, options));
         }
 
         [Fact]
         public static void Throw_when_public_properties_conflict_due_to_policy_and_double_inheritance()
         {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
             // Serialize
             var obj = new ClassTwiceInheritedWithPropertyPolicyConflictWhichThrows();
             Assert.Throws<InvalidOperationException>(
-                () => JsonSerializer.Serialize(obj));
+                () => JsonSerializer.Serialize(obj, options));
 
             // Deserialize
             string json = @"{""MyString"":""NewValue""}";
             Assert.Throws<InvalidOperationException>(
-                () => JsonSerializer.Deserialize<ClassTwiceInheritedWithPropertyPolicyConflictWhichThrows>(json));
+                () => JsonSerializer.Deserialize<ClassTwiceInheritedWithPropertyPolicyConflictWhichThrows>(json, options));
         }
 
         public class ClassWithInternalProperty
