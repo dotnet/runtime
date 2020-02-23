@@ -811,9 +811,9 @@ PEXCEPTION_ROUTINE
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
     );
 
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 extern RtlVirtualUnwindFn* RtlVirtualUnwind_Unsafe;
-#else // !TARGET_UNIX
+#else // !HOST_UNIX
 PEXCEPTION_ROUTINE
 RtlVirtualUnwind_Unsafe(
     IN ULONG HandlerType,
@@ -825,7 +825,7 @@ RtlVirtualUnwind_Unsafe(
     OUT PULONG64 EstablisherFrame,
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
     );
-#endif // !TARGET_UNIX
+#endif // !HOST_UNIX
 
 #endif // TARGET_AMD64
 
@@ -945,7 +945,7 @@ RtlUnwindEx (
     __in_opt PEXCEPTION_RECORD ExceptionRecord,
     __in PVOID ReturnValue,
     __in PT_CONTEXT ContextRecord,
-    __in_opt PUNWIND_HISTORY_TABLE HistoryTable
+    __in_opt PVOID HistoryTable
     );
 
 EXTERN_C
@@ -956,7 +956,7 @@ RtlVirtualUnwind (
     __in DWORD HandlerType,
     __in DWORD ImageBase,
     __in DWORD ControlPc,
-    __in PRUNTIME_FUNCTION FunctionEntry,
+    __in PT_RUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
     __out PVOID *HandlerData,
     __out PDWORD EstablisherFrame,

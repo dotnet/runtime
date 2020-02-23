@@ -305,10 +305,7 @@ namespace System.Diagnostics.Tracing
         internal static extern int EventActivityIdControl(uint controlCode, ref Guid activityId);
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern unsafe void WriteEvent(IntPtr eventHandle, uint eventID, void* pData, uint length, Guid* activityId, Guid* relatedActivityId);
-
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern unsafe void WriteEventData(IntPtr eventHandle, uint eventID, EventProvider.EventData* pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId);
+        internal static extern unsafe void WriteEventData(IntPtr eventHandle, EventProvider.EventData* pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId);
 
 
         //

@@ -1,10 +1,10 @@
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     list(APPEND LINK_LIBRARIES_ADDITIONAL
         ole32.lib
         advapi32.lib
         OleAut32.lib
     )
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 list(APPEND LINK_LIBRARIES_ADDITIONAL platformdefines)
 
@@ -34,6 +34,7 @@ add_subdirectory(PInvoke/CriticalHandles)
 add_subdirectory(PInvoke/Generics)
 add_subdirectory(PInvoke/AsAny)
 add_subdirectory(PInvoke/SafeHandles)
+add_subdirectory(PInvoke/Vector2_3_4)
 add_subdirectory(NativeCallable)
 add_subdirectory(PrimitiveMarshalling/Bool)
 add_subdirectory(PrimitiveMarshalling/UIntPtr)
@@ -66,7 +67,7 @@ add_subdirectory(ExecInDefAppDom)
 add_subdirectory(ICustomMarshaler/ConflictingNames)
 add_subdirectory(LayoutClass)
 add_subdirectory(PInvoke/DateTime)
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     add_subdirectory(PInvoke/Attributes/LCID)
     add_subdirectory(PInvoke/Variant)
     add_subdirectory(PInvoke/Varargs)
@@ -89,4 +90,4 @@ if(WIN32)
         add_subdirectory(IJW/CopyConstructorMarshaler)
         add_subdirectory(IJW/NativeVarargs)
     endif()
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)

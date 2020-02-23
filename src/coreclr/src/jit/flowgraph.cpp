@@ -4817,41 +4817,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             }
             break;
 
-#if !defined(FEATURE_CORECLR)
-            case CEE_CALLI:
-
-                // CEE_CALLI should not be inlined if the call indirect target has a calling convention other than
-                // CORINFO_CALLCONV_DEFAULT. In the case where we have a no-marshal CALLI P/Invoke we end up calling
-                // the IL stub. We don't NGEN these stubs, so we'll have to JIT an IL stub for a trivial func.
-                // It's almost certainly a better choice to leave out the inline candidate so we can generate an inlined
-                // call frame.
-
-                // Consider skipping this bail-out for force inlines.
-                if (makeInlineObservations)
-                {
-                    if (codeAddr > codeEndp - sizeof(DWORD))
-                    {
-                        goto TOO_FAR;
-                    }
-
-                    CORINFO_SIG_INFO calliSig;
-                    eeGetSig(getU4LittleEndian(codeAddr), info.compScopeHnd, impTokenLookupContextHandle, &calliSig);
-
-                    if (calliSig.getCallConv() != CORINFO_CALLCONV_DEFAULT)
-                    {
-                        compInlineResult->Note(InlineObservation::CALLEE_UNSUPPORTED_OPCODE);
-
-                        // Fail fast if we're inlining
-                        if (isInlining)
-                        {
-                            assert(compInlineResult->IsFailure());
-                            return;
-                        }
-                    }
-                }
-                break;
-#endif // FEATURE_CORECLR
-
             case CEE_JMP:
                 retBlocks++;
 
@@ -5588,22 +5553,14 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
                 if (tailCall)
                 {
-                    bool isCallPopAndRet = false;
-
                     // impIsTailCallILPattern uses isRecursive flag to determine whether ret in a fallthrough block is
                     // allowed. We don't know at this point whether the call is recursive so we conservatively pass
                     // false. This will only affect explicit tail calls when IL verification is not needed for the
                     // method.
                     bool isRecursive = false;
-                    if (!impIsTailCallILPattern(tailCall, opcode, codeAddr + sz, codeEndp, isRecursive,
-                                                &isCallPopAndRet))
+                    if (!impIsTailCallILPattern(tailCall, opcode, codeAddr + sz, codeEndp, isRecursive))
                     {
-#if !defined(FEATURE_CORECLR) && defined(TARGET_AMD64)
-                        BADCODE3("tail call not followed by ret or pop+ret", " at offset %04X",
-                                 (IL_OFFSET)(codeAddr - codeBegp));
-#else
                         BADCODE3("tail call not followed by ret", " at offset %04X", (IL_OFFSET)(codeAddr - codeBegp));
-#endif // !FEATURE_CORECLR && TARGET_AMD64
                     }
 
                     if (fgCanSwitchToOptimized() && fgMayExplicitTailCall())
@@ -5613,17 +5570,6 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                         // to avoid stack overflow from recursion
                         fgSwitchToOptimized();
                     }
-
-#if !defined(FEATURE_CORECLR) && defined(TARGET_AMD64)
-                    if (isCallPopAndRet)
-                    {
-                        // By breaking here, we let pop and ret opcodes to be
-                        // imported after tail call.  If tail prefix is honored,
-                        // stmts corresponding to pop and ret will be removed
-                        // in fgMorphCall().
-                        break;
-                    }
-#endif // !FEATURE_CORECLR && TARGET_AMD64
                 }
                 else
                 {
@@ -6915,13 +6861,6 @@ void Compiler::fgImport()
 {
     impImport(fgFirstBB);
 
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION))
-    {
-        CorInfoMethodRuntimeFlags verFlag;
-        verFlag = tiIsVerifiableCode ? CORINFO_FLG_VERIFIABLE : CORINFO_FLG_UNVERIFIABLE;
-        info.compCompHnd->setMethodAttribs(info.compMethodHnd, verFlag);
-    }
-
     // Estimate how much of method IL was actually imported.
     //
     // Note this includes (to some extent) the impact of importer folded
@@ -7849,7 +7788,8 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
 
     GenTree* tree = nullptr;
 
-    CORINFO_LOOKUP_KIND kind = info.compCompHnd->getLocationOfThisType(info.compMethodHnd);
+    CORINFO_LOOKUP_KIND kind;
+    info.compCompHnd->getLocationOfThisType(info.compMethodHnd, &kind);
 
     if (!kind.needsRuntimeLookup)
     {
@@ -8955,15 +8895,6 @@ void Compiler::fgAddInternal()
         }
     }
 
-    // Grab a temp for the security object.
-    // (Note: opts.compDbgEnC currently also causes the security object to be generated. See Compiler::compCompile)
-    if (opts.compNeedSecurityCheck)
-    {
-        noway_assert(lvaSecurityObject == BAD_VAR_NUM);
-        lvaSecurityObject                  = lvaGrabTempWithImplicitUse(false DEBUGARG("security check"));
-        lvaTable[lvaSecurityObject].lvType = TYP_REF;
-    }
-
     // Merge return points if required or beneficial
     MergedReturns merger(this);
 
@@ -9100,43 +9031,6 @@ void Compiler::fgAddInternal()
         fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback));
     }
 
-    /* Do we need to call out for security ? */
-
-    if (tiSecurityCalloutNeeded)
-    {
-        // We must have grabbed this local.
-        noway_assert(opts.compNeedSecurityCheck);
-        noway_assert(lvaSecurityObject != BAD_VAR_NUM);
-
-        GenTree* tree;
-
-        /* Insert the expression "call JIT_Security_Prolog(MethodHnd, &SecurityObject)" */
-
-        tree = gtNewIconEmbMethHndNode(info.compMethodHnd);
-
-        tree = gtNewHelperCallNode(info.compCompHnd->getSecurityPrologHelper(info.compMethodHnd), TYP_VOID,
-                                   gtNewCallArgs(tree, gtNewOperNode(GT_ADDR, TYP_BYREF,
-                                                                     gtNewLclvNode(lvaSecurityObject, TYP_REF))));
-
-        /* Create a new basic block and stick the call in it */
-
-        fgEnsureFirstBBisScratch();
-
-        fgNewStmtAtEnd(fgFirstBB, tree);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\ntiSecurityCalloutNeeded - Add call JIT_Security_Prolog(%08p) statement ",
-                   dspPtr(info.compMethodHnd));
-            printTreeID(tree);
-            printf(" in first basic block %s\n", fgFirstBB->dspToString());
-            gtDispTree(tree);
-            printf("\n");
-        }
-#endif
-    }
-
 #if !defined(FEATURE_EH_FUNCLETS)
 
     /* Is this a 'synchronized' method? */
@@ -9214,35 +9108,6 @@ void Compiler::fgAddInternal()
     }
 
 #endif // !FEATURE_EH_FUNCLETS
-
-    /* Do we need to do runtime call out to check the security? */
-
-    if (tiRuntimeCalloutNeeded)
-    {
-        GenTree* tree;
-
-        /* Insert the expression "call verificationRuntimeCheck(MethodHnd)" */
-
-        tree = gtNewIconEmbMethHndNode(info.compMethodHnd);
-
-        tree = gtNewHelperCallNode(CORINFO_HELP_VERIFICATION_RUNTIME_CHECK, TYP_VOID, gtNewCallArgs(tree));
-
-        /* Create a new basic block and stick the call in it */
-
-        fgEnsureFirstBBisScratch();
-
-        fgNewStmtAtEnd(fgFirstBB, tree);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\ntiRuntimeCalloutNeeded - Call verificationRuntimeCheck(%08p) statement in first basic block %s\n",
-                   dspPtr(info.compMethodHnd), fgFirstBB->dspToString());
-            gtDispTree(tree);
-            printf("\n");
-        }
-#endif
-    }
 
     if (opts.IsReversePInvoke())
     {
@@ -22315,7 +22180,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
     Compiler*            comp      = data->compiler;
     CORINFO_CLASS_HANDLE retClsHnd = NO_CLASS_HANDLE;
 
-    if (tree->OperGet() == GT_RET_EXPR)
+    while (tree->OperGet() == GT_RET_EXPR)
     {
         // We are going to copy the tree from the inlinee,
         // so record the handle now.
@@ -22327,8 +22192,15 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
 
         // Skip through chains of GT_RET_EXPRs (say from nested inlines)
         // to the actual tree to use.
-        GenTree*  inlineCandidate = tree->gtRetExprVal();
-        var_types retType         = tree->TypeGet();
+        //
+        // Also we might as well try and fold the return value.
+        // Eg returns of constant bools will have CASTS.
+        // This folding may uncover more GT_RET_EXPRs, so we loop around
+        // until we've got something distinct.
+        //
+        GenTree* inlineCandidate = tree->gtRetExprVal();
+        inlineCandidate          = comp->gtFoldExpr(inlineCandidate);
+        var_types retType        = tree->TypeGet();
 
 #ifdef DEBUG
         if (comp->verbose)
@@ -22597,6 +22469,56 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
                 }
             }
         }
+    }
+    else if (tree->OperGet() == GT_JTRUE)
+    {
+        // See if this jtrue is now foldable.
+        BasicBlock* block    = comp->compCurBB;
+        GenTree*    condTree = tree->AsOp()->gtOp1;
+        assert(tree == block->lastStmt()->GetRootNode());
+
+        if (condTree->OperGet() == GT_CNS_INT)
+        {
+            JITDUMP(" ... found foldable jtrue at [%06u] in BB%02u\n", dspTreeID(tree), block->bbNum);
+            noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
+
+            // We have a constant operand, and should have the all clear to optimize.
+            // Update side effects on the tree, assert there aren't any, and bash to nop.
+            comp->gtUpdateNodeSideEffects(tree);
+            assert((tree->gtFlags & GTF_SIDE_EFFECT) == 0);
+            tree->gtBashToNOP();
+
+            BasicBlock* bTaken    = nullptr;
+            BasicBlock* bNotTaken = nullptr;
+
+            if (condTree->AsIntCon()->gtIconVal != 0)
+            {
+                block->bbJumpKind = BBJ_ALWAYS;
+                bTaken            = block->bbJumpDest;
+                bNotTaken         = block->bbNext;
+            }
+            else
+            {
+                block->bbJumpKind = BBJ_NONE;
+                bTaken            = block->bbNext;
+                bNotTaken         = block->bbJumpDest;
+            }
+
+            comp->fgRemoveRefPred(bNotTaken, block);
+
+            // If that was the last ref, a subsequent flow-opt pass
+            // will clean up the now-unreachable bNotTaken, and any
+            // other transitively unreachable blocks.
+            if (bNotTaken->bbRefs == 0)
+            {
+                JITDUMP("... it looks like BB%02u is now unreachable!\n", bNotTaken->bbNum);
+            }
+        }
+    }
+    else
+    {
+        GenTree* foldedTree = comp->gtFoldExpr(tree);
+        *pTree              = foldedTree;
     }
 
     return WALK_CONTINUE;
@@ -23265,8 +23187,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     if (call->gtFlags & GTF_CALL_NULLCHECK && !inlineInfo->thisDereferencedFirst)
     {
         // Call impInlineFetchArg to "reserve" a temp for the "this" pointer.
-        nullcheck = gtNewOperNode(GT_IND, TYP_INT, impInlineFetchArg(0, inlArgInfo, lclVarInfo));
-        nullcheck->gtFlags |= GTF_EXCEPT;
+        nullcheck = gtNewNullCheck(impInlineFetchArg(0, inlArgInfo, lclVarInfo), block);
 
         // The NULL-check statement will be inserted to the statement list after those statements
         // that assign arguments to temps and before the actual body of the inlinee method.
@@ -23524,10 +23445,15 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
     CORINFO_METHOD_INFO* InlineeMethodInfo = InlineeCompiler->info.compMethodInfo;
 
-    unsigned lclCnt = InlineeMethodInfo->locals.numArgs;
+    unsigned lclCnt     = InlineeMethodInfo->locals.numArgs;
+    bool     bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+    bool     bbIsReturn = block->bbJumpKind == BBJ_RETURN;
 
-    // Does callee contain any zero-init local?
-    if ((lclCnt != 0) && (InlineeMethodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0)
+    // If the callee contains zero-init locals, we need to explicitly initialize them if we are
+    // in a loop or if the caller doesn't have compInitMem set. Otherwise we can rely on the
+    // normal logic in the caller to insert zero-init in the prolog if necessary.
+    if ((lclCnt != 0) && ((InlineeMethodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0) &&
+        ((bbInALoop && !bbIsReturn) || !info.compInitMem))
     {
 
 #ifdef DEBUG
@@ -23541,9 +23467,20 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         {
             unsigned tmpNum = inlineInfo->lclTmpNum[lclNum];
 
-            // Is the local used at all?
+            // If the local is used check whether we need to insert explicit zero initialization.
             if (tmpNum != BAD_VAR_NUM)
             {
+                if (!fgVarNeedsExplicitZeroInit(lvaGetDesc(tmpNum), bbInALoop, bbIsReturn))
+                {
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        printf("\nSkipping zero initialization of V%02u\n", tmpNum);
+                    }
+#endif // DEBUG
+                    continue;
+                }
+
                 var_types lclTyp = (var_types)lvaTable[tmpNum].lvType;
                 noway_assert(lclTyp == lclVarInfo[lclNum + inlineInfo->argCnt].lclTypeInfo);
 
@@ -23558,18 +23495,14 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 {
                     CORINFO_CLASS_HANDLE structType =
                         lclVarInfo[lclNum + inlineInfo->argCnt].lclVerTypeInfo.GetClassHandle();
+                    tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), // Dest
+                                          gtNewIconNode(0),              // Value
+                                          false,                         // isVolatile
+                                          false);                        // not copyBlock
 
-                    if (fgStructTempNeedsExplicitZeroInit(lvaTable + tmpNum, block))
-                    {
-                        tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), // Dest
-                                              gtNewIconNode(0),              // Value
-                                              false,                         // isVolatile
-                                              false);                        // not copyBlock
-
-                        newStmt = gtNewStmt(tree, callILOffset);
-                        fgInsertStmtAfter(block, afterStmt, newStmt);
-                        afterStmt = newStmt;
-                    }
+                    newStmt = gtNewStmt(tree, callILOffset);
+                    fgInsertStmtAfter(block, afterStmt, newStmt);
+                    afterStmt = newStmt;
                 }
 
 #ifdef DEBUG
@@ -24088,13 +24021,7 @@ void Compiler::fgRemoveEmptyTry()
     // Assume we don't need to update the bbPreds lists.
     assert(!fgComputePredsDone);
 
-#ifdef FEATURE_CORECLR
     bool enableRemoveEmptyTry = true;
-#else
-    // Code in a finally gets special treatment in the presence of
-    // thread abort.
-    bool enableRemoveEmptyTry = false;
-#endif // FEATURE_CORECLR
 
 #ifdef DEBUG
     // Allow override to enable/disable.
@@ -24434,13 +24361,7 @@ void Compiler::fgCloneFinally()
     // Assume we don't need to update the bbPreds lists.
     assert(!fgComputePredsDone);
 
-#ifdef FEATURE_CORECLR
     bool enableCloning = true;
-#else
-    // Finally cloning currently doesn't provide sufficient protection
-    // for the cloned code in the presence of thread abort.
-    bool enableCloning = false;
-#endif // FEATURE_CORECLR
 
 #ifdef DEBUG
     // Allow override to enable/disable.

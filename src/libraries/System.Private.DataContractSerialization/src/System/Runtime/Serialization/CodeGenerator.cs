@@ -1461,17 +1461,14 @@ namespace System.Runtime.Serialization
         }
 
 
-        [Conditional("NOT_SILVERLIGHT")]
         internal void EmitSourceInstruction(string line)
         {
         }
 
-        [Conditional("NOT_SILVERLIGHT")]
         internal void EmitSourceLabel(string line)
         {
         }
 
-        [Conditional("NOT_SILVERLIGHT")]
         internal void EmitSourceComment(string comment)
         {
         }

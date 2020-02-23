@@ -27,7 +27,7 @@ namespace System.ComponentModel.Composition
         private const char GenericFormatClosingBracket = '}';
 
         [ThreadStatic]
-        private static Dictionary<Type, string> typeIdentityCache;
+        private static Dictionary<Type, string>? typeIdentityCache;
 
         private static Dictionary<Type, string> TypeIdentityCache
         {
@@ -49,13 +49,11 @@ namespace System.ComponentModel.Composition
                 throw new ArgumentNullException(nameof(type));
             }
 
-            string typeIdentity = null;
-
-            if (!TypeIdentityCache.TryGetValue(type, out typeIdentity))
+            if (!TypeIdentityCache.TryGetValue(type, out string? typeIdentity))
             {
                 if (!type.IsAbstract && type.HasBaseclassOf(typeof(Delegate)))
                 {
-                    MethodInfo method = type.GetMethod("Invoke");
+                    MethodInfo method = type.GetMethod("Invoke")!;
                     typeIdentity = ContractNameServices.GetTypeIdentityFromMethod(method);
                 }
                 else if (type.IsGenericParameter)
@@ -93,7 +91,7 @@ namespace System.ComponentModel.Composition
 
             WriteTypeWithNamespace(methodNameStringBuilder, method.ReturnType, formatGenericName);
 
-            methodNameStringBuilder.Append("(");
+            methodNameStringBuilder.Append('(');
 
             ParameterInfo[] parameters = method.GetParameters();
 
@@ -101,12 +99,12 @@ namespace System.ComponentModel.Composition
             {
                 if (i != 0)
                 {
-                    methodNameStringBuilder.Append(",");
+                    methodNameStringBuilder.Append(',');
                 }
 
                 WriteTypeWithNamespace(methodNameStringBuilder, parameters[i].ParameterType, formatGenericName);
             }
-            methodNameStringBuilder.Append(")");
+            methodNameStringBuilder.Append(')');
 
             return methodNameStringBuilder.ToString();
         }
@@ -182,7 +180,7 @@ namespace System.ComponentModel.Composition
             //
             Type rootElementType = FindArrayElementType(type);
             WriteType(typeName, rootElementType, formatGenericName);
-            Type elementType = type;
+            Type? elementType = type;
             do
             {
                 WriteArrayTypeDimensions(typeName, elementType);
@@ -195,7 +193,7 @@ namespace System.ComponentModel.Composition
             //
             // Writes pointer type  e.g <TypeName>*
             //
-            WriteType(typeName, type.GetElementType(), formatGenericName);
+            WriteType(typeName, type.GetElementType()!, formatGenericName);
             typeName.Append(PointerSymbol);
         }
 
@@ -204,7 +202,7 @@ namespace System.ComponentModel.Composition
             //
             // Writes by ref type e.g <TypeName>&
             //
-            WriteType(typeName, type.GetElementType(), formatGenericName);
+            WriteType(typeName, type.GetElementType()!, formatGenericName);
             typeName.Append(ReferenceSymbol);
         }
 
@@ -319,9 +317,9 @@ namespace System.ComponentModel.Composition
             //
             // Gets array element type by calling GetElementType() until the element is not an array
             //
-            Type elementType = type;
+            Type? elementType = type;
             while ((elementType = elementType.GetElementType()) != null && elementType.IsArray) { }
-            return elementType;
+            return elementType!;
         }
 
         private static string FindGenericTypeName(string genericName)

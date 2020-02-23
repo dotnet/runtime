@@ -319,9 +319,9 @@ size_t DisAssembler::disCchAddrMember(
             break;
     }
 
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
 
     if (retval == 0)
     {
@@ -568,9 +568,9 @@ size_t DisAssembler::disCchFixupMember(
             break;
     }
 
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
 
     /* no displacement */
 
@@ -781,9 +781,9 @@ size_t DisAssembler::disCchRegRelMember(
             break;
     }
 
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
 
     /* save displacement */
 
@@ -1083,9 +1083,9 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
                 break;
 
         } // end switch
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
 
         return cb;
     } // end if
@@ -1252,7 +1252,7 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
     pdis = DIS::PdisNew(DIS::distX8664);
 #elif defined(TARGET_ARM64)
     pdis = DIS::PdisNew(DIS::distArm64);
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
 #endif
 

@@ -47,55 +47,6 @@ Assembly* CrawlFrame::GetAssembly()
     return pAssembly;
 }
 
-#ifndef DACCESS_COMPILE
-OBJECTREF* CrawlFrame::GetAddrOfSecurityObject()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    if (isFrameless)
-    {
-        _ASSERTE(pFunc);
-
-#if defined(TARGET_X86)
-        if (isCachedMethod)
-        {
-            return pSecurityObject;
-        }
-        else
-#endif // TARGET_X86
-        {
-            return (static_cast <OBJECTREF*>(GetCodeManager()->GetAddrOfSecurityObject(this)));
-        }
-    }
-    else
-    {
-#ifdef FEATURE_INTERPRETER
-        // Check for an InterpreterFrame.
-        Frame* pFrm = GetFrame();
-        if (pFrm != NULL && pFrm->GetVTablePtr() == InterpreterFrame::GetMethodFrameVPtr())
-        {
-#ifdef DACCESS_COMPILE
-            // TBD: DACize the interpreter.
-            return NULL;
-#else
-            return dac_cast<PTR_InterpreterFrame>(pFrm)->GetInterpreter()->GetAddressOfSecurityObject();
-#endif
-        }
-        // Otherwise...
-#endif // FEATURE_INTERPRETER
-
-        /*ISSUE: Are there any other functions holding a security desc? */
-        if (pFunc && (pFunc->IsIL() || pFunc->IsNoMetadata()))
-                return dac_cast<PTR_FramedMethodFrame>
-                    (pFrame)->GetAddrOfSecurityDesc();
-    }
-    return NULL;
-}
-#endif
-
 BOOL CrawlFrame::IsInCalleesFrames(LPVOID stackPointer)
 {
     LIMITED_METHOD_CONTRACT;
@@ -376,9 +327,6 @@ inline void CrawlFrame::GotoNextFrame()
     // Update app domain if this frame caused a transition
     //
 
-    AppDomain *pRetDomain = pFrame->GetReturnDomain();
-    if (pRetDomain != NULL)
-        pAppDomain = pRetDomain;
     pFrame = pFrame->Next();
 
     if (pFrame != FRAME_TOP)
@@ -1248,7 +1196,6 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
     }
 
     m_crawl.pRD = pRegDisp;
-    m_crawl.pAppDomain = pThread->GetDomain(INDEBUG(flags & PROFILER_DO_STACK_SNAPSHOT));
 
     m_codeManFlags = (ICodeManagerFlags)((flags & QUICKUNWIND) ? 0 : UpdateAllRegs);
     m_scanFlag = ExecutionManager::GetScanFlags();
@@ -1341,9 +1288,6 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
     }
 
     m_crawl.pRD = pRegDisp;
-
-    // we initialize the appdomain to be the current domain, but this nees to be updated below
-    m_crawl.pAppDomain = m_crawl.pThread->GetDomain(INDEBUG(m_flags & PROFILER_DO_STACK_SNAPSHOT));
 
     m_codeManFlags = (ICodeManagerFlags)((m_flags & QUICKUNWIND) ? 0 : UpdateAllRegs);
 
@@ -1516,7 +1460,6 @@ void StackFrameIterator::ResetCrawlFrame()
 
     m_crawl.pThread = this->m_pThread;
 
-    m_crawl.pSecurityObject = NULL;
     m_crawl.isCachedMethod  = false;
     m_crawl.stackWalkCache.ClearEntry();
 
@@ -2577,9 +2520,9 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
         PTR_VOID newSP = PTR_VOID((TADDR)GetRegdisplaySP(m_crawl.pRD));
 #ifndef NO_FIXED_STACK_LIMIT
-        FAIL_IF_SPECULATIVE_WALK(newSP >= m_crawl.pThread->GetCachedStackLimit());
+        FAIL_IF_SPECULATIVE_WALK(m_crawl.pThread->IsExecutingOnAltStack() || newSP >= m_crawl.pThread->GetCachedStackLimit());
 #endif // !NO_FIXED_STACK_LIMIT
-        FAIL_IF_SPECULATIVE_WALK(newSP < m_crawl.pThread->GetCachedStackBase());
+        FAIL_IF_SPECULATIVE_WALK(m_crawl.pThread->IsExecutingOnAltStack() || newSP < m_crawl.pThread->GetCachedStackBase());
 
 #undef FAIL_IF_SPECULATIVE_WALK
 
@@ -2633,16 +2576,6 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             m_crawl.hasFaulted = (uFrameAttribs & Frame::FRAME_ATTR_FAULTED) != 0;
             m_crawl.isIPadjusted = (uFrameAttribs & Frame::FRAME_ATTR_OUT_OF_LINE) != 0;
             _ASSERTE(!m_crawl.hasFaulted || !m_crawl.isIPadjusted); // both cant be set together
-        }
-
-        //
-        // Update app domain if this frame caused a transition.
-        //
-
-        AppDomain *retDomain = m_crawl.pFrame->GetReturnDomain();
-        if (retDomain != NULL)
-        {
-            m_crawl.pAppDomain = retDomain;
         }
 
         PCODE adr = m_crawl.pFrame->GetReturnAddress();
@@ -2962,18 +2895,6 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             {
                 m_crawl.isCachedMethod = m_crawl.stackWalkCache.Lookup((UINT_PTR)GetControlPC(m_crawl.pRD));
                 _ASSERTE (m_crawl.isCachedMethod != m_crawl.stackWalkCache.IsEmpty());
-
-                m_crawl.pSecurityObject = NULL;
-#if defined(TARGET_X86)
-                if (m_crawl.isCachedMethod && m_crawl.stackWalkCache.m_CacheEntry.HasSecurityObject())
-                {
-                    // pCallback will use this to save time on GetAddrOfSecurityObject
-                    StackwalkCacheUnwindInfo stackwalkCacheUnwindInfo(&m_crawl.stackWalkCache.m_CacheEntry);
-                    m_crawl.pSecurityObject = EECodeManager::GetAddrOfSecurityObjectFromCachedInfo(
-                                                m_crawl.pRD,
-                                                &stackwalkCacheUnwindInfo);
-                }
-#endif // TARGET_X86
             }
 #endif // DACCESS_COMPILE
 

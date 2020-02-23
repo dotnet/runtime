@@ -14,21 +14,24 @@ Param(
   [string]$arch,
   [string]$subsetCategory,
   [string]$subset,
-  [string]$runtimeConfiguration,
-  [string]$librariesConfiguration,
+  [ValidateSet("Debug","Release","Checked")][string]$runtimeConfiguration,
+  [ValidateSet("Debug","Release")][string]$librariesConfiguration,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
 function Get-Help() {
   Write-Host "Common settings:"
-  Write-Host "  -subset                 Build a subset, print available subsets with -subset help"
-  Write-Host "  -subsetCategory         Build a subsetCategory, print available subsetCategories with -subset help"
-  Write-Host "  -os                     Build operating system: Windows_NT or Unix"
-  Write-Host "  -arch                   Build platform: x86, x64, arm or arm64"
-  Write-Host "  -configuration <value>  Build configuration: Debug or Release (short: -c)"
-  Write-Host "  -verbosity <value>      MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
-  Write-Host "  -binaryLog              Output binary log (short: -bl)"
-  Write-Host "  -help                   Print help and exit (short: -h)"
+  Write-Host "  -subset                   Build a subset, print available subsets with -subset help"
+  Write-Host "  -subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
+  Write-Host "  -vs                       Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
+  Write-Host "  -os                       Build operating system: Windows_NT or Unix"
+  Write-Host "  -arch                     Build platform: x86, x64, arm or arm64"
+  Write-Host "  -configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
+  Write-Host "  -runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked"
+  Write-Host "  -librariesConfiguration   Libraries build configuration: Debug or Release"
+  Write-Host "  -verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
+  Write-Host "  -binaryLog                Output binary log (short: -bl)"
+  Write-Host "  -help                     Print help and exit (short: -h)"
   Write-Host ""
 
   Write-Host "Actions (defaults to -restore -build):"
@@ -44,7 +47,6 @@ function Get-Help() {
   Write-Host ""
 
   Write-Host "Libraries settings:"
-  Write-Host "  -vs                     Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
   Write-Host "  -framework              Build framework: netcoreapp5.0 or net472 (short: -f)"
   Write-Host "  -coverage               Collect code coverage when testing"
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all"
@@ -85,6 +87,7 @@ if ($vs) {
 
     # This tells .NET Core to use the same dotnet.exe that build scripts use
     $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\netcoreapp5.0-Windows_NT-$configuration-$archTestHost";
+    $env:DEVPATH="$PSScriptRoot\..\artifacts\bin\testhost\net472-Windows_NT-$configuration-$archTestHost";
   }
 
   # This tells MSBuild to load the SDK from the directory of the bootstrapped SDK
@@ -135,9 +138,9 @@ foreach ($argument in $PSBoundParameters.Keys)
     "build"                { $arguments += " -build" }
     "buildtests"           { if ($build -eq $true) { $arguments += " /p:BuildTests=true" } else { $arguments += " -build /p:BuildTests=only" } }
     "test"                 { $arguments += " -test" }
-    "configuration"        { $configuration = (Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])); $arguments += " /p:ConfigurationGroup=$configuration -configuration $configuration" }
+    "configuration"        { $arguments += " -configuration $((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "runtimeConfiguration" { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
-    "framework"            { $arguments += " /p:TargetGroup=$($PSBoundParameters[$argument].ToLowerInvariant())" }
+    "framework"            { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                   { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }
     "allconfigurations"    { $arguments += " /p:BuildAllConfigurations=true" }
     "arch"                 { $arguments += " /p:ArchGroup=$($PSBoundParameters[$argument]) /p:TargetArchitecture=$($PSBoundParameters[$argument])" }

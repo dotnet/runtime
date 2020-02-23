@@ -2784,19 +2784,22 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
                 // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
                 // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
-                // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for inteorp scenarios
-
-                if (m_pMT->HasInstantiation() && (!m_pMT->IsBlittable()
-                    || m_pMT->HasSameTypeDefAs(g_pByReferenceClass)
-                    || m_pMT->HasSameTypeDefAs(g_pNullableClass)
-                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T))
-                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T))
-                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T))
+                // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
+                // We can't block these types for field scenarios for back-compat reasons.
+                if (m_pMT->HasInstantiation() && !IsFieldScenario()
+                    && (!m_pMT->IsBlittable()
+                        || (m_pMT->HasSameTypeDefAs(g_pNullableClass)
+                        || m_pMT->HasSameTypeDefAs(g_pByReferenceClass)
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__SPAN))
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__READONLY_SPAN))
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T))
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T))
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T))
 #ifndef CROSSGEN_COMPILE
-                    // Crossgen scenarios block Vector<T> from even being loaded
-                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT))
+                            // Crossgen scenarios block Vector<T> from even being loaded
+                            || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT))
 #endif // !CROSSGEN_COMPILE
-                    ))
+                    )))
                 {
                     m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
                     IfFailGoto(E_FAIL, lFail);

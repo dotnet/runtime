@@ -882,7 +882,7 @@ namespace System.Net
         /// </summary>
         private long GetContentLengthFrom213Response(string responseString)
         {
-            string[] parsedList = responseString.Split(new char[] { ' ' });
+            string[] parsedList = responseString.Split(' ');
             if (parsedList.Length < 2)
                 throw new FormatException(SR.Format(SR.net_ftp_response_invalid_format, responseString));
             return Convert.ToInt64(parsedList[1], NumberFormatInfo.InvariantInfo);
@@ -999,7 +999,7 @@ namespace System.Net
                 {
                     pos1++;
                     long result;
-                    if (long.TryParse(str.Substring(pos1, pos2 - pos1),
+                    if (long.TryParse(str.AsSpan(pos1, pos2 - pos1),
                                         NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
                                         NumberFormatInfo.InvariantInfo, out result))
                     {
@@ -1064,7 +1064,7 @@ namespace System.Net
             // addressInfo will contain a string of format "|||<tcp-port>|"
             string addressInfo = responseString.Substring(pos1 + 1, pos2 - pos1 - 1);
 
-            string[] parsedList = addressInfo.Split(new char[] { '|' });
+            string[] parsedList = addressInfo.Split('|');
             if (parsedList.Length < 4)
                 throw new FormatException(SR.Format(SR.net_ftp_response_invalid_format, responseString));
 

@@ -19,7 +19,7 @@ namespace System.Security.AccessControl
         {
         }
 
-        internal FileSecurity(SafeFileHandle handle, AccessControlSections includeSections)
+        internal FileSecurity(SafeFileHandle? handle, AccessControlSections includeSections)
             : base(false, handle, includeSections, false)
         {
         }

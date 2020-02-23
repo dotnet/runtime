@@ -62,7 +62,7 @@ restore_optdata()
         fi
     fi
 
-    if [[ "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
+    if [[ "$__PgoOptimize" == 1 && "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
         # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
 
         local PgoDataPackagePathOutputFile="${__IntermediatesDir}/optdatapath.txt"
@@ -503,7 +503,7 @@ restore_optdata
 generate_event_logging
 
 # Build the coreclr (native) components.
-__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize $__CMakeArgs"
+__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize -DCLR_REPO_ROOT_DIR=\"$__RepoRootDir\" $__CMakeArgs"
 
 if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
     __CMakeArgs="-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 $__CMakeArgs"

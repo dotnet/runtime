@@ -769,7 +769,7 @@ void FrameInfo::InitFromStubHelper(
     // Method associated w/a stub will never have a JitManager.
     this->pIJM        = NULL;
     this->MethodToken = METHODTOKEN(NULL, 0);
-    this->currentAppDomain      = pCF->GetAppDomain();
+    this->currentAppDomain      = AppDomain::GetCurrentDomain();
     this->exactGenericArgsToken = NULL;
 
     // Stub frames are mutually exclusive with chain markers.
@@ -1545,7 +1545,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
     // Record the appdomain that the thread was in when it
     // was running code for this frame.
-    d->info.currentAppDomain = pCF->GetAppDomain();
+    d->info.currentAppDomain = AppDomain::GetCurrentDomain();
 
     //  Grab all the info from CrawlFrame that we need to
     //  check for "Am I in an exeption code blob?" now.

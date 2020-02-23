@@ -17,8 +17,7 @@ namespace System.ComponentModel.Composition
 {
     public static class AttributedModelServices
     {
-        [SuppressMessage("Microsoft.Design", "CA1004")]
-        public static TMetadataView GetMetadataView<TMetadataView>(IDictionary<string, object> metadata)
+        public static TMetadataView GetMetadataView<TMetadataView>(IDictionary<string, object?> metadata)
         {
             Requires.NotNull(metadata, nameof(metadata));
 
@@ -54,19 +53,19 @@ namespace System.ComponentModel.Composition
             return AttributedModelDiscovery.CreatePart(reflectionComposablePartDefinition, attributedPart);
         }
 
-        public static ComposablePartDefinition CreatePartDefinition(Type type, ICompositionElement origin)
+        public static ComposablePartDefinition CreatePartDefinition(Type type, ICompositionElement? origin)
         {
             Requires.NotNull(type, nameof(type));
 
             return AttributedModelServices.CreatePartDefinition(type, origin, false);
         }
 
-        public static ComposablePartDefinition CreatePartDefinition(Type type, ICompositionElement origin, bool ensureIsDiscoverable)
+        public static ComposablePartDefinition CreatePartDefinition(Type type, ICompositionElement? origin, bool ensureIsDiscoverable)
         {
             Requires.NotNull(type, nameof(type));
             if (ensureIsDiscoverable)
             {
-                return AttributedModelDiscovery.CreatePartDefinitionIfDiscoverable(type, origin);
+                return AttributedModelDiscovery.CreatePartDefinitionIfDiscoverable(type, origin)!;
             }
             else
             {
@@ -119,7 +118,7 @@ namespace System.ComponentModel.Composition
 
             string typeIdentity = AttributedModelServices.GetTypeIdentity(typeof(T));
 
-            IDictionary<string, object> metadata = new Dictionary<string, object>();
+            IDictionary<string, object?> metadata = new Dictionary<string, object?>();
             metadata.Add(CompositionConstants.ExportTypeIdentityMetadataName, typeIdentity);
 
             return batch.AddExport(new Export(contractName, metadata, () => exportedValue));

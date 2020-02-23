@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
@@ -19,7 +20,7 @@ internal static partial class Interop
             int loc);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameRawBytes")]
-        private static extern int GetX509NameRawBytes(SafeSharedX509NameHandle x509Name, byte[] buf, int cBuf);
+        private static extern int GetX509NameRawBytes(SafeSharedX509NameHandle x509Name, byte[]? buf, int cBuf);
 
         internal static X500DistinguishedName LoadX500Name(SafeSharedX509NameHandle namePtr)
         {

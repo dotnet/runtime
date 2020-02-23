@@ -396,7 +396,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"(cat)(\cZ*)(dog)", "asdlkcat\u001adogiwod", RegexOptions.None, new string[] { "cat\u001adog", "cat", "\u001a", "dog" } };
             yield return new object[] { null, @"(cat)(\cz*)(dog)", "asdlkcat\u001adogiwod", RegexOptions.None, new string[] { "cat\u001adog", "cat", "\u001a", "dog" } };
 
-            if (!PlatformDetection.IsNetFramework) // missing fix for https://github.com/dotnet/corefx/issues/26501
+            if (!PlatformDetection.IsNetFramework) // missing fix for https://github.com/dotnet/runtime/issues/24759
             {
                 yield return new object[] { null, @"(cat)(\c[*)(dog)", "asdlkcat\u001bdogiwod", RegexOptions.None, new string[] { "cat\u001bdog", "cat", "\u001b", "dog" } };
                 yield return new object[] { null, @"(cat)(\c[*)(dog)", "asdlkcat\u001Bdogiwod", RegexOptions.None, new string[] { "cat\u001Bdog", "cat", "\u001B", "dog" } };
@@ -716,6 +716,9 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"(?:abcd|efg[hij]*)k", "efgjk", RegexOptions.None, new string[] { "efgjk" } };
             yield return new object[] { null, @"[ace]?b[ace]?b[ace]?b[ace]?b", "cbbabeb", RegexOptions.None, new string[] { "cbbabeb" } };
             yield return new object[] { null, @"[ace]?b[ace]?b[ace]?b[ace]?b", "cBbAbEb", RegexOptions.IgnoreCase, new string[] { "cBbAbEb" } };
+            yield return new object[] { null, @"a[^wz]*w", "abcdcdcdwz", RegexOptions.None, new string[] { "abcdcdcdw" } };
+            yield return new object[] { null, @"a[^wyz]*w", "abcdcdcdwz", RegexOptions.None, new string[] { "abcdcdcdw" } };
+            yield return new object[] { null, @"a[^wyz]*W", "abcdcdcdWz", RegexOptions.IgnoreCase, new string[] { "abcdcdcdW" } };
             // Implicitly upgrading (or not) concat loops to be atomic
             yield return new object[] { null, @"(?:[ab]c[de]f)*", "", RegexOptions.None, new string[] { "" } };
             yield return new object[] { null, @"(?:[ab]c[de]f)*", "acdf", RegexOptions.None, new string[] { "acdf" } };
@@ -730,6 +733,8 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"(?:a{2}?){3}?", "aaaaaaaaa", RegexOptions.None, new string[] { "aaaaaa" } };
             yield return new object[] { null, @"(?:(?:[ab]c[de]f){3}){2}", "acdfbcdfacefbcefbcefbcdfacdef", RegexOptions.None, new string[] { "acdfbcdfacefbcefbcefbcdf" } };
             yield return new object[] { null, @"(?:(?:[ab]c[de]f){3}hello){2}", "aaaaaacdfbcdfacefhellobcefbcefbcdfhellooooo", RegexOptions.None, new string[] { "acdfbcdfacefhellobcefbcefbcdfhello" } };
+            // Nested atomic
+            yield return new object[] { null, @"(?>abc[def]gh(i*))", "123abceghiii456", RegexOptions.None, new string[] { "abceghiii", "iii" } };
 
             // Anchoring loops beginning with .* / .+
             yield return new object[] { null, @".*", "", RegexOptions.None, new string[] { "" } };

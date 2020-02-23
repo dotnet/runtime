@@ -380,7 +380,7 @@ namespace System.Text.Json
                     {
                         long startingOffset = reader.TokenStartIndex;
 
-                        // Placeholder until reader.Skip() is written (https://github.com/dotnet/corefx/issues/33295)
+                        // Placeholder until reader.Skip() is written (https://github.com/dotnet/runtime/issues/27838)
                         {
                             int depth = reader.CurrentDepth;
 

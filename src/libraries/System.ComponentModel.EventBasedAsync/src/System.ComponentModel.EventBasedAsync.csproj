@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.ComponentModel.EventBasedAsync</RootNamespace>
     <AssemblyName>System.ComponentModel.EventBasedAsync</AssemblyName>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

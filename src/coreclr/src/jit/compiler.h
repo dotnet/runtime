@@ -415,6 +415,8 @@ public:
     unsigned char lvDoNotEnregister : 1; // Do not enregister this variable.
     unsigned char lvFieldAccessed : 1;   // The var is a struct local, and a field of the variable is accessed.  Affects
                                          // struct promotion.
+    unsigned char lvLiveInOutOfHndlr : 1; // The variable is live in or out of an exception handler, and therefore must
+                                          // be on the stack (at least at those boundaries.)
 
     unsigned char lvInSsa : 1; // The variable is in SSA form (set by SsaBuilder)
 
@@ -424,9 +426,6 @@ public:
     // also, lvType == TYP_STRUCT prevents enregistration.  At least one of the reasons should be true.
     unsigned char lvVMNeedsStackAddr : 1; // The VM may have access to a stack-relative address of the variable, and
                                           // read/write its value.
-    unsigned char lvLiveInOutOfHndlr : 1; // The variable was live in or out of an exception handler, and this required
-                                          // the variable to be
-                                          // in the stack (at least at those boundaries.)
     unsigned char lvLclFieldExpr : 1;     // The variable is not a struct, but was accessed like one (e.g., reading a
                                           // particular byte from an int).
     unsigned char lvLclBlockOpAddr : 1;   // The variable was written to via a block operation that took its address.
@@ -1094,6 +1093,14 @@ extern const char*   PhaseNames[];
 extern const char*   PhaseEnums[];
 extern const LPCWSTR PhaseShortNames[];
 
+// Specify which checks should be run after each phase
+//
+enum class PhaseChecks
+{
+    CHECK_NONE,
+    CHECK_ALL
+};
+
 // The following enum provides a simple 1:1 mapping to CLR API's
 enum API_ICorJitInfo_Names
 {
@@ -1204,8 +1211,7 @@ public:
 };
 
 // A JitTimer encapsulates a CompTimeInfo for a single compilation. It also tracks the start of compilation,
-// and when the current phase started.  This is intended to be part of a Compilation object.  This is
-// disabled (FEATURE_JIT_METHOD_PERF not defined) when FEATURE_CORECLR is set, or on non-windows platforms.
+// and when the current phase started.  This is intended to be part of a Compilation object.
 //
 class JitTimer
 {
@@ -1608,7 +1614,7 @@ public:
 
     bool isPassedInFloatRegisters()
     {
-#ifdef _TARGET_X86
+#ifdef TARGET_X86
         return false;
 #else
         return isValidFloatArgReg(GetRegNum());
@@ -2439,7 +2445,7 @@ public:
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
 
-    GenTree* gtNewQmarkNode(var_types type, GenTree* cond, GenTree* colon);
+    GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTree* colon);
 
     GenTree* gtNewLargeOperNode(genTreeOps oper,
                                 var_types  type = TYP_I_IMPL,
@@ -2584,6 +2590,8 @@ public:
     GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
 
     GenTree* gtNewIndir(var_types typ, GenTree* addr);
+
+    GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
     GenTreeArgList* gtNewArgList(GenTree* op);
     GenTreeArgList* gtNewArgList(GenTree* op1, GenTree* op2);
@@ -2766,6 +2774,7 @@ public:
 #endif // __clang__
         gtFoldExprConst(GenTree* tree);
     GenTree* gtFoldExprSpecial(GenTree* tree);
+    GenTree* gtFoldBoxNullable(GenTree* tree);
     GenTree* gtFoldExprCompare(GenTree* tree);
     GenTree* gtCreateHandleCompare(genTreeOps             oper,
                                    GenTree*               op1,
@@ -2997,6 +3006,9 @@ public:
     void lvaSetVarAddrExposed(unsigned varNum);
     void lvaSetVarLiveInOutOfHandler(unsigned varNum);
     bool lvaVarDoNotEnregister(unsigned varNum);
+
+    bool lvaEnregEHVars;
+
 #ifdef DEBUG
     // Reasons why we can't enregister.  Some of these correspond to debug properties of local vars.
     enum DoNotEnregisterReason
@@ -3019,6 +3031,7 @@ public:
         DNER_PinningRef,
 #endif
     };
+
 #endif
     void lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregisterReason reason));
 
@@ -3420,7 +3433,6 @@ public:
         return lvaTable[lclNum].lvInSsa;
     }
 
-    unsigned lvaSecurityObject;  // variable representing the security object on the stack
     unsigned lvaStubArgumentVar; // variable representing the secret stub argument coming in EAX
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -4107,12 +4119,8 @@ private:
                                       var_types            calleeRetType,
                                       CORINFO_CLASS_HANDLE calleeRetTypeClass);
 
-    bool impIsTailCallILPattern(bool        tailPrefixed,
-                                OPCODE      curOpcode,
-                                const BYTE* codeAddrOfNextOpcode,
-                                const BYTE* codeEnd,
-                                bool        isRecursive,
-                                bool*       IsCallPopRet = nullptr);
+    bool impIsTailCallILPattern(
+        bool tailPrefixed, OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, bool isRecursive);
 
     bool impIsImplicitTailCallCandidate(
         OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, int prefixFlags, bool isRecursive);
@@ -4534,8 +4542,8 @@ public:
 
     unsigned fgSsaPassesCompleted; // Number of times fgSsaBuild has been run.
 
-    // Returns "true" if a struct temp of the given type requires needs zero init in this block
-    inline bool fgStructTempNeedsExplicitZeroInit(LclVarDsc* varDsc, BasicBlock* block);
+    // Returns "true" if the variable needs explicit zero initialization.
+    inline bool fgVarNeedsExplicitZeroInit(LclVarDsc* varDsc, bool bbInALoop, bool bbIsReturn);
 
     // The value numbers for this compilation.
     ValueNumStore* vnStore;
@@ -5384,7 +5392,6 @@ private:
 #endif // FEATURE_SIMD
     GenTree* fgMorphArrayIndex(GenTree* tree);
     GenTree* fgMorphCast(GenTree* tree);
-    GenTree* fgUnwrapProxy(GenTree* objRef);
     GenTreeFieldList* fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl);
     void fgInitArgInfo(GenTreeCall* call);
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
@@ -5439,7 +5446,6 @@ private:
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
-    GenTree* fgMorphRecognizeBoxNullable(GenTree* compare);
 
     GenTree* fgMorphToEmulatedFP(GenTree* tree);
     GenTree* fgMorphConst(GenTree* tree);
@@ -6318,14 +6324,15 @@ public:
         }
     };
 
-#define OMF_HAS_NEWARRAY 0x00000001      // Method contains 'new' of an array
-#define OMF_HAS_NEWOBJ 0x00000002        // Method contains 'new' of an object type.
-#define OMF_HAS_ARRAYREF 0x00000004      // Method contains array element loads or stores.
-#define OMF_HAS_VTABLEREF 0x00000008     // Method contains method table reference.
-#define OMF_HAS_NULLCHECK 0x00000010     // Method contains null check.
-#define OMF_HAS_FATPOINTER 0x00000020    // Method contains call, that needs fat pointer transformation.
-#define OMF_HAS_OBJSTACKALLOC 0x00000040 // Method contains an object allocated on the stack.
-#define OMF_HAS_GUARDEDDEVIRT 0x00000080 // Method contains guarded devirtualization candidate
+#define OMF_HAS_NEWARRAY 0x00000001         // Method contains 'new' of an array
+#define OMF_HAS_NEWOBJ 0x00000002           // Method contains 'new' of an object type.
+#define OMF_HAS_ARRAYREF 0x00000004         // Method contains array element loads or stores.
+#define OMF_HAS_VTABLEREF 0x00000008        // Method contains method table reference.
+#define OMF_HAS_NULLCHECK 0x00000010        // Method contains null check.
+#define OMF_HAS_FATPOINTER 0x00000020       // Method contains call, that needs fat pointer transformation.
+#define OMF_HAS_OBJSTACKALLOC 0x00000040    // Method contains an object allocated on the stack.
+#define OMF_HAS_GUARDEDDEVIRT 0x00000080    // Method contains guarded devirtualization candidate
+#define OMF_HAS_EXPRUNTIMELOOKUP 0x00000100 // Method contains a runtime lookup to an expandable dictionary.
 
     bool doesMethodHaveFatPointer()
     {
@@ -6364,6 +6371,23 @@ public:
                                              CORINFO_CLASS_HANDLE  classHandle,
                                              unsigned              methodAttr,
                                              unsigned              classAttr);
+
+    bool doesMethodHaveExpRuntimeLookup()
+    {
+        return (optMethodFlags & OMF_HAS_EXPRUNTIMELOOKUP) != 0;
+    }
+
+    void setMethodHasExpRuntimeLookup()
+    {
+        optMethodFlags |= OMF_HAS_EXPRUNTIMELOOKUP;
+    }
+
+    void clearMethodHasExpRuntimeLookup()
+    {
+        optMethodFlags &= ~OMF_HAS_EXPRUNTIMELOOKUP;
+    }
+
+    void addExpRuntimeLookupCandidate(GenTreeCall* call);
 
     unsigned optMethodFlags;
 
@@ -8415,28 +8439,6 @@ public:
             return jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
         }
 
-        // true if we must generate code compatible with JIT32 quirks
-        bool IsJit32Compat()
-        {
-#if defined(TARGET_X86)
-            return jitFlags->IsSet(JitFlags::JIT_FLAG_DESKTOP_QUIRKS);
-#else
-            return false;
-#endif
-        }
-
-        // true if we must generate code compatible with Jit64 quirks
-        bool IsJit64Compat()
-        {
-#if defined(TARGET_AMD64)
-            return jitFlags->IsSet(JitFlags::JIT_FLAG_DESKTOP_QUIRKS);
-#elif !defined(FEATURE_CORECLR)
-            return true;
-#else
-            return false;
-#endif
-        }
-
         bool compScopeInfo; // Generate the LocalVar info ?
         bool compDbgCode;   // Generate debugger-friendly code?
         bool compDbgInfo;   // Gather debugging info?
@@ -8463,22 +8465,6 @@ public:
         bool compStackCheckOnCall; // Check stack pointer after call to ensure it is correct. Only for x86.
 
 #endif // defined(DEBUG) && defined(TARGET_X86)
-
-        bool compNeedSecurityCheck; // This flag really means where or not a security object needs
-                                    // to be allocated on the stack.
-                                    // It will be set to true in the following cases:
-                                    //   1. When the method being compiled has a declarative security
-                                    //        (i.e. when CORINFO_FLG_NOSECURITYWRAP is reset for the current method).
-                                    //        This is also the case when we inject a prolog and epilog in the method.
-                                    //   (or)
-                                    //   2. When the method being compiled has imperative security (i.e. the method
-                                    //        calls into another method that has CORINFO_FLG_SECURITYCHECK flag set).
-                                    //   (or)
-                                    //   3. When opts.compDbgEnC is true. (See also Compiler::compCompile).
-                                    //
-        // When this flag is set, jit will allocate a gc-reference local variable (lvaSecurityObject),
-        // which gets reported as a GC root to stackwalker.
-        // (See also ICodeManager::GetAddrOfSecurityObject.)
 
         bool compReloc; // Generate relocs for pointers in code, true for all ngen/prejit codegen
 
@@ -8786,9 +8772,7 @@ public:
 
         bool compIsStatic : 1;         // Is the method static (no 'this' pointer)?
         bool compIsVarArgs : 1;        // Does the method have varargs parameters?
-        bool compIsContextful : 1;     // contextful method
         bool compInitMem : 1;          // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
-        bool compUnwrapContextful : 1; // JIT should unwrap proxies when possible
         bool compProfilerCallback : 1; // JIT inserted a profiler Enter callback
         bool compPublishStubParam : 1; // EAX captured in prolog will be available through an instrinsic
         bool compRetBuffDefStack : 1;  // The ret buff argument definitely points into the stack.
@@ -8979,7 +8963,8 @@ public:
 
 #endif // !TARGET_X86
 
-    Phases previousCompletedPhase; // the most recently completed phase
+    Phases      mostRecentlyActivePhase; // the most recently active phase
+    PhaseChecks activePhaseChecks;       // the currently active phase checks
 
     //-------------------------------------------------------------------------
     //  The following keeps track of how many bytes of local frame space we've
@@ -9048,13 +9033,12 @@ public:
                     ULONG*                methodCodeSize,
                     JitFlags*             compileFlags);
     void compCompileFinish();
-    int compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
-                          COMP_HANDLE                      compHnd,
-                          CORINFO_METHOD_INFO*             methodInfo,
-                          void**                           methodCodePtr,
-                          ULONG*                           methodCodeSize,
-                          JitFlags*                        compileFlags,
-                          CorInfoInstantiationVerification instVerInfo);
+    int compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
+                          COMP_HANDLE           compHnd,
+                          CORINFO_METHOD_INFO*  methodInfo,
+                          void**                methodCodePtr,
+                          ULONG*                methodCodeSize,
+                          JitFlags*             compileFlag);
 
     ArenaAllocator* compGetArenaAllocator();
 
@@ -9261,24 +9245,10 @@ public:
 
 public:
     // Set to TRUE if verification cannot be skipped for this method
-    // If we detect unverifiable code, we will lazily check
-    // canSkipMethodVerification() to see if verification is REALLY needed.
-    BOOL tiVerificationNeeded;
-
-    // It it initially TRUE, and it gets set to FALSE if we run into unverifiable code
-    // Note that this is valid only if tiVerificationNeeded was ever TRUE.
-    BOOL tiIsVerifiableCode;
-
-    // Set to TRUE if runtime callout is needed for this method
-    BOOL tiRuntimeCalloutNeeded;
-
-    // Set to TRUE if security prolog/epilog callout is needed for this method
-    // Note: This flag is different than compNeedSecurityCheck.
-    //     compNeedSecurityCheck means whether or not a security object needs
-    //         to be allocated on the stack, which is currently true for EnC as well.
-    //     tiSecurityCalloutNeeded means whether or not security callouts need
-    //         to be inserted in the jitted code.
-    BOOL tiSecurityCalloutNeeded;
+    // CoreCLR does not ever run IL verification. Compile out the verifier from the JIT by making this a constant.
+    // TODO: Delete the verifier from the JIT? (https://github.com/dotnet/runtime/issues/32648)
+    // BOOL tiVerificationNeeded;
+    static const BOOL tiVerificationNeeded = FALSE;
 
     // Returns TRUE if child is equal to or a subtype of parent for merge purposes
     // This support is necessary to suport attributes that are not described in
@@ -9352,7 +9322,6 @@ public:
     typeInfo verGetArrayElemType(const typeInfo& ti);
 
     typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
-    BOOL verNeedsVerification();
     BOOL verIsByRefLike(const typeInfo& ti);
     BOOL verIsSafeToReturnByRef(const typeInfo& ti);
 
@@ -9492,7 +9461,8 @@ private:
     static LPCWSTR JitTimeLogCsv();        // Retrieve the file name for CSV from ConfigDWORD.
     static LPCWSTR compJitTimeLogFilename; // If a log file for JIT time is desired, filename to write it to.
 #endif
-    inline void EndPhase(Phases phase); // Indicate the end of the given phase.
+    void BeginPhase(Phases phase); // Indicate the start of the given phase.
+    void EndPhase(Phases phase);   // Indicate the end of the given phase.
 
 #if MEASURE_CLRAPI_CALLS
     // Thin wrappers that call into JitTimer (if present).
@@ -9535,9 +9505,6 @@ public:
 #endif                                      // FUNC_INFO_LOGGING
 
     Compiler* prevCompiler; // Previous compiler on stack for TLS Compiler* linked list for reentrant compilers.
-
-    // Is the compilation in a full trust context?
-    bool compIsFullTrust();
 
 #if MEASURE_NOWAY
     void RecordNowayAssert(const char* filename, unsigned line, const char* condStr);

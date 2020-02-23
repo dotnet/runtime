@@ -15,6 +15,7 @@ namespace System.Net.Sockets
         private Socket _serverSocket;
         private bool _active;
         private bool _exclusiveAddressUse;
+        private bool? _allowNatTraversal;
 
         // Initializes a new instance of the TcpListener class with the specified local end point.
         public TcpListener(IPEndPoint localEP)
@@ -118,7 +119,14 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_tcplistener_mustbestopped);
             }
 
-            _serverSocket.SetIPProtectionLevel(allowed ? IPProtectionLevel.Unrestricted : IPProtectionLevel.EdgeRestricted);
+            if (_serverSocket != null)
+            {
+                SetIPProtectionLevel(allowed); // Set it only for the current socket to preserve existing behavior
+            }
+            else
+            {
+                _allowNatTraversal = allowed;
+            }
         }
 
         // Starts listening to network requests.
@@ -335,6 +343,9 @@ namespace System.Net.Sockets
             return listener;
         }
 
+        private void SetIPProtectionLevel(bool allowed)
+            => _serverSocket.SetIPProtectionLevel(allowed ? IPProtectionLevel.Unrestricted : IPProtectionLevel.EdgeRestricted);
+
         private void CreateNewSocketIfNeeded()
         {
             _serverSocket ??= new Socket(_serverSocketEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
@@ -342,6 +353,12 @@ namespace System.Net.Sockets
             if (_exclusiveAddressUse)
             {
                 _serverSocket.ExclusiveAddressUse = true;
+            }
+
+            if (_allowNatTraversal != null)
+            {
+                SetIPProtectionLevel(_allowNatTraversal.GetValueOrDefault());
+                _allowNatTraversal = null; // Reset value to avoid affecting more sockets
             }
         }
     }

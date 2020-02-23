@@ -54,15 +54,20 @@ enum {
 
 #ifdef USED_CROSS_COMPILER_OFFSETS
 #define MONO_STRUCT_OFFSET(struct,field) MONO_OFFSET_ ## struct ## _ ## field
+#define MONO_STRUCT_OFFSET_CONSTANT(struct,field) MONO_STRUCT_OFFSET(struct,field)
 #define MONO_STRUCT_SIZE(struct) MONO_SIZEOF_ ## struct
 #else
-#if defined(HAS_CROSS_COMPILER_OFFSETS) || defined(MONO_CROSS_COMPILE)
+/* This macro is expanding to something that uses the comma operator in C [0].
+ * The first part introduces an expression that uses the `MONO_OFFSET_*`
+ * define. The result isn't used, but it forces the compiler to bail out if the
+ * define doesn't exist; this happens when we forgot to add an entry in
+ * `object-offsets.h` accordingly.
+ *
+ * [0] https://en.wikipedia.org/wiki/Comma_operator
+ */
 #define MONO_STRUCT_OFFSET(struct,field) (MONO_OFFSET_ ## struct ## _ ## field == -1, G_STRUCT_OFFSET (struct,field))
+#define MONO_STRUCT_OFFSET_CONSTANT(struct,field) G_STRUCT_OFFSET (struct,field)
 #define MONO_STRUCT_SIZE(struct) (MONO_SIZEOF_ ## struct == -1, (int)sizeof(struct))
-#else
-#define MONO_STRUCT_OFFSET(struct,field) G_STRUCT_OFFSET (struct,field)
-#define MONO_STRUCT_SIZE(struct) ((int)sizeof(struct))
-#endif
 #endif
 
 // #define MONO_SIZEOF_MonoObject (2 * MONO_ABI_SIZEOF(gpointer))

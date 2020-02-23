@@ -1679,23 +1679,5 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
 
 #endif
 
-#ifdef FEATURE_TIERED_COMPILATION
-
-    IMPORT OnCallCountThresholdReached
-
-    NESTED_ENTRY OnCallCountThresholdReachedStub
-        PROLOG_WITH_TRANSITION_BLOCK
-
-        add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
-        mov     x1, x10 ; stub-identifying token
-        bl      OnCallCountThresholdReached
-        mov     x9, x0
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-        EPILOG_BRANCH_REG x9
-    NESTED_END
-
-#endif ; FEATURE_TIERED_COMPILATION
-
 ; Must be at very end of file
     END

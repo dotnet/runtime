@@ -2941,7 +2941,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						 * like the call which transitioned to JITted code has succeeded, but the
 						 * return value register etc. is not set, so we have to be careful.
 						 */
-						mini_get_interp_callbacks ()->set_resume_state (jit_tls, mono_ex, ei, frame.interp_frame, ei->handler_start);
+						mini_get_interp_callbacks ()->set_resume_state (jit_tls, ex_obj, ei, frame.interp_frame, ei->handler_start);
 						/* Undo the IP adjustment done by mono_arch_unwind_frame () */
 						/* ip == 0 means an interpreter frame */
 						if (MONO_CONTEXT_GET_IP (ctx) != 0)

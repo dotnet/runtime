@@ -2,7 +2,7 @@
   <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
 
   <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
-    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);package-$(ConfigurationGroup)</AdditionalBuildConfigurations>
+    <AdditionalBuildTargetFrameworks>$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">
@@ -70,4 +70,14 @@
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)dir.traversal.targets" />
+
+  <Target Name="SetAzureDevOpsVariableForBuiltPackages"
+          Condition="'$(ContinuousIntegrationBuild)' == 'true'"
+          AfterTargets="BuildAllProjects">
+    <ItemGroup>
+      <_PackageReports Include="$(PackageReportDir)*.json" />
+    </ItemGroup>
+
+    <Message Condition="'@(_PackageReports)' != ''" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
+  </Target>
 </Project>

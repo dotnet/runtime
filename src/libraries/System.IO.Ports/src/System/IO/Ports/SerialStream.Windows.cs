@@ -1581,7 +1581,6 @@ namespace System.IO.Ports
             }
 
             // This is the blocking method that waits for an event to occur.  It wraps the SDK's WaitCommEvent function.
-            [SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke", Justification = "this is debug-only code")]
             internal unsafe void WaitForCommEvent()
             {
                 int unused = 0;

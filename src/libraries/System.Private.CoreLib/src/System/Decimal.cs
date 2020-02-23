@@ -243,10 +243,18 @@ namespace System
         // The possible binary representations of a particular value are all
         // equally valid, and all are numerically equivalent.
         //
-        public Decimal(int[] bits)
+        public Decimal(int[] bits) :
+            this((ReadOnlySpan<int>)(bits ?? throw new ArgumentNullException(nameof(bits))))
         {
-            if (bits == null)
-                throw new ArgumentNullException(nameof(bits));
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="decimal"/> to a decimal value represented in binary and contained in the specified span.
+        /// </summary>
+        /// <param name="bits">A span of four <see cref="int"/>s containing a binary representation of a decimal value.</param>
+        /// <exception cref="ArgumentException">The length of <paramref name="bits"/> is not 4, or the representation of the decimal value in <paramref name="bits"/> is not valid.</exception>
+        public Decimal(ReadOnlySpan<int> bits)
+        {
             if (bits.Length == 4)
             {
                 int f = bits[3];
@@ -520,6 +528,50 @@ namespace System
         public static int[] GetBits(decimal d)
         {
             return new int[] { d.lo, d.mid, d.hi, d.flags };
+        }
+
+        /// <summary>
+        /// Converts the value of a specified instance of <see cref="decimal"/> to its equivalent binary representation.
+        /// </summary>
+        /// <param name="d">The value to convert.</param>
+        /// <param name="destination">The span into which to store the four-integer binary representation.</param>
+        /// <returns>Four, the number of integers in the binary representation.</returns>
+        /// <exception cref="ArgumentException">The destination span was not long enough to store the binary representation.</exception>
+        public static int GetBits(decimal d, Span<int> destination)
+        {
+            if ((uint)destination.Length <= 3)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            destination[0] = d.lo;
+            destination[1] = d.mid;
+            destination[2] = d.hi;
+            destination[3] = d.flags;
+            return 4;
+        }
+
+        /// <summary>
+        /// Tries to convert the value of a specified instance of <see cref="decimal"/> to its equivalent binary representation.
+        /// </summary>
+        /// <param name="d">The value to convert.</param>
+        /// <param name="destination">The span into which to store the binary representation.</param>
+        /// <param name="valuesWritten">The number of integers written to the destination.</param>
+        /// <returns>true if the decimal's binary representation was written to the destination; false if the destination wasn't long enough.</returns>
+        public static bool TryGetBits(decimal d, Span<int> destination, out int valuesWritten)
+        {
+            if ((uint)destination.Length <= 3)
+            {
+                valuesWritten = 0;
+                return false;
+            }
+
+            destination[0] = d.lo;
+            destination[1] = d.mid;
+            destination[2] = d.hi;
+            destination[3] = d.flags;
+            valuesWritten = 4;
+            return true;
         }
 
         internal static void GetBytes(in decimal d, byte[] buffer)

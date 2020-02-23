@@ -15,7 +15,6 @@
 // Strings and sets are indices into a string table.
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -48,7 +47,7 @@ namespace System.Text.RegularExpressions
         public const int Bol = 14;                //                          ^
         public const int Eol = 15;                //                          $
         public const int Boundary = 16;           //                          \b
-        public const int Nonboundary = 17;        //                          \B
+        public const int NonBoundary = 17;        //                          \B
         public const int Beginning = 18;          //                          \A
         public const int Start = 19;              //                          \G
         public const int EndZ = 20;               //                          \Z
@@ -171,7 +170,7 @@ namespace System.Text.RegularExpressions
                 case Bol:
                 case Eol:
                 case Boundary:
-                case Nonboundary:
+                case NonBoundary:
                 case ECMABoundary:
                 case NonECMABoundary:
                 case Beginning:
@@ -246,7 +245,7 @@ namespace System.Text.RegularExpressions
                 Bol => nameof(Bol),
                 Eol => nameof(Eol),
                 Boundary => nameof(Boundary),
-                Nonboundary => nameof(Nonboundary),
+                NonBoundary => nameof(NonBoundary),
                 Beginning => nameof(Beginning),
                 Start => nameof(Start),
                 EndZ => nameof(EndZ),
@@ -310,7 +309,7 @@ namespace System.Text.RegularExpressions
                 case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
-                    sb.Append("'").Append(RegexCharClass.CharDescription((char)Codes[offset + 1])).Append("'");
+                    sb.Append('\'').Append(RegexCharClass.CharDescription((char)Codes[offset + 1])).Append('\'');
                     break;
 
                 case Set:
@@ -395,7 +394,10 @@ namespace System.Text.RegularExpressions
         }
 
         [ExcludeFromCodeCoverage]
-        public void Dump()
+        public void Dump() => Debug.WriteLine(ToString());
+
+        [ExcludeFromCodeCoverage]
+        public override string ToString()
         {
             var sb = new StringBuilder();
 
@@ -426,7 +428,7 @@ namespace System.Text.RegularExpressions
             }
             sb.AppendLine();
 
-            Debug.WriteLine(sb.ToString());
+            return sb.ToString();
         }
 #endif
     }

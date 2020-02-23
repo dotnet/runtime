@@ -388,24 +388,26 @@ if %__RestoreOptData% EQU 1 (
         goto ExitWithCode
     )
 )
+set __PgoOptDataPath=
+if %__PgoOptimize% EQU 1 (
+    set PgoDataPackagePathOutputFile="%__IntermediatesDir%\optdatapath.txt"
 
-set PgoDataPackagePathOutputFile="%__IntermediatesDir%\optdatapath.txt"
+    REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
+    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
+        "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath %__CommonMSBuildArgs% /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"
 
-REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-    "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath %__CommonMSBuildArgs% /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"
+    if not !errorlevel! == 0 (
+        echo %__ErrMsgPrefix%Failed to get PGO data package path.
+        set __exitCode=!errorlevel!
+        goto ExitWithCode
+    )
+    if not exist "!PgoDataPackagePathOutputFile!" (
+        echo %__ErrMsgPrefix%Failed to get PGO data package path.
+        goto ExitWithError
+    )
 
- if not !errorlevel! == 0 (
-    echo %__ErrMsgPrefix%Failed to get PGO data package path.
-    set __exitCode=!errorlevel!
-    goto ExitWithCode
+    set /p __PgoOptDataPath=<"!PgoDataPackagePathOutputFile!"
 )
-if not exist "!PgoDataPackagePathOutputFile!" (
-    echo %__ErrMsgPrefix%Failed to get PGO data package path.
-    goto ExitWithError
-)
-
-set /p __PgoOptDataPath=<"!PgoDataPackagePathOutputFile!"
 
 REM =========================================================================================
 REM ===
@@ -457,7 +459,7 @@ if %__BuildCrossArchNative% EQU 1 (
 
     set __CMakeBinDir=%__CrossComponentBinDir%
     set "__CMakeBinDir=!__CMakeBinDir:\=/!"
-    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__BuildOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native"
+    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__BuildOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" "-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native" "-DCLR_REPO_ROOT_DIR=%__RepoRootDir%"
     call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectDir%" "%__CrossCompIntermediatesDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
 
     if not !errorlevel! == 0 (

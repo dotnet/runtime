@@ -70,6 +70,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32436", TestRuntimes.Mono)]
         public static void LoadAssemblyByPath_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
@@ -83,6 +84,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32437", TestRuntimes.Mono)]
         public static void LoadAssemblyByStream_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
@@ -96,6 +98,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32435", TestRuntimes.Mono)]
         public static void LoadFromAssemblyName_AssemblyNotFound()
         {
             var asmName = new AssemblyName("Non.Existing.Assembly.dll");
@@ -106,9 +109,10 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32439", TestRuntimes.Mono)]
         public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
         {
-            var asmName = typeof(ISet<>).Assembly.GetName();
+            var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
             asmName.CodeBase = null;
             var loadContext = new CustomTPALoadContext();
 
@@ -122,6 +126,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32434", TestRuntimes.Mono)]
         public static void GetLoadContextTest_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
@@ -137,7 +142,7 @@ namespace System.Runtime.Loader.Tests
         [Fact]
         public static void GetLoadContextTest_ValidTrustedPlatformAssembly()
         {
-            var asm = typeof(ISet<>).GetTypeInfo().Assembly;
+            var asm = typeof(System.Linq.Enumerable).GetTypeInfo().Assembly;
             var context = AssemblyLoadContext.GetLoadContext(asm);
 
             Assert.NotNull(context);
@@ -184,6 +189,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15142", TestRuntimes.Mono)]
         [InlineData("AssemblyLoadContextCollectible", true)]
         [InlineData("AssemblyLoadContextNonCollectible", false)]
         public static void PublicConstructor_Theory(string name, bool isCollectible)

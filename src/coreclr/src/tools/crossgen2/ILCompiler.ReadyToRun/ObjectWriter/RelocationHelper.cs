@@ -193,7 +193,9 @@ namespace ILCompiler.PEWriter
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                     {
                         relocationLength = 4;
-                        delta = (targetRVA - sourceRVA) >> 12;
+                        int sourcePageRVA = sourceRVA & ~0xfff;
+                        // Page delta always fits in 21 bits as long as we use 4-byte RVAs
+                        delta = ((targetRVA - sourcePageRVA) >> 12) & 0x1ffff;
                         break;
                     }
 

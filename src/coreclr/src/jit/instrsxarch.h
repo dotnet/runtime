@@ -694,7 +694,7 @@ INST1(shrd,             "shrd",             IUM_RW, 0x0F00AC,                   
 #ifdef TARGET_X86
 INST1(fld,              "fld",              IUM_WR, 0x0000D9,                                                            INS_FLAGS_x87Instr)
 INST1(fstp,             "fstp",             IUM_WR, 0x0018D9,                                                            INS_FLAGS_x87Instr)
-#endif // _TARGET_X86
+#endif // TARGET_X86
 
 INST1(seto,             "seto",             IUM_WR, 0x0F0090,                                                            INS_FLAGS_ReadsFlags)
 INST1(setno,            "setno",            IUM_WR, 0x0F0091,                                                            INS_FLAGS_ReadsFlags)

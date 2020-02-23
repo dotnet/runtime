@@ -10,7 +10,6 @@ set __CMakeBinDir=""
 set __IntermediatesDir=""
 set __BuildArch=x64
 set __BuildTarget="build"
-set __appContainer=""
 set __VCBuildArch=x86_amd64
 set __BuildOS=Windows_NT
 set CMAKE_BUILD_TYPE=Debug

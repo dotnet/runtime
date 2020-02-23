@@ -98,8 +98,14 @@ bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode)
 }
 
 //------------------------------------------------------------------------
-
-// This is the main entry point for Lowering.
+// LowerNode: this is the main entry point for Lowering.
+//
+// Arguments:
+//    node - the node we are lowering.
+//
+// Returns:
+//    next node in the transformed node sequence that needs to be lowered.
+//
 GenTree* Lowering::LowerNode(GenTree* node)
 {
     assert(node != nullptr);
@@ -128,8 +134,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_ADD:
-            LowerAdd(node->AsOp());
-            break;
+        {
+            GenTree* next = LowerAdd(node->AsOp());
+            if (next != nullptr)
+            {
+                return next;
+            }
+        }
+        break;
 
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
@@ -190,7 +202,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_RETURN:
-            LowerRet(node);
+            LowerRet(node->AsUnOp());
             break;
 
         case GT_RETURNTRAP:
@@ -286,16 +298,25 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_STORE_LCL_FLD:
         {
-#if defined(TARGET_AMD64) && defined(FEATURE_SIMD)
             GenTreeLclVarCommon* const store = node->AsLclVarCommon();
-            if ((store->TypeGet() == TYP_SIMD8) != (store->gtOp1->TypeGet() == TYP_SIMD8))
+            GenTree*                   op1   = store->gtGetOp1();
+            if ((varTypeUsesFloatReg(store) != varTypeUsesFloatReg(op1)) && !store->IsPhiDefn() &&
+                (op1->TypeGet() != TYP_STRUCT))
             {
-                GenTreeUnOp* bitcast =
-                    new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, store->TypeGet(), store->gtOp1, nullptr);
-                store->gtOp1 = bitcast;
-                BlockRange().InsertBefore(store, bitcast);
+                if (m_lsra->isRegCandidate(comp->lvaGetDesc(store->GetLclNum())))
+                {
+                    GenTreeUnOp* bitcast =
+                        new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, store->TypeGet(), store->gtOp1, nullptr);
+                    store->gtOp1 = bitcast;
+                    BlockRange().InsertBefore(store, bitcast);
+                    ContainCheckBitCast(bitcast);
+                }
+                else
+                {
+                    // This is an actual store, we'll just retype it.
+                    store->gtType = op1->TypeGet();
+                }
             }
-#endif // TARGET_AMD64
             // TODO-1stClassStructs: Once we remove the requirement that all struct stores
             // are block stores (GT_STORE_BLK or GT_STORE_OBJ), here is where we would put the local
             // store under a block store if codegen will require it.
@@ -1638,120 +1659,10 @@ void Lowering::LowerCall(GenTree* node)
         LowerFastTailCall(call);
     }
 
-    if (comp->opts.IsJit64Compat())
-    {
-        CheckVSQuirkStackPaddingNeeded(call);
-    }
-
     ContainCheckCallOperands(call);
     JITDUMP("lowering call (after):\n");
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
-}
-
-// Though the below described issue gets fixed in intellitrace dll of VS2015 (a.k.a Dev14),
-// we still need this quirk for desktop so that older version of VS (e.g. VS2010/2012)
-// continues to work.
-// This quirk is excluded from other targets that have no back compat burden.
-//
-// Quirk for VS debug-launch scenario to work:
-// See if this is a PInvoke call with exactly one param that is the address of a struct local.
-// In such a case indicate to frame-layout logic to add 16-bytes of padding
-// between save-reg area and locals.  This is to protect against the buffer
-// overrun bug in microsoft.intellitrace.11.0.0.dll!ProfilerInterop.InitInterop().
-//
-// A work-around to this bug is to disable IntelliTrace debugging
-// (VS->Tools->Options->IntelliTrace->Enable IntelliTrace - uncheck this option).
-// The reason why this works on Jit64 is that at the point of AV the call stack is
-//
-// GetSystemInfo() Native call
-// IL_Stub generated for PInvoke declaration.
-// ProfilerInterface::InitInterop()
-// ProfilerInterface.Cctor()
-// VM asm worker
-//
-// The cctor body has just the call to InitInterop().  VM asm worker is holding
-// something in rbx that is used immediately after the Cctor call.  Jit64 generated
-// InitInterop() method is pushing the registers in the following order
-//
-//  rbx
-//  rbp
-//  rsi
-//  rdi
-//  r12
-//  r13
-//  Struct local
-//
-// Due to buffer overrun, rbx doesn't get impacted.  Whereas RyuJIT jitted code of
-// the same method is pushing regs in the following order
-//
-//  rbp
-//  rdi
-//  rsi
-//  rbx
-//  struct local
-//
-// Therefore as a fix, we add padding between save-reg area and locals to
-// make this scenario work against JB.
-//
-// Note: If this quirk gets broken due to other JIT optimizations, we should consider
-// more tolerant fix.  One such fix is to padd the struct.
-void Lowering::CheckVSQuirkStackPaddingNeeded(GenTreeCall* call)
-{
-    assert(comp->opts.IsJit64Compat());
-
-#ifdef TARGET_AMD64
-    // Confine this to IL stub calls which aren't marked as unmanaged.
-    if (call->IsPInvoke() && !call->IsUnmanaged())
-    {
-        bool     paddingNeeded  = false;
-        GenTree* firstPutArgReg = nullptr;
-        for (GenTreeCall::Use& use : call->LateArgs())
-        {
-            if (use.GetNode()->OperIs(GT_PUTARG_REG))
-            {
-                if (firstPutArgReg == nullptr)
-                {
-                    firstPutArgReg = use.GetNode();
-                    GenTree* op1   = firstPutArgReg->AsOp()->gtOp1;
-
-                    if (op1->OperGet() == GT_LCL_VAR_ADDR)
-                    {
-                        unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
-                        if (comp->lvaGetDesc(lclNum)->TypeGet() == TYP_STRUCT)
-                        {
-                            // First arg is addr of a struct local.
-                            paddingNeeded = true;
-                        }
-                        else
-                        {
-                            // Not a struct local.
-                            assert(paddingNeeded == false);
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        // First arg is not a local var addr.
-                        assert(paddingNeeded == false);
-                        break;
-                    }
-                }
-                else
-                {
-                    // Has more than one arg.
-                    paddingNeeded = false;
-                    break;
-                }
-            }
-        }
-
-        if (paddingNeeded)
-        {
-            comp->compVSQuirkStackPaddingNeeded = VSQUIRK_STACK_PAD;
-        }
-    }
-#endif // TARGET_AMD64
 }
 
 // Inserts profiler hook, GT_PROF_HOOK for a tail call node.
@@ -1875,7 +1786,6 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // Most of these checks are already done by importer or fgMorphTailCall().
     // This serves as a double sanity check.
     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0); // tail calls from synchronized methods
-    assert(!comp->opts.compNeedSecurityCheck);               // tail call from methods that need security check
     assert(!call->IsUnmanaged());                            // tail calls to unamanaged methods
     assert(!comp->compLocallocUsed);                         // tail call from methods that also do localloc
 
@@ -2179,7 +2089,6 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     // Most of these checks are already done by importer or fgMorphTailCall().
     // This serves as a double sanity check.
     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0); // tail calls from synchronized methods
-    assert(!comp->opts.compNeedSecurityCheck);               // tail call from methods that need security check
     assert(!call->IsUnmanaged());                            // tail calls to unamanaged methods
     assert(!comp->compLocallocUsed);                         // tail call from methods that also do localloc
 
@@ -2306,7 +2215,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 
 #else
     NYI("LowerTailCallViaHelper");
-#endif // _TARGET_*
+#endif // TARGET*
 
     // Transform this call node into a call to Jit tail call helper.
     call->gtCallType    = CT_HELPER;
@@ -3075,7 +2984,7 @@ void Lowering::LowerJmpMethod(GenTree* jmp)
 }
 
 // Lower GT_RETURN node to insert PInvoke method epilog if required.
-void Lowering::LowerRet(GenTree* ret)
+void Lowering::LowerRet(GenTreeUnOp* ret)
 {
     assert(ret->OperGet() == GT_RETURN);
 
@@ -3083,22 +2992,22 @@ void Lowering::LowerRet(GenTree* ret)
     DISPNODE(ret);
     JITDUMP("============");
 
-#if defined(TARGET_AMD64) && defined(FEATURE_SIMD)
-    GenTreeUnOp* const unOp = ret->AsUnOp();
-    if ((unOp->TypeGet() == TYP_LONG) && (unOp->gtOp1->TypeGet() == TYP_SIMD8))
+    GenTree* op1 = ret->gtGetOp1();
+    if ((ret->TypeGet() != TYP_VOID) && (ret->TypeGet() != TYP_STRUCT) &&
+        (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(ret->gtGetOp1())))
     {
-        GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, TYP_LONG, unOp->gtOp1, nullptr);
-        unOp->gtOp1          = bitcast;
-        BlockRange().InsertBefore(unOp, bitcast);
+        GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, ret->TypeGet(), ret->gtGetOp1(), nullptr);
+        ret->gtOp1           = bitcast;
+        BlockRange().InsertBefore(ret, bitcast);
+        ContainCheckBitCast(bitcast);
     }
-#endif // TARGET_AMD64
 
     // Method doing PInvokes has exactly one return block unless it has tail calls.
     if (comp->compMethodRequiresPInvokeFrame() && (comp->compCurBB == comp->genReturnBB))
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
     }
-    ContainCheckRet(ret->AsOp());
+    ContainCheckRet(ret);
 }
 
 GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
@@ -4489,12 +4398,43 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable)
 // Arguments:
 //    node - the node we care about
 //
-void Lowering::LowerAdd(GenTreeOp* node)
+// Returns:
+//    nullptr if no transformation was done, or the next node in the transformed node sequence that
+//    needs to be lowered.
+//
+GenTree* Lowering::LowerAdd(GenTreeOp* node)
 {
-#ifndef TARGET_ARMARCH
     if (varTypeIsIntegralOrI(node->TypeGet()))
     {
+        GenTree* op1 = node->gtGetOp1();
+        GenTree* op2 = node->gtGetOp2();
         LIR::Use use;
+
+        // It is not the best place to do such simple arithmetic optimizations,
+        // but it allows us to avoid `LEA(addr, 0)` nodes and doing that in morph
+        // requires more changes. Delete that part if we get an expression optimizer.
+        if (op2->IsIntegralConst(0))
+        {
+            JITDUMP("Lower: optimize val + 0: ");
+            DISPNODE(node);
+            JITDUMP("Replaced with: ");
+            DISPNODE(op1);
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                use.ReplaceWith(comp, op1);
+            }
+            else
+            {
+                op1->SetUnusedValue();
+            }
+            GenTree* next = node->gtNext;
+            BlockRange().Remove(op2);
+            BlockRange().Remove(node);
+            JITDUMP("Remove [06%u], [06%u]\n", op2->gtTreeID, node->gtTreeID);
+            return next;
+        }
+
+#ifndef TARGET_ARMARCH
         if (BlockRange().TryGetUse(node, &use))
         {
             // If this is a child of an indir, let the parent handle it.
@@ -4505,13 +4445,14 @@ void Lowering::LowerAdd(GenTreeOp* node)
                 TryCreateAddrMode(node, false);
             }
         }
-    }
 #endif // !TARGET_ARMARCH
+    }
 
     if (node->OperIs(GT_ADD))
     {
         ContainCheckBinary(node);
     }
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -5317,19 +5258,6 @@ void Lowering::DoPhase()
     // impact of any dead code removal. Note this may leave us with
     // tracked vars that have zero refs.
     comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
-
-#ifdef DEBUG
-    JITDUMP("Liveness pass finished after lowering, IR:\n");
-    if (VERBOSE)
-    {
-        comp->fgDispBasicBlocks(true);
-    }
-
-    for (BasicBlock* block = comp->fgFirstBB; block; block = block->bbNext)
-    {
-        assert(LIR::AsRange(block).CheckLIR(comp, true));
-    }
-#endif
 }
 
 #ifdef DEBUG
@@ -5768,7 +5696,7 @@ void Lowering::ContainCheckLclHeap(GenTreeOp* node)
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckRet(GenTreeOp* ret)
+void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 {
     assert(ret->OperIs(GT_RETURN));
 
@@ -5814,4 +5742,39 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
     GenTree* cmp = node->gtGetOp1();
     cmp->gtType  = TYP_VOID;
     cmp->gtFlags |= GTF_SET_FLAGS;
+}
+
+//------------------------------------------------------------------------
+// ContainCheckBitCast: determine whether the source of a BITCAST should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckBitCast(GenTree* node)
+{
+    GenTree* const op1 = node->AsOp()->gtOp1;
+    if (op1->isMemoryOp())
+    {
+        op1->SetContained();
+    }
+    else if (op1->OperIs(GT_LCL_VAR))
+    {
+        if (!m_lsra->willEnregisterLocalVars())
+        {
+            op1->SetContained();
+        }
+        LclVarDsc* varDsc = &comp->lvaTable[op1->AsLclVar()->GetLclNum()];
+        if (!m_lsra->isRegCandidate(varDsc))
+        {
+            op1->SetContained();
+        }
+        else
+        {
+            op1->SetRegOptional();
+        }
+    }
+    else if (op1->IsLocal())
+    {
+        op1->SetContained();
+    }
 }

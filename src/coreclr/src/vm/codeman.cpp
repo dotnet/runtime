@@ -2551,7 +2551,11 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
 
     unsigned alignment = CODE_SIZE_ALIGN;
 
-    if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+    if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+    {
+        alignment = max(alignment, 32);
+    }
+    else if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
     {
         alignment = max(alignment, 16);
     }
@@ -4372,32 +4376,6 @@ BOOL ExecutionManager::IsReadyToRunCode(PCODE currentPC)
 }
 
 #ifndef DACCESS_COMPILE
-
-//**************************************************************************
-// Clear the caches for all JITs loaded.
-//
-void ExecutionManager::ClearCaches( void )
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    GetEEJitManager()->ClearCache();
-}
-
-//**************************************************************************
-// Check if caches for any JITs loaded need to be cleaned
-//
-BOOL ExecutionManager::IsCacheCleanupRequired( void )
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    return GetEEJitManager()->IsCacheCleanupRequired();
-}
 
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 /*********************************************************************/
@@ -6595,7 +6573,7 @@ unsigned ReadyToRunJitManager::InitializeEHEnumeration(const METHODTOKEN& Method
 
     ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(MethodToken);
 
-    IMAGE_DATA_DIRECTORY * pExceptionInfoDir = pReadyToRunInfo->FindSection(READYTORUN_SECTION_EXCEPTION_INFO);
+    IMAGE_DATA_DIRECTORY * pExceptionInfoDir = pReadyToRunInfo->FindSection(ReadyToRunSectionType::ExceptionInfo);
     if (pExceptionInfoDir == NULL)
         return 0;
 
@@ -6662,7 +6640,7 @@ StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRan
 
     ReadyToRunInfo * pReadyToRunInfo = dac_cast<PTR_Module>(pRangeSection->pHeapListOrZapModule)->GetReadyToRunInfo();
 
-    IMAGE_DATA_DIRECTORY * pDelayLoadMethodCallThunksDir = pReadyToRunInfo->FindSection(READYTORUN_SECTION_DELAYLOAD_METHODCALL_THUNKS);
+    IMAGE_DATA_DIRECTORY * pDelayLoadMethodCallThunksDir = pReadyToRunInfo->FindSection(ReadyToRunSectionType::DelayLoadMethodCallThunks);
     if (pDelayLoadMethodCallThunksDir != NULL)
     {
         if (pDelayLoadMethodCallThunksDir->VirtualAddress <= rva

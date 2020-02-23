@@ -360,7 +360,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             IDisposable ISourceBlock<T>.LinkTo(ITargetBlock<T> target, DataflowLinkOptions linkOptions) { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); }
 
             /// <summary>The data to display in the debugger display attribute.</summary>
-            [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
             private object DebuggerDisplayContent
             {
                 get

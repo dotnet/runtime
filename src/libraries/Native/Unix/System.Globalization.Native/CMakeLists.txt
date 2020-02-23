@@ -20,7 +20,7 @@ if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)
     return()
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+if(CLR_CMAKE_TARGET_DARWIN)
     find_library(ICUCORE icucore)
     if(ICUCORE STREQUAL ICUCORE-NOTFOUND)
         message(FATAL_ERROR "Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.")
@@ -58,23 +58,25 @@ set(NATIVEGLOBALIZATION_SOURCES
 )
 
 include_directories(${UTYPES_H})
+include_directories("../Common")
 
-add_library(System.Globalization.Native
-    SHARED
-    ${NATIVEGLOBALIZATION_SOURCES}
-    ${VERSION_FILE_PATH}
-)
+if (GEN_SHARED_LIB)
+    add_library(System.Globalization.Native
+        SHARED
+        ${NATIVEGLOBALIZATION_SOURCES}
+        ${VERSION_FILE_PATH}
+    )
 
-target_link_libraries(System.Globalization.Native
-    dl
-)
+    target_link_libraries(System.Globalization.Native
+        dl
+    )
 
-install_library_and_symbols (System.Globalization.Native)
+    install_library_and_symbols (System.Globalization.Native)
+endif()
 
 add_library(System.Globalization.Native-Static
     STATIC
     ${NATIVEGLOBALIZATION_SOURCES}
-    ${VERSION_FILE_PATH}
 )
 
 # Disable the "lib" prefix and override default name
@@ -83,12 +85,14 @@ set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME 
 
 install (TARGETS System.Globalization.Native-Static DESTINATION .)
 
-if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    add_custom_command(TARGET System.Globalization.Native POST_BUILD
-        COMMENT "Verifying System.Globalization.Native.so dependencies"
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
-            $<TARGET_FILE:System.Globalization.Native>
-            "Verification failed. System.Globalization.Native.so has undefined dependencies. These are likely ICU APIs that need to be added to icushim.h."
-        VERBATIM
-    )
+if(NOT CLR_CMAKE_TARGET_DARWIN)
+    if (GEN_SHARED_LIB)
+        add_custom_command(TARGET System.Globalization.Native POST_BUILD
+            COMMENT "Verifying System.Globalization.Native.so dependencies"
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
+                $<TARGET_FILE:System.Globalization.Native>
+                "Verification failed. System.Globalization.Native.so has undefined dependencies. These are likely ICU APIs that need to be added to icushim.h."
+            VERBATIM
+        )
+    endif()
 endif()

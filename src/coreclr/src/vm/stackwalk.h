@@ -112,16 +112,6 @@ public:
 
     BOOL IsInCalleesFrames(LPVOID stackPointer);
 
-#ifndef DACCESS_COMPILE
-    /* Returns address of the securityobject stored in the current function (method?)
-       Returns NULL if
-            - not a function OR
-            - function (method?) hasn't reserved any room for it
-              (which is an error)
-     */
-    OBJECTREF * GetAddrOfSecurityObject();
-#endif // DACCESS_COMPILE
-
     // Fetch the extra type argument passed in some cases
     PTR_VOID GetParamTypeArg();
 
@@ -312,13 +302,6 @@ public:
         return flags;
     }
 
-    AppDomain *GetAppDomain()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return pAppDomain;
-    }
-
     /* Is this frame at a safe spot for GC?
      */
     bool IsGcSafe();
@@ -410,6 +393,12 @@ public:
 
     void CheckGSCookies();
 
+    inline Thread* GetThread()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return pThread;
+    }
+
 #if defined(FEATURE_EH_FUNCLETS)
     bool IsFunclet()
     {
@@ -488,7 +477,6 @@ private:
     MethodDesc       *pFunc;
 
     // the rest is only used for "frameless methods"
-    AppDomain        *pAppDomain;
     PREGDISPLAY       pRD; // "thread context"/"virtual register set"
 
     EECodeInfo        codeInfo;
@@ -503,7 +491,6 @@ private:
     Thread*           pThread;
 
     // fields used for stackwalk cache
-    OBJECTREF         *pSecurityObject;
     BOOL              isCachedMethod;
     StackwalkCache    stackWalkCache;
 

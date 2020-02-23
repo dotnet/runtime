@@ -70,7 +70,7 @@ Namespace Microsoft.VisualBasic
         End Property
 
         Private Function IsDBCSCulture() As Boolean
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             'This function is apparently trying to determine a different default for East Asian systems.
             If System.Runtime.InteropServices.Marshal.SystemMaxDBCSCharSize = 1 Then
                 Return False

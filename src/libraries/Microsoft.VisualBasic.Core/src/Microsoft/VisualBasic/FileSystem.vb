@@ -75,7 +75,7 @@ Namespace Microsoft.VisualBasic
         End Sub
 
         Public Sub ChDrive(ByVal Drive As Char)
-            Drive = System.Char.ToUpper(Drive, CultureInfo.InvariantCulture)
+            Drive = System.Char.ToUpperInvariant(Drive)
 
             If (Drive < chLetterA) OrElse (Drive > chLetterZ) Then
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Drive"))
@@ -110,7 +110,7 @@ Namespace Microsoft.VisualBasic
             Debug.Assert(Not System.Reflection.Assembly.GetCallingAssembly() Is Utils.VBRuntimeAssembly,
                 "Methods in Microsoft.VisualBasic should not call FileSystem public method.")
 
-            Drive = System.Char.ToUpper(Drive, CultureInfo.InvariantCulture)
+            Drive = System.Char.ToUpperInvariant(Drive)
             If (Drive < chLetterA OrElse Drive > chLetterZ) Then
                 Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Drive")), vbErrors.DevUnavailable)
             End If
@@ -158,7 +158,7 @@ Namespace Microsoft.VisualBasic
                 "Methods in Microsoft.VisualBasic should not call FileSystem public method.")
 
             If Attributes = FileAttribute.Volume Then
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
                 Dim Result As Integer
                 Dim VolumeName As StringBuilder = New StringBuilder(256)
                 Dim RootName As String = Nothing
@@ -469,7 +469,7 @@ Namespace Microsoft.VisualBasic
 
         'IMPORTANT: This call provides sensitive information whether a device exists and should be used with extreme care
         Private Function UnsafeValidDrive(ByVal cDrive As Char) As Boolean 'Return of True means not a valid drive
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             Dim iDrive As Integer = AscW(cDrive) - AscW(chLetterA)
             Return (CLng(UnsafeNativeMethods.GetLogicalDrives()) And CLng(&H2 ^ iDrive)) <> 0
 #Else
@@ -1170,7 +1170,7 @@ Namespace Microsoft.VisualBasic
             OldPath = VB6CheckPathname(oAssemblyData, OldPath, CType(OpenModeTypes.Any, OpenMode))
             NewPath = VB6CheckPathname(oAssemblyData, NewPath, CType(OpenModeTypes.Any, OpenMode))
 
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             Dim Result As Integer
             Dim ErrCode As Integer
 
