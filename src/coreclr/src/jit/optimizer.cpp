@@ -8697,9 +8697,9 @@ void Compiler::optBranchlessConditions()
             continue;
         }
 
-        GenTree* rootNode    = fistStmt->GetRootNode();
-        GenTree* rootSubNode = rootNode->gtGetOp1();
-        var_types typ        = rootSubNode->TypeGet();
+        GenTree*  rootNode    = fistStmt->GetRootNode();
+        GenTree*  rootSubNode = rootNode->gtGetOp1();
+        var_types typ         = rootSubNode->TypeGet();
 
         assert(rootSubNode != nullptr);
 
@@ -8713,17 +8713,13 @@ void Compiler::optBranchlessConditions()
 
         assert((trueBb != nullptr) && (falseBb != nullptr));
 
-        if (!rootSubNode->OperIsCompare() ||
-            (trueBb == falseBb) ||
+        if (!rootSubNode->OperIsCompare() || (trueBb == falseBb) ||
             // both blocks are expected to be BBJ_RETURN
             // TODO: implement for GT_ASG
-            (trueBb->bbJumpKind != BBJ_RETURN) ||
-            (falseBb->bbJumpKind != BBJ_RETURN) ||
+            (trueBb->bbJumpKind != BBJ_RETURN) || (falseBb->bbJumpKind != BBJ_RETURN) ||
             // give up if these blocks are used by someone else
-            (trueBb->countOfInEdges() != 1) ||
-            (falseBb->countOfInEdges() != 1) ||
-            (trueBb->bbFlags & BBF_DONT_REMOVE) ||
-            (falseBb->bbFlags & BBF_DONT_REMOVE))
+            (trueBb->countOfInEdges() != 1) || (falseBb->countOfInEdges() != 1) ||
+            (trueBb->bbFlags & BBF_DONT_REMOVE) || (falseBb->bbFlags & BBF_DONT_REMOVE))
         {
             continue;
         }
@@ -8731,8 +8727,8 @@ void Compiler::optBranchlessConditions()
         // make sure both blocks are single statement
         Statement* trueBbStmt  = trueBb->firstStmt();
         Statement* falseBbStmt = falseBb->firstStmt();
-        if ((trueBbStmt == nullptr) || (trueBbStmt->GetPrevStmt() != trueBbStmt) ||
-            (falseBbStmt == nullptr) || (falseBbStmt->GetPrevStmt() != falseBbStmt))
+        if ((trueBbStmt == nullptr) || (trueBbStmt->GetPrevStmt() != trueBbStmt) || (falseBbStmt == nullptr) ||
+            (falseBbStmt->GetPrevStmt() != falseBbStmt))
         {
             continue;
         }
@@ -8740,8 +8736,7 @@ void Compiler::optBranchlessConditions()
         // make sure both blocks are single `return cns` nodes
         GenTree* retTrueNode  = trueBbStmt->GetRootNode();
         GenTree* retFalseNode = falseBbStmt->GetRootNode();
-        if (!retTrueNode->OperIs(GT_RETURN) ||
-            !retFalseNode->OperIs(GT_RETURN) ||
+        if (!retTrueNode->OperIs(GT_RETURN) || !retFalseNode->OperIs(GT_RETURN) ||
             !retTrueNode->TypeIs(typ) || !retFalseNode->TypeIs(typ) ||
             !retTrueNode->gtGetOp1()->IsIntegralConst() ||
             !retFalseNode->gtGetOp1()->IsIntegralConst())
