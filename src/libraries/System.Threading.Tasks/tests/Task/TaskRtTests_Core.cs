@@ -416,6 +416,20 @@ namespace System.Threading.Tasks.Tests
             {
                 Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, but get-Result threw unexpected exception"));
             }
+
+            // Try to cancel again
+            try
+            {
+                tcs.SetCanceled(cts.Token);
+                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, no exception on re-Cancel"));
+            }
+            catch(InvalidOperationException)
+            { }
+            catch
+            {
+                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, but re-Cancel threw unexpected exception"));
+
+            }
         }
 
         [Fact]
