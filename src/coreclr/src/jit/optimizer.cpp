@@ -8739,6 +8739,7 @@ void Compiler::optBranchlessConditions()
         {
             continue;
         }
+
         // TODO: optimize  `condition ? x + 2 : x + 3`
         // GT_ASG in both blocks for the same variable
 
