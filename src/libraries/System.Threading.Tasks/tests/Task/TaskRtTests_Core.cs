@@ -391,6 +391,34 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        public static void RunTaskCompletionSourceTests_SetCanceled()
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
+
+            tcs.SetCanceled(cts.Token);
+
+            if (tcs.Task.Status != TaskStatus.Canceled)
+            {
+                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, Status should be Canceled, is {0}", tcs.Task.Status));
+            }
+
+            try
+            {
+                var _ = tcs.Task.Result;
+                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, but get-Result threw no exception"));
+            }
+            catch(OperationCanceledException exc)
+            {
+                Assert.Equals(exc.CancellationToken, cts.Token);
+            }
+            catch
+            {
+                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, but get-Result threw unexpected exception"));
+            }
+        }
+
+        [Fact]
         public static void RunTaskCompletionSourceTests_CancellationTests()
         {
             // Test that cancellation is persistent
