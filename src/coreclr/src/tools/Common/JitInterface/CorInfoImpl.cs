@@ -1104,7 +1104,16 @@ namespace Internal.JitInterface
         private void findSig(CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
             var methodIL = (MethodIL)HandleToObject((IntPtr)module);
-            Get_CORINFO_SIG_INFO((MethodSignature)methodIL.GetObject((int)sigTOK), sig);
+            var methodSig = (MethodSignature)methodIL.GetObject((int)sigTOK);
+            Get_CORINFO_SIG_INFO(methodSig, sig);
+
+#if !READYTORUN
+            // Check whether we need to report this as a fat pointer call
+            if (_compilation.IsFatPointerCandidate(methodIL.OwningMethod, methodSig))
+            {
+                sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
+            }
+#endif
         }
 
         private void findCallSiteSig(CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)

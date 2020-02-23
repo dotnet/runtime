@@ -7425,16 +7425,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         *call->AsCall()->callSig = calliSig;
 #endif // DEBUG
 
-        if (IsTargetAbi(CORINFO_CORERT_ABI))
+        if ((sig->flags & CORINFO_SIGFLAG_FAT_CALL) != 0)
         {
-            bool managedCall = (((calliSig.callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_STDCALL) &&
-                                ((calliSig.callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_C) &&
-                                ((calliSig.callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_THISCALL) &&
-                                ((calliSig.callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_FASTCALL));
-            if (managedCall)
-            {
-                addFatPointerCandidate(call->AsCall());
-            }
+            addFatPointerCandidate(call->AsCall());
         }
     }
     else // (opcode != CEE_CALLI)
