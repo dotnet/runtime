@@ -410,7 +410,7 @@ namespace System.Threading.Tasks.Tests
             }
             catch(OperationCanceledException exc)
             {
-                Assert.Equals(exc.CancellationToken, cts.Token);
+                Assert.Equal(exc.CancellationToken, cts.Token);
             }
             catch
             {
