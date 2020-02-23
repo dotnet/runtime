@@ -8686,20 +8686,20 @@ void Compiler::optBranchlessConditions()
     bool changed = false;
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
     {
-        if (block->bbJumpKind != BBJ_COND || block->isEmpty())
+        if ((block->bbJumpKind != BBJ_COND) || block->isEmpty())
         {
             continue;
         }
 
         Statement* fistStmt = block->lastStmt();
-        if (fistStmt == nullptr || !fistStmt->GetRootNode()->OperIs(GT_JTRUE))
+        if ((fistStmt == nullptr) || !fistStmt->GetRootNode()->OperIs(GT_JTRUE))
         {
             continue;
         }
 
-        GenTree* rootNode = fistStmt->GetRootNode();
+        GenTree* rootNode    = fistStmt->GetRootNode();
         GenTree* rootSubNode = rootNode->gtGetOp1();
-        var_types typ = rootSubNode->TypeGet();
+        var_types typ        = rootSubNode->TypeGet();
 
         assert(rootSubNode != nullptr);
 
@@ -8708,7 +8708,7 @@ void Compiler::optBranchlessConditions()
             continue;
         }
 
-        BasicBlock* trueBb = block->bbJumpDest;
+        BasicBlock* trueBb  = block->bbJumpDest;
         BasicBlock* falseBb = block->bbNext;
 
         assert((trueBb != nullptr) && (falseBb != nullptr));
@@ -8729,7 +8729,7 @@ void Compiler::optBranchlessConditions()
         }
 
         // make sure both blocks are single statement
-        Statement* trueBbStmt = trueBb->firstStmt();
+        Statement* trueBbStmt  = trueBb->firstStmt();
         Statement* falseBbStmt = falseBb->firstStmt();
         if ((trueBbStmt == nullptr) || (trueBbStmt->GetPrevStmt() != trueBbStmt) ||
             (falseBbStmt == nullptr) || (falseBbStmt->GetPrevStmt() != falseBbStmt))
@@ -8738,7 +8738,7 @@ void Compiler::optBranchlessConditions()
         }
 
         // make sure both blocks are single `return cns` nodes
-        GenTree* retTrueNode = trueBbStmt->GetRootNode();
+        GenTree* retTrueNode  = trueBbStmt->GetRootNode();
         GenTree* retFalseNode = falseBbStmt->GetRootNode();
         if (!retTrueNode->OperIs(GT_RETURN) ||
             !retFalseNode->OperIs(GT_RETURN) ||
@@ -8752,7 +8752,7 @@ void Compiler::optBranchlessConditions()
         // TODO: optimize  `condition ? x + 2 : x + 3`
         // same LCL_VAR in both blocks
 
-        ssize_t cnsForTrue = retTrueNode->gtGetOp1()->AsIntCon()->IconValue();
+        ssize_t cnsForTrue  = retTrueNode->gtGetOp1()->AsIntCon()->IconValue();
         ssize_t cnsForFalse = retFalseNode->gtGetOp1()->AsIntCon()->IconValue();
 
         // the optimization can be applied when the difference between two constants is 1
