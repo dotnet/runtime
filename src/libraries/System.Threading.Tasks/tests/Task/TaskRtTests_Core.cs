@@ -408,8 +408,9 @@ namespace System.Threading.Tasks.Tests
                 var _ = tcs.Task.Result;
                 Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, but get-Result threw no exception"));
             }
-            catch(OperationCanceledException exc)
+            catch(AggregateException exc)
             {
+                var inner = exc.InnerException as TaskCanceledException;
                 Assert.Equal(exc.CancellationToken, cts.Token);
             }
             catch
