@@ -127,7 +127,7 @@ public class Tests
 
 public class TestsWithoutOptimization
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static T Var<T>(T t) => t;
 
     public int Test1(int a) => a == 42 ? Var(0) : Var(1);
