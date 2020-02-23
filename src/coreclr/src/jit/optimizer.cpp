@@ -8740,7 +8740,6 @@ void Compiler::optBranchlessConditions()
         // make sure both blocks are single `return cns` nodes
         GenTree* retTrueNode = trueBbStmt->GetRootNode();
         GenTree* retFalseNode = falseBbStmt->GetRootNode();
-
         if (!retTrueNode->OperIs(GT_RETURN) ||
             !retFalseNode->OperIs(GT_RETURN) ||
             !retTrueNode->TypeIs(typ) || !retFalseNode->TypeIs(typ) ||
@@ -8751,7 +8750,7 @@ void Compiler::optBranchlessConditions()
         }
 
         // TODO: optimize  `condition ? x + 2 : x + 3`
-        // GT_ASG in both blocks for the same variable
+        // same LCL_VAR in both blocks
 
         ssize_t cnsForTrue = retTrueNode->gtGetOp1()->AsIntCon()->IconValue();
         ssize_t cnsForFalse = retFalseNode->gtGetOp1()->AsIntCon()->IconValue();
