@@ -899,6 +899,60 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Fact]
+        public static void TestMultiSegmentStringConversionToDateTime()
+        {
+            string jsonString = "\"1997-07-16\"";
+            string expectedString = "1997-07-16";
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            ReadOnlySequence<byte> sequence = JsonTestHelper.CreateSegments(dataUtf8);
+
+            var json = new Utf8JsonReader(sequence, isFinalBlock: false, state: default);
+            while (json.Read())
+            {
+                if (json.TokenType == JsonTokenType.String)
+                {
+                    DateTime expected = DateTime.Parse(expectedString);
+
+                    Assert.True(json.TryGetDateTime(out DateTime actual));
+                    Assert.Equal(expected, actual);
+
+                    Assert.Equal(expected, json.GetDateTime());
+                }
+            }
+
+            Assert.Equal(dataUtf8.Length, json.BytesConsumed);
+        }
+
+        [Fact]
+        public static void TestMultiSegmentStringConversionToDateTimeOffset()
+        {
+            string jsonString = "\"1997-07-16\"";
+            string expectedString = "1997-07-16";
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            ReadOnlySequence<byte> sequence = JsonTestHelper.CreateSegments(dataUtf8);
+
+            var json = new Utf8JsonReader(sequence, isFinalBlock: false, state: default);
+            while (json.Read())
+            {
+                if (json.TokenType == JsonTokenType.String)
+                {
+                    DateTimeOffset expected = DateTimeOffset.Parse(expectedString);
+
+                    Assert.True(json.TryGetDateTimeOffset(out DateTimeOffset actual));
+                    Assert.Equal(expected, actual);
+
+                    Assert.Equal(expected, json.GetDateTimeOffset());
+                }
+            }
+
+            Assert.Equal(dataUtf8.Length, json.BytesConsumed);
+        }
+
         private static void SpanSequenceStatesAreEqualInvalidJson(byte[] dataUtf8, ReadOnlySequence<byte> sequence, int maxDepth, JsonCommentHandling commentHandling)
         {
             var stateSpan = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling, MaxDepth = maxDepth });
