@@ -68,11 +68,6 @@ namespace System.Text.Json
                     return;
                 }
 
-                if (inputType == null)
-                {
-                    inputType = value.GetType();
-                }
-
                 WriteStack state = default;
                 state.InitializeRoot(inputType, options, supportContinuation: true);
 
