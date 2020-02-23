@@ -433,14 +433,36 @@ namespace System.Net.Sockets
         {
             public ReadOperation(SocketAsyncContext context) : base(context) { }
 
-            void IThreadPoolWorkItem.Execute() => AssociatedContext.ProcessAsyncReadOperation(this);
+            void IThreadPoolWorkItem.Execute()
+            {
+                if (IsCompleted)
+                {
+                    CancellationRegistration.Dispose();
+                    InvokeCallback(allowPooling: true);
+                }
+                else
+                {
+                    AssociatedContext.ProcessAsyncReadOperation(this);
+                }
+            }
         }
 
         private abstract class WriteOperation : AsyncOperation, IThreadPoolWorkItem
         {
             public WriteOperation(SocketAsyncContext context) : base(context) { }
 
-            void IThreadPoolWorkItem.Execute() => AssociatedContext.ProcessAsyncWriteOperation(this);
+            void IThreadPoolWorkItem.Execute()
+            {
+                if (IsCompleted)
+                {
+                    CancellationRegistration.Dispose();
+                    InvokeCallback(allowPooling: true);
+                }
+                else
+                {
+                    AssociatedContext.ProcessAsyncWriteOperation(this);
+                }
+            }
         }
 
         private abstract class SendOperation : WriteOperation
@@ -1391,8 +1413,7 @@ namespace System.Net.Sockets
                 // todo: probably this is not the best place to call this stuff
                 if (op.IsCompleted)
                 {
-                    op.CancellationRegistration.Dispose();
-                    op.InvokeCallback(allowPooling: true);
+                    ThreadPool.UnsafeQueueUserWorkItem(op, preferLocal: false);
                 }
             }
 
