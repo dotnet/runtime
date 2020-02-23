@@ -1505,39 +1505,27 @@ namespace System
             (uint)(digit - 'a') <= 'f' - 'a' ? digit - 'a' + 10 :
             throw new ArgumentException(nameof(digit));
 
-        //
-        // GetHashCode
-        //
-        //  Overrides default function (in Object class)
-        //
-        //
         public override int GetHashCode()
         {
             if (IsNotAbsoluteUri)
             {
-                return CalculateCaseInsensitiveHashCode(OriginalString);
-            }
-
-            // Consider moving hash code storage from m_Info.MoreInfo to m_Info
-            UriInfo info = EnsureUriInfo();
-            if ((object?)info.MoreInfo == null)
-            {
-                info.MoreInfo = new MoreInfo();
-            }
-            int tempHash = info.MoreInfo.Hash;
-            if (tempHash == 0)
-            {
-                string? chkString = info.MoreInfo.RemoteUrl;
-                if ((object?)chkString == null)
-                    chkString = GetParts(UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped);
-                tempHash = CalculateCaseInsensitiveHashCode(chkString);
-                if (tempHash == 0)
+                MoreInfo moreInfo = (_info ??= new UriInfo()).MoreInfo ??= new MoreInfo();
+                if (moreInfo.Hash == 0)
                 {
-                    tempHash = 0x1000000;   //making it not zero still large enough to be mapped to zero by a hashtable
+                    moreInfo.Hash = OriginalString.GetHashCode(StringComparison.OrdinalIgnoreCase);
                 }
-                info.MoreInfo.Hash = tempHash;
+                return moreInfo.Hash;
             }
-            return tempHash;
+            else
+            {
+                MoreInfo moreInfo = EnsureUriInfo().MoreInfo ??= new MoreInfo();
+                if (moreInfo.Hash == 0)
+                {
+                    string? chkString = moreInfo.RemoteUrl ??= GetParts(UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped);
+                    moreInfo.Hash = chkString.GetHashCode(StringComparison.OrdinalIgnoreCase);
+                }
+                return moreInfo.Hash;
+            }
         }
 
         //
@@ -4941,11 +4929,6 @@ namespace System
                 }
             }
             return dest;
-        }
-
-        internal static int CalculateCaseInsensitiveHashCode(string text)
-        {
-            return text.ToLowerInvariant().GetHashCode();
         }
 
         //
