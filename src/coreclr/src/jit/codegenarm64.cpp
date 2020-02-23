@@ -1825,13 +1825,13 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 //
 void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
 {
-    var_types targetType = tree->TypeGet();
-    emitter*  emit       = GetEmitter();
 
     unsigned varNum = tree->GetLclNum();
     assert(varNum < compiler->lvaCount);
-    LclVarDsc* varDsc         = &(compiler->lvaTable[varNum]);
-    bool       isRegCandidate = varDsc->lvIsRegCandidate();
+    LclVarDsc* varDsc     = compiler->lvaGetDesc(varNum);
+    var_types  targetType = varDsc->GetRegisterType(tree);
+
+    bool isRegCandidate = varDsc->lvIsRegCandidate();
 
     // lcl_vars are not defs
     assert((tree->gtFlags & GTF_VAR_DEF) == 0);
@@ -1847,6 +1847,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         instruction ins  = ins_Load(targetType);
         emitAttr    attr = emitActualTypeSize(targetType);
 
+        emitter* emit = GetEmitter();
         emit->emitIns_R_S(ins, attr, tree->GetRegNum(), varNum, 0);
         genProduceReg(tree);
     }
@@ -1922,17 +1923,6 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 //
 void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 {
-    var_types targetType = tree->TypeGet();
-    regNumber targetReg  = tree->GetRegNum();
-    emitter*  emit       = GetEmitter();
-
-    unsigned varNum = tree->GetLclNum();
-    assert(varNum < compiler->lvaCount);
-    LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
-
-    // Ensure that lclVar nodes are typed correctly.
-    assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
-
     GenTree* data = tree->gtOp1;
 
     // var = call, where call returns a multi-reg return value
@@ -1943,9 +1933,17 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     }
     else
     {
+        regNumber targetReg = tree->GetRegNum();
+        emitter*  emit      = GetEmitter();
+
+        unsigned varNum = tree->GetLclNum();
+        assert(varNum < compiler->lvaCount);
+        LclVarDsc* varDsc     = compiler->lvaGetDesc(varNum);
+        var_types  targetType = varDsc->GetRegisterType(tree);
+
 #ifdef FEATURE_SIMD
         // storing of TYP_SIMD12 (i.e. Vector3) field
-        if (tree->TypeGet() == TYP_SIMD12)
+        if (targetType == TYP_SIMD12)
         {
             genStoreLclTypeSIMD12(tree);
             return;
@@ -1962,8 +1960,9 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
             if (varTypeIsSIMD(targetType))
             {
+                assert(targetType == TYP_SIMD16);
                 assert(targetReg != REG_NA);
-                GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, targetReg, 0x00, INS_OPTS_16B);
+                emit->emitIns_R_I(INS_movi, EA_16BYTE, targetReg, 0x00, INS_OPTS_16B);
                 genProduceReg(tree);
                 return;
             }

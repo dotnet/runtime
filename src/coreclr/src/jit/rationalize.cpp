@@ -353,48 +353,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
             }
         }
 #endif // FEATURE_SIMD
-        if ((location->TypeGet() == TYP_STRUCT) && !assignment->IsPhiDefn() && !value->IsMultiRegCall())
-        {
-            if ((location->OperGet() == GT_LCL_VAR))
-            {
-                // We need to construct a block node for the location.
-                // Modify lcl to be the address form.
-                location->SetOper(addrForm(locationOp));
-                LclVarDsc* varDsc     = &(comp->lvaTable[location->AsLclVarCommon()->GetLclNum()]);
-                location->gtType      = TYP_BYREF;
-                GenTreeBlk*  storeBlk = nullptr;
-                unsigned int size     = varDsc->lvExactSize;
-
-                if (varDsc->HasGCPtr())
-                {
-                    CORINFO_CLASS_HANDLE structHnd = varDsc->lvVerTypeInfo.GetClassHandle();
-                    GenTreeObj*          objNode   = comp->gtNewObjNode(structHnd, location);
-                    objNode->ChangeOper(GT_STORE_OBJ);
-                    objNode->SetData(value);
-                    storeBlk = objNode;
-                }
-                else
-                {
-                    storeBlk = new (comp, GT_STORE_BLK)
-                        GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, location, value, comp->typGetBlkLayout(size));
-                }
-                storeBlk->gtFlags |= GTF_ASG;
-                storeBlk->gtFlags |= ((location->gtFlags | value->gtFlags) & GTF_ALL_EFFECT);
-
-                GenTree* insertionPoint = location->gtNext;
-                BlockRange().InsertBefore(insertionPoint, storeBlk);
-                use.ReplaceWith(comp, storeBlk);
-                BlockRange().Remove(assignment);
-                JITDUMP("After transforming local struct assignment into a block op:\n");
-                DISPTREERANGE(BlockRange(), use.Def());
-                JITDUMP("\n");
-                return;
-            }
-            else
-            {
-                assert(location->OperIsBlk());
-            }
-        }
     }
 
     switch (locationOp)
