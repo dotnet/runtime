@@ -8777,8 +8777,7 @@ void Compiler::optBranchlessConditions()
 
         // convert current block from BBJ_COND to BBJ_RETURN
         block->bbJumpKind = BBJ_RETURN;
-        assert(rootNode->OperIs(GT_JTRUE));
-        rootNode->ChangeOper(GT_RETURN);
+        rootNode->ChangeOperUnchecked(GT_RETURN);
         rootNode->AsOp()->gtOp1 = gtNewOperNode(GT_ADD, typ, rootSubNode, gtNewIconNode(addValue, typ));
         rootNode->ChangeType(typ);
         block->bbJumpDest = nullptr;
