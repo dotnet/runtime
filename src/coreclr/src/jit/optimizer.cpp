@@ -8755,6 +8755,7 @@ void Compiler::optBranchlessConditions()
         // because it's what `cmp\test` return for true (and 0 for false)
         if (abs(cnsForTrue - cnsForFalse) != 1)
         {
+            // TODO: for some bigger difference we can use GT_LEA (?) or even cmov
             continue;
         }
 
@@ -8792,8 +8793,7 @@ void Compiler::optBranchlessConditions()
         fgDispBasicBlocks();
         printf("\n");
     }
-
-    /* Check that the flowgraph data (bbNum, bbRefs, bbPreds) is up-to-date */
+    // Check that the flowgraph data (bbNum, bbRefs, bbPreds) is up-to-date
     fgDebugCheckBBlist();
 #endif
 }
