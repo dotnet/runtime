@@ -48,7 +48,7 @@ namespace System
 
             if (BitConverter.IsLittleEndian)
             {
-                this = MemoryMarshal.Read<Guid>(b);
+                this = Unsafe.ReadUnaligned<Guid>(ref MemoryMarshal.GetReference(b));
                 return;
             }
 
@@ -732,7 +732,7 @@ namespace System
             var g = new byte[16];
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite<Guid>(g, ref this);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(new Span<byte>(g)), this);
             }
             else
             {
@@ -746,7 +746,12 @@ namespace System
         {
             if (BitConverter.IsLittleEndian)
             {
-                return MemoryMarshal.TryWrite(destination, ref this);
+                if (Unsafe.SizeOf<Guid>() > (uint)destination.Length)
+                {
+                    return false;
+                }
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), this);
+                return true;
             }
 
             // slower path for BigEndian
