@@ -8665,11 +8665,21 @@ bool Compiler::optIsRangeCheckRemovable(GenTree* tree)
 //  Operation:
 //      Look for BBJ_COND basic blocks which target two BBJ_RETURN blocks
 //      and convert them into single branchless expressions, e.g.
-//          cmp(...) return 3;
-//          return 2;
-//      to
-//          return cmp(...) + 2;  // cmp returns 0 or 1
-//
+//                                            
+//            JTRUE                           
+//              \                             
+//              EQ              RETURN        
+//             /  \                \          
+//            X    Y               ADD        
+//                       =>       /   \       
+//           RETURN             EQ     C3     
+//              \              /  \           
+//              C1            X    Y          
+//                                            
+//           RETURN                           
+//              \                             
+//               C2                           
+//                                            
 void Compiler::optBranchlessConditions()
 {
     JITDUMP("\n*************** In optBranchlessConditions()\n");
