@@ -1512,7 +1512,7 @@ namespace System
                 MoreInfo moreInfo = (_info ??= new UriInfo()).MoreInfo ??= new MoreInfo();
                 if (moreInfo.Hash == 0)
                 {
-                    moreInfo.Hash = OriginalString.GetHashCode(StringComparison.OrdinalIgnoreCase);
+                    moreInfo.Hash = OriginalString.GetHashCode();
                 }
                 return moreInfo.Hash;
             }
@@ -1521,8 +1521,8 @@ namespace System
                 MoreInfo moreInfo = EnsureUriInfo().MoreInfo ??= new MoreInfo();
                 if (moreInfo.Hash == 0)
                 {
-                    string? chkString = moreInfo.RemoteUrl ??= GetParts(UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped);
-                    moreInfo.Hash = chkString.GetHashCode(StringComparison.OrdinalIgnoreCase);
+                    string remoteUrl = moreInfo.RemoteUrl ??= GetParts(UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped);
+                    moreInfo.Hash = remoteUrl.GetHashCode(IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
                 }
                 return moreInfo.Hash;
             }
