@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class PropertyVisibilityTests
     {
         [Fact]
-        public static void Serialize_new_slot_public_property()
+        public static void SerializeNewSlotPublicProperty()
         {
             // Serialize
             var obj = new ClassWithNewSlotProperty();
@@ -20,29 +20,29 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(@"{""MyString"":""NewDefaultValue""}", json);
 
-            // Deserialzie
+            // Deserialize
             json = @"{""MyString"":""NewValue""}";
             obj = JsonSerializer.Deserialize<ClassWithNewSlotProperty>(json);
 
             Assert.Equal("NewValue", ((ClassWithNewSlotProperty)obj).MyString);
-            Assert.Equal("DefaultValue", ((ClassWithPrivateProperty)obj).MyString);
+            Assert.Equal("DefaultValue", ((ClassWithInternalProperty)obj).MyString);
         }
 
         [Fact]
         public static void Serialize_base_public_property_on_conflict_with_derived_private()
         {
             // Serialize
-            var obj = new ClassWithNewSlotPrivateProperty();
+            var obj = new ClassWithNewSlotInternalProperty();
             string json = JsonSerializer.Serialize(obj);
 
             Assert.Equal(@"{""MyString"":""DefaultValue""}", json);
 
-            // Deserialzie
+            // Deserialize
             json = @"{""MyString"":""NewValue""}";
-            obj = JsonSerializer.Deserialize<ClassWithNewSlotPrivateProperty>(json);
+            obj = JsonSerializer.Deserialize<ClassWithNewSlotInternalProperty>(json);
 
             Assert.Equal("NewValue", ((ClassWithPublicProperty)obj).MyString);
-            Assert.Equal("NewDefaultValue", ((ClassWithNewSlotPrivateProperty)obj).MyString);
+            Assert.Equal("NewDefaultValue", ((ClassWithNewSlotInternalProperty)obj).MyString);
         }
 
         [Fact]
@@ -54,7 +54,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(@"{""MyString"":""DefaultValue""}", json);
 
-            // Deserialzie
+            // Deserialize
             json = @"{""MyString"":""NewValue""}";
             obj = JsonSerializer.Deserialize<ClassWithPropertyNamingConflict>(json);
 
@@ -73,7 +73,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(@"{""myString"":""DefaultValue""}", json);
 
-            // Deserialzie
+            // Deserialize
             json = @"{""myString"":""NewValue""}";
             obj = JsonSerializer.Deserialize<ClassWithPropertyPolicyConflict>(json, options);
 
@@ -85,14 +85,14 @@ namespace System.Text.Json.Serialization.Tests
         public static void Ignore_non_public_property()
         {
             // Serialize
-            var obj = new ClassWithPrivateProperty();
+            var obj = new ClassWithInternalProperty();
             string json = JsonSerializer.Serialize(obj);
 
             Assert.Equal(@"{}", json);
 
-            // Deserialzie
+            // Deserialize
             json = @"{""MyString"":""NewValue""}";
-            obj = JsonSerializer.Deserialize<ClassWithPrivateProperty>(json);
+            obj = JsonSerializer.Deserialize<ClassWithInternalProperty>(json);
 
             Assert.Equal("DefaultValue", obj.MyString);
         }
@@ -106,12 +106,12 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(@"{}", json);
 
-            // Deserialzie
+            // Deserialize
             json = @"{""MyString"":""NewValue""}";
             obj = JsonSerializer.Deserialize<ClassWithIgnoredNewSlotProperty>(json);
 
             Assert.Equal("NewDefaultValue", ((ClassWithIgnoredNewSlotProperty)obj).MyString);
-            Assert.Equal("DefaultValue", ((ClassWithPrivateProperty)obj).MyString);
+            Assert.Equal("DefaultValue", ((ClassWithInternalProperty)obj).MyString);
         }
 
         [Fact]
@@ -123,7 +123,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(@"{}", json);
 
-            // Deserialzie
+            // Deserialize
             json = @"{""MyString"":""NewValue""}";
             obj = JsonSerializer.Deserialize<ClassWithIgnoredPublicPropertyAndNewSlotPrivate>(json);
 
@@ -140,7 +140,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(@"{}", json);
 
-            // Deserialzie
+            // Deserialize
             json = @"{""MyString"":""NewValue""}";
             obj = JsonSerializer.Deserialize<ClassWithIgnoredPropertyNamingConflict>(json);
 
@@ -159,7 +159,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(@"{}", json);
 
-            // Deserialzie
+            // Deserialize
             json = @"{""myString"":""NewValue""}";
             obj = JsonSerializer.Deserialize<ClassWithIgnoredPropertyPolicyConflict>(json, options);
 
@@ -167,12 +167,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("ConflictingValue", obj.myString);
         }
 
-        public class ClassWithPrivateProperty
+        public class ClassWithInternalProperty
         {
             internal string MyString { get; set; } = "DefaultValue";
         }
 
-        public class ClassWithNewSlotProperty : ClassWithPrivateProperty
+        public class ClassWithNewSlotProperty : ClassWithInternalProperty
         {
             public new string MyString { get; set; } = "NewDefaultValue";
         }
@@ -182,7 +182,7 @@ namespace System.Text.Json.Serialization.Tests
             public string MyString { get; set; } = "DefaultValue";
         }
 
-        public class ClassWithNewSlotPrivateProperty : ClassWithPublicProperty
+        public class ClassWithNewSlotInternalProperty : ClassWithPublicProperty
         {
             internal new string MyString { get; set; } = "NewDefaultValue";
         }
@@ -202,7 +202,7 @@ namespace System.Text.Json.Serialization.Tests
             internal string myString { get; set; } = "ConflictingValue";
         }
 
-        public class ClassWithIgnoredNewSlotProperty : ClassWithPrivateProperty
+        public class ClassWithIgnoredNewSlotProperty : ClassWithInternalProperty
         {
             [JsonIgnore]
             public new string MyString { get; set; } = "NewDefaultValue";

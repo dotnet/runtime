@@ -102,7 +102,7 @@ namespace System.Text.Json
                                 ? StringComparer.OrdinalIgnoreCase
                                 : StringComparer.Ordinal);
 
-                        for (Type? currentType = runtimeType; currentType != null; currentType = currentType.BaseType)
+                        for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                         {
                             foreach (PropertyInfo propertyInfo in currentType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
                             {
