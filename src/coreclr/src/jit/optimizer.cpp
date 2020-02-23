@@ -8659,6 +8659,139 @@ bool Compiler::optIsRangeCheckRemovable(GenTree* tree)
     return true;
 }
 
+//----------------------------------------------------------------------------------
+// optBranchlessConditions: optimize simple expressions to branchless expressions
+//
+//  Operation:
+//      Look for BBJ_COND basic blocks which target two BBJ_RETURN blocks
+//      and convert them into single branchless expressions, e.g.
+//          cmp(...) return 3;
+//          return 2;
+//      to
+//          return cmp(...) + 2;  // cmp returns 0 or 1
+//
+void Compiler::optBranchlessConditions()
+{
+    JITDUMP("\n*************** In optBranchlessConditions()\n");
+    bool changed = false;
+    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    {
+        if (block->bbJumpKind != BBJ_COND || block->isEmpty())
+        {
+            continue;
+        }
+
+        Statement* fistStmt = block->lastStmt();
+        if (fistStmt == nullptr || !fistStmt->GetRootNode()->OperIs(GT_JTRUE))
+        {
+            continue;
+        }
+
+        GenTree* rootNode = fistStmt->GetRootNode();
+        GenTree* rootSubNode = rootNode->gtGetOp1();
+        var_types typ = rootSubNode->TypeGet();
+
+        assert(rootSubNode != nullptr);
+
+        if (!varTypeIsIntegral(typ))
+        {
+            continue;
+        }
+
+        BasicBlock* trueBb = block->bbJumpDest;
+        BasicBlock* falseBb = block->bbNext;
+
+        assert((trueBb != nullptr) && (falseBb != nullptr));
+
+        if (!rootSubNode->OperIsCompare() ||
+            (trueBb == falseBb) ||
+            // both blocks are expected to be BBJ_RETURN
+            // TODO: implement for GT_ASG
+            (trueBb->bbJumpKind != BBJ_RETURN) ||
+            (falseBb->bbJumpKind != BBJ_RETURN) ||
+            // give up if these blocks are used by someone else
+            (trueBb->countOfInEdges() != 1) ||
+            (falseBb->countOfInEdges() != 1) ||
+            (trueBb->bbFlags & BBF_DONT_REMOVE) ||
+            (falseBb->bbFlags & BBF_DONT_REMOVE))
+        {
+            continue;
+        }
+
+        // make sure both blocks are single statement
+        Statement* trueBbStmt = trueBb->firstStmt();
+        Statement* falseBbStmt = falseBb->firstStmt();
+        if ((trueBbStmt == nullptr) || (trueBbStmt->GetPrevStmt() != trueBbStmt) ||
+            (falseBbStmt == nullptr) || (falseBbStmt->GetPrevStmt() != falseBbStmt))
+        {
+            continue;
+        }
+
+        // make sure both blocks are single `return cns` nodes
+        GenTree* retTrueNode = trueBbStmt->GetRootNode();
+        GenTree* retFalseNode = falseBbStmt->GetRootNode();
+
+        if (!retTrueNode->OperIs(GT_RETURN) ||
+            !retFalseNode->OperIs(GT_RETURN) ||
+            !retTrueNode->TypeIs(typ) || !retFalseNode->TypeIs(typ) ||
+            !retTrueNode->gtGetOp1()->IsIntegralConst() ||
+            !retFalseNode->gtGetOp1()->IsIntegralConst())
+        {
+            continue;
+        }
+        // TODO: optimize  `condition ? x + 2 : x + 3`
+        // GT_ASG in both blocks for the same variable
+
+        ssize_t cnsForTrue = retTrueNode->gtGetOp1()->AsIntCon()->IconValue();
+        ssize_t cnsForFalse = retFalseNode->gtGetOp1()->AsIntCon()->IconValue();
+
+        // the optimization can be applied when the difference between two constants is 1
+        // because it's what `cmp\test` return for true (and 0 for false)
+        if (abs(cnsForTrue - cnsForFalse) != 1)
+        {
+            continue;
+        }
+
+        ssize_t addValue;
+        if (cnsForFalse > cnsForTrue)
+        {
+            addValue = cnsForTrue;
+        }
+        else
+        {
+            addValue = cnsForFalse;
+            // we need to flip the comparision operator in this case, e.g. `>` -> `<=`
+            rootSubNode->ChangeOper(GenTree::ReverseRelop(rootSubNode->OperGet()));
+        }
+
+        // unlink both blocks
+        fgRemoveRefPred(block->bbJumpDest, block);
+        fgRemoveRefPred(block->bbNext, block);
+
+        // convert current block from BBJ_COND to BBJ_RETURN
+        block->bbJumpKind = BBJ_RETURN;
+        assert(rootNode->OperIs(GT_JTRUE));
+        rootNode->ChangeOper(GT_RETURN);
+        rootNode->AsOp()->gtOp1 =
+            gtNewOperNode(GT_ADD, typ, rootSubNode, gtNewIconNode(addValue, typ));
+        rootNode->ChangeType(typ);
+        block->bbJumpDest = nullptr;
+        changed = true;
+    }
+
+#if DEBUG
+    if (changed && verbose)
+    {
+        printf("\nAfter optBranchlessConditions:\n");
+        fgDispBasicBlocks();
+        printf("\n");
+    }
+
+    /* Check that the flowgraph data (bbNum, bbRefs, bbPreds) is up-to-date */
+    fgDebugCheckBBlist();
+#endif
+}
+
 /******************************************************************************
  *
  * Replace x==null with (x|x)==0 if x is a GC-type.

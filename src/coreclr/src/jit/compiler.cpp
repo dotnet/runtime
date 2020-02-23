@@ -4730,6 +4730,9 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     if (opts.OptimizationEnabled())
     {
+        // Optimize conditions into branchless expressions
+        optBranchlessConditions();
+        EndPhase(PHASE_OPTIMIZE_BRANCHLESS);
         // Optimize boolean conditions
         optOptimizeBools();
         EndPhase(PHASE_OPTIMIZE_BOOLS);

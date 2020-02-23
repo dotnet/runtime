@@ -53,6 +53,7 @@ CompPhaseNameMacro(PHASE_CLONE_LOOPS,            "Clone loops",                 
 CompPhaseNameMacro(PHASE_UNROLL_LOOPS,           "Unroll loops",                   "UNROLL",   false, -1, false)
 CompPhaseNameMacro(PHASE_HOIST_LOOP_CODE,        "Hoist loop code",                "LP-HOIST", false, -1, false)
 CompPhaseNameMacro(PHASE_MARK_LOCAL_VARS,        "Mark local vars",                "MARK-LCL", false, -1, false)
+CompPhaseNameMacro(PHASE_OPTIMIZE_BRANCHLESS,    "Optimize to branchless code",    "OPT-BRLESS", false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_BOOLS,         "Optimize bools",                 "OPT-BOOL", false, -1, false)
 CompPhaseNameMacro(PHASE_FIND_OPER_ORDER,        "Find oper order",                "OPER-ORD", false, -1, false)
 CompPhaseNameMacro(PHASE_SET_BLOCK_ORDER,        "Set block order",                "BLK-ORD",  false, -1, true)

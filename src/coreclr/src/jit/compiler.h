@@ -5734,6 +5734,8 @@ private:
     void optPerformHoistExpr(GenTree* expr, unsigned lnum);
 
 public:
+    void optBranchlessConditions();
+
     void optOptimizeBools();
 
 private:
