@@ -782,7 +782,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     {
         if (!op2->IsIntCnsFitsInI32())
         {
-            // only cns is supported for op2 at the moment for &,%,>> operators
+            // only cns is supported for op2 at the moment for &,%,<<,>> operators
             return Range(Limit::keUnknown);
         }
 
@@ -802,7 +802,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
             // (x & cns1) >> cns2 -> [0..cns1>>cns2]
             int icon1 = static_cast<int>(op1->AsOp()->gtGetOp2()->AsIntCon()->IconValue());
             int icon2 = static_cast<int>(op2->AsIntCon()->IconValue());
-            if (icon1 >= 0 && icon2 >= 0 && icon2 < 32)
+            if ((icon1 >= 0) && (icon2 >= 0) && (icon2 < 32))
             {
                 icon = binop->OperIs(GT_RSH) ? (icon1 >> icon2) : (icon1 << icon2);
             }
