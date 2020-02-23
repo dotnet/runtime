@@ -8736,9 +8736,8 @@ void Compiler::optBranchlessConditions()
         // make sure both blocks are single `return cns` nodes
         GenTree* retTrueNode  = trueBbStmt->GetRootNode();
         GenTree* retFalseNode = falseBbStmt->GetRootNode();
-        if (!retTrueNode->OperIs(GT_RETURN) || !retFalseNode->OperIs(GT_RETURN) ||
-            !retTrueNode->TypeIs(typ) || !retFalseNode->TypeIs(typ) ||
-            !retTrueNode->gtGetOp1()->IsIntegralConst() ||
+        if (!retTrueNode->OperIs(GT_RETURN) || !retFalseNode->OperIs(GT_RETURN) || !retTrueNode->TypeIs(typ) ||
+            !retFalseNode->TypeIs(typ) || !retTrueNode->gtGetOp1()->IsIntegralConst() ||
             !retFalseNode->gtGetOp1()->IsIntegralConst())
         {
             continue;
@@ -8777,11 +8776,10 @@ void Compiler::optBranchlessConditions()
         block->bbJumpKind = BBJ_RETURN;
         assert(rootNode->OperIs(GT_JTRUE));
         rootNode->ChangeOper(GT_RETURN);
-        rootNode->AsOp()->gtOp1 =
-            gtNewOperNode(GT_ADD, typ, rootSubNode, gtNewIconNode(addValue, typ));
+        rootNode->AsOp()->gtOp1 = gtNewOperNode(GT_ADD, typ, rootSubNode, gtNewIconNode(addValue, typ));
         rootNode->ChangeType(typ);
         block->bbJumpDest = nullptr;
-        changed = true;
+        changed           = true;
     }
 
 #if DEBUG
