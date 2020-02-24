@@ -398,39 +398,14 @@ namespace System.Threading.Tasks.Tests
 
             tcs.SetCanceled(cts.Token);
 
-            if (tcs.Task.Status != TaskStatus.Canceled)
-            {
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, Status should be Canceled, is {0}", tcs.Task.Status));
-            }
+            Assert.Equal(TaskStatus.Canceled, tcs.Task.Status);
 
-            try
-            {
-                var _ = tcs.Task.Result;
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, but get-Result threw no exception"));
-            }
-            catch(AggregateException exc)
-            {
-                var inner = exc.InnerException as TaskCanceledException;
-                Assert.Equal(inner.CancellationToken, cts.Token);
-            }
-            catch
-            {
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, but get-Result threw unexpected exception"));
-            }
+            var ae = Assert.Throws<AggregateException>(() => tcs.Task.Result);
+            var tce = Assert.IsType<TaskCanceledException>(ae.InnerException);
+            Assert.Equal(cts.Tokem, tce.CancellationToken);
 
             // Try to cancel again
-            try
-            {
-                tcs.SetCanceled(cts.Token);
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, no exception on re-Cancel"));
-            }
-            catch(InvalidOperationException)
-            { }
-            catch
-            {
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, but re-Cancel threw unexpected exception"));
-
-            }
+            Assert.Throws<InvalidOperationException>(() => tcs.SetCanceled(cts.Token));
         }
 
         [Fact]

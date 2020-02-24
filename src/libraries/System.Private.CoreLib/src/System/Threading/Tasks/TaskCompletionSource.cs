@@ -344,6 +344,8 @@ namespace System.Threading.Tasks
         /// state, and enables a token to be stored into the canceled
         /// <see cref="System.Threading.Tasks.Task{TResult}"/>.
         /// </summary>
+        /// <param name="cancellationToken">The cancellation token to bind to this <see
+        /// cref="System.Threading.Tasks.Task{TResult}"/>.</param>
         /// <exception cref="System.InvalidOperationException">
         /// The underlying <see cref="System.Threading.Tasks.Task{TResult}"/> is already in one
         /// of the three final states:
