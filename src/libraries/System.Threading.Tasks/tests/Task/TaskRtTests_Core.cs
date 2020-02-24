@@ -402,7 +402,7 @@ namespace System.Threading.Tasks.Tests
 
             var ae = Assert.Throws<AggregateException>(() => tcs.Task.Result);
             var tce = Assert.IsType<TaskCanceledException>(ae.InnerException);
-            Assert.Equal(cts.Tokem, tce.CancellationToken);
+            Assert.Equal(cts.Token, tce.CancellationToken);
 
             // Try to cancel again
             Assert.Throws<InvalidOperationException>(() => tcs.SetCanceled(cts.Token));
