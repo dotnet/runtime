@@ -741,7 +741,6 @@ unwinder_unwind_frame (Unwinder *unwinder,
 					   host_mgreg_t **save_locations,
 					   StackFrameInfo *frame)
 {
-	gpointer parent;
 	if (unwinder->in_interp) {
 		memcpy (new_ctx, ctx, sizeof (MonoContext));
 
@@ -760,12 +759,10 @@ unwinder_unwind_frame (Unwinder *unwinder,
 
 		unwinder->in_interp = mini_get_interp_callbacks ()->frame_iter_next (&unwinder->interp_iter, frame);
 		if (frame->type == FRAME_TYPE_INTERP) {
-			parent = mini_get_interp_callbacks ()->frame_get_parent (frame->interp_frame);
-			if (parent)
-				unwinder->last_frame_addr = mini_get_interp_callbacks ()->frame_get_native_stack_addr (parent);
-			else
-				unwinder->last_frame_addr = NULL;
+			const gpointer parent = mini_get_interp_callbacks ()->frame_get_parent (frame->interp_frame);
+			unwinder->last_frame_addr = parent;
 		}
+
 		if (!unwinder->in_interp)
 			return unwinder_unwind_frame (unwinder, domain, jit_tls, prev_ji, ctx, new_ctx, trace, lmf, save_locations, frame);
 		return TRUE;
