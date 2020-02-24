@@ -7,6 +7,7 @@ parameters:
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
+  runtimeDisplayName: 'coreclr'
   timeoutInMinutes: 150
   pool: ''
   testScope: ''
@@ -27,14 +28,15 @@ jobs:
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
       runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      runtimeDisplayName: ${{ parameters.runtimeDisplayName }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       container: '' # we just send to helix, no need to use a container.
       condition: ${{ parameters.condition }}
       pool: ${{ parameters.pool }}
       testScope: ${{ parameters.testScope }}
       ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-        displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavor) }}
-        name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavor) }}
+        displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
+        name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeDisplayName) }}
       ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
         displayName: 'Test Run'
         name: test_run
