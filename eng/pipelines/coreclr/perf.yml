@@ -65,7 +65,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: release
+    buildConfig: Release
     platforms:
     - Linux_x64
     - Windows_NT_x64
