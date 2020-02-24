@@ -2,6 +2,13 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.PreserveDependencies {
+	
+	[LogContains("Could not resolve 'Mono.Linker.Tests.Cases.PreserveDependencies.MissingType' type dependency")]
+	[LogContains("Could not resolve dependency member 'MissingMethod' declared in type 'Mono.Linker.Tests.Cases.PreserveDependencies.C'")]
+	[LogContains("Could not resolve dependency member 'Dependency2`1' declared in type 'Mono.Linker.Tests.Cases.PreserveDependencies.C'")]
+	[LogContains("Could not resolve dependency member '' declared in type 'Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyMethod/B'")]
+	[LogContains("Could not resolve dependency member '.ctor' declared in type 'Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyMethod/NestedStruct'")]
+	[LogContains("Could not resolve dependency member '.cctor' declared in type 'Mono.Linker.Tests.Cases.PreserveDependencies.C'")]
 	class PreserveDependencyMethod {
 		public static void Main ()
 		{
@@ -31,7 +38,8 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 			[PreserveDependency (".ctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.C")] // To avoid lazy body marking stubbing
 			[PreserveDependency ("field", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
 			[PreserveDependency ("NextOne (Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyMethod+Nested&)", "Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyMethod+Nested")]
-			[PreserveDependency ("Property", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
+			[PreserveDependency (".cctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyMethod+Nested")]
+			// Dependency on a property itself should be expressed as a dependency on one or both accessor methods
 			[PreserveDependency ("get_Property()", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
 			public static void Method ()
 			{
@@ -45,15 +53,18 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 			}
 
 			[Kept]
-			[PreserveDependency ("Missing", "Mono.Linker.Tests.Cases.Advanced.C")]
-			[PreserveDependency ("Dependency2`1 (T, System.Int32, System.Object)", "Mono.Linker.Tests.Cases.Advanced.C")]
+			[PreserveDependency ("MissingType", "Mono.Linker.Tests.Cases.PreserveDependencies.MissingType")]
+			[PreserveDependency ("MissingMethod", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
+			[PreserveDependency ("Dependency2`1 (T, System.Int32, System.Object)", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
 			[PreserveDependency ("")]
+			[PreserveDependency (".ctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyMethod+NestedStruct")]
+			[PreserveDependency (".cctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
 			public static void Broken ()
 			{
 			}
 
 			[Kept]
-			[PreserveDependency ("ConditionalTest()", "Mono.Linker.Tests.Cases.Advanced.C", Condition = "don't have it")]
+			[PreserveDependency ("ConditionalTest()", "Mono.Linker.Tests.Cases.PreserveDependencies.C", Condition = "don't have it")]
 			public static void Conditional ()
 			{
 			}
@@ -64,6 +75,22 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 			[Kept]
 			private static void NextOne (ref Nested arg1)
 			{
+			}
+
+			[Kept]
+			static Nested()
+			{
+
+			}
+		}
+
+		struct NestedStruct
+		{
+			public string Name;
+
+			public NestedStruct (string name)
+			{
+				Name = name;
 			}
 		}
 	}
