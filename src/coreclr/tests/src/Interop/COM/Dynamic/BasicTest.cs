@@ -15,7 +15,7 @@ namespace Dynamic
 
         public BasicTest(int seed = 123)
         {
-            Type t = Type.GetTypeFromCLSID(ServerGuids.BasicTest);
+            Type t = Type.GetTypeFromCLSID(Guid.Parse(ServerGuids.BasicTest));
             obj = Activator.CreateInstance(t);
             rand = new Random(seed);
         }
@@ -337,7 +337,7 @@ namespace Dynamic
 
         private void ComObject()
         {
-            Type t = Type.GetTypeFromCLSID(ServerGuids.BasicTest);
+            Type t = Type.GetTypeFromCLSID(Guid.Parse(ServerGuids.BasicTest));
             dynamic val = Activator.CreateInstance(t);
 
             // Get and set property

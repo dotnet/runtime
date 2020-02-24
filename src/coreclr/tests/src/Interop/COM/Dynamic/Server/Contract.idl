@@ -190,6 +190,38 @@ interface ICollectionTest : IDispatch
 };
 
 [
+    object,
+    uuid(D6B0E8B8-CAD5-4483-A10E-D6FB566B2BBE)
+]
+interface IEventTest : IDispatch
+{
+    HRESULT FireEvent([in] int id);
+    HRESULT FireEventMessage([in] BSTR message);
+};
+
+cpp_quote("#define DISPID_IEVENTTESTSINK_ONEVENT 100")
+[
+    object,
+    uuid(354A827D-1D51-4CD6-8B75-157664962707)
+]
+interface IEventTestSink : IDispatch
+{
+    [id(100)]
+    HRESULT OnEvent([in] int id);
+};
+
+cpp_quote("#define DISPID_IEVENTTESTSINKEX_ONEVENTMESSAGE 200")
+[
+    object,
+    uuid(70637C04-570B-4CDC-90D4-E869F5929A84)
+]
+interface IEventTestSinkEx : IDispatch
+{
+    [id(200)]
+    HRESULT OnEventMessage([in] BSTR message);
+};
+
+[
     uuid(0971AD7E-3D4A-4C44-B0A3-A518AC88DFE1)
 ]
 library DynamicTestLib
@@ -201,14 +233,26 @@ library DynamicTestLib
     ]
     coclass BasicTest
     {
-        interface IBasicTest;
+        [default] interface IBasicTest;
     }
-    
+
     [
         uuid(1FFF64AE-FF9C-41AB-BF80-3ECA831AEC40)
     ]
     coclass CollectionTest
     {
-        interface ICollectionTest;
+        [default] interface ICollectionTest;
+    };
+
+    [
+        uuid(23425222-10FE-46BA-8B1A-1D42D2D73464)
+    ]
+    coclass EventTest
+    {
+        [default] interface IEventTest;
+        interface IConnectionPoint;
+        interface IConnectionPointContainer;
+        [source] interface IEventTestSink;
+        [source] interface IEventTestSinkEx;
     };
 }

@@ -6,10 +6,6 @@ namespace Dynamic
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
-    using System.Reflection;
-    using System.Runtime.InteropServices;
-
     using TestLibrary;
 
     internal class CollectionTest
@@ -19,7 +15,7 @@ namespace Dynamic
 
         public CollectionTest(int seed = 123)
         {
-            Type t = Type.GetTypeFromCLSID(ServerGuids.CollectionTest);
+            Type t = Type.GetTypeFromCLSID(Guid.Parse(ServerGuids.CollectionTest));
             obj = Activator.CreateInstance(t);
             rand = new Random(seed);
         }

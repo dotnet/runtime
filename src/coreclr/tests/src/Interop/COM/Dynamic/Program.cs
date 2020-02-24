@@ -5,10 +5,6 @@
 namespace Dynamic
 {
     using System;
-    using System.Globalization;
-    using System.Reflection;
-    using System.Runtime.InteropServices;
-
     using TestLibrary;
 
     /*
@@ -29,6 +25,7 @@ namespace Dynamic
             {
                 new BasicTest().Run();
                 new CollectionTest().Run();
+                new EventTest().Run();
             }
             catch (Exception e)
             {

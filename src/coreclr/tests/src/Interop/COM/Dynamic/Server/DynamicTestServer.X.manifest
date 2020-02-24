@@ -16,6 +16,11 @@
   <comClass
     clsid="{1FFF64AE-FF9C-41AB-BF80-3ECA831AEC40}"
     threadingModel="Both" />
+
+  <!-- EventTest -->
+  <comClass
+    clsid="{23425222-10FE-46BA-8B1A-1D42D2D73464}"
+    threadingModel="Both" />
 </file>
 
 </assembly>

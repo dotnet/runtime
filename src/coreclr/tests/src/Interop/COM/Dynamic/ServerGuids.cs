@@ -11,7 +11,8 @@ namespace Dynamic
     /// </summary>
     internal static class ServerGuids
     {
-        public static readonly Guid BasicTest = Guid.Parse("ED349A5B-257B-4349-8CB8-2C30B0C05FC3");
-        public static readonly Guid CollectionTest = Guid.Parse("1FFF64AE-FF9C-41AB-BF80-3ECA831AEC40");
+        public const string BasicTest = "ED349A5B-257B-4349-8CB8-2C30B0C05FC3";
+        public const string CollectionTest = "1FFF64AE-FF9C-41AB-BF80-3ECA831AEC40";
+        public const string EventTest = "23425222-10FE-46BA-8B1A-1D42D2D73464";
     }
 }

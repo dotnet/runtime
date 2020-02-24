@@ -13,6 +13,7 @@
   <ItemGroup>
     <Compile Include="BasicTest.cs" />
     <Compile Include="CollectionTest.cs" />
+    <Compile Include="EventTest.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ServerGuids.cs" />
   </ItemGroup>
