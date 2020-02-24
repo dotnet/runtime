@@ -23,14 +23,12 @@
 #define PRId PRId64
 #define PRIA "016"
 #define PRIxA PRIA PRIx
-#define TARGET_WORDSIZE 64
 #else
 #define PRIx PRIx32
 #define PRIu PRIu32
 #define PRId PRId32
 #define PRIA "08"
 #define PRIxA PRIA PRIx
-#define TARGET_WORDSIZE 32
 #endif
 
 #ifdef HOST_UNIX
