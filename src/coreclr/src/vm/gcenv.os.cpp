@@ -392,7 +392,14 @@ void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t n
     size = (size + (largePageMinimum - 1)) & ~(largePageMinimum - 1);
 #endif
 
-    return ::ClrVirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT | MEM_LARGE_PAGES, PAGE_READWRITE);
+    if (node == NUMA_NODE_UNDEFINED)
+    {
+        return ::ClrVirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT | MEM_LARGE_PAGES, PAGE_READWRITE);
+    }
+    else
+    {
+        return NumaNodeInfo::VirtualAllocExNuma(::GetCurrentProcess(), nullptr, size, MEM_RESERVE | MEM_COMMIT | MEM_LARGE_PAGES, PAGE_READWRITE, node);
+    }
 }
 
 // Commit virtual memory range. It must be part of a range reserved using VirtualReserve.

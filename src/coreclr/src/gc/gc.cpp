@@ -4511,7 +4511,7 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinne
             if (block->block_size == 0)
                 continue;
 
-            block->memory_base = (uint8_t*)virtual_alloc(block->block_size, use_large_pages_p, numa_node);
+            block->memory_base = (uint8_t*)virtual_alloc (block->block_size, use_large_pages_p, numa_node);
             if (block->memory_base == nullptr)
             {
                 dprintf(2, ("failed to reserve %Id bytes for on NUMA node %u", block->block_size, numa_node));
@@ -4659,7 +4659,7 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinne
                         numa_node = heap_no_to_numa_node[heap_no];
                     }
                     current_block->memory_base =
-                        (uint8_t*)virtual_alloc(block_size, use_large_pages_p, numa_node);
+                        (uint8_t*)virtual_alloc (block_size, use_large_pages_p, numa_node);
                     if (current_block->memory_base == 0)
                     {
                         // Free the blocks that we've allocated so far
@@ -4696,13 +4696,13 @@ void destroy_initial_memory()
         if (memory_details.allocation_pattern == initial_memory_details::ALLATONCE)
         {
             virtual_free (memory_details.initial_memory[0].memory_base,
-                memory_details.block_count * (memory_details.block_size_normal +
-                    memory_details.block_size_large));
+                memory_details.block_count*(memory_details.block_size_normal +
+                memory_details.block_size_large + memory_details.block_size_pinned));
         }
         else if (memory_details.allocation_pattern == initial_memory_details::EACH_GENERATION)
         {
             virtual_free (memory_details.initial_normal_heap[0].memory_base,
-                memory_details.block_count * memory_details.block_size_normal);
+                memory_details.block_count*memory_details.block_size_normal);
 
             virtual_free (memory_details.initial_large_heap[0].memory_base,
                 memory_details.block_count*memory_details.block_size_large);
@@ -4761,7 +4761,7 @@ void* virtual_alloc (size_t size)
     return virtual_alloc(size, false);
 }
 
-void* virtual_alloc(size_t size, bool use_large_pages_p, uint16_t numa_node)
+void* virtual_alloc (size_t size, bool use_large_pages_p, uint16_t numa_node)
 {
     size_t requested_size = size;
 
