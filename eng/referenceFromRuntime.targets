@@ -31,7 +31,22 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="GetFilesFromCoreCLR" Returns="@(CoreCLRFiles)" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" />
+  <Target Name="GetFilesFromRuntime" Returns="@(RuntimeFiles)" DependsOnTargets="GetFilesFromCoreClr;GetFilesFromMono">
+    <ItemGroup>
+      <RuntimeFiles Include="@(CoreCLRFiles)" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
+      <RuntimeFiles Include="@(MonoFiles)" Condition="'$(RuntimeFlavor)' == 'Mono'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetFilesFromCoreCLR" 
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR'"
+          Returns="@(CoreCLRFiles)"
+          DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" />
+
+  <Target Name="GetFilesFromMono" 
+          Condition="'$(RuntimeFlavor)' == 'Mono'"
+          Returns="@(MonoFiles)"
+          DependsOnTargets="ResolveMonoFilesFromLocalBuild" />
 
   <Target Name="FilterReferenceFromRuntime"
           AfterTargets="ResolveProjectReferences"
@@ -39,12 +54,12 @@
 
     <Error Condition="'$(IsReferenceAssembly)' == 'true' and '$(AllowReferenceFromRuntime)' != 'true'" Text="ReferenceFromRuntime may not be used from reference assemblies." />
 
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="GetFilesFromCoreCLR" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-      <Output TaskParameter="TargetOutputs" ItemName="CoreCLRFiles" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="GetFilesFromRuntime" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+      <Output TaskParameter="TargetOutputs" ItemName="RuntimeFiles" />
     </MSBuild>
 
     <ItemGroup>
-      <_referencePathFromRuntime Include="@(CoreCLRFiles)" Private="false" />
+      <_referencePathFromRuntime Include="@(RuntimeFiles)" Private="false" />
       <_referencePathFromRuntime Include="@(_referencePathFromRestoredRuntime)" Private="false" />
       <!-- If this is a test project, also use the $(RuntimePath) to find a @(ReferenceFromRuntime) assembly. -->
       <_referencePathFromRuntime Include="@(ReferenceFromRuntime->'$(RuntimePath)%(Identity).dll')" Condition="'$(IsTestProject)' == 'true'" />
