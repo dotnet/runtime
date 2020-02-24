@@ -838,7 +838,7 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
             // Copy old dictionary entry contents
             DictionaryEntry* pOldEntriesPtr = (DictionaryEntry*)pIMD->m_pPerInstInfo.GetValue();
             DictionaryEntry* pNewEntriesPtr = (DictionaryEntry*)pDictionary;
-            for (int i = 0; i < currentDictionarySize / sizeof(DictionaryEntry); i++, pOldEntriesPtr++, pNewEntriesPtr++)
+            for (DWORD i = 0; i < currentDictionarySize / sizeof(DictionaryEntry); i++, pOldEntriesPtr++, pNewEntriesPtr++)
             {
                 *pNewEntriesPtr = VolatileLoadWithoutBarrier(pOldEntriesPtr);
             }
@@ -894,7 +894,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
             // Copy old dictionary entry contents
             DictionaryEntry* pOldEntriesPtr = (DictionaryEntry*)pMT->GetPerInstInfo()[pMT->GetNumDicts() - 1].GetValue();
             DictionaryEntry* pNewEntriesPtr = (DictionaryEntry*)pDictionary;
-            for (int i = 0; i < currentDictionarySize / sizeof(DictionaryEntry); i++, pOldEntriesPtr++, pNewEntriesPtr++)
+            for (DWORD i = 0; i < currentDictionarySize / sizeof(DictionaryEntry); i++, pOldEntriesPtr++, pNewEntriesPtr++)
             {
                 *pNewEntriesPtr = VolatileLoadWithoutBarrier(pOldEntriesPtr);
             }
