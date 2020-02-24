@@ -66,18 +66,18 @@ UNATIVE_OFFSET emitLocation::GetFuncletPrologOffset(emitter* emit) const
 }
 
 //------------------------------------------------------------------------
-// IsPreviousIns: Returns true if the emitter is on the next instruction
-//  of the same group than this emitLocation.
+// IsPreviousInsNum: Returns true if the emitter is on the next instruction
+//  of the same group as this emitLocation.
 //
 // Arguments:
 //  emit - an emitter* instance
 //
-bool emitLocation::IsPreviousIns(const emitter* emit) const
+bool emitLocation::IsPreviousInsNum(const emitter* emit) const
 {
     assert(Valid());
-    bool sameGroup  = ig == emit->emitCurIG;
-    bool sameInsNum = emitGetInsNumFromCodePos(codePos) == emitGetInsNumFromCodePos(emit->emitCurOffset()) - 1;
-    return sameGroup && sameInsNum;
+    bool isSameGroup  = (ig == emit->emitCurIG);
+    bool isSameInsNum = (emitGetInsNumFromCodePos(codePos) == emitGetInsNumFromCodePos(emit->emitCurOffset()) - 1);
+    return isSameGroup && isSameInsNum;
 }
 
 #ifdef DEBUG
