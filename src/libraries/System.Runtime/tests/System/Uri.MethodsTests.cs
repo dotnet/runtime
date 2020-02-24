@@ -389,15 +389,17 @@ namespace System.Tests
         public void Equals(Uri uri1, object obj, bool expected)
         {
             Uri uri2 = obj as Uri;
+
             if (uri1 != null)
             {
                 Assert.Equal(expected, uri1.Equals(obj));
+
                 if (uri2 != null)
                 {
-                    bool onlyCaseDifference = string.Equals(uri1.OriginalString, uri2.OriginalString, StringComparison.OrdinalIgnoreCase);
-                    Assert.Equal(expected || onlyCaseDifference, uri1.GetHashCode().Equals(uri2.GetHashCode()));
+                    Assert.Equal(expected, uri1.GetHashCode() == uri2.GetHashCode());
                 }
             }
+
             if (!(obj is string))
             {
                 Assert.Equal(expected, uri1 == uri2);
