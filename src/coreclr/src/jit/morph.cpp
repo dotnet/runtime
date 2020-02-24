@@ -8652,56 +8652,60 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
         return nullptr;
     }
 
-    //
-    //  See if we can do a simple transformation:
-    //
-    //          GT_ASG <TYP_size>
-    //          /   \.
-    //      GT_IND GT_IND or CNS_INT
-    //         |      |
-    //       [dest] [src]
-    //
-
-    if (asgType == TYP_STRUCT)
-    {
-        if (size == REGSIZE_BYTES)
-        {
-            if (clsHnd == NO_CLASS_HANDLE)
-            {
-                // A register-sized cpblk can be treated as an integer asignment.
-                asgType = TYP_I_IMPL;
-            }
-            else
-            {
-                BYTE gcPtr;
-                info.compCompHnd->getClassGClayout(clsHnd, &gcPtr);
-                asgType = getJitGCType(gcPtr);
-            }
-        }
-        else
-        {
-            switch (size)
-            {
-                case 1:
-                    asgType = TYP_BYTE;
-                    break;
-                case 2:
-                    asgType = TYP_SHORT;
-                    break;
-
-#ifdef TARGET_64BIT
-                case 4:
-                    asgType = TYP_INT;
-                    break;
-#endif // TARGET_64BIT
-            }
-        }
-    }
-
     if ((destVarDsc != nullptr) && varTypeIsStruct(destLclVarTree) && destVarDsc->lvPromoted)
     {
         // Let fgMorphCopyBlock handle it.
         return nullptr;
+    }
+
+    if ((destVarDsc != nullptr) && !varTypeIsStruct(destVarDsc->TypeGet()))
+    {
+
+        //
+        //  See if we can do a simple transformation:
+        //
+        //          GT_ASG <TYP_size>
+        //          /   \.
+        //      GT_IND GT_IND or CNS_INT
+        //         |      |
+        //       [dest] [src]
+        //
+
+        if (asgType == TYP_STRUCT)
+        {
+            if (size == REGSIZE_BYTES)
+            {
+                if (clsHnd == NO_CLASS_HANDLE)
+                {
+                    // A register-sized cpblk can be treated as an integer asignment.
+                    asgType = TYP_I_IMPL;
+                }
+                else
+                {
+                    BYTE gcPtr;
+                    info.compCompHnd->getClassGClayout(clsHnd, &gcPtr);
+                    asgType = getJitGCType(gcPtr);
+                }
+            }
+            else
+            {
+                switch (size)
+                {
+                    case 1:
+                        asgType = TYP_BYTE;
+                        break;
+                    case 2:
+                        asgType = TYP_SHORT;
+                        break;
+
+#ifdef TARGET_64BIT
+                    case 4:
+                        asgType = TYP_INT;
+                        break;
+#endif // TARGET_64BIT
+                }
+            }
+        }
     }
 
     GenTree*   srcLclVarTree = nullptr;
