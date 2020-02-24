@@ -26,7 +26,7 @@ static void EnsureLibSsl10Initialized()
 }
 #endif
 
-// Master encryption key for TLS session tickets.
+// Master encryption key for RFC5077 TLS session tickets.
 static unsigned char *s_sessionTicketsMasterKey = NULL;
 static long s_sessionTicketsMasterKeyLength = 0;
 static void * s_sessionContextId = &s_sessionTicketsMasterKeyLength; // actual value does not matter.
