@@ -746,12 +746,7 @@ namespace System
         {
             if (BitConverter.IsLittleEndian)
             {
-                if (Unsafe.SizeOf<Guid>() > (uint)destination.Length)
-                {
-                    return false;
-                }
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), this);
-                return true;
+                return MemoryMarshal.TryWrite(destination, ref this);
             }
 
             // slower path for BigEndian
