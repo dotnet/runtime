@@ -54,7 +54,7 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
-        protected abstract object? CreateObject(IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags);
+        protected abstract object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags);
 
         protected virtual void ReleaseObjects(IEnumerable objects)
         {

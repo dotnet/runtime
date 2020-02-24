@@ -50,9 +50,6 @@ namespace InteropLib
             // The returned context memory is guaranteed to be initialized to zero.
             void* Context;
 
-            // IAgileReference instance.
-            IUnknown* AgileRef;
-
             // See https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/
             // for details.
             bool FromTrackerRuntime;

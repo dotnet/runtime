@@ -195,10 +195,8 @@ namespace ComWrappersTests
                 return entryRaw;
             }
 
-            protected override object? CreateObject(IntPtr externalComObject, IntPtr agileObj, CreateObjectFlags flag)
+            protected override object? CreateObject(IntPtr externalComObject, CreateObjectFlags flag)
             {
-                Assert.AreNotEqual(agileObj, IntPtr.Zero);
-
                 var iid = typeof(ITrackerObject).GUID;
                 IntPtr iTestComObject;
                 int hr = Marshal.QueryInterface(externalComObject, ref iid, out iTestComObject);
@@ -348,7 +346,7 @@ namespace ComWrappersTests
 
             }
 
-            protected override object? CreateObject(IntPtr externalComObject, IntPtr agileObj, CreateObjectFlags flags)
+            protected override object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
             {
                 switch (CreateObjectMode)
                 {

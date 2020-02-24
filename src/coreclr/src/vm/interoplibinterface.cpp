@@ -109,8 +109,6 @@ namespace
         {
             if (Result.Context != NULL)
                 InteropLib::Com::DestroyWrapperForExternal(Result.Context);
-            if (Result.AgileRef != NULL)
-                (void)Result.AgileRef->Release();
         }
         InteropLib::Com::ExternalWrapperResult* operator&()
         {
@@ -437,7 +435,6 @@ namespace
     OBJECTREF CallGetObject(
         _In_ OBJECTREF* implPROTECTED,
         _In_ IUnknown* externalComObject,
-        _In_ IUnknown* agileObjectRef,
         _In_ INT32 flags)
     {
         CONTRACTL
@@ -452,11 +449,10 @@ namespace
         OBJECTREF retObjRef;
 
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__CREATE_OBJECT);
-        DECLARE_ARGHOLDER_ARRAY(args, 4);
+        DECLARE_ARGHOLDER_ARRAY(args, 3);
         args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
         args[ARGNUM_1]  = PTR_TO_ARGHOLDER(externalComObject);
-        args[ARGNUM_2]  = PTR_TO_ARGHOLDER(agileObjectRef);
-        args[ARGNUM_3]  = DWORD_TO_ARGHOLDER(flags);
+        args[ARGNUM_2]  = DWORD_TO_ARGHOLDER(flags);
         CALL_MANAGED_METHOD(retObjRef, OBJECTREF, args);
 
         return retObjRef;
@@ -642,7 +638,7 @@ namespace
         }
         else
         {
-            // Create context and IAgileReference instance for the possibly new external object.
+            // Create context instance for the possibly new external object.
             ExternalWrapperResultHolder resultHolder;
             hr = InteropLib::Com::CreateWrapperForExternal(
                 identity,
@@ -658,7 +654,7 @@ namespace
             // If the wrapper hasn't been set yet, call the implementation to create one.
             if (gc.objRef == NULL)
             {
-                gc.objRef = CallGetObject(&gc.implRef, identity, resultHolder.Result.AgileRef, flags);
+                gc.objRef = CallGetObject(&gc.implRef, identity, flags);
                 if (gc.objRef == NULL)
                     COMPlusThrow(kArgumentNullException);
             }

@@ -152,15 +152,6 @@ public:
     void DisconnectTracker() noexcept;
 };
 
-// API for creating an IAgileReference instance to a supplied IUnknown instance.
-// See https://docs.microsoft.com/windows/win32/api/combaseapi/nf-combaseapi-rogetagilereference
-//
-// N.B. Using a template so that callers are required to provide an explicit IUnknown instance.
-template<typename T>
-HRESULT CreateAgileReference(
-    _In_ T* object,
-    _Outptr_ IAgileReference** agileReference);
-
 // Manage native object wrappers that support IReferenceTracker.
 class TrackerObjectManager
 {

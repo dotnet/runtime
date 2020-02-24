@@ -99,15 +99,10 @@ namespace InteropLib
 
             HRESULT hr;
 
-            // Attempt to create an agile reference first.
-            ComHolder<IAgileReference> reference;
-            RETURN_IF_FAILED(CreateAgileReference(external, &reference));
-
             NativeObjectWrapperContext* wrapperContext;
             RETURN_IF_FAILED(NativeObjectWrapperContext::Create(external, flags, contextSize, &wrapperContext));
 
             result->Context = wrapperContext->GetRuntimeContext();
-            result->AgileRef = reference.Detach();
             result->FromTrackerRuntime = (wrapperContext->GetReferenceTracker() != nullptr);
             return S_OK;
         }
