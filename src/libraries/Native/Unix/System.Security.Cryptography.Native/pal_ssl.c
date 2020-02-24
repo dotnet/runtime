@@ -26,6 +26,11 @@ static void EnsureLibSsl10Initialized()
 }
 #endif
 
+// Master encryption key for TLS session tickets.
+static unsigned char *s_sessionTicketsMasterKey = NULL;
+static long s_sessionTicketsMasterKeyLength = 0;
+static void * s_sessionContextId = &s_sessionTicketsMasterKeyLength; // actual value does not matter.
+
 void CryptoNative_EnsureLibSslInitialized()
 {
     CryptoNative_EnsureOpenSslInitialized();
@@ -41,6 +46,24 @@ void CryptoNative_EnsureLibSslInitialized()
 #elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
     EnsureLibSsl10Initialized();
 #endif
+
+    // Get length of session master key and generate one.
+    SSL_CTX* ctx = SSL_CTX_new(TLS_method());
+    if (ctx != NULL)
+    {
+        s_sessionTicketsMasterKeyLength = SSL_CTX_ctrl(ctx, SSL_CTRL_SET_TLSEXT_TICKET_KEYS, 0, NULL);
+        if (s_sessionTicketsMasterKeyLength > 0)
+        {
+            s_sessionTicketsMasterKey = malloc((size_t)s_sessionTicketsMasterKeyLength);
+            if (RAND_bytes(s_sessionTicketsMasterKey, (int)s_sessionTicketsMasterKeyLength) != 1)
+            {
+                free(s_sessionTicketsMasterKey);
+                s_sessionTicketsMasterKey = NULL;
+            }
+        }
+
+        CryptoNative_SslCtxDestroy(ctx);
+    }
 }
 
 const SSL_METHOD* CryptoNative_SslV2_3Method()
@@ -50,7 +73,7 @@ const SSL_METHOD* CryptoNative_SslV2_3Method()
     return method;
 }
 
-SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method)
+SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method, int32_t isServer)
 {
     SSL_CTX* ctx = SSL_CTX_new(method);
 
@@ -59,6 +82,20 @@ SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method)
         // As of OpenSSL 1.1.0, compression is disabled by default. In case an older build
         // is used, ensure it's disabled.
         SSL_CTX_set_options(ctx, SSL_OP_NO_COMPRESSION);
+
+        if (isServer)
+        {
+            if (s_sessionTicketsMasterKey != NULL &&
+                SSL_CTX_ctrl(ctx, SSL_CTRL_SET_TLSEXT_TICKET_KEYS, s_sessionTicketsMasterKeyLength, s_sessionTicketsMasterKey) == 1)
+            {
+                SSL_CTX_set_session_id_context(ctx, (void*)&s_sessionContextId, sizeof(s_sessionContextId));
+            }
+            else
+            {
+                // If we did not set master key, disable RFC5077 tickets as we won't be able to use them anyway.
+                SSL_CTX_set_options(ctx, SSL_OP_NO_TICKET);
+            }
+        }
     }
 
     return ctx;

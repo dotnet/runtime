@@ -144,7 +144,7 @@ Shims the SSL_CTX_new method.
 
 Returns the new SSL_CTX instance.
 */
-PALEXPORT SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method);
+PALEXPORT SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method, int32_t isServer);
 
 /*
 Sets the specified protocols in the SSL_CTX options.
