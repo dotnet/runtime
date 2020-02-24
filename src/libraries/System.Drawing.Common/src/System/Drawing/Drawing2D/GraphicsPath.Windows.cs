@@ -627,17 +627,17 @@ namespace System.Drawing.Drawing2D
                 new HandleRef(this, _nativePath), new HandleRef(addingPath, addingPath._nativePath), connect));
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, PointF origin, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, PointF origin, StringFormat? format)
         {
             AddString(s, family, style, emSize, new RectangleF(origin.X, origin.Y, 0, 0), format);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, Point origin, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, Point origin, StringFormat? format)
         {
             AddString(s, family, style, emSize, new Rectangle(origin.X, origin.Y, 0, 0), format);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat? format)
         {
             Gdip.CheckStatus(Gdip.GdipAddPathString(
                 new HandleRef(this, _nativePath),
@@ -650,7 +650,7 @@ namespace System.Drawing.Drawing2D
                 new HandleRef(format, format?.nativeFormat ?? IntPtr.Zero)));
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat? format)
         {
             Gdip.CheckStatus(Gdip.GdipAddPathStringI(
                 new HandleRef(this, _nativePath),

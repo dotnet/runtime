@@ -623,7 +623,7 @@ namespace System.Drawing.Drawing2D
             Gdip.CheckStatus(status);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, Point origin, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, Point origin, StringFormat? format)
         {
             Rectangle layout = default;
             layout.X = origin.X;
@@ -631,7 +631,7 @@ namespace System.Drawing.Drawing2D
             AddString(s, family, style, emSize, layout, format);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, PointF origin, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, PointF origin, StringFormat? format)
         {
             RectangleF layout = default;
             layout.X = origin.X;
@@ -639,7 +639,7 @@ namespace System.Drawing.Drawing2D
             AddString(s, family, style, emSize, layout, format);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat? format)
         {
             if (family == null)
                 throw new ArgumentException(nameof(family));
@@ -650,7 +650,7 @@ namespace System.Drawing.Drawing2D
             Gdip.CheckStatus(status);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat? format)
         {
             if (family == null)
                 throw new ArgumentException(nameof(family));

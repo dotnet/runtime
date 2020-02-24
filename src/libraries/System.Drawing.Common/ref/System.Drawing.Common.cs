@@ -340,7 +340,7 @@ namespace System.Drawing
     {
         public FontFamily(System.Drawing.Text.GenericFontFamilies genericFamily) { }
         public FontFamily(string name) { }
-        public FontFamily(string name, System.Drawing.Text.FontCollection fontCollection) { }
+        public FontFamily(string name, System.Drawing.Text.FontCollection? fontCollection) { }
         public static System.Drawing.FontFamily[] Families { get { throw null; } }
         public static System.Drawing.FontFamily GenericMonospace { get { throw null; } }
         public static System.Drawing.FontFamily GenericSansSerif { get { throw null; } }
@@ -1289,9 +1289,9 @@ namespace System.Drawing.Drawing2D
     }
     public partial class CustomLineCap : System.MarshalByRefObject, System.ICloneable, System.IDisposable
     {
-        public CustomLineCap(System.Drawing.Drawing2D.GraphicsPath fillPath, System.Drawing.Drawing2D.GraphicsPath strokePath) { }
-        public CustomLineCap(System.Drawing.Drawing2D.GraphicsPath fillPath, System.Drawing.Drawing2D.GraphicsPath strokePath, System.Drawing.Drawing2D.LineCap baseCap) { }
-        public CustomLineCap(System.Drawing.Drawing2D.GraphicsPath fillPath, System.Drawing.Drawing2D.GraphicsPath strokePath, System.Drawing.Drawing2D.LineCap baseCap, float baseInset) { }
+        public CustomLineCap(System.Drawing.Drawing2D.GraphicsPath? fillPath, System.Drawing.Drawing2D.GraphicsPath? strokePath) { }
+        public CustomLineCap(System.Drawing.Drawing2D.GraphicsPath? fillPath, System.Drawing.Drawing2D.GraphicsPath? strokePath, System.Drawing.Drawing2D.LineCap baseCap) { }
+        public CustomLineCap(System.Drawing.Drawing2D.GraphicsPath? fillPath, System.Drawing.Drawing2D.GraphicsPath? strokePath, System.Drawing.Drawing2D.LineCap baseCap, float baseInset) { }
         public System.Drawing.Drawing2D.LineCap BaseCap { get { throw null; } set { } }
         public float BaseInset { get { throw null; } set { } }
         public System.Drawing.Drawing2D.LineJoin StrokeJoin { get { throw null; } set { } }
@@ -1385,10 +1385,10 @@ namespace System.Drawing.Drawing2D
         public void AddRectangle(System.Drawing.RectangleF rect) { }
         public void AddRectangles(System.Drawing.RectangleF[] rects) { }
         public void AddRectangles(System.Drawing.Rectangle[] rects) { }
-        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.Point origin, System.Drawing.StringFormat format) { }
-        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.PointF origin, System.Drawing.StringFormat format) { }
-        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.Rectangle layoutRect, System.Drawing.StringFormat format) { }
-        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.RectangleF layoutRect, System.Drawing.StringFormat format) { }
+        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.Point origin, System.Drawing.StringFormat? format) { }
+        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.PointF origin, System.Drawing.StringFormat? format) { }
+        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.Rectangle layoutRect, System.Drawing.StringFormat? format) { }
+        public void AddString(string s, System.Drawing.FontFamily family, int style, float emSize, System.Drawing.RectangleF layoutRect, System.Drawing.StringFormat? format) { }
         public void ClearMarkers() { }
         public object Clone() { throw null; }
         public void CloseAllFigures() { }
@@ -1433,7 +1433,7 @@ namespace System.Drawing.Drawing2D
     }
     public sealed partial class GraphicsPathIterator : System.MarshalByRefObject, System.IDisposable
     {
-        public GraphicsPathIterator(System.Drawing.Drawing2D.GraphicsPath path) { }
+        public GraphicsPathIterator(System.Drawing.Drawing2D.GraphicsPath? path) { }
         public int Count { get { throw null; } }
         public int SubpathCount { get { throw null; } }
         public int CopyData(ref System.Drawing.PointF[] points, ref byte[] types, int startIndex, int endIndex) { throw null; }

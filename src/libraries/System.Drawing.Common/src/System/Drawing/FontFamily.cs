@@ -63,7 +63,7 @@ namespace System.Drawing
         /// Initializes a new instance of the <see cref='FontFamily'/> class in the specified
         /// <see cref='FontCollection'/> and with the specified name.
         /// </summary>
-        public FontFamily(string name, FontCollection fontCollection) => CreateFontFamily(name, fontCollection);
+        public FontFamily(string name, FontCollection? fontCollection) => CreateFontFamily(name, fontCollection);
 
         // Creates the native font family object.
         // Note: GDI+ creates singleton font family objects (from the corresponding font file) and reference count them.
