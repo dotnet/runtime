@@ -35,7 +35,7 @@ jobs:
       testScope: ${{ parameters.testScope }}
       ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
         displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavorName) }}
-        name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavor) }}
+        name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavorName) }}
       ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
         displayName: 'Test Run'
         name: test_run
