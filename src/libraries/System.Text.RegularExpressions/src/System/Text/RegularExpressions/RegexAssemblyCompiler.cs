@@ -28,7 +28,7 @@ namespace System.Text.RegularExpressions
                 throw new PlatformNotSupportedException();
             }
 
-            _assembly = AssemblyBuilder.DefineDynamicAssembly(an, AssemblyBuilderAccess.Run); // TODO https://github.com/dotnet/corefx/issues/39227: AssemblyBuilderAccess.Save
+            _assembly = AssemblyBuilder.DefineDynamicAssembly(an, AssemblyBuilderAccess.Run); // TODO https://github.com/dotnet/runtime/issues/30153: AssemblyBuilderAccess.Save
             _module = _assembly.DefineDynamicModule(an.Name + ".dll");
             if (attribs != null)
             {
@@ -237,7 +237,7 @@ namespace System.Text.RegularExpressions
             // Save the assembly to the current directory.
             string fileName = _assembly.GetName().Name + ".dll";
 
-            // TODO https://github.com/dotnet/corefx/issues/39227: _assembly.Save(fileName)
+            // TODO https://github.com/dotnet/runtime/issues/30153: _assembly.Save(fileName)
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
         }
 
@@ -255,7 +255,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>
         private static ILGenerator DefineMethod(TypeBuilder typeBuilder, string methname, Type? returnType) =>
-            typeBuilder.DefineMethod(methname, MethodAttributes.Public | MethodAttributes.Virtual, returnType, null).GetILGenerator();
+            typeBuilder.DefineMethod(methname, MethodAttributes.Family | MethodAttributes.Virtual, returnType, null).GetILGenerator();
     }
 }
 #endif

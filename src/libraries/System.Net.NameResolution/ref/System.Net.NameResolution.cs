@@ -2,20 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Net
 {
     public static partial class Dns
     {
-        public static System.IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, System.AsyncCallback requestCallback, object state) { throw null; }
+        public static System.IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, System.AsyncCallback? requestCallback, object? state) { throw null; }
         [System.ObsoleteAttribute("BeginGetHostByName is obsoleted for this type, please use BeginGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public static System.IAsyncResult BeginGetHostByName(string hostName, System.AsyncCallback requestCallback, object stateObject) { throw null; }
-        public static System.IAsyncResult BeginGetHostEntry(System.Net.IPAddress address, System.AsyncCallback requestCallback, object stateObject) { throw null; }
-        public static System.IAsyncResult BeginGetHostEntry(string hostNameOrAddress, System.AsyncCallback requestCallback, object stateObject) { throw null; }
+        public static System.IAsyncResult BeginGetHostByName(string hostName, System.AsyncCallback? requestCallback, object? stateObject) { throw null; }
+        public static System.IAsyncResult BeginGetHostEntry(System.Net.IPAddress address, System.AsyncCallback? requestCallback, object? stateObject) { throw null; }
+        public static System.IAsyncResult BeginGetHostEntry(string hostNameOrAddress, System.AsyncCallback? requestCallback, object? stateObject) { throw null; }
         [System.ObsoleteAttribute("BeginResolve is obsoleted for this type, please use BeginGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public static System.IAsyncResult BeginResolve(string hostName, System.AsyncCallback requestCallback, object stateObject) { throw null; }
+        public static System.IAsyncResult BeginResolve(string hostName, System.AsyncCallback? requestCallback, object? stateObject) { throw null; }
         public static System.Net.IPAddress[] EndGetHostAddresses(System.IAsyncResult asyncResult) { throw null; }
         [System.ObsoleteAttribute("EndGetHostByName is obsoleted for this type, please use EndGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static System.Net.IPHostEntry EndGetHostByName(System.IAsyncResult asyncResult) { throw null; }

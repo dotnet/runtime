@@ -191,6 +191,10 @@ void ECall::PopulateManagedCastHelpers()
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS_SPECIAL, pDest);
 
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__UNBOX));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_UNBOX, pDest);
+
 #endif  //CROSSGEN_COMPILE
 }
 
@@ -501,7 +505,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
 
     // Use the ECFunc address as a unique fake entrypoint to make the entrypoint<->MethodDesc mapping work
     PCODE pImplementation = (PCODE)ret;
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     pImplementation |= THUMB_CODE;
 #endif
 

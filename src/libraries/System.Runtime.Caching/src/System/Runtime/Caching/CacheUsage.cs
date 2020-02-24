@@ -116,7 +116,6 @@ namespace System.Runtime.Caching
         internal UsageEntryRef _prev;
     }
 
-    [SuppressMessage("Microsoft.Portability", "CA1900:ValueTypeFieldsShouldBePortable", Justification = "Grandfathered suppression from original caching code checkin")]
     [StructLayout(LayoutKind.Explicit)]
     internal struct UsageEntry
     {
@@ -901,7 +900,6 @@ namespace System.Runtime.Caching
             }
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Grandfathered suppression from original caching code checkin")]
         internal void Update(MemoryCacheEntry cacheEntry)
         {
             byte bucket = cacheEntry.UsageBucket;

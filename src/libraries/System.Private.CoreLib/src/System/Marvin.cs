@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
@@ -77,7 +77,7 @@ namespace System
 
                 // Decrementing by 1 every time and comparing against zero allows the JIT to produce
                 // better codegen compared to a standard 'for' loop with an incrementing counter.
-                // Requires https://github.com/dotnet/coreclr/issues/7566 to be addressed first
+                // Requires https://github.com/dotnet/runtime/issues/6794 to be addressed first
                 // before we can realize the full benefits of this.
 
                 data = ref Unsafe.AddByteOffset(ref data, 8);

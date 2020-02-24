@@ -31,7 +31,7 @@ namespace System.Security.Cryptography
 
             this.HashName = HashAlgorithmNames.SHA512;
             _hMacCommon = new HMACCommon(HashAlgorithmNames.SHA512, key, BlockSize);
-            base.Key = _hMacCommon.ActualKey;
+            base.Key = _hMacCommon.ActualKey!;
             // change the default value of BlockSizeValue to 128 instead of 64
             BlockSizeValue = BlockSize;
             HashSizeValue = _hMacCommon.HashSizeInBits;
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
                 }
 
                 _hMacCommon.ChangeKey(value);
-                base.Key = _hMacCommon.ActualKey;
+                base.Key = _hMacCommon.ActualKey!;
             }
         }
 
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography
                 HMACCommon hMacCommon = _hMacCommon;
                 if (hMacCommon != null)
                 {
-                    _hMacCommon = null;
+                    _hMacCommon = null!;
                     hMacCommon.Dispose(disposing);
                 }
             }

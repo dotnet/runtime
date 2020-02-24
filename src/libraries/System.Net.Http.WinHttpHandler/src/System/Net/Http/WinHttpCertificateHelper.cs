@@ -94,7 +94,7 @@ namespace System.Net.Http
             }
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/3891:
+        // TODO https://github.com/dotnet/runtime/issues/15462:
         // Get the Trusted Issuers List from WinHTTP and use that to help narrow down
         // the list of eligible client certificates.
     }

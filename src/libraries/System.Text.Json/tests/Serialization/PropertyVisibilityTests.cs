@@ -74,7 +74,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void PrivateSetterPublicGetter()
         {
-            // https://github.com/dotnet/corefx/issues/37567
+            // https://github.com/dotnet/runtime/issues/29503
             ClassWithPublicGetterAndPrivateSetter obj
                 = JsonSerializer.Deserialize<ClassWithPublicGetterAndPrivateSetter>(@"{ ""Class"": {} }");
 
@@ -159,26 +159,17 @@ namespace System.Text.Json.Serialization.Tests
             
             // Using new options instance to prevent using previously cached metadata.
             JsonSerializerOptions options = new JsonSerializerOptions();
-            string serialized = JsonSerializer.Serialize(new ClassWithUnsupportedDictionary(), options);
-            
-            // Object keys are fine on serialization if the keys are strings.
-            Assert.Contains(@"""MyConcurrentDict"":null", serialized);
-            Assert.Contains(@"""MyIDict"":null", serialized);
-            Assert.Contains(@"""MyDict"":null", serialized);
+
+            // Unsupported collections will throw on serialize by default.
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new ClassWithUnsupportedDictionary(), options));
 
             // Unsupported collections will throw on deserialize by default.
             options = new JsonSerializerOptions();
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForClassWithUnsupportedDictionary>(wrapperJson, options));
             
             options = new JsonSerializerOptions();
-            serialized = JsonSerializer.Serialize(new WrapperForClassWithUnsupportedDictionary(), options);
-
-            // Object keys are fine on serialization if the keys are strings.
-            Assert.Contains(@"{""MyClass"":{", serialized);
-            Assert.Contains(@"""MyConcurrentDict"":null", serialized);
-            Assert.Contains(@"""MyIDict"":null", serialized);
-            Assert.Contains(@"""MyDict"":null", serialized);
-            Assert.Contains("}}", serialized);
+            // Unsupported collections will throw on serialize by default.
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new WrapperForClassWithUnsupportedDictionary(), options));
 
             // When ignored, we can serialize and deserialize without exceptions.
             options = new JsonSerializerOptions();
@@ -280,7 +271,7 @@ namespace System.Text.Json.Serialization.Tests
             public ClassWithIgnoredUnsupportedBigInteger MyClass { get; set; }
         }
 
-        // Todo: add tests with missing object property and missing collection property.
+        // Todo: https://github.com/dotnet/runtime/issues/32348
 
         public class ClassWithPrivateSetterAndGetter
         {

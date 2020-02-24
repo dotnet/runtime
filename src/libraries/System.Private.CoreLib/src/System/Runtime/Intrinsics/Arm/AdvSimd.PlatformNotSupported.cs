@@ -16,6 +16,64 @@ namespace System.Runtime.Intrinsics.Arm
 
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
+        // [Intrinsic]
+        // public new abstract class Arm32 : ArmBase.Arm32
+        // {
+        //     internal Arm32() { }
+        //
+        //     public static new bool IsSupported { [Intrinsic] get { return false; } }
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmla_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
+        //     ///   A32: VMLA.F32 Dd, Dn, Dm
+        //     /// </summary>
+        //     public static Vector64<float> MultiplyAdd(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlaq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
+        //     ///   A32: VMLA.F32 Qd, Qn, Qm
+        //     /// </summary>
+        //     public static Vector128<float> MultiplyAdd(Vector128<float> acc, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float64x1_t vmla_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        //     ///   A32: VMLA.F64 Dd, Dn, Dm
+        //     /// </summary>
+        //     public static Vector64<double> MultiplyAddScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32_t vmlas_f32 (float32_t a, float32_t b, float32_t c)
+        //     ///   A32: VMLA.F32 Sd, Sn, Sm
+        //     /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        //     /// </summary>
+        //     public static Vector64<float> MultiplyAddScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmls_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
+        //     ///   A32: VMLS.F32 Dd, Dn, Dm
+        //     /// </summary>
+        //     public static Vector64<float> MultiplySubtract(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlsq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
+        //     ///   A32: VMLS.F32 Qd, Qn, Qm
+        //     /// </summary>
+        //     public static Vector128<float> MultiplySubtract(Vector128<float> acc, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float64x1_t vmls_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        //     ///   A32: VMLS.F64 Dd, Dn, Dm
+        //     /// </summary>
+        //     public static Vector64<double> MultiplySubtractScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32_t vmlss_f32 (float32_t a, float32_t b, float32_t c)
+        //     ///   A32: VMLS.F32 Sd, Sn, Sm
+        //     /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        //     /// </summary>
+        //     public static Vector64<float> MultiplySubtractScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        // }
+
         public new abstract class Arm64 : ArmBase.Arm64
         {
             internal Arm64() { }
@@ -137,64 +195,148 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> Add(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// uint8_t vaddv_u8(uint8x8_t a)
+            /// uint8_t vaddv_u8 (uint8x8_t a)
             ///   A64: ADDV Bd, Vn.8B
             /// </summary>
             public static Vector64<byte> AddAcross(Vector64<byte> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// int16_t vaddv_s16(int16x4_t a)
+            /// int16_t vaddv_s16 (int16x4_t a)
             ///   A64: ADDV Hd, Vn.4H
             /// </summary>
             public static Vector64<short> AddAcross(Vector64<short> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// int8_t vaddv_s8(int8x8_t a)
+            /// int8_t vaddv_s8 (int8x8_t a)
             ///   A64: ADDV Bd, Vn.8B
             /// </summary>
             public static Vector64<sbyte> AddAcross(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// uint16_t vaddv_u16(uint16x4_t a)
+            /// uint16_t vaddv_u16 (uint16x4_t a)
             ///   A64: ADDV Hd, Vn.4H
             /// </summary>
             public static Vector64<ushort> AddAcross(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// uint8_t vaddvq_u8(uint8x16_t a)
+            /// uint8_t vaddvq_u8 (uint8x16_t a)
             ///   A64: ADDV Bd, Vn.16B
             /// </summary>
-            public static Vector128<byte> AddAcross(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+            public static Vector64<byte> AddAcross(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// int16_t vaddvq_s16(int16x8_t a)
+            /// int16_t vaddvq_s16 (int16x8_t a)
             ///   A64: ADDV Hd, Vn.8H
             /// </summary>
-            public static Vector128<short> AddAcross(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+            public static Vector64<short> AddAcross(Vector128<short> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// int32_t vaddvq_s32(int32x4_t a)
+            /// int32_t vaddvq_s32 (int32x4_t a)
             ///   A64: ADDV Sd, Vn.4S
             /// </summary>
-            public static Vector128<int> AddAcross(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+            public static Vector64<int> AddAcross(Vector128<int> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// int8_t vaddvq_s8(int8x16_t a)
+            /// int8_t vaddvq_s8 (int8x16_t a)
             ///   A64: ADDV Bd, Vn.16B
             /// </summary>
-            public static Vector128<sbyte> AddAcross(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+            public static Vector64<sbyte> AddAcross(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// uint16_t vaddvq_u16(uint16x8_t a)
+            /// uint16_t vaddvq_u16 (uint16x8_t a)
             ///   A64: ADDV Hd, Vn.8H
             /// </summary>
-            public static Vector128<ushort> AddAcross(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+            public static Vector64<ushort> AddAcross(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// uint32_t vaddvq_u32(uint32x4_t a)
+            /// uint32_t vaddvq_u32 (uint32x4_t a)
             ///   A64: ADDV Sd, Vn.4S
             /// </summary>
-            public static Vector128<uint> AddAcross(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+            public static Vector64<uint> AddAcross(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8x16_t vpaddq_u8 (uint8x16_t a, uint8x16_t b)
+            ///   A64: ADDP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<byte> AddPairwise(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vpaddq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FADDP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> AddPairwise(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16x8_t vpaddq_s16 (int16x8_t a, int16x8_t b)
+            ///   A64: ADDP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<short> AddPairwise(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32x4_t vpaddq_s32 (int32x4_t a, int32x4_t b)
+            ///   A64: ADDP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<int> AddPairwise(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vpaddq_s64 (int64x2_t a, int64x2_t b)
+            ///   A64: ADDP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<long> AddPairwise(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8x16_t vpaddq_s8 (int8x16_t a, int8x16_t b)
+            ///   A64: ADDP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> AddPairwise(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vpaddq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FADDP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> AddPairwise(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16x8_t vpaddq_u16 (uint16x8_t a, uint16x8_t b)
+            ///   A64: ADDP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<ushort> AddPairwise(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32x4_t vpaddq_u32 (uint32x4_t a, uint32x4_t b)
+            ///   A64: ADDP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<uint> AddPairwise(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vpaddq_u64 (uint64x2_t a, uint64x2_t b)
+            ///   A64: ADDP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<ulong> AddPairwise(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vpadds_f32 (float32x2_t a)
+            ///   A64: FADDP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> AddPairwiseScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64_t vpaddd_f64 (float64x2_t a)
+            ///   A64: FADDP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> AddPairwiseScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64_t vpaddd_s64 (int64x2_t a)
+            ///   A64: ADDP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<long> AddPairwiseScalar(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64_t vpaddd_u64 (uint64x2_t a)
+            ///   A64: ADDP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<ulong> AddPairwiseScalar(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint64x2_t vceqq_f64 (float64x2_t a, float64x2_t b)
@@ -443,6 +585,452 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: CMTST Dd, Dn, Dm
             /// </summary>
             public static Vector64<ulong> CompareTestScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vdiv_f32 (float32x2_t a, float32x2_t b)
+            ///   A64: FDIV Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> Divide(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vdivq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FDIV Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> Divide(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vdivq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FDIV Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> Divide(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMAX Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> Max(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8_t vmaxv_u8 (uint8x8_t a)
+            ///   A64: UMAXV Bd, Vn.8B
+            /// </summary>
+            public static Vector64<byte> MaxAcross(Vector64<byte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vmaxv_s16 (int16x4_t a)
+            ///   A64: SMAXV Hd, Vn.4H
+            /// </summary>
+            public static Vector64<short> MaxAcross(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8_t vmaxv_s8 (int8x8_t a)
+            ///   A64: SMAXV Bd, Vn.8B
+            /// </summary>
+            public static Vector64<sbyte> MaxAcross(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16_t vmaxv_u16 (uint16x4_t a)
+            ///   A64: UMAXV Hd, Vn.4H
+            /// </summary>
+            public static Vector64<ushort> MaxAcross(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8_t vmaxvq_u8 (uint8x16_t a)
+            ///   A64: UMAXV Bd, Vn.16B
+            /// </summary>
+            public static Vector64<byte> MaxAcross(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vmaxvq_s16 (int16x8_t a)
+            ///   A64: SMAXV Hd, Vn.8H
+            /// </summary>
+            public static Vector64<short> MaxAcross(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vmaxvq_s32 (int32x4_t a)
+            ///   A64: SMAXV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<int> MaxAcross(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8_t vmaxvq_s8 (int8x16_t a)
+            ///   A64: SMAXV Bd, Vn.16B
+            /// </summary>
+            public static Vector64<sbyte> MaxAcross(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vmaxvq_f32 (float32x4_t a)
+            ///   A64: FMAXV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<float> MaxAcross(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16_t vmaxvq_u16 (uint16x8_t a)
+            ///   A64: UMAXV Hd, Vn.8H
+            /// </summary>
+            public static Vector64<ushort> MaxAcross(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vmaxvq_u32 (uint32x4_t a)
+            ///   A64: UMAXV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<uint> MaxAcross(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vmaxnmq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMAXNM Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MaxNumber(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vmaxnmvq_f32 (float32x4_t a)
+            ///   A64: FMAXNMV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<float> MaxNumberAcross(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vpmaxnm_f32 (float32x2_t a, float32x2_t b)
+            ///   A64: FMAXNMP Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> MaxNumberPairwise(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vpmaxnmq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMAXNMP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MaxNumberPairwise(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vpmaxnmq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FMAXNMP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> MaxNumberPairwise(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vpmaxnms_f32 (float32x2_t a)
+            ///   A64: FMAXNMP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> MaxNumberPairwiseScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64_t vpmaxnmqd_f64 (float64x2_t a)
+            ///   A64: FMAXNMP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> MaxNumberPairwiseScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8x16_t vpmaxq_u8 (uint8x16_t a, uint8x16_t b)
+            ///   A64: UMAXP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<byte> MaxPairwise(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vpmaxq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMAXP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MaxPairwise(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16x8_t vpmaxq_s16 (int16x8_t a, int16x8_t b)
+            ///   A64: SMAXP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<short> MaxPairwise(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32x4_t vpmaxq_s32 (int32x4_t a, int32x4_t b)
+            ///   A64: SMAXP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<int> MaxPairwise(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8x16_t vpmaxq_s8 (int8x16_t a, int8x16_t b)
+            ///   A64: SMAXP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> MaxPairwise(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vpmaxq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FMAXP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> MaxPairwise(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16x8_t vpmaxq_u16 (uint16x8_t a, uint16x8_t b)
+            ///   A64: UMAXP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<ushort> MaxPairwise(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32x4_t vpmaxq_u32 (uint32x4_t a, uint32x4_t b)
+            ///   A64: UMAXP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<uint> MaxPairwise(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vpmaxs_f32 (float32x2_t a)
+            ///   A64: FMAXP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> MaxPairwiseScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64_t vpmaxqd_f64 (float64x2_t a)
+            ///   A64: FMAXP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> MaxPairwiseScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x1_t vmax_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FMAX Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> MaxScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vmaxs_f32 (float32_t a, float32_t b)
+            ///   A64: FMAX Sd, Sn, Sm
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+            /// </summary>
+            public static Vector64<float> MaxScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vminq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMIN Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> Min(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8_t vminv_u8 (uint8x8_t a)
+            ///   A64: UMINV Bd, Vn.8B
+            /// </summary>
+            public static Vector64<byte> MinAcross(Vector64<byte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vminv_s16 (int16x4_t a)
+            ///   A64: SMINV Hd, Vn.4H
+            /// </summary>
+            public static Vector64<short> MinAcross(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8_t vminv_s8 (int8x8_t a)
+            ///   A64: SMINV Bd, Vn.8B
+            /// </summary>
+            public static Vector64<sbyte> MinAcross(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16_t vminv_u16 (uint16x4_t a)
+            ///   A64: UMINV Hd, Vn.4H
+            /// </summary>
+            public static Vector64<ushort> MinAcross(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8_t vminvq_u8 (uint8x16_t a)
+            ///   A64: UMINV Bd, Vn.16B
+            /// </summary>
+            public static Vector64<byte> MinAcross(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vminvq_s16 (int16x8_t a)
+            ///   A64: SMINV Hd, Vn.8H
+            /// </summary>
+            public static Vector64<short> MinAcross(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vaddvq_s32 (int32x4_t a)
+            ///   A64: SMINV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<int> MinAcross(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8_t vminvq_s8 (int8x16_t a)
+            ///   A64: SMINV Bd, Vn.16B
+            /// </summary>
+            public static Vector64<sbyte> MinAcross(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vminvq_f32 (float32x4_t a)
+            ///   A64: FMINV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<float> MinAcross(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16_t vminvq_u16 (uint16x8_t a)
+            ///   A64: UMINV Hd, Vn.8H
+            /// </summary>
+            public static Vector64<ushort> MinAcross(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vminvq_u32 (uint32x4_t a)
+            ///   A64: UMINV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<uint> MinAcross(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vminnmq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMINNM Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MinNumber(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vminnmvq_f32 (float32x4_t a)
+            ///   A64: FMINNMV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<float> MinNumberAcross(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vpminnm_f32 (float32x2_t a, float32x2_t b)
+            ///   A64: FMINNMP Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> MinNumberPairwise(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vpminnmq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMINNMP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MinNumberPairwise(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vpminnmq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FMINNMP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> MinNumberPairwise(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vpminnms_f32 (float32x2_t a)
+            ///   A64: FMINNMP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> MinNumberPairwiseScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64_t vpminnmqd_f64 (float64x2_t a)
+            ///   A64: FMINNMP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> MinNumberPairwiseScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8x16_t vpminq_u8 (uint8x16_t a, uint8x16_t b)
+            ///   A64: UMINP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<byte> MinPairwise(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vpminq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMINP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MinPairwise(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16x8_t vpminq_s16 (int16x8_t a, int16x8_t b)
+            ///   A64: SMINP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<short> MinPairwise(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32x4_t vpminq_s32 (int32x4_t a, int32x4_t b)
+            ///   A64: SMINP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<int> MinPairwise(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8x16_t vpminq_s8 (int8x16_t a, int8x16_t b)
+            ///   A64: SMINP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> MinPairwise(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vpminq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FMINP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> MinPairwise(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16x8_t vpminq_u16 (uint16x8_t a, uint16x8_t b)
+            ///   A64: UMINP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<ushort> MinPairwise(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32x4_t vpminq_u32 (uint32x4_t a, uint32x4_t b)
+            ///   A64: UMINP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<uint> MinPairwise(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vpmins_f32 (float32x2_t a)
+            ///   A64: FMINP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> MinPairwiseScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64_t vpminqd_f64 (float64x2_t a)
+            ///   A64: FMINP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> MinPairwiseScalar(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x1_t vmin_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FMIN Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> MinScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vmins_f32 (float32_t a, float32_t b)
+            ///   A64: FMIN Sd, Sn, Sm
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+            /// </summary>
+            public static Vector64<float> MinScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vmulq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMUL Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> Multiply(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vnegq_f64 (float64x2_t a)
+            ///   A64: FNEG Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> Negate(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vnegq_s64 (int64x2_t a)
+            ///   A64: NEG Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> Negate(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x1_t vneg_s64 (int64x1_t a)
+            ///   A64: NEG Dd, Dn
+            /// </summary>
+            public static Vector64<long> NegateScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x2_t vsqrt_f32 (float32x2_t a)
+            ///   A64: FSQRT Vd.2S, Vn.2S
+            /// </summary>
+            public static Vector64<float> Sqrt(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vsqrtq_f64 (float64x2_t a)
+            ///   A64: FSQRT Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> Sqrt(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32x4_t vsqrtq_f32 (float32x4_t a)
+            ///   A64: FSQRT Vd.4S, Vn.4S
+            /// </summary>
+            public static Vector128<float> Sqrt(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vfmaq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
+            ///   A64: FMLA Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> FusedMultiplyAdd(Vector128<double> acc, Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vfmsq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
+            ///   A64: FMLS Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> FusedMultiplySubtract(Vector128<double> acc, Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
@@ -1425,6 +2013,55 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> Add(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint8x8_t vpadd_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VPADD.I8 Dd, Dn, Dm
+        ///   A64: ADDP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> AddPairwise(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vpadd_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VPADD.I16 Dd, Dn, Dm
+        ///   A64: ADDP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> AddPairwise(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vpadd_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VPADD.I32 Dd, Dn, Dm
+        ///   A64: ADDP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> AddPairwise(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vpadd_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VPADD.I8 Dd, Dn, Dm
+        ///   A64: ADDP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> AddPairwise(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vpadd_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VPADD.F32 Dd, Dn, Dm
+        ///   A64: FADDP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> AddPairwise(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vpadd_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VPADD.I16 Dd, Dn, Dm
+        ///   A64: ADDP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> AddPairwise(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vpadd_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VPADD.I32 Dd, Dn, Dm
+        ///   A64: ADDP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> AddPairwise(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float64x1_t vadd_f64 (float64x1_t a, float64x1_t b)
         ///   A32: VADD.F64 Dd, Dn, Dm
         ///   A64: FADD Dd, Dn, Dm
@@ -1456,50 +2093,50 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint8x8_t vand_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> And(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// float64x1_t vand_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VAND Dd, Dn, Dm
-        // ///   A64: AND Vd, Vn, Vm
-        // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        // /// </summary>
-        // public static Vector64<double> And(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// float64x1_t vand_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VAND Dd, Dn, Dm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> And(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vand_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<short> And(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x2_t vand_s32(int32x2_t a, int32x2_t b)
+        /// int32x2_t vand_s32 (int32x2_t a, int32x2_t b)
         ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<int> And(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// int64x1_t vand_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VAND Dd, Dn, Dm
-        // ///   A64: AND Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> And(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int64x1_t vand_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VAND Dd, Dn, Dm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<long> And(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vand_s8 (int8x8_t a, int8x8_t b)
         ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> And(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x2_t vand_f32 (float32x2_t a, float32x2_t b)
         ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> And(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
@@ -1507,239 +2144,239 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint16x4_t vand_u16 (uint16x4_t a, uint16x4_t b)
         ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<ushort> And(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t vand_u32 (uint32x2_t a, uint32x2_t b)
         ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<uint> And(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// uint64x1_t vand_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VAND Dd, Dn, Dm
-        // ///   A64: AND Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> And(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// uint64x1_t vand_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VAND Dd, Dn, Dm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<ulong> And(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint8x16_t vand_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// uint8x16_t vandq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> And(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float64x2_t vand_f64 (float64x2_t a, float64x2_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// float64x2_t vandq_f64 (float64x2_t a, float64x2_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<double> And(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x8_t vand_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// int16x8_t vandq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<short> And(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x4_t vand_s32(int32x4_t a, int32x4_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// int32x4_t vandq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<int> And(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int64x2_t vand_s64 (int64x2_t a, int64x2_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// int64x2_t vandq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<long> And(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vand_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// int8x16_t vandq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> And(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vand_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// float32x4_t vandq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> And(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x8_t vand_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// uint16x8_t vandq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ushort> And(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint32x4_t vand_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// uint32x4_t vandq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<uint> And(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint64x2_t vand_u64 (uint64x2_t a, uint64x2_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// uint64x2_t vandq_u64 (uint64x2_t a, uint64x2_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ulong> And(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vbic_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<byte> AndNot(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<byte> BitwiseClear(Vector64<byte> value, Vector64<byte> mask) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// float64x1_t vbic_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VBIC Dd, Dn, Dm
-        // ///   A64: BIC Vd, Vn, Vm
-        // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        // /// </summary>
-        // public static Vector64<double> AndNot(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// float64x1_t vbic_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VBIC Dd, Dn, Dm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> BitwiseClear(Vector64<double> value, Vector64<double> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vbic_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<short> AndNot(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<short> BitwiseClear(Vector64<short> value, Vector64<short> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x2_t vbic_s32(int32x2_t a, int32x2_t b)
+        /// int32x2_t vbic_s32 (int32x2_t a, int32x2_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<int> AndNot(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<int> BitwiseClear(Vector64<int> value, Vector64<int> mask) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// int64x1_t vbic_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VBIC Dd, Dn, Dm
-        // ///   A64: BIC Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> AndNot(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int64x1_t vbic_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VBIC Dd, Dn, Dm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<long> BitwiseClear(Vector64<long> value, Vector64<long> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vbic_s8 (int8x8_t a, int8x8_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<sbyte> AndNot(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<sbyte> BitwiseClear(Vector64<sbyte> value, Vector64<sbyte> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x2_t vbic_f32 (float32x2_t a, float32x2_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector64<float> AndNot(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<float> BitwiseClear(Vector64<float> value, Vector64<float> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x4_t vbic_u16 (uint16x4_t a, uint16x4_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<ushort> AndNot(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<ushort> BitwiseClear(Vector64<ushort> value, Vector64<ushort> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t vbic_u32 (uint32x2_t a, uint32x2_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<uint> AndNot(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
-
-        // /// <summary>
-        // /// uint64x1_t vbic_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VBIC Dd, Dn, Dm
-        // ///   A64: BIC Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> AndNot(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<uint> BitwiseClear(Vector64<uint> value, Vector64<uint> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint8x16_t vbic_u8 (uint8x16_t a, uint8x16_t b)
+        /// uint64x1_t vbic_u64 (uint64x1_t a, uint64x1_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector128<byte> AndNot(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<ulong> BitwiseClear(Vector64<ulong> value, Vector64<ulong> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float64x2_t vbic_f64 (float64x2_t a, float64x2_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// uint8x16_t vbicq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> BitwiseClear(Vector128<byte> value, Vector128<byte> mask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x2_t vbicq_f64 (float64x2_t a, float64x2_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector128<double> AndNot(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> BitwiseClear(Vector128<double> value, Vector128<double> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x8_t vbic_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// int16x8_t vbicq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<short> AndNot(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> BitwiseClear(Vector128<short> value, Vector128<short> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x4_t vbic_s32(int32x4_t a, int32x4_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// int32x4_t vbicq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<int> AndNot(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> BitwiseClear(Vector128<int> value, Vector128<int> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int64x2_t vbic_s64 (int64x2_t a, int64x2_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// int64x2_t vbicq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<long> AndNot(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> BitwiseClear(Vector128<long> value, Vector128<long> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vbic_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// int8x16_t vbicq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<sbyte> AndNot(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> BitwiseClear(Vector128<sbyte> value, Vector128<sbyte> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vbic_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// float32x4_t vbicq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector128<float> AndNot(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> BitwiseClear(Vector128<float> value, Vector128<float> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x8_t vbic_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// uint16x8_t vbicq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<ushort> AndNot(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> BitwiseClear(Vector128<ushort> value, Vector128<ushort> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint32x4_t vbic_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// uint32x4_t vbicq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<uint> AndNot(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> BitwiseClear(Vector128<uint> value, Vector128<uint> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint64x2_t vbic_u64 (uint64x2_t a, uint64x2_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// uint64x2_t vbicq_u64 (uint64x2_t a, uint64x2_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<ulong> AndNot(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong> BitwiseClear(Vector128<ulong> value, Vector128<ulong> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vbsl_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
@@ -2472,6 +3109,111 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> CompareTest(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// float64x1_t vdiv_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VDIV.F64 Dd, Dn, Dm
+        ///   A64: FDIV Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> DivideScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vdivs_f32 (float32_t a, float32_t b)
+        ///   A32: VDIV.F32 Sd, Sn, Sm
+        ///   A64: FDIV Sd, Sn, Sm
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> DivideScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vfma_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
+        ///   A32: VFMA.F32 Dd, Dn, Dm
+        ///   A64: FMLA Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> FusedMultiplyAdd(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vfmaq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
+        ///   A32: VFMA.F32 Qd, Qn, Qm
+        ///   A64: FMLA Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> FusedMultiplyAdd(Vector128<float> acc, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vfma_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VFMA.F64 Dd, Dn, Dm
+        ///   A64: FMADD Dd, Dn, Dm, Da
+        /// </summary>
+        public static Vector64<double> FusedMultiplyAddScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vfmas_f32 (float32_t a, float32_t b, float32_t c)
+        ///   A32: VFMA.F32 Sd, Sn, Sm
+        ///   A64: FMADD Sd, Sn, Sm, Sa
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FusedMultiplyAddScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vfnma_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VFNMA.F64 Dd, Dn, Dm
+        ///   A64: FNMADD Dd, Dn, Dm, Da
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> FusedMultiplyAddNegatedScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vfnmas_f32 (float32_t a, float32_t b, float32_t c)
+        ///   A32: VFNMA.F32 Sd, Sn, Sm
+        ///   A64: FNMADD Sd, Sn, Sm, Sa
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FusedMultiplyAddNegatedScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vfms_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
+        ///   A32: VFMS.F32 Dd, Dn, Dm
+        ///   A64: FMLS Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> FusedMultiplySubtract(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vfmsq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
+        ///   A32: VFMS.F32 Qd, Qn, Qm
+        ///   A64: FMLS Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> FusedMultiplySubtract(Vector128<float> acc, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vfms_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VFMS.F64 Dd, Dn, Dm
+        ///   A64: FMSUB Dd, Dn, Dm, Da
+        /// </summary>
+        public static Vector64<double> FusedMultiplySubtractScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vfmss_f32 (float32_t a, float32_t b, float32_t c)
+        ///   A32: VFMS.F32 Sd, Sn, Sm
+        ///   A64: FMSUB Sd, Sn, Sm, Sa
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FusedMultiplySubtractScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vfnms_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VFNMS.F64 Dd, Dn, Dm
+        ///   A64: FNMSUB Dd, Dn, Dm, Da
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> FusedMultiplySubtractNegatedScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vfnmss_f32 (float32_t a, float32_t b, float32_t c)
+        ///   A32: VFNMS.F32 Sd, Sn, Sm
+        ///   A64: FNMSUB Sd, Sn, Sm, Sa
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FusedMultiplySubtractNegatedScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// int16x4_t vcls_s16 (int16x4_t a)
         ///   A32: VCLS.S16 Dd, Dm
         ///   A64: CLS Vd.4H, Vn.4H
@@ -2738,196 +3480,898 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector128<ulong> LoadVector128(ulong* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint8x8_t vmax_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VMAX.U8 Dd, Dn, Dm
+        ///   A64: UMAX Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> Max(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmax_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VMAX.S16 Dd, Dn, Dm
+        ///   A64: SMAX Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> Max(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmax_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VMAX.S32 Dd, Dn, Dm
+        ///   A64: SMAX Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> Max(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vmax_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VMAX.S8 Dd, Dn, Dm
+        ///   A64: SMAX Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> Max(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vmax_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMAX.F32 Dd, Dn, Dm
+        ///   A64: FMAX Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> Max(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmax_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VMAX.U16 Dd, Dn, Dm
+        ///   A64: UMAX Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> Max(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmax_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VMAX.U32 Dd, Dn, Dm
+        ///   A64: UMAX Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> Max(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vmaxq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VMAX.U8 Qd, Qn, Qm
+        ///   A64: UMAX Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> Max(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmaxq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VMAX.S16 Qd, Qn, Qm
+        ///   A64: SMAX Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> Max(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmaxq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VMAX.S32 Qd, Qn, Qm
+        ///   A64: SMAX Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> Max(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vmaxq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VMAX.S8 Qd, Qn, Qm
+        ///   A64: SMAX Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> Max(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vmaxq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMAX.F32 Qd, Qn, Qm
+        ///   A64: FMAX Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> Max(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmaxq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VMAX.U16 Qd, Qn, Qm
+        ///   A64: UMAX Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> Max(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmaxq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VMAX.U32 Qd, Qn, Qm
+        ///   A64: UMAX Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> Max(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vmaxnm_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMAXNM.F32 Dd, Dn, Dm
+        ///   A64: FMAXNM Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> MaxNumber(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vmaxnmq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMAXNM.F32 Qd, Qn, Qm
+        ///   A64: FMAXNM Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> MaxNumber(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vmaxnm_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VMAXNM.F64 Dd, Dn, Dm
+        ///   A64: FMAXNM Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> MaxNumberScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vmaxnms_f32 (float32_t a, float32_t b)
+        ///   A32: VMAXNM.F32 Sd, Sn, Sm
+        ///   A64: FMAXNM Sd, Sn, Sm
+        /// </summary>
+        public static Vector64<float> MaxNumberScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vpmax_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VPMAX.U8 Dd, Dn, Dm
+        ///   A64: UMAXP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> MaxPairwise(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vpmax_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VPMAX.S16 Dd, Dn, Dm
+        ///   A64: SMAXP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MaxPairwise(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vpmax_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VPMAX.S32 Dd, Dn, Dm
+        ///   A64: SMAXP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MaxPairwise(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vpmax_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VPMAX.S8 Dd, Dn, Dm
+        ///   A64: SMAXP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> MaxPairwise(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vpmax_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VPMAX.F32 Dd, Dn, Dm
+        ///   A64: FMAXP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> MaxPairwise(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vpmax_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VPMAX.U16 Dd, Dn, Dm
+        ///   A64: UMAXP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> MaxPairwise(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vpmax_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VPMAX.U32 Dd, Dn, Dm
+        ///   A64: UMAXP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> MaxPairwise(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vmin_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VMIN.U8 Dd, Dn, Dm
+        ///   A64: UMIN Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> Min(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmin_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VMIN.S16 Dd, Dn, Dm
+        ///   A64: SMIN Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> Min(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmin_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VMIN.S32 Dd, Dn, Dm
+        ///   A64: SMIN Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> Min(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vmin_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VMIN.S8 Dd, Dn, Dm
+        ///   A64: SMIN Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> Min(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vmin_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMIN.F32 Dd, Dn, Dm
+        ///   A64: FMIN Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> Min(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmin_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VMIN.U16 Dd, Dn, Dm
+        ///   A64: UMIN Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> Min(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmin_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VMIN.U32 Dd, Dn, Dm
+        ///   A64: UMIN Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> Min(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vminq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VMIN.U8 Qd, Qn, Qm
+        ///   A64: UMIN Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> Min(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vminq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VMIN.S16 Qd, Qn, Qm
+        ///   A64: SMIN Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> Min(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vminq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VMIN.S32 Qd, Qn, Qm
+        ///   A64: SMIN Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> Min(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vminq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VMIN.S8 Qd, Qn, Qm
+        ///   A64: SMIN Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> Min(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vminq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMIN.F32 Qd, Qn, Qm
+        ///   A64: FMIN Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> Min(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vminq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VMIN.U16 Qd, Qn, Qm
+        ///   A64: UMIN Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> Min(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vminq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VMIN.U32 Qd, Qn, Qm
+        ///   A64: UMIN Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> Min(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vminnm_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMINNM.F32 Dd, Dn, Dm
+        ///   A64: FMINNM Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> MinNumber(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vminnmq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMINNM.F32 Qd, Qn, Qm
+        ///   A64: FMINNM Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> MinNumber(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vminnm_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VMINNM.F64 Dd, Dn, Dm
+        ///   A64: FMINNM Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> MinNumberScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vminnms_f32 (float32_t a, float32_t b)
+        ///   A32: VMINNM.F32 Sd, Sn, Sm
+        ///   A64: FMINNM Sd, Sn, Sm
+        /// </summary>
+        public static Vector64<float> MinNumberScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vpmin_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VPMIN.U8 Dd, Dn, Dm
+        ///   A64: UMINP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> MinPairwise(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vpmin_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VPMIN.S16 Dd, Dn, Dm
+        ///   A64: SMINP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MinPairwise(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vpmin_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VPMIN.S32 Dd, Dn, Dm
+        ///   A64: SMINP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MinPairwise(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vpmin_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VPMIN.S8 Dd, Dn, Dm
+        ///   A64: SMINP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> MinPairwise(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vpmin_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VPMIN.F32 Dd, Dn, Dm
+        ///   A64: FMINP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> MinPairwise(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vpmin_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VPMIN.U16 Dd, Dn, Dm
+        ///   A64: UMINP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> MinPairwise(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vpmin_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VPMIN.U32 Dd, Dn, Dm
+        ///   A64: UMINP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> MinPairwise(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vmul_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VMUL.I8 Dd, Dn, Dm
+        ///   A64: MUL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> Multiply(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmul_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VMUL.I16 Dd, Dn, Dm
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> Multiply(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmul_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VMUL.I32 Dd, Dn, Dm
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> Multiply(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vmul_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VMUL.I8 Dd, Dn, Dm
+        ///   A64: MUL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> Multiply(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vmul_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMUL.F32 Dd, Dn, Dm
+        ///   A64: FMUL Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> Multiply(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmul_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VMUL.I16 Dd, Dn, Dm
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> Multiply(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmul_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VMUL.I32 Dd, Dn, Dm
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> Multiply(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vmulq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VMUL.I8 Qd, Qn, Qm
+        ///   A64: MUL Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> Multiply(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmulq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VMUL.I16 Qd, Qn, Qm
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> Multiply(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmulq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VMUL.I32 Qd, Qn, Qm
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> Multiply(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vmulq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VMUL.I8 Qd, Qn, Qm
+        ///   A64: MUL Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> Multiply(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vmulq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMUL.F32 Qd, Qn, Qm
+        ///   A64: FMUL Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> Multiply(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmulq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VMUL.I16 Qd, Qn, Qm
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> Multiply(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmulq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VMUL.I32 Qd, Qn, Qm
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> Multiply(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vmul_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VMUL.F64 Dd, Dn, Dm
+        ///   A64: FMUL Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> MultiplyScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vmuls_f32 (float32_t a, float32_t b)
+        ///   A32: VMUL.F32 Sd, Sn, Sm
+        ///   A64: FMUL Sd, Sn, Sm
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> MultiplyScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vmla_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
+        ///   A32: VMLA.I8 Dd, Dn, Dm
+        ///   A64: MLA Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> MultiplyAdd(Vector64<byte> acc, Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmla_s16 (int16x4_t a, int16x4_t b, int16x4_t c)
+        ///   A32: VMLA.I16 Dd, Dn, Dm
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MultiplyAdd(Vector64<short> acc, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmla_s32 (int32x2_t a, int32x2_t b, int32x2_t c)
+        ///   A32: VMLA.I32 Dd, Dn, Dm
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MultiplyAdd(Vector64<int> acc, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vmla_s8 (int8x8_t a, int8x8_t b, int8x8_t c)
+        ///   A32: VMLA.I8 Dd, Dn, Dm
+        ///   A64: MLA Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> MultiplyAdd(Vector64<sbyte> acc, Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmla_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t c)
+        ///   A32: VMLA.I16 Dd, Dn, Dm
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> MultiplyAdd(Vector64<ushort> acc, Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmla_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t c)
+        ///   A32: VMLA.I32 Dd, Dn, Dm
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> MultiplyAdd(Vector64<uint> acc, Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vmlaq_u8 (uint8x16_t a, uint8x16_t b, uint8x16_t c)
+        ///   A32: VMLA.I8 Qd, Qn, Qm
+        ///   A64: MLA Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> MultiplyAdd(Vector128<byte> acc, Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmlaq_s16 (int16x8_t a, int16x8_t b, int16x8_t c)
+        ///   A32: VMLA.I16 Qd, Qn, Qm
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> MultiplyAdd(Vector128<short> acc, Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlaq_s32 (int32x4_t a, int32x4_t b, int32x4_t c)
+        ///   A32: VMLA.I32 Qd, Qn, Qm
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> MultiplyAdd(Vector128<int> acc, Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vmlaq_s8 (int8x16_t a, int8x16_t b, int8x16_t c)
+        ///   A32: VMLA.I8 Qd, Qn, Qm
+        ///   A64: MLA Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> MultiplyAdd(Vector128<sbyte> acc, Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmlaq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t c)
+        ///   A32: VMLA.I16 Qd, Qn, Qm
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> MultiplyAdd(Vector128<ushort> acc, Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlaq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t c)
+        ///   A32: VMLA.I32 Qd, Qn, Qm
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> MultiplyAdd(Vector128<uint> acc, Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vmls_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
+        ///   A32: VMLS.I8 Dd, Dn, Dm
+        ///   A64: MLS Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> MultiplySubtract(Vector64<byte> acc, Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmls_s16 (int16x4_t a, int16x4_t b, int16x4_t c)
+        ///   A32: VMLS.I16 Dd, Dn, Dm
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MultiplySubtract(Vector64<short> acc, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmls_s32 (int32x2_t a, int32x2_t b, int32x2_t c)
+        ///   A32: VMLS.I32 Dd, Dn, Dm
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MultiplySubtract(Vector64<int> acc, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vmls_s8 (int8x8_t a, int8x8_t b, int8x8_t c)
+        ///   A32: VMLS.I8 Dd, Dn, Dm
+        ///   A64: MLS Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> MultiplySubtract(Vector64<sbyte> acc, Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmls_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t c)
+        ///   A32: VMLS.I16 Dd, Dn, Dm
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> MultiplySubtract(Vector64<ushort> acc, Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmls_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t c)
+        ///   A32: VMLS.I32 Dd, Dn, Dm
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> MultiplySubtract(Vector64<uint> acc, Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vmlsq_u8 (uint8x16_t a, uint8x16_t b, uint8x16_t c)
+        ///   A32: VMLS.I8 Qd, Qn, Qm
+        ///   A64: MLS Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> MultiplySubtract(Vector128<byte> acc, Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmlsq_s16 (int16x8_t a, int16x8_t b, int16x8_t c)
+        ///   A32: VMLS.I16 Qd, Qn, Qm
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> MultiplySubtract(Vector128<short> acc, Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlsq_s32 (int32x4_t a, int32x4_t b, int32x4_t c)
+        ///   A32: VMLS.I32 Qd, Qn, Qm
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> MultiplySubtract(Vector128<int> acc, Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vmlsq_s8 (int8x16_t a, int8x16_t b, int8x16_t c)
+        ///   A32: VMLS.I8 Qd, Qn, Qm
+        ///   A64: MLS Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> MultiplySubtract(Vector128<sbyte> acc, Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmlsq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t c)
+        ///   A32: VMLS.I16 Qd, Qn, Qm
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> MultiplySubtract(Vector128<ushort> acc, Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlsq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t c)
+        ///   A32: VMLS.I32 Qd, Qn, Qm
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> MultiplySubtract(Vector128<uint> acc, Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vneg_s16 (int16x4_t a)
+        ///   A32: VNEG.S16 Dd, Dm
+        ///   A64: NEG Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<short> Negate(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vneg_s32 (int32x2_t a)
+        ///   A32: VNEG.S32 Dd, Dm
+        ///   A64: NEG Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<int> Negate(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vneg_s8 (int8x8_t a)
+        ///   A32: VNEG.S8 Dd, Dm
+        ///   A64: NEG Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<sbyte> Negate(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vneg_f32 (float32x2_t a)
+        ///   A32: VNEG.F32 Dd, Dm
+        ///   A64: FNEG Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> Negate(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vnegq_s16 (int16x8_t a)
+        ///   A32: VNEG.S16 Qd, Qm
+        ///   A64: NEG Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<short> Negate(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vnegq_s32 (int32x4_t a)
+        ///   A32: VNEG.S32 Qd, Qm
+        ///   A64: NEG Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<int> Negate(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vnegq_s8 (int8x16_t a)
+        ///   A32: VNEG.S8 Qd, Qm
+        ///   A64: NEG Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<sbyte> Negate(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vnegq_f32 (float32x4_t a)
+        ///   A32: VNEG.F32 Qd, Qm
+        ///   A64: FNEG Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> Negate(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vneg_f64 (float64x1_t a)
+        ///   A32: VNEG.F64 Dd, Dm
+        ///   A64: FNEG Dd, Dn
+        /// </summary>
+        public static Vector64<double> NegateScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vnegs_f32 (float32_t a)
+        ///   A32: VNEG.F32 Sd, Sm
+        ///   A64: FNEG Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> NegateScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint8x8_t vmvn_u8 (uint8x8_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<byte> Not(Vector64<byte> value) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// float64x1_t vmvn_f64 (float64x1_t a)
-        // ///   A32: VMVN Dd, Dn, Dm
-        // ///   A64: MVN Vd, Vn, Vm
-        // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        // /// </summary>
-        // public static Vector64<double> Not(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// float64x1_t vmvn_f64 (float64x1_t a)
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> Not(Vector64<double> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vmvn_s16 (int16x4_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<short> Not(Vector64<short> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x2_t vmvn_s32(int32x2_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// int32x2_t vmvn_s32 (int32x2_t a)
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<int> Not(Vector64<int> value) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// int64x1_t vmvn_s64 (int64x1_t a)
-        // ///   A32: VMVN Dd, Dn, Dm
-        // ///   A64: MVN Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> Not(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int64x1_t vmvn_s64 (int64x1_t a)
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<long> Not(Vector64<long> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vmvn_s8 (int8x8_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<sbyte> Not(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x2_t vmvn_f32 (float32x2_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> Not(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x4_t vmvn_u16 (uint16x4_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<ushort> Not(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t vmvn_u32 (uint32x2_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<uint> Not(Vector64<uint> value) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// uint64x1_t vmvn_u64 (uint64x1_t a)
-        // ///   A32: VMVN Dd, Dn, Dm
-        // ///   A64: MVN Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> Not(Vector64<ulong> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// uint64x1_t vmvn_u64 (uint64x1_t a)
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<ulong> Not(Vector64<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint8x16_t vmvn_u8 (uint8x16_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// uint8x16_t vmvnq_u8 (uint8x16_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<byte> Not(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float64x2_t vmvn_f64 (float64x2_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// float64x2_t vmvnq_f64 (float64x2_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<double> Not(Vector128<double> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x8_t vmvn_s16 (int16x8_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// int16x8_t vmvnq_s16 (int16x8_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<short> Not(Vector128<short> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x4_t vmvn_s32(int32x4_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// int32x4_t vmvnq_s32 (int32x4_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<int> Not(Vector128<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int64x2_t vmvn_s64 (int64x2_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// int64x2_t vmvnq_s64 (int64x2_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<long> Not(Vector128<long> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vmvn_s8 (int8x16_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// int8x16_t vmvnq_s8 (int8x16_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<sbyte> Not(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vmvn_f32 (float32x4_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// float32x4_t vmvnq_f32 (float32x4_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> Not(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x8_t vmvn_u16 (uint16x8_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// uint16x8_t vmvnq_u16 (uint16x8_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<ushort> Not(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint32x4_t vmvn_u32 (uint32x4_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// uint32x4_t vmvnq_u32 (uint32x4_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<uint> Not(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint64x2_t vmvn_u64 (uint64x2_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// uint64x2_t vmvnq_u64 (uint64x2_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<ulong> Not(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vorr_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> Or(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// float64x1_t vorr_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VORR Dd, Dn, Dm
-        // ///   A64: ORR Vd, Vn, Vm
-        // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        // /// </summary>
-        // public static Vector64<double> Or(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// float64x1_t vorr_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VORR Dd, Dn, Dm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> Or(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vorr_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<short> Or(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x2_t vorr_s32(int32x2_t a, int32x2_t b)
+        /// int32x2_t vorr_s32 (int32x2_t a, int32x2_t b)
         ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<int> Or(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// int64x1_t vorr_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VORR Dd, Dn, Dm
-        // ///   A64: ORR Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> Or(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int64x1_t vorr_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VORR Dd, Dn, Dm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<long> Or(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vorr_s8 (int8x8_t a, int8x8_t b)
         ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> Or(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x2_t vorr_f32 (float32x2_t a, float32x2_t b)
         ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> Or(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
@@ -2935,143 +4379,143 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint16x4_t vorr_u16 (uint16x4_t a, uint16x4_t b)
         ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<ushort> Or(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t vorr_u32 (uint32x2_t a, uint32x2_t b)
         ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<uint> Or(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// uint64x1_t vorr_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VORR Dd, Dn, Dm
-        // ///   A64: ORR Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> Or(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// uint64x1_t vorr_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VORR Dd, Dn, Dm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<ulong> Or(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint8x16_t vorr_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// uint8x16_t vorrq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> Or(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float64x2_t vorr_f64 (float64x2_t a, float64x2_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// float64x2_t vorrq_f64 (float64x2_t a, float64x2_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<double> Or(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x8_t vorr_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// int16x8_t vorrq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<short> Or(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x4_t vorr_s32(int32x4_t a, int32x4_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// int32x4_t vorrq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<int> Or(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int64x2_t vorr_s64 (int64x2_t a, int64x2_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// int64x2_t vorrq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<long> Or(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vorr_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// int8x16_t vorrq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> Or(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vorr_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// float32x4_t vorrq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> Or(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x8_t vorr_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// uint16x8_t vorrq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ushort> Or(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint32x4_t vorr_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// uint32x4_t vorrq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<uint> Or(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint64x2_t vorr_u64 (uint64x2_t a, uint64x2_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// uint64x2_t vorrq_u64 (uint64x2_t a, uint64x2_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ulong> Or(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vorn_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> OrNot(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// float64x1_t vorn_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VORN Dd, Dn, Dm
-        // ///   A64: ORN Vd, Vn, Vm
-        // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        // /// </summary>
-        // public static Vector64<double> OrNot(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// float64x1_t vorn_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VORN Dd, Dn, Dm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> OrNot(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vorn_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<short> OrNot(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x2_t vorn_s32(int32x2_t a, int32x2_t b)
+        /// int32x2_t vorn_s32 (int32x2_t a, int32x2_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<int> OrNot(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// int64x1_t vorn_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VORN Dd, Dn, Dm
-        // ///   A64: ORN Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> OrNot(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int64x1_t vorn_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VORN Dd, Dn, Dm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<long> OrNot(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vorn_s8 (int8x8_t a, int8x8_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> OrNot(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x2_t vorn_f32 (float32x2_t a, float32x2_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> OrNot(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
@@ -3079,93 +4523,93 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint16x4_t vorn_u16 (uint16x4_t a, uint16x4_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<ushort> OrNot(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t vorn_u32 (uint32x2_t a, uint32x2_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<uint> OrNot(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// uint64x1_t vorn_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VORN Dd, Dn, Dm
-        // ///   A64: ORN Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> OrNot(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// uint64x1_t vorn_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VORN Dd, Dn, Dm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<ulong> OrNot(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint8x16_t vorn_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// uint8x16_t vornq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> OrNot(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float64x2_t vorn_f64 (float64x2_t a, float64x2_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// float64x2_t vornq_f64 (float64x2_t a, float64x2_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<double> OrNot(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x8_t vorn_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// int16x8_t vornq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<short> OrNot(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x4_t vorn_s32(int32x4_t a, int32x4_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// int32x4_t vornq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<int> OrNot(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int64x2_t vorn_s64 (int64x2_t a, int64x2_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// int64x2_t vornq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<long> OrNot(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vorn_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// int8x16_t vornq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> OrNot(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vorn_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// float32x4_t vornq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> OrNot(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x8_t vorn_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// uint16x8_t vornq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ushort> OrNot(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint32x4_t vorn_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// uint32x4_t vornq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<uint> OrNot(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint64x2_t vorn_u64 (uint64x2_t a, uint64x2_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// uint64x2_t vornq_u64 (uint64x2_t a, uint64x2_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ulong> OrNot(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
@@ -3198,6 +4642,21 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<sbyte> PopCount(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// float64x1_t vsqrt_f64 (float64x1_t a)
+        ///   A32: VSQRT.F64 Dd, Dm
+        ///   A64: FSQRT Dd, Dn
+        /// </summary>
+        public static Vector64<double> SqrtScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vsqrts_f32 (float32_t a)
+        ///   A32: VSQRT.F32 Sd, Sm
+        ///   A64: FSQRT Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> SqrtScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint8x8_t vsub_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VSUB.I8 Dd, Dn, Dm
         ///   A64: SUB Vd.8B, Vn.8B, Vm.8B
@@ -3228,7 +4687,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// float32x2_t vsub_f32 (float32x2_t a, float32x2_t b)
         ///   A32: VSUB.F32 Dd, Dn, Dm
-        ///   A64: FADD Vd.2S, Vn.2S, Vm.2S
+        ///   A64: FSUB Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> Subtract(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
@@ -3284,7 +4743,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// float32x4_t vsubq_f32 (float32x4_t a, float32x4_t b)
         ///   A32: VSUB.F32 Qd, Qn, Qm
-        ///   A64: FADD Vd.4S, Vn.4S, Vm.4S
+        ///   A64: FSUB Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> Subtract(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
@@ -3309,80 +4768,82 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector128<ulong> Subtract(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// float64x1_t vsub_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VSUB.F64 Dd, Dn, Dm
-        // ///   A64: FADD Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<double> SubtractScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
-
-        // /// <summary>
-        // /// int64x1_t vsub_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VSUB.I64 Dd, Dn, Dm
-        // ///   A64: SUB Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<long> SubtractScalar(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
-
-        // /// <summary>
-        // /// uint64x1_t vsub_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VSUB.I64 Dd, Dn, Dm
-        // ///   A64: SUB Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<ulong> SubtractScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// float64x1_t vsub_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VSUB.F64 Dd, Dn, Dm
+        ///   A64: FSUB Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> SubtractScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int64x1_t vsub_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VSUB.I64 Dd, Dn, Dm
+        ///   A64: SUB Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<long> SubtractScalar(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vsubs_f32 (float32_t a, float32_t b)
         ///   A32: VSUB.F32 Sd, Sn, Sm
-        ///   A64:
+        ///   A64: FSUB Sd, Sn, Sm
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> SubtractScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint64x1_t vsub_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VSUB.I64 Dd, Dn, Dm
+        ///   A64: SUB Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<ulong> SubtractScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint8x8_t veor_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> Xor(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// float64x1_t veor_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VEOR Dd, Dn, Dm
-        // ///   A64: EOR Vd, Vn, Vm
-        // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        // /// </summary>
-        // public static Vector64<double> Xor(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// float64x1_t veor_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VEOR Dd, Dn, Dm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> Xor(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t veor_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<short> Xor(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x2_t veor_s32(int32x2_t a, int32x2_t b)
+        /// int32x2_t veor_s32 (int32x2_t a, int32x2_t b)
         ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<int> Xor(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// int64x1_t veor_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VEOR Dd, Dn, Dm
-        // ///   A64: EOR Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> Xor(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int64x1_t veor_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VEOR Dd, Dn, Dm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<long> Xor(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t veor_s8 (int8x8_t a, int8x8_t b)
         ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> Xor(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x2_t veor_f32 (float32x2_t a, float32x2_t b)
         ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> Xor(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
@@ -3390,93 +4851,93 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint16x4_t veor_u16 (uint16x4_t a, uint16x4_t b)
         ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<ushort> Xor(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t veor_u32 (uint32x2_t a, uint32x2_t b)
         ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<uint> Xor(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// uint64x1_t veor_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VEOR Dd, Dn, Dm
-        // ///   A64: EOR Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> Xor(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// uint64x1_t veor_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VEOR Dd, Dn, Dm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<ulong> Xor(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint8x16_t veor_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// uint8x16_t veorq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> Xor(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float64x2_t veor_f64 (float64x2_t a, float64x2_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// float64x2_t veorq_f64 (float64x2_t a, float64x2_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<double> Xor(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x8_t veor_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// int16x8_t veorq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<short> Xor(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x4_t veor_s32(int32x4_t a, int32x4_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// int32x4_t veorq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<int> Xor(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int64x2_t veor_s64 (int64x2_t a, int64x2_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// int64x2_t veorq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<long> Xor(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t veor_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// int8x16_t veorq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> Xor(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t veor_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// float32x4_t veorq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> Xor(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x8_t veor_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// uint16x8_t veorq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ushort> Xor(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint32x4_t veor_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// uint32x4_t veorq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<uint> Xor(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint64x2_t veor_u64 (uint64x2_t a, uint64x2_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// uint64x2_t veorq_u64 (uint64x2_t a, uint64x2_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ulong> Xor(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
     }

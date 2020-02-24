@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
@@ -13,9 +13,9 @@ namespace System
 {
     public static partial class Buffer
     {
-#if ARM64
+#if TARGET_ARM64
         // Determine optimal value for Windows.
-        // https://github.com/dotnet/coreclr/issues/13843
+        // https://github.com/dotnet/runtime/issues/8896
         private const nuint MemmoveNativeThreshold = ulong.MaxValue;
 #else
         private const nuint MemmoveNativeThreshold = 2048;

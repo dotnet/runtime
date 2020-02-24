@@ -2160,7 +2160,7 @@ $__RealName
 ;
 ; NOTE: this helper will probe at least one page below the one pointed to by sp.
 #define PAGE_SIZE_LOG2 12
-    NESTED_ENTRY JIT_StackProbe
+    LEAF_ENTRY JIT_StackProbe
     PROLOG_PUSH {r7}
     PROLOG_STACK_SAVE r7
 
@@ -2178,25 +2178,7 @@ ProbeLoop
     EPILOG_STACK_RESTORE r7
     EPILOG_POP {r7}
     EPILOG_BRANCH_REG lr
-    NESTED_END
-
-#ifdef FEATURE_TIERED_COMPILATION
-
-    IMPORT OnCallCountThresholdReached
-
-    NESTED_ENTRY OnCallCountThresholdReachedStub
-        PROLOG_WITH_TRANSITION_BLOCK
-
-        add     r0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
-        mov     r1, r12 ; stub-identifying token
-        bl      OnCallCountThresholdReached
-        mov     r12, r0
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-        EPILOG_BRANCH_REG r12
-    NESTED_END
-
-#endif ; FEATURE_TIERED_COMPILATION
+    LEAF_END_MARKED JIT_StackProbe
 
 ; Must be at very end of file
     END

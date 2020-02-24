@@ -399,7 +399,6 @@ namespace System.Text.RegularExpressions
         private List<SingleRange>? _rangelist;
         private StringBuilder? _categories;
         private RegexCharClass? _subtractor;
-        private bool _canonical = true;
         private bool _negate;
 
 #if DEBUG
@@ -450,15 +449,6 @@ namespace System.Text.RegularExpressions
 
             int ccRangeCount = cc._rangelist?.Count ?? 0;
 
-            if (!cc._canonical || // if the new char class to add isn't canonical, we're not either.
-                (_canonical &&
-                 ccRangeCount > 0 &&
-                 _rangelist != null && _rangelist.Count > 0 &&
-                 cc._rangelist![0].First <= _rangelist[^1].Last))
-            {
-                _canonical = false;
-            }
-
             if (ccRangeCount != 0)
             {
                 EnsureRangeList().AddRange(cc._rangelist!);
@@ -488,11 +478,6 @@ namespace System.Text.RegularExpressions
 
             List<SingleRange> rangeList = EnsureRangeList();
 
-            if (_canonical && rangeList.Count > 0 && set[0] <= rangeList[^1].Last)
-            {
-                _canonical = false;
-            }
-
             int i;
             for (i = 0; i < set.Length - 1; i += 2)
             {
@@ -514,14 +499,8 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Adds a single range of characters to the class.
         /// </summary>
-        public void AddRange(char first, char last)
-        {
+        public void AddRange(char first, char last) =>
             EnsureRangeList().Add(new SingleRange(first, last));
-            if (_canonical && first <= last)
-            {
-                _canonical = false;
-            }
-        }
 
         public void AddCategoryFromName(string categoryName, bool invert, bool caseInsensitive, string pattern, int currentPos)
         {
@@ -563,8 +542,6 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public void AddLowercase(CultureInfo culture)
         {
-            _canonical = false;
-
             List<SingleRange>? rangeList = _rangelist;
             if (rangeList != null)
             {
@@ -767,6 +744,44 @@ namespace System.Text.RegularExpressions
             !IsSubtraction(set) &&
             (set[SetStartIndex] == LastChar || set[SetStartIndex] + 1 == set[SetStartIndex + 1]);
 
+        /// <summary>Gets whether the set contains nothing other than a single UnicodeCategory (it may be negated).</summary>
+        /// <param name="set">The set to examine.</param>
+        /// <param name="category">The single category if there was one.</param>
+        /// <param name="negated">true if the single category is a not match.</param>
+        /// <returns>true if a single category could be obtained; otherwise, false.</returns>
+        public static bool TryGetSingleUnicodeCategory(string set, out UnicodeCategory category, out bool negated)
+        {
+            if (set[CategoryLengthIndex] == 1 &&
+                set[SetLengthIndex] == 0 &&
+                !IsSubtraction(set))
+            {
+                short c = (short)set[SetStartIndex];
+
+                if (c > 0)
+                {
+                    if (c != SpaceConst)
+                    {
+                        category = (UnicodeCategory)(c - 1);
+                        negated = IsNegated(set);
+                        return true;
+                    }
+                }
+                else if (c < 0)
+                {
+                    if (c != NotSpaceConst)
+                    {
+                        category = (UnicodeCategory)(-1 - c);
+                        negated = !IsNegated(set);
+                        return true;
+                    }
+                }
+            }
+
+            category = default;
+            negated = false;
+            return false;
+        }
+
         /// <summary>Attempts to get a single range stored in the set.</summary>
         /// <param name="set">The set.</param>
         /// <param name="lowInclusive">The inclusive lower-bound of the range, if available.</param>
@@ -805,17 +820,21 @@ namespace System.Text.RegularExpressions
         /// <param name="chars">The span into which the chars should be stored.</param>
         /// <returns>
         /// The number of stored chars.  If they won't all fit, 0 is returned.
+        /// If 0 is returned, no assumptions can be made about the characters.
         /// </returns>
         /// <remarks>
-        /// Only considers character classes that only contain sets (no categories), no negation,
+        /// Only considers character classes that only contain sets (no categories)
         /// and no subtraction... just simple sets containing starting/ending pairs.
+        /// The returned characters may be negated: if IsNegated(set) is false, then
+        /// the returned characters are the only ones that match; if it returns true,
+        /// then the returned characters are the only ones that don't match.
         /// </remarks>
         public static int GetSetChars(string set, Span<char> chars)
         {
             // If the set is negated, it's likely to contain a large number of characters,
             // so we don't even try.  We also get the characters by enumerating the set
             // portion, so we validate that it's set up to enable that, e.g. no categories.
-            if (IsNegated(set) || !CanEasilyEnumerateSetContents(set))
+            if (!CanEasilyEnumerateSetContents(set))
             {
                 return 0;
             }
@@ -1091,24 +1110,13 @@ namespace System.Text.RegularExpressions
                 // Otherwise, compute it normally.
                 bool isInClass = CharInClass(ch, set);
 
-                // Determine which bits to write back to the array.
+                // Determine which bits to write back to the array and "or" the bits back in a thread-safe manner.
                 int bitsToSet = knownBit;
                 if (isInClass)
                 {
                     bitsToSet |= valueBit;
                 }
-
-                // "or" the bits back in a thread-safe manner.
-                while (true)
-                {
-                    int oldValue = Interlocked.CompareExchange(ref slot, current | bitsToSet, current);
-                    if (oldValue == current)
-                    {
-                        break;
-                    }
-
-                    current = oldValue;
-                }
+                Interlocked.Or(ref slot, bitsToSet);
 
                 // Return the computed value.
                 return isInClass;
@@ -1341,10 +1349,7 @@ namespace System.Text.RegularExpressions
 
         private void ToStringClass(ref ValueStringBuilder vsb)
         {
-            if (!_canonical)
-            {
-                Canonicalize();
-            }
+            Canonicalize();
 
             int initialLength = vsb.Length;
             int categoriesLength = _categories?.Length ?? 0;
@@ -1390,8 +1395,6 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void Canonicalize()
         {
-            _canonical = true;
-
             List<SingleRange>? rangelist = _rangelist;
             if (rangelist != null)
             {
@@ -1518,7 +1521,6 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        public static readonly char[] Hex = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
         public static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
 
         private static string[] PopulateCategoryIdToName()
@@ -1663,7 +1665,7 @@ namespace System.Text.RegularExpressions
             while (shift > 0)
             {
                 shift -= 4;
-                sb.Append(Hex[(ch >> shift) & 0xF]);
+                sb.Append(HexConverter.ToCharLower(ch >> shift));
             }
 
             return sb.ToString();

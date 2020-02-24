@@ -65,7 +65,7 @@ MethodSet* Compiler::s_pJitMethodSet               = nullptr;
  */
 #ifdef FEATURE_JIT_METHOD_PERF
 
-#if defined(_HOST_X86_) || defined(_HOST_AMD64_)
+#if defined(HOST_X86) || defined(HOST_AMD64)
 
 #if defined(_MSC_VER)
 
@@ -93,7 +93,7 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 
 #endif
 
-#elif defined(_HOST_ARM_) || defined(_HOST_ARM64_)
+#elif defined(HOST_ARM) || defined(HOST_ARM64)
 
 // If this doesn't work please see ../gc/gc.cpp for additional ARM
 // info (and possible solutions).
@@ -548,19 +548,19 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
 
 // Start by determining if we have an HFA/HVA with a single element.
 #ifdef FEATURE_HFA
-#if defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
     // Arm64 Windows VarArg methods arguments will not classify HFA types, they will need to be treated
     // as if they are not HFA types.
     if (!isVarArg)
-#endif // defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
     {
         switch (structSize)
         {
             case 4:
             case 8:
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
             case 16:
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
             {
                 var_types hfaType;
 #ifdef ARM_SOFTFP
@@ -605,28 +605,28 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             useType = TYP_SHORT;
             break;
 
-#if !defined(_TARGET_XARCH_) || defined(UNIX_AMD64_ABI)
+#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
         case 3:
             useType = TYP_INT;
             break;
 
-#endif // !_TARGET_XARCH_ || UNIX_AMD64_ABI
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         case 4:
             // We dealt with the one-float HFA above. All other 4-byte structs are handled as INT.
             useType = TYP_INT;
             break;
 
-#if !defined(_TARGET_XARCH_) || defined(UNIX_AMD64_ABI)
+#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
         case 5:
         case 6:
         case 7:
             useType = TYP_I_IMPL;
             break;
 
-#endif // !_TARGET_XARCH_ || UNIX_AMD64_ABI
-#endif // _TARGET_64BIT_
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI
+#endif // TARGET_64BIT
 
         case TARGET_POINTER_SIZE:
         {
@@ -694,7 +694,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
 // Determine if we can pass the struct as a primitive type.
 // Note that on x86 we never pass structs as primitive types (unless the VM unwraps them for us).
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
 #ifdef UNIX_AMD64_ABI
 
     // An 8-byte struct may need to be passed in a floating point register
@@ -729,7 +729,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         useType = getPrimitiveTypeForStruct(structSize, clsHnd, isVarArg);
     }
 
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 
     // Did we change this struct type into a simple "primitive" type?
     //
@@ -749,13 +749,13 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             // Arm64 Windows VarArg methods arguments will not classify HFA/HVA types, they will need to be treated
             // as if they are not HFA/HVA types.
             var_types hfaType;
-#if defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
             if (isVarArg)
             {
                 hfaType = TYP_UNDEF;
             }
             else
-#endif // defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
             {
                 hfaType = GetHfaType(clsHnd);
             }
@@ -792,7 +792,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     useType         = TYP_UNKNOWN;
                 }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
                 // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
                 assert(structSize > TARGET_POINTER_SIZE);
@@ -815,18 +815,18 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     useType         = TYP_UNKNOWN;
                 }
 
-#elif defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+#elif defined(TARGET_X86) || defined(TARGET_ARM)
 
                 // Otherwise we pass this struct by value on the stack
                 // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
                 howToPassStruct = SPK_ByValue;
                 useType         = TYP_STRUCT;
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
                 noway_assert(!"Unhandled TARGET in getArgTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
 
-#endif //  _TARGET_XXX_
+#endif //  TARGET_XXX
             }
         }
         else // (structSize > MAX_PASS_MULTIREG_BYTES)
@@ -835,25 +835,25 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             // and can't be passed in multiple registers
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(UNIX_AMD64_ABI)
+#if defined(TARGET_X86) || defined(TARGET_ARM) || defined(UNIX_AMD64_ABI)
 
             // Otherwise we pass this struct by value on the stack
             // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
             howToPassStruct = SPK_ByValue;
             useType         = TYP_STRUCT;
 
-#elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
             // Otherwise we pass this struct by reference to a copy
             // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)
             howToPassStruct = SPK_ByReference;
             useType         = TYP_UNKNOWN;
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
             noway_assert(!"Unhandled TARGET in getArgTypeForStruct");
 
-#endif //  _TARGET_XXX_
+#endif //  TARGET_XXX
         }
     }
 
@@ -985,7 +985,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         }
     }
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     // Note this handles an odd case when FEATURE_MULTIREG_RET is disabled and HFAs are enabled
     //
     // getPrimitiveTypeForStruct will return TYP_UNKNOWN for a struct that is an HFA of two floats
@@ -1050,7 +1050,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     assert(structDesc.passedInRegisters == false);
                 }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
                 // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
                 assert(structSize > TARGET_POINTER_SIZE);
@@ -1072,7 +1072,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     useType           = TYP_UNKNOWN;
                 }
 
-#elif defined(_TARGET_ARM_) || defined(_TARGET_X86_)
+#elif defined(TARGET_ARM) || defined(TARGET_X86)
 
                 // Otherwise we return this struct using a return buffer
                 // setup wbPassType and useType indicate that this is returned using a return buffer register
@@ -1080,11 +1080,11 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                 howToReturnStruct = SPK_ByReference;
                 useType           = TYP_UNKNOWN;
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
                 noway_assert(!"Unhandled TARGET in getReturnTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
 
-#endif //  _TARGET_XXX_
+#endif //  TARGET_XXX
             }
         }
         else // (structSize > MAX_RET_MULTIREG_BYTES) || (FEATURE_MULTIREG_RET == 0)
@@ -1751,6 +1751,12 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
         compInlineResult = nullptr;
     }
 
+    // Initialize this to the first phase to run.
+    mostRecentlyActivePhase = PHASE_PRE_IMPORT;
+
+    // Initially, no phase checks are active.
+    activePhaseChecks = PhaseChecks::CHECK_NONE;
+
 #ifdef FEATURE_TRACELOGGING
     // Make sure JIT telemetry is initialized as soon as allocations can be made
     // but no later than a point where noway_asserts can be thrown.
@@ -1759,9 +1765,8 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     //    Note: JIT telemetry could gather data when compiler is not fully initialized.
     //          So you have to initialize the compiler variables you use for telemetry.
     assert((unsigned)PHASE_PRE_IMPORT == 0);
-    previousCompletedPhase = PHASE_PRE_IMPORT;
-    info.compILCodeSize    = 0;
-    info.compMethodHnd     = nullptr;
+    info.compILCodeSize = 0;
+    info.compMethodHnd  = nullptr;
     compJitTelemetry.Initialize(this);
 #endif
 
@@ -2041,7 +2046,7 @@ VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
 const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloatReg)
 {
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     isFloatReg = genIsValidFloatReg(reg);
 #endif
 
@@ -2085,7 +2090,7 @@ const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
         { "cl", "cx" },
         { "dl", "dx" },
         { "bl", "bx" },
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         {  "spl",   "sp" }, // ESP
         {  "bpl",   "bp" }, // EBP
         {  "sil",   "si" }, // ESI
@@ -2098,7 +2103,7 @@ const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
         { "r13b", "r13w" },
         { "r14b", "r14w" },
         { "r15b", "r15w" },
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     };
     // clang-format on
 
@@ -2158,13 +2163,13 @@ void Compiler::compSetProcessor()
 
     const JitFlags& jitFlags = *opts.jitFlags;
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     info.genCPU = CPU_ARM;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     info.genCPU      = CPU_ARM64;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     info.genCPU                   = CPU_X64;
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_TARGET_P4))
         info.genCPU = CPU_X86_PENTIUM_4;
     else
@@ -2176,22 +2181,21 @@ void Compiler::compSetProcessor()
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     opts.compUseCMOV = true;
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
         opts.compUseCMOV = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 // Instruction set flags for Intel hardware intrinsics
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     opts.compSupportsISA = 0;
 
-#ifdef FEATURE_CORECLR
     if (JitConfig.EnableHWIntrinsic())
     {
         // Dummy ISAs for simplifying the JIT code
@@ -2202,16 +2206,16 @@ void Compiler::compSetProcessor()
     if (JitConfig.EnableSSE())
     {
         opts.setSupportedISA(InstructionSet_SSE);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         opts.setSupportedISA(InstructionSet_SSE_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
         if (JitConfig.EnableSSE2())
         {
             opts.setSupportedISA(InstructionSet_SSE2);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             opts.setSupportedISA(InstructionSet_SSE2_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AES) && JitConfig.EnableAES())
             {
@@ -2236,23 +2240,23 @@ void Compiler::compSetProcessor()
                     if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE41) && JitConfig.EnableSSE41())
                     {
                         opts.setSupportedISA(InstructionSet_SSE41);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                         opts.setSupportedISA(InstructionSet_SSE41_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
                         if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42) && JitConfig.EnableSSE42())
                         {
                             opts.setSupportedISA(InstructionSet_SSE42);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                             opts.setSupportedISA(InstructionSet_SSE42_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
                             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_POPCNT) && JitConfig.EnablePOPCNT())
                             {
                                 opts.setSupportedISA(InstructionSet_POPCNT);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                                 opts.setSupportedISA(InstructionSet_POPCNT_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
                             }
 
                             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX) && JitConfig.EnableAVX())
@@ -2279,9 +2283,9 @@ void Compiler::compSetProcessor()
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_LZCNT) && JitConfig.EnableLZCNT())
     {
         opts.setSupportedISA(InstructionSet_LZCNT);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         opts.setSupportedISA(InstructionSet_LZCNT_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     }
 
     // We currently need to also check that AVX is supported as that controls the support for the VEX encoding
@@ -2289,9 +2293,9 @@ void Compiler::compSetProcessor()
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI1) && JitConfig.EnableBMI1() && compSupports(InstructionSet_AVX))
     {
         opts.setSupportedISA(InstructionSet_BMI1);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         opts.setSupportedISA(InstructionSet_BMI1_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     }
 
     // We currently need to also check that AVX is supported as that controls the support for the VEX encoding
@@ -2299,36 +2303,10 @@ void Compiler::compSetProcessor()
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI2) && JitConfig.EnableBMI2() && compSupports(InstructionSet_AVX))
     {
         opts.setSupportedISA(InstructionSet_BMI2);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         opts.setSupportedISA(InstructionSet_BMI2_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     }
-#else  // !FEATURE_CORECLR
-    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT))
-    {
-        // If this is not FEATURE_CORECLR, the only flags supported by the VM are AVX and AVX2.
-        // Furthermore, the only two configurations supported by the desktop JIT are SSE2 and AVX2,
-        // so if the latter is set, we also check all the in-between options.
-        // Note that the EnableSSE2 and EnableSSE flags are only checked by HW Intrinsic code,
-        // so the System.Numerics.Vector support doesn't depend on those flags.
-        // However, if any of these are disabled, we will not enable AVX2.
-        //
-        if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX) && jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2) &&
-            (JitConfig.EnableAVX2() != 0) && (JitConfig.EnableAVX() != 0) && (JitConfig.EnableSSE42() != 0) &&
-            (JitConfig.EnableSSE41() != 0) && (JitConfig.EnableSSSE3() != 0) && (JitConfig.EnableSSE3() != 0) &&
-            (JitConfig.EnableSSE2() != 0) && (JitConfig.EnableSSE() != 0) && (JitConfig.EnableSSE3_4() != 0))
-        {
-            opts.setSupportedISA(InstructionSet_SSE);
-            opts.setSupportedISA(InstructionSet_SSE2);
-            opts.setSupportedISA(InstructionSet_SSE3);
-            opts.setSupportedISA(InstructionSet_SSSE3);
-            opts.setSupportedISA(InstructionSet_SSE41);
-            opts.setSupportedISA(InstructionSet_SSE42);
-            opts.setSupportedISA(InstructionSet_AVX);
-            opts.setSupportedISA(InstructionSet_AVX2);
-        }
-    }
-#endif // !FEATURE_CORECLR
 
     if (!compIsForInlining())
     {
@@ -2340,9 +2318,9 @@ void Compiler::compSetProcessor()
             codeGen->GetEmitter()->SetContains256bitAVX(false);
         }
     }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     if (JitConfig.EnableHWIntrinsic())
     {
         // Dummy ISAs for simplifying the JIT code
@@ -2463,24 +2441,19 @@ void Compiler::compSetProcessor()
 #ifdef PROFILING_SUPPORTED
 // A Dummy routine to receive Enter/Leave/Tailcall profiler callbacks.
 // These are used when complus_JitEltHookEnabled=1
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 void DummyProfilerELTStub(UINT_PTR ProfilerHandle, UINT_PTR callerSP)
 {
     return;
 }
-#else  //! _TARGET_AMD64_
+#else  //! TARGET_AMD64
 void DummyProfilerELTStub(UINT_PTR ProfilerHandle)
 {
     return;
 }
-#endif //!_TARGET_AMD64_
+#endif //! TARGET_AMD64
 
 #endif // PROFILING_SUPPORTED
-
-bool Compiler::compIsFullTrust()
-{
-    return (info.compCompHnd->canSkipMethodVerification(info.compMethodHnd) == CORINFO_VERIFICATION_CAN_SKIP);
-}
 
 bool Compiler::compShouldThrowOnNoway(
 #ifdef FEATURE_TRACELOGGING
@@ -2495,8 +2468,7 @@ bool Compiler::compShouldThrowOnNoway(
     // In min opts, we don't want the noway assert to go through the exception
     // path. Instead we want it to just silently go through codegen for
     // compat reasons.
-    // If we are not in full trust, we should always fire for security.
-    return !opts.MinOpts() || !compIsFullTrust();
+    return !opts.MinOpts();
 }
 
 // ConfigInteger does not offer an option for decimal flags.  Any numbers are interpreted as hex.
@@ -2541,8 +2513,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO));
-
-        assert(jitFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION));
     }
 
     opts.jitFlags  = jitFlags;
@@ -2613,8 +2583,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dspDiffable = compIsForInlining() ? impInlineInfo->InlinerCompiler->opts.dspDiffable : false;
 #endif
 
-    opts.compNeedSecurityCheck = false;
-    opts.altJit                = false;
+    opts.altJit = false;
 
 #if defined(LATE_DISASM) && !defined(DEBUG)
     // For non-debug builds with the late disassembler built in, we currently always do late disassembly
@@ -2810,10 +2779,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitELTHookEnabled = false;
 #endif // PROFILING_SUPPORTED
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     // 0 is default: use the appropriate frame type based on the function.
     opts.compJitSaveFpLrWithCalleeSavedRegisters = 0;
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
 
 #ifdef DEBUG
     opts.dspInstrs       = false;
@@ -3047,7 +3016,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compGcChecks = (JitConfig.JitGCChecks() != 0) || compStressCompile(STRESS_GENERIC_VARN, 5);
 #endif
 
-#if defined(DEBUG) && defined(_TARGET_XARCH_)
+#if defined(DEBUG) && defined(TARGET_XARCH)
     enum
     {
         STACK_CHECK_ON_RETURN = 0x1,
@@ -3061,10 +3030,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         dwJitStackChecks = STACK_CHECK_ALL;
     }
     opts.compStackCheckOnRet = (dwJitStackChecks & DWORD(STACK_CHECK_ON_RETURN)) != 0;
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     opts.compStackCheckOnCall = (dwJitStackChecks & DWORD(STACK_CHECK_ON_CALL)) != 0;
-#endif // defined(_TARGET_X86_)
-#endif // defined(DEBUG) && defined(_TARGET_XARCH_)
+#endif // defined(TARGET_X86)
+#endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #if MEASURE_MEM_ALLOC
     s_dspMemStats = (JitConfig.DisplayMemStats() != 0);
@@ -3138,7 +3107,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compReloc = jitFlags->IsSet(JitFlags::JIT_FLAG_RELOC);
 
 #ifdef DEBUG
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     // Whether encoding of absolute addr as PC-rel offset is enabled
     opts.compEnablePCRelAddr = (JitConfig.EnablePCRelAddr() != 0);
 #endif
@@ -3146,10 +3115,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compProcedureSplitting = jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT);
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     // TODO-ARM64-NYI: enable hot/cold splitting
     opts.compProcedureSplitting = false;
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
 
 #ifdef DEBUG
     opts.compProcedureSplittingEH = opts.compProcedureSplitting;
@@ -3309,12 +3278,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // UNIX_AMD64_ABI
 #endif
 
-#if defined(DEBUG) && defined(_TARGET_ARM64_)
+#if defined(DEBUG) && defined(TARGET_ARM64)
     if ((s_pJitMethodSet == nullptr) || s_pJitMethodSet->IsActiveMethod(info.compFullName, info.compMethodHash()))
     {
         opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters();
     }
-#endif // defined(DEBUG) && defined(_TARGET_ARM64_)
+#endif // defined(DEBUG) && defined(TARGET_ARM64)
 }
 
 #ifdef DEBUG
@@ -3854,7 +3823,7 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
         }
 
-#if !defined(_TARGET_AMD64_)
+#if !defined(TARGET_AMD64)
         // The VM sets JitFlags::JIT_FLAG_FRAMED for two reasons: (1) the COMPlus_JitFramed variable is set, or
         // (2) the function is marked "noinline". The reason for #2 is that people mark functions
         // noinline to ensure the show up on in a stack walk. But for AMD64, we don't need a frame
@@ -3879,12 +3848,10 @@ _SetMinOpts:
         }
     }
 
-    info.compUnwrapContextful = opts.OptimizationEnabled();
-
     fgCanRelocateEHRegions = true;
 }
 
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
 // Function compRsvdRegCheck:
 //  given a curState to use for calculating the total frame size
 //  it will return true if the REG_OPT_RSVD should be reserved so
@@ -3923,13 +3890,13 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 
     noway_assert(frameSize >= calleeSavedRegMaxSz);
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 
     // TODO-ARM64-CQ: update this!
     JITDUMP(" Returning true (ARM64)\n\n");
     return true; // just always assume we'll need it, for now
 
-#else  // _TARGET_ARM_
+#else  // TARGET_ARM
 
     // frame layout:
     //
@@ -4050,9 +4017,9 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     //
     JITDUMP(" Returning false\n\n");
     return false;
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 }
-#endif // _TARGET_ARMARCH_
+#endif // TARGET_ARMARCH
 
 //------------------------------------------------------------------------
 // compGetTieringName: get a string describing tiered compilation settings
@@ -4215,6 +4182,37 @@ void Compiler::compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, b
 }
 
 //------------------------------------------------------------------------
+// BeginPhase: begin execution of a phase
+//
+// Arguments:
+//    phase - the phase that is about to begin
+//
+void Compiler::BeginPhase(Phases phase)
+{
+    mostRecentlyActivePhase = phase;
+}
+
+//------------------------------------------------------------------------
+// EndPhase: finish execution of a phase
+//
+// Arguments:
+//    phase - the phase that has just finished
+//
+void Compiler::EndPhase(Phases phase)
+{
+#if defined(FEATURE_JIT_METHOD_PERF)
+    if (pCompJitTimer != nullptr)
+    {
+        pCompJitTimer->EndPhase(this, phase);
+    }
+#endif
+#if DUMP_FLOWGRAPHS
+    fgDumpFlowGraph(phase);
+#endif // DUMP_FLOWGRAPHS
+    mostRecentlyActivePhase = phase;
+}
+
+//------------------------------------------------------------------------
 // compCompile: run phases needed for compilation
 //
 // Arguments:
@@ -4347,11 +4345,6 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     {
         codeGen->setFramePointerRequired(true);
 
-        // Since we need a slots for security near ebp, its not possible
-        // to do this after an Edit without shifting all the locals.
-        // So we just always reserve space for these slots in case an Edit adds them
-        opts.compNeedSecurityCheck = true;
-
         // We don't care about localloc right now. If we do support it,
         // EECodeManager::FixContextForEnC() needs to handle it smartly
         // in case the localloc was actually executed.
@@ -4415,21 +4408,21 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     }
 #endif // DEBUG
 
-#if defined(DEBUG) && defined(_TARGET_XARCH_)
+#if defined(DEBUG) && defined(TARGET_XARCH)
     if (opts.compStackCheckOnRet)
     {
         lvaReturnSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
         lvaTable[lvaReturnSpCheck].lvType = TYP_I_IMPL;
     }
-#endif // defined(DEBUG) && defined(_TARGET_XARCH_)
+#endif // defined(DEBUG) && defined(TARGET_XARCH)
 
-#if defined(DEBUG) && defined(_TARGET_X86_)
+#if defined(DEBUG) && defined(TARGET_X86)
     if (opts.compStackCheckOnCall)
     {
         lvaCallSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
         lvaTable[lvaCallSpCheck].lvType = TYP_I_IMPL;
     }
-#endif // defined(DEBUG) && defined(_TARGET_X86_)
+#endif // defined(DEBUG) && defined(TARGET_X86)
 
     // Filter out unimported BBs
     fgRemoveEmptyBlocks();
@@ -4485,6 +4478,37 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     fgUpdateFinallyTargetFlags();
 
     EndPhase(PHASE_CLONE_FINALLY);
+
+#if DEBUG
+    if (lvaEnregEHVars)
+    {
+        unsigned methHash   = info.compMethodHash();
+        char*    lostr      = getenv("JitEHWTHashLo");
+        unsigned methHashLo = 0;
+        bool     dump       = false;
+        if (lostr != nullptr)
+        {
+            sscanf_s(lostr, "%x", &methHashLo);
+            dump = true;
+        }
+        char*    histr      = getenv("JitEHWTHashHi");
+        unsigned methHashHi = UINT32_MAX;
+        if (histr != nullptr)
+        {
+            sscanf_s(histr, "%x", &methHashHi);
+            dump = true;
+        }
+        if (methHash < methHashLo || methHash > methHashHi)
+        {
+            lvaEnregEHVars = false;
+        }
+        else if (dump)
+        {
+            printf("Enregistering EH Vars for method %s, hash = 0x%x.\n", info.compFullName, info.compMethodHash());
+            printf(""); // flush
+        }
+    }
+#endif
 
     // Compute bbNum, bbRefs and bbPreds
     //
@@ -4545,14 +4569,14 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     DBEXEC(VERBOSE, fgDispBasicBlocks(true));
 #endif
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (fgNeedToAddFinallyTargetBits)
     {
         // We previously wiped out the BBF_FINALLY_TARGET bits due to some morphing; add them back.
         fgAddFinallyTargetFlags();
         fgNeedToAddFinallyTargetBits = false;
     }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
     // Decide the kind of code we want to generate
     fgSetOptions();
@@ -4564,7 +4588,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 #endif // DEBUG
 
     // End of the morphing phases
+    //
+    // We can now enable all phase checking
     EndPhase(PHASE_MORPH_END);
+    activePhaseChecks = PhaseChecks::CHECK_ALL;
 
     // GS security checks for unsafe buffers
     if (getNeedsGSSecurityCookie())
@@ -4798,7 +4825,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         }
     }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     //  Check if we need to add the Quirk for the PPP backward compat issue
     compQuirkForPPPflag = compQuirkForPPP();
 #endif
@@ -4845,13 +4872,13 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // call and register argument info, flowgraph and loop info, etc.
     compJitStats();
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     if (compLocallocUsed)
     {
         // We reserve REG_SAVED_LOCALLOC_SP to store SP on entry for stack unwinding
         codeGen->regSet.rsMaskResvd |= RBM_SAVED_LOCALLOC_SP;
     }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
     // Assign registers to variables, etc.
 
@@ -4991,7 +5018,7 @@ void Compiler::ProcessShutdownWork(ICorStaticInfo* statInfo)
 {
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 //  Check if we need to add the Quirk for the PPP backward compat issue.
 //  This Quirk addresses a compatibility issue between the new RyuJit and the previous JIT64.
 //  A backward compatibity issue called 'PPP' exists where a PInvoke call passes a 32-byte struct
@@ -5072,7 +5099,7 @@ bool Compiler::compQuirkForPPP()
     }
     return false;
 }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 /*****************************************************************************/
 
@@ -5169,9 +5196,9 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
             compJitFuncInfoFile = _wfopen(compJitFuncInfoFilename, W("a"));
             if (compJitFuncInfoFile == nullptr)
             {
-#if defined(DEBUG) && !defined(FEATURE_PAL) // no 'perror' in the PAL
+#if defined(DEBUG) && !defined(TARGET_UNIX) // no 'perror' in the PAL
                 perror("Failed to open JitFuncInfoLogFile");
-#endif // defined(DEBUG) && !defined(FEATURE_PAL)
+#endif // defined(DEBUG) && !defined(TARGET_UNIX)
             }
         }
     }
@@ -5194,7 +5221,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 
     // Match OS for compMatchedVM
     CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
-#ifdef _TARGET_UNIX_
+#ifdef TARGET_UNIX
     info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
 #else
     info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
@@ -5211,13 +5238,13 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 
     if (!info.compMatchedVM)
     {
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 
 // Currently nothing needs to be done. There are no ARM flags that conflict with other flags.
 
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 
         // The x86/x64 architecture capabilities flags overlap with the ARM64 ones. Set a reasonable architecture
         // target default. Currently this is disabling all ARM64 architecture features except FP and SIMD, but this
@@ -5245,7 +5272,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SM4);
         compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SVE);
 
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
     }
 
     compMaxUncheckedOffsetForNullObject = eeGetEEInfo()->maxUncheckedOffsetForNullObject;
@@ -5314,65 +5341,10 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 
     // Set this before the first 'BADCODE'
     // Skip verification where possible
-    tiVerificationNeeded = !compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
+    //.tiVerificationNeeded = !compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
+    assert(compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION));
 
     assert(!compIsForInlining() || !tiVerificationNeeded); // Inlinees must have been verified.
-
-    // assume the code is verifiable unless proven otherwise
-    tiIsVerifiableCode = TRUE;
-
-    tiRuntimeCalloutNeeded = false;
-
-    CorInfoInstantiationVerification instVerInfo = INSTVER_GENERIC_PASSED_VERIFICATION;
-
-    if (!compIsForInlining() && tiVerificationNeeded)
-    {
-        instVerInfo = compHnd->isInstantiationOfVerifiedGeneric(methodHnd);
-
-        if (tiVerificationNeeded && (instVerInfo == INSTVER_GENERIC_FAILED_VERIFICATION))
-        {
-            CorInfoCanSkipVerificationResult canSkipVerificationResult =
-                info.compCompHnd->canSkipMethodVerification(info.compMethodHnd);
-
-            switch (canSkipVerificationResult)
-            {
-                case CORINFO_VERIFICATION_CANNOT_SKIP:
-                    // We cannot verify concrete instantiation.
-                    // We can only verify the typical/open instantiation
-                    // The VM should throw a VerificationException instead of allowing this.
-                    NO_WAY("Verification of closed instantiations is not supported");
-                    break;
-
-                case CORINFO_VERIFICATION_CAN_SKIP:
-                    // The VM should first verify the open instantiation. If unverifiable code
-                    // is detected, it should pass in JitFlags::JIT_FLAG_SKIP_VERIFICATION.
-                    assert(!"The VM should have used JitFlags::JIT_FLAG_SKIP_VERIFICATION");
-                    tiVerificationNeeded = false;
-                    break;
-
-                case CORINFO_VERIFICATION_RUNTIME_CHECK:
-                    // This is a concrete generic instantiation with unverifiable code, that also
-                    // needs a runtime callout.
-                    tiVerificationNeeded   = false;
-                    tiRuntimeCalloutNeeded = true;
-                    break;
-
-                case CORINFO_VERIFICATION_DONT_JIT:
-                    // We cannot verify concrete instantiation.
-                    // We can only verify the typical/open instantiation
-                    // The VM should throw a VerificationException instead of allowing this.
-                    BADCODE("NGEN of unverifiable transparent code is not supported");
-                    break;
-            }
-        }
-
-        // load any constraints for verification, noting any cycles to be rejected by the verifying importer
-        if (tiVerificationNeeded)
-        {
-            compHnd->initConstraintsForVerification(methodHnd, &info.hasCircularClassConstraints,
-                                                    &info.hasCircularMethodConstraints);
-        }
-    }
 
     /* Setup an error trap */
 
@@ -5387,8 +5359,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         ULONG*                methodCodeSize;
         JitFlags*             compileFlags;
 
-        CorInfoInstantiationVerification instVerInfo;
-        int                              result;
+        int result;
     } param;
     param.pThis          = this;
     param.classPtr       = classPtr;
@@ -5397,14 +5368,13 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     param.methodCodePtr  = methodCodePtr;
     param.methodCodeSize = methodCodeSize;
     param.compileFlags   = compileFlags;
-    param.instVerInfo    = instVerInfo;
     param.result         = CORJIT_INTERNALERROR;
 
     setErrorTrap(compHnd, Param*, pParam, &param) // ERROR TRAP: Start normal block
     {
-        pParam->result = pParam->pThis->compCompileHelper(pParam->classPtr, pParam->compHnd, pParam->methodInfo,
-                                                          pParam->methodCodePtr, pParam->methodCodeSize,
-                                                          pParam->compileFlags, pParam->instVerInfo);
+        pParam->result =
+            pParam->pThis->compCompileHelper(pParam->classPtr, pParam->compHnd, pParam->methodInfo,
+                                             pParam->methodCodePtr, pParam->methodCodeSize, pParam->compileFlags);
     }
     finallyErrorTrap() // ERROR TRAP: The following block handles errors
     {
@@ -5675,7 +5645,7 @@ void Compiler::compCompileFinish()
     {
         if (compJitHaltMethod())
         {
-#if !defined(_HOST_UNIX_)
+#if !defined(HOST_UNIX)
             // TODO-UNIX: re-enable this when we have an OS that supports a pop-up dialog
 
             // Don't do an assert, but just put up the dialog box so we get just-in-time debugger
@@ -5754,13 +5724,12 @@ unsigned getMethodBodyChecksum(__in_z char* code, int size)
 #endif
 }
 
-int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
-                                COMP_HANDLE                      compHnd,
-                                CORINFO_METHOD_INFO*             methodInfo,
-                                void**                           methodCodePtr,
-                                ULONG*                           methodCodeSize,
-                                JitFlags*                        compileFlags,
-                                CorInfoInstantiationVerification instVerInfo)
+int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
+                                COMP_HANDLE           compHnd,
+                                CORINFO_METHOD_INFO*  methodInfo,
+                                void**                methodCodePtr,
+                                ULONG*                methodCodeSize,
+                                JitFlags*             compileFlags)
 {
     CORINFO_METHOD_HANDLE methodHnd = info.compMethodHnd;
 
@@ -5843,12 +5812,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
                 eeGetMethodFullName(info.compMethodHnd), dspPtr(impTokenLookupContextHandle)));
     }
 
-    // Force verification if asked to do so
-    if (JitConfig.JitForceVer())
-    {
-        tiVerificationNeeded = (instVerInfo == INSTVER_NOT_INSTANTIATION);
-    }
-
     if (tiVerificationNeeded)
     {
         JITLOG((LL_INFO10000, "tiVerificationNeeded initially set to true for %s\n", info.compFullName));
@@ -5860,18 +5823,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
        for reimporting, impCanReimport can be used to check for reimporting. */
 
     impCanReimport = (tiVerificationNeeded || compStressCompile(STRESS_CHK_REIMPORT, 15));
-
-    // Need security prolog/epilog callouts when there is a declarative security in the method.
-    tiSecurityCalloutNeeded = ((info.compFlags & CORINFO_FLG_NOSECURITYWRAP) == 0);
-
-    if (tiSecurityCalloutNeeded || (info.compFlags & CORINFO_FLG_SECURITYCHECK))
-    {
-        // We need to allocate the security object on the stack
-        // when the method being compiled has a declarative security
-        // (i.e. when CORINFO_FLG_NOSECURITYWRAP is reset for the current method).
-        // This is also the case when we inject a prolog and epilog in the method.
-        opts.compNeedSecurityCheck = true;
-    }
 
     /* Initialize set a bunch of global values */
 
@@ -5906,8 +5857,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     }
 
     info.compIsStatic = (info.compFlags & CORINFO_FLG_STATIC) != 0;
-
-    info.compIsContextful = (info.compClassAttr & CORINFO_FLG_CONTEXTFUL) != 0;
 
     info.compPublishStubParam = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM);
 
@@ -6021,12 +5970,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
         goto _Next;
     }
 
-#ifdef FEATURE_CORECLR
     if (compHasBackwardJump && (info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0 && fgCanSwitchToOptimized())
-#else // !FEATURE_CORECLR
-    // We may want to use JitConfig value here to support DISABLE_TIER0_FOR_LOOPS
-    if (compHasBackwardJump && fgCanSwitchToOptimized())
-#endif
     {
         // Method likely has a loop, switch to the OptimizedTier to avoid spending too much time running slower code
         fgSwitchToOptimized();
@@ -8769,7 +8713,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 break;
 
             case GT_MUL:
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
             case GT_MUL_LONG:
 #endif
 
@@ -9062,6 +9006,21 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     if (call->gtCallMoreFlags & GTF_CALL_M_PINVOKE)
                     {
                         chars += printf("[CALL_M_PINVOKE]");
+                    }
+
+                    if (call->IsFatPointerCandidate())
+                    {
+                        chars += printf("[CALL_FAT_POINTER_CANDIDATE]");
+                    }
+
+                    if (call->IsGuarded())
+                    {
+                        chars += printf("[CALL_GUARDED]");
+                    }
+
+                    if (call->IsExpRuntimeLookup())
+                    {
+                        chars += printf("[CALL_EXP_RUNTIME_LOOKUP]");
                     }
                 }
                 break;

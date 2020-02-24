@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Security.AccessControl
@@ -332,7 +332,7 @@ namespace System.Security.AccessControl
         protected void Persist(System.Runtime.InteropServices.SafeHandle handle, System.Security.AccessControl.AccessControlSections includeSections, object? exceptionContext) { }
         protected sealed override void Persist(string name, System.Security.AccessControl.AccessControlSections includeSections) { }
         protected void Persist(string name, System.Security.AccessControl.AccessControlSections includeSections, object? exceptionContext) { }
-        protected internal delegate System.Exception ExceptionFromErrorCode(int errorCode, string? name, System.Runtime.InteropServices.SafeHandle? handle, object? context);
+        protected internal delegate System.Exception? ExceptionFromErrorCode(int errorCode, string? name, System.Runtime.InteropServices.SafeHandle? handle, object? context);
     }
     public abstract partial class ObjectAccessRule : System.Security.AccessControl.AccessRule
     {

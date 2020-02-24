@@ -12,7 +12,7 @@
 #ifndef __CORHLPR_H__
 #define __CORHLPR_H__
 
-#if defined(_MSC_VER) && defined(_X86_) && !defined(FPO_ON)
+#if defined(_MSC_VER) && defined(HOST_X86) && !defined(FPO_ON)
 #pragma optimize("y", on)		// Small critical routines, don't put in EBP frame
 #define FPO_ON 1
 #define CORHLPR_TURNED_FPO_ON 1

@@ -905,7 +905,6 @@ char* DumpAttributeToConsoleBare(DWORD attribute)
     const char* s_static      = "static";
     const char* s_dontInline  = "$dontInline ";
     const char* s_constructor = "$constructor";
-    const char* s_cfnw        = "$noSecurityWrap";
 
 #define ifPrint(s, t)                                                                                                  \
     else if ((s & attribute) == s)                                                                                     \
@@ -917,7 +916,7 @@ char* DumpAttributeToConsoleBare(DWORD attribute)
     if (0)
         ;
     ifPrint(CORINFO_FLG_STATIC, s_static) ifPrint(CORINFO_FLG_DONT_INLINE, s_dontInline)
-        ifPrint(CORINFO_FLG_CONSTRUCTOR, s_constructor) ifPrint(CORINFO_FLG_NOSECURITYWRAP, s_cfnw) else
+        ifPrint(CORINFO_FLG_CONSTRUCTOR, s_constructor) else
     {
         LogError("unknown attribute %x", attribute);
         __debugbreak();

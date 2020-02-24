@@ -41,7 +41,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
     LclVarDsc*   varDsc = compiler->lvaTable + lclNum;
 
 #ifdef DEBUG
-#if !defined(_TARGET_AMD64_)
+#if !defined(TARGET_AMD64)
     // There are no addr nodes on ARM and we are experimenting with encountering vars in 'random' order.
     // Struct fields are not traversed in a consistent order, so ignore them when
     // verifying that we see the var nodes in execution order
@@ -59,7 +59,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
             // dereferenced, so we can't say that this is not a use or def.
         }
     }
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 #endif // DEBUG
 
     compiler->compCurLifeTree = tree;
@@ -96,11 +96,13 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                 {
                     compiler->codeGen->genUpdateVarReg(varDsc, tree);
                 }
-                if (varDsc->lvIsInReg() && tree->GetRegNum() != REG_NA)
+                bool isInReg    = varDsc->lvIsInReg() && tree->GetRegNum() != REG_NA;
+                bool isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr;
+                if (isInReg)
                 {
                     compiler->codeGen->genUpdateRegLife(varDsc, isBorn, isDying DEBUGARG(tree));
                 }
-                else
+                if (isInMemory)
                 {
                     VarSetOps::AddElemD(compiler, stackVarDeltaSet, varDsc->lvVarIndex);
                 }
@@ -131,6 +133,8 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                 if (fldVarDsc->lvTracked)
                 {
                     unsigned fldVarIndex = fldVarDsc->lvVarIndex;
+                    bool     isInReg     = fldVarDsc->lvIsInReg();
+                    bool     isInMemory  = !isInReg || fldVarDsc->lvLiveInOutOfHndlr;
                     noway_assert(fldVarIndex < compiler->lvaTrackedCount);
                     if (!hasDeadTrackedFieldVars)
                     {
@@ -139,7 +143,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                         {
                             // We repeat this call here and below to avoid the VarSetOps::IsMember
                             // test in this, the common case, where we have no deadTrackedFieldVars.
-                            if (fldVarDsc->lvIsInReg())
+                            if (isInReg)
                             {
                                 if (isBorn)
                                 {
@@ -147,7 +151,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                                 }
                                 compiler->codeGen->genUpdateRegLife(fldVarDsc, isBorn, isDying DEBUGARG(tree));
                             }
-                            else
+                            if (isInMemory)
                             {
                                 VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
                             }
@@ -155,7 +159,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                     }
                     else if (ForCodeGen && VarSetOps::IsMember(compiler, varDeltaSet, fldVarIndex))
                     {
-                        if (compiler->lvaTable[i].lvIsInReg())
+                        if (isInReg)
                         {
                             if (isBorn)
                             {
@@ -163,7 +167,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                             }
                             compiler->codeGen->genUpdateRegLife(fldVarDsc, isBorn, isDying DEBUGARG(tree));
                         }
-                        else
+                        if (isInMemory)
                         {
                             VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
                         }

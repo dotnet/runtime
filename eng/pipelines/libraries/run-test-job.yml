@@ -52,9 +52,6 @@ jobs:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
         - _skipTestRestoreArg: /p:SkipTestRestore=false
-        - _testRunNamePrefixSuffix: ''
-        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-          - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
         - ${{ parameters.variables }}
 
       steps:
@@ -80,7 +77,8 @@ jobs:
                     $(_runtimeOSArg)
                     /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
                     /p:ArchGroup=${{ parameters.archType }}
-                    /p:ConfigurationGroup=${{ parameters.buildConfig }}
+                    /p:Configuration=${{ parameters.buildConfig }}
+                    /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideCoreclrFromLiveDrop.binlog
             displayName: Override $(runtimeFlavorName) from live drop
 
         - template: /eng/pipelines/libraries/helix.yml

@@ -113,7 +113,7 @@ namespace Microsoft.Win32
                     }
                     finally
                     {
-                        _hkey = null;
+                        _hkey = null!;
                     }
                 }
                 else if (IsPerfDataKey())
@@ -126,7 +126,6 @@ namespace Microsoft.Win32
         /// <summary>Creates a new subkey, or opens an existing one.</summary>
         /// <param name="subkey">Name or path to subkey to create or open.</param>
         /// <returns>The subkey, or <b>null</b> if the operation failed.</returns>
-        [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread safety")]
         public RegistryKey CreateSubKey(string subkey)
         {
             return CreateSubKey(subkey, _checkMode);
@@ -147,12 +146,12 @@ namespace Microsoft.Win32
             return CreateSubKey(subkey, permissionCheck, RegistryOptions.None);
         }
 
-        public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions, RegistrySecurity registrySecurity)
+        public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions, RegistrySecurity? registrySecurity)
         {
             return CreateSubKey(subkey, permissionCheck, registryOptions);
         }
 
-        public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistrySecurity registrySecurity)
+        public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistrySecurity? registrySecurity)
         {
             return CreateSubKey(subkey, permissionCheck, RegistryOptions.None);
         }
@@ -168,7 +167,7 @@ namespace Microsoft.Win32
             // only keys opened under read mode is not writable
             if (!_remoteKey)
             {
-                RegistryKey key = InternalOpenSubKeyWithoutSecurityChecks(subkey, (permissionCheck != RegistryKeyPermissionCheck.ReadSubTree));
+                RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, (permissionCheck != RegistryKeyPermissionCheck.ReadSubTree));
                 if (key != null)
                 {
                     // Key already exits
@@ -200,7 +199,7 @@ namespace Microsoft.Win32
             // Open the key we are deleting and check for children. Be sure to
             // explicitly call close to avoid keeping an extra HKEY open.
             //
-            RegistryKey key = InternalOpenSubKeyWithoutSecurityChecks(subkey, false);
+            RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, false);
             if (key != null)
             {
                 using (key)
@@ -244,7 +243,7 @@ namespace Microsoft.Win32
 
             subkey = FixupName(subkey); // Fixup multiple slashes to a single slash
 
-            RegistryKey key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
+            RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
             if (key != null)
             {
                 using (key)
@@ -274,7 +273,7 @@ namespace Microsoft.Win32
         /// </summary>
         private void DeleteSubKeyTreeInternal(string subkey)
         {
-            RegistryKey key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
+            RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
             if (key != null)
             {
                 using (key)
@@ -339,7 +338,7 @@ namespace Microsoft.Win32
         /// <summary>Returns a subkey with read only permissions.</summary>
         /// <param name="name">Name or path of subkey to open.</param>
         /// <returns>The Subkey requested, or <b>null</b> if the operation failed.</returns>
-        public RegistryKey OpenSubKey(string name)
+        public RegistryKey? OpenSubKey(string name)
         {
             return OpenSubKey(name, false);
         }
@@ -351,7 +350,7 @@ namespace Microsoft.Win32
         /// <param name="name">Name or the path of subkey to open.</param>
         /// <param name="writable">Set to <b>true</b> if you only need readonly access.</param>
         /// <returns>the Subkey requested, or <b>null</b> if the operation failed.</returns>
-        public RegistryKey OpenSubKey(string name, bool writable)
+        public RegistryKey? OpenSubKey(string name, bool writable)
         {
             ValidateKeyName(name);
             EnsureNotDisposed();
@@ -360,19 +359,19 @@ namespace Microsoft.Win32
             return InternalOpenSubKeyCore(name, writable);
         }
 
-        public RegistryKey OpenSubKey(string name, RegistryKeyPermissionCheck permissionCheck)
+        public RegistryKey? OpenSubKey(string name, RegistryKeyPermissionCheck permissionCheck)
         {
             ValidateKeyMode(permissionCheck);
 
             return OpenSubKey(name, permissionCheck, (RegistryRights)GetRegistryKeyAccess(permissionCheck));
         }
 
-        public RegistryKey OpenSubKey(string name, RegistryRights rights)
+        public RegistryKey? OpenSubKey(string name, RegistryRights rights)
         {
             return OpenSubKey(name, this._checkMode, rights);
         }
 
-        public RegistryKey OpenSubKey(string name, RegistryKeyPermissionCheck permissionCheck, RegistryRights rights)
+        public RegistryKey? OpenSubKey(string name, RegistryKeyPermissionCheck permissionCheck, RegistryRights rights)
         {
             ValidateKeyName(name);
             ValidateKeyMode(permissionCheck);
@@ -385,7 +384,7 @@ namespace Microsoft.Win32
             return InternalOpenSubKeyCore(name, permissionCheck, (int)rights);
         }
 
-        internal RegistryKey InternalOpenSubKeyWithoutSecurityChecks(string name, bool writable)
+        internal RegistryKey? InternalOpenSubKeyWithoutSecurityChecks(string name, bool writable)
         {
             ValidateKeyName(name);
             EnsureNotDisposed();
@@ -498,7 +497,7 @@ namespace Microsoft.Win32
         /// </remarks>
         /// <param name="name">Name of value to retrieve.</param>
         /// <returns>The data associated with the value.</returns>
-        public object GetValue(string name)
+        public object? GetValue(string? name)
         {
             return InternalGetValue(name, null, false);
         }
@@ -515,12 +514,12 @@ namespace Microsoft.Win32
         /// <param name="name">Name of value to retrieve.</param>
         /// <param name="defaultValue">Value to return if <i>name</i> doesn't exist.</param>
         /// <returns>The data associated with the value.</returns>
-        public object GetValue(string name, object defaultValue)
+        public object? GetValue(string? name, object? defaultValue)
         {
             return InternalGetValue(name, defaultValue, false);
         }
 
-        public object GetValue(string name, object defaultValue, RegistryValueOptions options)
+        public object? GetValue(string? name, object? defaultValue, RegistryValueOptions options)
         {
             if (options < RegistryValueOptions.None || options > RegistryValueOptions.DoNotExpandEnvironmentNames)
             {
@@ -530,13 +529,13 @@ namespace Microsoft.Win32
             return InternalGetValue(name, defaultValue, doNotExpand);
         }
 
-        private object InternalGetValue(string name, object defaultValue, bool doNotExpand)
+        private object? InternalGetValue(string? name, object? defaultValue, bool doNotExpand)
         {
             EnsureNotDisposed();
             return InternalGetValueCore(name, defaultValue, doNotExpand);
         }
 
-        public RegistryValueKind GetValueKind(string name)
+        public RegistryValueKind GetValueKind(string? name)
         {
             EnsureNotDisposed();
             return GetValueKindCore(name);
@@ -554,12 +553,12 @@ namespace Microsoft.Win32
         /// <summary>Sets the specified value.</summary>
         /// <param name="name">Name of value to store data in.</param>
         /// <param name="value">Data to store.</param>
-        public void SetValue(string name, object value)
+        public void SetValue(string? name, object value)
         {
             SetValue(name, value, RegistryValueKind.Unknown);
         }
 
-        public void SetValue(string name, object value, RegistryValueKind valueKind)
+        public void SetValue(string? name, object value, RegistryValueKind valueKind)
         {
             if (value == null)
             {

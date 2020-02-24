@@ -6,21 +6,18 @@ remove_definitions(-D_UNICODE)
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
   #use static crt
   add_definitions(-MT)
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 include_directories(.)
 include_directories(../superpmi-shared)
 
 set(SUPERPMI_SHIM_SIMPLE_SOURCES
-    coreclrcallbacks.cpp
     jithost.cpp
     icorjitcompiler.cpp
     icorjitinfo.cpp
-    ieememorymanager.cpp
-    iexecutionengine.cpp
     superpmi-shim-simple.cpp
     ../superpmi-shared/callutils.cpp
     ../superpmi-shared/compileresult.cpp
@@ -36,11 +33,11 @@ set(SUPERPMI_SHIM_SIMPLE_SOURCES
     ../superpmi-shared/spmidumphelper.cpp
 )
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     preprocess_file(${CMAKE_CURRENT_SOURCE_DIR}/superpmi-shim-simple.def ${CMAKE_CURRENT_BINARY_DIR}/superpmi-shim-simple.def)
 
     list(APPEND SUPERPMI_SHIM_SIMPLE_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/superpmi-shim-simple.def)
-endif (WIN32)
+endif (CLR_CMAKE_TARGET_WIN32)
 
 _add_library(superpmi-shim-simple
     SHARED

@@ -1,4 +1,4 @@
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     add_compile_options($<$<CONFIG:Debug>:/Od>)
     add_compile_options($<$<CONFIG:Checked>:/O1>)
     add_compile_options($<$<CONFIG:Release>:/Ox>)

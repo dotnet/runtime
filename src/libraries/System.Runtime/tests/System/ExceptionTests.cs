@@ -81,6 +81,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15140", TestRuntimes.Mono)]
         public static void ThrowStatementDoesNotResetExceptionStackLineSameMethod()
         {
             (string, string, int) rethrownExceptionStackFrame = (null, null, 0);
@@ -108,7 +109,9 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] 
+        // [ActiveIssue(https://github.com/dotnet/runtime/issues/1871)] can't use ActiveIssue for archs
+        [ActiveIssue("https://github.com/mono/mono/issues/15141", TestRuntimes.Mono)]
         public static void ThrowStatementDoesNotResetExceptionStackLineOtherMethod()
         {
             (string, string, int) rethrownExceptionStackFrame = (null, null, 0);
@@ -202,7 +205,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Exception_OverriddenToStringOnInnerException()
         {
             var inner = new DerivedException();

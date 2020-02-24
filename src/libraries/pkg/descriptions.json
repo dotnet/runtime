@@ -15,17 +15,6 @@
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.CSharp",
-    "Description": "Provides support for compilation and code generation, including dynamic, using the C# language.",
-    "CommonTypes": [
-      "Microsoft.CSharp.RuntimeBinder.Binder",
-      "Microsoft.CSharp.RuntimeBinder.RuntimeBinderException",
-      "Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo",
-      "Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfoFlags",
-      "Microsoft.CSharp.RuntimeBinder.CSharpBinderFlags"
-    ]
-  },
-  {
     "Name": "Microsoft.Bcl.HashCode",
     "Description": "Provides the HashCode type for .NET Standard 2.0. This package is not required starting with .NET Standard 2.1 and .NET Core 3.0.",
     "CommonTypes": [
@@ -91,11 +80,6 @@
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.NETCore.Runtime.CoreCLR",
-    "Description": "The .NET Core runtime, called CoreCLR, and the base library, called mscorlib. It includes the garbage collector, JIT compiler, base .NET data types and many low-level classes.",
-    "CommonTypes": []
-  },
-  {
     "Name": "Microsoft.NETCore.Targets",
     "Description": "Provides supporting infrastructure for portable projects: support identifiers that define framework and runtime for support targets and packages that reference the minimum supported package versions when targeting these.",
     "CommonTypes": []
@@ -141,11 +125,6 @@
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.Private.CoreFx.NETCoreApp",
-    "Description": "Package used to represent the portions of NETCoreApp that come from CoreFx.",
-    "CommonTypes": []
-  },
-  {
     "Name": "Microsoft.Private.CoreFx.OOB",
     "Description": "Package used to represent out-of-band packages that are not included in NetCoreApp.",
     "CommonTypes": []
@@ -153,11 +132,6 @@
   {
     "Name": "Microsoft.TargetingPack.NETFramework.v4.6",
     "Description": "Contains the .NET Framework v4.6 targeting pack.",
-    "CommonTypes": []
-  },
-  {
-    "Name": "Microsoft.TargetingPack.Private.CoreCLR",
-    "Description": "Contains a private targeting pack which contains only the CoreCLR mscorlib reference assembly. Used for producing platform specific libraries such as facades.",
     "CommonTypes": []
   },
   {
@@ -974,16 +948,6 @@
     ]
   },
   {
-    "Name": "System.Json",
-    "Description": "Provides standards-based support for the serialization of JavaScript Object Notation (JSON).",
-    "CommonTypes": [
-      "System.Json.JsonArray",
-      "System.Json.JsonObject",
-      "System.Json.JsonPrimitive",
-      "System.Json.JsonValue"
-    ]
-  },
-  {
     "Name": "System.Linq",
     "Description": "Provides classes and interfaces that supports queries that use Language-Integrated Query (LINQ).",
     "CommonTypes": [
@@ -1405,7 +1369,7 @@
       "System.Resources.SatelliteContractVersionAttribute",
       "System.Resources.MissingManifestResourceException"
     ]
-  }, 
+  },
   {
     "Name": "System.Resources.Extensions",
     "Description": "Provides classes which read and write resources in a format that supports non-primitive objects.",

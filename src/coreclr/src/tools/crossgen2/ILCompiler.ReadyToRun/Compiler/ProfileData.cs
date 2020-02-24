@@ -1,10 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
-
+using System.Linq;
 using ILCompiler.IBC;
 
 using Internal.TypeSystem;
@@ -87,44 +87,132 @@ namespace ILCompiler
     public class ProfileDataManager
     {
         private readonly IBCProfileParser _ibcParser;
+        private readonly List<ProfileData> _inputData = new List<ProfileData>();
+        private readonly Dictionary<MethodDesc, MethodProfileData> _mergedProfileData = new Dictionary<MethodDesc, MethodProfileData>();
+        private readonly Dictionary<ModuleDesc, HashSet<MethodDesc>> _placedProfileMethods = new Dictionary<ModuleDesc, HashSet<MethodDesc>>();
+        private readonly HashSet<MethodDesc> _placedProfileMethodsAll = new HashSet<MethodDesc>();
+        private readonly bool _partialNGen;
+        private readonly ReadyToRunCompilationModuleGroupBase _compilationGroup;
 
-        public ProfileDataManager(Logger logger, IEnumerable<ModuleDesc> possibleReferenceModules)
+        public ProfileDataManager(Logger logger,
+                                  IEnumerable<ModuleDesc> possibleReferenceModules,
+                                  IEnumerable<ModuleDesc> inputModules,
+                                  IEnumerable<ModuleDesc> versionBubbleModules,
+                                  ModuleDesc nonLocalGenericsHome,
+                                  IReadOnlyList<string> mibcFiles,
+                                  CompilerTypeSystemContext context,
+                                  ReadyToRunCompilationModuleGroupBase compilationGroup)
         {
             _ibcParser = new IBCProfileParser(logger, possibleReferenceModules);
-        }
+            _compilationGroup = compilationGroup;
+            HashSet<ModuleDesc> versionBubble = new HashSet<ModuleDesc>(versionBubbleModules);
 
-        private readonly Dictionary<ModuleDesc, ProfileData> _profileData = new Dictionary<ModuleDesc, ProfileData>();
-
-        public ProfileData GetDataForModuleDesc(ModuleDesc moduleDesc)
-        {
-            lock (_profileData)
             {
-                if (_profileData.TryGetValue(moduleDesc, out ProfileData precomputedProfileData))
-                    return precomputedProfileData;
+                // Parse MIbc Data
+
+                string onlyParseItemsDefinedInAssembly = nonLocalGenericsHome == null ? inputModules.First().Assembly.GetName().Name : null;
+                HashSet<string> versionBubbleModuleStrings = new HashSet<string>();
+                foreach (ModuleDesc versionBubbleModule in versionBubble)
+                {
+                    versionBubbleModuleStrings.Add(versionBubbleModule.Assembly.GetName().Name);
+                }
+
+                foreach (string file in mibcFiles)
+                {
+                    _inputData.Add(MIbcProfileParser.ParseMIbcFile(context, file, versionBubbleModuleStrings, onlyParseItemsDefinedInAssembly));
+                }
             }
 
-            ProfileData computedProfileData = ComputeDataForModuleDesc(moduleDesc);
-
-            lock (_profileData)
             {
-                if (_profileData.TryGetValue(moduleDesc, out ProfileData precomputedProfileData))
-                    return precomputedProfileData;
+                // Parse Ibc data
+                foreach (var module in inputModules)
+                {
+                    _inputData.Add(_ibcParser.ParseIBCDataFromModule((EcmaModule)module));
+                    _placedProfileMethods.Add(module, new HashSet<MethodDesc>());
+                }
+            }
 
-                _profileData.Add(moduleDesc, computedProfileData);
-                return computedProfileData;
+            // Merge all data together
+            foreach (ProfileData profileData in _inputData)
+            {
+                MergeProfileData(ref _partialNGen, _mergedProfileData, profileData);
+            }
+
+            // With the merged data find the set of methods to be placed within this module
+            foreach (var profileData in _mergedProfileData)
+            {
+                // If the method is not excluded from processing
+                if (!profileData.Value.Flags.HasFlag(MethodProfilingDataFlags.ExcludeHotMethodCode) &&
+                    !profileData.Value.Flags.HasFlag(MethodProfilingDataFlags.ExcludeColdMethodCode))
+                {
+                    // Check for methods which are defined within the version bubble, and only rely on other modules within the bubble
+                    if (!_compilationGroup.VersionsWithMethodBody(profileData.Key))
+                        continue; // Method not contained within version bubble
+
+                    if (_compilationGroup.ContainsType(profileData.Key.OwningType) &&
+                        (profileData.Key.OwningType is MetadataType declaringType))
+                    {
+                        // In this case the method is placed in its natural home (which is the defining module of the method)
+                        _placedProfileMethods[declaringType.Module].Add(profileData.Key);
+                        _placedProfileMethodsAll.Add(profileData.Key);
+                    }
+                    else
+                    {
+                        // If the defining module is not within the input set, if the nonLocalGenericsHome is provided, place it there
+                        if ((nonLocalGenericsHome != null) && (profileData.Key.GetTypicalMethodDefinition() != profileData.Key))
+                        {
+                            _placedProfileMethods[nonLocalGenericsHome].Add(profileData.Key);
+                            _placedProfileMethodsAll.Add(profileData.Key);
+                        }
+                    }
+                }
             }
         }
 
-        private ProfileData ComputeDataForModuleDesc(ModuleDesc moduleDesc)
+        private void MergeProfileData(ref bool partialNgen, Dictionary<MethodDesc, MethodProfileData> mergedProfileData, ProfileData profileData)
         {
-            if (!(moduleDesc is EcmaModule ecmaModule))
-                return EmptyProfileData.Singleton;
+            if (profileData.PartialNGen)
+                partialNgen = true;
 
-            ProfileData profileData = _ibcParser.ParseIBCDataFromModule(ecmaModule);
-            if (profileData == null)
-                profileData = EmptyProfileData.Singleton;
+            foreach (MethodProfileData data in profileData.GetAllMethodProfileData())
+            {
+                MethodProfileData dataToMerge;
+                if (mergedProfileData.TryGetValue(data.Method, out dataToMerge))
+                {
+                    mergedProfileData[data.Method] = new MethodProfileData(data.Method, dataToMerge.Flags | data.Flags, dataToMerge.ScenarioMask | data.ScenarioMask);
+                }
+                else
+                {
+                    mergedProfileData.Add(data.Method, data);
+                }
+            }
+        }
 
-            return profileData;
+        /// <summary>
+        /// Get the defining module for a method which is entirely defined within the version bubble
+        /// If a module is a generic which has interaction modules outside of the version bubble, return null.
+        /// </summary>
+        private ModuleDesc GetDefiningModuleForMethodWithinVersionBubble(MethodDesc method, HashSet<ModuleDesc> versionBubble)
+        {
+            if (_compilationGroup.VersionsWithMethodBody(method) && (method.OwningType is MetadataType metadataType))
+            {
+                return metadataType.Module;
+            }
+
+            return null;
+        }
+
+        public IEnumerable<MethodDesc> GetMethodsForModuleDesc(ModuleDesc moduleDesc)
+        {
+            if (_placedProfileMethods.TryGetValue(moduleDesc, out var precomputedProfileData))
+                return precomputedProfileData.ToArray();
+
+            return Array.Empty<MethodDesc>();
+        }
+
+        public bool IsMethodInProfileData(MethodDesc method)
+        {
+            return _placedProfileMethodsAll.Contains(method);
         }
     }
 }

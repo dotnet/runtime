@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -11,9 +11,45 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
+using Internal.Runtime;
 
 namespace ILCompiler.Reflection.ReadyToRun
 {
+    /// <summary>
+    /// This structure represents a single precode fixup cell decoded from the
+    /// nibble-oriented per-method fixup blob. Each method entrypoint fixup
+    /// represents an array of cells that must be fixed up before the method
+    /// can start executing.
+    /// </summary>
+    public struct FixupCell
+    {
+        public int Index { get; set; }
+
+        /// <summary>
+        /// Zero-based index of the import table within the import tables section.
+        /// </summary>
+        public uint TableIndex;
+
+        /// <summary>
+        /// Zero-based offset of the entry in the import table; it must be a multiple
+        /// of the target architecture pointer size.
+        /// </summary>
+        public uint CellOffset;
+
+        /// <summary>
+        /// Fixup cell signature (textual representation of the typesystem object).
+        /// </summary>
+        public string Signature;
+
+        public FixupCell(int index, uint tableIndex, uint cellOffset, string signature)
+        {
+            Index = index;
+            TableIndex = tableIndex;
+            CellOffset = cellOffset;
+            Signature = signature;
+        }
+    }
+
     public abstract class BaseUnwindInfo
     {
         public int Size { get; set; }
@@ -46,22 +82,24 @@ namespace ILCompiler.Reflection.ReadyToRun
     }
 
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/pal/inc/pal.h">src/pal/inc/pal.h</a> _RUNTIME_FUNCTION
+    /// A runtime function corresponds to a contiguous fragment of code that implements a method.
     /// </summary>
     public class RuntimeFunction
     {
+        // based on <a href= "https://github.com/dotnet/runtime/blob/master/src/coreclr/src/pal/inc/pal.h" > src / pal / inc / pal.h </ a > _RUNTIME_FUNCTION
         private ReadyToRunReader _readyToRunReader;
+        private EHInfo _ehInfo;
         private DebugInfo _debugInfo;
 
         /// <summary>
         /// The index of the runtime function
         /// </summary>
-        public int Id { get; set; }
+        public int Id { get; }
 
         /// <summary>
         /// The relative virtual address to the start of the code block
         /// </summary>
-        public int StartAddress { get; set; }
+        public int StartAddress { get; }
 
         /// <summary>
         /// The size of the code block in bytes
@@ -70,17 +108,17 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// The EndAddress field in the runtime functions section is conditional on machine type
         /// Size is -1 for images without the EndAddress field
         /// </remarks>
-        public int Size { get; set; }
+        public int Size { get; }
 
         /// <summary>
         /// The relative virtual address to the unwind info
         /// </summary>
-        public int UnwindRVA { get; set; }
+        public int UnwindRVA { get; }
 
         /// <summary>
         /// The start offset of the runtime function with is non-zero for methods with multiple runtime functions
         /// </summary>
-        public int CodeOffset { get; set; }
+        public int CodeOffset { get; }
 
         /// <summary>
         /// The method that this runtime function belongs to
@@ -89,7 +127,17 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public BaseUnwindInfo UnwindInfo { get; }
 
-        public EHInfo EHInfo { get; }
+        public EHInfo EHInfo
+        {
+            get
+            {
+                if (_ehInfo == null)
+                {
+                    _readyToRunReader.RuntimeFunctionToEHInfo.TryGetValue(StartAddress, out _ehInfo);
+                }
+                return _ehInfo;
+            }
+        }
 
         public DebugInfo DebugInfo
         {
@@ -112,8 +160,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             int codeOffset,
             ReadyToRunMethod method,
             BaseUnwindInfo unwindInfo,
-            BaseGcInfo gcInfo,
-            EHInfo ehInfo)
+            BaseGcInfo gcInfo)
         {
             _readyToRunReader = readyToRunReader;
             Id = id;
@@ -148,7 +195,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
             CodeOffset = codeOffset;
             method.GcInfo = gcInfo;
-            EHInfo = ehInfo;
         }
     }
 
@@ -196,7 +242,23 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// All the runtime functions of this method
         /// </summary>
-        public IList<RuntimeFunction> RuntimeFunctions { get; }
+        public IReadOnlyList<RuntimeFunction> RuntimeFunctions
+        {
+            get
+            {
+                EnsureRuntimeFunctions();
+                return _runtimeFunctions;
+            }
+        }
+
+        private void EnsureRuntimeFunctions()
+        {
+            if (this._runtimeFunctions == null)
+            {
+                this._runtimeFunctions = new List<RuntimeFunction>();
+                this.ParseRuntimeFunctions();
+            }
+        }
 
         /// <summary>
         /// The id of the entrypoint runtime function
@@ -205,12 +267,27 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public BaseGcInfo GcInfo { get; set; }
 
-        public FixupCell[] Fixups { get; set; }
+        private ReadyToRunReader _readyToRunReader;
+        private List<FixupCell> _fixupCells;
+        private int? _fixupOffset;
+        private List<RuntimeFunction> _runtimeFunctions;
+
+        public IReadOnlyList<FixupCell> Fixups
+        {
+            get
+            {
+                EnsureFixupCells();
+                return _fixupCells;
+            }
+        }
+
+        internal int RuntimeFunctionCount { get; set; }
 
         /// <summary>
         /// Extracts the method signature from the metadata by rid
         /// </summary>
         public ReadyToRunMethod(
+            ReadyToRunReader readyToRunReader,
             int index,
             MetadataReader metadataReader,
             EntityHandle methodHandle,
@@ -218,14 +295,15 @@ namespace ILCompiler.Reflection.ReadyToRun
             string owningType,
             string constrainedType,
             string[] instanceArgs,
-            FixupCell[] fixups)
+            int? fixupOffset)
         {
+            _readyToRunReader = readyToRunReader;
+            _fixupOffset = fixupOffset;
             Index = index;
             MethodHandle = methodHandle;
             EntryPointRuntimeFunctionId = entryPointId;
 
             MetadataReader = metadataReader;
-            RuntimeFunctions = new List<RuntimeFunction>();
 
             EntityHandle owningTypeHandle;
             GenericParameterHandleCollection genericParams = default(GenericParameterHandleCollection);
@@ -268,8 +346,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 DeclaringType = MetadataNameFormatter.FormatHandle(MetadataReader, owningTypeHandle);
             }
 
-            Fixups = fixups;
-
             StringBuilder sb = new StringBuilder();
             sb.Append(Signature.ReturnType);
             sb.Append(" ");
@@ -311,6 +387,126 @@ namespace ILCompiler.Reflection.ReadyToRun
             sb.Append(")");
 
             SignatureString = sb.ToString();
+        }
+
+        private void EnsureFixupCells()
+        {
+            if (_fixupCells != null)
+            {
+                return;
+            }
+            if (!_fixupOffset.HasValue)
+            {
+                return;
+            }
+            _fixupCells = new List<FixupCell>();
+            NibbleReader reader = new NibbleReader(_readyToRunReader.Image, _fixupOffset.Value);
+
+            // The following algorithm has been loosely ported from CoreCLR,
+            // src\vm\ceeload.inl, BOOL Module::FixupDelayListAux
+            uint curTableIndex = reader.ReadUInt();
+
+            while (true)
+            {
+                uint fixupIndex = reader.ReadUInt(); // Accumulate the real rva from the delta encoded rva
+
+                while (true)
+                {
+                    ReadyToRunImportSection importSection = _readyToRunReader.ImportSections[(int)curTableIndex];
+                    ReadyToRunImportSection.ImportSectionEntry entry = importSection.Entries[(int)fixupIndex];
+                    _fixupCells.Add(new FixupCell(_fixupCells.Count, curTableIndex, fixupIndex, entry.Signature));
+
+                    uint delta = reader.ReadUInt();
+
+                    // Delta of 0 means end of entries in this table
+                    if (delta == 0)
+                        break;
+
+                    fixupIndex += delta;
+                }
+
+                uint tableIndex = reader.ReadUInt();
+
+                if (tableIndex == 0)
+                    break;
+
+                curTableIndex = curTableIndex + tableIndex;
+
+            } // Done with all entries in this table
+        }
+
+        /// <summary>
+        /// Get the RVAs of the runtime functions for each method
+        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/zap/zapcode.cpp">ZapUnwindInfo::Save</a>
+        /// </summary>
+        private void ParseRuntimeFunctions()
+        {
+            int runtimeFunctionId = EntryPointRuntimeFunctionId;
+            int runtimeFunctionSize = _readyToRunReader.CalculateRuntimeFunctionSize();
+            int runtimeFunctionOffset = _readyToRunReader.PEReader.GetOffset(_readyToRunReader.ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions].RelativeVirtualAddress);
+            int curOffset = runtimeFunctionOffset + runtimeFunctionId * runtimeFunctionSize;
+            BaseGcInfo gcInfo = null;
+            int codeOffset = 0;
+            for (int i = 0; i < RuntimeFunctionCount; i++)
+            {
+                int startRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
+                int endRva = -1;
+                if (_readyToRunReader.Machine == Machine.Amd64)
+                {
+                    endRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
+                }
+                int unwindRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
+                int unwindOffset = _readyToRunReader.PEReader.GetOffset(unwindRva);
+
+                BaseUnwindInfo unwindInfo = null;
+                if (_readyToRunReader.Machine == Machine.Amd64)
+                {
+                    unwindInfo = new Amd64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
+                    if (i == 0)
+                    {
+                        gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                    }
+                }
+                else if (_readyToRunReader.Machine == Machine.I386)
+                {
+                    unwindInfo = new x86.UnwindInfo(_readyToRunReader.Image, unwindOffset);
+                    if (i == 0)
+                    {
+                        gcInfo = new x86.GcInfo(_readyToRunReader.Image, unwindOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                    }
+                }
+                else if (_readyToRunReader.Machine == Machine.ArmThumb2)
+                {
+                    unwindInfo = new Arm.UnwindInfo(_readyToRunReader.Image, unwindOffset);
+                    if (i == 0)
+                    {
+                        gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion); // Arm and Arm64 use the same GcInfo format as x64
+                    }
+                }
+                else if (_readyToRunReader.Machine == Machine.Arm64)
+                {
+                    unwindInfo = new Arm64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
+                    if (i == 0)
+                    {
+                        gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, unwindOffset + unwindInfo.Size, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                    }
+                }
+
+                RuntimeFunction rtf = new RuntimeFunction(
+                    _readyToRunReader,
+                    runtimeFunctionId,
+                    startRva,
+                    endRva,
+                    unwindRva,
+                    codeOffset,
+                    this,
+                    unwindInfo,
+                    gcInfo);
+
+                _runtimeFunctions.Add(rtf);
+                runtimeFunctionId++;
+                codeOffset += rtf.Size;
+            }
         }
     }
 }

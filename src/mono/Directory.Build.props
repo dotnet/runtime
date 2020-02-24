@@ -12,6 +12,7 @@
 
     <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
     <Platform>$(ArchGroup)</Platform>
+    <TargetArchitecture>$(ArchGroup)</TargetArchitecture>
 
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
 

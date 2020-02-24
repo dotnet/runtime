@@ -715,7 +715,6 @@ namespace System.Xml
                             pDst = LineFeedEntity(pDst);
                             break;
                         default:
-                            const string hexDigits = "0123456789ABCDEF";
                             Debug.Assert(_uriEscapingBuffer?.Length > 0);
                             fixed (byte* pUriEscapingBuffer = _uriEscapingBuffer)
                             {
@@ -727,8 +726,8 @@ namespace System.Xml
                                 while (pByte < pEnd)
                                 {
                                     *pDst++ = (char)'%';
-                                    *pDst++ = (char)hexDigits[*pByte >> 4];
-                                    *pDst++ = (char)hexDigits[*pByte & 0xF];
+                                    *pDst++ = (char)HexConverter.ToCharUpper(*pByte >> 4);
+                                    *pDst++ = (char)HexConverter.ToCharUpper(*pByte);
                                     pByte++;
                                 }
                             }

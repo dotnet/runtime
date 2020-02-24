@@ -9,10 +9,11 @@ include_directories("classlibnative/cryptography")
 include_directories("classlibnative/inc")
 include_directories("${GENERATED_INCLUDE_DIR}")
 
-if(WIN32 AND FEATURE_EVENT_TRACE)
+if(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
     include_directories("${GENERATED_INCLUDE_DIR}/etw")
-endif(WIN32 AND FEATURE_EVENT_TRACE)
+endif(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
 
+add_subdirectory(debug/dbgutil)
 
 if(CLR_CMAKE_HOST_UNIX)
   if(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86)
@@ -76,6 +77,6 @@ add_subdirectory(ilasm)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_subdirectory(palrt)
-elseif(WIN32)
+elseif(CLR_CMAKE_HOST_WIN32)
     add_subdirectory(hosts)
 endif(CLR_CMAKE_HOST_UNIX)

@@ -40,17 +40,24 @@ namespace System.Text.Json
             return converters;
         }
 
+        // Get the list for converters that implement CanConvert().
         private static List<JsonConverter> GetDefaultConverters()
         {
-            const int NumberOfConverters = 2;
+            const int NumberOfConverters = 5;
 
             var converters = new List<JsonConverter>(NumberOfConverters);
 
-            // Use a list for converters that implement CanConvert().
-            converters.Add(new JsonConverterEnum());
-            converters.Add(new JsonKeyValuePairConverter());
+            // Nullable converter should always be first since it forwards to any nullable type.
+            converters.Add(new NullableConverterFactory());
 
-            // We will likely add collection converters here in the future.
+            converters.Add(new EnumConverterFactory());
+            converters.Add(new KeyValuePairConverterFactory());
+
+            // IEnumerable should always be last since they can convert any IEnumerable.
+            converters.Add(new JsonIEnumerableConverterFactory());
+
+            // Object should always be last since it converts any type.
+            converters.Add(new ObjectConverterFactory());
 
             Debug.Assert(NumberOfConverters == converters.Count);
 
@@ -65,7 +72,7 @@ namespace System.Text.Json
         /// </remarks>
         public IList<JsonConverter> Converters { get; }
 
-        internal JsonConverter? DetermineConverterForProperty(Type parentClassType, Type runtimePropertyType, PropertyInfo? propertyInfo)
+        internal JsonConverter? DetermineConverter(Type parentClassType, Type runtimePropertyType, PropertyInfo? propertyInfo)
         {
             JsonConverter? converter = null;
 
@@ -155,10 +162,8 @@ namespace System.Text.Json
             if (converter is JsonConverterFactory factory)
             {
                 converter = factory.GetConverterInternal(typeToConvert, this);
-                if (converter == null || converter.TypeToConvert == null)
-                {
-                    throw new ArgumentNullException(nameof(typeToConvert));
-                }
+                // Allow null converters from the factory. This will result in a NotSupportedException later
+                // and with a nice exception that indicates the parent type.
             }
 
             if (converter != null)
@@ -182,11 +187,6 @@ namespace System.Text.Json
             }
 
             return converter;
-        }
-
-        internal bool HasConverter(Type typeToConvert)
-        {
-            return GetConverter(typeToConvert) != null;
         }
 
         private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, PropertyInfo? propertyInfo)
@@ -259,27 +259,27 @@ namespace System.Text.Json
             {
                 // When adding to this, update NumberOfSimpleConverters above.
 
-                yield return new JsonConverterBoolean();
-                yield return new JsonConverterByte();
-                yield return new JsonConverterByteArray();
-                yield return new JsonConverterChar();
-                yield return new JsonConverterDateTime();
-                yield return new JsonConverterDateTimeOffset();
-                yield return new JsonConverterDouble();
-                yield return new JsonConverterDecimal();
-                yield return new JsonConverterGuid();
-                yield return new JsonConverterInt16();
-                yield return new JsonConverterInt32();
-                yield return new JsonConverterInt64();
-                yield return new JsonConverterJsonElement();
-                yield return new JsonConverterObject();
-                yield return new JsonConverterSByte();
-                yield return new JsonConverterSingle();
-                yield return new JsonConverterString();
-                yield return new JsonConverterUInt16();
-                yield return new JsonConverterUInt32();
-                yield return new JsonConverterUInt64();
-                yield return new JsonConverterUri();
+                yield return new BooleanConverter();
+                yield return new ByteConverter();
+                yield return new ByteArrayConverter();
+                yield return new CharConverter();
+                yield return new DateTimeConverter();
+                yield return new DateTimeOffsetConverter();
+                yield return new DoubleConverter();
+                yield return new DecimalConverter();
+                yield return new GuidConverter();
+                yield return new Int16Converter();
+                yield return new Int32Converter();
+                yield return new Int64Converter();
+                yield return new JsonElementConverter();
+                yield return new ObjectConverter();
+                yield return new SByteConverter();
+                yield return new SingleConverter();
+                yield return new StringConverter();
+                yield return new UInt16Converter();
+                yield return new UInt32Converter();
+                yield return new UInt64Converter();
+                yield return new UriConverter();
             }
         }
     }

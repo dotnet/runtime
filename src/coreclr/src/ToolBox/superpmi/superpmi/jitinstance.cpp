@@ -6,7 +6,6 @@
 #include "standardpch.h"
 #include "superpmi.h"
 #include "jitinstance.h"
-#include "coreclrcallbacks.h"
 #include "icorjitinfo.h"
 #include "jithost.h"
 #include "errorhandling.h"
@@ -131,7 +130,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
     else
         PathToTempJit = PathToOriginalJit;
 
-#ifndef FEATURE_PAL // No file version APIs in the PAL
+#ifndef TARGET_UNIX // No file version APIs in the PAL
     // Do a quick version check
     DWORD dwHandle = 0;
     DWORD fviSize  = GetFileVersionInfoSizeA(PathToTempJit, &dwHandle);
@@ -156,7 +155,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
         }
         delete[] fviData;
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     // Load Library
     hLib = ::LoadLibraryA(PathToTempJit);
@@ -173,15 +172,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
         LogError("GetProcAddress 'getJit' failed (0x%08x)", ::GetLastError());
         return -1;
     }
-    pnsxsJitStartup = (PsxsJitStartup)::GetProcAddress(hLib, "sxsJitStartup");
     pnjitStartup    = (PjitStartup)::GetProcAddress(hLib, "jitStartup");
-
-    if (pnsxsJitStartup != nullptr)
-    {
-        // Setup CoreClrCallbacks and call sxsJitStartup
-        CoreClrCallbacks* cccallbacks = InitCoreClrCallbacks();
-        pnsxsJitStartup(*cccallbacks);
-    }
 
     // Setup ICorJitHost and call jitStartup if necessary
     if (pnjitStartup != nullptr)
@@ -241,15 +232,7 @@ bool JitInstance::reLoad(MethodContext* firstContext)
         LogError("GetProcAddress 'getJit' failed (0x%08x)", ::GetLastError());
         return false;
     }
-    pnsxsJitStartup = (PsxsJitStartup)::GetProcAddress(hLib, "sxsJitStartup");
     pnjitStartup    = (PjitStartup)::GetProcAddress(hLib, "jitStartup");
-
-    if (pnsxsJitStartup != nullptr)
-    {
-        // Setup CoreClrCallbacks and call sxsJitStartup
-        CoreClrCallbacks* cccallbacks = InitCoreClrCallbacks();
-        pnsxsJitStartup(*cccallbacks);
-    }
 
     // Setup ICorJitHost and call jitStartup if necessary
     if (pnjitStartup != nullptr)
@@ -320,12 +303,12 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         if (jitResult == CORJIT_SKIPPED)
         {
             // For altjit, treat SKIPPED as OK
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             if (SpmiTargetArchitecture == SPMI_TARGET_ARCHITECTURE_ARM64)
             {
                 jitResult = CORJIT_OK;
             }
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
             if (SpmiTargetArchitecture == SPMI_TARGET_ARCHITECTURE_ARM)
             {
                 jitResult = CORJIT_OK;
@@ -450,7 +433,7 @@ const WCHAR* JitInstance::getOption(const WCHAR* key, LightWeightMap<DWORD, DWOR
 // Used to allocate memory that needs to handed to the EE.
 // For eg, use this to allocated memory for reporting debug info,
 // which will be handed to the EE by setVars() and setBoundaries()
-void* JitInstance::allocateArray(ULONG cBytes)
+void* JitInstance::allocateArray(size_t cBytes)
 {
     mc->cr->AddCall("allocateArray");
     return HeapAlloc(mc->cr->getCodeHeap(), 0, cBytes);
@@ -458,7 +441,7 @@ void* JitInstance::allocateArray(ULONG cBytes)
 
 // Used to allocate memory that needs to live as long as the jit
 // instance does.
-void* JitInstance::allocateLongLivedArray(ULONG cBytes)
+void* JitInstance::allocateLongLivedArray(size_t cBytes)
 {
     return HeapAlloc(ourHeap, 0, cBytes);
 }

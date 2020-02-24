@@ -263,7 +263,7 @@ namespace System.Security.Cryptography
                 if (disposing)
                 {
                     _key?.Dispose();
-                    _key = null;
+                    _key = null!;
                 }
 
                 base.Dispose(disposing);

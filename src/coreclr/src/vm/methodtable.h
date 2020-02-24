@@ -239,7 +239,7 @@ typedef DPTR(GuidInfo) PTR_GuidInfo;
 // GenericsDictInfo is stored at negative offset of the dictionary
 struct GenericsDictInfo
 {
-#ifdef BIT64
+#ifdef HOST_64BIT
     DWORD m_dwPadding;               // Just to keep the size a multiple of 8
 #endif
 
@@ -354,7 +354,7 @@ struct MethodTableWriteableData
     // GC (like AD unload)
     Volatile<DWORD> m_dwLastVerifedGCCnt;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     DWORD m_dwPadding;               // Just to keep the size a multiple of 8
 #endif
 
@@ -2652,7 +2652,7 @@ public:
     // GetInternalCorElementType() retrieves the internal representation of the type. It's not always
     // appropiate to use this. For example, we treat enums as their underlying type or some structs are
     // optimized to be ints. To get the signature type or the verifier type (same as signature except for
-    // enums are normalized to the primtive type that underlies them), use the APIs in Typehandle.h
+    // enums are normalized to the primitive type that underlies them), use the APIs in Typehandle.h
     //
     //   * code:TypeHandle.GetSignatureCorElementType()
     //   * code:TypeHandle.GetVerifierCorElementType()

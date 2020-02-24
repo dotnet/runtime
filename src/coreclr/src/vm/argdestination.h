@@ -30,7 +30,7 @@ public:
         LIMITED_METHOD_CONTRACT;
 #if defined(UNIX_AMD64_ABI)
         _ASSERTE((argLocDescForStructInRegs != NULL) || (offset != TransitionBlock::StructInRegsOffset));
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         // This assert is not interesting on arm64. argLocDescForStructInRegs could be
         // initialized if the args are being enregistered.
 #else
@@ -45,7 +45,7 @@ public:
         return dac_cast<PTR_VOID>(dac_cast<TADDR>(m_base) + m_offset);
     }
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 #ifndef DACCESS_COMPILE
 
     // Returns true if the ArgDestination represents an HFA struct
@@ -82,7 +82,7 @@ public:
     }
 
 #endif // !DACCESS_COMPILE
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
 
 #if defined(UNIX_AMD64_ABI)
 

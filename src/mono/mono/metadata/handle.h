@@ -192,13 +192,20 @@ Icall macros
 	HandleStackMark __mark;	\
 	mono_stack_mark_init (mono_thread_info_current_var ? mono_thread_info_current_var : mono_thread_info_current (), &__mark);
 
+#ifdef ENABLE_CHECKED_BUILD
+/* __FUNCTION__ creates a C string for every icall */
 // FIXME This should be one function call since it is not fully inlined.
 #define CLEAR_ICALL_FRAME	\
 	mono_stack_mark_pop (mono_stack_mark_record_size (mono_thread_info_current_var, &__mark, __FUNCTION__), &__mark);
-
 // FIXME This should be one function call since it is not fully inlined.
 #define CLEAR_ICALL_FRAME_VALUE(RESULT, HANDLE)				\
 	(RESULT) = g_cast (mono_stack_mark_pop_value (mono_stack_mark_record_size (mono_thread_info_current_var, &__mark, __FUNCTION__), &__mark, (HANDLE)));
+#else
+#define CLEAR_ICALL_FRAME	\
+	mono_stack_mark_pop (mono_thread_info_current_var ? mono_thread_info_current_var : mono_thread_info_current (), &__mark);
+#define CLEAR_ICALL_FRAME_VALUE(RESULT, HANDLE)				\
+	(RESULT) = g_cast (mono_stack_mark_pop_value (mono_thread_info_current_var ? mono_thread_info_current_var : mono_thread_info_current (), &__mark, (HANDLE)));
+#endif
 
 #define HANDLE_FUNCTION_ENTER() do {				\
 	MONO_DISABLE_WARNING(4459) /* declaration of 'identifier' hides global declaration */ \

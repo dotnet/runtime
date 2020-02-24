@@ -459,7 +459,7 @@ mono_marshal_get_aot_init_wrapper_name (MonoAotInitSubtype subtype);
 MONO_LLVM_INTERNAL MonoMethod *
 mono_marshal_get_llvm_func_wrapper (MonoLLVMFuncWrapperSubtype subtype);
 
-MonoMethod *
+MONO_LLVM_INTERNAL MonoMethod *
 mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, gboolean aot);
 
 MonoMethod *

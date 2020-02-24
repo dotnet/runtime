@@ -137,7 +137,7 @@ namespace System.Security.Principal
             }
         }
 
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
             return (this == o as NTAccount); // invokes operator==
         }
@@ -193,10 +193,10 @@ namespace System.Security.Principal
 
         #region Operators
 
-        public static bool operator ==(NTAccount left, NTAccount right)
+        public static bool operator ==(NTAccount? left, NTAccount? right)
         {
-            object l = left;
-            object r = right;
+            object? l = left;
+            object? r = right;
 
             if (l == r)
             {
@@ -208,11 +208,11 @@ namespace System.Security.Principal
             }
             else
             {
-                return (left.ToString().Equals(right.ToString(), StringComparison.OrdinalIgnoreCase));
+                return (left!.ToString().Equals(right!.ToString(), StringComparison.OrdinalIgnoreCase));
             }
         }
 
-        public static bool operator !=(NTAccount left, NTAccount right)
+        public static bool operator !=(NTAccount? left, NTAccount? right)
         {
             return !(left == right); // invoke operator==
         }
@@ -234,9 +234,9 @@ namespace System.Security.Principal
                 throw new ArgumentException(SR.Arg_EmptyCollection, nameof(sourceAccounts));
             }
 
-            SafeLsaPolicyHandle LsaHandle = null;
-            SafeLsaMemoryHandle ReferencedDomainsPtr = null;
-            SafeLsaMemoryHandle SidsPtr = null;
+            SafeLsaPolicyHandle? LsaHandle = null;
+            SafeLsaMemoryHandle? ReferencedDomainsPtr = null;
+            SafeLsaMemoryHandle? SidsPtr = null;
 
             try
             {
@@ -249,9 +249,7 @@ namespace System.Security.Principal
                 int currentName = 0;
                 foreach (IdentityReference id in sourceAccounts)
                 {
-                    NTAccount nta = id as NTAccount;
-
-                    if (nta == null)
+                    if (!(id is NTAccount nta))
                     {
                         throw new ArgumentException(SR.Argument_ImproperType, nameof(sourceAccounts));
                     }

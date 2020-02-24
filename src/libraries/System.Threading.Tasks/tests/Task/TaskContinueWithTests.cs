@@ -42,6 +42,7 @@ namespace System.Threading.Tasks.Tests
 
         // Stresses on multiple continuations from a single antecedent
         [Fact]
+        [SkipOnCoreClr("Test timing out: https://github.com/dotnet/runtime/issues/2271", RuntimeConfiguration.Checked)]
         public static void RunContinueWithStressTestsNoState()
         {
             int numIterations = 3;
@@ -1211,6 +1212,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2084", TestRuntimes.Mono)]
         public static void LongContinuationChain_ContinueWith_DoesNotStackOverflow()
         {
             const int DiveDepth = 12_000;

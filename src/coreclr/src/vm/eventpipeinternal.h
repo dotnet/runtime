@@ -81,16 +81,8 @@ public:
         uint32_t controlCode,
         GUID *pActivityId);
 
-    static void QCALLTYPE WriteEvent(
-        INT_PTR eventHandle,
-        UINT32 eventID,
-        void *pData,
-        UINT32 length,
-        LPCGUID pActivityId, LPCGUID pRelatedActivityId);
-
     static void QCALLTYPE WriteEventData(
         INT_PTR eventHandle,
-        UINT32 eventID,
         EventData *pEventData,
         UINT32 eventDataCount,
         LPCGUID pActivityId, LPCGUID pRelatedActivityId);
