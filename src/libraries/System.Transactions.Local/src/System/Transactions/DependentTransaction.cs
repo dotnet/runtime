@@ -6,7 +6,6 @@ using System.Diagnostics;
 
 namespace System.Transactions
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2229", Justification = "Serialization not yet supported and will be done using DistributedTransaction")]
     public sealed class DependentTransaction : Transaction
     {
         private readonly bool _blocking;

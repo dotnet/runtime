@@ -89,7 +89,7 @@ namespace System.Diagnostics
         }
 
         // <summary>Gets execution path</summary>
-        private string GetPathToOpenFile()
+        private string? GetPathToOpenFile()
         {
             Interop.Sys.FileStatus stat;
             if (Interop.Sys.Stat("/usr/local/bin/open", out stat) == 0)
@@ -106,7 +106,7 @@ namespace System.Diagnostics
         // ---- PAL layer ends here ----
         // -----------------------------
         /// <summary>Gets the path to the current executable, or null if it could not be retrieved.</summary>
-        private static string GetExePath()
+        private static string? GetExePath()
         {
             return Interop.Process.GetProcPath(Interop.Sys.GetPid());
         }

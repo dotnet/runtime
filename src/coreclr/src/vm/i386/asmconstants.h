@@ -12,7 +12,7 @@
 // a compile-time assert, check out USE_COMPILE_TIME_CONSTANT_FINDER.
 // TODO: put the constant finder in a common place so other platforms can use it.
 
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
 #error this file should only be used on an X86 platform
 #endif
 

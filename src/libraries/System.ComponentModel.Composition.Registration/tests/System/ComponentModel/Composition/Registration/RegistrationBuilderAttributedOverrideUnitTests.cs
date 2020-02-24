@@ -8,11 +8,10 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Xunit;
 using Xunit.Sdk;
-using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.ComponentModel.Composition.Registration.Tests
 {
-    [SkipOnCoreClr("Test failures on stress tests")]
+    [SkipOnCoreClr("Test failures on stress tests", RuntimeConfiguration.Checked)]
     [SkipOnMono("Test failures on stress tests")]
     public class RegistrationBuilderAttributedOverrideUnitTests
     {

@@ -518,12 +518,12 @@ namespace System.Diagnostics.Tracing
                 (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
                 ref activityId);
 #endif // FEATURE_PERFTRACING
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
             // Set the activity id via ETW.
             Interop.Advapi32.EventActivityIdControl(
                 Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
                 ref activityId);
-#endif // PLATFORM_WINDOWS
+#endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
         }
 
@@ -538,7 +538,7 @@ namespace System.Diagnostics.Tracing
                 // errors. Note we can't access m_throwOnWrites because this is a static method.
                 Guid retVal = default;
 #if FEATURE_MANAGED_ETW
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
                 Interop.Advapi32.EventActivityIdControl(
                     Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref retVal);
@@ -546,7 +546,7 @@ namespace System.Diagnostics.Tracing
                 EventPipeInternal.EventActivityIdControl(
                     (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref retVal);
-#endif // PLATFORM_WINDOWS
+#endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
                 return retVal;
             }
@@ -578,7 +578,7 @@ namespace System.Diagnostics.Tracing
             // We ignore errors to keep with the convention that EventSources do not throw errors.
             // Note we can't access m_throwOnWrites because this is a static method.
 
-#if FEATURE_PERFTRACING && PLATFORM_WINDOWS
+#if FEATURE_PERFTRACING && TARGET_WINDOWS
             EventPipeInternal.EventActivityIdControl(
                 (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
                     ref oldActivityThatWillContinue);
@@ -586,13 +586,13 @@ namespace System.Diagnostics.Tracing
             EventPipeInternal.EventActivityIdControl(
                 (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
                     ref oldActivityThatWillContinue);
-#endif // FEATURE_PERFTRACING && PLATFORM_WINDOWS
+#endif // FEATURE_PERFTRACING && TARGET_WINDOWS
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
             Interop.Advapi32.EventActivityIdControl(
                 Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
                     ref oldActivityThatWillContinue);
-#endif // PLATFORM_WINDOWS
+#endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
 
             // We don't call the activityDying callback here because the caller has declared that
@@ -1469,7 +1469,7 @@ namespace System.Diagnostics.Tracing
                 // Set m_provider, which allows this.
                 m_etwProvider = etwProvider;
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
 #if (!ES_BUILD_STANDALONE && !ES_BUILD_PN)
                 // API available on OS >= Win 8 and patched Win 7.
                 // Disable only for FrameworkEventSource to avoid recursion inside exception handling.
@@ -1488,7 +1488,7 @@ namespace System.Diagnostics.Tracing
 
                     metadataHandle.Free();
                 }
-#endif // PLATFORM_WINDOWS
+#endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
 
 #if FEATURE_PERFTRACING
@@ -1579,7 +1579,11 @@ namespace System.Diagnostics.Tracing
             /// <param name="input">
             /// Data to include in the hash. Must not be null.
             /// </param>
+#if ES_BUILD_STANDALONE
             public void Append(byte[] input)
+#else
+            public void Append(ReadOnlySpan<byte> input)
+#endif
             {
                 foreach (byte b in input)
                 {
@@ -1691,6 +1695,7 @@ namespace System.Diagnostics.Tracing
 
         private static Guid GenerateGuidFromName(string name)
         {
+#if ES_BUILD_STANDALONE
             if (namespaceBytes == null)
             {
                 namespaceBytes = new byte[] {
@@ -1698,6 +1703,13 @@ namespace System.Diagnostics.Tracing
                     0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
                 };
             }
+#else
+            ReadOnlySpan<byte> namespaceBytes = new byte[] // rely on C# compiler optimization to remove byte[] allocation
+            {
+                0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
+                0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
+            };
+#endif
 
             byte[] bytes = Encoding.BigEndianUnicode.GetBytes(name);
             Sha1ForNonSecretPurposes hash = default;
@@ -3882,10 +3894,10 @@ namespace System.Diagnostics.Tracing
         // WARNING: Do not depend upon initialized statics during creation of EventSources, as it is possible for creation of an EventSource to trigger
         // creation of yet another EventSource.  When this happens, these statics may not yet be initialized.
         // Rather than depending on initialized statics, use lazy initialization to ensure that the statics are initialized exactly when they are needed.
-
+#if ES_BUILD_STANDALONE
         // used for generating GUID from eventsource name
         private static byte[]? namespaceBytes;
-
+#endif
 #endregion
     }
 
@@ -4020,8 +4032,6 @@ namespace System.Diagnostics.Tracing
         /// is the only way to actually make the listen die. Thus it is important that users of EventListener
         /// call Dispose when they are done with their logging.
         /// </summary>
-#if ES_BUILD_STANDALONE
-#endif
         public virtual void Dispose()
         {
             lock (EventListenersLock)
@@ -4700,7 +4710,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (EventId < 0)      // TraceLogging convention EventID == -1
+                if (EventId <= 0)      // TraceLogging convention EventID == -1
                     return m_keywords;
 
                 Debug.Assert(m_eventSource.m_eventData != null);
@@ -5286,7 +5296,7 @@ namespace System.Diagnostics.Tracing
             sb.AppendLine(" <instrumentation xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:win=\"http://manifests.microsoft.com/win/2004/08/windows/events\">");
             sb.AppendLine("  <events xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
             sb.Append("<provider name=\"").Append(providerName).
-               Append("\" guid=\"{").Append(providerGuid.ToString()).Append("}");
+               Append("\" guid=\"{").Append(providerGuid.ToString()).Append('}');
             if (dllName != null)
                 sb.Append("\" resourceFileName=\"").Append(dllName).Append("\" messageFileName=\"").Append(dllName);
 

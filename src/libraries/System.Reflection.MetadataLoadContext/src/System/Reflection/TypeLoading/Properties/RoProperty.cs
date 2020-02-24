@@ -25,7 +25,7 @@ namespace System.Reflection.TypeLoading
             _reflectedType = reflectedType;
         }
 
-        public abstract override bool Equals(object obj);
+        public abstract override bool Equals(object? obj);
         public abstract override int GetHashCode();
         public abstract override string ToString();
 
@@ -36,7 +36,7 @@ namespace System.Reflection.TypeLoading
 
         public sealed override string Name => _lazyName ?? (_lazyName = ComputeName());
         protected abstract string ComputeName();
-        private volatile string _lazyName;
+        private volatile string? _lazyName;
 
         public sealed override Module Module => GetRoModule();
         internal abstract RoModule GetRoModule();
@@ -54,27 +54,27 @@ namespace System.Reflection.TypeLoading
 
         public sealed override Type PropertyType => _lazyPropertyType ?? (_lazyPropertyType = ComputePropertyType());
         protected abstract Type ComputePropertyType();
-        private volatile Type _lazyPropertyType;
+        private volatile Type? _lazyPropertyType;
 
-        public sealed override MethodInfo GetGetMethod(bool nonPublic) => GetRoGetMethod()?.FilterAccessor(nonPublic);
-        public sealed override MethodInfo GetSetMethod(bool nonPublic) => GetRoSetMethod()?.FilterAccessor(nonPublic);
+        public sealed override MethodInfo? GetGetMethod(bool nonPublic) => GetRoGetMethod()?.FilterAccessor(nonPublic);
+        public sealed override MethodInfo? GetSetMethod(bool nonPublic) => GetRoSetMethod()?.FilterAccessor(nonPublic);
 
-        private RoMethod GetRoGetMethod() => object.ReferenceEquals(_lazyGetter, Sentinels.RoMethod) ? (_lazyGetter = ComputeGetterMethod()?.FilterInheritedAccessor()) : _lazyGetter;
-        private RoMethod GetRoSetMethod() => object.ReferenceEquals(_lazySetter, Sentinels.RoMethod) ? (_lazySetter = ComputeSetterMethod()?.FilterInheritedAccessor()) : _lazySetter;
+        private RoMethod? GetRoGetMethod() => object.ReferenceEquals(_lazyGetter, Sentinels.RoMethod) ? (_lazyGetter = ComputeGetterMethod()?.FilterInheritedAccessor()) : _lazyGetter;
+        private RoMethod? GetRoSetMethod() => object.ReferenceEquals(_lazySetter, Sentinels.RoMethod) ? (_lazySetter = ComputeSetterMethod()?.FilterInheritedAccessor()) : _lazySetter;
 
-        protected abstract RoMethod ComputeGetterMethod();
-        protected abstract RoMethod ComputeSetterMethod();
+        protected abstract RoMethod? ComputeGetterMethod();
+        protected abstract RoMethod? ComputeSetterMethod();
 
-        private volatile RoMethod _lazyGetter = Sentinels.RoMethod;
-        private volatile RoMethod _lazySetter = Sentinels.RoMethod;
+        private volatile RoMethod? _lazyGetter = Sentinels.RoMethod;
+        private volatile RoMethod? _lazySetter = Sentinels.RoMethod;
 
         public sealed override bool CanRead => GetMethod != null;
         public sealed override bool CanWrite => SetMethod != null;
 
         public sealed override MethodInfo[] GetAccessors(bool nonPublic)
         {
-            MethodInfo getter = GetGetMethod(nonPublic);
-            MethodInfo setter = GetSetMethod(nonPublic);
+            MethodInfo? getter = GetGetMethod(nonPublic);
+            MethodInfo? setter = GetSetMethod(nonPublic);
 
             int count = 0;
             if (getter != null)
@@ -96,7 +96,7 @@ namespace System.Reflection.TypeLoading
         private RoPropertyIndexParameter[] ComputeIndexParameters()
         {
             bool useGetter = CanRead;
-            RoMethod accessor = (useGetter ? GetRoGetMethod() : GetRoSetMethod());
+            RoMethod? accessor = (useGetter ? GetRoGetMethod() : GetRoSetMethod());
             if (accessor == null)
                 throw new BadImageFormatException(); // Property has neither a getter or setter.
             RoParameter[] methodParameters = accessor.GetParametersNoCopy();
@@ -113,9 +113,9 @@ namespace System.Reflection.TypeLoading
             }
             return indexParameters;
         }
-        private volatile RoPropertyIndexParameter[] _lazyIndexedParameters;
+        private volatile RoPropertyIndexParameter[]? _lazyIndexedParameters;
 
-        public sealed override object GetRawConstantValue()
+        public sealed override object? GetRawConstantValue()
         {
             if ((Attributes & PropertyAttributes.HasDefault) == 0)
                 throw new InvalidOperationException(SR.Arg_EnumLitValueNotFound);
@@ -123,7 +123,7 @@ namespace System.Reflection.TypeLoading
             return ComputeRawConstantValue();
         }
 
-        protected abstract object ComputeRawConstantValue();
+        protected abstract object? ComputeRawConstantValue();
 
         public abstract override Type[] GetOptionalCustomModifiers();
         public abstract override Type[] GetRequiredCustomModifiers();
@@ -133,8 +133,8 @@ namespace System.Reflection.TypeLoading
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
         public sealed override bool IsDefined(Type attributeType, bool inherit) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
         public sealed override object GetConstantValue() => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
-        public sealed override object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
-        public sealed override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
+        public sealed override object GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
+        public sealed override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
         internal TypeContext TypeContext => _declaringType.Instantiation.ToTypeContext();
     }

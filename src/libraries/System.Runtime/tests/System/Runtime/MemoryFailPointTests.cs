@@ -27,7 +27,7 @@ namespace System.Runtime.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] //https://github.com/dotnet/coreclr/issues/7807
+        [PlatformSpecific(TestPlatforms.Windows)] //https://github.com/dotnet/runtime/issues/6879
         public void Ctor_LargeSizeInMegabytes_ThrowsInsufficientMemoryException()
         {
             Assert.Throws<InsufficientMemoryException>(() => new MemoryFailPoint(int.MaxValue));

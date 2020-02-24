@@ -82,6 +82,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15027", TestRuntimes.Mono)]
         [MemberData(nameof(GetValue_Invalid_TestData))]
         public void GetValue_Invalid(Type type, string name, object obj, object[] index, Type exceptionType)
         {

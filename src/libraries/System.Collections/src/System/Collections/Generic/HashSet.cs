@@ -47,7 +47,6 @@ namespace System.Collections.Generic
     /// <typeparam name="T"></typeparam>
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "By design")]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, ISerializable, IDeserializationCallback
@@ -267,7 +266,7 @@ namespace System.Collections.Generic
                 {
                     int hashCode = item == null ? 0 : InternalGetHashCode(item.GetHashCode());
 
-                    if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                    if (typeof(T).IsValueType)
                     {
                         // see note at "HashSet" level describing why "- 1" appears in for loop
                         for (int i = buckets[hashCode % buckets.Length] - 1; i >= 0; i = slots[i].next)
@@ -288,7 +287,7 @@ namespace System.Collections.Generic
                     else
                     {
                         // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                        // https://github.com/dotnet/coreclr/issues/17273
+                        // https://github.com/dotnet/runtime/issues/10050
                         // So cache in a local rather than get EqualityComparer per loop iteration
                         EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
 
@@ -369,7 +368,7 @@ namespace System.Collections.Generic
                     hashCode = item == null ? 0 : InternalGetHashCode(item.GetHashCode());
                     bucket = hashCode % _buckets!.Length;
 
-                    if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                    if (typeof(T).IsValueType)
                     {
                         for (i = _buckets[bucket] - 1; i >= 0; last = i, i = slots[i].next)
                         {
@@ -389,7 +388,7 @@ namespace System.Collections.Generic
                     else
                     {
                         // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                        // https://github.com/dotnet/coreclr/issues/17273
+                        // https://github.com/dotnet/runtime/issues/10050
                         // So cache in a local rather than get EqualityComparer per loop iteration
                         EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
 
@@ -1342,7 +1341,7 @@ namespace System.Collections.Generic
                 hashCode = value == null ? 0 : InternalGetHashCode(value.GetHashCode());
                 bucket = hashCode % _buckets!.Length;
 
-                if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                if (typeof(T).IsValueType)
                 {
                     for (int i = _buckets[bucket] - 1; i >= 0; i = slots[i].next)
                     {
@@ -1362,7 +1361,7 @@ namespace System.Collections.Generic
                 else
                 {
                     // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                    // https://github.com/dotnet/coreclr/issues/17273
+                    // https://github.com/dotnet/runtime/issues/10050
                     // So cache in a local rather than get EqualityComparer per loop iteration
                     EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
 
@@ -1578,7 +1577,7 @@ namespace System.Collections.Generic
             {
                 int hashCode = item == null ? 0 : InternalGetHashCode(item.GetHashCode());
 
-                if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                if (typeof(T).IsValueType)
                 {
                     // see note at "HashSet" level describing why "- 1" appears in for loop
                     for (int i = buckets[hashCode % buckets.Length] - 1; i >= 0; i = slots[i].next)
@@ -1599,7 +1598,7 @@ namespace System.Collections.Generic
                 else
                 {
                     // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                    // https://github.com/dotnet/coreclr/issues/17273
+                    // https://github.com/dotnet/runtime/issues/10050
                     // So cache in a local rather than get EqualityComparer per loop iteration
                     EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
 

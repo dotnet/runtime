@@ -456,7 +456,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     pHp->maxCodeHeapSize = m_TotalBytesAvailable - pTracker->size;
     pHp->reserveForJumpStubs = 0;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     emitJump((LPBYTE)pHp->CLRPersonalityRoutine, (void *)ProcessCLRException);
 #endif
 
@@ -986,10 +986,10 @@ void LCGMethodResolver::Destroy()
 
     if (m_recordCodePointer)
     {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
         // Remove the unwind information (if applicable)
         UnwindInfoTable::UnpublishUnwindInfoForMethod((TADDR)m_recordCodePointer);
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
 
         HostCodeHeap *pHeap = HostCodeHeap::GetCodeHeap((TADDR)m_recordCodePointer);
         LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%x)} \n", this, pHeap, *(size_t*)pHeap));
@@ -1195,6 +1195,21 @@ LCGMethodResolver::IsValidStringRef(mdToken metaTok)
     GCX_COOP();
 
     return GetStringLiteral(metaTok) != NULL;
+}
+
+int
+LCGMethodResolver::GetStringLiteralLength(mdToken metaTok)
+{
+    STANDARD_VM_CONTRACT;
+
+    GCX_COOP();
+
+    STRINGREF str = GetStringLiteral(metaTok);
+    if (str != NULL)
+    {
+        return str->GetStringLength();
+    }
+    return -1;
 }
 
 //---------------------------------------------------------------------------------------

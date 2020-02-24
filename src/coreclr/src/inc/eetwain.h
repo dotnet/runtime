@@ -32,11 +32,11 @@
 #include "bitvector.h"
 #include "gcinfotypes.h"
 
-#if !defined(_TARGET_X86_)
+#if !defined(TARGET_X86)
 #define USE_GC_INFO_DECODER
 #endif
 
-#if (defined(_TARGET_X86_) && !defined(FEATURE_PAL)) || defined(_TARGET_AMD64_)
+#if (defined(TARGET_X86) && !defined(TARGET_UNIX)) || defined(TARGET_AMD64)
 #define HAS_QUICKUNWIND
 #endif
 
@@ -173,7 +173,7 @@ virtual void FixContext(ContextType     ctxType,
 #endif // !FEATURE_EH_FUNCLETS
 #endif // #ifndef DACCESS_COMPILE
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 /*
     Gets the ambient stack pointer value at the given nesting level within
     the method.
@@ -183,7 +183,7 @@ virtual TADDR GetAmbientSP(PREGDISPLAY     pContext,
                            DWORD           dwRelOffset,
                            DWORD           nestingLevel,
                            CodeManState   *pState) = 0;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 /*
     Get the number of bytes used for stack parameters.
@@ -214,11 +214,11 @@ virtual bool UnwindStackFrame(PREGDISPLAY     pContext,
 virtual bool IsGcSafe(EECodeInfo     *pCodeInfo,
                       DWORD           dwRelOffset) = 0;
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
 virtual bool HasTailCalls(EECodeInfo *pCodeInfo) = 0;
-#endif // _TARGET_ARM_ || _TARGET_ARM64_
+#endif // TARGET_ARM || TARGET_ARM64
 
-#if defined(_TARGET_AMD64_) && defined(_DEBUG)
+#if defined(TARGET_AMD64) && defined(_DEBUG)
 /*
     Locates the end of the last interruptible region in the given code range.
     Returns 0 if the entire range is uninterruptible.  Returns the end point
@@ -227,7 +227,7 @@ virtual bool HasTailCalls(EECodeInfo *pCodeInfo) = 0;
 virtual unsigned FindEndOfLastInterruptibleRegion(unsigned curOffset,
                                                   unsigned endOffset,
                                                   GCInfoToken gcInfoToken) = 0;
-#endif // _TARGET_AMD64_ && _DEBUG
+#endif // TARGET_AMD64 && _DEBUG
 
 #ifndef CROSSGEN_COMPILE
 /*
@@ -244,14 +244,6 @@ virtual bool EnumGcRefs(PREGDISPLAY     pContext,
                         LPVOID          hCallBack,
                         DWORD           relOffsetOverride = NO_OVERRIDE_OFFSET) = 0;
 #endif // !CROSSGEN_COMPILE
-
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-/*
-    Return the address of the local security object reference
-    (if available).
-*/
-virtual OBJECTREF* GetAddrOfSecurityObject(CrawlFrame *pCF) = 0;
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
 #ifndef CROSSGEN_COMPILE
 /*
@@ -409,7 +401,7 @@ void FixContext(ContextType     ctxType,
 #endif // !FEATURE_EH_FUNCLETS
 #endif // #ifndef DACCESS_COMPILE
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 /*
     Gets the ambient stack pointer value at the given nesting level within
     the method.
@@ -420,7 +412,7 @@ TADDR GetAmbientSP(PREGDISPLAY     pContext,
                    DWORD           dwRelOffset,
                    DWORD           nestingLevel,
                    CodeManState   *pState);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 /*
     Get the number of bytes used for stack parameters.
@@ -474,12 +466,12 @@ virtual
 bool IsGcSafe(  EECodeInfo     *pCodeInfo,
                 DWORD           dwRelOffset);
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
 virtual
 bool HasTailCalls(EECodeInfo *pCodeInfo);
-#endif // _TARGET_ARM_ || _TARGET_ARM64_
+#endif // TARGET_ARM || TARGET_ARM64
 
-#if defined(_TARGET_AMD64_) && defined(_DEBUG)
+#if defined(TARGET_AMD64) && defined(_DEBUG)
 /*
     Locates the end of the last interruptible region in the given code range.
     Returns 0 if the entire range is uninterruptible.  Returns the end point
@@ -489,7 +481,7 @@ virtual
 unsigned FindEndOfLastInterruptibleRegion(unsigned curOffset,
                                           unsigned endOffset,
                                           GCInfoToken gcInfoToken);
-#endif // _TARGET_AMD64_ && _DEBUG
+#endif // TARGET_AMD64 && _DEBUG
 
 #ifndef CROSSGEN_COMPILE
 /*
@@ -517,22 +509,6 @@ bool EnumGcRefsConservative(PREGDISPLAY     pRD,
                             GCEnumCallback  pCallBack,
                             LPVOID          hCallBack);
 #endif // FEATURE_CONSERVATIVE_GC
-
-#ifdef _TARGET_X86_
-/*
-   Return the address of the local security object reference
-   using data that was previously cached before in UnwindStackFrame
-   using StackwalkCacheUnwindInfo
-*/
-static OBJECTREF* GetAddrOfSecurityObjectFromCachedInfo(
-        PREGDISPLAY pRD,
-        StackwalkCacheUnwindInfo * stackwalkCacheUnwindInfo);
-#endif // _TARGET_X86_
-
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-virtual
-OBJECTREF* GetAddrOfSecurityObject(CrawlFrame *pCF) DAC_UNEXPECTED();
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
 #ifndef CROSSGEN_COMPILE
 virtual
@@ -657,9 +633,9 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 #ifdef FEATURE_EH_FUNCLETS
     static void EnsureCallerContextIsValid( PREGDISPLAY pRD, StackwalkCacheEntry* pCacheEntry, EECodeInfo * pCodeInfo = NULL );
     static size_t GetCallerSp( PREGDISPLAY  pRD );
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     static size_t GetResumeSp( PCONTEXT  pContext );
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef DACCESS_COMPILE
@@ -668,7 +644,7 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 
 };
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 bool UnwindStackFrame(PREGDISPLAY     pContext,
                       EECodeInfo     *pCodeInfo,
                       unsigned        flags,

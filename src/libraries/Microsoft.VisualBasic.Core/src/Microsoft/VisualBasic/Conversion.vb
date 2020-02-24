@@ -933,7 +933,7 @@ NextOctCharacter:
         <ResourceExposure(ResourceScope.None)>
         <ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)>
         Friend Function ParseInputField(ByVal Value As Object, ByVal vtInput As VariantType) As Object
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             Dim numprsPtr() As Byte
             Dim vtSuffix As Integer
             Dim cDecMax As Integer

@@ -27,9 +27,9 @@ isMSBuildOnNETCoreSupported()
         return
     fi
 
-    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "arm64" ) ]]; then
+    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" ) ]]; then
         __IsMSBuildOnNETCoreSupported=1
-    elif [[ "$__HostArch" == "x64" && ( "$__HostOS" == "OSX" || "$__HostOS" == "FreeBSD" ) ]]; then
+    elif [[ ( "$__HostOS" == "OSX" || "$__HostOS" == "FreeBSD" ) && "$__HostArch" == "x64" ]]; then
         __IsMSBuildOnNETCoreSupported=1
     fi
 }
@@ -213,9 +213,13 @@ case "$CPUName" in
         ;;
 
     armv7l)
-        echo "Unsupported CPU $CPUName detected, build might not succeed!"
-        __BuildArch=arm
-        __HostArch=arm
+        if (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+            __BuildArch=armel
+            __HostArch=armel
+        else
+            __BuildArch=arm
+            __HostArch=arm
+        fi
         ;;
 
     i686)
@@ -456,7 +460,8 @@ __CommonMSBuildArgs="/p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:
 
 # Configure environment if we are doing a verbose build
 if [[ "$__VerboseBuild" == 1 ]]; then
-    export VERBOSE=1
+    VERBOSE=1
+    export VERBOSE
     __CommonMSBuildArgs="$__CommonMSBuildArgs /v:detailed"
 fi
 
@@ -466,9 +471,11 @@ fi
 
 # Configure environment if we are doing a cross compile.
 if [[ "$__CrossBuild" == 1 ]]; then
-    export CROSSCOMPILE=1
+    CROSSCOMPILE=1
+    export CROSSCOMPILE
     if [[ ! -n "$ROOTFS_DIR" ]]; then
-        export ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__BuildArch"
+        ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__BuildArch"
+        export ROOTFS_DIR
     fi
 fi
 

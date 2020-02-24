@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Security.Cryptography
@@ -148,7 +148,7 @@ namespace System.Security.Cryptography
         protected HMAC() { }
         protected int BlockSizeValue { get { throw null; } set { } }
         public string HashName { get { throw null; } set { } }
-        public override byte[]? Key { get { throw null; } set { } }
+        public override byte[] Key { get { throw null; } set { } }
         public static new System.Security.Cryptography.HMAC Create() { throw null; }
         public static new System.Security.Cryptography.HMAC? Create(string algorithmName) { throw null; }
         protected override void Dispose(bool disposing) { }
@@ -171,7 +171,7 @@ namespace System.Security.Cryptography
     {
         protected byte[] KeyValue;
         protected KeyedHashAlgorithm() { }
-        public virtual byte[]? Key { get { throw null; } set { } }
+        public virtual byte[] Key { get { throw null; } set { } }
         public static new System.Security.Cryptography.KeyedHashAlgorithm Create() { throw null; }
         public static new System.Security.Cryptography.KeyedHashAlgorithm? Create(string algName) { throw null; }
         protected override void Dispose(bool disposing) { }
@@ -231,9 +231,9 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.SymmetricAlgorithm Create() { throw null; }
         public static System.Security.Cryptography.SymmetricAlgorithm? Create(string algName) { throw null; }
         public virtual System.Security.Cryptography.ICryptoTransform CreateDecryptor() { throw null; }
-        public abstract System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV);
+        public abstract System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV);
         public virtual System.Security.Cryptography.ICryptoTransform CreateEncryptor() { throw null; }
-        public abstract System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV);
+        public abstract System.Security.Cryptography.ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV);
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public abstract void GenerateIV();

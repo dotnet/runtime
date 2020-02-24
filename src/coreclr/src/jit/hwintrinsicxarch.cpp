@@ -36,7 +36,7 @@ static InstructionSet X64VersionOfIsa(InstructionSet isa)
         case InstructionSet_POPCNT:
             return InstructionSet_POPCNT_X64;
         default:
-            unreached();
+            return InstructionSet_NONE;
     }
 }
 
@@ -289,7 +289,7 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
 
         default:
         {
-            unreached();
+            return false;
         }
     }
 }
@@ -357,7 +357,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
         }
 
         default:
-            unreached();
+            return nullptr;
     }
 }
 
@@ -415,7 +415,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case InstructionSet_POPCNT_X64:
             return impPOPCNTIntrinsic(intrinsic, method, sig, mustExpand);
         default:
-            unreached();
+            return nullptr;
     }
 }
 
@@ -669,7 +669,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             if (varTypeIsLong(baseType))
             {
                 // TODO-XARCH-CQ: It may be beneficial to emit the movq
@@ -677,7 +677,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 // works on 32-bit x86 systems.
                 break;
             }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
             if (compSupports(InstructionSet_SSE2) || (compSupports(InstructionSet_SSE) && (baseType == TYP_FLOAT)))
             {
@@ -728,7 +728,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             if (varTypeIsLong(baseType))
             {
                 // TODO-XARCH-CQ: It may be beneficial to emit the movq
@@ -736,7 +736,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 // works on 32-bit x86 systems.
                 break;
             }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
             if (compSupports(InstructionSet_AVX))
             {
@@ -821,8 +821,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                     break;
 
                 default:
-                    unreached();
-                    break;
+                    return nullptr;
             }
 
             ssize_t imm8       = indexOp->AsIntCon()->IconValue();
@@ -980,8 +979,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 }
 
                 default:
-                    unreached();
-                    break;
+                    return nullptr;
             }
 
             if (simdSize == 32)
@@ -1106,7 +1104,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                         break;
 
                     default:
-                        unreached();
+                        return nullptr;
                 }
 
                 return gtNewSimdHWIntrinsicNode(retType, vectorOp, resIntrinsic, baseType, 16);
@@ -1176,7 +1174,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                     break;
 
                 default:
-                    unreached();
+                    return nullptr;
             }
 
             break;
@@ -1184,8 +1182,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
         default:
         {
-            unreached();
-            break;
+            return nullptr;
         }
     }
 
@@ -1513,7 +1510,7 @@ GenTree* Compiler::impBMI1OrBMI2Intrinsic(NamedIntrinsic        intrinsic,
         }
 
         default:
-            unreached();
+            return nullptr;
     }
 }
 

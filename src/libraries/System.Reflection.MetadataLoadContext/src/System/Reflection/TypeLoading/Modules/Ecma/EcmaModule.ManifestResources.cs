@@ -32,7 +32,7 @@ namespace System.Reflection.TypeLoading.Ecma
                             result.ResourceLocation = ResourceLocation.Embedded | ResourceLocation.ContainedInManifestFile;
                             PEReader pe = _guardedPEReader.PEReader;
 
-                            PEMemoryBlock resourceDirectory = pe.GetSectionData(pe.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
+                            PEMemoryBlock resourceDirectory = pe.GetSectionData(pe.PEHeaders.CorHeader!.ResourcesDirectory.RelativeVirtualAddress);
                             BlobReader blobReader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
                             uint length = blobReader.ReadUInt32();
                             result.PointerToResource = blobReader.CurrentPointer;
@@ -53,7 +53,7 @@ namespace System.Reflection.TypeLoading.Ecma
                             result.FileName = file.Name.GetString(reader);
                             if (file.ContainsMetadata)
                             {
-                                EcmaModule module = (EcmaModule)Assembly.GetModule(result.FileName);
+                                EcmaModule? module = (EcmaModule?)Assembly.GetModule(result.FileName);
                                 if (module == null)
                                     throw new BadImageFormatException(SR.Format(SR.ManifestResourceInfoReferencedBadModule, result.FileName));
                                 result = module.GetInternalManifestResourceInfo(resourceName);

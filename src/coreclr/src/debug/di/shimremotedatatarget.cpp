@@ -227,26 +227,26 @@ HRESULT STDMETHODCALLTYPE
 ShimRemoteDataTarget::GetPlatform(
         CorDebugPlatform *pPlatform)
 {
-#ifdef FEATURE_PAL
-     #if defined(DBG_TARGET_X86)
+#ifdef TARGET_UNIX
+     #if defined(TARGET_X86)
          *pPlatform = CORDB_PLATFORM_POSIX_X86;
-     #elif defined(DBG_TARGET_AMD64)
+     #elif defined(TARGET_AMD64)
          *pPlatform = CORDB_PLATFORM_POSIX_AMD64;
-     #elif defined(DBG_TARGET_ARM)
+     #elif defined(TARGET_ARM)
          *pPlatform = CORDB_PLATFORM_POSIX_ARM;
-     #elif defined(DBG_TARGET_ARM64)
+     #elif defined(TARGET_ARM64)
          *pPlatform = CORDB_PLATFORM_POSIX_ARM64;
      #else
          #error Unknown Processor.
      #endif
 #else
-    #if defined(DBG_TARGET_X86)
+    #if defined(TARGET_X86)
         *pPlatform = CORDB_PLATFORM_WINDOWS_X86;
-    #elif defined(DBG_TARGET_AMD64)
+    #elif defined(TARGET_AMD64)
         *pPlatform = CORDB_PLATFORM_WINDOWS_AMD64;
-    #elif defined(DBG_TARGET_ARM)
+    #elif defined(TARGET_ARM)
         *pPlatform = CORDB_PLATFORM_WINDOWS_ARM;
-    #elif defined(DBG_TARGET_ARM64)
+    #elif defined(TARGET_ARM64)
         *pPlatform = CORDB_PLATFORM_WINDOWS_ARM64;
     #else
         #error Unknown Processor.

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -24,6 +25,24 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task ExecutionContext_Suppressed_Success()
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                uri => Task.Run(() =>
+                {
+                    using (ExecutionContext.SuppressFlow())
+                    using (HttpClient client = CreateHttpClient())
+                    {
+                        client.GetStringAsync(uri).GetAwaiter().GetResult();
+                    }
+                }),
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync();
+                });
+        }
 
         [OuterLoop("Relies on finalization")]
         [Fact]
@@ -149,13 +168,6 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_HttpClientHandler_Finalization_Http2_Test(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version20;
-    }
-
-    // TODO: public to test HTTP/3.
-    internal sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http3_Test : HttpClientHandler_Finalization_Test
-    {
-        public SocketsHttpHandler_HttpClientHandler_Finalization_Http3_Test(ITestOutputHelper output) : base(output) { }
-        protected override Version UseVersion => HttpVersion.Version30;
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test
@@ -1164,7 +1176,7 @@ namespace System.Net.Http.Functional.Tests
         {
             // These test cases successfully authenticate on SocketsHttpHandler but fail on the other handlers.
             // These are legal as per the RFC, so authenticating is the expected behavior.
-            // See https://github.com/dotnet/corefx/issues/28521 for details.
+            // See https://github.com/dotnet/runtime/issues/25643 for details.
             yield return new object[] { "Basic realm=\"testrealm1\" basic realm=\"testrealm1\"", true };
             yield return new object[] { "Basic something digest something", true };
             yield return new object[] { "Digest realm=\"api@example.org\", qop=\"auth\", algorithm=MD5-sess, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", " +
@@ -1173,12 +1185,12 @@ namespace System.Net.Http.Functional.Tests
                     "opaque=\"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS\", charset=UTF-8, userhash=true", true };
 
             // These cases fail on WinHttpHandler because of a behavior in WinHttp that causes requests to be duplicated
-            // when the digest header has certain parameters. See https://github.com/dotnet/corefx/issues/28522 for details.
+            // when the digest header has certain parameters. See https://github.com/dotnet/runtime/issues/25644 for details.
             yield return new object[] { "Digest ", false };
             yield return new object[] { "Digest realm=\"testrealm\", nonce=\"testnonce\", algorithm=\"myown\"", false };
 
             // These cases fail to authenticate on SocketsHttpHandler, but succeed on the other handlers.
-            // they are all invalid as per the RFC, so failing is the expected behavior. See https://github.com/dotnet/corefx/issues/28523 for details.
+            // they are all invalid as per the RFC, so failing is the expected behavior. See https://github.com/dotnet/runtime/issues/25645 for details.
             yield return new object[] { "Digest realm=withoutquotes, nonce=withoutquotes", false };
             yield return new object[] { "Digest realm=\"testrealm\" nonce=\"testnonce\"", false };
             yield return new object[] { "Digest realm=\"testrealm1\", nonce=\"testnonce1\" Digest realm=\"testrealm2\", nonce=\"testnonce2\"", false };
@@ -2148,47 +2160,49 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    // TODO: public to test HTTP/3.
-    internal sealed class SocketsHttpHandlerTest_Http3 : HttpClientHandlerTest_Http3
+    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http3_Test : HttpClientHandler_Finalization_Test
+    {
+        public SocketsHttpHandler_HttpClientHandler_Finalization_Http3_Test(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version30;
+    }
+
+    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
+    public sealed class SocketsHttpHandlerTest_Http3 : HttpClientHandlerTest_Http3
     {
         public SocketsHttpHandlerTest_Http3(ITestOutputHelper output) : base(output) { }
     }
 
-    // TODO: public to test HTTP/3.
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-    internal sealed class SocketsHttpHandlerTest_Cookies_Http3 : HttpClientHandlerTest_Cookies
+    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
+    public sealed class SocketsHttpHandlerTest_Cookies_Http3 : HttpClientHandlerTest_Cookies
     {
         public SocketsHttpHandlerTest_Cookies_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    // TODO: public to test HTTP/3.
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-    internal sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http3 : HttpClientHandlerTest
+    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
+    public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http3 : HttpClientHandlerTest
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    // TODO: public to test HTTP/3.
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-    internal sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3 : HttpClientHandlerTest_Headers
+    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
+    public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3 : HttpClientHandlerTest_Headers
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    // TODO: public to test HTTP/3.
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-    internal sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3 : HttpClientHandler_Cancellation_Test
+    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3 : HttpClientHandler_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
-    // TODO: public to test HTTP/3.
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-    internal sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3 : HttpClientHandler_AltSvc_Test
+    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3 : HttpClientHandler_AltSvc_Test
     {
         public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;

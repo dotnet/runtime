@@ -24,7 +24,6 @@ namespace System.Xml.Serialization
 
         private static DateTimeSerializationSection.DateTimeSerializationMode Mode
         {
-            [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread-safety")]
             get
             {
                 if (s_mode == DateTimeSerializationSection.DateTimeSerializationMode.Default)
@@ -134,7 +133,7 @@ namespace System.Xml.Serialization
                 return FromXmlNmToken(nmTokens);
             else
             {
-                string[] toks = nmTokens.Split(new char[] { ' ' });
+                string[] toks = nmTokens.Split(' ');
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < toks.Length; i++)
                 {
@@ -189,7 +188,7 @@ namespace System.Xml.Serialization
                 if ((ids[i] & originalValue) == ids[i])
                 {
                     if (sb.Length != 0)
-                        sb.Append(" ");
+                        sb.Append(' ');
                     sb.Append(vals[i]);
                     val &= ~ids[i];
                 }

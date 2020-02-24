@@ -60,7 +60,7 @@ namespace System.Diagnostics
         /// <param name="processId">The process ID.</param>
         /// <param name="machineName">The machine name.</param>
         /// <returns>The ProcessInfo for the process if it could be found; otherwise, null.</returns>
-        public static ProcessInfo GetProcessInfo(int processId, string machineName)
+        public static ProcessInfo? GetProcessInfo(int processId, string machineName)
         {
             if (IsRemoteMachine(machineName))
             {
@@ -125,7 +125,7 @@ namespace System.Diagnostics
 
         private static bool IsRemoteMachineCore(string machineName)
         {
-            ReadOnlySpan<char> baseName = machineName.AsSpan(machineName.StartsWith("\\", StringComparison.Ordinal) ? 2 : 0);
+            ReadOnlySpan<char> baseName = machineName.AsSpan(machineName.StartsWith('\\') ? 2 : 0);
             return
                 !baseName.Equals(".", StringComparison.Ordinal) &&
                 !baseName.Equals(Interop.Kernel32.GetComputerName(), StringComparison.OrdinalIgnoreCase);
@@ -150,7 +150,7 @@ namespace System.Diagnostics
                 return;
             }
 
-            SafeTokenHandle tokenHandle = null;
+            SafeTokenHandle? tokenHandle = null;
             try
             {
                 if (!Interop.Advapi32.OpenProcessToken(
@@ -301,7 +301,7 @@ namespace System.Diagnostics
             return GetModules(processId, firstModuleOnly: false);
         }
 
-        public static ProcessModule GetFirstModule(int processId)
+        public static ProcessModule? GetFirstModule(int processId)
         {
             ProcessModuleCollection modules = GetModules(processId, firstModuleOnly: true);
             return modules.Count == 0 ? null : modules[0];
@@ -330,7 +330,7 @@ namespace System.Diagnostics
 
         public static ProcessInfo[] GetProcessInfos(string machineName, bool isRemoteMachine)
         {
-            PerformanceCounterLib library = null;
+            PerformanceCounterLib? library = null;
             try
             {
                 library = PerformanceCounterLib.GetPerformanceCounterLib(machineName, new CultureInfo("en"));
@@ -360,7 +360,7 @@ namespace System.Diagnostics
             {
                 try
                 {
-                    byte[] dataPtr = library.GetPerformanceData(PerfCounterQueryString);
+                    byte[]? dataPtr = library.GetPerformanceData(PerfCounterQueryString);
                     processInfos = GetProcessInfos(library, ProcessPerfCounterId, ThreadPerfCounterId, dataPtr);
                 }
                 catch (Exception e)
@@ -469,7 +469,7 @@ namespace System.Diagnostics
             for (int i = 0; i < threadInfos.Count; i++)
             {
                 ThreadInfo threadInfo = threadInfos[i];
-                if (processInfos.TryGetValue(threadInfo._processId, out ProcessInfo processInfo))
+                if (processInfos.TryGetValue(threadInfo._processId, out ProcessInfo? processInfo))
                 {
                     processInfo._threadInfoList.Add(threadInfo);
                 }

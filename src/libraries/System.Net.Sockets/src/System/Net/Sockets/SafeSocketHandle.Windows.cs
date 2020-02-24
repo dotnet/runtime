@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -13,7 +12,6 @@ namespace System.Net.Sockets
     {
         private ThreadPoolBoundHandle _iocpBoundHandle;
         private bool _skipCompletionPortOnSuccess;
-        private readonly object _iocpBindingLock = new object();
 
         internal void SetExposed() { /* nop */ }
 
@@ -40,7 +38,7 @@ namespace System.Net.Sockets
                 return _iocpBoundHandle;
             }
 
-            lock (_iocpBindingLock)
+            lock (this)
             {
                 ThreadPoolBoundHandle boundHandle = _iocpBoundHandle;
 
@@ -59,6 +57,7 @@ namespace System.Net.Sockets
                     catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
                     {
                         bool closed = IsClosed;
+                        bool alreadyBound = !IsInvalid && !IsClosed && (exception is ArgumentException);
                         CloseAsIs(abortive: false);
                         if (closed)
                         {
@@ -67,6 +66,12 @@ namespace System.Net.Sockets
                             // instead propagate as an ObjectDisposedException.
                             ThrowSocketDisposedException(exception);
                         }
+
+                        if (alreadyBound)
+                        {
+                            throw new InvalidOperationException(SR.net_sockets_asyncoperations_notallowed, exception);
+                        }
+
                         throw;
                     }
 

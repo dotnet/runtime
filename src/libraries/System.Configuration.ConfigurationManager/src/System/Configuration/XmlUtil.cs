@@ -834,22 +834,22 @@ namespace System.Configuration
 
             // Start with element tag name
             StringBuilder element = new StringBuilder(64);
-            element.Append("<");
+            element.Append('<');
             element.Append(Reader.Name);
 
             // Add attributes
             while (Reader.MoveToNextAttribute())
             {
-                element.Append(" ");
+                element.Append(' ');
                 element.Append(Reader.Name);
-                element.Append("=");
+                element.Append('=');
                 element.Append('\"');
                 element.Append(Reader.Value);
                 element.Append('\"');
             }
 
             // Now close the element tag
-            element.Append(">");
+            element.Append('>');
 
             return element.ToString();
         }

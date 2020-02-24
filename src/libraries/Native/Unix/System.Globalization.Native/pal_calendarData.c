@@ -7,6 +7,8 @@
 #include <string.h>
 #include <strings.h>
 
+#include "pal_locale_internal.h"
+#include "pal_errors_internal.h"
 #include "pal_calendarData.h"
 
 #define GREGORIAN_NAME "gregorian"

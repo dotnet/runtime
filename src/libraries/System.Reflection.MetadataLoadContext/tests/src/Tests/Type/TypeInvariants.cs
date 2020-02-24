@@ -14,6 +14,7 @@ namespace System.Reflection.Tests
     public static class TypeInvariants
     {
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15344", TestRuntimes.Mono)]
         public static void TestInvariantCode()
         {
             // These run some *runtime*-implemented Type objects through our invariant battery.

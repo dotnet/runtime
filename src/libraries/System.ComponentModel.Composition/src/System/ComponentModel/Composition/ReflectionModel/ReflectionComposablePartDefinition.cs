@@ -16,10 +16,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         private readonly IReflectionPartCreationInfo _creationInfo;
 
-        private volatile ImportDefinition[] _imports;
-        private volatile ExportDefinition[] _exports;
-        private volatile IDictionary<string, object> _metadata;
-        private volatile ConstructorInfo _constructor;
+        private volatile ImportDefinition[]? _imports;
+        private volatile ExportDefinition[]? _exports;
+        private volatile IDictionary<string, object?>? _metadata;
+        private volatile ConstructorInfo? _constructor;
         private readonly object _lock = new object();
 
         public ReflectionComposablePartDefinition(IReflectionPartCreationInfo creationInfo)
@@ -41,11 +41,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return _creationInfo.GetLazyPartType();
         }
 
-        public ConstructorInfo GetConstructor()
+        public ConstructorInfo? GetConstructor()
         {
             if (_constructor == null)
             {
-                ConstructorInfo constructor = _creationInfo.GetConstructor();
+                ConstructorInfo? constructor = _creationInfo.GetConstructor();
                 lock (_lock)
                 {
                     if (_constructor == null)
@@ -104,13 +104,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        public override IDictionary<string, object> Metadata
+        public override IDictionary<string, object?> Metadata
         {
             get
             {
                 if (_metadata == null)
                 {
-                    IDictionary<string, object> metadata = _creationInfo.GetMetadata().AsReadOnly();
+                    IDictionary<string, object?> metadata = _creationInfo.GetMetadata().AsReadOnly();
                     lock (_lock)
                     {
                         if (_metadata == null)
@@ -131,7 +131,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public override ComposablePart CreatePart()
         {
             if (IsDisposalRequired)
@@ -144,10 +143,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        internal override ComposablePartDefinition GetGenericPartDefinition()
+        internal override ComposablePartDefinition? GetGenericPartDefinition()
         {
-            GenericSpecializationPartCreationInfo genericCreationInfo = _creationInfo as GenericSpecializationPartCreationInfo;
-            if (genericCreationInfo != null)
+            if (_creationInfo is GenericSpecializationPartCreationInfo genericCreationInfo)
             {
                 return genericCreationInfo.OriginalPart;
             }
@@ -155,31 +153,29 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return null;
         }
 
-        internal override bool TryGetExports(ImportDefinition definition, out Tuple<ComposablePartDefinition, ExportDefinition> singleMatch, out IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> multipleMatches)
+        internal override bool TryGetExports(ImportDefinition definition, out Tuple<ComposablePartDefinition, ExportDefinition>? singleMatch, out IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>>? multipleMatches)
         {
             if (this.IsGeneric())
             {
                 singleMatch = null;
                 multipleMatches = null;
 
-                List<Tuple<ComposablePartDefinition, ExportDefinition>> exports = null;
+                List<Tuple<ComposablePartDefinition, ExportDefinition>>? exports = null;
 
                 var genericParameters = (definition.Metadata.Count > 0) ? definition.Metadata.GetValue<IEnumerable<object>>(CompositionConstants.GenericParametersMetadataName) : null;
                 // if and only if generic parameters have been supplied can we attempt to "close" the generic
                 if (genericParameters != null)
                 {
-                    Type[] genericTypeParameters = null;
                     // we only understand types
-                    if (TryGetGenericTypeParameters(genericParameters, out genericTypeParameters))
+                    if (TryGetGenericTypeParameters(genericParameters, out Type?[]? genericTypeParameters))
                     {
-                        HashSet<ComposablePartDefinition> candidates = null;
-                        ComposablePartDefinition candidatePart = null;
-                        ComposablePartDefinition previousPart = null;
+                        HashSet<ComposablePartDefinition>? candidates = null;
+                        ComposablePartDefinition? previousPart = null;
 
                         // go through all orders of generic parameters that part exports allows
-                        foreach (Type[] candidateParameters in GetCandidateParameters(genericTypeParameters))
+                        foreach (Type[] candidateParameters in GetCandidateParameters(genericTypeParameters!))
                         {
-                            if (TryMakeGenericPartDefinition(candidateParameters, out candidatePart))
+                            if (TryMakeGenericPartDefinition(candidateParameters, out ComposablePartDefinition? candidatePart))
                             {
                                 bool alreadyProcessed = false;
                                 if (candidates == null)
@@ -215,9 +211,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                                 }
                                 if (!alreadyProcessed)
                                 {
-                                    Tuple<ComposablePartDefinition, ExportDefinition> candidateSingleMatch;
-                                    IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> candidateMultipleMatches;
-                                    if (candidatePart.TryGetExports(definition, out candidateSingleMatch, out candidateMultipleMatches))
+                                    if (candidatePart.TryGetExports(definition, out Tuple<ComposablePartDefinition, ExportDefinition>? candidateSingleMatch, out IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>>? candidateMultipleMatches))
                                     {
                                         exports = exports.FastAppendToListAllowNulls(candidateSingleMatch, candidateMultipleMatches);
                                     }
@@ -243,13 +237,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         // Optimised for local as array case
-        private bool TryGetNonGenericExports(ImportDefinition definition, out Tuple<ComposablePartDefinition, ExportDefinition> singleMatch, out IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> multipleMatches)
+        private bool TryGetNonGenericExports(ImportDefinition definition, out Tuple<ComposablePartDefinition, ExportDefinition>? singleMatch, out IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>>? multipleMatches)
         {
             singleMatch = null;
             multipleMatches = null;
 
-            List<Tuple<ComposablePartDefinition, ExportDefinition>> multipleExports = null;
-            Tuple<ComposablePartDefinition, ExportDefinition> singleExport = null;
+            List<Tuple<ComposablePartDefinition, ExportDefinition>>? multipleExports = null;
+            Tuple<ComposablePartDefinition, ExportDefinition>? singleExport = null;
             bool matchesFound = false;
 
             foreach (var export in ExportDefinitionsInternal)
@@ -303,7 +297,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         }
 
-        private static bool TryGetGenericTypeParameters(IEnumerable<object> genericParameters, out Type[] genericTypeParameters)
+        private static bool TryGetGenericTypeParameters(IEnumerable<object> genericParameters, [NotNullWhen(true)] out Type?[]? genericTypeParameters)
         {
             genericTypeParameters = genericParameters as Type[];
             if (genericTypeParameters == null)
@@ -322,7 +316,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return true;
         }
 
-        internal bool TryMakeGenericPartDefinition(Type[] genericTypeParameters, out ComposablePartDefinition genericPartDefinition)
+        internal bool TryMakeGenericPartDefinition(Type[] genericTypeParameters, [NotNullWhen(true)] out ComposablePartDefinition? genericPartDefinition)
         {
             genericPartDefinition = null;
 
@@ -340,7 +334,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return _creationInfo.DisplayName; }
         }
 
-        ICompositionElement ICompositionElement.Origin
+        ICompositionElement? ICompositionElement.Origin
         {
             get { return _creationInfo.Origin; }
         }
@@ -350,7 +344,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return _creationInfo.DisplayName;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (_creationInfo.IsIdentityComparison)
             {
@@ -358,13 +352,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
             else
             {
-                ReflectionComposablePartDefinition that = obj as ReflectionComposablePartDefinition;
-                if (that == null)
-                {
-                    return false;
-                }
-
-                return _creationInfo.Equals(that._creationInfo);
+                return obj is ReflectionComposablePartDefinition that && _creationInfo.Equals(that._creationInfo);
             }
         }
 

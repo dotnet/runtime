@@ -8,4 +8,4 @@
 #include "pal_types.h"
 #include "pal_errno.h"
 
-DLLEXPORT int32_t SystemNative_Sysctl(int* name, unsigned int namelen, void* value, size_t* len);
+PALEXPORT int32_t SystemNative_Sysctl(int* name, unsigned int namelen, void* value, size_t* len);

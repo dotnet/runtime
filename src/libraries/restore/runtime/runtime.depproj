@@ -4,12 +4,13 @@
     <!-- We're using ToolRuntimeRID as a placeholder for the real corelib/runtime components until we have an actual set of runtime bits to consume for webassembly. -->
     <RuntimeIdentifier Condition="'$(RuntimeOS)' == 'webassembly'">$(ToolRuntimeRID)</RuntimeIdentifier>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
-    <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(ConfigurationGroup)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
-    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(DefaultOSGroup)</CoreCLROSGroup>
-    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(ConfigurationGroup)</CoreCLRConfiguration>
+    <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
+    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(OSGroup)</CoreCLROSGroup>
+    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
     <MonoOSGroup Condition="'$(MonoOSGroup)' == ''">$(DefaultOSGroup)</MonoOSGroup>
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(ConfigurationGroup)</MonoConfiguration>
+    <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(Configuration)</MonoConfiguration>
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
+    <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0-Unix;$(netcoreappCurrent)-Windows_NT;$(netcoreappCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
@@ -23,6 +24,15 @@
          Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework.
          This can be removed once we have a new SDK -->
     <FileToExclude Include="apphost" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- System.Data.SqlClient is not live-built anymore -->
+    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
+    <!-- Exclude live-built dependencies -->
+    <FileToExclude Include="Microsoft.Win32.Registry" />
+    <FileToExclude Include="System.Security.AccessControl" />
+    <FileToExclude Include="System.Security.Principal.Windows" />
   </ItemGroup>
 
   <ItemGroup>
@@ -101,5 +111,4 @@
         <ReferenceCopyLocalPaths Include="@(CoreCLRILFiles)" />
       </ItemGroup>
   </Target>
-
 </Project>

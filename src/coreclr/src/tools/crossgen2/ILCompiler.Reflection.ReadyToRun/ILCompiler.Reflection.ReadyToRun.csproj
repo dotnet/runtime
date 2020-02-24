@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>ILCompiler.Reflection.ReadyToRun</AssemblyName>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
@@ -12,6 +12,7 @@
     <NoWarn>8002,NU1701</NoWarn>
     <RuntimeIdentifiers>win-x64;win-x86</RuntimeIdentifiers>
     <OutputPath>$(BinDir)</OutputPath>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +22,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\Common\Internal\Runtime\CorConstants.cs" Link="Common\CorConstants.cs" />
+    <Compile Include="..\..\Common\Internal\Runtime\ModuleHeaders.cs" Link="Common\ModuleHeaders.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunConstants.cs" Link="Common\ReadyToRunConstants.cs" />
   </ItemGroup>
 </Project>

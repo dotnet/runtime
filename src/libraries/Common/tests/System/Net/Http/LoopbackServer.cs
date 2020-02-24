@@ -673,7 +673,7 @@ namespace System.Net.Test.Common
                 {
                     if (requestData.GetHeaderValueCount("Content-Length") != 0)
                     {
-                        _contentLength = Int32.Parse(requestData.GetSingleHeaderValue("Content-Length"));
+                        _contentLength = int.Parse(requestData.GetSingleHeaderValue("Content-Length"));
                     }
                     else if (requestData.GetHeaderValueCount("Transfer-Encoding") != 0 && requestData.GetSingleHeaderValue("Transfer-Encoding") == "chunked")
                     {
@@ -897,8 +897,6 @@ namespace System.Net.Test.Common
             return newOptions;
         }
 
-        public override bool IsHttp11 => true;
-        public override bool IsHttp2 => false;
-        public override bool IsHttp3 => false;
+        public override Version Version => HttpVersion.Version11;
     }
 }

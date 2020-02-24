@@ -13,19 +13,19 @@ namespace System.Diagnostics
     /// </devdoc>
     public class ProcessModule : Component
     {
-        private FileVersionInfo _fileVersionInfo;
+        private FileVersionInfo? _fileVersionInfo;
 
         internal ProcessModule() { }
 
         /// <devdoc>
         ///     Returns the name of the Module.
         /// </devdoc>
-        public string ModuleName { get; internal set; }
+        public string? ModuleName { get; internal set; }
 
         /// <devdoc>
         ///     Returns the full file path for the location of the module.
         /// </devdoc>
-        public string FileName { get; internal set; }
+        public string? FileName { get; internal set; }
 
         /// <devdoc>
         ///     Returns the memory address that the module was loaded at.
@@ -49,7 +49,7 @@ namespace System.Diagnostics
         /// <devdoc>
         ///     Returns version information about the module.
         /// </devdoc>
-        public FileVersionInfo FileVersionInfo => _fileVersionInfo ?? (_fileVersionInfo = FileVersionInfo.GetVersionInfo(FileName));
+        public FileVersionInfo FileVersionInfo => _fileVersionInfo ?? (_fileVersionInfo = FileVersionInfo.GetVersionInfo(FileName!));
 
         public override string ToString() => $"{base.ToString()} ({ModuleName})";
     }

@@ -246,7 +246,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     return 0x321;
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
     LoaderAllocator *pLoaderAllocator /* = NULL */, bool throwOnOutOfMemoryWithinRange /*= true*/)
 {
@@ -304,7 +304,7 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
     return (PCODE)(0x12345);
 }
 
-Assembly * SystemDomain::GetCallersAssembly(StackCrawlMark * stackMark, AppDomain ** ppAppDomain)
+Assembly * SystemDomain::GetCallersAssembly(StackCrawlMark * stackMark)
 {
     return NULL;
 }

@@ -28,11 +28,11 @@ class ComPlusCallMethodDesc;
 void ResumeAtJit(PT_CONTEXT pContext, LPVOID oldFP);
 #endif
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 void ResumeAtJitEH   (CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHClausePtr, DWORD nestingLevel, Thread *pThread, BOOL unwindStack);
 int  CallJitEHFilter (CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHClausePtr, DWORD nestingLevel, OBJECTREF thrownObj);
 void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHClausePtr, DWORD nestingLevel);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 //These are in util.cpp
 extern size_t GetLogicalProcessorCacheSizeFromOS();
@@ -86,7 +86,7 @@ extern "C" void STDCALL DelayLoad_Helper_ObjObj();
 // Note that this information may be the least-common-denominator in the
 // case of a multi-proc machine.
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo);
 #else
 inline void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
@@ -97,9 +97,9 @@ inline void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
     cpuInfo->dwExtendedFeatures = 0;
 }
 
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 
-#if (defined(_TARGET_X86_) || defined(_TARGET_AMD64_)) && !defined(CROSSGEN_COMPILE)
+#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(CROSSGEN_COMPILE)
 extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16]);
 extern "C" DWORD __stdcall getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16]);
 extern "C" DWORD __stdcall xmmYmmStateSupport();
@@ -107,7 +107,7 @@ extern "C" DWORD __stdcall xmmYmmStateSupport();
 
 inline bool TargetHasAVXSupport()
 {
-#if (defined(_TARGET_X86_) || defined(_TARGET_AMD64_)) && !defined(CROSSGEN_COMPILE)
+#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(CROSSGEN_COMPILE)
     unsigned char buffer[16];
     // All x86/AMD64 targets support cpuid.
     (void) getcpuid(1, buffer);
@@ -115,7 +115,7 @@ inline bool TargetHasAVXSupport()
     // It returns the resulting eax, ebx, ecx and edx (in that order) in buffer[].
     // The AVX feature is ECX bit 28.
     return ((buffer[11] & 0x10) != 0);
-#endif // (defined(_TARGET_X86_) || defined(_TARGET_AMD64_)) && !defined(CROSSGEN_COMPILE)
+#endif // (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(CROSSGEN_COMPILE)
     return false;
 }
 
@@ -152,7 +152,7 @@ BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDes
 //
 class ResetProcessorStateHolder
 {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     ULONG m_mxcsr;
 #endif
 
@@ -160,17 +160,17 @@ public:
 
     ResetProcessorStateHolder ()
     {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
         m_mxcsr = _mm_getcsr();
         _mm_setcsr(0x1f80);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     }
 
     ~ResetProcessorStateHolder ()
     {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
         _mm_setcsr(m_mxcsr);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     }
 };
 

@@ -2008,7 +2008,7 @@ RedimAndExit:
         End Function
 
         Public Function StrConv(ByVal [str] As String, ByVal Conversion As VbStrConv, Optional ByVal LocaleID As Integer = 0) As String
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             Try
                 Const LANG_CHINESE As Integer = &H4I
                 Const LANG_JAPANESE As Integer = &H11I
@@ -2147,7 +2147,7 @@ RedimAndExit:
 #End If
         End Function
 
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
         Friend Function ValidLCID(ByVal LocaleID As Integer) As Boolean
             Try
                 Dim loc As CultureInfo = New CultureInfo(LocaleID)

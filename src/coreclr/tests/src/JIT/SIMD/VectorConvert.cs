@@ -613,9 +613,9 @@ partial class VectorTest
         if (!jitLog.Check("System.Numerics.Vector:ConvertToInt32(struct):struct")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector:ConvertToSingle(struct):struct")) returnVal = Fail;
         // SIMD Conversion to Int64 is not supported on x86
-#if !BIT32
+#if !TARGET_32BIT
         if (!jitLog.Check("System.Numerics.Vector:ConvertToInt64(struct):struct")) returnVal = Fail;
-#endif // !BIT32
+#endif // !TARGET_32BIT
         if (!jitLog.Check("System.Numerics.Vector:ConvertToDouble(struct):struct")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector:Narrow(struct,struct):struct")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector:Widen(struct,byref,byref)")) returnVal = Fail;

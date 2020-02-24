@@ -10,16 +10,6 @@ namespace System.Net.Sockets.Tests
     public class SocketInformationTest
     {
         [Fact]
-        public void Socket_Ctor_DuplicateAndClose_Throw()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => new Socket(new SocketInformation()));
-            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => s.DuplicateAndClose(0));
-            }
-        }
-
-        [Fact]
         public void Properties_Roundtrip()
         {
             SocketInformation si = default(SocketInformation);

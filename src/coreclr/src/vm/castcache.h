@@ -261,7 +261,7 @@ private:
         // we do `rotl(source, <half-size>) ^ target` for mixing inputs.
         // then we use fibonacci hashing to reduce the value to desired size.
 
-#if BIT64
+#if HOST_64BIT
         UINT64 hash = (((UINT64)source << 32) | ((UINT64)source >> 32)) ^ (UINT64)target;
         return (DWORD)((hash * 11400714819323198485llu) >> HashShift(table));
 #else

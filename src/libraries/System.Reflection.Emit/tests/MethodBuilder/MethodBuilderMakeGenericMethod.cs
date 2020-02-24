@@ -32,6 +32,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void TestNotThrowsExceptionOnNull()
         {
             Type returnType = typeof(void);
@@ -45,6 +46,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void TestNotThrowsExceptionOnEmptyArray1()
         {
             Type returnType = typeof(void);
@@ -59,6 +61,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void TestNotThrowsExceptionOnEmptyArray2()
         {
             Type returnType = typeof(void);

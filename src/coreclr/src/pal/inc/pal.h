@@ -95,14 +95,14 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #define _M_ARM64 1
 #endif
 
-#if defined(_M_IX86) && !defined(_X86_)
-#define _X86_
-#elif defined(_M_AMD64) && !defined(_AMD64_)
-#define _AMD64_
-#elif defined(_M_ARM) && !defined(_ARM_)
-#define _ARM_
-#elif defined(_M_ARM64) && !defined(_ARM64_)
-#define _ARM64_
+#if defined(_M_IX86) && !defined(HOST_X86)
+#define HOST_X86
+#elif defined(_M_AMD64) && !defined(HOST_AMD64)
+#define HOST_AMD64
+#elif defined(_M_ARM) && !defined(HOST_ARM)
+#define HOST_ARM
+#elif defined(_M_ARM64) && !defined(HOST_ARM64)
+#define HOST_ARM64
 #endif
 
 #endif // !_MSC_VER
@@ -155,6 +155,9 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #else
 #define ANALYZER_NORETURN
 #endif
+
+#define EMPTY_BASES_DECL
+
 
 #if !defined(_MSC_VER) || defined(SOURCE_FORMATTING)
 #define __assume(x) (void)0
@@ -302,7 +305,7 @@ PAL_IsDebuggerPresent();
 
 #ifndef PAL_STDCPP_COMPAT
 
-#if BIT64 || _MSC_VER >= 1400
+#if HOST_64BIT || _MSC_VER >= 1400
 typedef __int64 time_t;
 #else
 typedef long time_t;
@@ -1484,7 +1487,7 @@ QueueUserAPC(
          IN HANDLE hThread,
          IN ULONG_PTR dwData);
 
-#ifdef _X86_
+#ifdef HOST_X86
 
 //
 // ***********************************************************************************
@@ -1610,7 +1613,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
 // copied from winnt.h
 
 #define CONTEXT_AMD64   0x100000
@@ -1861,7 +1864,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 
 #define CONTEXT_ARM   0x00200000L
 
@@ -2041,7 +2044,7 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
     };
 } IMAGE_ARM_RUNTIME_FUNCTION_ENTRY, * PIMAGE_ARM_RUNTIME_FUNCTION_ENTRY;
 
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 
 #define CONTEXT_ARM64   0x00400000L
 
@@ -2345,13 +2348,13 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_
 #define PAL_CS_NATIVE_DATA_SIZE 76
 #elif defined(__APPLE__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 120
-#elif defined(__FreeBSD__) && defined(_X86_)
+#elif defined(__FreeBSD__) && defined(HOST_X86)
 #define PAL_CS_NATIVE_DATA_SIZE 12
 #elif defined(__FreeBSD__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 24
-#elif defined(__linux__) && defined(_ARM_)
+#elif defined(__linux__) && defined(HOST_ARM)
 #define PAL_CS_NATIVE_DATA_SIZE 80
-#elif defined(__linux__) && defined(_ARM64_)
+#elif defined(__linux__) && defined(HOST_ARM64)
 #define PAL_CS_NATIVE_DATA_SIZE 116
 #elif defined(__linux__) && defined(__i386__)
 #define PAL_CS_NATIVE_DATA_SIZE 76
@@ -2374,11 +2377,13 @@ typedef struct _CRITICAL_SECTION {
     LONG LockCount;
     LONG RecursionCount;
     HANDLE OwningThread;
-    HANDLE LockSemaphore;
     ULONG_PTR SpinCount;
 
+#ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
     BOOL bInternal;
+#endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
     volatile DWORD dwInitState;
+
     union CSNativeDataStorage
     {
         BYTE rgNativeDataStorage[PAL_CS_NATIVE_DATA_SIZE];
@@ -2934,7 +2939,7 @@ enum {
 //
 typedef struct _RUNTIME_FUNCTION {
     DWORD BeginAddress;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     DWORD EndAddress;
 #endif
     DWORD UnwindData;
@@ -3219,7 +3224,7 @@ BitScanReverse64(
 
 FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
 {
-#ifdef _ARM64_
+#ifdef HOST_ARM64
     // On arm64, most of the __sync* functions generate a code sequence like:
     //   loop:
     //     ldaxr (load acquire exclusive)
@@ -3232,7 +3237,7 @@ FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
     // require the load to occur after the store. This memory barrier should be used following a call to a __sync* function to
     // prevent that reordering. Code generated for arm32 includes a 'dmb' after 'cbnz', so no issue there at the moment.
     __sync_synchronize();
-#endif // _ARM64_
+#endif // HOST_ARM64
 }
 
 /*++
@@ -3539,7 +3544,7 @@ InterlockedBitTestAndSet(
     return (InterlockedOr(Base, (1 << Bit)) & (1 << Bit)) != 0;
 }
 
-#if defined(BIT64)
+#if defined(HOST_64BIT)
 #define InterlockedExchangePointer(Target, Value) \
     ((PVOID)InterlockedExchange64((PLONG64)(Target), (LONGLONG)(Value)))
 
@@ -3577,11 +3582,11 @@ VOID
 PALAPI
 YieldProcessor()
 {
-#if defined(_X86_) || defined(_AMD64_)
+#if defined(HOST_X86) || defined(HOST_AMD64)
     __asm__ __volatile__(
         "rep\n"
         "nop");
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
     __asm__ __volatile__( "yield");
 #else
     return;
@@ -3928,10 +3933,10 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define strnlen       PAL_strnlen
 #define wcsnlen       PAL_wcsnlen
 
-#ifdef _AMD64_
+#ifdef HOST_AMD64
 #define _mm_getcsr    PAL__mm_getcsr
 #define _mm_setcsr    PAL__mm_setcsr
-#endif // _AMD64_
+#endif // HOST_AMD64
 
 #endif // !PAL_STDCPP_COMPAT
 
@@ -4119,9 +4124,9 @@ unsigned int __cdecl _rotl(unsigned int value, int shift)
 #endif // !HAS_ROTL
 
 // On 64 bit unix, make the long an int.
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define _lrotl _rotl
-#endif // BIT64
+#endif // HOST_64BIT
 
 #if !HAS_ROTR
 

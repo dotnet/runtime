@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Xunit;
 using Xunit.Sdk;
 
@@ -292,6 +293,54 @@ namespace System.Text.RegularExpressions.Tests
 
             ValidateSet($"[{set}]", RegexOptions.None, included, null);
             ValidateSet($"[^{set}]", RegexOptions.None, null, included);
+        }
+
+        [Theory]
+        [InlineData("Cc", UnicodeCategory.Control)]
+        [InlineData("Cf", UnicodeCategory.Format)]
+        [InlineData("Cn", UnicodeCategory.OtherNotAssigned)]
+        [InlineData("Co", UnicodeCategory.PrivateUse)]
+        [InlineData("Cs", UnicodeCategory.Surrogate)]
+        [InlineData("Ll", UnicodeCategory.LowercaseLetter)]
+        [InlineData("Lm", UnicodeCategory.ModifierLetter)]
+        [InlineData("Lo", UnicodeCategory.OtherLetter)]
+        [InlineData("Lt", UnicodeCategory.TitlecaseLetter)]
+        [InlineData("Lu", UnicodeCategory.UppercaseLetter)]
+        [InlineData("Mc", UnicodeCategory.SpacingCombiningMark)]
+        [InlineData("Me", UnicodeCategory.EnclosingMark)]
+        [InlineData("Mn", UnicodeCategory.NonSpacingMark)]
+        [InlineData("Nd", UnicodeCategory.DecimalDigitNumber)]
+        [InlineData("Nl", UnicodeCategory.LetterNumber)]
+        [InlineData("No", UnicodeCategory.OtherNumber)]
+        [InlineData("Pc", UnicodeCategory.ConnectorPunctuation)]
+        [InlineData("Pd", UnicodeCategory.DashPunctuation)]
+        [InlineData("Pe", UnicodeCategory.ClosePunctuation)]
+        [InlineData("Po", UnicodeCategory.OtherPunctuation)]
+        [InlineData("Ps", UnicodeCategory.OpenPunctuation)]
+        [InlineData("Pf", UnicodeCategory.FinalQuotePunctuation)]
+        [InlineData("Pi", UnicodeCategory.InitialQuotePunctuation)]
+        [InlineData("Sc", UnicodeCategory.CurrencySymbol)]
+        [InlineData("Sk", UnicodeCategory.ModifierSymbol)]
+        [InlineData("Sm", UnicodeCategory.MathSymbol)]
+        [InlineData("So", UnicodeCategory.OtherSymbol)]
+        [InlineData("Zl", UnicodeCategory.LineSeparator)]
+        [InlineData("Zp", UnicodeCategory.ParagraphSeparator)]
+        [InlineData("Zs", UnicodeCategory.SpaceSeparator)]
+        public void UnicodeCategoriesInclusionsExpected(string generalCategory, UnicodeCategory unicodeCategory)
+        {
+            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Compiled })
+            {
+                Regex r;
+                char[] allChars = Enumerable.Range(0, char.MaxValue + 1).Select(i => (char)i).ToArray();
+                int expectedInCategory = allChars.Count(c => char.GetUnicodeCategory(c) == unicodeCategory);
+                int expectedNotInCategory = allChars.Length - expectedInCategory;
+
+                r = new Regex(@$"\p{{{generalCategory}}}");
+                Assert.Equal(expectedInCategory, r.Matches(string.Concat(allChars)).Count);
+
+                r = new Regex(@$"\P{{{generalCategory}}}");
+                Assert.Equal(expectedNotInCategory, r.Matches(string.Concat(allChars)).Count);
+            }
         }
 
         private static HashSet<char> ComputeIncludedSet(Func<char, bool> func)

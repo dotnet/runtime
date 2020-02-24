@@ -1459,7 +1459,7 @@ CHECK PEDecoder::CheckILOnly() const
             CHECK(CheckILOnlyBaseRelocations());
         }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         if (!IsMapped())
         {
             CHECK(CheckILOnlyEntryPoint());
@@ -1511,7 +1511,7 @@ CHECK PEDecoder::CheckILOnlyImportDlls() const
 
     // The only allowed DLL Imports are MscorEE.dll:_CorExeMain,_CorDllMain
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     // On win64, when the image is LoadLibrary'd, we whack the import and IAT directories. We have to relax
     // the verification for mapped images. Ideally, we would only do it for a post-LoadLibrary image.
     if (IsMapped() && !HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_IMPORT))
@@ -1604,7 +1604,7 @@ CHECK PEDecoder::CheckILOnlyImportByNameTable(RVA rva) const
     CHECK_OK;
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 // jmp dword ptr ds:[XXXX]
 #define JMP_DWORD_PTR_DS_OPCODE { 0xFF, 0x25 }
 #define JMP_DWORD_PTR_DS_OPCODE_SIZE   2        // Size of opcode
@@ -1678,7 +1678,7 @@ CHECK PEDecoder::CheckILOnlyBaseRelocations() const
     CHECK_OK;
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 CHECK PEDecoder::CheckILOnlyEntryPoint() const
 {
     CONTRACT_CHECK
@@ -1721,7 +1721,7 @@ CHECK PEDecoder::CheckILOnlyEntryPoint() const
 
     CHECK_OK;
 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #ifndef DACCESS_COMPILE
 
@@ -2863,7 +2863,7 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
             _ASSERTE(i == 0 || (pSections[i - 1].Type < pSections[i].Type));
 
             READYTORUN_SECTION * pSection = pSections + i;
-            if (pSection->Type == READYTORUN_SECTION_MANIFEST_METADATA)
+            if (pSection->Type == ReadyToRunSectionType::ManifestMetadata)
             {
                 // Set pDir to the address of the manifest metadata section
                 pDir = &pSection->Section;
@@ -2871,7 +2871,7 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
             }
         }
 
-        // ReadyToRun file without large version bubble support doesn't have the READYTORUN_SECTION_MANIFEST_METADATA
+        // ReadyToRun file without large version bubble support doesn't have the ManifestMetadata
         if (pDir == NULL)
         {
             if (pSize != NULL)
@@ -3102,22 +3102,15 @@ BOOL PEDecoder::GetForceRelocs()
 
 BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 {
-    // Use static contracts to avoid recursion, as the dynamic contracts
-    // do WszLoadLibrary(MSCOREE_SHIM_W).
 #ifdef _DEBUG
 		STATIC_CONTRACT_NOTHROW;                                        \
 		ANNOTATION_DEBUG_ONLY;                                          \
 		STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 #endif
 
-#if defined(DACCESS_COMPILE) || defined(FEATURE_PAL)
+#if defined(DACCESS_COMPILE) || defined(TARGET_UNIX)
     return TRUE;
 #else
-
-    // Contracts in ConfigDWORD do WszLoadLibrary(MSCOREE_SHIM_W).
-    // This check prevents recursion.
-    if (wcsstr(lpFileName, MSCOREE_SHIM_W) != 0)
-        return TRUE;
 
     if (!GetForceRelocs())
         return TRUE;
@@ -3181,7 +3174,7 @@ ErrExit:
 
     return fSuccess;
 
-#endif // DACCESS_COMPILE || FEATURE_PAL
+#endif // DACCESS_COMPILE || TARGET_UNIX
 }
 
 #endif // _DEBUG

@@ -161,6 +161,8 @@ monoutils_sources = \
 	mono-stack-unwinding.h	\
 	hazard-pointer.c	\
 	hazard-pointer.h	\
+	lifo-semaphore.c	\
+	lifo-semaphore.h	\
 	lock-free-queue.c	\
 	lock-free-queue.h	\
 	lock-free-alloc.c	\
@@ -206,6 +208,7 @@ monoutils_sources = \
 	bsearch.h	\
 	bsearch.c	\
 	mono-signal-handler.h	\
+	mono-signal-handler.c	\
 	mono-conc-hashtable.h	\
 	mono-conc-hashtable.c	\
 	json.h	\

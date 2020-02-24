@@ -119,7 +119,7 @@ Namespace Microsoft.VisualBasic
         '============================================================================
 
         Public Sub Beep()
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             UnsafeNativeMethods.MessageBeep(0)
 #Else
             Throw New PlatformNotSupportedException()

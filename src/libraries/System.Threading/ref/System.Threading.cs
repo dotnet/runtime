@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Threading
@@ -152,10 +152,24 @@ namespace System.Threading
     public static partial class Interlocked
     {
         public static int Add(ref int location1, int value) { throw null; }
+        [System.CLSCompliant(false)]
+        public static uint Add(ref uint location1, uint value) { throw null; }
         public static long Add(ref long location1, long value) { throw null; }
+        [System.CLSCompliant(false)]
+        public static ulong Add(ref ulong location1, ulong value) { throw null; }
+        public static int And(ref int location1, int value) { throw null; }
+        [System.CLSCompliant(false)]
+        public static uint And(ref uint location1, uint value) { throw null; }
+        public static long And(ref long location1, long value) { throw null; }
+        [System.CLSCompliant(false)]
+        public static ulong And(ref ulong location1, ulong value) { throw null; }
         public static double CompareExchange(ref double location1, double value, double comparand) { throw null; }
         public static int CompareExchange(ref int location1, int value, int comparand) { throw null; }
+        [System.CLSCompliant(false)]
+        public static uint CompareExchange(ref uint location1, uint value, uint comparand) { throw null; }
         public static long CompareExchange(ref long location1, long value, long comparand) { throw null; }
+        [System.CLSCompliant(false)]
+        public static ulong CompareExchange(ref ulong location1, ulong value, ulong comparand) { throw null; }
         public static System.IntPtr CompareExchange(ref System.IntPtr location1, System.IntPtr value, System.IntPtr comparand) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
         public static object? CompareExchange(ref object? location1, object? value, object? comparand) { throw null; }
@@ -163,10 +177,18 @@ namespace System.Threading
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class? { throw null; }
         public static int Decrement(ref int location) { throw null; }
+        [System.CLSCompliant(false)]
+        public static uint Decrement(ref uint location) { throw null; }
         public static long Decrement(ref long location) { throw null; }
+        [System.CLSCompliant(false)]
+        public static ulong Decrement(ref ulong location) { throw null; }
         public static double Exchange(ref double location1, double value) { throw null; }
         public static int Exchange(ref int location1, int value) { throw null; }
+        [System.CLSCompliant(false)]
+        public static uint Exchange(ref uint location1, uint value) { throw null; }
         public static long Exchange(ref long location1, long value) { throw null; }
+        [System.CLSCompliant(false)]
+        public static ulong Exchange(ref ulong location1, ulong value) { throw null; }
         public static System.IntPtr Exchange(ref System.IntPtr location1, System.IntPtr value) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
         public static object? Exchange([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref object? location1, object? value) { throw null; }
@@ -174,10 +196,22 @@ namespace System.Threading
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
         public static T Exchange<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location1, T value) where T : class? { throw null; }
         public static int Increment(ref int location) { throw null; }
+        [System.CLSCompliant(false)]
+        public static uint Increment(ref uint location) { throw null; }
         public static long Increment(ref long location) { throw null; }
+        [System.CLSCompliant(false)]
+        public static ulong Increment(ref ulong location) { throw null; }
         public static void MemoryBarrier() { }
         public static void MemoryBarrierProcessWide() { }
+        public static int Or(ref int location1, int value) { throw null; }
+        [System.CLSCompliant(false)]
+        public static uint Or(ref uint location1, uint value) { throw null; }
+        public static long Or(ref long location1, long value) { throw null; }
+        [System.CLSCompliant(false)]
+        public static ulong Or(ref ulong location1, ulong value) { throw null; }
         public static long Read(ref long location) { throw null; }
+        [System.CLSCompliant(false)]
+        public static ulong Read(ref ulong location) { throw null; }
     }
     public static partial class LazyInitializer
     {

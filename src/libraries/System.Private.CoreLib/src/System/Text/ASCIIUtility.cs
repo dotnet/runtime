@@ -10,13 +10,13 @@ using System.Runtime.Intrinsics.X86;
 using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nint = System.Int64;
 using nuint = System.UInt64;
-#else // BIT64
+#else // TARGET_64BIT
 using nint = System.Int32;
 using nuint = System.UInt32;
-#endif // BIT64
+#endif // TARGET_64BIT
 
 namespace System.Text
 {
@@ -662,7 +662,7 @@ namespace System.Text
             Debug.Assert(Sse2.IsSupported, "Should've been checked by caller.");
             Debug.Assert(BitConverter.IsLittleEndian, "SSE2 assumes little-endian.");
 
-            Vector128<short> firstVector, secondVector;
+            Vector128<ushort> firstVector, secondVector;
             uint currentMask;
             char* pOriginalBuffer = pBuffer;
 
@@ -675,33 +675,23 @@ namespace System.Text
             // jumps as much as possible in the optimistic case of "all ASCII". If we see non-ASCII
             // data, we jump out of the hot paths to targets at the end of the method.
 
-            Vector128<short> asciiMaskForPTEST = Vector128.Create(unchecked((short)0xFF80)); // used for PTEST on supported hardware
-            Vector128<ushort> asciiMaskForPMINUW = Vector128.Create((ushort)0x0080); // used for PMINUW on supported hardware
-            Vector128<short> asciiMaskForPXOR = Vector128.Create(unchecked((short)0x8000)); // used for PXOR
-            Vector128<short> asciiMaskForPCMPGTW = Vector128.Create(unchecked((short)0x807F)); // used for PCMPGTW
+            Vector128<ushort> asciiMaskForPTEST = Vector128.Create((ushort)0xFF80); // used for PTEST on supported hardware
+            Vector128<ushort> asciiMaskForPADDUSW = Vector128.Create((ushort)0x7F80); // used for PADDUSW
+            const uint NonAsciiDataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether 'currentMask' contains non-ASCII data
 
             Debug.Assert(bufferLength <= nuint.MaxValue / sizeof(char));
 
             // Read the first vector unaligned.
 
-            firstVector = Sse2.LoadVector128((short*)pBuffer); // unaligned load
+            firstVector = Sse2.LoadVector128((ushort*)pBuffer); // unaligned load
 
-            if (Sse41.IsSupported)
-            {
-                // The SSE41-optimized code path works by forcing the 0x0080 bit in each WORD of the vector to be
-                // set iff the WORD element has value >= 0x0080 (non-ASCII). Then we'll treat it as a BYTE vector
-                // in order to extract the mask.
-                currentMask = (uint)Sse2.MoveMask(Sse41.Min(firstVector.AsUInt16(), asciiMaskForPMINUW).AsByte());
-            }
-            else
-            {
-                // The SSE2-optimized code path works by forcing each WORD of the vector to be 0xFFFF iff the WORD
-                // element has value >= 0x0080 (non-ASCII). Then we'll treat it as a BYTE vector in order to extract
-                // the mask.
-                currentMask = (uint)Sse2.MoveMask(Sse2.CompareGreaterThan(Sse2.Xor(firstVector, asciiMaskForPXOR), asciiMaskForPCMPGTW).AsByte());
-            }
+            // The operation below forces the 0x8000 bit of each WORD to be set iff the WORD element
+            // has value >= 0x0800 (non-ASCII). Then we'll treat the vector as a BYTE vector in order
+            // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
 
-            if (currentMask != 0)
+            currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
+
+            if ((currentMask & NonAsciiDataSeenMask) != 0)
             {
                 goto FoundNonAsciiDataInCurrentMask;
             }
@@ -745,9 +735,9 @@ namespace System.Text
 
                 do
                 {
-                    firstVector = Sse2.LoadAlignedVector128((short*)pBuffer);
-                    secondVector = Sse2.LoadAlignedVector128((short*)pBuffer + SizeOfVector128InChars);
-                    Vector128<short> combinedVector = Sse2.Or(firstVector, secondVector);
+                    firstVector = Sse2.LoadAlignedVector128((ushort*)pBuffer);
+                    secondVector = Sse2.LoadAlignedVector128((ushort*)pBuffer + SizeOfVector128InChars);
+                    Vector128<ushort> combinedVector = Sse2.Or(firstVector, secondVector);
 
                     if (Sse41.IsSupported)
                     {
@@ -761,7 +751,8 @@ namespace System.Text
                     else
                     {
                         // See comment earlier in the method for an explanation of how the below logic works.
-                        if (Sse2.MoveMask(Sse2.CompareGreaterThan(Sse2.Xor(combinedVector, asciiMaskForPXOR), asciiMaskForPCMPGTW).AsByte()) != 0)
+                        currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(combinedVector, asciiMaskForPADDUSW).AsByte());
+                        if ((currentMask & NonAsciiDataSeenMask) != 0)
                         {
                             goto FoundNonAsciiDataInFirstOrSecondVector;
                         }
@@ -789,7 +780,7 @@ namespace System.Text
             // At least one full vector's worth of data remains, so we can safely read it.
             // Remember, at this point pBuffer is still aligned.
 
-            firstVector = Sse2.LoadAlignedVector128((short*)pBuffer);
+            firstVector = Sse2.LoadAlignedVector128((ushort*)pBuffer);
 
             if (Sse41.IsSupported)
             {
@@ -803,8 +794,8 @@ namespace System.Text
             else
             {
                 // See comment earlier in the method for an explanation of how the below logic works.
-                currentMask = (uint)Sse2.MoveMask(Sse2.CompareGreaterThan(Sse2.Xor(firstVector, asciiMaskForPXOR), asciiMaskForPCMPGTW).AsByte());
-                if (currentMask != 0)
+                currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
+                if ((currentMask & NonAsciiDataSeenMask) != 0)
                 {
                     goto FoundNonAsciiDataInCurrentMask;
                 }
@@ -822,7 +813,7 @@ namespace System.Text
                 // We need to adjust the pointer because we're re-reading data.
 
                 pBuffer = (char*)((byte*)pBuffer + (bufferLength & (SizeOfVector128InBytes - 1)) - SizeOfVector128InBytes);
-                firstVector = Sse2.LoadVector128((short*)pBuffer); // unaligned load
+                firstVector = Sse2.LoadVector128((ushort*)pBuffer); // unaligned load
 
                 if (Sse41.IsSupported)
                 {
@@ -836,8 +827,8 @@ namespace System.Text
                 else
                 {
                     // See comment earlier in the method for an explanation of how the below logic works.
-                    currentMask = (uint)Sse2.MoveMask(Sse2.CompareGreaterThan(Sse2.Xor(firstVector, asciiMaskForPXOR), asciiMaskForPCMPGTW).AsByte());
-                    if (currentMask != 0)
+                    currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
+                    if ((currentMask & NonAsciiDataSeenMask) != 0)
                     {
                         goto FoundNonAsciiDataInCurrentMask;
                     }
@@ -867,8 +858,8 @@ namespace System.Text
             }
             else
             {
-                currentMask = (uint)Sse2.MoveMask(Sse2.CompareGreaterThan(Sse2.Xor(firstVector, asciiMaskForPXOR), asciiMaskForPCMPGTW).AsByte());
-                if (currentMask != 0)
+                currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
+                if ((currentMask & NonAsciiDataSeenMask) != 0)
                 {
                     goto FoundNonAsciiDataInCurrentMask;
                 }
@@ -882,24 +873,27 @@ namespace System.Text
         FoundNonAsciiDataInFirstVector:
 
             // See comment earlier in the method for an explanation of how the below logic works.
-            if (Sse41.IsSupported)
-            {
-                currentMask = (uint)Sse2.MoveMask(Sse41.Min(firstVector.AsUInt16(), asciiMaskForPMINUW).AsByte());
-            }
-            else
-            {
-                currentMask = (uint)Sse2.MoveMask(Sse2.CompareGreaterThan(Sse2.Xor(firstVector, asciiMaskForPXOR), asciiMaskForPCMPGTW).AsByte());
-            }
+            currentMask = (uint)Sse2.MoveMask(Sse2.AddSaturate(firstVector, asciiMaskForPADDUSW).AsByte());
 
         FoundNonAsciiDataInCurrentMask:
 
-            // The mask contains - from the LSB - a 0 for each ASCII byte we saw, and a 1 for each non-ASCII byte.
-            // Tzcnt is the correct operation to count the number of zero bits quickly. If this instruction isn't
-            // available, we'll fall back to a normal loop. (Even though the original vector used WORD elements,
-            // masks work on BYTE elements, and we account for this in the final fixup.)
+            // See comment earlier in the method accounting for the 0x8000 and 0x0080 bits set after the WORD-sized operations.
+
+            currentMask &= NonAsciiDataSeenMask;
+
+            // Now, the mask contains - from the LSB - a 0b00 pair for each ASCII char we saw, and a 0b10 pair for each non-ASCII char.
+            //
+            // (Keep endianness in mind in the below examples.)
+            // A non-ASCII char followed by two ASCII chars is 0b..._00_00_10. (tzcnt = 1)
+            // An ASCII char followed by two non-ASCII chars is 0b..._10_10_00. (tzcnt = 3)
+            // Two ASCII chars followed by a non-ASCII char is 0b..._10_00_00. (tzcnt = 5)
+            //
+            // This means tzcnt = 2 * numLeadingAsciiChars + 1. We can conveniently take advantage of the fact
+            // that the 2x multiplier already matches the char* stride length, then just subtract 1 at the end to
+            // compute the correct final ending pointer value.
 
             Debug.Assert(currentMask != 0, "Shouldn't be here unless we see non-ASCII data.");
-            pBuffer = (char*)((byte*)pBuffer + (uint)BitOperations.TrailingZeroCount(currentMask));
+            pBuffer = (char*)((byte*)pBuffer + (uint)BitOperations.TrailingZeroCount(currentMask) - 1);
 
             goto Finish;
 
@@ -1010,10 +1004,14 @@ namespace System.Text
         {
             Debug.Assert(AllCharsInUInt64AreAscii(value));
 
-            if (Bmi2.X64.IsSupported)
+            if (Sse2.X64.IsSupported)
             {
-                // BMI2 will work regardless of the processor's endianness.
-                Unsafe.WriteUnaligned(ref outputBuffer, (uint)Bmi2.X64.ParallelBitExtract(value, 0x00FF00FF_00FF00FFul));
+                // Narrows a vector of words [ w0 w1 w2 w3 ] to a vector of bytes
+                // [ b0 b1 b2 b3 b0 b1 b2 b3 ], then writes 4 bytes (32 bits) to the destination.
+
+                Vector128<short> vecWide = Sse2.X64.ConvertScalarToVector128UInt64(value).AsInt16();
+                Vector128<uint> vecNarrow = Sse2.PackUnsignedSaturate(vecWide, vecWide).AsUInt32();
+                Unsafe.WriteUnaligned<uint>(ref outputBuffer, Sse2.ConvertToUInt32(vecNarrow));
             }
             else
             {
@@ -1315,8 +1313,8 @@ namespace System.Text
             Debug.Assert(elementCount >= 2 * SizeOfVector128);
 
             Vector128<short> asciiMaskForPTEST = Vector128.Create(unchecked((short)0xFF80)); // used for PTEST on supported hardware
-            Vector128<short> asciiMaskForPXOR = Vector128.Create(unchecked((short)0x8000)); // used for PXOR
-            Vector128<short> asciiMaskForPCMPGTW = Vector128.Create(unchecked((short)0x807F)); // used for PCMPGTW
+            Vector128<ushort> asciiMaskForPADDUSW = Vector128.Create((ushort)0x7F80); // used for PADDUSW
+            const int NonAsciiDataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether the pmovmskb operation saw non-ASCII chars
 
             // First, perform an unaligned read of the first part of the input buffer.
 
@@ -1334,7 +1332,7 @@ namespace System.Text
             }
             else
             {
-                if (Sse2.MoveMask(Sse2.CompareGreaterThan(Sse2.Xor(utf16VectorFirst, asciiMaskForPXOR), asciiMaskForPCMPGTW).AsByte()) != 0)
+                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForPADDUSW).AsByte()) & NonAsciiDataSeenMask) != 0)
                 {
                     return 0;
                 }
@@ -1374,7 +1372,7 @@ namespace System.Text
                 }
                 else
                 {
-                    if (Sse2.MoveMask(Sse2.CompareGreaterThan(Sse2.Xor(utf16VectorFirst, asciiMaskForPXOR), asciiMaskForPCMPGTW).AsByte()) != 0)
+                    if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForPADDUSW).AsByte()) & NonAsciiDataSeenMask) != 0)
                     {
                         goto Finish;
                     }
@@ -1413,7 +1411,7 @@ namespace System.Text
                 }
                 else
                 {
-                    if (Sse2.MoveMask(Sse2.CompareGreaterThan(Sse2.Xor(combinedVector, asciiMaskForPXOR), asciiMaskForPCMPGTW).AsByte()) != 0)
+                    if ((Sse2.MoveMask(Sse2.AddSaturate(combinedVector.AsUInt16(), asciiMaskForPADDUSW).AsByte()) & NonAsciiDataSeenMask) != 0)
                     {
                         goto FoundNonAsciiDataInLoop;
                     }
@@ -1447,7 +1445,7 @@ namespace System.Text
             }
             else
             {
-                if (Sse2.MoveMask(Sse2.CompareGreaterThan(Sse2.Xor(utf16VectorFirst, asciiMaskForPXOR), asciiMaskForPCMPGTW).AsByte()) != 0)
+                if ((Sse2.MoveMask(Sse2.AddSaturate(utf16VectorFirst.AsUInt16(), asciiMaskForPADDUSW).AsByte()) & NonAsciiDataSeenMask) != 0)
                 {
                     goto Finish; // found non-ASCII data
                 }
@@ -1695,14 +1693,16 @@ namespace System.Text
         /// writes them to the output buffer with machine endianness.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref char outputBuffer, uint value)
+        internal static void WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref char outputBuffer, uint value)
         {
             Debug.Assert(AllBytesInUInt32AreAscii(value));
 
-            if (Bmi2.X64.IsSupported)
+            if (Sse2.X64.IsSupported)
             {
-                // BMI2 will work regardless of the processor's endianness.
-                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref outputBuffer), Bmi2.X64.ParallelBitDeposit(value, 0x00FF00FF_00FF00FFul));
+                Debug.Assert(BitConverter.IsLittleEndian, "SSE2 widening assumes little-endian.");
+                Vector128<byte> vecNarrow = Sse2.ConvertScalarToVector128UInt32(value).AsByte();
+                Vector128<ulong> vecWide = Sse2.UnpackLow(vecNarrow, Vector128<byte>.Zero).AsUInt64();
+                Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref outputBuffer), Sse2.X64.ConvertToUInt64(vecWide));
             }
             else
             {

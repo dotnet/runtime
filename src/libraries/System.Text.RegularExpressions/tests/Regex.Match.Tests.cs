@@ -96,6 +96,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { Case("(?>hi|hello|hey)hi"), "hellohi", options, 0, 0, false, string.Empty };
                 yield return new object[] { Case("(?:hi|hello|hey)hi"), "hellohi", options, 0, 7, true, "hellohi" }; // allow backtracking and it succeeds
                 yield return new object[] { Case("(?>hi|hello|hey)hi"), "hihi", options, 0, 4, true, "hihi" };
+                yield return new object[] { Case(@"a[^wyz]*w"), "abczw", RegexOptions.IgnoreCase, 0, 0, false, string.Empty };
             }
 
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
@@ -322,13 +323,22 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"[a-[a-f]]", "abcdefghijklmnopqrstuvwxyz", RegexOptions.None, 0, 26, false, string.Empty };
 
             // \c
-            if (!PlatformDetection.IsNetFramework) // missing fix for https://github.com/dotnet/corefx/issues/26501
+            if (!PlatformDetection.IsNetFramework) // missing fix for https://github.com/dotnet/runtime/issues/24759
             {
                 yield return new object[] { @"(cat)(\c[*)(dog)", "asdlkcat\u00FFdogiwod", RegexOptions.None, 0, 15, false, string.Empty };
             }
 
-            // Surrogate pairs splitted up into UTF-16 code units.
+            // Surrogate pairs split up into UTF-16 code units.
             yield return new object[] { @"(\uD82F[\uDCA0-\uDCA3])", "\uD82F\uDCA2", RegexOptions.CultureInvariant, 0, 2, true, "\uD82F\uDCA2" };
+
+            // Unicode text
+            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.RightToLeft, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant })
+            {
+                yield return new object[] { "\u05D0\u05D1\u05D2\u05D3(\u05D4\u05D5|\u05D6\u05D7|\u05D8)", "abc\u05D0\u05D1\u05D2\u05D3\u05D4\u05D5def", options, 3, 6, true, "\u05D0\u05D1\u05D2\u05D3\u05D4\u05D5" };
+                yield return new object[] { "\u05D0(\u05D4\u05D5|\u05D6\u05D7|\u05D8)", "\u05D0\u05D8", options, 0, 2, true, "\u05D0\u05D8" };
+                yield return new object[] { "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D2", options, 0, 2, true, "\u05D0\u05D2" };
+                yield return new object[] { "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D4", options, 0, 0, false, "" };
+            }
         }
 
         [Theory]
@@ -909,8 +919,8 @@ namespace System.Text.RegularExpressions.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // times out on ARM
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.Compiled)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/corefx/issues/26484")]
-        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/18912", RuntimeStressTestModes.JitMinOpts)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/runtime/issues/24749")]
+        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", RuntimeConfiguration.Checked, RuntimeTestModes.JitMinOpts)]
         public void Match_ExcessPrefix(RegexOptions options)
         {
             RemoteExecutor.Invoke(optionsString =>
@@ -986,6 +996,17 @@ namespace System.Text.RegularExpressions.Tests
             // Start is invalid
             Assert.Throws<ArgumentOutOfRangeException>(() => r.IsMatch("input", -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => r.IsMatch("input", 6));
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // take too long due to backtracking
+        [Theory]
+        [InlineData(@"(\w*)+\.", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
+        [InlineData(@"(a+)+b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
+        [InlineData(@"(x+x+)+y", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", false)]
+        public void IsMatch_SucceedQuicklyDueToAutoAtomicity(string regex, string input, bool expected)
+        {
+            Assert.Equal(expected, Regex.IsMatch(input, regex, RegexOptions.None));
+            Assert.Equal(expected, Regex.IsMatch(input, regex, RegexOptions.Compiled));
         }
 
         [Fact]

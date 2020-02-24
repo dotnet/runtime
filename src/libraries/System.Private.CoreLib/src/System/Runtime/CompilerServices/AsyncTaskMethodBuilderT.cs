@@ -98,7 +98,7 @@ namespace System.Runtime.CompilerServices
             AwaitUnsafeOnCompleted(ref awaiter, box);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)] // workaround boxing allocations in Tier0: https://github.com/dotnet/coreclr/issues/14474
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)] // workaround boxing allocations in Tier0: https://github.com/dotnet/runtime/issues/9120
         internal static void AwaitUnsafeOnCompleted<TAwaiter>(
             ref TAwaiter awaiter, IAsyncStateMachineBox box)
             where TAwaiter : ICriticalNotifyCompletion
@@ -106,17 +106,17 @@ namespace System.Runtime.CompilerServices
             // The null tests here ensure that the jit can optimize away the interface
             // tests when TAwaiter is a ref type.
 
-            if ((null != (object)default(TAwaiter)!) && (awaiter is ITaskAwaiter)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if ((null != (object?)default(TAwaiter)) && (awaiter is ITaskAwaiter))
             {
                 ref TaskAwaiter ta = ref Unsafe.As<TAwaiter, TaskAwaiter>(ref awaiter); // relies on TaskAwaiter/TaskAwaiter<T> having the same layout
                 TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, continueOnCapturedContext: true);
             }
-            else if ((null != (object)default(TAwaiter)!) && (awaiter is IConfiguredTaskAwaiter)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            else if ((null != (object?)default(TAwaiter)) && (awaiter is IConfiguredTaskAwaiter))
             {
                 ref ConfiguredTaskAwaitable.ConfiguredTaskAwaiter ta = ref Unsafe.As<TAwaiter, ConfiguredTaskAwaitable.ConfiguredTaskAwaiter>(ref awaiter);
                 TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, ta.m_continueOnCapturedContext);
             }
-            else if ((null != (object)default(TAwaiter)!) && (awaiter is IStateMachineBoxAwareAwaiter)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            else if ((null != (object?)default(TAwaiter)) && (awaiter is IStateMachineBoxAwareAwaiter))
             {
                 try
                 {
@@ -547,7 +547,7 @@ namespace System.Runtime.CompilerServices
             // find a cached value, since static fields (even if readonly and integral types)
             // require special access helpers in this NGEN'd and domain-neutral.
 
-            if (null != (object)default(TResult)!) // help the JIT avoid the value type branches for ref types // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (null != (object?)default(TResult)) // help the JIT avoid the value type branches for ref types
             {
                 // Special case simple value types:
                 // - Boolean

@@ -44,7 +44,7 @@ namespace System.Net.Http
         private readonly IWebProxy _proxy;
         private readonly ICredentials _proxyCredentials;
 
-        private NetworkAddressChangedEventHandler _networkChangedDelegate;
+        private NetworkChangeCleanup _networkChangeCleanup;
 
         /// <summary>
         /// Keeps track of whether or not the cleanup timer is running. It helps us avoid the expensive
@@ -131,13 +131,23 @@ namespace System.Net.Http
                     _proxyCredentials = _proxy.Credentials ?? settings._defaultProxyCredentials;
                 }
             }
+        }
+
+        /// <summary>
+        /// Starts monitoring for network changes. Upon a change, <see cref="HttpConnectionPool.OnNetworkChanged"/> will be
+        /// called for every <see cref="HttpConnectionPool"/> in the <see cref="HttpConnectionPoolManager"/>.
+        /// </summary>
+        public void StartMonitoringNetworkChanges()
+        {
+            if (_networkChangeCleanup != null)
+            {
+                return;
+            }
 
             // Monitor network changes to invalidate Alt-Svc headers.
             // A weak reference is used to avoid NetworkChange.NetworkAddressChanged keeping a non-disposed connection pool alive.
             var poolsRef = new WeakReference<ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>>(_pools);
-            NetworkAddressChangedEventHandler networkChangedDelegate = null;
-
-            networkChangedDelegate = delegate
+            NetworkAddressChangedEventHandler networkChangedDelegate = delegate
             {
                 if (poolsRef.TryGetTarget(out ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> pools))
                 {
@@ -146,18 +156,47 @@ namespace System.Net.Http
                         pool.OnNetworkChanged();
                     }
                 }
-                else
-                {
-                    // Our pools were GCed; user did not dispose the handler.
-                    NetworkChange.NetworkAddressChanged -= networkChangedDelegate;
-                }
             };
 
-            _networkChangedDelegate = networkChangedDelegate;
+            var cleanup = new NetworkChangeCleanup(networkChangedDelegate);
 
-            using (ExecutionContext.SuppressFlow())
+            if (Interlocked.CompareExchange(ref _networkChangeCleanup, cleanup, null) != null)
+            {
+                // We lost a race, another thread already started monitoring.
+                GC.SuppressFinalize(cleanup);
+                return;
+            }
+
+            if (!ExecutionContext.IsFlowSuppressed())
+            {
+                using (ExecutionContext.SuppressFlow())
+                {
+                    NetworkChange.NetworkAddressChanged += networkChangedDelegate;
+                }
+            }
+            else
             {
                 NetworkChange.NetworkAddressChanged += networkChangedDelegate;
+            }
+        }
+
+        private sealed class NetworkChangeCleanup : IDisposable
+        {
+            private readonly NetworkAddressChangedEventHandler _handler;
+
+            public NetworkChangeCleanup(NetworkAddressChangedEventHandler handler)
+            {
+                _handler = handler;
+            }
+
+            // If user never disposes the HttpClient, use finalizer to remove from NetworkChange.NetworkAddressChanged.
+            // _handler will be rooted in NetworkChange, so should be safe to use here.
+            ~NetworkChangeCleanup() => NetworkChange.NetworkAddressChanged -= _handler;
+
+            public void Dispose()
+            {
+                NetworkChange.NetworkAddressChanged -= _handler;
+                GC.SuppressFinalize(this);
             }
         }
 
@@ -377,11 +416,7 @@ namespace System.Net.Http
                 pool.Value.Dispose();
             }
 
-            if (_networkChangedDelegate != null)
-            {
-                NetworkChange.NetworkAddressChanged -= _networkChangedDelegate;
-                _networkChangedDelegate = null;
-            }
+            _networkChangeCleanup?.Dispose();
         }
 
         /// <summary>Sets <see cref="_cleaningTimer"/> and <see cref="_timerIsRunning"/> based on the specified timeout.</summary>

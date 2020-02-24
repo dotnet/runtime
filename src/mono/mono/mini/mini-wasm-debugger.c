@@ -4,6 +4,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/metadata.h>
+#include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/seq-points-data.h>
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/seq-points.h>
@@ -42,6 +43,7 @@ extern void mono_wasm_add_bool_var (gint8);
 extern void mono_wasm_add_number_var (double);
 extern void mono_wasm_add_string_var (const char*);
 extern void mono_wasm_add_obj_var (const char*, guint64);
+extern void mono_wasm_add_func_var (const char*, guint64);
 extern void mono_wasm_add_array_var (const char*, guint64);
 extern void mono_wasm_add_properties_var (const char*);
 extern void mono_wasm_add_array_item (int);
@@ -291,6 +293,12 @@ ss_args_destroy (SingleStepArgs *ss_args)
 	//nothing to do	
 }
 
+static int
+handle_multiple_ss_requests (void) {
+	mono_de_cancel_ss ();
+	return 1;
+}
+
 void
 mono_wasm_debugger_init (void)
 {
@@ -313,6 +321,7 @@ mono_wasm_debugger_init (void)
 		.process_breakpoint_events = process_breakpoint_events,
 		.ss_create_init_args = ss_create_init_args,
 		.ss_args_destroy = ss_args_destroy,
+		.handle_multiple_ss_requests = handle_multiple_ss_requests,
 	};
 
 	mono_debug_init (MONO_DEBUG_FORMAT_MONO);
@@ -522,7 +531,11 @@ mono_wasm_current_bp_id (void)
 
 static int get_object_id(MonoObject *obj) 
 {
-	ObjRef *ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
+	ObjRef *ref;
+	if (!obj)
+		return 0;
+
+	ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
 	if (ref)
 		return ref->id;
 	ref = g_new0 (ObjRef, 1);
@@ -643,23 +656,18 @@ static gboolean describe_value(MonoType * type, gpointer addr)
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_CLASS: {
 			MonoObject *obj = *(MonoObject**)addr;
-			if (!obj) {
-				mono_wasm_add_string_var (NULL);
+			MonoClass *klass = type->data.klass;
+
+			char *class_name = mono_type_full_name (type);
+
+			if (type->type == MONO_TYPE_SZARRAY || type->type == MONO_TYPE_ARRAY) {
+				mono_wasm_add_array_var (class_name, get_object_id (obj));
+			} else if (m_class_is_delegate (klass)) {
+				mono_wasm_add_func_var (class_name, get_object_id (obj));
 			} else {
-				GString *class_name;
-				class_name = g_string_new ("");
-				if (*(obj->vtable->klass->name_space)) {
-					g_string_append (class_name, obj->vtable->klass->name_space);
-					g_string_append_c (class_name, '.');
-				}
-				g_string_append (class_name, obj->vtable->klass->name);
-				if (m_class_get_byval_arg (obj->vtable->klass)->type == MONO_TYPE_SZARRAY || m_class_get_byval_arg (obj->vtable->klass)->type == MONO_TYPE_ARRAY)
-					mono_wasm_add_array_var (class_name->str, get_object_id(obj));
-				else
-					mono_wasm_add_obj_var (class_name->str, get_object_id(obj));
-				g_string_free(class_name, FALSE);
-				break;
+				mono_wasm_add_obj_var (class_name, get_object_id (obj));
 			}
+			g_free (class_name);
 			break;
 		}
 		default: {
@@ -814,11 +822,11 @@ describe_this (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
 		mono_wasm_add_properties_var("this");
 		GString *class_name;
 		class_name = g_string_new ("");
-		if (*(obj->vtable->klass->name_space)) {
-			g_string_append (class_name, obj->vtable->klass->name_space);
+		if (*(m_class_get_name_space (obj->vtable->klass))) {
+			g_string_append (class_name, m_class_get_name_space (obj->vtable->klass));
 			g_string_append_c (class_name, '.');
 		}
-		g_string_append (class_name, obj->vtable->klass->name);
+		g_string_append (class_name, m_class_get_name (obj->vtable->klass));
 		mono_wasm_add_obj_var (class_name->str, get_object_id(obj));
 		g_string_free(class_name, FALSE);
 	}

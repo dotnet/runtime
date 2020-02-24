@@ -106,6 +106,8 @@ inline void FATAL_GC_ERROR()
 
 #define CARD_BUNDLE         //enable card bundle feature.(requires WRITE_WATCH)
 
+#define ALLOW_REFERENCES_IN_POH  //Allow POH objects to contain references.
+
 // If this is defined we use a map for segments in order to find the heap for
 // a segment fast. But it does use more memory as we have to cover the whole
 // heap range and for each entry we allocate a struct of 5 ptr-size words
@@ -182,19 +184,19 @@ void GCLogConfig (const char *fmt, ... );
 
 #ifdef SERVER_GC
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define MAX_INDEX_POWER2 30
 #else
 #define MAX_INDEX_POWER2 26
-#endif  // BIT64
+#endif  // HOST_64BIT
 
 #else //SERVER_GC
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define MAX_INDEX_POWER2 28
 #else
 #define MAX_INDEX_POWER2 24
-#endif  // BIT64
+#endif  // HOST_64BIT
 
 #endif //SERVER_GC
 
@@ -566,9 +568,9 @@ public:
     bool stress_induced;
 #endif // STRESS_HEAP
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     uint32_t entry_memory_load;
-#endif // BIT64
+#endif // HOST_64BIT
 
     void store (gc_mechanisms* gm)
     {
@@ -597,9 +599,9 @@ public:
         stress_induced          = (gm->stress_induced != 0);
 #endif // STRESS_HEAP
 
-#ifdef BIT64
+#ifdef HOST_64BIT
         entry_memory_load       = gm->entry_memory_load;
-#endif // BIT64
+#endif // HOST_64BIT
     }
 };
 
@@ -1227,7 +1229,8 @@ public:
 
     static
     HRESULT initialize_gc  (size_t soh_segment_size,
-                            size_t loh_segment_size
+                            size_t loh_segment_size,
+                            size_t poh_segment_size
 #ifdef MULTIPLE_HEAPS
                             , int number_of_heaps
 #endif //MULTIPLE_HEAPS
@@ -1269,13 +1272,13 @@ public:
     void gc_thread_stub (void* arg);
 #endif //MULTIPLE_HEAPS
 
-    // For LOH allocations we only update the alloc_bytes_uoh in allocation
+    // For UOH allocations we only update the alloc_bytes_uoh in allocation
     // context - we don't actually use the ptr/limit from it so I am
     // making this explicit by not passing in the alloc_context.
-    // Note: This is an instance method, but the heap instance is only used for
+    // Note: This are instance methods, but the heap instance is only used for
     // lowest_address and highest_address, which are currently the same accross all heaps.
     PER_HEAP
-    CObjectHeader* allocate_large_object (size_t size, uint32_t flags, int64_t& alloc_bytes);
+    CObjectHeader* allocate_uoh_object (size_t size, uint32_t flags, int gen_num, int64_t& alloc_bytes);
 
 #ifdef FEATURE_STRUCTALIGN
     PER_HEAP
@@ -1541,6 +1544,9 @@ protected:
 
     PER_HEAP
     BOOL bgc_loh_allocate_spin();
+
+    PER_HEAP
+    BOOL bgc_poh_allocate_spin();
 #endif //BACKGROUND_GC
 
 #define max_saved_spinlock_info 48
@@ -2840,14 +2846,14 @@ protected:
     PER_HEAP
     void decommit_ephemeral_segment_pages();
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     PER_HEAP_ISOLATED
     size_t trim_youngest_desired (uint32_t memory_load,
                                   size_t total_new_allocation,
                                   size_t total_min_allocation);
     PER_HEAP_ISOLATED
     size_t joined_youngest_desired (size_t new_allocation);
-#endif // BIT64
+#endif // HOST_64BIT
     PER_HEAP_ISOLATED
     size_t get_total_heap_size ();
     PER_HEAP_ISOLATED
@@ -3381,10 +3387,10 @@ public:
     double short_plugs_pad_ratio;
 #endif //SHORT_PLUGS
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     PER_HEAP_ISOLATED
     size_t youngest_gen_desired_th;
-#endif //BIT64
+#endif //HOST_64BIT
 
     PER_HEAP_ISOLATED
     uint32_t last_gc_memory_load;
@@ -3724,7 +3730,11 @@ protected:
     PER_HEAP
     size_t     bgc_begin_loh_size;
     PER_HEAP
+    size_t     bgc_begin_poh_size;
+    PER_HEAP
     size_t     end_loh_size;
+    PER_HEAP
+    size_t     end_poh_size;
 
 #ifdef BGC_SERVO_TUNING
     PER_HEAP
@@ -3758,6 +3768,8 @@ protected:
     // in free list doesn't increase the heap size.
     PER_HEAP
     size_t     bgc_loh_size_increased;
+    PER_HEAP
+    size_t     bgc_poh_size_increased;
 
     PER_HEAP
     size_t     background_soh_alloc_count;
@@ -3895,6 +3907,7 @@ protected:
 
 #define youngest_generation (generation_of (0))
 #define large_object_generation (generation_of (loh_generation))
+#define pinned_object_generation (generation_of (poh_generation))
 
     // The more_space_lock and gc_lock is used for 3 purposes:
     //
@@ -3974,13 +3987,23 @@ protected:
     alloc_list loh_alloc_list[NUM_LOH_ALIST-1];
 
 #define NUM_GEN2_ALIST (12)
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define BASE_GEN2_ALIST (1*256)
 #else
 #define BASE_GEN2_ALIST (1*128)
-#endif // BIT64
+#endif // HOST_64BIT
     PER_HEAP
     alloc_list gen2_alloc_list[NUM_GEN2_ALIST-1];
+
+// TODO: tuning https://github.com/dotnet/runtime/issues/13739
+#define NUM_POH_ALIST (12)
+#ifdef BIT64
+#define BASE_POH_ALIST (1*256)
+#else
+#define BASE_POH_ALIST (1*128)
+#endif // BIT64
+    PER_HEAP
+    alloc_list poh_alloc_list[NUM_POH_ALIST-1];
 
 //------------------------------------------    
 
@@ -4272,6 +4295,9 @@ public:
     VOLATILE(uint32_t)    card_mark_chunk_index_loh;
 
     PER_HEAP
+    VOLATILE(uint32_t)    card_mark_chunk_index_poh;
+
+    PER_HEAP
     VOLATILE(bool)        card_mark_done_uoh;
 
     PER_HEAP
@@ -4282,6 +4308,7 @@ public:
         card_mark_done_soh = false;
 
         card_mark_chunk_index_loh = ~0;
+        card_mark_chunk_index_poh = ~0;
         card_mark_done_uoh = false;
     }
 
@@ -4772,6 +4799,7 @@ struct loh_padding_obj
 #define heap_segment_flags_ma_pcommitted 128
 #define heap_segment_flags_uoh_delete   256
 
+#define heap_segment_flags_poh          512
 #endif //BACKGROUND_GC
 
 //need to be careful to keep enough pad items to fit a relocation node
@@ -4860,7 +4888,7 @@ BOOL heap_segment_unmappable_p (heap_segment* inst)
 inline
 BOOL heap_segment_uoh_p (heap_segment * inst)
 {
-    return !!(inst->flags & heap_segment_flags_loh);
+    return !!(inst->flags & (heap_segment_flags_loh | heap_segment_flags_poh));
 }
 
 #ifdef BACKGROUND_GC
@@ -4929,11 +4957,11 @@ dynamic_data* gc_heap::dynamic_data_of (int gen_number)
 // The value of card_size is determined empirically according to the average size of an object
 // In the code we also rely on the assumption that one card_table entry (uint32_t) covers an entire os page
 //
-#if defined (BIT64)
+#if defined (HOST_64BIT)
 #define card_size ((size_t)(2*GC_PAGE_SIZE/card_word_width))
 #else
 #define card_size ((size_t)(GC_PAGE_SIZE/card_word_width))
-#endif // BIT64
+#endif // HOST_64BIT
 
 inline
 size_t card_word (size_t card)

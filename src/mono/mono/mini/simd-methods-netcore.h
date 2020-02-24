@@ -77,6 +77,7 @@ METHOD(Shuffle)
 METHOD(UnpackHigh)
 METHOD(UnpackLow)
 // Sse2
+METHOD(AddSaturate)
 METHOD(And)
 METHOD(Or)
 METHOD(LoadAlignedVector128)

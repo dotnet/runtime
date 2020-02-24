@@ -148,10 +148,8 @@ namespace System.Linq.Parallel
 
             if (querySettings.CancellationState.MergedCancellationToken.IsCancellationRequested)
             {
-                if (querySettings.CancellationState.ExternalCancellationToken.IsCancellationRequested)
-                    throw new OperationCanceledException(querySettings.CancellationState.ExternalCancellationToken);
-                else
-                    throw new OperationCanceledException();
+                querySettings.CancellationState.ExternalCancellationToken.ThrowIfCancellationRequested();
+                throw new OperationCanceledException();
             }
 
             bool orderedMerge = OutputOrdered && !suppressOrder;
@@ -220,10 +218,8 @@ namespace System.Linq.Parallel
 
                 if (querySettings.CancellationState.MergedCancellationToken.IsCancellationRequested)
                 {
-                    if (querySettings.CancellationState.ExternalCancellationToken.IsCancellationRequested)
-                        throw new OperationCanceledException(querySettings.CancellationState.ExternalCancellationToken);
-                    else
-                        throw new OperationCanceledException();
+                    querySettings.CancellationState.ExternalCancellationToken.ThrowIfCancellationRequested();
+                    throw new OperationCanceledException();
                 }
 
                 if (results.IsIndexible && OutputOrdered)

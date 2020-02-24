@@ -244,7 +244,7 @@ namespace System.Diagnostics
     internal static class NtProcessInfoHelper
     {
         // Cache a single buffer for use in GetProcessInfos().
-        private static long[] CachedBuffer;
+        private static long[]? CachedBuffer;
 
         // Use a smaller buffer size on debug to ensure we hit the retry path.
 #if DEBUG
@@ -253,7 +253,7 @@ namespace System.Diagnostics
         private const int DefaultCachedBufferSize = 128 * 1024;
 #endif
 
-        internal static ProcessInfo[] GetProcessInfos(Predicate<int> processIdFilter = null)
+        internal static ProcessInfo[] GetProcessInfos(Predicate<int>? processIdFilter = null)
         {
             ProcessInfo[] processInfos;
 
@@ -261,7 +261,7 @@ namespace System.Diagnostics
             int bufferSize = DefaultCachedBufferSize;
 
             // Get the cached buffer.
-            long[] buffer = Interlocked.Exchange(ref CachedBuffer, null);
+            long[]? buffer = Interlocked.Exchange(ref CachedBuffer, null);
 
             try
             {
@@ -343,7 +343,7 @@ namespace System.Diagnostics
             return newSize;
         }
 
-        private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, Predicate<int> processIdFilter)
+        private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, Predicate<int>? processIdFilter)
         {
             // Use a dictionary to avoid duplicate entries if any
             // 60 is a reasonable number for processes on a normal machine.

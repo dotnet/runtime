@@ -57,7 +57,7 @@ namespace System.Net
 
             // See if it's an IP Address.
             IPHostEntry ipHostEntry;
-            if (IPAddress.TryParse(hostNameOrAddress, out IPAddress address))
+            if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
             {
                 if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
                 {
@@ -82,7 +82,7 @@ namespace System.Net
             {
                 NetEventSource.Enter(hostNameOrAddress, hostNameOrAddress);
                 Task<IPHostEntry> t = GetHostEntryCoreAsync(hostNameOrAddress, justReturnParsedIp: false, throwOnIIPAny: true);
-                t.ContinueWith((t, s) => NetEventSource.Exit((string)s, $"{t.Result} with {((IPHostEntry)t.Result).AddressList.Length} entries"),
+                t.ContinueWith((t, s) => NetEventSource.Exit((string)s!, $"{t.Result} with {((IPHostEntry)t.Result).AddressList.Length} entries"),
                     hostNameOrAddress, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
                 return t;
             }
@@ -116,7 +116,7 @@ namespace System.Net
                 }, address);
         }
 
-        public static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback requestCallback, object stateObject)
+        public static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback? requestCallback, object? stateObject)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(address, address);
 
@@ -126,7 +126,7 @@ namespace System.Net
             return asyncResult;
         }
 
-        public static IAsyncResult BeginGetHostEntry(string hostNameOrAddress, AsyncCallback requestCallback, object stateObject)
+        public static IAsyncResult BeginGetHostEntry(string hostNameOrAddress, AsyncCallback? requestCallback, object? stateObject)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(hostNameOrAddress, hostNameOrAddress);
 
@@ -158,7 +158,7 @@ namespace System.Net
 
             // See if it's an IP Address.
             IPAddress[] addresses;
-            if (IPAddress.TryParse(hostNameOrAddress, out IPAddress address))
+            if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
             {
                 if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
                 {
@@ -180,7 +180,7 @@ namespace System.Net
         public static Task<IPAddress[]> GetHostAddressesAsync(string hostNameOrAddress) =>
             (Task<IPAddress[]>)GetHostEntryOrAddressesCoreAsync(hostNameOrAddress, justReturnParsedIp: true, throwOnIIPAny: true, justAddresses: true);
 
-        public static IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, AsyncCallback requestCallback, object state)
+        public static IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, AsyncCallback? requestCallback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(hostNameOrAddress, hostNameOrAddress);
 
@@ -210,7 +210,7 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(hostName));
             }
 
-            if (IPAddress.TryParse(hostName, out IPAddress address))
+            if (IPAddress.TryParse(hostName, out IPAddress? address))
             {
                 return CreateHostEntryForAddress(address);
             }
@@ -219,7 +219,7 @@ namespace System.Net
         }
 
         [Obsolete("BeginGetHostByName is obsoleted for this type, please use BeginGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public static IAsyncResult BeginGetHostByName(string hostName, AsyncCallback requestCallback, object stateObject)
+        public static IAsyncResult BeginGetHostByName(string hostName, AsyncCallback? requestCallback, object? stateObject)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(hostName, hostName);
 
@@ -287,7 +287,7 @@ namespace System.Net
 
             // See if it's an IP Address.
             IPHostEntry ipHostEntry;
-            if (IPAddress.TryParse(hostName, out IPAddress address) &&
+            if (IPAddress.TryParse(hostName, out IPAddress? address) &&
                 (address.AddressFamily != AddressFamily.InterNetworkV6 || SocketProtocolSupportPal.OSSupportsIPv6))
             {
                 try
@@ -310,7 +310,7 @@ namespace System.Net
         }
 
         [Obsolete("BeginResolve is obsoleted for this type, please use BeginGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public static IAsyncResult BeginResolve(string hostName, AsyncCallback requestCallback, object stateObject)
+        public static IAsyncResult BeginResolve(string hostName, AsyncCallback? requestCallback, object? stateObject)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(null, hostName);
 
@@ -332,7 +332,7 @@ namespace System.Net
             }
             catch (SocketException ex)
             {
-                IPAddress address = asyncResult switch
+                IPAddress? address = asyncResult switch
                 {
                     Task t => t.AsyncState as IPAddress,
                     TaskToApm.TaskAsyncResult twar => twar._task.AsyncState as IPAddress,
@@ -360,7 +360,7 @@ namespace System.Net
         {
             ValidateHostName(hostName);
 
-            SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, out string newHostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
+            SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, out string? newHostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
 
             if (errorCode != SocketError.Success)
             {
@@ -373,7 +373,7 @@ namespace System.Net
                 new IPHostEntry
                 {
                     AddressList = addresses,
-                    HostName = newHostName,
+                    HostName = newHostName!,
                     Aliases = aliases
                 };
 
@@ -394,7 +394,7 @@ namespace System.Net
             // will only return that address and not the full list.
 
             // Do a reverse lookup to get the host name.
-            string name = NameResolutionPal.TryGetNameInfo(address, out SocketError errorCode, out int nativeErrorCode);
+            string? name = NameResolutionPal.TryGetNameInfo(address, out SocketError errorCode, out int nativeErrorCode);
             if (errorCode != SocketError.Success)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Error(address, $"{address} DNS lookup failed with {errorCode}");
@@ -402,7 +402,7 @@ namespace System.Net
             }
 
             // Do the forward lookup to get the IPs for that host name
-            errorCode = NameResolutionPal.TryGetAddrInfo(name, justAddresses, out string hostName, out string[] aliases, out IPAddress[] addresses, out nativeErrorCode);
+            errorCode = NameResolutionPal.TryGetAddrInfo(name!, justAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses, out nativeErrorCode);
 
             if (errorCode != SocketError.Success)
             {
@@ -421,7 +421,7 @@ namespace System.Net
                 (object)addresses :
                 new IPHostEntry
                 {
-                    HostName = hostName,
+                    HostName = hostName!,
                     Aliases = aliases,
                     AddressList = addresses
                 };
@@ -441,7 +441,7 @@ namespace System.Net
             }
 
             // See if it's an IP Address.
-            if (IPAddress.TryParse(hostName, out IPAddress ipAddress))
+            if (IPAddress.TryParse(hostName, out IPAddress? ipAddress))
             {
                 if (throwOnIIPAny && (ipAddress.Equals(IPAddress.Any) || ipAddress.Equals(IPAddress.IPv6Any)))
                 {
@@ -475,7 +475,7 @@ namespace System.Net
         }
 
         private static Task<TResult> RunAsync<TResult>(Func<object, TResult> func, object arg) =>
-            Task.Factory.StartNew(func, arg, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            Task.Factory.StartNew(func!, arg, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
         private static IPHostEntry CreateHostEntryForAddress(IPAddress address) =>
             new IPHostEntry

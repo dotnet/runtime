@@ -411,14 +411,38 @@ namespace System.Data.OleDb
             _dbBindings = bindings;
         }
 
-        private void ApplyParameterBindings(UnsafeNativeMethods.ICommandWithParameters commandWithParameters, tagDBPARAMBINDINFO[] bindInfo)
+        private unsafe void ApplyParameterBindings(UnsafeNativeMethods.ICommandWithParameters commandWithParameters, tagDBPARAMBINDINFO[] bindInfo)
         {
             IntPtr[] ordinals = new IntPtr[bindInfo.Length];
             for (int i = 0; i < ordinals.Length; ++i)
             {
                 ordinals[i] = (IntPtr)(i + 1);
             }
-            OleDbHResult hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, bindInfo);
+
+            OleDbHResult hr;
+
+            if (ODB.IsRunningOnX86)
+            {
+                tagDBPARAMBINDINFO_x86[] bindInfo_x86 = new tagDBPARAMBINDINFO_x86[bindInfo.Length];
+                for (int i = 0; i < bindInfo.Length; i++)
+                {
+                    fixed (tagDBPARAMBINDINFO* p = &bindInfo[i])
+                    {
+                        bindInfo_x86[i] = *(tagDBPARAMBINDINFO_x86*)p;
+                    }
+                }
+                fixed (tagDBPARAMBINDINFO_x86* p = &bindInfo_x86[0])
+                {
+                    hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, (IntPtr)p);
+                }
+            }
+            else
+            {
+                fixed (tagDBPARAMBINDINFO* p = &bindInfo[0])
+                {
+                    hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, (IntPtr)p);
+                }
+            }
 
             if (hr < 0)
             {

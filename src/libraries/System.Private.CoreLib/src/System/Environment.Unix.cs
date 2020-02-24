@@ -96,7 +96,7 @@ namespace System
             {
                 case SpecialFolder.CommonApplicationData: return "/usr/share";
                 case SpecialFolder.CommonTemplates: return "/usr/share/templates";
-#if PLATFORM_OSX
+#if TARGET_OSX
                 case SpecialFolder.ProgramFiles: return "/Applications";
                 case SpecialFolder.System: return "/System";
 #endif
@@ -152,7 +152,7 @@ namespace System
                 case SpecialFolder.MyVideos:
                     return ReadXdgDirectory(home, "XDG_VIDEOS_DIR", "Videos");
 
-#if PLATFORM_OSX
+#if TARGET_OSX
                 case SpecialFolder.MyMusic:
                     return Path.Combine(home, "Music");
                 case SpecialFolder.MyPictures:

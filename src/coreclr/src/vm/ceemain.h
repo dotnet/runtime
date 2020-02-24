@@ -42,7 +42,6 @@ enum ShutdownCompleteAction
 
 // Force shutdown of the EE
 void ForceEEShutdown(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete);
-void InnerCoEEShutDownCOM();
 
 // We have an internal class that can be used to expose EE functionality to other CLR
 // DLLs, via the deliberately obscure IEE DLL exports from the shim and the EE
