@@ -27,9 +27,9 @@ static void EnsureLibSsl10Initialized()
 #endif
 
 // Master encryption key for RFC5077 TLS session tickets.
-static unsigned char *s_sessionTicketsMasterKey = NULL;
+static unsigned char* s_sessionTicketsMasterKey = NULL;
 static long s_sessionTicketsMasterKeyLength = 0;
-static void * s_sessionContextId = &s_sessionTicketsMasterKeyLength; // actual value does not matter.
+static void* s_sessionContextId = &s_sessionTicketsMasterKeyLength; // actual value does not matter.
 
 void CryptoNative_EnsureLibSslInitialized()
 {
@@ -55,7 +55,7 @@ void CryptoNative_EnsureLibSslInitialized()
         if (s_sessionTicketsMasterKeyLength > 0)
         {
             s_sessionTicketsMasterKey = malloc((size_t)s_sessionTicketsMasterKeyLength);
-            if (RAND_bytes(s_sessionTicketsMasterKey, (int)s_sessionTicketsMasterKeyLength) != 1)
+            if (s_sessionTicketsMasterKey != NULL && RAND_bytes(s_sessionTicketsMasterKey, (int)s_sessionTicketsMasterKeyLength) != 1)
             {
                 free(s_sessionTicketsMasterKey);
                 s_sessionTicketsMasterKey = NULL;
