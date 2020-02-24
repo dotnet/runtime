@@ -10462,10 +10462,11 @@ MethodTableBuilder::SetupMethodTable2(
             pInstDest[j] = inst[j];
         }
 
-        if (pClass->GetDictionaryLayout() != NULL && pClass->GetDictionaryLayout()->GetMaxSlots() > 0)
+        PTR_DictionaryLayout pLayout = pClass->GetDictionaryLayout();
+        if (pLayout != NULL && pLayout->GetMaxSlots() > 0)
         {
-            ULONG_PTR* pDictionarySlots = (ULONG_PTR*)pMT->GetPerInstInfo()[bmtGenerics->numDicts - 1].GetValue();
-            ULONG_PTR* pSizeSlot = pDictionarySlots + bmtGenerics->GetNumGenericArgs();
+            PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[bmtGenerics->numDicts - 1].GetValue();
+            DWORD* pSizeSlot = (DWORD*)(pDictionarySlots + bmtGenerics->GetNumGenericArgs());
             *pSizeSlot = cbDict;
         }
     }

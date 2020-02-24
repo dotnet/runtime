@@ -278,10 +278,10 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     DWORD cbPerInst = sizeof(GenericsDictInfo) + pOldMT->GetPerInstInfoSize();
 
     // Finally we need space for the instantiation/dictionary for this type
-    // Note that this is an unsafe operation because it uses the dictionary layout to compute the size needed,
-    // and the dictionary layout can be updated by other threads during a dictionary size expansion. This is
-    // not a problem anyways because whenever we load a value from the dictionary after a certain index, we will
-    // always check the size of the dictionary and expand it if needed
+    // Note that it is possible for the dictionary layout to be expanded in size by other threads while we're still
+    // creating this type. In other words: this type will have a smaller dictionary that its layout. This is not a
+    // problem however because whenever we need to load a value from the dictionary of this type beyond its size, we
+    // will expand the dictionary at that point.
     DWORD cbInstAndDict = pOldMT->GetInstAndDictSize();
 
     // Allocate from the high frequence heap of the correct domain
@@ -493,10 +493,11 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     }
 
     PTR_DictionaryLayout pLayout = pOldMT->GetClass()->GetDictionaryLayout();
-    if (pLayout != NULL && pLayout->GetMaxSlots() > 0)
+    if (pLayout != NULL)
     {
-        ULONG_PTR* pDictionarySlots = (ULONG_PTR*)pMT->GetPerInstInfo()[pOldMT->GetNumDicts() - 1].GetValue();
-        ULONG_PTR* pSizeSlot = pDictionarySlots + ntypars;
+        _ASSERTE(pLayout->GetMaxSlots() > 0);
+        PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[pOldMT->GetNumDicts() - 1].GetValue();
+        DWORD* pSizeSlot = (DWORD*)(pDictionarySlots + ntypars);
         *pSizeSlot = cbInstAndDict;
     }
 

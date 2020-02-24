@@ -373,9 +373,10 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             {
                 if (pWrappedMD->IsSharedByGenericMethodInstantiations())
                 {
-                    // It is ok to not take a lock here while reading the dictionary layout pointer. This is because
-                    // when we load values from a generic dictionary beyond a certain index, we will check the size of
-                    // the dictionary and expand it if needed.
+                    // Note that it is possible for the dictionary layout to be expanded in size by other threads while we're still
+                    // creating this method. In other words: this method will have a smaller dictionary that its layout. This is not a
+                    // problem however because whenever we need to load a value from the dictionary of this method beyond its size, we
+                    // will expand the dictionary at that point.
                     pDL = pWrappedMD->AsInstantiatedMethodDesc()->GetDictLayoutRaw();
                 }
             }
@@ -402,9 +403,9 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             {
                 // Has to be at least larger than the first slots containing the instantiation arguments,
                 // and the slot with size information. Otherwise, we shouldn't really have a size slot
-                _ASSERTE(infoSize > (sizeof(TypeHandle*) * methodInst.GetNumArgs() + sizeof(ULONG_PTR*)));
+                _ASSERTE(infoSize > sizeof(TypeHandle*) * (methodInst.GetNumArgs() + 1));
 
-                ULONG_PTR* pDictSizeSlot = ((ULONG_PTR*)pInstOrPerInstInfo) + methodInst.GetNumArgs();
+                DWORD* pDictSizeSlot = (DWORD*)(pInstOrPerInstInfo + methodInst.GetNumArgs());
                 *pDictSizeSlot = infoSize;
             }
         }
