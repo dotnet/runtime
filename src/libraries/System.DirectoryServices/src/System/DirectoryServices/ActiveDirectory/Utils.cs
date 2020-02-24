@@ -1592,6 +1592,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     if (needToContinueRangeRetrieval)
                     {
+                        StringBuilder str = new StringBuilder(20);
                         // Now continue with range retrieval if necessary for msDS-HasInstantiatedNCs
                         do
                         {
@@ -1600,7 +1601,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             // this should be greater than 0, since needToContinueRangeRetrieval is true
                             Debug.Assert(ntdsaNamesForRangeRetrieval.Count > 0);
 
-                            StringBuilder str = new StringBuilder(20);
+                            str.Clear();
                             if (ntdsaNamesForRangeRetrieval.Count > 1)
                             {
                                 str.Append("(|");
