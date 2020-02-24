@@ -840,8 +840,7 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
             DictionaryEntry* pNewEntriesPtr = (DictionaryEntry*)pDictionary;
             for (int i = 0; i < currentDictionarySize / sizeof(DictionaryEntry); i++, pOldEntriesPtr++, pNewEntriesPtr++)
             {
-                DictionaryEntry pSlotValue = VolatileLoadWithoutBarrier(pOldEntriesPtr);
-                VolatileStoreWithoutBarrier(pNewEntriesPtr, pSlotValue);
+                *pNewEntriesPtr = VolatileLoadWithoutBarrier(pOldEntriesPtr);
             }
 
             DWORD* pSizeSlot = (DWORD*)(pDictionary + pIMD->GetNumGenericMethodArgs());
@@ -897,8 +896,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
             DictionaryEntry* pNewEntriesPtr = (DictionaryEntry*)pDictionary;
             for (int i = 0; i < currentDictionarySize / sizeof(DictionaryEntry); i++, pOldEntriesPtr++, pNewEntriesPtr++)
             {
-                DictionaryEntry pSlotValue = VolatileLoadWithoutBarrier(pOldEntriesPtr);
-                VolatileStoreWithoutBarrier(pNewEntriesPtr, pSlotValue);
+                *pNewEntriesPtr = VolatileLoadWithoutBarrier(pOldEntriesPtr);
             }
 
             DWORD* pSizeSlot = (DWORD*)(pDictionary + pMT->GetNumGenericArgs());
