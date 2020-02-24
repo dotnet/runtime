@@ -2103,7 +2103,7 @@ bool Compiler::StructPromotionHelper::TryPromoteStructField(lvaStructFieldInfo& 
 //
 void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 {
-    LclVarDsc* varDsc = &compiler->lvaTable[lclNum];
+    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
 
     // We should never see a reg-sized non-field-addressed struct here.
     assert(!varDsc->lvRegStruct);
@@ -2167,11 +2167,13 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 #endif
 
         // Lifetime of field locals might span multiple BBs, so they must be long lifetime temps.
-        unsigned varNum = compiler->lvaGrabTemp(false DEBUGARG(bufp));
+        const unsigned varNum = compiler->lvaGrabTemp(false DEBUGARG(bufp));
 
-        varDsc = &compiler->lvaTable[lclNum]; // lvaGrabTemp can reallocate the lvaTable
+        // lvaGrabTemp can reallocate the lvaTable, so
+        // refresh the cached varDsc for lclNum.
+        varDsc = compiler->lvaGetDesc(lclNum);
 
-        LclVarDsc* fieldVarDsc       = &compiler->lvaTable[varNum];
+        LclVarDsc* fieldVarDsc       = compiler->lvaGetDesc(varNum);
         fieldVarDsc->lvType          = pFieldInfo->fldType;
         fieldVarDsc->lvExactSize     = pFieldInfo->fldSize;
         fieldVarDsc->lvIsStructField = true;
@@ -2180,6 +2182,13 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         fieldVarDsc->lvFldOrdinal    = pFieldInfo->fldOrdinal;
         fieldVarDsc->lvParentLcl     = lclNum;
         fieldVarDsc->lvIsParam       = varDsc->lvIsParam;
+
+        // This new local may be the first time we've seen a long typed local.
+        if (fieldVarDsc->lvType == TYP_LONG)
+        {
+            compiler->compLongUsed = true;
+        }
+
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
         // Reset the implicitByRef flag.
