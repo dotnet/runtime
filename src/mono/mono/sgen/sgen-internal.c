@@ -264,8 +264,8 @@ sgen_dump_internal_mem_usage (FILE *heap_dump_file)
 void
 sgen_report_internal_mem_usage (void)
 {
-	int i G_GNUC_UNUSED;
 #ifdef HEAVY_STATISTICS
+	int i;
 	printf ("size -> # allocations\n");
 	for (i = 0; i < NUM_ALLOCATORS; ++i)
 		printf ("%d -> %d\n", allocator_sizes [i], allocator_sizes_stats [i]);

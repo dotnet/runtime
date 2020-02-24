@@ -79,10 +79,6 @@
 #endif
 #include <mono/metadata/icall-decl.h>
 
-#ifdef _MSC_VER
-#pragma warning(disable:4102) // label' : unreferenced label
-#endif
-
 /* Arguments that are passed when invoking only a finally/filter clause from the frame */
 struct FrameClauseArgs {
 	/* Where we start the frame execution from */

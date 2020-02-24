@@ -2532,7 +2532,7 @@ mono_class_metadata_foreach_custom_attr (MonoClass *klass, MonoAssemblyMetadataC
 
 	guint32 idx = custom_attrs_idx_from_class (klass);
 
-	return metadata_foreach_custom_attr_from_index (image, idx, func, user_data);
+	metadata_foreach_custom_attr_from_index (image, idx, func, user_data);
 }
 
 static void
