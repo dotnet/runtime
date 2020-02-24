@@ -396,7 +396,17 @@ namespace System.Tests
 
                 if (uri2 != null)
                 {
-                    Assert.Equal(expected, uri1.GetHashCode() == uri2.GetHashCode());
+                    bool hashCodesAreEqual = uri1.GetHashCode() == uri2.GetHashCode();
+
+                    if (expected)
+                    {
+                        Assert.True(hashCodesAreEqual);
+                    }
+
+                    if (!hashCodesAreEqual)
+                    {
+                        Assert.False(expected);
+                    }
                 }
             }
 
