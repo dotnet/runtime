@@ -480,7 +480,7 @@ namespace System.Security.Cryptography
         {
             // This method is expected to be overriden with better implementation
 
-            byte[] sig = this.ConvertSignatureToIeeeP1363(signatureFormat, signature);
+            byte[]? sig = this.ConvertSignatureToIeeeP1363(signatureFormat, signature);
 
             // If the signature failed normalization to IEEE P1363 then it
             // obviously doesn't verify.
@@ -716,7 +716,7 @@ namespace System.Security.Cryptography
         public int GetMaxSignatureSize(DSASignatureFormat signatureFormat)
         {
             DSAParameters dsaParameters = ExportParameters(false);
-            int qLength = dsaParameters.Q.Length;
+            int qLength = dsaParameters.Q!.Length;
 
             switch (signatureFormat)
             {

@@ -127,7 +127,7 @@ namespace System.Security.Cryptography
         {
             Span<byte> signature = stackalloc byte[SignatureStackBufSize];
             int maxSignatureSize = GetMaxSignatureSize(signatureFormat);
-            byte[] rented = null;
+            byte[]? rented = null;
             int bytesWritten = 0;
 
             if (maxSignatureSize > signature.Length)
@@ -204,7 +204,7 @@ namespace System.Security.Cryptography
         {
             Span<byte> signature = stackalloc byte[SignatureStackBufSize];
             int maxSignatureSize = GetMaxSignatureSize(signatureFormat);
-            byte[] rented = null;
+            byte[]? rented = null;
             int bytesWritten = 0;
 
             if (maxSignatureSize > signature.Length)
@@ -560,12 +560,15 @@ namespace System.Security.Cryptography
         {
             // This method is expected to be overriden with better implementation
 
-            byte[] sig = this.ConvertSignatureToIeeeP1363(signatureFormat, signature);
+            byte[]? sig = this.ConvertSignatureToIeeeP1363(signatureFormat, signature);
 
+            // If the signature failed normalization to P1363, it obviously doesn't verify.
             if (sig == null)
+            {
                 return false;
+            }
 
-            // The only available implmentation here is abstract method, use it
+            // The only available implementation here is abstract method, use it
             return VerifyHash(hash.ToArray(), sig);
         }
 

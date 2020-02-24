@@ -213,7 +213,7 @@ namespace Internal.Cryptography
         }
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-        internal static byte[] ConvertSignatureToIeeeP1363(
+        internal static byte[]? ConvertSignatureToIeeeP1363(
             this DSA dsa,
             DSASignatureFormat currentFormat,
             ReadOnlySpan<byte> signature,
@@ -224,7 +224,7 @@ namespace Internal.Cryptography
                 if (fieldSizeBits == 0)
                 {
                     DSAParameters pars = dsa.ExportParameters(false);
-                    fieldSizeBits = pars.Q.Length * 8;
+                    fieldSizeBits = pars.Q!.Length * 8;
                 }
 
                 return ConvertSignatureToIeeeP1363(
@@ -241,7 +241,7 @@ namespace Internal.Cryptography
             }
         }
 
-        internal static byte[] ConvertSignatureToIeeeP1363(
+        internal static byte[]? ConvertSignatureToIeeeP1363(
             this ECDsa ecdsa,
             DSASignatureFormat currentFormat,
             ReadOnlySpan<byte> signature)
