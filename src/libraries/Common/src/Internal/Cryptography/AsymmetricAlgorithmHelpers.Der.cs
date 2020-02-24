@@ -208,6 +208,7 @@ namespace Internal.Cryptography
             // with zeroes in the response.  Since the array was already
             // zeroed out, just figure out where we need to start copying.
             int writeOffset = response.Length - signatureField.Length;
+            response.Slice(0, writeOffset).Clear();
             signatureField.CopyTo(response.Slice(writeOffset));
         }
 
