@@ -780,7 +780,6 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     runtimeFlavor: mono
-    runtimeFlavorName: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
     - Windows_NT_x64
@@ -805,31 +804,31 @@ jobs:
 # Libraries Release Test Execution against a release mono interpreter runtime.
 # Only when libraries or mono changed
 #
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-    runtimeFlavor: mono
-    runtimeFlavorDisplayName: mono_interpreter
-    interpreter: true
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-    platforms:
+#- template: /eng/pipelines/common/platform-matrix.yml
+#  parameters:
+#    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+#    runtimeFlavor: mono
+#    runtimeFlavorDisplayName: mono_interpreter
+#    interpreter: true
+#    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+#    platforms:
     # - Windows_NT_x64
     #- OSX_x64
     #- Linux_arm64
-    - Linux_x64
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    jobParameters:
-      isOfficialBuild: false
-      isFullMatrix: ${{ variables.isFullMatrix }}
-      testScope: innerloop
-      liveRuntimeBuildConfig: release
-      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-      dependsOnTestArchitecture: x64
-      condition: >-
-        or(
-          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+#    - Linux_x64
+#    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+#    jobParameters:
+#      isOfficialBuild: false
+#      isFullMatrix: ${{ variables.isFullMatrix }}
+#      testScope: innerloop
+#      liveRuntimeBuildConfig: release
+#      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
+#      dependsOnTestArchitecture: x64
+#      condition: >-
+#        or(
+#          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+#          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+#          eq(variables['isFullMatrix'], true))
 
 #
 # Libraries Release Test Execution against a release coreclr runtime

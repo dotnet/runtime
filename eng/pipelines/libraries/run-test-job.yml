@@ -7,7 +7,6 @@ parameters:
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
-  runtimeFlavorDisplayName: 'coreclr'
   timeoutInMinutes: 150
   pool: ''
   testScope: ''
@@ -34,8 +33,8 @@ jobs:
       pool: ${{ parameters.pool }}
       testScope: ${{ parameters.testScope }}
       ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-        displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavorDisplayName) }}
-        name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavorDisplayName) }}
+        displayName: ${{ format('Test Run {0} {1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavor) }}
+        name: ${{ format('test_run_{0}_{1}', parameters.liveRuntimeBuildConfig, parameters.runtimeFlavor) }}
       ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
         displayName: 'Test Run'
         name: test_run
