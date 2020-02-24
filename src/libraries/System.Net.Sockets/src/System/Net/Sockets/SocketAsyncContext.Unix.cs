@@ -310,7 +310,7 @@ namespace System.Net.Sockets
 
             public abstract void InvokeCallback(bool allowPooling);
 
-            internal virtual bool TryBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock) => false;
+            internal virtual bool TryBatch(SocketAsyncContext context, int id, ref Interop.Sys.IoControlBlock ioControlBlock) => false;
 
             internal virtual void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock)
             {
@@ -514,7 +514,7 @@ namespace System.Net.Sockets
                 cb(bt, sa, sal, SocketFlags.None, ec);
             }
 
-            internal override unsafe bool TryBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
+            internal override unsafe bool TryBatch(SocketAsyncContext context, int id, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
                 if (IsSync || !TrySetRunning())
                 {
@@ -523,11 +523,12 @@ namespace System.Net.Sockets
 
                 PinHandle = Buffer.Pin();
 
+                ioControlBlock.AioData = (ulong)id;
                 ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PWRITE;
                 ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
                 ioControlBlock.AioBuf = (ulong)PinHandle.Pointer;
-                ioControlBlock.AioOffset = Offset;
                 ioControlBlock.AioNbytes = (ulong)Count;
+                ioControlBlock.AioOffset = Offset;
 
                 return true;
             }
@@ -604,18 +605,19 @@ namespace System.Net.Sockets
                 return SocketPal.TryCompleteSendTo(context._socket, new ReadOnlySpan<byte>(BufferPtr, Offset + Count), null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
             }
 
-            internal override bool TryBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
+            internal override bool TryBatch(SocketAsyncContext context, int id, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
                 if (IsSync || !TrySetRunning())
                 {
                     return false;
                 }
 
+                ioControlBlock.AioData = (ulong)id;
                 ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PWRITE;
                 ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
                 ioControlBlock.AioBuf = (ulong)BufferPtr;
-                ioControlBlock.AioOffset = Offset;
                 ioControlBlock.AioNbytes = (ulong)Count;
+                ioControlBlock.AioOffset = Offset;
 
                 return true;
             }
@@ -710,7 +712,7 @@ namespace System.Net.Sockets
                 cb(bt, sa, sal, rf, ec);
             }
 
-            internal override unsafe bool TryBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
+            internal override unsafe bool TryBatch(SocketAsyncContext context, int id, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
                 if (Buffer.Length == 0 || IsSync || !TrySetRunning())
                 {
@@ -719,11 +721,12 @@ namespace System.Net.Sockets
 
                 PinHandle = Buffer.Pin();
 
+                ioControlBlock.AioData = (ulong)id;
                 ioControlBlock.AioLioOpcode = (ushort)Interop.Sys.IoControlBlockFlags.IOCB_CMD_PREAD;
                 ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
                 ioControlBlock.AioBuf = (ulong)PinHandle.Pointer;
-                ioControlBlock.AioOffset = 0;
                 ioControlBlock.AioNbytes = (ulong)Buffer.Length;
+                ioControlBlock.AioOffset = 0;
 
                 return true;
             }
@@ -794,18 +797,19 @@ namespace System.Net.Sockets
             protected override bool DoTryComplete(SocketAsyncContext context) =>
                 SocketPal.TryCompleteReceiveFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
 
-            internal override bool TryBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
+            internal override bool TryBatch(SocketAsyncContext context, int id, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
                 if (IsSync || !TrySetRunning())
                 {
                     return false;
                 }
 
+                ioControlBlock.AioData = (ulong)id;
                 ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PREAD;
                 ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
                 ioControlBlock.AioBuf = (ulong)BufferPtr;
-                ioControlBlock.AioOffset = 0;
                 ioControlBlock.AioNbytes = (ulong)Length;
+                ioControlBlock.AioOffset = 0;
 
                 return true;
             }
@@ -1196,12 +1200,9 @@ namespace System.Net.Sockets
                             _state = QueueState.Processing;
                             nextOperation = _tail.Next;
 
-                            while (nextOperation != null && batchedCount < ioControlBlocks.Length && nextOperation.TryBatch(context, ref ioControlBlocks[batchedCount]))
+                            while (batchedCount < ioControlBlocks.Length && nextOperation.TryBatch(context, batchedCount, ref ioControlBlocks[batchedCount]))
                             {
-                                ioControlBlocks[batchedCount].AioData = (ulong)batchedCount;
-                                batchedOperations[batchedCount] = nextOperation;
-
-                                batchedCount++;
+                                batchedOperations[batchedCount++] = nextOperation;
                                 _batchedOperationsCount++;
 
                                 if (nextOperation == nextOperation.Next)
@@ -1209,10 +1210,8 @@ namespace System.Net.Sockets
                                     // we have batched some operations and reached the end of the queue
                                     return;
                                 }
-                                else
-                                {
-                                    nextOperation = nextOperation.Next;
-                                }
+
+                                nextOperation = nextOperation.Next;
                             }
                             break;
 
