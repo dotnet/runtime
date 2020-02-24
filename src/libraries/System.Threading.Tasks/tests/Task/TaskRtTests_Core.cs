@@ -411,7 +411,7 @@ namespace System.Threading.Tasks.Tests
             catch(AggregateException exc)
             {
                 var inner = exc.InnerException as TaskCanceledException;
-                Assert.Equal(exc.CancellationToken, cts.Token);
+                Assert.Equal(inner.CancellationToken, cts.Token);
             }
             catch
             {
