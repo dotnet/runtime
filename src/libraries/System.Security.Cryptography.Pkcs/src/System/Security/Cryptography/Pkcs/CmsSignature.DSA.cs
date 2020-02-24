@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 DSAParameters dsaParameters = dsa.ExportParameters(false);
-                int bufSize = 2 * dsaParameters.Q.Length;
+                int bufSize = 2 * dsaParameters.Q!.Length;
 
 #if NETCOREAPP || NETSTANDARD2_1
                 byte[] rented = CryptoPool.Rent(bufSize);

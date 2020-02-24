@@ -4,4 +4,4 @@
 
 using Xunit;
 
-[assembly: SkipOnMono("Flaky tests: https://github.com/mono/mono/issues/16417")]
+[assembly: ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)] // flaky tests
