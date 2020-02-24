@@ -290,8 +290,19 @@ public:
             StackSString coreLibraries;
             if (WszGetEnvironmentVariable(W("CORE_LIBRARIES"), coreLibraries) > 0 && coreLibraries.GetCount() > 0)
             {
-                coreLibraries.Append(W('\\'));
-                AddFilesFromDirectoryToTPAList(coreLibraries, rgTPAExtensions, _countof(rgTPAExtensions));
+                StackSString separator { W('\\') };
+                StackSString::CIterator it = coreLibraries.Begin();
+                while (it != coreLibraries.End())
+                {
+                    coreLibraries.Skip(it, W(';'));
+                    StackSString::CIterator start = it;
+                    if (!coreLibraries.Find(it, W(';')))
+                        it = coreLibraries.End();
+                    StackSString item { coreLibraries, start, it };
+                    if (!item.EndsWith(separator))
+                        item.Append(separator);
+                    AddFilesFromDirectoryToTPAList(item, rgTPAExtensions, _countof(rgTPAExtensions));
+                }
             }
             else
             {
