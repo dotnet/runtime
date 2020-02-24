@@ -1012,7 +1012,7 @@ namespace System.Runtime.InteropServices
         }
         public System.IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags) { throw null; }
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
-        public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags) { throw null; }
+        public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object? wrapper = null) { throw null; }
         protected abstract object CreateObject(System.IntPtr externalComObject, System.IntPtr agileObjectRef, CreateObjectFlags flags);
         protected virtual void ReleaseObjects(System.Collections.IEnumerable objects) { throw null; }
         public void RegisterAsGlobalInstance() { }

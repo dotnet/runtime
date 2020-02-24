@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
     }
 
     /// <summary>
-    /// Enumeration of flags for <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags)"/>.
+    /// Enumeration of flags for <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags, object?)"/>.
     /// </summary>
     [Flags]
     public enum CreateObjectFlags
@@ -139,6 +139,8 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// All memory returned from this function must either be unmanaged memory, pinned managed memory, or have been
         /// allocated with the <see cref="System.Runtime.CompilerServices.RuntimeHelpers.AllocateTypeAssociatedMemory(Type, int)"/> API.
+        ///
+        /// If the interface entries cannot be created and <code>null</code> is returned, the call to <see cref="ComWrappers.GetOrCreateComInterfaceForObject(object, CreateComInterfaceFlags)"/> will throw a <see cref="System.ArgumentNullException"/>.
         /// </remarks>
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
@@ -151,21 +153,29 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="externalComObject">Object to import for usage into the .NET runtime.</param>
         /// <param name="flags">Flags used to describe the external object.</param>
+        /// <param name="wrapper">An optional <see cref="object"/> to be used as the wrapper for the external object</param>
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
-        public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
+        /// <remarks>
+        /// Providing a <paramref name="wrapper"/> instance means <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags, object?)"/>
+        /// will not be called.
+        ///
+        /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="System.NotSupportedException"/> will be thrown.
+        /// </remarks>
+        public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object? wrapper = null)
         {
             if (externalComObject == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(externalComObject));
 
             ComWrappers impl = this;
+            object? wrapperLocal = wrapper;
             object? retValue = null;
-            GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack.Create(ref impl), externalComObject, flags, ObjectHandleOnStack.Create(ref retValue));
+            GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack.Create(ref impl), externalComObject, flags, ObjectHandleOnStack.Create(ref wrapperLocal), ObjectHandleOnStack.Create(ref retValue));
 
             return retValue!;
         }
 
         [DllImport(RuntimeHelpers.QCall)]
-        private static extern void GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack comWrappersImpl, IntPtr externalComObject, CreateObjectFlags flags, ObjectHandleOnStack retValue);
+        private static extern void GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack comWrappersImpl, IntPtr externalComObject, CreateObjectFlags flags, ObjectHandleOnStack wrapper, ObjectHandleOnStack retValue);
 
         /// <summary>
         /// Create a managed object for the object pointed at by <paramref name="agileObjectRef"/> respecting the values of <paramref name="flags"/>.
@@ -177,12 +187,12 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// The <paramref name="agileObjectRef"/> is an <see href="https://docs.microsoft.com/windows/win32/api/objidl/nn-objidl-iagilereference">IAgileReference</see> instance. This type should be used to ensure the associated external object, if not known to be free-threaded, is released from the correct COM apartment.
         ///
-        /// If the object cannot be created and <code>null</code> is returned, the call to <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags)"/> will throw a <see cref="System.ArgumentNullException"/>.
+        /// If the object cannot be created and <code>null</code> is returned, the call to <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags, object?)"/> will throw a <see cref="System.ArgumentNullException"/>.
         /// </remarks>
-        protected abstract object CreateObject(IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags);
+        protected abstract object? CreateObject(IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags);
 
         // Call to execute the abstract instance function
-        internal static object CallCreateObject(ComWrappers? comWrappersImpl, IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags)
+        internal static object? CallCreateObject(ComWrappers? comWrappersImpl, IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags)
             => (comWrappersImpl ?? s_globalInstance!).CreateObject(externalComObject, agileObjectRef, flags);
 
         /// <summary>

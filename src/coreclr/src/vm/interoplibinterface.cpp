@@ -598,7 +598,8 @@ namespace
     OBJECTREF GetOrCreateObjectForComInstanceInternal(
         _In_opt_ OBJECTREF impl,
         _In_ IUnknown* identity,
-        _In_ CreateObjectFlags flags)
+        _In_ CreateObjectFlags flags,
+        _In_opt_ OBJECTREF wrapperMaybe)
     {
         CONTRACT(OBJECTREF)
         {
@@ -615,12 +616,14 @@ namespace
         struct
         {
             OBJECTREF implRef;
+            OBJECTREF wrapperMaybeRef;
             OBJECTREF objRef;
         } gc;
         ::ZeroMemory(&gc, sizeof(gc));
         GCPROTECT_BEGIN(gc);
 
         gc.implRef = impl;
+        gc.wrapperMaybeRef = wrapperMaybe;
 
         ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
 
@@ -639,7 +642,7 @@ namespace
         }
         else
         {
-            // Create context and IAgileReference instance for the possibly new external COM object.
+            // Create context and IAgileReference instance for the possibly new external object.
             ExternalWrapperResultHolder resultHolder;
             hr = InteropLib::Com::CreateWrapperForExternal(
                 identity,
@@ -649,10 +652,16 @@ namespace
             if (FAILED(hr))
                 COMPlusThrowHR(hr);
 
-            // Call the implementation to create an external object wrapper.
-            gc.objRef = CallGetObject(&gc.implRef, identity, resultHolder.Result.AgileRef, flags);
+            // The user could have supplied a wrapper so assign that now.
+            gc.objRef = gc.wrapperMaybeRef;
+
+            // If the wrapper hasn't been set yet, call the implementation to create one.
             if (gc.objRef == NULL)
-                COMPlusThrow(kArgumentNullException);
+            {
+                gc.objRef = CallGetObject(&gc.implRef, identity, resultHolder.Result.AgileRef, flags);
+                if (gc.objRef == NULL)
+                    COMPlusThrow(kArgumentNullException);
+            }
 
             // Construct the new context with the object details.
             DWORD flags = (resultHolder.Result.FromTrackerRuntime
@@ -687,7 +696,12 @@ namespace
                 SyncBlock* syncBlock = gc.objRef->GetSyncBlock();
                 InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
                 _ASSERTE(syncBlock->IsPrecious());
-                (void)interopInfo->TrySetExternalComObjectContext((void**)extObjCxt);
+
+                // Since the caller has the option of providing a wrapper, it is
+                // possible the supplied wrapper already has an associated external
+                // object and an object can only be associated with one external object.
+                if (!interopInfo->TrySetExternalComObjectContext((void**)extObjCxt))
+                    COMPlusThrow(kNotSupportedException);
 
                 // Detach from the holder to avoid cleanup.
                 (void)resultHolder.DetachContext();
@@ -924,18 +938,21 @@ namespace InteropLibImports
             struct
             {
                 OBJECTREF implRef;
+                OBJECTREF wrapperMaybeRef;
                 OBJECTREF objRef;
             } gc;
             ::ZeroMemory(&gc, sizeof(gc));
             GCPROTECT_BEGIN(gc);
 
             gc.implRef = NULL; // Use the globally registered implementation.
+            gc.wrapperMaybeRef = NULL; // No supplied wrapper here.
 
             // Get wrapper for external object
             gc.objRef = GetOrCreateObjectForComInstanceInternal(
                 gc.implRef,
                 externalComObject,
-                externalObjectFlags);
+                externalObjectFlags,
+                gc.wrapperMaybeRef);
 
             // Get wrapper for managed object
             *trackerTarget = GetOrCreateComInterfaceForObjectInternal(
@@ -1066,6 +1083,7 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
     _In_ void* ext,
     _In_ INT32 flags,
+    _In_ QCall::ObjectHandleOnStack wrapperMaybe,
     _Inout_ QCall::ObjectHandleOnStack retValue)
 {
     QCALL_CONTRACT;
@@ -1089,7 +1107,8 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
         OBJECTREF newObj = GetOrCreateObjectForComInstanceInternal(
             ObjectToOBJECTREF(*comWrappersImpl.m_ppObject),
             identity,
-            (CreateObjectFlags)flags);
+            (CreateObjectFlags)flags,
+            ObjectToOBJECTREF(*wrapperMaybe.m_ppObject));
 
         // Set the return value
         retValue.Set(newObj);
