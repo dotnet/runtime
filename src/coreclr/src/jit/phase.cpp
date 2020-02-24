@@ -35,7 +35,7 @@ void Phase::PrePhase()
     // the various methods in the phase.
     //
     // In the long run the aim is to get rid of all pre-phase checks
-    // and dumps, relying intstead on post-phase checks and dumps from
+    // and dumps, relying instead on post-phase checks and dumps from
     // the preceeding phase.
     //
     // Currently the list is just the set of phases that have custom

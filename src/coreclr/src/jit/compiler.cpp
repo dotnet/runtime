@@ -4453,21 +4453,21 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         }
 #endif // DEBUG
 
-#if defined(DEBUG) && defined(_TARGET_XARCH_)
+#if defined(DEBUG) && defined(TARGET_XARCH)
         if (opts.compStackCheckOnRet)
         {
             lvaReturnSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
             lvaTable[lvaReturnSpCheck].lvType = TYP_I_IMPL;
         }
-#endif // defined(DEBUG) && defined(_TARGET_XARCH_)
+#endif // defined(DEBUG) && defined(TARGET_XARCH)
 
-#if defined(DEBUG) && defined(_TARGET_X86_)
+#if defined(DEBUG) && defined(TARGET_X86)
         if (opts.compStackCheckOnCall)
         {
             lvaCallSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
             lvaTable[lvaCallSpCheck].lvType = TYP_I_IMPL;
         }
-#endif // defined(DEBUG) && defined(_TARGET_X86_)
+#endif // defined(DEBUG) && defined(TARGET_X86)
 
         // Filter out unimported BBs
         fgRemoveEmptyBlocks();
@@ -4613,14 +4613,14 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         fgMarkDemotedImplicitByRefArgs();
         lvaRefCountState = RCS_INVALID;
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         if (fgNeedToAddFinallyTargetBits)
         {
             // We previously wiped out the BBF_FINALLY_TARGET bits due to some morphing; add them back.
             fgAddFinallyTargetFlags();
             fgNeedToAddFinallyTargetBits = false;
         }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
         // Decide the kind of code we want to generate
         fgSetOptions();
