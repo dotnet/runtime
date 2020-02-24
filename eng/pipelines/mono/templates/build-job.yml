@@ -11,6 +11,7 @@ parameters:
   condition: true
   llvm: false
   isOfficialBuild: false
+  interpreter: false
   crossrootfsDir: ''
 
 ### Product build
@@ -25,13 +26,18 @@ jobs:
     enableMicrobuild: true
     pool: ${{ parameters.pool }}
     llvm: ${{ parameters.llvm }}
+    interpreter: ${{ parameters.interpreter }}
     crossrootfsDir: ${{ parameters.crossroofsDir }}
     condition: ${{ parameters.condition }}
 
     # Compute job name from template parameters
-    ${{ if ne(parameters.llvm, true) }}:
+    ${{ if and(ne(parameters.llvm, true), ne(parameters.interpreter, true)) }}:
       name: ${{ format('mono_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('Mono Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+    ${{ if and(ne(parameters.llvm, true), eq(parameters.interpreter, true)) }}:
+      name: ${{ format('mono_interpreter_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Mono Interpreter Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     # if LLVM enabled, set a variable we can consume
     ${{ if eq(parameters.llvm, true) }}:
@@ -148,8 +154,10 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        ${{ if ne(parameters.llvm, true) }}:
+        ${{ if and(ne(parameters.llvm, true), ne(parameters.interpreter, true)) }}:
           artifactName: 'BuildLogs_Mono_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        ${{ if and(ne(parameters.llvm, true), eq(parameters.interpreter, true)) }}:
+          artifactName: 'BuildLogs_Mono_Interpreter_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
         ${{ if eq(parameters.llvm, true) }}:
           artifactName: 'BuildLogs_Mono_LLVM_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true

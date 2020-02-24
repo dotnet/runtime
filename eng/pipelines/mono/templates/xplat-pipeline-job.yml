@@ -11,6 +11,7 @@ parameters:
   pool: ''
   llvm: false
   liveRuntimeBuildConfig: 'release'
+  interpreter: false
 
   # arcade-specific parameters
   condition: true
@@ -36,6 +37,7 @@ jobs:
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
     llvm: ${{ parameters.llvm }}
+    interpreter: ${{parameters.interpreter}}
 
     # arcade-specific parameters
     condition: and(succeeded(), ${{ parameters.condition }})
@@ -55,8 +57,10 @@ jobs:
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).${{ parameters.liveRuntimeBuildConfig }}'
 
     - name: buildProductArtifactName
-      ${{ if ne(parameters.llvm, true) }}:
+      ${{ if and(ne(parameters.llvm, true), ne(parameters.interpreter, true)) }}:
         value: 'MonoProduct_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      ${{ if and(ne(parameters.llvm, true), eq(parameters.interpreter, true)) }}:
+        value: 'MonoProduct_Interpreter_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       ${{ if eq(parameters.llvm, true) }}:
         value: 'MonoProduct_LLVM_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
