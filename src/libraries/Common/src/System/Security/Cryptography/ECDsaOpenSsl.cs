@@ -121,8 +121,8 @@ namespace System.Security.Cryptography
                     }
 
                     ReadOnlySpan<byte> derSignature = SignHash(hash, signDestination, signatureLength, key);
-                    AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, KeySize, destination);
-                    bytesWritten = encodedSize;
+                    bytesWritten = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, KeySize, destination);
+                    Debug.Assert(bytesWritten == encodedSize);
                     return true;
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 }

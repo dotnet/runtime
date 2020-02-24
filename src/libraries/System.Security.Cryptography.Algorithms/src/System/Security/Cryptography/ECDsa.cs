@@ -427,7 +427,11 @@ namespace System.Security.Cryptography
             return VerifyDataCore(data, signature, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 
-        public bool VerifyData(Stream data, byte[] signature, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        public bool VerifyData(
+            Stream data,
+            byte[] signature,
+            HashAlgorithmName hashAlgorithm,
+            DSASignatureFormat signatureFormat)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));

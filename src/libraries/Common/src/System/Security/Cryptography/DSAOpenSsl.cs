@@ -28,6 +28,8 @@ namespace System.Security.Cryptography
             // If a future version of the standard continues to enhance DSA,
             // we may want to bump this limit to allow the max-1 (expected size)
             // TryCreateSignature to pass.
+            // Future updates seem unlikely, though, as FIPS 186-5 October 2019 draft has
+            // DSA as a no longer supported/updated algorithm.
             private const int SignatureStackBufSize = 72;
             private const int BitsPerByte = 8;
 
@@ -250,9 +252,11 @@ namespace System.Security.Cryptography
                         return false;
                     }
 
+                    int fieldSizeBits = fieldSizeBytes * 8;
+
                     ReadOnlySpan<byte> derSignature = SignHash(hash, signDestination, maxSignatureSize, key);
-                    AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, KeySize, destination);
-                    bytesWritten = p1363SignatureSize;
+                    bytesWritten = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, fieldSizeBits, destination);
+                    Debug.Assert(bytesWritten == p1363SignatureSize);
                     return true;
                 }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS

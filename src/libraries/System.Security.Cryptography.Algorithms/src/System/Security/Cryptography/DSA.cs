@@ -364,7 +364,10 @@ namespace System.Security.Cryptography
             return TryCreateSignatureCore(hash, destination, signatureFormat, out bytesWritten);
         }
 
-        public virtual bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm)
+        public virtual bool VerifyData(
+            ReadOnlySpan<byte> data,
+            ReadOnlySpan<byte> signature,
+            HashAlgorithmName hashAlgorithm)
         {
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
@@ -372,7 +375,11 @@ namespace System.Security.Cryptography
             return VerifyDataCore(data, signature, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 
-        public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        public bool VerifyData(
+            byte[] data,
+            byte[] signature,
+            HashAlgorithmName hashAlgorithm,
+            DSASignatureFormat signatureFormat)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -386,7 +393,11 @@ namespace System.Security.Cryptography
             return VerifyDataCore(data, signature, hashAlgorithm, signatureFormat);
         }
 
-        public bool VerifyData(Stream data, byte[] signature, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        public bool VerifyData(
+            Stream data,
+            byte[] signature,
+            HashAlgorithmName hashAlgorithm,
+            DSASignatureFormat signatureFormat)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -451,7 +462,10 @@ namespace System.Security.Cryptography
         public virtual bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
             => VerifySignatureCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
 
-        public bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
+        public bool VerifySignature(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> signature,
+            DSASignatureFormat signatureFormat)
         {
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
