@@ -780,6 +780,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     runtimeFlavor: mono
+    runtimeDisplayName: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
     - Windows_NT_x64
