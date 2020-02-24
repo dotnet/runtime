@@ -360,7 +360,7 @@ namespace System.Diagnostics
             {
                 try
                 {
-                    byte[] dataPtr = library.GetPerformanceData(PerfCounterQueryString);
+                    byte[]? dataPtr = library.GetPerformanceData(PerfCounterQueryString);
                     processInfos = GetProcessInfos(library, ProcessPerfCounterId, ThreadPerfCounterId, dataPtr);
                 }
                 catch (Exception e)

@@ -4435,8 +4435,7 @@ namespace System
                         {
                             if ((i + 1) < end)
                             {
-                                bool surrPair = false;
-                                valid = IriHelper.CheckIriUnicodeRange(c, str[i + 1], ref surrPair, true);
+                                valid = IriHelper.CheckIriUnicodeRange(c, str[i + 1], out _, true);
                             }
                         }
                         else

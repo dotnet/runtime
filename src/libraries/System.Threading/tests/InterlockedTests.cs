@@ -302,7 +302,7 @@ namespace System.Threading.Tests
             Assert.Equal(0x17755771u, value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/coreclr/issues/20215")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/11177")]
         public void MemoryBarrierProcessWide()
         {
             // Stress MemoryBarrierProcessWide correctness using a simple AsymmetricLock

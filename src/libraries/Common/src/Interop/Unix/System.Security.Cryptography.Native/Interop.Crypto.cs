@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -12,7 +13,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        private delegate int NegativeSizeReadMethod<in THandle>(THandle handle, byte[] buf, int cBuf);
+        private delegate int NegativeSizeReadMethod<in THandle>(THandle handle, byte[]? buf, int cBuf);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioTell")]
         internal static extern int CryptoNative_BioTell(SafeBioHandle bio);
@@ -32,10 +33,10 @@ internal static partial class Interop
         internal static extern int BioSeek(SafeBioHandle bio, int pos);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509Thumbprint")]
-        private static extern int GetX509Thumbprint(SafeX509Handle x509, byte[] buf, int cBuf);
+        private static extern int GetX509Thumbprint(SafeX509Handle x509, byte[]? buf, int cBuf);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameRawBytes")]
-        private static extern int GetX509NameRawBytes(IntPtr x509Name, byte[] buf, int cBuf);
+        private static extern int GetX509NameRawBytes(IntPtr x509Name, byte[]? buf, int cBuf);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ReadX509AsDerFromBio")]
         internal static extern SafeX509Handle ReadX509AsDerFromBio(SafeBioHandle bio);
@@ -59,7 +60,7 @@ internal static partial class Interop
         internal static extern IntPtr GetX509PublicKeyAlgorithm(SafeX509Handle x509);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyParameterBytes")]
-        private static extern int GetX509PublicKeyParameterBytes(SafeX509Handle x509, byte[] buf, int cBuf);
+        private static extern int GetX509PublicKeyParameterBytes(SafeX509Handle x509, byte[]? buf, int cBuf);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyBytes")]
         internal static extern IntPtr GetX509PublicKeyBytes(SafeX509Handle x509);
@@ -74,7 +75,7 @@ internal static partial class Interop
         internal static extern SafeBioHandle GetX509NameInfo(SafeX509Handle x509, int nameType, [MarshalAs(UnmanagedType.Bool)] bool forIssuer);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetAsn1StringBytes")]
-        private static extern int GetAsn1StringBytes(IntPtr asn1, byte[] buf, int cBuf);
+        private static extern int GetAsn1StringBytes(IntPtr asn1, byte[]? buf, int cBuf);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PushX509StackField")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -84,12 +85,12 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool PushX509StackField(SafeSharedX509StackHandle stack, SafeX509Handle x509);
 
-        internal static string GetX509RootStorePath()
+        internal static string? GetX509RootStorePath()
         {
             return Marshal.PtrToStringAnsi(GetX509RootStorePath_private());
         }
 
-        internal static string GetX509RootStoreFile()
+        internal static string? GetX509RootStoreFile()
         {
             return Marshal.PtrToStringAnsi(GetX509RootStoreFile_private());
         }

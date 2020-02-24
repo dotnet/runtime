@@ -270,7 +270,7 @@ namespace System.Xml.Serialization
             for (int i = 0; i < list.Count; i++)
             {
                 sb.Append(list[i].ToString());
-                sb.Append(",");
+                sb.Append(',');
             }
 
             return sb.ToString();

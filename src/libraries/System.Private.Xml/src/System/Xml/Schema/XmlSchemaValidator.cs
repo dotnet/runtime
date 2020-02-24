@@ -2656,7 +2656,7 @@ namespace System.Xml.Schema
             builder.Append(expected[0].ToString());
             for (int i = 1; i < expected.Count; ++i)
             {
-                builder.Append(" ");
+                builder.Append(' ');
                 builder.Append(expected[i].ToString());
             }
             builder.Append(Quote);

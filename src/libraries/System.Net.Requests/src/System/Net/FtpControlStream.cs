@@ -999,7 +999,7 @@ namespace System.Net
                 {
                     pos1++;
                     long result;
-                    if (long.TryParse(str.Substring(pos1, pos2 - pos1),
+                    if (long.TryParse(str.AsSpan(pos1, pos2 - pos1),
                                         NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
                                         NumberFormatInfo.InvariantInfo, out result))
                     {

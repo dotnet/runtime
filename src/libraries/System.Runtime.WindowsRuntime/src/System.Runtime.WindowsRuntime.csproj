@@ -8,7 +8,7 @@
     <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.0'">4.0.0.0</AssemblyVersion>
     <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.2'">4.0.11.0</AssemblyVersion>
     <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true'">$(DefineConstants);FEATURE_APPX</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netstandard1.0;netstandard1.2;netstandard2.0;netcoreapp3.0-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netstandard1.0;netstandard1.2;netstandard2.0</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsNetStandard)' == 'true'">
@@ -20,14 +20,6 @@
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
     <ProjectReference Include="$(LibrariesProjectRoot)restore\winrt\winrt.depproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
-    <ReferenceFromRuntime Include="System.Runtime" />
-    <ReferenceFromRuntime Include="System.Runtime.Extensions" />
-    <ReferenceFromRuntime Include="System.Diagnostics.Debug" />
-    <ReferenceFromRuntime Include="System.Diagnostics.Tools" />
-    <ReferenceFromRuntime Include="System.Runtime.InteropServices.WindowsRuntime" />
-    <ReferenceFromRuntime Include="System.ObjectModel" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />

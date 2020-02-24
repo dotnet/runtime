@@ -309,7 +309,7 @@ namespace System.Text.RegularExpressions
                 case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
-                    sb.Append("'").Append(RegexCharClass.CharDescription((char)Codes[offset + 1])).Append("'");
+                    sb.Append('\'').Append(RegexCharClass.CharDescription((char)Codes[offset + 1])).Append('\'');
                     break;
 
                 case Set:

@@ -1493,25 +1493,6 @@ TYPED_HANDLE_DECL (MonoReflectionGenericClass);
 typedef struct {
 	MonoObject  obj;
 	MonoString *name;
-	MonoString *codebase;
-	gint32 major, minor, build, revision;
-	MonoObject  *cultureInfo;
-	guint32     flags;
-	guint32     hashalg;
-	MonoObject  *keypair;
-	MonoArray   *publicKey;
-	MonoArray   *keyToken;
-	guint32     versioncompat;
-	MonoObject *version;
-	guint32     processor_architecture;
-} MonoReflectionAssemblyName;
-
-/* Safely access System.Reflection.AssemblyName from native code */
-TYPED_HANDLE_DECL (MonoReflectionAssemblyName);
-
-typedef struct {
-	MonoObject  obj;
-	MonoString *name;
 	MonoReflectionType *type;
 	MonoReflectionTypeBuilder *typeb;
 	MonoArray *cattrs;

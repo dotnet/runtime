@@ -34,14 +34,6 @@ CorJitResult __stdcall compileMethod(ICorJitInfo*                comp,     /* IN
                                      ULONG* nativeSizeOfCode               /* OUT */
                                      );
 
-// Some JIT compilers (most notably Phoenix), cache information about EE structures from one invocation
-// of the compiler to the next. This can be a problem when appdomains are unloaded, as some of this
-// cached information becomes stale. The code:ICorJitCompiler.isCacheCleanupRequired is called by the EE
-// early first to see if jit needs these notifications, and if so, the EE will call ClearCache is called
-// whenever the compiler should abandon its cache (eg on appdomain unload)
-void clearCache();
-BOOL isCacheCleanupRequired();
-
 // Do any appropriate work at process shutdown.  Default impl is to do nothing.
 void ProcessShutdownWork(ICorStaticInfo* info); /* {}; */
 
@@ -56,13 +48,5 @@ void getVersionIdentifier(GUID* versionIdentifier /* OUT */
 // SIMD vector it supports as an intrinsic type.  Zero means that the JIT does not support SIMD
 // intrinsics, so the EE should use the default size (i.e. the size of the IL implementation).
 unsigned getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags); /* { return 0; } */
-
-// IL obfuscators sometimes interpose on the EE-JIT interface. This function allows the VM to
-// tell the JIT to use a particular ICorJitCompiler to implement the methods of this interface,
-// and not to implement those methods itself. The JIT must not return this method when getJit()
-// is called. Instead, it must pass along all calls to this interface from within its own
-// ICorJitCompiler implementation. If 'realJitCompiler' is nullptr, then the JIT should resume
-// executing all the functions itself.
-void setRealJit(ICorJitCompiler* realJitCompiler); /* { } */
 
 #endif

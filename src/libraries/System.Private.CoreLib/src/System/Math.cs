@@ -185,7 +185,7 @@ namespace System
 
         public static int DivRem(int a, int b, out int result)
         {
-            // TODO https://github.com/dotnet/coreclr/issues/3439:
+            // TODO https://github.com/dotnet/runtime/issues/5213:
             // Restore to using % and / when the JIT is able to eliminate one of the idivs.
             // In the meantime, a * and - is measurably faster than an extra /.
 

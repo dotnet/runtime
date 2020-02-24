@@ -169,22 +169,6 @@ BOOL isCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,          /* type of the 
                           BOOL*                 pfIsOpenDelegate /* is the delegate open */
                           );
 
-// Indicates if the method is an instance of the generic
-// method that passes (or has passed) verification
-CorInfoInstantiationVerification isInstantiationOfVerifiedGeneric(CORINFO_METHOD_HANDLE method /* IN  */
-                                                                  );
-
-// Loads the constraints on a typical method definition, detecting cycles;
-// for use in verification.
-void initConstraintsForVerification(CORINFO_METHOD_HANDLE method,                        /* IN */
-                                    BOOL*                 pfHasCircularClassConstraints, /* OUT */
-                                    BOOL*                 pfHasCircularMethodConstraint  /* OUT */
-                                    );
-
-// Returns enum whether the method does not require verification
-// Also see ICorModuleInfo::canSkipVerification
-CorInfoCanSkipVerificationResult canSkipMethodVerification(CORINFO_METHOD_HANDLE ftnHandle);
-
 // load and restore the method
 void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method);
 
@@ -231,20 +215,6 @@ void findCallSiteSig(CORINFO_MODULE_HANDLE  module,  /* IN */
 
 CORINFO_CLASS_HANDLE getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken /* IN  */);
 
-// Returns true if the module does not require verification
-//
-// If fQuickCheckOnlyWithoutCommit=TRUE, the function only checks that the
-// module does not currently require verification in the current AppDomain.
-// This decision could change in the future, and so should not be cached.
-// If it is cached, it should only be used as a hint.
-// This is only used by ngen for calculating certain hints.
-//
-
-// Returns enum whether the module does not require verification
-// Also see ICorMethodInfo::canSkipMethodVerification();
-CorInfoCanSkipVerificationResult canSkipVerification(CORINFO_MODULE_HANDLE module /* IN  */
-                                                     );
-
 // Checks if the given metadata token is valid
 BOOL isValidToken(CORINFO_MODULE_HANDLE module, /* IN  */
                   unsigned              metaTOK /* IN  */
@@ -259,8 +229,6 @@ LPCWSTR getStringLiteral(CORINFO_MODULE_HANDLE module,  /* IN  */
                          unsigned              metaTOK, /* IN  */
                          int*                  length   /* OUT */
                          );
-
-BOOL shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope);
 
 /**********************************************************************************/
 //
@@ -299,10 +267,6 @@ BOOL isValueClass(CORINFO_CLASS_HANDLE cls);
 //     GetTypeFromHandle(handle) == obj.GetType() (for CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE)
 //     GetTypeFromHandle(X) == GetTypeFromHandle(Y) (for CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
 CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
-
-// If this method returns true, JIT will do optimization to inline the check for
-//     GetTypeFromHandle(handle) == obj.GetType()
-BOOL canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls);
 
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
 DWORD getClassAttribs(CORINFO_CLASS_HANDLE cls);
@@ -374,8 +338,6 @@ CorInfoHelpFunc getCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fT
 
 // returns helper to trigger static constructor
 CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd);
-
-CorInfoHelpFunc getSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn);
 
 // This is not pretty.  Boxing nullable<T> actually returns
 // a boxed<T> not a boxed Nullable<T>.  This call allows the verifier
@@ -532,11 +494,6 @@ CorInfoType getFieldType(CORINFO_FIELD_HANDLE  field,
 // return the data member's instance offset
 unsigned getFieldOffset(CORINFO_FIELD_HANDLE field);
 
-// TODO: jit64 should be switched to the same plan as the i386 jits - use
-// getClassGClayout to figure out the need for writebarrier helper, and inline the copying.
-// The interpretted value class copy is slow. Once this happens, USE_WRITE_BARRIER_HELPERS
-bool isWriteBarrierHelperRequired(CORINFO_FIELD_HANDLE field);
-
 void getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                   CORINFO_METHOD_HANDLE   callerHandle,
                   CORINFO_ACCESS_FLAGS    flags,
@@ -609,7 +566,7 @@ void setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of interest
 // Used to allocate memory that needs to handed to the EE.
 // For eg, use this to allocated memory for reporting debug info,
 // which will be handed to the EE by setVars() and setBoundaries()
-void* allocateArray(ULONG cBytes);
+void* allocateArray(size_t cBytes);
 
 // JitCompiler will free arrays passed by the EE using this
 // For eg, The EE returns memory in getVars() and getBoundaries()
@@ -827,17 +784,7 @@ void embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 //      CORINFO_LOOKUP_THISOBJ     use vtable pointer of 'this' param
 //      CORINFO_LOOKUP_CLASSPARAM  use vtable hidden param
 //      CORINFO_LOOKUP_METHODPARAM use enclosing type of method-desc hidden param
-CORINFO_LOOKUP_KIND getLocationOfThisType(CORINFO_METHOD_HANDLE context);
-
-// NOTE: the two methods below--getPInvokeUnmanagedTarget and getAddressOfPInvokeFixup--are
-//       deprecated. New code should instead use getAddressOfPInvokeTarget, which subsumes the
-//       functionality of these methods.
-
-// return the unmanaged target *if method has already been prelinked.*
-void* getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void** ppIndirection = NULL);
-
-// return address of fixup area for late-bound PInvoke calls.
-void* getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void** ppIndirection = NULL);
+void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
 
 // return the address of the PInvoke target. May be a fixup area in the
 // case of late-bound PInvoke calls.
@@ -929,9 +876,6 @@ void* getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpec
 
 bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert);
 
-// return memory manager that the JIT can use to allocate a regular memory
-IEEMemoryManager* getMemoryManager();
-
 // get a block of memory for the code, readonly data, and read-write data
 void allocMem(ULONG              hotCodeSize,   /* IN */
               ULONG              coldCodeSize,  /* IN */
@@ -991,8 +935,6 @@ void allocUnwindInfo(BYTE*          pHotCode,     /* IN */
 // Note that allocMem must be called first
 void* allocGCInfo(size_t size /* IN */
                   );
-
-void yieldExecution();
 
 // Indicate how many exception handler blocks are to be returned.
 // This is guaranteed to be called before any 'setEHinfo' call.
@@ -1059,13 +1001,6 @@ void recordRelocation(void* location,   /* IN  */
                       );
 
 WORD getRelocTypeHint(void* target);
-
-// A callback to identify the range of address known to point to
-// compiler-generated native entry points that call back into
-// MSIL.
-void getModuleNativeEntryPointRange(void** pStart, /* OUT */
-                                    void** pEnd    /* OUT */
-                                    );
 
 // For what machine does the VM expect the JIT to generate code? The VM
 // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM

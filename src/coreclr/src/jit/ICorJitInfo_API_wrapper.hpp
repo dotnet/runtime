@@ -232,34 +232,6 @@ BOOL WrapICorJitInfo::isCompatibleDelegate(
     return temp;
 }
 
-CorInfoInstantiationVerification WrapICorJitInfo::isInstantiationOfVerifiedGeneric(
-            CORINFO_METHOD_HANDLE   method /* IN  */)
-{
-    API_ENTER(isInstantiationOfVerifiedGeneric);
-    CorInfoInstantiationVerification temp = wrapHnd->isInstantiationOfVerifiedGeneric(method);
-    API_LEAVE(isInstantiationOfVerifiedGeneric);
-    return temp;
-}
-
-void WrapICorJitInfo::initConstraintsForVerification(
-            CORINFO_METHOD_HANDLE   method, /* IN */
-            BOOL *pfHasCircularClassConstraints, /* OUT */
-            BOOL *pfHasCircularMethodConstraint /* OUT */)
-{
-    API_ENTER(initConstraintsForVerification);
-    wrapHnd->initConstraintsForVerification(method, pfHasCircularClassConstraints, pfHasCircularMethodConstraint);
-    API_LEAVE(initConstraintsForVerification);
-}
-
-CorInfoCanSkipVerificationResult WrapICorJitInfo::canSkipMethodVerification(
-            CORINFO_METHOD_HANDLE       ftnHandle)
-{
-    API_ENTER(canSkipMethodVerification);
-    CorInfoCanSkipVerificationResult temp = wrapHnd->canSkipMethodVerification(ftnHandle);
-    API_LEAVE(canSkipMethodVerification);
-    return temp;
-}
-
 void WrapICorJitInfo::methodMustBeLoadedBeforeCodeIsRun(
             CORINFO_METHOD_HANDLE       method)
 {
@@ -338,15 +310,6 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getTokenTypeAsHandle(
     return temp;
 }
 
-CorInfoCanSkipVerificationResult WrapICorJitInfo::canSkipVerification(
-            CORINFO_MODULE_HANDLE       module     /* IN  */)
-{
-    API_ENTER(canSkipVerification);
-    CorInfoCanSkipVerificationResult temp = wrapHnd->canSkipVerification(module);
-    API_LEAVE(canSkipVerification);
-    return temp;
-}
-
 BOOL WrapICorJitInfo::isValidToken(
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK     /* IN  */)
@@ -375,15 +338,6 @@ LPCWSTR WrapICorJitInfo::getStringLiteral(
     API_ENTER(getStringLiteral);
     LPCWSTR temp = wrapHnd->getStringLiteral(module, metaTOK, length);
     API_LEAVE(getStringLiteral);
-    return temp;
-}
-
-BOOL WrapICorJitInfo::shouldEnforceCallvirtRestriction(
-            CORINFO_MODULE_HANDLE   scope)
-{
-    API_ENTER(shouldEnforceCallvirtRestriction);
-    BOOL temp = wrapHnd->shouldEnforceCallvirtRestriction(scope);
-    API_LEAVE(shouldEnforceCallvirtRestriction);
     return temp;
 }
 
@@ -453,14 +407,6 @@ CorInfoInlineTypeCheck WrapICorJitInfo::canInlineTypeCheck(CORINFO_CLASS_HANDLE 
     API_ENTER(canInlineTypeCheck);
     CorInfoInlineTypeCheck temp = wrapHnd->canInlineTypeCheck(cls, source);
     API_LEAVE(canInlineTypeCheck);
-    return temp;
-}
-
-BOOL WrapICorJitInfo::canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(canInlineTypeCheckWithObjectVTable);
-    BOOL temp = wrapHnd->canInlineTypeCheckWithObjectVTable(cls);
-    API_LEAVE(canInlineTypeCheckWithObjectVTable);
     return temp;
 }
 
@@ -644,15 +590,6 @@ CorInfoHelpFunc WrapICorJitInfo::getSharedCCtorHelper(
     API_ENTER(getSharedCCtorHelper);
     CorInfoHelpFunc temp = wrapHnd->getSharedCCtorHelper(clsHnd);
     API_LEAVE(getSharedCCtorHelper);
-    return temp;
-}
-
-CorInfoHelpFunc WrapICorJitInfo::getSecurityPrologHelper(
-            CORINFO_METHOD_HANDLE   ftn)
-{
-    API_ENTER(getSecurityPrologHelper);
-    CorInfoHelpFunc temp = wrapHnd->getSecurityPrologHelper(ftn);
-    API_LEAVE(getSecurityPrologHelper);
     return temp;
 }
 
@@ -938,15 +875,6 @@ unsigned WrapICorJitInfo::getFieldOffset(
     return temp;
 }
 
-bool WrapICorJitInfo::isWriteBarrierHelperRequired(
-                    CORINFO_FIELD_HANDLE    field)
-{
-    API_ENTER(isWriteBarrierHelperRequired);
-    bool result = wrapHnd->isWriteBarrierHelperRequired(field);
-    API_LEAVE(isWriteBarrierHelperRequired);
-    return result;
-}
-
 void WrapICorJitInfo::getFieldInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                             CORINFO_METHOD_HANDLE  callerHandle,
                             CORINFO_ACCESS_FLAGS   flags,
@@ -1017,7 +945,7 @@ void WrapICorJitInfo::setVars(
 }
 
 void * WrapICorJitInfo::allocateArray(
-                    ULONG              cBytes)
+                    size_t              cBytes)
 {
     API_ENTER(allocateArray);
     void *temp = wrapHnd->allocateArray(cBytes);
@@ -1345,33 +1273,13 @@ void WrapICorJitInfo::embedGenericHandle(
     API_LEAVE(embedGenericHandle);
 }
 
-CORINFO_LOOKUP_KIND WrapICorJitInfo::getLocationOfThisType(
-                CORINFO_METHOD_HANDLE context)
+void WrapICorJitInfo::getLocationOfThisType(
+                CORINFO_METHOD_HANDLE   context,
+                CORINFO_LOOKUP_KIND *   pLookupKind)
 {
     API_ENTER(getLocationOfThisType);
-    CORINFO_LOOKUP_KIND temp = wrapHnd->getLocationOfThisType(context);
+    wrapHnd->getLocationOfThisType(context, pLookupKind);
     API_LEAVE(getLocationOfThisType);
-    return temp;
-}
-
-void* WrapICorJitInfo::getPInvokeUnmanagedTarget(
-                CORINFO_METHOD_HANDLE   method,
-                void                  **ppIndirection)
-{
-    API_ENTER(getPInvokeUnmanagedTarget);
-    void *result = wrapHnd->getPInvokeUnmanagedTarget(method, ppIndirection);
-    API_LEAVE(getPInvokeUnmanagedTarget);
-    return result;
-}
-
-void* WrapICorJitInfo::getAddressOfPInvokeFixup(
-                CORINFO_METHOD_HANDLE   method,
-                void                  **ppIndirection)
-{
-    API_ENTER(getAddressOfPInvokeFixup);
-    void *temp = wrapHnd->getAddressOfPInvokeFixup(method, ppIndirection);
-    API_LEAVE(getAddressOfPInvokeFixup);
-    return temp;
 }
 
 void WrapICorJitInfo::getAddressOfPInvokeTarget(
@@ -1595,14 +1503,6 @@ bool WrapICorJitInfo::convertPInvokeCalliToCall(
 //
 /*********************************************************************************/
 
-IEEMemoryManager* WrapICorJitInfo::getMemoryManager()
-{
-    API_ENTER(getMemoryManager);
-    IEEMemoryManager * temp = wrapHnd->getMemoryManager();
-    API_LEAVE(getMemoryManager);
-    return temp;
-}
-
 void WrapICorJitInfo::allocMem(
         ULONG               hotCodeSize,    /* IN */
         ULONG               coldCodeSize,   /* IN */
@@ -1648,13 +1548,6 @@ void *WrapICorJitInfo::allocGCInfo(size_t size /* IN */)
     void *temp = wrapHnd->allocGCInfo(size);
     API_LEAVE(allocGCInfo);
     return temp;
-}
-
-void WrapICorJitInfo::yieldExecution()
-{
-    API_ENTER(yieldExecution); //Nothing to record
-    wrapHnd->yieldExecution();
-    API_LEAVE(yieldExecution); //Nothing to recor)
 }
 
 void WrapICorJitInfo::setEHcount(unsigned cEH /* IN */)
@@ -1746,15 +1639,6 @@ WORD WrapICorJitInfo::getRelocTypeHint(void *target)
     WORD result = wrapHnd->getRelocTypeHint(target);
     API_LEAVE(getRelocTypeHint);
     return result;
-}
-
-void WrapICorJitInfo::getModuleNativeEntryPointRange(
-            void **pStart, /* OUT */
-            void **pEnd    /* OUT */)
-{
-    API_ENTER(getModuleNativeEntryPointRange);
-    wrapHnd->getModuleNativeEntryPointRange(pStart, pEnd);
-    API_LEAVE(getModuleNativeEntryPointRange);
 }
 
 DWORD WrapICorJitInfo::getExpectedTargetArchitecture()

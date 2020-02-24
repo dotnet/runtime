@@ -156,7 +156,7 @@ namespace System.Net
             // There's not currently a LocalMachine\My store on Unix, so don't bother trying
             // and having to deal with the exception.
             //
-            // https://github.com/dotnet/corefx/issues/3690 tracks the lack of this store.
+            // https://github.com/dotnet/runtime/issues/15377 tracks the lack of this store.
             if (storeLocation == StoreLocation.LocalMachine)
                 hasSupport = false;
         }
