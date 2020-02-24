@@ -701,7 +701,14 @@ namespace
                 // possible the supplied wrapper already has an associated external
                 // object and an object can only be associated with one external object.
                 if (!interopInfo->TrySetExternalComObjectContext((void**)extObjCxt))
+                {
+                    // Failed to set the context; one must already exist.
+                    // Remove from the cache above as well.
+                    ExtObjCxtCache::LockHolder lock(cache);
+                    cache->Remove(resultHolder.GetContext());
+
                     COMPlusThrow(kNotSupportedException);
+                }
 
                 // Detach from the holder to avoid cleanup.
                 (void)resultHolder.DetachContext();

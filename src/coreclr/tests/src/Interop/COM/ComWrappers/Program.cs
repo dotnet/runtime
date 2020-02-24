@@ -261,59 +261,6 @@ namespace ComWrappersTests
             Assert.AreEqual(count, 0);
         }
 
-        static void ValidateRuntimeTrackerScenario()
-        {
-            Console.WriteLine($"Running {nameof(ValidateRuntimeTrackerScenario)}...");
-
-            var cw = new TestComWrappers();
-
-            // Get an object from a tracker runtime.
-            IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
-
-            // Create a managed wrapper for the native object.
-            var trackerObj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
-
-            // Ownership has been transferred to the wrapper.
-            Marshal.Release(trackerObjRaw);
-
-            var testWrapperIds = new List<int>();
-            for (int i = 0; i < 1000; ++i)
-            {
-                // Create a native wrapper for the managed object.
-                IntPtr testWrapper = cw.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.TrackerSupport);
-
-                // Pass the managed object to the native object.
-                int id = trackerObj.AddObjectRef(testWrapper);
-
-                // Retain the managed object wrapper ptr.
-                testWrapperIds.Add(id);
-            }
-
-            Assert.IsTrue(testWrapperIds.Count <= Test.InstanceCount);
-
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-
-            Assert.IsTrue(testWrapperIds.Count <= Test.InstanceCount);
-
-            // Remove the managed object ref from the native object.
-            foreach (int id in testWrapperIds)
-            {
-                trackerObj.DropObjectRef(id);
-            }
-
-            testWrapperIds.Clear();
-
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-            GC.Collect();
-        }
-
         static void ValidateCreateObjectCachingScenario()
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectCachingScenario)}...");
@@ -332,58 +279,43 @@ namespace ComWrappersTests
 
             var trackerObj3 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject | CreateObjectFlags.UniqueInstance);
             Assert.AreNotEqual(trackerObj1, trackerObj3);
+        }
+
+        static void ValidatePrecreatedExternalWrapper()
+        {
+            Console.WriteLine($"Running {nameof(ValidatePrecreatedExternalWrapper)}...");
+
+            var cw = new TestComWrappers();
+
+            // Get an object from a tracker runtime.
+            IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+            // Manually create a wrapper
+            var iid = typeof(ITrackerObject).GUID;
+            IntPtr iTestComObject;
+            int hr = Marshal.QueryInterface(trackerObjRaw, ref iid, out iTestComObject);
+            Assert.AreEqual(hr, 0);
+            var nativeWrapper = new ITrackerObjectWrapper(iTestComObject);
+
+            // Request wrapper, but supply the wrapper.
+            var nativeWrapper2 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject, nativeWrapper);
+            Assert.AreEqual(nativeWrapper, nativeWrapper2);
+
+            // Ownership has been transferred to the wrapper.
+            Marshal.Release(trackerObjRaw);
 
             // Validate reuse of a wrapper fails.
             IntPtr trackerObjRaw2 = MockReferenceTrackerRuntime.CreateTrackerObject();
             Assert.Throws<NotSupportedException>(
                 () =>
                 {
-                    cw.GetOrCreateObjectForComInstance(trackerObjRaw2, CreateObjectFlags.None, trackerObj3);
+                    cw.GetOrCreateObjectForComInstance(trackerObjRaw2, CreateObjectFlags.None, nativeWrapper2);
                 });
             Marshal.Release(trackerObjRaw2);
         }
 
         static void ValidateIUnknownImpls()
             => TestComWrappers.ValidateIUnknownImpls();
-
-        static void ValidateGlobalInstanceScenarios()
-        {
-            Console.WriteLine($"Running {nameof(ValidateGlobalInstanceScenarios)}...");
-            Console.WriteLine($"Validate RegisterAsGlobalInstance()...");
-
-            var wrappers1 = TestComWrappers.Global;
-            wrappers1.RegisterAsGlobalInstance();
-
-            Assert.Throws<InvalidOperationException>(
-                () =>
-                {
-                    wrappers1.RegisterAsGlobalInstance();
-                }, "Should not be able to re-register for global ComWrappers");
-
-            var wrappers2 = new TestComWrappers();
-            Assert.Throws<InvalidOperationException>(
-                () =>
-                {
-                    wrappers2.RegisterAsGlobalInstance();
-                }, "Should not be able to reset for global ComWrappers");
-
-            Console.WriteLine($"Validate NotifyEndOfReferenceTrackingOnThread()...");
-
-            int hr;
-            var cw = TestComWrappers.Global;
-
-            // Trigger the thread lifetime end API and verify the default behavior.
-            hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
-            Assert.AreEqual(unchecked((int)0x80004001), hr);
-
-            cw.DefaultReleaseObjects = false;
-            // Trigger the thread lifetime end API and verify the customizable behavior.
-            hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
-            Assert.AreEqual(0, hr);
-
-            // Reset the global wrapper state.
-            cw.DefaultReleaseObjects = true;
-        }
 
         class BadComWrappers : ComWrappers
         {
@@ -476,15 +408,108 @@ namespace ComWrappersTests
             Marshal.Release(trackerObjRaw);
         }
 
+        static void ValidateRuntimeTrackerScenario()
+        {
+            Console.WriteLine($"Running {nameof(ValidateRuntimeTrackerScenario)}...");
+
+            var cw = new TestComWrappers();
+
+            // Get an object from a tracker runtime.
+            IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+            // Create a managed wrapper for the native object.
+            var trackerObj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+
+            // Ownership has been transferred to the wrapper.
+            Marshal.Release(trackerObjRaw);
+
+            var testWrapperIds = new List<int>();
+            for (int i = 0; i < 1000; ++i)
+            {
+                // Create a native wrapper for the managed object.
+                IntPtr testWrapper = cw.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.TrackerSupport);
+
+                // Pass the managed object to the native object.
+                int id = trackerObj.AddObjectRef(testWrapper);
+
+                // Retain the managed object wrapper ptr.
+                testWrapperIds.Add(id);
+            }
+
+            Assert.IsTrue(testWrapperIds.Count <= Test.InstanceCount);
+
+            GC.Collect();
+            GC.Collect();
+            GC.Collect();
+            GC.Collect();
+            GC.Collect();
+
+            Assert.IsTrue(testWrapperIds.Count <= Test.InstanceCount);
+
+            // Remove the managed object ref from the native object.
+            foreach (int id in testWrapperIds)
+            {
+                trackerObj.DropObjectRef(id);
+            }
+
+            testWrapperIds.Clear();
+
+            GC.Collect();
+            GC.Collect();
+            GC.Collect();
+            GC.Collect();
+            GC.Collect();
+        }
+
+        static void ValidateGlobalInstanceScenarios()
+        {
+            Console.WriteLine($"Running {nameof(ValidateGlobalInstanceScenarios)}...");
+            Console.WriteLine($"Validate RegisterAsGlobalInstance()...");
+
+            var wrappers1 = TestComWrappers.Global;
+            wrappers1.RegisterAsGlobalInstance();
+
+            Assert.Throws<InvalidOperationException>(
+                () =>
+                {
+                    wrappers1.RegisterAsGlobalInstance();
+                }, "Should not be able to re-register for global ComWrappers");
+
+            var wrappers2 = new TestComWrappers();
+            Assert.Throws<InvalidOperationException>(
+                () =>
+                {
+                    wrappers2.RegisterAsGlobalInstance();
+                }, "Should not be able to reset for global ComWrappers");
+
+            Console.WriteLine($"Validate NotifyEndOfReferenceTrackingOnThread()...");
+
+            int hr;
+            var cw = TestComWrappers.Global;
+
+            // Trigger the thread lifetime end API and verify the default behavior.
+            hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
+            Assert.AreEqual(unchecked((int)0x80004001), hr);
+
+            cw.DefaultReleaseObjects = false;
+            // Trigger the thread lifetime end API and verify the customizable behavior.
+            hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
+            Assert.AreEqual(0, hr);
+
+            // Reset the global wrapper state.
+            cw.DefaultReleaseObjects = true;
+        }
+
         static int Main(string[] doNotUse)
         {
             try
             {
                 ValidateComInterfaceCreation();
-                ValidateRuntimeTrackerScenario();
                 ValidateCreateObjectCachingScenario();
+                ValidatePrecreatedExternalWrapper();
                 ValidateIUnknownImpls();
                 ValidateBadComWrapperImpl();
+                ValidateRuntimeTrackerScenario();
 
                 // Perform all global impacting test scenarios last to
                 // avoid polluting non-global tests.
