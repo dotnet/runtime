@@ -15,6 +15,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 using Xunit.Sdk;
@@ -1510,7 +1511,9 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.MainWindowHandle);
         }
         
-        [Fact(Skip = "Manual test")]
+        [Fact]
+        [OuterLoop]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Pops UI
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
         {
