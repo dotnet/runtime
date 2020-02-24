@@ -26,7 +26,6 @@ public: // Native QCalls for the abstract ComWrappers managed type.
         _In_ QCall::ObjectHandleOnStack comWrappersImpl,
         _In_ void* externalComObject,
         _In_ INT32 flags,
-        _In_ QCall::ObjectHandleOnStack targetTypeMaybe,
         _Inout_ QCall::ObjectHandleOnStack retValue);
 
 public: // Lifetime management for COM Wrappers

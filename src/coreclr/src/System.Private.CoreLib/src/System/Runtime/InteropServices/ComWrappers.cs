@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
     }
 
     /// <summary>
-    /// Enumeration of flags for <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags, Type?)"/>.
+    /// Enumeration of flags for <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags)"/>.
     /// </summary>
     [Flags]
     public enum CreateObjectFlags
@@ -151,23 +151,21 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="externalComObject">Object to import for usage into the .NET runtime.</param>
         /// <param name="flags">Flags used to describe the external object.</param>
-        /// <param name="targetType">An optional <see cref="System.Type"/> that represents the type of the wrapper for the external object</param>
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
-        public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, Type? targetType)
+        public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {
             if (externalComObject == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(externalComObject));
 
             ComWrappers impl = this;
-            Type? targetTypeLocal = targetType;
             object? retValue = null;
-            GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack.Create(ref impl), externalComObject, flags, ObjectHandleOnStack.Create(ref targetTypeLocal), ObjectHandleOnStack.Create(ref retValue));
+            GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack.Create(ref impl), externalComObject, flags, ObjectHandleOnStack.Create(ref retValue));
 
             return retValue!;
         }
 
         [DllImport(RuntimeHelpers.QCall)]
-        private static extern void GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack comWrappersImpl, IntPtr externalComObject, CreateObjectFlags flags, ObjectHandleOnStack targetType, ObjectHandleOnStack retValue);
+        private static extern void GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack comWrappersImpl, IntPtr externalComObject, CreateObjectFlags flags, ObjectHandleOnStack retValue);
 
         /// <summary>
         /// Create a managed object for the object pointed at by <paramref name="agileObjectRef"/> respecting the values of <paramref name="flags"/>.
@@ -175,18 +173,17 @@ namespace System.Runtime.InteropServices
         /// <param name="externalComObject">Object to import for usage into the .NET runtime.</param>
         /// <param name="agileObjectRef">IAgileReference pointing at the object to import into the .NET runtime.</param>
         /// <param name="flags">Flags used to describe the external object.</param>
-        /// <param name="targetType">An optional <see cref="System.Type"/> that represents the type of the wrapper for the external object</param>
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
         /// <remarks>
         /// The <paramref name="agileObjectRef"/> is an <see href="https://docs.microsoft.com/windows/win32/api/objidl/nn-objidl-iagilereference">IAgileReference</see> instance. This type should be used to ensure the associated external object, if not known to be free-threaded, is released from the correct COM apartment.
         ///
-        /// If the object cannot be created and <code>null</code> is returned, the call to <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags, Type?)"/> will throw a <see cref="System.ArgumentNullException"/>.
+        /// If the object cannot be created and <code>null</code> is returned, the call to <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags)"/> will throw a <see cref="System.ArgumentNullException"/>.
         /// </remarks>
-        protected abstract object? CreateObject(IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags, Type? targetType);
+        protected abstract object CreateObject(IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags);
 
         // Call to execute the abstract instance function
-        internal static object? CallCreateObject(ComWrappers? comWrappersImpl, IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags, Type? targetType)
-            => (comWrappersImpl ?? s_globalInstance!).CreateObject(externalComObject, agileObjectRef, flags, targetType);
+        internal static object CallCreateObject(ComWrappers? comWrappersImpl, IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags)
+            => (comWrappersImpl ?? s_globalInstance!).CreateObject(externalComObject, agileObjectRef, flags);
 
         /// <summary>
         /// Called when a request is made for a collection of objects to be released.

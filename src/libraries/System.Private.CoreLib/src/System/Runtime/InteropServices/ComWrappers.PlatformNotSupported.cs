@@ -49,12 +49,12 @@ namespace System.Runtime.InteropServices
 
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
-        public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, Type? targetType)
+        public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {
             throw new PlatformNotSupportedException();
         }
 
-        protected abstract object? CreateObject(IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags, Type? targetType);
+        protected abstract object CreateObject(IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags);
 
         protected virtual void ReleaseObjects(IEnumerable objects)
         {
