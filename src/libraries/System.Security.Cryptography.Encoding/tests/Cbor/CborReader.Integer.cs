@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             switch (header.MajorType)
             {
-                case CborMajorType.PositiveInteger:
+                case CborMajorType.UnsignedInteger:
                     ulong value = ReadUnsignedInteger(in header, out int additionalBytes);
                     AdvanceBuffer(1 + additionalBytes);
                     return value;
@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             switch (header.MajorType)
             {
-                case CborMajorType.PositiveInteger:
+                case CborMajorType.UnsignedInteger:
                     value = ReadUnsignedInteger(in header, out int additionalBytes);
                     AdvanceBuffer(1 + additionalBytes);
                     return true;
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             switch (header.MajorType)
             {
-                case CborMajorType.PositiveInteger:
+                case CborMajorType.UnsignedInteger:
                     value = checked((long)ReadUnsignedInteger(in header, out additionalBytes));
                     AdvanceBuffer(1 + additionalBytes);
                     return value;
@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             switch (header.MajorType)
             {
-                case CborMajorType.PositiveInteger:
+                case CborMajorType.UnsignedInteger:
                     result = ReadUnsignedInteger(in header, out additionalBytes);
                     if (result > long.MaxValue)
                     {

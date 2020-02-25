@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Implements major type 0 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public void Write(ulong value)
         {
-            WriteUnsignedInteger(CborMajorType.PositiveInteger, value);
+            WriteUnsignedInteger(CborMajorType.UnsignedInteger, value);
         }
 
         // Implements major type 0,1 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
             else
             {
-                WriteUnsignedInteger(CborMajorType.PositiveInteger, (ulong)value);
+                WriteUnsignedInteger(CborMajorType.UnsignedInteger, (ulong)value);
             }
         }
 

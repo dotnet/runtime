@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal enum CborMajorType : byte
     {
-        PositiveInteger = 0,
+        UnsignedInteger = 0,
         NegativeInteger = 1,
         ByteString = 2,
         Utf8String = 3,
