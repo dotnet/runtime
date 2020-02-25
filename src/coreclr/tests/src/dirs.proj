@@ -19,8 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <AllProjects Include="*\**\*.csproj" Exclude="@(DisabledProjects)" />
-      <AllProjects Include="*\**\*.ilproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="GC/API/GC/AddMemoryPressureTest.csproj" Exclude="@(DisabledProjects)" />
     </ItemGroup>
 
     <!-- All the test projects are partitioned into the test groups as defined below.

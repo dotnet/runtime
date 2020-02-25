@@ -7,7 +7,7 @@ build_test_wrappers()
 
 	if [[ __Mono -eq 1 ]]; then
 		echo "Excluding mono test failures"
-		export __EXCLUDE_MONO_FAILURES="true"
+		export EXCLUDE_MONO_FAILURES="true"
 	fi
 
         __Exclude="${__ProjectDir}/tests/issues.targets"
@@ -32,7 +32,7 @@ build_test_wrappers()
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild -verbosity:diag \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TargetsWindows=false $__Logging /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch /p:EXCLUDE_MONO_FAILURES=$__EXCLUDE_MONO_FAILURES"
+        nextCommand="\"${__DotNetCli}\" msbuild -verbosity:diag \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TargetsWindows=false $__Logging /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch"
         eval $nextCommand
 
         local exitCode="$?"
