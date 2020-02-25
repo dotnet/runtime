@@ -34,35 +34,34 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             if (value < 24)
             {
                 EnsureWriteCapacity(1);
-                _buffer[0] = new CborDataItem(type, (byte)value).InitialByte;
-                _offset++;
+                _buffer[_offset++] = new CborDataItem(type, (byte)value).InitialByte;
             }
             else if (value <= byte.MaxValue)
             {
                 EnsureWriteCapacity(2);
-                _buffer[0] = new CborDataItem(type, 24).InitialByte;
-                _buffer[1] = (byte)value;
+                _buffer[_offset] = new CborDataItem(type, 24).InitialByte;
+                _buffer[_offset + 1] = (byte)value;
                 _offset += 2;
             }
             else if (value <= ushort.MaxValue)
             {
                 EnsureWriteCapacity(3);
-                _buffer[0] = new CborDataItem(type, 25).InitialByte;
-                BinaryPrimitives.WriteUInt16BigEndian(_buffer.AsSpan(1), (ushort)value);
+                _buffer[_offset] = new CborDataItem(type, 25).InitialByte;
+                BinaryPrimitives.WriteUInt16BigEndian(_buffer.AsSpan(_offset + 1), (ushort)value);
                 _offset += 3;
             }
             else if (value <= uint.MaxValue)
             {
                 EnsureWriteCapacity(5);
-                _buffer[0] = new CborDataItem(type, 26).InitialByte;
-                BinaryPrimitives.WriteUInt32BigEndian(_buffer.AsSpan(1), (uint)value);
+                _buffer[_offset] = new CborDataItem(type, 26).InitialByte;
+                BinaryPrimitives.WriteUInt32BigEndian(_buffer.AsSpan(_offset + 1), (uint)value);
                 _offset += 5;
             }
             else
             {
                 EnsureWriteCapacity(9);
-                _buffer[0] = new CborDataItem(type, 27).InitialByte;
-                BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(1), value);
+                _buffer[_offset] = new CborDataItem(type, 27).InitialByte;
+                BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(_offset + 1), value);
                 _offset += 9;
             }
         }
