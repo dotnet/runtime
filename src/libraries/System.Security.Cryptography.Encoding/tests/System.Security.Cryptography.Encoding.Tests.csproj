@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
-    <NoWarn>8002</NoWarn>
   </PropertyGroup>
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
@@ -50,7 +49,6 @@
     <Compile Include="Asn1\Writer\WriteUtcTime.cs" />
     <Compile Include="Asn1\Writer\WriteUtf8String.cs" />
     <Compile Include="Cbor.Tests\CborReaderTests.String.cs" />
-    <Compile Include="Cbor.Tests\CborRoundtripTests.cs" />
     <Compile Include="Cbor.Tests\CborWriterTests.Integer.cs" />
     <Compile Include="Cbor.Tests\CborWriterTests.String.cs" />
     <Compile Include="Cbor\CborDataItem.cs" />
@@ -72,8 +70,5 @@
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs">
       <Link>Common\System\Memory\PointerMemoryManager.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="FsCheck.Xunit" Version="2.14.0" />
   </ItemGroup>
 </Project>
