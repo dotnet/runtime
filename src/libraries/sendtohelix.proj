@@ -62,8 +62,8 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixCommand)' == ''">    
-    <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(TargetsWindows)' == 'true'">set MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
-    <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(TargetsWindows)' == 'false'">export MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
+    <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(OSGroup)' == 'Windows_NT'">set MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
+    <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(OSGroup)' != 'Windows_NT'">export MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
 
     <!--
       For windows we need to use call, since the command is going to be called from a bat script created by Helix
@@ -108,9 +108,6 @@
         <Timeout>$(_timeoutSpan)</Timeout>
       </HelixWorkItem>
     </ItemGroup>
-
-    <Message Importance="High" Text="MonoEnvOptions: $(MonoEnvOptions)" />
-
   </Target>
 
   <Target Name="PrintHelixQueues">
