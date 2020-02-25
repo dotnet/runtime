@@ -4,11 +4,11 @@
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
-    internal ref partial struct CborReader
+    internal ref partial struct CborValueReader
     {
         private ReadOnlySpan<byte> _buffer;
 
-        public CborReader(ReadOnlySpan<byte> buffer)
+        public CborValueReader(ReadOnlySpan<byte> buffer)
         {
             _buffer = buffer;
         }

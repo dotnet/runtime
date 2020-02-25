@@ -6,7 +6,7 @@ using System.Buffers.Binary;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
-    internal ref partial struct CborReader
+    internal ref partial struct CborValueReader
     {
         private static readonly System.Text.Encoding s_utf8Encoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 

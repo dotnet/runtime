@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             byte[] expectedValue = hexExpectedValue.HexToByteArray();
-            var reader = new CborReader(encoding);
+            var reader = new CborValueReader(encoding);
             byte[] output = reader.ReadByteString();
             Assert.Equal(expectedValue, output);
         }
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void Utf8StringReaderTests(string expectedValue, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            var reader = new CborValueReader(data);
             string actualResult = reader.ReadUtf8String();
             Assert.Equal(expectedValue, actualResult);
         }

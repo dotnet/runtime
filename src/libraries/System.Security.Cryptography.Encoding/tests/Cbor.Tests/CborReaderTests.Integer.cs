@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void Int64ReaderTests(long expectedResult, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            var reader = new CborValueReader(data);
             long actualResult = reader.ReadInt64();
             Assert.Equal(expectedResult, actualResult);
         }
@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void UInt64ReaderTests(ulong expectedResult, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborReader(data);
+            var reader = new CborValueReader(data);
             ulong actualResult = reader.ReadUInt64();
             Assert.Equal(expectedResult, actualResult);
         }

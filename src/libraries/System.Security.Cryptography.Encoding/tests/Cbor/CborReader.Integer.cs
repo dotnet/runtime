@@ -6,7 +6,7 @@ using System.Buffers.Binary;
 
 namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
-    internal ref partial struct CborReader
+    internal ref partial struct CborValueReader
     {
         // Implements major type 0 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public ulong ReadUInt64()
