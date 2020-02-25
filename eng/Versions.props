@@ -19,7 +19,7 @@
     <UsingToolIbcOptimization>true</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
     <!-- Paths used during restore -->
-    <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and ('$(ConfigurationGroup)' == 'Release' or '$(Configuration)' == 'Release')">true</EnableNgenOptimization>
+    <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and '$(Configuration)' == 'Release'">true</EnableNgenOptimization>
     <IbcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'ibc'))</IbcOptimizationDataDir>
     <XmlDocDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'docs'))</XmlDocDir>
     <!-- Blob storage container that has the "Latest" channel to publish to. -->
