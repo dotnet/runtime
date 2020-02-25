@@ -74,6 +74,8 @@ jobs:
     - subset: clrjit
       include:
       - src/coreclr/src/jit/*
+      - eng/pipelines/runtime.yml
+      - eng/pipelines/coreclr/templates/crossgen-comparison-job.yml
     - subset: mono
       include:
       - src/libraries/System.Private.CoreLib/*
