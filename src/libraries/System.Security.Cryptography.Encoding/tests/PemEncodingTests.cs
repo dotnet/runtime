@@ -18,10 +18,13 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
-        public static void Find_Simple()
+        public static void Find_Success_Simple()
         {
             string content = "-----BEGIN TEST-----\nZm9v\n-----END TEST-----";
-            PemFields fields = PemEncoding.Find(content);
+            PemFields fields = AssertPemFound(content,
+                expectedLocation: 0..44,
+                expectedBase64: 21..25,
+                expectedLabel: 11..15);
             Assert.Equal("TEST", content[fields.Label]);
             Assert.Equal(content, content[fields.Location]);
             Assert.Equal("Zm9v", content[fields.Base64Data]);
@@ -29,116 +32,125 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
-        public static void TryFind_True_IncompletePreebPrefixed()
+        public static void Find_Success_IncompletePreebPrefixed()
         {
             string content = "-----BEGIN FAIL -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
-            Assert.True(PemEncoding.TryFind(content, out _));
+            AssertPemFound(content,
+                expectedLocation: 16..60,
+                expectedBase64: 37..41,
+                expectedLabel: 27..31);
         }
 
         [Fact]
-        public static void TryFind_True_CompletePreebPrefixedDifferentLabel()
+        public static void Find_Success_CompletePreebPrefixedDifferentLabel()
         {
             string content = "-----BEGIN FAIL----- -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
-            Assert.True(PemEncoding.TryFind(content, out PemFields fields));
+            PemFields fields = AssertPemFound(content,
+                expectedLocation: 21..65,
+                expectedBase64: 42..46,
+                expectedLabel: 32..36);
+
+            Assert.Equal("TEST", content[fields.Label]);
         }
 
         [Fact]
-        public static void TryFind_True_CompletePreebPrefixedSameLabel()
+        public static void Find_Success_CompletePreebPrefixedSameLabel()
         {
             string content = "-----BEGIN TEST----- -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
-            Assert.True(PemEncoding.TryFind(content, out PemFields fields));
-            Assert.Equal(32..36, fields.Label);
-            Assert.Equal(42..46, fields.Base64Data);
-            Assert.Equal(21..65, fields.Location);
-            Assert.Equal(3, fields.DecodedDataLength);
+            PemFields fields = AssertPemFound(content,
+                expectedLocation: 21..65,
+                expectedBase64: 42..46,
+                expectedLabel: 32..36);
+
+            Assert.Equal("TEST", content[fields.Label]);
         }
 
         [Fact]
-        public static void TryFind_True_PreebEndingOverlap()
+        public static void Find_Success_PreebEndingOverlap()
         {
             string content = "-----BEGIN TEST -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
-            Assert.True(PemEncoding.TryFind(content, out PemFields fields));
-            Assert.Equal(27..31, fields.Label);
-            Assert.Equal(37..41, fields.Base64Data);
-            Assert.Equal(16..60, fields.Location);
+            PemFields fields = AssertPemFound(content,
+                expectedLocation: 16..60,
+                expectedBase64: 37..41,
+                expectedLabel: 27..31);
+
+            Assert.Equal("TEST", content[fields.Label]);
             Assert.Equal(3, fields.DecodedDataLength);
         }
 
         [Fact]
-        public static void Find_LargeLabel()
+        public static void Find_Success_LargeLabel()
         {
             string label = new string('A', 275);
             string content = $"-----BEGIN {label}-----\nZm9v\n-----END {label}-----";
-            PemFields fields = PemEncoding.Find(content);
+            PemFields fields = AssertPemFound(content,
+                expectedLocation: 0..587,
+                expectedBase64: 292..296,
+                expectedLabel: 11..286);
+
             Assert.Equal(label, content[fields.Label]);
-            Assert.Equal(content, content[fields.Location]);
-            Assert.Equal("Zm9v", content[fields.Base64Data]);
-            Assert.Equal(3, fields.DecodedDataLength);
         }
 
         [Fact]
-        public static void TryFind_True_Minimum()
+        public static void Find_Success_Minimum()
         {
             string content = "-----BEGIN ----------END -----";
-            Assert.True(PemEncoding.TryFind(content, out PemFields fields));
-            Assert.Equal(string.Empty, content[fields.Label]);
-            Assert.Equal(content, content[fields.Location]);
-            Assert.Equal(string.Empty, content[fields.Base64Data]);
+            PemFields fields = AssertPemFound(content,
+                expectedLocation: 0..30,
+                expectedBase64: 16..16,
+                expectedLabel: 11..11);
             Assert.Equal(0, fields.DecodedDataLength);
         }
 
         [Fact]
-        public static void TryFind_True_PrecedingLinesAndWhitespaceBeforePreeb()
+        public static void Find_Success_PrecedingContentAndWhitespaceBeforePreeb()
         {
-            string content = "boop\n   -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
-            Assert.True(PemEncoding.TryFind(content, out PemFields fields));
-            Assert.Equal("TEST", content[fields.Label]);
-            Assert.Equal(content["boop\n   ".Length..], content[fields.Location]);
-            Assert.Equal("Zm9v", content[fields.Base64Data]);
-            Assert.Equal(3, fields.DecodedDataLength);
+            string content = "boop   -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
+            AssertPemFound(content,
+                expectedLocation: 7..51,
+                expectedBase64: 28..32,
+                expectedLabel: 18..22);
         }
 
         [Fact]
-        public static void TryFind_True_TrailingWhitespaceAfterPosteb()
+        public static void Find_Success_TrailingWhitespaceAfterPosteb()
         {
             string content = "-----BEGIN TEST-----\nZm9v\n-----END TEST-----    ";
-            Assert.True(PemEncoding.TryFind(content, out PemFields fields));
-            Assert.Equal("TEST", content[fields.Label]);
-            Assert.Equal(content[..^"    ".Length], content[fields.Location]);
-            Assert.Equal("Zm9v", content[fields.Base64Data]);
-            Assert.Equal(3, fields.DecodedDataLength);
+            AssertPemFound(content,
+                expectedLocation: 0..44,
+                expectedBase64: 21..25,
+                expectedLabel: 11..15);
         }
 
         [Fact]
-        public static void TryFind_True_EmptyLabel()
+        public static void Find_Success_EmptyLabel()
         {
             string content = "-----BEGIN -----\nZm9v\n-----END -----";
-            Assert.True(PemEncoding.TryFind(content, out PemFields fields));
-            Assert.Equal(11..11, fields.Label);
-            Assert.Equal(content, content[fields.Location]);
-            Assert.Equal("Zm9v", content[fields.Base64Data]);
-            Assert.Equal(3, fields.DecodedDataLength);
+            AssertPemFound(content,
+                expectedLocation: 0..36,
+                expectedBase64: 17..21,
+                expectedLabel: 11..11);
         }
 
         [Fact]
-        public static void TryFind_True_EmptyContent_OneLine()
+        public static void Find_Success_EmptyContent_OneLine()
         {
             string content = "-----BEGIN EMPTY----------END EMPTY-----";
-            Assert.True(PemEncoding.TryFind(content, out PemFields fields));
-            Assert.Equal("EMPTY", content[fields.Label]);
-            Assert.Equal(content, content[fields.Location]);
-            Assert.Equal(21..21, fields.Base64Data);
+            PemFields fields = AssertPemFound(content,
+                expectedLocation: 0..40,
+                expectedBase64: 21..21,
+                expectedLabel: 11..16);
             Assert.Equal(0, fields.DecodedDataLength);
         }
 
         [Fact]
-        public static void TryFind_True_EmptyContent_ManyLinesOfWhitespace()
+        public static void Find_Success_EmptyContent_ManyLinesOfWhitespace()
         {
             string content = "-----BEGIN EMPTY-----\n\t\n\t\n\t  \n-----END EMPTY-----";
-            Assert.True(PemEncoding.TryFind(content, out PemFields fields));
-            Assert.Equal("EMPTY", content[fields.Label]);
-            Assert.Equal(content, content[fields.Location]);
-            Assert.Equal(30..30, fields.Base64Data);
+            PemFields fields = AssertPemFound(content,
+                expectedLocation: 0..49,
+                expectedBase64: 30..30,
+                expectedLabel: 11..16);
             Assert.Equal(0, fields.DecodedDataLength);
         }
 
@@ -250,52 +262,52 @@ Zm9v
         [InlineData("te\x19st")]
         [InlineData("te  st")] //two spaces
         [InlineData("te- st")]
-        public static void TryFind_False_InvalidLabel(string label)
+        public static void Find_Fail_InvalidLabel(string label)
         {
             string content = $"-----BEGIN {label}-----\nZm9v\n-----END {label}-----";
-            Assert.False(PemEncoding.TryFind(content, out _));
+            AssertNoPemFound(content);
         }
 
         [Fact]
-        public static void TryFind_False_InvalidBase64()
+        public static void Find_Fail_InvalidBase64()
         {
             string content = "-----BEGIN TEST-----\n$$$$\n-----END TEST-----";
-            Assert.False(PemEncoding.TryFind(content, out _));
+            AssertNoPemFound(content);
         }
 
         [Fact]
-        public static void TryFind_False_PrecedingLinesAndSignificantCharsBeforePreeb()
+        public static void Find_Fail_PrecedingLinesAndSignificantCharsBeforePreeb()
         {
             string content = "boop\nbeep-----BEGIN TEST-----\nZm9v\n-----END TEST-----";
-            Assert.False(PemEncoding.TryFind(content, out _));
+            AssertNoPemFound(content);
         }
 
         [Fact]
-        public static void TryFind_False_ContentOnPostEbLine()
+        public static void Find_Fail_ContentOnPostEbLine()
         {
             string content = "-----BEGIN TEST-----\nZm9v\n-----END TEST-----boop";
-            Assert.False(PemEncoding.TryFind(content, out _));
+            AssertNoPemFound(content);
         }
 
         [Fact]
-        public static void TryFind_False_MismatchedLabels()
+        public static void Find_Fail_MismatchedLabels()
         {
             string content = "-----BEGIN TEST-----\nZm9v\n-----END FAIL-----";
-            Assert.False(PemEncoding.TryFind(content, out _));
+            AssertNoPemFound(content);
         }
 
         [Fact]
-        public static void TryFind_False_NoPostEncapBoundary()
+        public static void Find_Fail_NoPostEncapBoundary()
         {
             string content = "-----BEGIN TEST-----\nZm9v\n";
-            Assert.False(PemEncoding.TryFind(content, out _));
+            AssertNoPemFound(content);
         }
 
         [Fact]
-        public static void TryFind_False_IncompletePostEncapBoundary()
+        public static void Find_Fail_IncompletePostEncapBoundary()
         {
             string content = "-----BEGIN TEST-----\nZm9v\n-----END TEST";
-            Assert.False(PemEncoding.TryFind(content, out _));
+            AssertNoPemFound(content);
         }
 
         [Fact]
@@ -520,6 +532,41 @@ Zm9v
                 "AAECAwQFBgcICQABAgMEBQYHCAkAAQIDBAUGBwgJAAECAwQFBgcICQABAgMEBQYH\n" +
                 "-----END FANCY DATA-----";
             Assert.Equal(expected, result);
+        }
+
+        private static PemFields AssertPemFound(
+            ReadOnlySpan<char> input,
+            Range expectedLocation,
+            Range expectedBase64,
+            Range expectedLabel)
+        {
+            bool tryFind = PemEncoding.TryFind(input, out PemFields tryFields);
+            Assert.True(tryFind, "TryFind did not succeed but was expected to");
+
+            PemFields fields = PemEncoding.Find(input);
+            Assert.Equal(fields.Base64Data, tryFields.Base64Data);
+            Assert.Equal(fields.Location, tryFields.Location);
+            Assert.Equal(fields.Label, tryFields.Label);
+            Assert.Equal(fields.DecodedDataLength, tryFields.DecodedDataLength);
+
+            return fields;
+        }
+
+        private static void AssertNoPemFound(ReadOnlySpan<char> input)
+        {
+            bool tryFind = PemEncoding.TryFind(input, out _);
+            Assert.False(tryFind, "TryFind did succeed but was not expected to");
+
+            //Can't use AssertExtensions because it requires capturing a ref struct
+            try
+            {
+                PemEncoding.Find(input);
+            }
+            catch (ArgumentException ae)
+            {
+                Assert.Equal("pemData", ae.ParamName);
+                // Pass
+            }
         }
     }
 }
