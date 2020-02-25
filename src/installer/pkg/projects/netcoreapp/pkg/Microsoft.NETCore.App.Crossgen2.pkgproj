@@ -60,6 +60,7 @@
     <MSBuild Projects="$(CoreClrProjectRoot)src/tools/crossgen2/crossgen2/crossgen2.csproj"
             Targets="Restore"
             Properties="
+            Configuration=$(RuntimeConfiguration);
             SelfContained=true;
             RuntimeIdentifier=$(PackageRID)">
     <Output TaskParameter="TargetOutputs" ItemName="Crossgen2File" />
@@ -68,6 +69,7 @@
     <MSBuild Projects="$(CoreClrProjectRoot)src/tools/crossgen2/crossgen2/crossgen2.csproj"
             Targets="GenerateDepsJsonFile"
             Properties="
+            Configuration=$(RuntimeConfiguration);
             GenerateDependencyFile=true;
             IncludeFileVersionsInDependencyFile=false;
             SelfContained=true;
