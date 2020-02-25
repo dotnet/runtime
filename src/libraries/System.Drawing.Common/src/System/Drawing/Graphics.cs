@@ -1844,7 +1844,7 @@ namespace System.Drawing
             }
         }
 
-        public void DrawImage(Image image, PointF[] destPoints, RectangleF srcRect, GraphicsUnit srcUnit, ImageAttributes imageAttr)
+        public void DrawImage(Image image, PointF[] destPoints, RectangleF srcRect, GraphicsUnit srcUnit, ImageAttributes? imageAttr)
         {
             DrawImage(image, destPoints, srcRect, srcUnit, imageAttr, null, 0);
         }
