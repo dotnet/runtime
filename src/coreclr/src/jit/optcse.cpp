@@ -2461,6 +2461,28 @@ public:
                     extra_yes_cost *= 2; // full cost if we are being Conservative
                 }
             }
+
+#ifdef FEATURE_SIMD
+            // SIMD types will cause a SIMD register to be spilled/restored
+            //
+            if (varTypeIsSIMD(candidate->Expr()->TypeGet()))
+            {
+                int spillSimdRegInProlog = 1;
+
+                // If we have a SIMD32 that is live across a call we have even higher spill costs
+                //
+                if (candidate->Expr()->TypeGet() == TYP_SIMD32)
+                {
+                    spillSimdRegInProlog++; // we likely need to spill an extra register to save the upper half
+
+                    // Increase the cse_use_cost since at use sites we have to generate code to spill/restore
+                    // the upper half of the YMM register
+                    cse_use_cost += 2;
+                }
+
+                extra_yes_cost = (BB_UNITY_WEIGHT * spillSimdRegInProlog) * 3;
+            }
+#endif // FEATURE_SIMD
         }
 
         // estimate the cost from lost codesize reduction if we do not perform the CSE
