@@ -4639,7 +4639,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     else
     {
         noway_assert(targetType != TYP_STRUCT);
-        assert(!varTypeIsFloating(targetType) || (targetType == op1->TypeGet()));
+        assert(varTypeUsesFloatReg(targetType) == varTypeUsesFloatReg(op1->TypeGet()));
+        assert(!varTypeUsesFloatReg(targetType) || (emitTypeSize(targetType) == emitTypeSize(op1->TypeGet())));
 
         unsigned   lclNum = tree->GetLclNum();
         LclVarDsc* varDsc = &(compiler->lvaTable[lclNum]);
