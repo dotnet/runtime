@@ -85,15 +85,16 @@ namespace R2RDump
                 if (_r2r.Composite)
                 {
                     WriteDivider("Component Assembly Sections");
-                    for (int assemblyIndex = 0; assemblyIndex < _r2r.ReadyToRunAssemblyHeaders.Count; assemblyIndex++)
+                    int assemblyIndex = 0;
+                    foreach (string assemblyName in _r2r.ManifestReferenceAssemblies.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key))
                     {
-                        string assemblyName = _r2r.ManifestReferenceAssemblies[assemblyIndex];
                         WriteDivider($@"Component Assembly [{assemblyIndex}]: {assemblyName}");
                         ReadyToRunCoreHeader assemblyHeader = _r2r.ReadyToRunAssemblyHeaders[assemblyIndex];
                         foreach (ReadyToRunSection section in NormalizedSections(assemblyHeader))
                         {
                             DumpSection(section);
                         }
+                        assemblyIndex++;
                     }
 
                 }
@@ -420,9 +421,9 @@ namespace R2RDump
                         }
                     }
 
-                    _writer.WriteLine($"Manifest metadata AssemblyRef's ({_r2r.ManifestReferenceAssemblies.Count()} entries):");
+                    _writer.WriteLine($"Manifest metadata AssemblyRef's ({_r2r.ManifestReferenceAssemblies.Count} entries):");
                     int manifestAsmIndex = 0;
-                    foreach (string manifestReferenceAssembly in _r2r.ManifestReferenceAssemblies)
+                    foreach (string manifestReferenceAssembly in _r2r.ManifestReferenceAssemblies.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key))
                     {
                         _writer.WriteLine($"[ID 0x{manifestAsmIndex + assemblyRefCount + 2:X2}]: {manifestReferenceAssembly}");
                         manifestAsmIndex++;

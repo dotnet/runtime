@@ -130,16 +130,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// The list originates in the top-level R2R image and is copied
         /// to all reference assemblies for the sake of simplicity.
         /// </summary>
-        public IList<string> ManifestReferenceAssemblies
-        {
-            get
-            {
-                EnsureManifestReferenceNames();
-                return _manifestReferenceNames;
-            }
-        }
-
-        public Dictionary<string, int> ManifestReferenceIndices
+        public Dictionary<string, int> ManifestReferenceAssemblies
         {
             get
             {
