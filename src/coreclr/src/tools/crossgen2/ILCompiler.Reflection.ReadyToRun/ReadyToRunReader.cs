@@ -84,8 +84,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         // ManifestReferences
         private MetadataReader _manifestReader;
         private List<AssemblyReferenceHandle> _manifestReferences;
-        private List<string> _manifestReferenceNames;
-        private Dictionary<string, int> _manifestReferenceIndices;
+        private Dictionary<string, int> _manifestReferenceAssemblies;
 
         // ExceptionInfo
         private Dictionary<int, EHInfo> _runtimeFunctionToEHInfo;
@@ -134,8 +133,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             get
             {
-                EnsureManifestReferenceNames();
-                return _manifestReferenceIndices;
+                EnsureManifestReferenceAssemblies();
+                return _manifestReferenceAssemblies;
             }
         }
 
@@ -558,20 +557,18 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        private void EnsureManifestReferenceNames()
+        private void EnsureManifestReferenceAssemblies()
         {
-            if (_manifestReferenceNames != null)
+            if (_manifestReferenceAssemblies != null)
             {
                 return;
             }
             EnsureManifestReferences();
-            _manifestReferenceNames = new List<string>(_manifestReferences.Count);
-            _manifestReferenceIndices = new Dictionary<string, int>(_manifestReferences.Count);
+            _manifestReferenceAssemblies = new Dictionary<string, int>(_manifestReferences.Count);
             for (int assemblyIndex = 0; assemblyIndex < _manifestReferences.Count; assemblyIndex++)
             {
                 string assemblyName = ManifestReader.GetString(ManifestReader.GetAssemblyReference(_manifestReferences[assemblyIndex]).Name);
-                _manifestReferenceNames.Add(assemblyName);
-                _manifestReferenceIndices.Add(assemblyName, assemblyIndex);
+                _manifestReferenceAssemblies.Add(assemblyName, assemblyIndex);
             }
         }
 
