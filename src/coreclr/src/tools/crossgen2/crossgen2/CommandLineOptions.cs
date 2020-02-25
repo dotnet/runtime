@@ -14,6 +14,7 @@ namespace ILCompiler
         public FileInfo[] UnrootedInputFilePaths { get; set; }
         public FileInfo[] Mibc { get; set; }
         public string[] Reference { get; set; }
+        public string[] InstructionSet { get; set; }
         public FileInfo OutputFilePath { get; set; }
         public bool Optimize { get; set; }
         public bool OptimizeSpace { get; set; }
@@ -70,6 +71,13 @@ namespace ILCompiler
                     { 
                         Arity = arbitraryArity
                     } 
+                },
+                new Option(new[] { "--instruction-set" }, SR.InstructionSets)
+                {
+                    Argument = new Argument<string[]>() 
+                    {
+                        Arity = arbitraryArity
+                    }
                 },
                 new Option(new[] { "--mibc", "-m" }, SR.MibcFiles)
                 {

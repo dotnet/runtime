@@ -149,6 +149,41 @@ namespace ILCompiler
                     throw new CommandLineException(SR.TargetOSUnsupported);
             }
 
+            if (_commandLineOptions.InstructionSet.Length > 0)
+            {
+                // At this time, instruction sets may only be specified with --input-bubble, as
+                // we do not yet have a stable ABI for all vector parameter/return types.
+                if (!_commandLineOptions.InputBubble)
+                    throw new CommandLineException(SR.InstructionSetWithoutInputBubble);
+
+                // Normalize instruction set format to include implied +.
+                for (int i = 0; i < _commandLineOptions.InstructionSet.Length; i++)
+                {
+                    string instructionSet = _commandLineOptions.InstructionSet[i];
+
+                    if (String.IsNullOrEmpty(instructionSet.Length))
+                        throw new CommandLineException(String.Format(SR.InstructionSetMustNotBe, ""));
+
+                    char lastChar = instructionSet[instructionSet.Length - 1];
+                    if ((lastChar != '+') && (lastChar != '-'))
+                    {
+                        instructionSet = instructionSet + "+";
+                        _commandLineOptions.InstructionSet[i] = instructionSet;
+                    }
+                }
+
+                Dictionary<string, bool> instructionSetSpecification = new Dictionary<string, bool>();
+                foreach (string instructionSetSpecifier in _commandLineOptions.InstructionSet)
+                {
+                    string instructionSet = instructionSetSpecifier.Substring(0, instructionSetSpecifier.Length - 1);
+                    bool enabled = 
+                    if ((_targetArchitecture == TargetArchitecture.X64) || (_targetArchitecture == TargetArchitecture.X86);
+                    {
+                        
+                    }
+                }
+            }
+
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
                 ICompilation compilation;
