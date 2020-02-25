@@ -18,6 +18,7 @@ using Internal.Runtime;
 using Internal.ReadyToRunConstants;
 
 using Debug = System.Diagnostics.Debug;
+using System.Linq;
 
 namespace ILCompiler.Reflection.ReadyToRun
 {
@@ -83,12 +84,13 @@ namespace ILCompiler.Reflection.ReadyToRun
         // ManifestReferences
         private MetadataReader _manifestReader;
         private List<AssemblyReferenceHandle> _manifestReferences;
+        private Dictionary<string, int> _manifestReferenceAssemblies;
 
         // ExceptionInfo
         private Dictionary<int, EHInfo> _runtimeFunctionToEHInfo;
 
         // Methods
-        private List<ReadyToRunMethod> _methods;
+        private Dictionary<ReadyToRunSection, List<ReadyToRunMethod>> _methods;
         private List<InstanceMethod> _instanceMethods;
 
         // ImportSections
@@ -96,7 +98,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private Dictionary<int, string> _importCellNames;
 
         // AvailableType
-        private List<string> _availableTypes;
+        private Dictionary<ReadyToRunSection, List<string>> _availableTypes;
 
         // CompilerIdentifier
         private string _compilerIdentifier;
@@ -127,15 +129,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// The list originates in the top-level R2R image and is copied
         /// to all reference assemblies for the sake of simplicity.
         /// </summary>
-        public IEnumerable<string> ManifestReferenceAssemblies
+        public Dictionary<string, int> ManifestReferenceAssemblies
         {
             get
             {
-                // TODO (refactoring) make this a IReadOnlyList<string> to be consistent with the rest of the interface
-                foreach (AssemblyReferenceHandle manifestReference in ManifestReferences)
-                {
-                    yield return ManifestReader.GetString(ManifestReader.GetAssemblyReference(manifestReference).Name);
-                }
+                EnsureManifestReferenceAssemblies();
+                return _manifestReferenceAssemblies;
             }
         }
 
@@ -224,7 +223,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// The runtime functions and method signatures of each method
         /// </summary>
-        public IReadOnlyList<ReadyToRunMethod> Methods
+        public Dictionary<ReadyToRunSection, List<ReadyToRunMethod>> Methods
         {
             get
             {
@@ -248,7 +247,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// The available types from READYTORUN_SECTION_AVAILABLE_TYPES
         /// </summary>
-        public IReadOnlyList<string> AvailableTypes
+        public Dictionary<ReadyToRunSection, List<string>> AvailableTypes
         {
 
             get
@@ -402,7 +401,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 return;
             }
-            _methods = new List<ReadyToRunMethod>();
+
+            _methods = new Dictionary<ReadyToRunSection, List<ReadyToRunMethod>>();
             _instanceMethods = new List<InstanceMethod>();
 
             if (ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection runtimeFunctionSection))
@@ -557,6 +557,21 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
+        private void EnsureManifestReferenceAssemblies()
+        {
+            if (_manifestReferenceAssemblies != null)
+            {
+                return;
+            }
+            EnsureManifestReferences();
+            _manifestReferenceAssemblies = new Dictionary<string, int>(_manifestReferences.Count);
+            for (int assemblyIndex = 0; assemblyIndex < _manifestReferences.Count; assemblyIndex++)
+            {
+                string assemblyName = ManifestReader.GetString(ManifestReader.GetAssemblyReference(_manifestReferences[assemblyIndex]).Name);
+                _manifestReferenceAssemblies.Add(assemblyName, assemblyIndex);
+            }
+        }
+
         private unsafe void EnsureExceptionInfo()
         {
             if (_runtimeFunctionToEHInfo != null)
@@ -659,7 +674,12 @@ namespace ILCompiler.Reflection.ReadyToRun
                         throw new BadImageFormatException("EntryPointRuntimeFunctionId out of bounds");
                     }
                     isEntryPoint[method.EntryPointRuntimeFunctionId] = true;
-                    _methods.Add(method);
+                    if (!_methods.TryGetValue(section, out List<ReadyToRunMethod> sectionMethods))
+                    {
+                        sectionMethods = new List<ReadyToRunMethod>();
+                        _methods.Add(section, sectionMethods);
+                    }
+                    sectionMethods.Add(method);
                 }
             }
         }
@@ -744,7 +764,12 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     isEntryPoint[method.EntryPointRuntimeFunctionId] = true;
                 }
-                _methods.Add(method);
+                if (!Methods.TryGetValue(instMethodEntryPointSection, out List<ReadyToRunMethod> sectionMethods))
+                {
+                    sectionMethods = new List<ReadyToRunMethod>();
+                    Methods.Add(instMethodEntryPointSection, sectionMethods);
+                }
+                sectionMethods.Add(method);
                 _instanceMethods.Add(new InstanceMethod(curParser.LowHashcode, method));
                 curParser = allEntriesEnum.GetNext();
             }
@@ -752,7 +777,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         private void CountRuntimeFunctions(bool[] isEntryPoint)
         {
-            foreach (ReadyToRunMethod method in _methods)
+            foreach (ReadyToRunMethod method in Methods.Values.SelectMany(sectionMethods => sectionMethods))
             {
                 int runtimeFunctionId = method.EntryPointRuntimeFunctionId;
                 if (runtimeFunctionId == -1)
@@ -778,7 +803,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 return;
             }
-            _availableTypes = new List<string>();
+            _availableTypes = new Dictionary<ReadyToRunSection, List<string>>();
             ReadyToRunSection availableTypesSection;
             if (ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.AvailableTypes, out availableTypesSection))
             {
@@ -820,13 +845,23 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     ExportedTypeHandle exportedTypeHandle = MetadataTokens.ExportedTypeHandle((int)rid);
                     string exportedTypeName = GetExportedTypeFullName(metadataReader, exportedTypeHandle);
-                    _availableTypes.Add("exported " + exportedTypeName);
+                    if (!AvailableTypes.TryGetValue(availableTypesSection, out List<string> sectionTypes))
+                    {
+                        sectionTypes = new List<string>();
+                        AvailableTypes.Add(availableTypesSection, sectionTypes);
+                    }
+                    sectionTypes.Add("exported " + exportedTypeName);
                 }
                 else
                 {
                     TypeDefinitionHandle typeDefHandle = MetadataTokens.TypeDefinitionHandle((int)rid);
                     string typeDefName = MetadataNameFormatter.FormatHandle(metadataReader, typeDefHandle);
-                    _availableTypes.Add(typeDefName);
+                    if (!AvailableTypes.TryGetValue(availableTypesSection, out List<string> sectionTypes))
+                    {
+                        sectionTypes = new List<string>();
+                        AvailableTypes.Add(availableTypesSection, sectionTypes);
+                    }
+                    sectionTypes.Add(typeDefName);
                 }
 
                 curParser = allEntriesEnum.GetNext();
