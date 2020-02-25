@@ -1817,7 +1817,7 @@ namespace System
             {
                 for (start = 0; start < Length; start++)
                 {
-                    int i = 0;
+                    int i;
                     char ch = this[start];
                     for (i = 0; i < trimCharsLength; i++)
                     {
@@ -1838,7 +1838,7 @@ namespace System
             {
                 for (end = Length - 1; end >= start; end--)
                 {
-                    int i = 0;
+                    int i;
                     char ch = this[end];
                     for (i = 0; i < trimCharsLength; i++)
                     {
