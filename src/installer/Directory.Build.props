@@ -66,10 +66,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
   </PropertyGroup>
 
