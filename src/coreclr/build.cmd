@@ -277,15 +277,6 @@ REM Determine if this is a cross-arch build. Only do cross-arch build if we're a
 
 if %__SkipCrossArchNative% EQU 0 (
     if %__BuildNative% EQU 1 (
-        if %__BuildCrossArchNative% EQU 0 (
-            if /i not "%__BuildArch%"=="x86" (
-                REM Make recursive calls to build the cross OS DAC
-                call :BuildCrossOSDac -linuxdac
-                if not !errorlevel! == 0 (
-                    goto ExitWithError
-                )
-            )
-        )
         if /i "%__BuildArch%"=="arm64" (
             set __BuildCrossArchNative=1
         )
@@ -906,20 +897,6 @@ exit /b 1
 
 :ExitWithCode
 exit /b !__exitCode!
-
-:BuildCrossOSDac
-setlocal
-set __BuildDacOption=%1
-set __NextCmd=call %__ThisScriptFull% %__BuildDacOption% %__BuildArch% %__BuildType% %__PassThroughArgs%
-echo %__MsgPrefix%Invoking: %__NextCmd%
-%__NextCmd%
-if not !errorlevel! == 0 (
-    echo %__MsgPrefix%    %__BuildDacOption% %__BuildArch% %__BuildType% %__PassThroughArgs%
-    endlocal
-    goto ExitWithError
-)
-endlocal
-exit /b 0
 
 :Usage
 echo.
