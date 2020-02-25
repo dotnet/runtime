@@ -4,6 +4,9 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <GenFacadesIgnoreMissingTypes Condition="'$(RuntimeFlavor)' == 'Mono'">true</GenFacadesIgnoreMissingTypes>
+    <GenFacadesIgnoreMissingType Condition="'$(RuntimeFlavor)' == 'Mono'">true</GenFacadesIgnoreMissingType>
+    <RunApiCompat Condition="'$(RuntimeFlavor)' == 'Mono'">false</RunApiCompat>
   </PropertyGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" Condition="'$(TargetsWindows)'=='true'" />
