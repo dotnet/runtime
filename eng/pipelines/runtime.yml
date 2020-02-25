@@ -75,7 +75,7 @@ jobs:
       include:
       - src/coreclr/src/jit/*
       exclude:
-      - *
+      - '*'
     - subset: mono
       include:
       - src/libraries/System.Private.CoreLib/*
