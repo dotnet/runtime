@@ -12508,24 +12508,28 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         // double check if it's final via impIsClassExact for arrays
         (pIsExact || impIsClassExact(objCls)) && impIsClassExact(clsHnd))
     {
-        const bool typesAreEqual = objCls == clsHnd;
-        const bool operatorIsEQ  = oper == GT_EQ;
-        GenTree*   compareResult = gtNewIconNode((operatorIsEQ ^ typesAreEqual) ? 0 : 1);
+        TypeCompareState tcs = info.compCompHnd->compareTypesForEquality(objCls, clsHnd);
+        if (tcs != TypeCompareState::May)
+        {
+            const bool operatorIsEQ  = oper == GT_EQ;
+            const bool typesAreEqual = tcs == TypeCompareState::Must;
+            GenTree* compareResult   = gtNewIconNode((operatorIsEQ ^ typesAreEqual) ? 0 : 1);
 
-        if (!pIsNonNull)
-        {
-            // we still have to emit a null-check
-            // obj.GetType == typeof() -> (nullcheck) true/false
-            GenTree* nullcheck = gtNewNullCheck(objOp, compCurBB);
-            return gtNewOperNode(GT_COMMA, tree->TypeGet(), nullcheck, compareResult);
-        }
-        else if (objOp->gtFlags & GTF_ALL_EFFECT)
-        {
-            return gtNewOperNode(GT_COMMA, tree->TypeGet(), objOp, compareResult);
-        }
-        else
-        {
-            return compareResult;
+            if (!pIsNonNull)
+            {
+                // we still have to emit a null-check
+                // obj.GetType == typeof() -> (nullcheck) true/false
+                GenTree* nullcheck = gtNewNullCheck(objOp, compCurBB);
+                return gtNewOperNode(GT_COMMA, tree->TypeGet(), nullcheck, compareResult);
+            }
+            else if (objOp->gtFlags & GTF_ALL_EFFECT)
+            {
+                return gtNewOperNode(GT_COMMA, tree->TypeGet(), objOp, compareResult);
+            }
+            else
+            {
+                return compareResult;
+            }
         }
     }
 

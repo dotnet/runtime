@@ -20654,8 +20654,7 @@ void Compiler::addExpRuntimeLookupCandidate(GenTreeCall* call)
 //    variance or similar.
 //
 // Note:
-//    We are conservative on arrays here, only arrays of sealed classes can
-//    be considered as final.
+//    We are conservative on arrays of primitive types here.
 
 bool Compiler::impIsClassExact(CORINFO_CLASS_HANDLE classHnd)
 {
@@ -20672,8 +20671,7 @@ bool Compiler::impIsClassExact(CORINFO_CLASS_HANDLE classHnd)
         CorInfoType          type
             = info.compCompHnd->getChildType(classHnd, &arrayElementHandle);
 
-        if ((type == CORINFO_TYPE_CLASS) || (type == CORINFO_TYPE_VALUECLASS) ||
-            (type == CORINFO_TYPE_STRING))
+        if ((type == CORINFO_TYPE_CLASS) || (type == CORINFO_TYPE_VALUECLASS))
         {
             return impIsClassExact(arrayElementHandle);
         }
