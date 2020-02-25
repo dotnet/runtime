@@ -8673,6 +8673,12 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
 
         if (asgType == TYP_STRUCT)
         {
+            // It is possible to use `initobj` to init a primitive type on the stack,
+            // like `ldloca.s 1; initobj 1B000003` where `V01` has type `ref`;
+            // in this case we generate `ASG struct(BLK<8> struct(ADDR byref(LCL_VAR ref)), 0)`
+            // and this code path transforms it into `ASG ref(LCL_VARref, 0)` because it is not a real
+            // struct assignment.
+
             if (size == REGSIZE_BYTES)
             {
                 if (clsHnd == NO_CLASS_HANDLE)
