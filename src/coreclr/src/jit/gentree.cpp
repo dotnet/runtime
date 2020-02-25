@@ -12506,11 +12506,15 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     // with `true` + null check.
     if (objCls != NO_CLASS_HANDLE &&
         // double check if it's final via impIsClassExact rather than pIsExact
-        impIsClassExact(objCls) && objCls == clsHnd)
+        impIsClassExact(objCls) && impIsClassExact(clsHnd))
     {
+        const bool typesAreEqual = objCls == clsHnd;
+        const bool operatorIsEQ = (oper == GT_EQ);
+        const int  compareResult = operatorIsEQ ^ typesAreEqual ? 0 : 1;
+
         GenTree* nullcheck = gtNewNullCheck(objOp, compCurBB);
         return gtNewOperNode(GT_COMMA, tree->TypeGet(), nullcheck,
-            gtNewIconNode((oper == GT_EQ) ? 1 : 0));
+            gtNewIconNode(compareResult));
     }
 
     GenTree* const objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, objOp);
