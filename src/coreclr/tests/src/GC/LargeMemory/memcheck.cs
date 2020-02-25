@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 #nullable enable
 
@@ -41,11 +42,19 @@ public static class MemCheck {
             : TryGetPhysicalMemMBNonWindows();
 
     private static uint? TryGetPhysicalMemMBNonWindows() {
-        string? kb = File.Exists("/proc/meminfo")
-            ? TryExtractLine(File.ReadAllText("/proc/meminfo"), prefix: "MemAvailable:", suffix: "kB")
-            : null;
-        return kb == null ? (uint?) null : KBToMB(ParseUint(kb));
+        if (File.Exists("/proc/meminfo")) {
+            string s = File.ReadAllText("/proc/meminfo");
+            Regex regex = new Regex(@"MemAvailable:\s*([0-9]+)\s*kB");
+            Match match = regex.Match(s);
+            if (match.Success) {
+                return KBToMB(ParseUint(match.Groups[1].Value));
+            } 
+        }
+        return null;
     }
+    
+    private static uint ParseUint(string s) =>
+        uint.Parse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite | NumberStyles.AllowThousands, CultureInfo.InvariantCulture);
 
     private static uint KBToMB(uint kb) =>
          kb / 1024;
@@ -81,22 +90,6 @@ public static class MemCheck {
         public ulong ullAvailExtendedVirtual;
     }
 
-    private static string? TryExtractLine(string s, string prefix, string suffix) =>
-        FirstNonNull(from line in Lines(s) select TryRemoveStringStartEnd(line, prefix, suffix));
-
-    private static T? FirstNonNull<T>(IEnumerable<T?> xs) where T : class =>
-        xs.First(x => x != null);
-
-    private static string? TryRemoveStringStartEnd(string s, string start, string end) {
-        int newLength = s.Length - (start.Length + end.Length);
-        return newLength > 0 && s.StartsWith(start) && s.EndsWith(end)
-            ? s.Substring(start.Length, newLength)
-            : null;
-    }
-
-    private static uint ParseUint(string s) =>
-        uint.Parse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite | NumberStyles.AllowThousands, CultureInfo.InvariantCulture);
-
     private static string RunCommand(string name) {
         ProcessStartInfo startInfo = new ProcessStartInfo(name) {
             RedirectStandardInput = true,
@@ -108,18 +101,6 @@ public static class MemCheck {
             cmd.Start();
             cmd.WaitForExit();
             return cmd.StandardOutput.ReadToEnd();
-        }
-    }
-
-    private static IEnumerable<string> Lines(string s) {
-        using (StringReader reader = new StringReader(s)) {
-            while (true) {
-                string? line = reader.ReadLine();
-                if (line == null) {
-                    break;
-                }
-                yield return line;
-            }
         }
     }
 }
