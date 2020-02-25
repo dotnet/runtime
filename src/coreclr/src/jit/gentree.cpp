@@ -12504,16 +12504,14 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
     // if both classes are "final" (e.g. System.String[]) we can replace the comparison
     // with `true/false` + null check.
-    if ((objCls != NO_CLASS_HANDLE) &&
-        // double check if it's final via impIsClassExact for arrays
-        (pIsExact || impIsClassExact(objCls)) && impIsClassExact(clsHnd))
+    if ((objCls != NO_CLASS_HANDLE) && (pIsExact || impIsClassExact(objCls)))
     {
         TypeCompareState tcs = info.compCompHnd->compareTypesForEquality(objCls, clsHnd);
         if (tcs != TypeCompareState::May)
         {
             const bool operatorIsEQ  = oper == GT_EQ;
             const bool typesAreEqual = tcs == TypeCompareState::Must;
-            GenTree* compareResult   = gtNewIconNode((operatorIsEQ ^ typesAreEqual) ? 0 : 1);
+            GenTree*   compareResult = gtNewIconNode((operatorIsEQ ^ typesAreEqual) ? 0 : 1);
 
             if (!pIsNonNull)
             {
