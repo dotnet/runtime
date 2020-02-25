@@ -20654,15 +20654,27 @@ void Compiler::addExpRuntimeLookupCandidate(GenTreeCall* call)
 //    variance or similar.
 //
 // Note:
-//    We are conservative on arrays here. It might be worth checking
-//    for types like int[].
+//    We are conservative on arrays here, only array of sealed clases can
+//    be considered as final.
 
 bool Compiler::impIsClassExact(CORINFO_CLASS_HANDLE classHnd)
 {
     DWORD flags     = info.compCompHnd->getClassAttribs(classHnd);
     DWORD flagsMask = CORINFO_FLG_FINAL | CORINFO_FLG_VARIANCE | CORINFO_FLG_ARRAY;
 
-    return ((flags & flagsMask) == CORINFO_FLG_FINAL);
+    if ((flags & flagsMask) == CORINFO_FLG_FINAL)
+    {
+        return true;
+    }
+    if ((flags & (CORINFO_FLG_VARIANCE | CORINFO_FLG_ARRAY)) == CORINFO_FLG_ARRAY)
+    {
+        CORINFO_CLASS_HANDLE arrayElementHandle = nullptr;
+        if (info.compCompHnd->getChildType(classHnd, &arrayElementHandle) == CORINFO_TYPE_CLASS)
+        {
+            return impIsClassExact(arrayElementHandle);
+        }
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------

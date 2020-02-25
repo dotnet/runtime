@@ -12498,6 +12498,21 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         objOp = opOther->AsCall()->gtCallThisArg->GetNode();
     }
 
+    bool pIsExact   = false;
+    bool pIsNonNull = false;
+    CORINFO_CLASS_HANDLE objCls = gtGetClassHandle(objOp, &pIsExact, &pIsNonNull);
+
+    // if both classes are "final" arrays (e.g. string[]) we can replace the comparison
+    // with `true` + null check.
+    if (objCls != NO_CLASS_HANDLE &&
+        // double check if it's final via impIsClassExact rather than pIsExact
+        impIsClassExact(objCls) && objCls == clsHnd)
+    {
+        GenTree* nullcheck = gtNewNullCheck(objOp, compCurBB);
+        return gtNewOperNode(GT_COMMA, tree->TypeGet(), nullcheck,
+            gtNewIconNode((oper == GT_EQ) ? 1 : 0));
+    }
+
     GenTree* const objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, objOp);
 
     // Update various flags
