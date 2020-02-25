@@ -130,32 +130,23 @@ typedef enum {
  * Structure representing a method transformed for the interpreter 
  * This is domain specific
  */
-typedef struct _InterpMethod
-{
+typedef struct InterpMethod InterpMethod;
+struct InterpMethod {
 	/* NOTE: These first two elements (method and
 	   next_jit_code_hash) must be in the same order and at the
 	   same offset as in MonoJitInfo, because of the jit_code_hash
 	   internal hash table in MonoDomain. */
 	MonoMethod *method;
-	struct _InterpMethod *next_jit_code_hash;
-	guint32 locals_size;
-	guint32 total_locals_size;
-	guint32 stack_size;
-	guint32 vt_stack_size;
-	guint32 alloca_size;
-	unsigned int init_locals : 1;
-	unsigned int vararg : 1;
-	unsigned int needs_thread_attach : 1;
+	InterpMethod *next_jit_code_hash;
+
+	// Sort pointers ahead of integers to minimize padding for alignment.
+
 	unsigned short *code;
 	MonoPIFunc func;
-	int num_clauses;
-	MonoExceptionClause *clauses;
+	MonoExceptionClause *clauses; // num_clauses
 	void **data_items;
-	int transformed;
 	guint32 *local_offsets;
 	guint32 *exvar_offsets;
-	unsigned int param_count;
-	unsigned int hasthis;
 	gpointer jit_wrapper;
 	gpointer jit_addr;
 	MonoMethodSignature *jit_sig;
@@ -165,12 +156,25 @@ typedef struct _InterpMethod
 	MonoType **param_types;
 	MonoJitInfo *jinfo;
 	MonoDomain *domain;
+
+	guint32 locals_size;
+	guint32 total_locals_size;
+	guint32 stack_size;
+	guint32 vt_stack_size;
+	guint32 alloca_size;
+	int num_clauses; // clauses
+	int transformed; // boolean
+	unsigned int param_count;
+	unsigned int hasthis; // boolean
 	MonoProfilerCallInstrumentationFlags prof_flags;
 	InterpMethodCodeType code_type;
 #ifdef ENABLE_EXPERIMENT_TIERED
 	MiniTieredCounter tiered_counter;
 #endif
-} InterpMethod;
+	unsigned int init_locals : 1;
+	unsigned int vararg : 1;
+	unsigned int needs_thread_attach : 1;
+};
 
 typedef struct _StackFragment StackFragment;
 struct _StackFragment {
