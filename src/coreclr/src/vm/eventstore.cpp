@@ -35,7 +35,7 @@ public:
         EventStoreElem *next;
         
         walk = m_Store;
-        while(walk) {
+        while (walk) {
             next = walk->next;
             delete (walk);
             walk = next;
