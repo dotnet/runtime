@@ -8,6 +8,7 @@ parameters:
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
   runtimeDisplayName: 'coreclr'
+  interpreter: ''
   timeoutInMinutes: 150
   pool: ''
   testScope: ''
@@ -90,6 +91,7 @@ jobs:
             msbuildScript: $(_msbuildCommand)
             framework: ${{ parameters.framework }}
             testScope: ${{ parameters.testScope }}
+            interpreter: ${{ parameters.interpreter }}
             creator: dotnet-bot
             helixToken: ''
             testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)

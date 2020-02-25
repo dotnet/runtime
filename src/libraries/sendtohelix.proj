@@ -4,6 +4,9 @@
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
 
+    <!-- To enable the interpreter for mono, we need to pass an env switch -->
+    <MonoEnvOptions Condition="'$(MonoEnvOptions)' == '' and '$(MonoEnableInterpreter)' == 'true'">--interpreter</MonoEnvOptions>
+
     <!-- For arm/arm64 we set a 30 min timeout temporarily until we split up slow test assemblies. -->
     <TimeoutInSeconds Condition="'$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm'">1800</TimeoutInSeconds>
     <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">900</TimeoutInSeconds>
@@ -59,6 +62,10 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixCommand)' == ''">
+    <Message Importance="High" Text="MonoEnvOptions: $(MonoEnvOptions)" />
+    <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(TargetsWindows)' == 'true'">set MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
+    <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(TargetsWindows)' == 'false'">export MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
+
     <!--
       For windows we need to use call, since the command is going to be called from a bat script created by Helix
       and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
