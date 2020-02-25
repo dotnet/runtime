@@ -780,7 +780,6 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     runtimeFlavor: mono
-    runtimeDisplayName: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
     - Windows_NT_x64
@@ -809,8 +808,6 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     runtimeFlavor: mono
-    runtimeDisplayName: mono_interpreter
-    interpreter: true
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
     # - Windows_NT_x64
@@ -821,6 +818,7 @@ jobs:
     jobParameters:
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
+      runtimeDisplayName: mono
       testScope: innerloop
       liveRuntimeBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -845,6 +843,8 @@ jobs:
     jobParameters:
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
+      interpreter: true
+      runtimeDisplayName: mono_interpreter
       testScope: innerloop
       liveRuntimeBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
