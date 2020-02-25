@@ -18,6 +18,7 @@
 
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
+class NativeImage;
 class PrepareCodeConfig;
 
 typedef DPTR(class ReadyToRunCoreInfo) PTR_ReadyToRunCoreInfo;
@@ -49,11 +50,11 @@ class ReadyToRunInfo
     PTR_Module                      m_pModule;
     PTR_READYTORUN_HEADER           m_pHeader;
     bool                            m_isComponentAssembly;
-    DomainCompositeImage*           m_compositeImage;
-    ReadyToRunInfo*                 m_compositeInfo;
+    NativeImage*                    m_pNativeImage;
+    ReadyToRunInfo*                 m_pCompositeInfo;
 
     ReadyToRunCoreInfo              m_component;
-    const ReadyToRunCoreInfo*       m_composite;
+    const ReadyToRunCoreInfo*       m_pComposite;
 
     PTR_RUNTIME_FUNCTION            m_pRuntimeFunctions;
     DWORD                           m_nRuntimeFunctions;
@@ -75,16 +76,16 @@ class ReadyToRunInfo
     PTR_PersistentInlineTrackingMapR2R m_pPersistentInlineTrackingMap;
 
 public:
-    ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, DomainCompositeImage * compositeImage, AllocMemTracker *pamTracker);
+    ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, AllocMemTracker *pamTracker);
 
     static BOOL IsReadyToRunEnabled();
 
     static PTR_ReadyToRunInfo Initialize(Module * pModule, AllocMemTracker *pamTracker);
 
     bool IsComponentAssembly() const { return m_isComponentAssembly; }
-    const ReadyToRunCoreInfo * GetComponent() const { return &m_component; }
-    const ReadyToRunCoreInfo * GetComposite() const { return m_composite; }
-    DomainCompositeImage * GetCompositeImage() const { return m_compositeImage; }
+    const ReadyToRunCoreInfo * GetComponentInfo() const { return &m_component; }
+    const ReadyToRunCoreInfo * GetCompositeInfo() const { return m_pComposite; }
+    NativeImage * GetNativeImage() const { return m_pNativeImage; }
 
     PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups);
 

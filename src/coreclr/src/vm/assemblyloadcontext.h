@@ -5,6 +5,11 @@
 #ifndef _ASSEMBLYLOADCONTEXT_H
 #define _ASSEMBLYLOADCONTEXT_H
 
+#include "crst.h"
+
+class NativeImage;
+class Module;
+
 //
 // Unmanaged counter-part of System.Runtime.Loader.AssemblyLoadContext
 //
@@ -15,6 +20,30 @@ public:
 
     STDMETHOD(GetBinderID)(
         /* [retval][out] */ UINT_PTR* pBinderId);
+
+    NativeImage *LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName, int nativeImageNameLength);
+
+private:
+    // Multi-thread safe access to the list of composite R2R images
+    class NativeImageList
+    {
+    private:
+        ArrayList m_array;
+
+    public:
+        NativeImageList();
+    
+        void Clear_Unlocked();
+
+        bool IsEmpty_Unlocked();
+        int32_t GetCount_Unlocked();
+        NativeImage* Get_UnlockedNoReference(int32_t index);
+        void Set_Unlocked(int32_t index, NativeImage* nativeImage);
+        HRESULT Append_Unlocked(NativeImage* nativeImage);
+    };
+
+    // Conceptually a list of NativeImage structures, protected by lock AppDomain::GetAssemblyListLock
+    NativeImageList m_nativeImages;
 };
 
 #endif

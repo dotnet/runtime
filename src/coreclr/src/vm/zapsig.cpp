@@ -15,6 +15,7 @@
 #include "typedesc.h"
 #include "compile.h"
 #include "sigbuilder.h"
+#include "nativeimage.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -625,41 +626,41 @@ Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
     CONTRACTL_END;
 
     Assembly *pAssembly = NULL;
+    NativeImage *nativeImage = fromModule->GetCompositeNativeImage();
+    uint32_t assemblyRefMax = (nativeImage != NULL ? 0 : fromModule->GetAssemblyRefMax());
 
-    if (index == 0)
+    if (index < assemblyRefMax)
     {
-        pAssembly = fromModule->GetAssembly();
-    }
-    else
-    {
-        DomainCompositeImage *compositeImage = fromModule->GetCompositeImage();
-        uint32_t assemblyRefMax = (compositeImage != NULL ? 1 : fromModule->GetAssemblyRefMax());
-        if (index < assemblyRefMax)
+        if (index == 0)
         {
-            pAssembly = fromModule->LoadAssembly(RidToToken(index, mdtAssemblyRef))->GetAssembly();
+            pAssembly = fromModule->GetAssembly();
         }
         else
         {
-            index -= assemblyRefMax;
+            pAssembly = fromModule->LoadAssembly(RidToToken(index, mdtAssemblyRef))->GetAssembly();
+        }
+    }
+    else
+    {
+        index -= assemblyRefMax;
 
-            pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
+        pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
 
-            if(pAssembly == NULL)
+        if(pAssembly == NULL)
+        {
+            if (nativeImage != NULL)
             {
-                if (compositeImage != NULL)
-                {
-                    pAssembly = compositeImage->LoadComponentAssembly(index);
-                }
-                else
-                {
-                    AssemblySpec spec;
-                    spec.InitializeSpec(TokenFromRid(index, mdtAssemblyRef),
-                                    fromModule->GetNativeAssemblyImport(),
-                                    NULL);
-                    pAssembly = spec.LoadAssembly(FILE_LOADED);
-                }
-                fromModule->SetNativeMetadataAssemblyRefInCache(index, pAssembly);
+                pAssembly = nativeImage->LoadComponentAssembly(index);
             }
+            else
+            {
+                AssemblySpec spec;
+                spec.InitializeSpec(TokenFromRid(index, mdtAssemblyRef),
+                                fromModule->GetNativeAssemblyImport(),
+                                NULL);
+                pAssembly = spec.LoadAssembly(FILE_LOADED);
+            }
+            fromModule->SetNativeMetadataAssemblyRefInCache(index, pAssembly);
         }
     }
 
@@ -684,7 +685,7 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
         pAssembly = fromModule->GetAssembly();
     else
     {
-        DomainCompositeImage *compositeImage = fromModule->GetCompositeImage();
+        NativeImage *compositeImage = fromModule->GetCompositeNativeImage();
         uint32_t assemblyRefMax = (compositeImage != NULL ? 1 : fromModule->GetAssemblyRefMax());
         if (index < assemblyRefMax)
         {

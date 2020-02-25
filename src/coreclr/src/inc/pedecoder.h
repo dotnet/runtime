@@ -406,6 +406,8 @@ class PEDecoder
     READYTORUN_HEADER *FindReadyToRunHeader() const;
     READYTORUN_HEADER *FindNativeReadyToRunHeader() const;
 
+    bool ReadUInt32(int offset, uint32_t& outValue) const;
+
     // Flat mapping utilities
     RVA InternalAddressToRva(SIZE_T address) const;
 

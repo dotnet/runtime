@@ -17,6 +17,7 @@
 #include "typehashingalgorithms.h"
 #include "method.hpp"
 #include "wellknownattributes.h"
+#include "nativeimage.h"
 
 using namespace NativeFormat;
 
@@ -69,7 +70,7 @@ MethodDesc * ReadyToRunInfo::GetMethodDescForEntryPoint(PCODE entryPoint)
         return NULL;
 #endif
 
-    return m_compositeInfo->TryGetMethodDescForEntryPoint(entryPoint);
+    return m_pCompositeInfo->TryGetMethodDescForEntryPoint(entryPoint);
 }
 
 BOOL ReadyToRunInfo::HasHashtableOfTypes()
@@ -319,7 +320,7 @@ PTR_BYTE ReadyToRunInfo::GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction)
     }
     CONTRACTL_END;
 
-    IMAGE_DATA_DIRECTORY * pDebugInfoDir = m_composite->FindSection(ReadyToRunSectionType::DebugInfo);
+    IMAGE_DATA_DIRECTORY * pDebugInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::DebugInfo);
     if (pDebugInfoDir == NULL)
         return NULL;
 
@@ -338,7 +339,7 @@ PTR_BYTE ReadyToRunInfo::GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction)
     if (lookBack != 0)
         debugInfoOffset = offset - lookBack;
 
-    return dac_cast<PTR_BYTE>(m_composite->GetLayout()->GetBase()) + debugInfoOffset;
+    return dac_cast<PTR_BYTE>(m_pComposite->GetLayout()->GetBase()) + debugInfoOffset;
 }
 
 MethodDesc *ReadyToRunInfo::TryGetMethodDescForEntryPoint(TADDR entryPointRVA)
@@ -486,7 +487,7 @@ static bool AcquireImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_H
 /// <summary>
 /// Try to locate composite R2R image for a given component module.
 /// </summary>
-static DomainCompositeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER *pHeader)
+static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER *pHeader)
 {
     READYTORUN_SECTION * pSections = (READYTORUN_SECTION*)(pHeader + 1);
     LPCUTF8 ownerCompositeExecutableName = NULL;
@@ -503,8 +504,12 @@ static DomainCompositeImage *AcquireCompositeImage(Module * pModule, PEImageLayo
 
     if (ownerCompositeExecutableName != NULL)
     {
-        AppDomain *appDomain = (AppDomain *)pModule->GetDomain();
-        return appDomain->LoadCompositeImage(pModule, ownerCompositeExecutableName, ownerCompositeExecutableNameLength);
+        AssemblyLoadContext *loadContext = pModule->GetFile()->GetAssemblyLoadContext();
+        if (loadContext == nullptr)
+        {
+            loadContext = (AssemblyLoadContext *)AppDomain::GetCurrentDomain()->CreateBinderContext();
+        }
+        return loadContext->LoadNativeImage(pModule, ownerCompositeExecutableName, ownerCompositeExecutableNameLength);
     }
     
     return NULL;
@@ -587,11 +592,11 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
-    DomainCompositeImage *compositeImage = NULL;
+    NativeImage *nativeImage = NULL;
     if (pHeader->CoreHeader.Flags & READYTORUN_FLAG_COMPONENT)
     {
-        compositeImage = AcquireCompositeImage(pModule, pLayout, pHeader);
-        if (compositeImage == NULL)
+        nativeImage = AcquireCompositeImage(pModule, pLayout, pHeader);
+        if (nativeImage == NULL)
         {
             DoLog("Ready to Run disabled - composite image not found");
             return NULL;
@@ -611,48 +616,48 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
 
     DoLog("Ready to Run initialized successfully");
 
-    return new (pMemory) ReadyToRunInfo(pModule, pLayout, pHeader, compositeImage, pamTracker);
+    return new (pMemory) ReadyToRunInfo(pModule, pLayout, pHeader, nativeImage, pamTracker);
 }
 
-ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, DomainCompositeImage *compositeImage, AllocMemTracker *pamTracker)
+ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage *pNativeImage, AllocMemTracker *pamTracker)
     : m_pModule(pModule),
     m_pHeader(pHeader),
-    m_compositeImage(compositeImage),
+    m_pNativeImage(pNativeImage),
     m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
     m_pPersistentInlineTrackingMap(NULL)
 {
     STANDARD_VM_CONTRACT;
 
-    if (compositeImage != NULL)
+    if (pNativeImage != NULL)
     {
         // In multi-assembly composite images, per assembly sections are stored next to their core headers.
-        m_compositeInfo = compositeImage->GetReadyToRunInfo();
-        m_composite = m_compositeInfo->GetComposite();
+        m_pCompositeInfo = pNativeImage->GetReadyToRunInfo();
+        m_pComposite = m_pCompositeInfo->GetCompositeInfo();
         SString componentAssemblyName(SString::Utf8, pModule->GetSimpleName());
-        if (compositeImage->GetComponentAssemblyCount() == 1)
+        if (pNativeImage->GetComponentAssemblyCount() == 1)
         {
             // When there's just 1 component assembly in the composite image, we're skipping the
             // assembly headers and store all sections directly in the main R2R header.
-            m_component = *m_composite;
+            m_component = *m_pComposite;
         }
         else
         {
-            m_component = ReadyToRunCoreInfo(m_composite->GetLayout(), compositeImage->GetComponentAssemblyHeader(componentAssemblyName));
+            m_component = ReadyToRunCoreInfo(m_pComposite->GetLayout(), pNativeImage->GetComponentAssemblyHeader(componentAssemblyName));
         }
         m_isComponentAssembly = true;
     }
     else
     {
-        m_compositeInfo = this;
+        m_pCompositeInfo = this;
         m_component = ReadyToRunCoreInfo(pLayout, &pHeader->CoreHeader);
-        m_composite = &m_component;
+        m_pComposite = &m_component;
         m_isComponentAssembly = false;
     }
 
-    IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = m_composite->FindSection(ReadyToRunSectionType::RuntimeFunctions);
+    IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = m_pComposite->FindSection(ReadyToRunSectionType::RuntimeFunctions);
     if (pRuntimeFunctionsDir != NULL)
     {
-        m_pRuntimeFunctions = (T_RUNTIME_FUNCTION *)m_composite->GetLayout()->GetDirectoryData(pRuntimeFunctionsDir);
+        m_pRuntimeFunctions = (T_RUNTIME_FUNCTION *)m_pComposite->GetLayout()->GetDirectoryData(pRuntimeFunctionsDir);
         m_nRuntimeFunctions = pRuntimeFunctionsDir->Size / sizeof(T_RUNTIME_FUNCTION);
     }
     else
@@ -660,10 +665,10 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
         m_nRuntimeFunctions = 0;
     }
 
-    IMAGE_DATA_DIRECTORY * pImportSectionsDir = m_composite->FindSection(ReadyToRunSectionType::ImportSections);
+    IMAGE_DATA_DIRECTORY * pImportSectionsDir = m_pComposite->FindSection(ReadyToRunSectionType::ImportSections);
     if (pImportSectionsDir != NULL)
     {
-        m_pImportSections = (CORCOMPILE_IMPORT_SECTION*)m_composite->GetLayout()->GetDirectoryData(pImportSectionsDir);
+        m_pImportSections = (CORCOMPILE_IMPORT_SECTION*)m_pComposite->GetLayout()->GetDirectoryData(pImportSectionsDir);
         m_nImportSections = pImportSectionsDir->Size / sizeof(CORCOMPILE_IMPORT_SECTION);
     }
     else
@@ -671,7 +676,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
         m_nImportSections = 0;
     }
 
-    m_nativeReader = NativeReader((byte *)m_composite->GetLayout()->GetBase(), m_composite->GetLayout()->GetVirtualSize());
+    m_nativeReader = NativeReader((BYTE *)m_pComposite->GetLayout()->GetBase(), m_pComposite->GetLayout()->GetVirtualSize());
 
     IMAGE_DATA_DIRECTORY * pEntryPointsDir = m_component.FindSection(ReadyToRunSectionType::MethodDefEntryPoints);
     if (pEntryPointsDir != NULL)
@@ -679,7 +684,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
         m_methodDefEntryPoints = NativeArray(&m_nativeReader, pEntryPointsDir->VirtualAddress);
     }
 
-    IMAGE_DATA_DIRECTORY * pinstMethodsDir = m_composite->FindSection(ReadyToRunSectionType::InstanceMethodEntryPoints);
+    IMAGE_DATA_DIRECTORY * pinstMethodsDir = m_pComposite->FindSection(ReadyToRunSectionType::InstanceMethodEntryPoints);
     if (pinstMethodsDir != NULL)
     {
         NativeParser parser = NativeParser(&m_nativeReader, pinstMethodsDir->VirtualAddress);
@@ -705,10 +710,10 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     // For format version 4.1 and later, there is an optional inlining table
     if (IsImageVersionAtLeast(4, 1))
     {
-        IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_composite->FindSection(ReadyToRunSectionType::InliningInfo2);
+        IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::InliningInfo2);
         if (pInlineTrackingInfoDir != NULL)
         {
-            const BYTE* pInlineTrackingMapData = (const BYTE*)m_composite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
+            const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
             PersistentInlineTrackingMapR2R2::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
                 pamTracker, (PersistentInlineTrackingMapR2R2**)&m_pPersistentInlineTrackingMap);
         }
@@ -717,10 +722,10 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     // For format version 2.1 and later, there is an optional inlining table
     if (m_pPersistentInlineTrackingMap == nullptr && IsImageVersionAtLeast(2, 1))
     {
-        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = m_composite->FindSection(ReadyToRunSectionType::InliningInfo);
+        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::InliningInfo);
         if (pInlineTrackingInfoDir != NULL)
         {
-            const BYTE* pInlineTrackingMapData = (const BYTE*)m_composite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
+            const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
             PersistentInlineTrackingMapR2R::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
                                                     pamTracker, &m_pPersistentInlineTrackingMap);
         }
@@ -729,11 +734,11 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     // For format version 2.2 and later, there is an optional profile-data section
     if (IsImageVersionAtLeast(2, 2))
     {
-        IMAGE_DATA_DIRECTORY * pProfileDataInfoDir = m_composite->FindSection(ReadyToRunSectionType::ProfileDataInfo);
+        IMAGE_DATA_DIRECTORY * pProfileDataInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::ProfileDataInfo);
         if (pProfileDataInfoDir != NULL)
         {
             CORCOMPILE_METHOD_PROFILE_LIST * pMethodProfileList;
-            pMethodProfileList = (CORCOMPILE_METHOD_PROFILE_LIST *)m_composite->GetImage()->GetDirectoryData(pProfileDataInfoDir);
+            pMethodProfileList = (CORCOMPILE_METHOD_PROFILE_LIST *)m_pComposite->GetImage()->GetDirectoryData(pProfileDataInfoDir);
 
             pModule->SetMethodProfileList(pMethodProfileList);
         }
@@ -744,8 +749,8 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     if (attributesPresenceDataInfoDir != NULL)
     {
         NativeCuckooFilter newFilter(
-            (byte *)m_composite->GetLayout()->GetBase(),
-            m_composite->GetLayout()->GetVirtualSize(),
+            (BYTE *)m_pComposite->GetLayout()->GetBase(),
+            m_pComposite->GetLayout()->GetVirtualSize(),
             attributesPresenceDataInfoDir->VirtualAddress,
             attributesPresenceDataInfoDir->Size);
 
@@ -881,7 +886,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 
         if (fFixups)
         {
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetComposite()->GetLayout()->GetBase()) + offset))
+            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetCompositeInfo()->GetLayout()->GetBase()) + offset))
             {
 #ifndef CROSSGEN_COMPILE
                 pConfig->SetReadyToRunRejectedPrecompiledCode();
@@ -898,8 +903,8 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
 
     _ASSERTE(id < m_nRuntimeFunctions);
-    pEntryPoint = dac_cast<TADDR>(GetComposite()->GetLayout()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
-    m_compositeInfo->SetMethodDescForEntryPoint(pEntryPoint, pMD);
+    pEntryPoint = dac_cast<TADDR>(GetCompositeInfo()->GetLayout()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
+    m_pCompositeInfo->SetMethodDescForEntryPoint(pEntryPoint, pMD);
 
 #ifndef CROSSGEN_COMPILE
 #ifdef PROFILING_SUPPORTED
@@ -1092,7 +1097,7 @@ MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc_NoRestore()
     }
 
     _ASSERTE(id < m_pInfo->m_nRuntimeFunctions);
-    PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetComposite()->GetLayout()->GetBase()) + m_pInfo->m_pRuntimeFunctions[id].BeginAddress;
+    PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetCompositeInfo()->GetLayout()->GetBase()) + m_pInfo->m_pRuntimeFunctions[id].BeginAddress;
 
     return m_pInfo->GetMethodDescForEntryPoint(pEntryPoint);
 }

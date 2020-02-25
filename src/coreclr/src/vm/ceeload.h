@@ -2923,10 +2923,10 @@ public:
 #endif
     }
 
-    DomainCompositeImage *GetCompositeImage() const
+    NativeImage *GetCompositeNativeImage() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_pReadyToRunInfo != NULL ? m_pReadyToRunInfo->GetCompositeImage() : NULL);
+        return (m_pReadyToRunInfo != NULL ? m_pReadyToRunInfo->GetNativeImage() : NULL);
     }
 
 #ifdef FEATURE_READYTORUN

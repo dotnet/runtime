@@ -41,6 +41,7 @@
 #include "metadataexports.h"
 #include "inlinetracking.h"
 #include "threads.h"
+#include "nativeimage.h"
 
 #ifdef FEATURE_PREJIT
 #include "exceptionhandling.h"
@@ -445,7 +446,7 @@ void Module::InitializeForProfiling()
         if (m_methodProfileList != nullptr)
         {
             ReadyToRunInfo * pInfo = GetReadyToRunInfo();
-            PEImageLayout *  pImage = pInfo->GetComposite()->GetImage();
+            PEImageLayout *  pImage = pInfo->GetCompositeInfo()->GetImage();
 
             // Enable profiling if the ZapBBInstr value says to
             m_nativeImageProfiling = GetAssembly()->IsInstrumented();
@@ -499,7 +500,7 @@ BOOL Module::IsPersistedObject(void *address)
 
 uint32_t Module::GetNativeMetadataAssemblyCount()
 {
-    DomainCompositeImage *compositeImage = GetCompositeImage();
+    NativeImage *compositeImage = GetCompositeNativeImage();
     if (compositeImage != NULL)
     {
         return compositeImage->GetComponentAssemblyCount();
@@ -4093,7 +4094,7 @@ PEImageLayout * Module::GetNativeOrReadyToRunImage()
 
 #ifdef FEATURE_READYTORUN
     if (IsReadyToRun())
-        return GetReadyToRunInfo()->GetComposite()->GetImage();
+        return GetReadyToRunInfo()->GetCompositeInfo()->GetImage();
 #endif
 
     return GetNativeImage();
@@ -10515,8 +10516,8 @@ void Module::RunEagerFixups()
     // TODO: Verify that eager fixup dependency graphs can contain no cycles
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-    DomainCompositeImage *compositeImage = GetCompositeImage();
-    if (compositeImage != NULL && !compositeImage->TestAndClearRunEagerFixups())
+    NativeImage *compositeImage = GetCompositeNativeImage();
+    if (compositeImage != NULL && !compositeImage->EagerFixupsNeedToRun())
     {
         return;
     }
