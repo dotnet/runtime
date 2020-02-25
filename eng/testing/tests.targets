@@ -105,7 +105,7 @@
              Text="Skipping tests in $(AssemblyName) because it is not supported on $(TargetOS)" />
 
     <Message Condition="'$(ConfigurationErrorMsg)' != ''"
-             Text="Skipping tests in $(AssemblyName) because there is no configuration compatible with the current BuildConfiguration." />
+             Text="Skipping tests in $(AssemblyName) because there is no TargetFramework compatible with the current BuildTargetFramework." />
   </Target>
 
   <Target Name="RunTests"

@@ -1575,7 +1575,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->doubleAlign = compiler->genDoubleAlign();
 #endif
 
-    header->security = compiler->opts.compNeedSecurityCheck;
+    header->security = false;
 
     header->handlers = compiler->ehHasCallableHandlers();
     header->localloc = compiler->compLocallocUsed;
@@ -3919,26 +3919,9 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
                                                        compiler->lvaGSSecurityCookie),
                                                    prologSize, methodSize);
     }
-    else if (compiler->opts.compNeedSecurityCheck || compiler->lvaReportParamTypeArg() ||
-             compiler->lvaKeepAliveAndReportThis())
+    else if (compiler->lvaReportParamTypeArg() || compiler->lvaKeepAliveAndReportThis())
     {
         gcInfoEncoderWithLog->SetPrologSize(prologSize);
-    }
-
-    if (compiler->opts.compNeedSecurityCheck)
-    {
-        assert(compiler->lvaSecurityObject != BAD_VAR_NUM);
-
-        // A VM requirement due to how the decoder works (it ignores partially interruptible frames when
-        // an exception has escaped, but the VM requires the security object to live on).
-        assert(compiler->codeGen->GetInterruptible());
-
-        // The lv offset is FP-relative, and the using code expects caller-sp relative, so translate.
-        // The normal GC lifetime reporting mechanisms will report a proper lifetime to the GC.
-        // The security subsystem can safely assume that anywhere it might walk the stack, it will be
-        // valid (null or a live GC ref).
-        gcInfoEncoderWithLog->SetSecurityObjectStackSlot(
-            compiler->lvaGetCallerSPRelativeOffset(compiler->lvaSecurityObject));
     }
 
 #if defined(FEATURE_EH_FUNCLETS)

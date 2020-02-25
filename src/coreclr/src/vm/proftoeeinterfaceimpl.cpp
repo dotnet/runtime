@@ -7062,14 +7062,14 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVEN
     EX_CATCH_HRESULT(hr);
 
     return hr;
-#elif // FEATURE_PERFTRACING
+#else // FEATURE_PERFTRACING
     return E_NOTIMPL;
 #endif // FEATURE_PERFTRACING
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
     EVENTPIPE_PROVIDER provHandle,
-    const WCHAR *szName, 
+    const WCHAR *szName,
     UINT32 eventID,
     UINT64 keywords,
     UINT32 eventVersion,
@@ -7112,7 +7112,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
                       && sizeof(EventPipeParameterDesc) == sizeof(COR_PRF_EVENTPIPE_PARAM_DESC),
             "Layouts of EventPipeParameterDesc type and COR_PRF_EVENTPIPE_PARAM_DESC type do not match!");
         EventPipeParameterDesc *params = reinterpret_cast<EventPipeParameterDesc *>(pParamDescs);
-        
+
         size_t metadataLength;
         NewArrayHolder<BYTE> pMetadata = EventPipeMetadataGenerator::GenerateEventMetadata(
             eventID,
@@ -7139,7 +7139,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
     EX_CATCH_HRESULT(hr);
 
     return hr;
-#elif // FEATURE_PERFTRACING
+#else // FEATURE_PERFTRACING
     return E_NOTIMPL;
 #endif // FEATURE_PERFTRACING
 }
@@ -7174,14 +7174,14 @@ HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
 
     static_assert(offsetof(EventData, Ptr) == offsetof(COR_PRF_EVENT_DATA, ptr)
                     && offsetof(EventData, Size) == offsetof(COR_PRF_EVENT_DATA, size)
-                    && sizeof(EventData) == sizeof(COR_PRF_EVENT_DATA), 
+                    && sizeof(EventData) == sizeof(COR_PRF_EVENT_DATA),
         "Layouts of EventData type and COR_PRF_EVENT_DATA type do not match!");
 
     EventData *pEventData = reinterpret_cast<EventData *>(data);
     EventPipe::WriteEvent(*pEvent, pEventData, cData, pActivityId, pRelatedActivityId);
 
     return S_OK;
-#elif // FEATURE_PERFTRACING
+#else // FEATURE_PERFTRACING
     return E_NOTIMPL;
 #endif // FEATURE_PERFTRACING
 }

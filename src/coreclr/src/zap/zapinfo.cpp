@@ -164,10 +164,7 @@ CORJIT_FLAGS ZapInfo::ComputeJitFlags(CORINFO_METHOD_HANDLE handle)
         jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FRAMED);
     }
 
-    if (canSkipMethodVerification(m_currentMethodHandle) == CORINFO_VERIFICATION_CAN_SKIP)
-    {
-        jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION);
-    }
+    jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION);
 
     if (m_pImage->m_profileDataSections[MethodBlockCounts].pData &&
         !m_zapper->m_pOpt->m_ignoreProfileData)
@@ -482,13 +479,6 @@ void ZapInfo::CompileMethod()
     {
         // READYTORUN: FUTURE: Producedure spliting
         m_jitFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT);
-
-        if (!(methodAttribs & CORINFO_FLG_NOSECURITYWRAP) || (methodAttribs & CORINFO_FLG_SECURITYCHECK))
-        {
-            if (m_zapper->m_pOpt->m_verbose)
-                m_zapper->Warning(W("ReadyToRun: Methods with security checks not supported\n"));
-            ThrowHR(E_NOTIMPL);
-        }
     }
 #endif
 
@@ -891,11 +881,6 @@ DWORD ZapInfo::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
     return sizeof(m_jitFlags);
 }
 
-IEEMemoryManager* ZapInfo::getMemoryManager()
-{
-    return GetEEMemoryManager();
-}
-
 bool ZapInfo::runWithErrorTrap(void (*function)(void*), void* param)
 {
     return m_pEEJitInfo->runWithErrorTrap(function, param);
@@ -1170,12 +1155,6 @@ void * ZapInfo::allocGCInfo(size_t size)
 
     return m_pGCInfo;
 }
-
-void ZapInfo::yieldExecution()
-{
-    // nothing necessary here
-}
-
 
 void ZapInfo::setEHcount(unsigned cEH)
 {
@@ -1613,10 +1592,9 @@ CORINFO_CLASS_HANDLE ZapInfo::getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN * pRes
     return m_pEEJitInfo->getTokenTypeAsHandle(pResolvedToken);
 }
 
-CORINFO_LOOKUP_KIND
-ZapInfo::getLocationOfThisType(CORINFO_METHOD_HANDLE   context)
+void ZapInfo::getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND * pLookupKind)
 {
-    return m_pEEJitInfo->getLocationOfThisType(context);
+    m_pEEJitInfo->getLocationOfThisType(context, pLookupKind);
 }
 
 void
@@ -2009,15 +1987,6 @@ void * ZapInfo::getMethodSync(CORINFO_METHOD_HANDLE ftn,
     return NULL;
 }
 
-void * ZapInfo::getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void **ppIndirection)
-{
-    // We will never be able to return this directly in prejit mode.
-    _ASSERTE(ppIndirection != NULL);
-
-    *ppIndirection = NULL;
-    return NULL;
-}
-
 void * ZapInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,void **ppIndirection)
 {
     _ASSERTE(ppIndirection != NULL);
@@ -2263,13 +2232,6 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
         {
             if (m_zapper->m_pOpt->m_verbose)
                 m_zapper->Warning(W("ReadyToRun: Runtime method access checks not supported\n"));
-            ThrowHR(E_NOTIMPL);
-        }
-
-        if (pResult->methodFlags & CORINFO_FLG_SECURITYCHECK)
-        {
-            if (m_zapper->m_pOpt->m_verbose)
-                m_zapper->Warning(W("ReadyToRun: Methods with security checks not supported\n"));
             ThrowHR(E_NOTIMPL);
         }
 
@@ -2855,13 +2817,6 @@ WORD ZapInfo::getRelocTypeHint(void * target)
 #endif
 }
 
-void ZapInfo::getModuleNativeEntryPointRange(void** pStart, void** pEnd)
-{
-    // Initialize outparams to default range of (0,0).
-    *pStart = 0;
-    *pEnd = 0;
-}
-
 DWORD ZapInfo::getExpectedTargetArchitecture()
 {
     return IMAGE_FILE_MACHINE_NATIVE;
@@ -2988,7 +2943,7 @@ void ZapInfo::setVars(CORINFO_METHOD_HANDLE ftn,
     return;
 }
 
-void * ZapInfo::allocateArray(ULONG cBytes)
+void * ZapInfo::allocateArray(size_t cBytes)
 {
     return new BYTE[cBytes];
 }
@@ -3023,12 +2978,6 @@ CorInfoType ZapInfo::getFieldType(CORINFO_FIELD_HANDLE field,
 unsigned ZapInfo::getFieldOffset(CORINFO_FIELD_HANDLE field)
 {
     return m_pEEJitInfo->getFieldOffset(field);
-}
-
-bool ZapInfo::isWriteBarrierHelperRequired(
-                        CORINFO_FIELD_HANDLE    field)
-{
-    return m_pEEJitInfo->isWriteBarrierHelperRequired(field);
 }
 
 void ZapInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
@@ -3281,11 +3230,6 @@ CorInfoInlineTypeCheck ZapInfo::canInlineTypeCheck (CORINFO_CLASS_HANDLE cls, Co
     return m_pEEJitInfo->canInlineTypeCheck(cls, source);
 }
 
-BOOL ZapInfo::canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE cls)
-{
-    return m_pEEJitInfo->canInlineTypeCheckWithObjectVTable(cls);
-}
-
 DWORD ZapInfo::getClassAttribs(CORINFO_CLASS_HANDLE cls)
 {
     return m_pEEJitInfo->getClassAttribs(cls);
@@ -3372,12 +3316,6 @@ BOOL ZapInfo::isMoreSpecificType(
                 CORINFO_CLASS_HANDLE cls2)
 {
     return m_pEEJitInfo->isMoreSpecificType(cls1, cls2);
-}
-
-BOOL ZapInfo::shouldEnforceCallvirtRestriction(
-        CORINFO_MODULE_HANDLE scopeHnd)
-{
-    return m_zapper->m_pEEJitInfo->shouldEnforceCallvirtRestriction(scopeHnd);
 }
 
 CORINFO_CLASS_HANDLE ZapInfo::getParentType (
@@ -3601,11 +3539,6 @@ CorInfoHelpFunc ZapInfo::getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd)
     return m_pEEJitInfo->getSharedCCtorHelper(clsHnd);
 }
 
-CorInfoHelpFunc ZapInfo::getSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn)
-{
-    return m_pEEJitInfo->getSecurityPrologHelper(ftn);
-}
-
 CORINFO_CLASS_HANDLE  ZapInfo::getTypeForBox(CORINFO_CLASS_HANDLE  cls)
 {
     return m_pEEJitInfo->getTypeForBox(cls);
@@ -3789,12 +3722,6 @@ size_t ZapInfo::findNameOfToken(CORINFO_MODULE_HANDLE tokenScope,
     return m_pEEJitInfo->findNameOfToken(tokenScope, token, szFQName, FQNameCapacity);
 }
 
-CorInfoCanSkipVerificationResult ZapInfo::canSkipVerification (
-        CORINFO_MODULE_HANDLE tokenScope)
-{
-    return m_pEEJitInfo->canSkipVerification(tokenScope);
-}
-
 BOOL ZapInfo::isValidToken (
             CORINFO_MODULE_HANDLE       tokenScope,
             unsigned                    token)
@@ -3882,22 +3809,6 @@ void ZapInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
     return m_pEEJitInfo->reportInliningDecision(inlinerHnd, inlineeHnd, inlineResult, reason);
 }
 
-
-CorInfoInstantiationVerification ZapInfo::isInstantiationOfVerifiedGeneric(
-        CORINFO_METHOD_HANDLE method)
-{
-    return m_pEEJitInfo->isInstantiationOfVerifiedGeneric(method);
-}
-
-
-void ZapInfo::initConstraintsForVerification(CORINFO_METHOD_HANDLE method,
-                                                            BOOL *pfHasCircularClassConstraints,
-                                                            BOOL *pfHasCircularMethodConstraints)
-{
-     m_pEEJitInfo->
-              initConstraintsForVerification(method,pfHasCircularClassConstraints,pfHasCircularMethodConstraints);
-}
-
 bool ZapInfo::canTailCall(CORINFO_METHOD_HANDLE caller,
                                          CORINFO_METHOD_HANDLE declaredCallee,
                                          CORINFO_METHOD_HANDLE exactCallee,
@@ -3928,30 +3839,6 @@ void ZapInfo::reportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd,
                                                const char * reason)
 {
     return m_pEEJitInfo->reportTailCallDecision(callerHnd, calleeHnd, fIsTailPrefix, tailCallResult, reason);
-}
-
-
-CorInfoCanSkipVerificationResult ZapInfo::canSkipMethodVerification (
-        CORINFO_METHOD_HANDLE ftnHandle)
-{
-    // ILStubs are generated internally by the CLR. There is no need to
-    // verify it, or any of its callees.
-    if (m_zapper->m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB))
-        return CORINFO_VERIFICATION_CAN_SKIP;
-
-    CorInfoCanSkipVerificationResult canSkipVer =
-        m_pEEJitInfo->canSkipMethodVerification(ftnHandle);
-
-    if (canSkipVer == CORINFO_VERIFICATION_RUNTIME_CHECK)
-    {
-        // Transparent code could be partial trust, but we don't know at NGEN time.
-        // Since the JIT is not hardened against unverifiable/illegal code, tell it
-        // to just not jit the method if it hits unverifiable code, rathern than
-        // injecting a runtime callout and continuing trying to JIT the method.
-        canSkipVer = CORINFO_VERIFICATION_DONT_JIT;
-    }
-
-    return canSkipVer;
 }
 
 void ZapInfo::getEHinfo(CORINFO_METHOD_HANDLE ftn,

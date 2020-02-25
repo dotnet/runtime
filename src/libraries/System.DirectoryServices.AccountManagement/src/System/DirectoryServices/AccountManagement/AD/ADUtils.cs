@@ -124,7 +124,7 @@ namespace System.DirectoryServices.AccountManagement
                         break;
 
                     default:
-                        sb.Append(c.ToString());
+                        sb.Append(c);
                         break;
                 }
             }
@@ -174,7 +174,7 @@ namespace System.DirectoryServices.AccountManagement
                         break;
 
                     default:
-                        sb.Append(c.ToString());
+                        sb.Append(c);
                         break;
                 }
             }
@@ -235,7 +235,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         default:
                             // including the '*' wildcard
-                            sb.Append(c.ToString());    //   *  --> *   and   x  --> x
+                            sb.Append(c);    //   *  --> *   and   x  --> x
                             break;
                     }
                 }
@@ -262,7 +262,7 @@ namespace System.DirectoryServices.AccountManagement
                             break;
 
                         default:
-                            sb.Append(c.ToString());    //      \x --> x
+                            sb.Append(c);    //      \x --> x
                             break;
                     }
                 }

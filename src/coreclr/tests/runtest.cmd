@@ -30,7 +30,6 @@ set __JitDisasm=
 set __IlasmRoundTrip=
 set __DoCrossgen=
 set __CrossgenAltJit=
-set __BuildXUnitWrappers=
 set __PrintLastResultsOnly=
 set RunInUnloadableContext=
 
@@ -70,7 +69,6 @@ if /i "%1" == "jitforcerelocs"                          (set COMPlus_ForceRelocs
 if /i "%1" == "jitdisasm"                               (set __JitDisasm=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 
-if /i "%1" == "buildxunitwrappers"                      (set __BuildXunitWrappers=1&shift&goto Arg_Loop)
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"                        (set RunCrossGen=true&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=true&shift&goto Arg_Loop)
@@ -149,10 +147,6 @@ if defined __TestEnv (
 
 if defined __Sequential (
     set __RuntestPyArgs=%__RuntestPyArgs% --sequential
-)
-
-if defined __BuildXUnitWrappers (
-    set __RuntestPyArgs=%__RuntestPyArgs% --build_xunit_test_wrappers
 )
 
 if defined RunCrossGen (

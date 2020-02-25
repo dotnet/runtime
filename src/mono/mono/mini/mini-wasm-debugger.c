@@ -4,6 +4,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/metadata.h>
+#include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/seq-points-data.h>
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/seq-points.h>
@@ -42,6 +43,7 @@ extern void mono_wasm_add_bool_var (gint8);
 extern void mono_wasm_add_number_var (double);
 extern void mono_wasm_add_string_var (const char*);
 extern void mono_wasm_add_obj_var (const char*, guint64);
+extern void mono_wasm_add_func_var (const char*, guint64);
 extern void mono_wasm_add_array_var (const char*, guint64);
 extern void mono_wasm_add_properties_var (const char*);
 extern void mono_wasm_add_array_item (int);
@@ -529,7 +531,11 @@ mono_wasm_current_bp_id (void)
 
 static int get_object_id(MonoObject *obj) 
 {
-	ObjRef *ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
+	ObjRef *ref;
+	if (!obj)
+		return 0;
+
+	ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
 	if (ref)
 		return ref->id;
 	ref = g_new0 (ObjRef, 1);
@@ -589,7 +595,8 @@ mono_wasm_enum_frames (void)
 typedef struct {
 	int cur_frame;
 	int target_frame;
-	int variable;
+	int len;
+	int *pos;
 } FrameDescData;
 
 static gboolean describe_value(MonoType * type, gpointer addr)
@@ -650,23 +657,18 @@ static gboolean describe_value(MonoType * type, gpointer addr)
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_CLASS: {
 			MonoObject *obj = *(MonoObject**)addr;
-			if (!obj) {
-				mono_wasm_add_string_var (NULL);
+			MonoClass *klass = type->data.klass;
+
+			char *class_name = mono_type_full_name (type);
+
+			if (type->type == MONO_TYPE_SZARRAY || type->type == MONO_TYPE_ARRAY) {
+				mono_wasm_add_array_var (class_name, get_object_id (obj));
+			} else if (m_class_is_delegate (klass)) {
+				mono_wasm_add_func_var (class_name, get_object_id (obj));
 			} else {
-				GString *class_name;
-				class_name = g_string_new ("");
-				if (*(m_class_get_name_space (obj->vtable->klass))) {
-					g_string_append (class_name, m_class_get_name_space (obj->vtable->klass));
-					g_string_append_c (class_name, '.');
-				}
-				g_string_append (class_name, m_class_get_name (obj->vtable->klass));
-				if (m_class_get_byval_arg (obj->vtable->klass)->type == MONO_TYPE_SZARRAY || m_class_get_byval_arg (obj->vtable->klass)->type == MONO_TYPE_ARRAY)
-					mono_wasm_add_array_var (class_name->str, get_object_id(obj));
-				else
-					mono_wasm_add_obj_var (class_name->str, get_object_id(obj));
-				g_string_free(class_name, FALSE);
-				break;
+				mono_wasm_add_obj_var (class_name, get_object_id (obj));
 			}
+			g_free (class_name);
 			break;
 		}
 		default: {
@@ -765,100 +767,41 @@ describe_array_values (guint64 objectId)
 	return TRUE;
 }
 
-static gboolean
-describe_async_method_locals (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
+static void
+describe_async_method_locals (InterpFrame *frame, MonoMethod *method)
 {
 	//Async methods are special in the way that local variables can be lifted to generated class fields 
-	FrameDescData *data = (FrameDescData*)ud;
-
-	//skip wrappers
-	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP) {
-		return FALSE;
-	}
-
-	if (data->cur_frame < data->target_frame) {
-		++data->cur_frame;
-		return FALSE;
-	}
-
-	InterpFrame *frame = (InterpFrame*)info->interp_frame;
-	g_assert (frame);
-	MonoMethod *method = frame->imethod->method;
-	g_assert (method);
 	gpointer addr = NULL;
 	if (mono_debug_lookup_method_async_debug_info (method)) {
 		addr = mini_get_interp_callbacks ()->frame_get_this (frame);
 		MonoObject *obj = *(MonoObject**)addr;
 		describe_object_properties(get_object_id(obj), TRUE);		
 	}
-	return TRUE;
 }
 
-static gboolean
-describe_this (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
+static void
+describe_this (InterpFrame *frame, MonoMethod *method)
 {
-	//Async methods are special in the way that local variables can be lifted to generated class fields 
-	FrameDescData *data = (FrameDescData*)ud;
-
-	//skip wrappers
-	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP) {
-		return FALSE;
-	}
-
-	if (data->cur_frame < data->target_frame) {
-		++data->cur_frame;
-		return FALSE;
-	}
-
-	InterpFrame *frame = (InterpFrame*)info->interp_frame;
-	g_assert (frame);
-	MonoMethod *method = frame->imethod->method;
-	g_assert (method);
 	gpointer addr = NULL;
 	if (mono_method_signature_internal (method)->hasthis) {
 		addr = mini_get_interp_callbacks ()->frame_get_this (frame);
 		MonoObject *obj = *(MonoObject**)addr;
+		char *class_name = mono_class_full_name (obj->vtable->klass);
+
 		mono_wasm_add_properties_var("this");
-		GString *class_name;
-		class_name = g_string_new ("");
-		if (*(m_class_get_name_space (obj->vtable->klass))) {
-			g_string_append (class_name, m_class_get_name_space (obj->vtable->klass));
-			g_string_append_c (class_name, '.');
-		}
-		g_string_append (class_name, m_class_get_name (obj->vtable->klass));
-		mono_wasm_add_obj_var (class_name->str, get_object_id(obj));
-		g_string_free(class_name, FALSE);
+		mono_wasm_add_obj_var (class_name, get_object_id(obj));
+		g_free (class_name);
 	}
-	return TRUE;
 }
 
-
 static gboolean
-describe_variable (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
+describe_variable (InterpFrame *frame, MonoMethod *method, int pos)
 {
 	ERROR_DECL (error);
 	MonoMethodHeader *header = NULL;
 
-	FrameDescData *data = (FrameDescData*)ud;
-
-	//skip wrappers
-	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP) {
-		return FALSE;
-	}
-
-	if (data->cur_frame < data->target_frame) {
-		++data->cur_frame;
-		return FALSE;
-	}
-
-	InterpFrame *frame = (InterpFrame*)info->interp_frame;
-	g_assert (frame);
-	MonoMethod *method = frame->imethod->method;
-	g_assert (method);
-
 	MonoType *type = NULL;
 	gpointer addr = NULL;
-	int pos = data->variable;
 	if (pos < 0) {
 		pos = -pos - 1;
 		type = mono_method_signature_internal (method)->params [pos];
@@ -880,21 +823,48 @@ describe_variable (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
 	return TRUE;
 }
 
+static gboolean
+describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
+{
+	FrameDescData *data = (FrameDescData*)ud;
+
+	//skip wrappers
+	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP) {
+		return FALSE;
+	}
+
+	if (data->cur_frame < data->target_frame) {
+		++data->cur_frame;
+		return FALSE;
+	}
+
+	InterpFrame *frame = (InterpFrame*)info->interp_frame;
+	g_assert (frame);
+	MonoMethod *method = frame->imethod->method;
+	g_assert (method);
+
+	for (int i = 0; i < data->len; i++)
+	{
+		describe_variable (frame, method, data->pos[i]);
+	}
+
+	describe_async_method_locals (frame, method);
+	describe_this (frame, method);
+
+	return TRUE;
+}
+
 //FIXME this doesn't support getting the return value pseudo-var
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_get_var_info (int scope, int* pos, int len)
 {
 	FrameDescData data;
-	data.cur_frame = 0;
 	data.target_frame = scope;
-	for (int i = 0; i < len; i++)
-	{
-		DEBUG_PRINTF (2, "getting var %d of scope %d - %d\n", pos[i], scope, len);
-		data.variable = pos[i];
-		mono_walk_stack_with_ctx (describe_variable, NULL, MONO_UNWIND_NONE, &data);
-	}
-	mono_walk_stack_with_ctx (describe_async_method_locals, NULL, MONO_UNWIND_NONE, &data);
-	mono_walk_stack_with_ctx (describe_this, NULL, MONO_UNWIND_NONE, &data);
+	data.cur_frame = 0;
+	data.len = len;
+	data.pos = pos;
+
+	mono_walk_stack_with_ctx (describe_variables_on_frame, NULL, MONO_UNWIND_NONE, &data);
 }
 
 EMSCRIPTEN_KEEPALIVE void

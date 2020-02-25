@@ -857,14 +857,28 @@ namespace System.Net.Http
                     {
                         var thisRef = new WeakReference<HttpConnectionPool>(this);
 
-                        _authorityExpireTimer = new Timer(o =>
+                        bool restoreFlow = false;
+                        try
                         {
-                            var wr = (WeakReference<HttpConnectionPool>)o;
-                            if (wr.TryGetTarget(out HttpConnectionPool @this))
+                            if (!ExecutionContext.IsFlowSuppressed())
                             {
-                                @this.ExpireAltSvcAuthority();
+                                ExecutionContext.SuppressFlow();
+                                restoreFlow = true;
                             }
-                        }, thisRef, nextAuthorityMaxAge, Timeout.InfiniteTimeSpan);
+
+                            _authorityExpireTimer = new Timer(o =>
+                            {
+                                var wr = (WeakReference<HttpConnectionPool>)o;
+                                if (wr.TryGetTarget(out HttpConnectionPool @this))
+                                {
+                                    @this.ExpireAltSvcAuthority();
+                                }
+                            }, thisRef, nextAuthorityMaxAge, Timeout.InfiniteTimeSpan);
+                        }
+                        finally
+                        {
+                            if (restoreFlow) ExecutionContext.RestoreFlow();
+                        }
                     }
                     else
                     {
@@ -873,6 +887,11 @@ namespace System.Net.Http
 
                     _http3Authority = nextAuthority;
                     _persistAuthority = nextAuthorityPersist;
+                }
+
+                if (!nextAuthorityPersist)
+                {
+                    _poolManager.StartMonitoringNetworkChanges();
                 }
             }
         }

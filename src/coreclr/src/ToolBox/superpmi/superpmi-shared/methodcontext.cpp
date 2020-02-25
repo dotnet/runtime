@@ -1637,27 +1637,6 @@ CorInfoUnmanagedCallConv MethodContext::repGetUnmanagedCallConv(CORINFO_METHOD_H
     return result;
 }
 
-void MethodContext::recIsInstantiationOfVerifiedGeneric(CORINFO_METHOD_HANDLE            method,
-                                                        CorInfoInstantiationVerification result)
-{
-    if (IsInstantiationOfVerifiedGeneric == nullptr)
-        IsInstantiationOfVerifiedGeneric = new LightWeightMap<DWORDLONG, DWORD>();
-
-    IsInstantiationOfVerifiedGeneric->Add((DWORDLONG)method, result);
-    DEBUG_REC(dmpIsInstantiationOfVerifiedGeneric((DWORDLONG)method, (DWORD)result));
-}
-void MethodContext::dmpIsInstantiationOfVerifiedGeneric(DWORDLONG key, DWORD value)
-{
-    printf("IsInstantiationOfVerifiedGeneric key ftn-%016llX, value res-%u", key, value);
-}
-CorInfoInstantiationVerification MethodContext::repIsInstantiationOfVerifiedGeneric(CORINFO_METHOD_HANDLE method)
-{
-    CorInfoInstantiationVerification result =
-        (CorInfoInstantiationVerification)IsInstantiationOfVerifiedGeneric->Get((DWORDLONG)method);
-    DEBUG_REP(dmpIsInstantiationOfVerifiedGeneric((DWORDLONG)method, (DWORD)result));
-    return result;
-}
-
 void MethodContext::recAsCorInfoType(CORINFO_CLASS_HANDLE cls, CorInfoType result)
 {
     if (AsCorInfoType == nullptr)
@@ -1850,25 +1829,6 @@ CorInfoHelpFunc MethodContext::repGetSharedCCtorHelper(CORINFO_CLASS_HANDLE clsH
 {
     CorInfoHelpFunc result = (CorInfoHelpFunc)GetSharedCCtorHelper->Get((DWORDLONG)clsHnd);
     DEBUG_REP(dmpGetSharedCCtorHelper((DWORDLONG)clsHnd, (DWORD)result));
-    return result;
-}
-
-void MethodContext::recGetSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn, CorInfoHelpFunc result)
-{
-    if (GetSecurityPrologHelper == nullptr)
-        GetSecurityPrologHelper = new LightWeightMap<DWORDLONG, DWORD>();
-
-    GetSecurityPrologHelper->Add((DWORDLONG)ftn, result);
-    DEBUG_REC(dmpGetSecurityPrologHelper((DWORDLONG)ftn, (DWORD)result));
-}
-void MethodContext::dmpGetSecurityPrologHelper(DWORDLONG key, DWORD value)
-{
-    printf("GetSecurityPrologHelper key ftn-%016llX, value res-%u", key, value);
-}
-CorInfoHelpFunc MethodContext::repGetSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn)
-{
-    CorInfoHelpFunc result = (CorInfoHelpFunc)GetSecurityPrologHelper->Get((DWORDLONG)ftn);
-    DEBUG_REP(dmpGetSecurityPrologHelper((DWORDLONG)ftn, (DWORD)result));
     return result;
 }
 
@@ -3325,30 +3285,22 @@ void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     if (GetFieldInfo->GetIndex(key) == -1)
     {
 #ifdef sparseMC
-        key.flags = origFlag ^ (DWORD)CORINFO_ACCESS_UNWRAP;
+        key.flags = origFlag ^ ((DWORD)CORINFO_ACCESS_THIS);
         if (GetFieldInfo->GetIndex(key) != -1)
         {
-            LogDebug("Sparse - repGetFieldInfo found value with inverted CORINFO_ACCESS_UNWRAP");
+            LogDebug(
+                "Sparse - repGetFieldInfo found value with inverted CORINFO_ACCESS_THIS");
         }
         else
         {
-            key.flags = origFlag ^ ((DWORD)CORINFO_ACCESS_THIS | (DWORD)CORINFO_ACCESS_UNWRAP);
+            key.flags = origFlag ^ (DWORD)CORINFO_ACCESS_INLINECHECK;
             if (GetFieldInfo->GetIndex(key) != -1)
             {
-                LogDebug(
-                    "Sparse - repGetFieldInfo found value with inverted CORINFO_ACCESS_UNWRAP|CORINFO_ACCESS_THIS");
+                LogDebug("Sparse - repGetFieldInfo found value with inverted CORINFO_ACCESS_INLINECHECK");
             }
             else
             {
-                key.flags = origFlag ^ (DWORD)CORINFO_ACCESS_INLINECHECK;
-                if (GetFieldInfo->GetIndex(key) != -1)
-                {
-                    LogDebug("Sparse - repGetFieldInfo found value with inverted CORINFO_ACCESS_INLINECHECK");
-                }
-                else
-                {
-                    LogException(EXCEPTIONCODE_MC, "Didn't find %x", pResolvedToken->token);
-                }
+                LogException(EXCEPTIONCODE_MC, "Didn't find %x", pResolvedToken->token);
             }
         }
 #else
@@ -3898,17 +3850,11 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     value.offsetOfDelegateInstance                   = (DWORD)pEEInfoOut->offsetOfDelegateInstance;
     value.offsetOfDelegateFirstTarget                = (DWORD)pEEInfoOut->offsetOfDelegateFirstTarget;
     value.offsetOfWrapperDelegateIndirectCell        = (DWORD)pEEInfoOut->offsetOfWrapperDelegateIndirectCell;
-    value.offsetOfTransparentProxyRP                 = (DWORD)pEEInfoOut->offsetOfTransparentProxyRP;
-    value.offsetOfRealProxyServer                    = (DWORD)pEEInfoOut->offsetOfRealProxyServer;
-    value.offsetOfObjArrayData                       = (DWORD)pEEInfoOut->offsetOfObjArrayData;
     value.sizeOfReversePInvokeFrame                  = (DWORD)pEEInfoOut->sizeOfReversePInvokeFrame;
     value.osPageSize                                 = (DWORD)pEEInfoOut->osPageSize;
     value.maxUncheckedOffsetForNullObject            = (DWORD)pEEInfoOut->maxUncheckedOffsetForNullObject;
     value.targetAbi                                  = (DWORD)pEEInfoOut->targetAbi;
     value.osType                                     = (DWORD)pEEInfoOut->osType;
-    value.osMajor                                    = (DWORD)pEEInfoOut->osMajor;
-    value.osMinor                                    = (DWORD)pEEInfoOut->osMinor;
-    value.osBuild                                    = (DWORD)pEEInfoOut->osBuild;
 
     GetEEInfo->Add((DWORD)0, value);
     DEBUG_REC(dmpGetEEInfo((DWORD)0, value));
@@ -3916,17 +3862,15 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
 void MethodContext::dmpGetEEInfo(DWORD key, const Agnostic_CORINFO_EE_INFO& value)
 {
     printf("GetEEInfo key %u, value icfi{sz-%u ogs-%u ofv-%u ofl-%u ocsp-%u ocsfp-%u oct-%u ora-%u} "
-           "otf-%u ogcs-%u odi-%u odft-%u osdic-%u otrp-%u orps-%u ooad-%u srpf-%u osps-%u muono-%u tabi-%u osType-%u "
-           "osMajor-%u osMinor-%u osBuild-%u",
+           "otf-%u ogcs-%u odi-%u odft-%u osdic-%u srpf-%u osps-%u muono-%u tabi-%u osType-%u",
            key, value.inlinedCallFrameInfo.size, value.inlinedCallFrameInfo.offsetOfGSCookie,
            value.inlinedCallFrameInfo.offsetOfFrameVptr, value.inlinedCallFrameInfo.offsetOfFrameLink,
            value.inlinedCallFrameInfo.offsetOfCallSiteSP, value.inlinedCallFrameInfo.offsetOfCalleeSavedFP,
            value.inlinedCallFrameInfo.offsetOfCallTarget, value.inlinedCallFrameInfo.offsetOfReturnAddress,
            value.offsetOfThreadFrame, value.offsetOfGCState, value.offsetOfDelegateInstance,
            value.offsetOfDelegateFirstTarget, value.offsetOfWrapperDelegateIndirectCell,
-           value.offsetOfTransparentProxyRP, value.offsetOfRealProxyServer, value.offsetOfObjArrayData,
            value.sizeOfReversePInvokeFrame, value.osPageSize, value.maxUncheckedOffsetForNullObject, value.targetAbi,
-           value.osType, value.osMajor, value.osMinor, value.osBuild);
+           value.osType);
 }
 void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
 {
@@ -3953,17 +3897,11 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->offsetOfDelegateInstance           = (unsigned)value.offsetOfDelegateInstance;
         pEEInfoOut->offsetOfDelegateFirstTarget        = (unsigned)value.offsetOfDelegateFirstTarget;
         pEEInfoOut->offsetOfWrapperDelegateIndirectCell= (unsigned)value.offsetOfWrapperDelegateIndirectCell;
-        pEEInfoOut->offsetOfTransparentProxyRP         = (unsigned)value.offsetOfTransparentProxyRP;
-        pEEInfoOut->offsetOfRealProxyServer            = (unsigned)value.offsetOfRealProxyServer;
-        pEEInfoOut->offsetOfObjArrayData               = (unsigned)value.offsetOfObjArrayData;
         pEEInfoOut->sizeOfReversePInvokeFrame          = (unsigned)value.sizeOfReversePInvokeFrame;
         pEEInfoOut->osPageSize                         = (size_t)value.osPageSize;
         pEEInfoOut->maxUncheckedOffsetForNullObject    = (size_t)value.maxUncheckedOffsetForNullObject;
         pEEInfoOut->targetAbi                          = (CORINFO_RUNTIME_ABI)value.targetAbi;
         pEEInfoOut->osType                             = (CORINFO_OS)value.osType;
-        pEEInfoOut->osMajor                            = (unsigned)value.osMajor;
-        pEEInfoOut->osMinor                            = (unsigned)value.osMinor;
-        pEEInfoOut->osBuild                            = (unsigned)value.osBuild;
         DEBUG_REP(dmpGetEEInfo((DWORD)0, value));
     }
     else
@@ -3981,9 +3919,6 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->offsetOfDelegateInstance                   = (unsigned)0x8;
         pEEInfoOut->offsetOfDelegateFirstTarget                = (unsigned)0x18;
         pEEInfoOut->offsetOfWrapperDelegateIndirectCell        = (unsigned)0x40;
-        pEEInfoOut->offsetOfTransparentProxyRP                 = (unsigned)0x8;
-        pEEInfoOut->offsetOfRealProxyServer                    = (unsigned)0x18;
-        pEEInfoOut->offsetOfObjArrayData                       = (unsigned)0x18;
         pEEInfoOut->sizeOfReversePInvokeFrame                  = (unsigned)0x8;
         pEEInfoOut->osPageSize                                 = (size_t)0x1000;
         pEEInfoOut->maxUncheckedOffsetForNullObject            = (size_t)((32 * 1024) - 1);
@@ -3993,10 +3928,6 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
 #else
         pEEInfoOut->osType                                     = CORINFO_WINNT;
 #endif
-
-        pEEInfoOut->osMajor                                    = (unsigned)0;
-        pEEInfoOut->osMinor                                    = (unsigned)0;
-        pEEInfoOut->osBuild                                    = (unsigned)0;
     }
 }
 
@@ -4224,10 +4155,10 @@ void MethodContext::dmpGetLocationOfThisType(DWORDLONG key, const Agnostic_CORIN
     printf("GetLocationOfThisType key ftn-%016llX, value %s", key,
            SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP_KIND(value).c_str());
 }
-CORINFO_LOOKUP_KIND MethodContext::repGetLocationOfThisType(CORINFO_METHOD_HANDLE context)
+void MethodContext::repGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind)
 {
     Agnostic_CORINFO_LOOKUP_KIND value = GetLocationOfThisType->Get((DWORDLONG)context);
-    return SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(value);
+    *pLookupKind = SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(value);
 }
 
 void MethodContext::recGetDelegateCtor(CORINFO_METHOD_HANDLE methHnd,
@@ -4494,24 +4425,6 @@ CorInfoInlineTypeCheck MethodContext::repCanInlineTypeCheck(CORINFO_CLASS_HANDLE
     return (CorInfoInlineTypeCheck)CanInlineTypeCheck->Get(key);
 }
 
-void MethodContext::recCanInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls, BOOL result)
-{
-    if (CanInlineTypeCheckWithObjectVTable == nullptr)
-        CanInlineTypeCheckWithObjectVTable = new LightWeightMap<DWORDLONG, DWORD>();
-
-    CanInlineTypeCheckWithObjectVTable->Add((DWORDLONG)cls, (DWORD)result);
-}
-void MethodContext::dmpCanInlineTypeCheckWithObjectVTable(DWORDLONG key, DWORD value)
-{
-    printf("CanInlineTypeCheckWithObjectVTable key cls-%016llX, value res-%u", key, value);
-}
-BOOL MethodContext::repCanInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls)
-{
-    AssertCodeMsg(CanInlineTypeCheckWithObjectVTable != nullptr, EXCEPTIONCODE_MC,
-                  "No map for CanInlineTypeCheckWithObjectVTable");
-    return (BOOL)CanInlineTypeCheckWithObjectVTable->Get((DWORDLONG)cls);
-}
-
 void MethodContext::recSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE  parent,
                                                   CORINFO_METHOD_HANDLE method,
                                                   BOOL                  result)
@@ -4543,36 +4456,6 @@ BOOL MethodContext::repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, C
 
     BOOL value = (BOOL)SatisfiesMethodConstraints->Get(key);
     return value;
-}
-
-void MethodContext::recInitConstraintsForVerification(CORINFO_METHOD_HANDLE method,
-                                                      BOOL*                 pfHasCircularClassConstraints,
-                                                      BOOL*                 pfHasCircularMethodConstraint)
-{
-    if (InitConstraintsForVerification == nullptr)
-        InitConstraintsForVerification = new LightWeightMap<DWORDLONG, DD>();
-
-    DD value;
-
-    value.A = (DWORD)*pfHasCircularClassConstraints;
-    value.B = (DWORD)*pfHasCircularMethodConstraint;
-
-    InitConstraintsForVerification->Add((DWORDLONG)method, value);
-}
-void MethodContext::dmpInitConstraintsForVerification(DWORDLONG key, DD value)
-{
-    printf("InitConstraintsForVerification key ftn-%016llX, value circ-%u cirm-%u", key, value.A, value.B);
-}
-void MethodContext::repInitConstraintsForVerification(CORINFO_METHOD_HANDLE method,
-                                                      BOOL*                 pfHasCircularClassConstraints,
-                                                      BOOL*                 pfHasCircularMethodConstraint)
-{
-    DD value;
-
-    value = InitConstraintsForVerification->Get((DWORDLONG)method);
-
-    *pfHasCircularClassConstraints = (BOOL)value.A;
-    *pfHasCircularMethodConstraint = (BOOL)value.B;
 }
 
 void MethodContext::recIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK, BOOL result)
@@ -4836,35 +4719,6 @@ void MethodContext::dmpHandleException(DWORD key, DWORD value)
     printf("HandleException key %u, value %u", key, value);
 }
 
-void MethodContext::recGetAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void** ppIndirection, void* result)
-{
-    if (GetAddressOfPInvokeFixup == nullptr)
-        GetAddressOfPInvokeFixup = new LightWeightMap<DWORDLONG, DLDL>();
-
-    DLDL value;
-
-    if (ppIndirection != nullptr)
-        value.A = (DWORDLONG)*ppIndirection;
-    else
-        value.A = (DWORDLONG)0;
-    value.B     = (DWORDLONG)result;
-
-    GetAddressOfPInvokeFixup->Add((DWORDLONG)method, value);
-}
-void MethodContext::dmpGetAddressOfPInvokeFixup(DWORDLONG key, DLDL value)
-{
-    printf("GetAddressOfPInvokeFixup key ftn-%016llX, value pp-%016llX res-%016llX", key, value.A, value.B);
-}
-void* MethodContext::repGetAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void** ppIndirection)
-{
-    DLDL value;
-
-    value = GetAddressOfPInvokeFixup->Get((DWORDLONG)method);
-
-    if (ppIndirection != nullptr)
-        *ppIndirection = (void*)value.A;
-    return (void*)value.B;
-}
 void MethodContext::recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup)
 {
     if (GetAddressOfPInvokeTarget == nullptr)
@@ -5063,46 +4917,6 @@ BOOL MethodContext::repIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHn
     return (BOOL)value;
 }
 
-void MethodContext::recCanSkipMethodVerification(CORINFO_METHOD_HANDLE            ftnHandle,
-                                                 BOOL                             skip,
-                                                 CorInfoCanSkipVerificationResult result)
-{
-    if (CanSkipMethodVerification == nullptr)
-        CanSkipMethodVerification = new LightWeightMap<DLD, DWORD>();
-
-    DLD key;
-    ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
-                                   // out padding too
-
-    key.A = (DWORDLONG)ftnHandle;
-    key.B = (DWORD)skip;
-
-    CanSkipMethodVerification->Add(key, (DWORD)result);
-    DEBUG_REC(dmpCanSkipMethodVerification(key, (DWORD)result));
-}
-void MethodContext::dmpCanSkipMethodVerification(DLD key, DWORD value)
-{
-    printf("CanSkipMethodVerification key ftn-%016llX skp-%u, value res-%u", key.A, key.B, value);
-}
-CorInfoCanSkipVerificationResult MethodContext::repCanSkipMethodVerification(CORINFO_METHOD_HANDLE ftnHandle, BOOL skip)
-{
-    DLD key;
-    ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
-                                   // out padding too
-
-    key.A = (DWORDLONG)ftnHandle;
-    key.B = (DWORD)skip;
-
-    AssertCodeMsg(CanSkipMethodVerification != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX",
-                  (DWORDLONG)ftnHandle);
-    AssertCodeMsg(CanSkipMethodVerification->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
-                  (DWORDLONG)ftnHandle);
-
-    CorInfoCanSkipVerificationResult temp = (CorInfoCanSkipVerificationResult)CanSkipMethodVerification->Get(key);
-    DEBUG_REP(dmpCanSkipMethodVerification(key, (DWORD)temp));
-    return temp;
-}
-
 void MethodContext::recFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
                                        unsigned               methTOK,
                                        CORINFO_CONTEXT_HANDLE context,
@@ -5155,28 +4969,6 @@ void MethodContext::repFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
     *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindCallSiteSig);
 
     DEBUG_REP(dmpFindCallSiteSig(key, value));
-}
-
-void MethodContext::recShouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope, BOOL result)
-{
-    if (ShouldEnforceCallvirtRestriction == nullptr)
-        ShouldEnforceCallvirtRestriction = new LightWeightMap<DWORDLONG, DWORD>();
-    ShouldEnforceCallvirtRestriction->Add((DWORDLONG)scope, (DWORD)result);
-    DEBUG_REC(dmpShouldEnforceCallvirtRestriction((DWORDLONG)scope, (DWORD)result));
-}
-void MethodContext::dmpShouldEnforceCallvirtRestriction(DWORDLONG key, DWORD value)
-{
-    printf("ShouldEnforceCallvirtRestriction key %016llX, value %u", key, value);
-}
-BOOL MethodContext::repShouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope)
-{
-    AssertCodeMsg(ShouldEnforceCallvirtRestriction != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX",
-                  (DWORDLONG)scope);
-    AssertCodeMsg(ShouldEnforceCallvirtRestriction->GetIndex((DWORDLONG)scope) != -1, EXCEPTIONCODE_MC,
-                  "Didn't find %016llX", (DWORDLONG)scope);
-    BOOL temp = (BOOL)ShouldEnforceCallvirtRestriction->Get((DWORDLONG)scope);
-    DEBUG_REC(dmpShouldEnforceCallvirtRestriction((DWORDLONG)scope, (DWORD)temp));
-    return temp;
 }
 
 void MethodContext::recGetMethodSync(CORINFO_METHOD_HANDLE ftn, void** ppIndirection, void* result)
@@ -5904,25 +5696,6 @@ WORD MethodContext::repGetRelocTypeHint(void* target)
     return retVal;
 }
 
-void MethodContext::recIsWriteBarrierHelperRequired(CORINFO_FIELD_HANDLE field, bool result)
-{
-    if (IsWriteBarrierHelperRequired == nullptr)
-        IsWriteBarrierHelperRequired = new LightWeightMap<DWORDLONG, DWORD>();
-
-    IsWriteBarrierHelperRequired->Add((DWORDLONG)field, (DWORD)result);
-    DEBUG_REC(dmpIsWriteBarrierHelperRequired((DWORDLONG)field, (DWORD)result));
-}
-void MethodContext::dmpIsWriteBarrierHelperRequired(DWORDLONG key, DWORD value)
-{
-    printf("IsWriteBarrierHelperRequired key fld-%016llX, value res-%u", key, value);
-}
-bool MethodContext::repIsWriteBarrierHelperRequired(CORINFO_FIELD_HANDLE field)
-{
-    bool result = IsWriteBarrierHelperRequired->Get((DWORDLONG)field) != 0;
-    DEBUG_REP(dmpIsWriteBarrierHelperRequired((DWORDLONG)field, result));
-    return result;
-}
-
 void MethodContext::recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, BOOL result)
 {
     if (IsValidToken == nullptr)
@@ -6249,30 +6022,6 @@ BOOL MethodContext::repCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR
 
     BOOL value = (BOOL)CheckMethodModifier->Get(key);
     return value;
-}
-
-void MethodContext::recGetPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void** ppIndirection, void* result)
-{
-    if (GetPInvokeUnmanagedTarget == nullptr)
-        GetPInvokeUnmanagedTarget = new LightWeightMap<DWORDLONG, DLDL>();
-    DLDL temp;
-    temp.A = (DWORDLONG)*ppIndirection;
-    temp.B = (DWORDLONG)result;
-
-    GetPInvokeUnmanagedTarget->Add((DWORDLONG)method, temp);
-    DEBUG_REC(dmpGetPInvokeUnmanagedTarget((DWORDLONG)method, temp));
-}
-void MethodContext::dmpGetPInvokeUnmanagedTarget(DWORDLONG key, DLDL value)
-{
-    printf("GetPInvokeUnmanagedTarget key ftn-%016llX, value pp-%016llX res-%016llX", key, value.A, value.B);
-}
-void* MethodContext::repGetPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void** ppIndirection)
-{
-    DLDL temp      = (DLDL)GetPInvokeUnmanagedTarget->Get((DWORDLONG)method);
-    *ppIndirection = (void*)temp.A;
-    DEBUG_REP(dmpGetPInvokeUnmanagedTarget((DWORDLONG)method, temp));
-
-    return (void*)temp.B;
 }
 
 void MethodContext::recGetArrayRank(CORINFO_CLASS_HANDLE cls, unsigned result)

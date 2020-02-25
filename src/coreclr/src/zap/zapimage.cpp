@@ -2434,15 +2434,6 @@ HRESULT ZapImage::LocateProfileData()
 #endif
 
     //
-    // Don't use IBC data from untrusted assemblies--this allows us to assume that
-    // the IBC data is not malicious
-    //
-    if (m_zapper->m_pEEJitInfo->canSkipVerification(m_hModule) != CORINFO_VERIFICATION_CAN_SKIP)
-    {
-        return S_FALSE;
-    }
-
-    //
     // See if there's profile data in the resource section of the PE
     //
     m_pRawProfileData = (BYTE*)m_ModuleDecoder.GetWin32Resource(W("PROFILE_DATA"), W("IBC"), &m_cRawProfileData);

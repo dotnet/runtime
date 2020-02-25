@@ -454,7 +454,6 @@ public:
                                   BOOL fAssembly);
     BOOL isValueClass (CORINFO_CLASS_HANDLE cls);
     CorInfoInlineTypeCheck canInlineTypeCheck (CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
-    BOOL canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE cls);
 
     DWORD getClassAttribs (CORINFO_CLASS_HANDLE cls);
 
@@ -498,7 +497,6 @@ public:
     static CorInfoHelpFunc getCastingHelperStatic(TypeHandle clsHnd, bool fThrowing, bool * pfClassMustBeRestored);
 
     CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd);
-    CorInfoHelpFunc getSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn);
     CORINFO_CLASS_HANDLE getTypeForBox(CORINFO_CLASS_HANDLE  cls);
     CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls);
     CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls);
@@ -651,8 +649,6 @@ public:
     size_t findNameOfToken (CORINFO_MODULE_HANDLE module, mdToken metaTOK,
                                       __out_ecount (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
 
-    CorInfoCanSkipVerificationResult canSkipVerification(CORINFO_MODULE_HANDLE moduleHnd);
-
     // Checks if the given metadata token is valid
     BOOL isValidToken (
             CORINFO_MODULE_HANDLE       module,
@@ -697,21 +693,6 @@ public:
                                  CorInfoInline inlineResult,
                                  const char * reason);
 
-    // Used by ngen
-    CORINFO_METHOD_HANDLE instantiateMethodAtObject(CORINFO_METHOD_HANDLE method);
-
-    // Loads the constraints on a typical method definition, detecting cycles;
-    // used by verifiers.
-    void initConstraintsForVerification(
-            CORINFO_METHOD_HANDLE   method,
-            BOOL *pfHasCircularClassConstraints,
-            BOOL *pfHasCircularMethodConstraints
-            );
-
-    CorInfoInstantiationVerification isInstantiationOfVerifiedGeneric (
-            CORINFO_METHOD_HANDLE  methodHnd);
-
-
     bool canTailCall (
             CORINFO_METHOD_HANDLE  callerHnd,
             CORINFO_METHOD_HANDLE  declaredCalleeHnd,
@@ -723,9 +704,6 @@ public:
                                  bool fIsTailPrefix,
                                  CorInfoTailCall tailCallResult,
                                  const char * reason);
-
-    CorInfoCanSkipVerificationResult canSkipMethodVerification(
-        CORINFO_METHOD_HANDLE ftnHnd);
 
     // Given a method descriptor ftnHnd, extract signature information into sigInfo
     // Obtain (representative) instantiation information from ftnHnd's owner class
@@ -799,12 +777,6 @@ public:
     LPVOID GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void ** ppIndirection);
     bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
 
-    // Check Visibility rules.
-
-    // should we enforce the new (for whidbey) restrictions on calling virtual methods?
-    BOOL shouldEnforceCallvirtRestriction(
-            CORINFO_MODULE_HANDLE   scope);
-
     // Check constraints on method type arguments (only).
     // The parent class should be checked separately using satisfiesClassConstraints(parent).
     BOOL satisfiesMethodConstraints(
@@ -835,14 +807,12 @@ public:
 
     unsigned getFieldOffset (CORINFO_FIELD_HANDLE field);
 
-    bool isWriteBarrierHelperRequired(CORINFO_FIELD_HANDLE field);
-
     void* getFieldAddress(CORINFO_FIELD_HANDLE field, void **ppIndirection);
 
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
 
     // ICorDebugInfo stuff
-    void * allocateArray(ULONG cBytes);
+    void * allocateArray(size_t cBytes);
     void freeArray(void *array);
     void getBoundaries(CORINFO_METHOD_HANDLE ftn,
                        unsigned int *cILOffsets, DWORD **pILOffsets,
@@ -922,7 +892,6 @@ public:
     unsigned getClassDomainID (CORINFO_CLASS_HANDLE   cls, void **ppIndirection);
     CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO *sig, void **ppIndirection);
     bool canGetVarArgsHandle(CORINFO_SIG_INFO *sig);
-    void* getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void **ppIndirection);
     void* getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void **ppIndirection);
     void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP *pLookup);
     CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(CORINFO_METHOD_HANDLE method, CORINFO_JUST_MY_CODE_HANDLE **ppIndirection);
@@ -970,11 +939,11 @@ public:
     CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE handle,
                                             void **ppIndirection);
 
-	void embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
-		BOOL                     fEmbedParent,
-		CORINFO_GENERICHANDLE_RESULT *pResult);
+    void embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
+        BOOL                     fEmbedParent,
+        CORINFO_GENERICHANDLE_RESULT *pResult);
 
-    CORINFO_LOOKUP_KIND getLocationOfThisType(CORINFO_METHOD_HANDLE context);
+    void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
 
 
     void setOverride(ICorDynamicInfo *pOverride, CORINFO_METHOD_HANDLE currentMethod)
@@ -1009,8 +978,6 @@ public:
     // ICorJitInfo stuff - none of this should be called on this class
     //
 
-    IEEMemoryManager* getMemoryManager();
-
     void allocMem (
             ULONG               hotCodeSize,    /* IN */
             ULONG               coldCodeSize,   /* IN */
@@ -1041,8 +1008,6 @@ public:
     void * allocGCInfo (
             size_t                  size        /* IN */
             );
-
-    void yieldExecution();
 
     void setEHcount (
             unsigned		     cEH    /* IN */
@@ -1089,11 +1054,6 @@ public:
             );
 
     WORD getRelocTypeHint(void * target);
-
-    void getModuleNativeEntryPointRange(
-            void ** pStart, /* OUT */
-            void ** pEnd    /* OUT */
-            );
 
     DWORD getExpectedTargetArchitecture();
 
@@ -1295,10 +1255,6 @@ public:
             INT32                    addlDelta);
 
     WORD getRelocTypeHint(void * target);
-
-    void getModuleNativeEntryPointRange(
-            void**                   pStart,
-            void**                   pEnd);
 
     DWORD getExpectedTargetArchitecture();
 

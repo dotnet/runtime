@@ -21,13 +21,13 @@ usage()
     echo "Input sources:"
     echo "    --runtime <location>              Location of root of the binaries directory"
     echo "                                      containing the FreeBSD, NetBSD or Linux runtime"
-    echo "                                      default: <repo_root>/bin/testhost/netcoreapp-<OS>-<ConfigurationGroup>-<Arch>"
+    echo "                                      default: <repo_root>/bin/testhost/netcoreapp-<OS>-<Configuration>-<Arch>"
     echo "    --corefx-tests <location>         Location of the root binaries location containing"
     echo "                                      the tests to run"
     echo "                                      default: <repo_root>/artifacts/bin"
     echo
     echo "Flavor/OS/Architecture options:"
-    echo "    --configurationGroup <config>     ConfigurationGroup to run (Debug/Release)"
+    echo "    --configuration <config>     Configuration to run (Debug/Release)"
     echo "                                      default: Debug"
     echo "    --os <os>                         OS to run (FreeBSD, NetBSD or Linux)"
     echo "                                      default: detect current OS"
@@ -66,7 +66,7 @@ ProjectRoot="$(dirname "$(dirname "$(realpath ${BASH_SOURCE[0]})")")"
 
 # Location parameters
 # OS/ConfigurationGroup defaults
-ConfigurationGroup="Debug"
+Configuration="Debug"
 source $ProjectRoot/eng/native/init-os-and-arch.sh
 
 OS=$os
@@ -150,7 +150,7 @@ run_test()
     fi
   fi
 
-  dirName="$1/netcoreapp-$OS-$ConfigurationGroup-$__Arch"
+  dirName="$1/netcoreapp-$OS-$Configuration-$__Arch"
   if [ ! -d "$dirName" ]; then
     echo "Nothing to test in $testProject"
     return
@@ -201,8 +201,8 @@ do
         --restrict-proj)
         TestSelection=$2
         ;;
-        --configurationGroup)
-        ConfigurationGroup=$2
+        --configuration)
+        Configuration=$2
         ;;
         --os)
         OS=$2
@@ -238,7 +238,7 @@ done
 
 if [ "$Runtime" == "" ]
 then
-    Runtime="$ProjectRoot/artifacts/bin/testhost/netcoreapp-$OS-$ConfigurationGroup-$__Arch"
+    Runtime="$ProjectRoot/artifacts/bin/testhost/netcoreapp-$OS-$Configuration-$__Arch"
 fi
 
 if [ "$CoreFxTests" == "" ]
@@ -248,9 +248,9 @@ fi
 
 # Check parameters up front for valid values:
 
-if [ ! "$ConfigurationGroup" == "Debug" ] && [ ! "$ConfigurationGroup" == "Release" ]
+if [ ! "$Configuration" == "Debug" ] && [ ! "$Configuration" == "Release" ]
 then
-    echo "error: ConfigurationGroup should be Debug or Release"
+    echo "error: Configuration should be Debug or Release"
     exit 1
 fi
 
@@ -276,7 +276,7 @@ fi
 
 ensure_binaries_are_present
 
-# Walk the directory tree rooted at src bin/tests/$OS.AnyCPU.$ConfigurationGroup/
+# Walk the directory tree rooted at src bin/tests/$OS.AnyCPU.$Configuration/
 
 TestsFailed=0
 numberOfProcesses=0

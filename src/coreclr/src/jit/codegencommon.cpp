@@ -7635,12 +7635,6 @@ void CodeGen::genFnProlog()
 
     genReportGenericContextArg(initReg, &initRegZeroed);
 
-    // The local variable representing the security object must be on the stack frame
-    // and must be 0 initialized.
-    noway_assert((compiler->lvaSecurityObject == BAD_VAR_NUM) ||
-                 (compiler->lvaTable[compiler->lvaSecurityObject].lvOnFrame &&
-                  compiler->lvaTable[compiler->lvaSecurityObject].lvMustInit));
-
 #ifdef JIT32_GCENCODER
     // Initialize the LocalAllocSP slot if there is localloc in the function.
     if (compiler->lvaLocAllocSPvar != BAD_VAR_NUM)

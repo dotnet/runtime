@@ -645,7 +645,7 @@ INST2(cmtst,   "cmtst",  0, 0, IF_EN2O,   0x5EE08C00,  0x0E208C00)
                                    //  cmtst   Vd,Vn,Vm             DV_3E  01011110111mmmmm 100011nnnnnddddd   5EE0 8C00   Vd,Vn,Vm   (scalar)
                                    //  cmtst   Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 100011nnnnnddddd   0E20 8C00   Vd,Vn,Vm   (vector)
 
-//    enum     name     FP LD/ST            DV_2G        DV_3B
+//    enum     name     FP LD/ST            DV_2Q        DV_3B
 INST2(faddp,   "faddp",  0, 0, IF_EN2P,   0x7E30D800,  0x2E20D400)
                                    //  faddp   Vd,Vn                DV_2Q  011111100X110000 110110nnnnnddddd   7E30 D800   Vd,Vn      (scalar)
                                    //  faddp   Vd,Vn,Vm             DV_3B  0Q1011100X1mmmmm 110101nnnnnddddd   2E20 D400   Vd,Vn,Vm   (vector)
@@ -1222,8 +1222,8 @@ INST1(bit,     "bit",    0, 0, IF_DV_3C,  0x2EA01C00)
 INST1(bif,     "bif",    0, 0, IF_DV_3C,  0x2EE01C00)
                                    //  bif     Vd,Vn,Vm             DV_3C  0Q101110111mmmmm 000111nnnnnddddd   2EE0 1C00   Vd,Vn,Vm
 
-INST1(addv,    "addv",   0, 0, IF_DV_2M,  0x0E31B800)
-                                   //  addv    Vd,Vn                DV_2M  0Q001110XX110001 101110nnnnnddddd   0E31 B800   Vd,Vn      (vector)
+INST1(addv,    "addv",   0, 0, IF_DV_2T,  0x0E31B800)
+                                   //  addv    Vd,Vn                DV_2T  0Q001110XX110001 101110nnnnnddddd   0E31 B800   Vd,Vn      (vector)
 
 INST1(cnt,     "cnt",    0, 0, IF_DV_2M,  0x0E205800)
                                    //  cnt     Vd,Vn                DV_2M  0Q00111000100000 010110nnnnnddddd   0E20 5800   Vd,Vn      (vector)
@@ -1231,23 +1231,23 @@ INST1(cnt,     "cnt",    0, 0, IF_DV_2M,  0x0E205800)
 INST1(not,     "not",    0, 0, IF_DV_2M,  0x2E205800)
                                    //  not     Vd,Vn                DV_2M  0Q10111000100000 010110nnnnnddddd   2E20 5800   Vd,Vn      (vector)
 
-INST1(saddlv,  "saddlv", 0, 0, IF_DV_2M,  0x0E303800)
-                                   //  saddlv  Vd,Vn                DV_2M  0Q001110XX110000 001110nnnnnddddd   0E30 3800   Vd,Vn      (vector)
+INST1(saddlv,  "saddlv", 0, 0, IF_DV_2T,  0x0E303800)
+                                   //  saddlv  Vd,Vn                DV_2T  0Q001110XX110000 001110nnnnnddddd   0E30 3800   Vd,Vn      (vector)
 
-INST1(smaxv,   "smaxv",  0, 0, IF_DV_2M,  0x0E30A800)
-                                   //  smaxv   Vd,Vn                DV_2M  0Q001110XX110000 101010nnnnnddddd   0E30 A800   Vd,Vn      (vector)
+INST1(smaxv,   "smaxv",  0, 0, IF_DV_2T,  0x0E30A800)
+                                   //  smaxv   Vd,Vn                DV_2T  0Q001110XX110000 101010nnnnnddddd   0E30 A800   Vd,Vn      (vector)
 
-INST1(sminv,   "sminv",  0, 0, IF_DV_2M,  0x0E31A800)
-                                   //  sminv   Vd,Vn                DV_2M  0Q001110XX110001 101010nnnnnddddd   0E31 A800   Vd,Vn      (vector)
+INST1(sminv,   "sminv",  0, 0, IF_DV_2T,  0x0E31A800)
+                                   //  sminv   Vd,Vn                DV_2T  0Q001110XX110001 101010nnnnnddddd   0E31 A800   Vd,Vn      (vector)
 
-INST1(uaddlv,  "uaddlv", 0, 0, IF_DV_2M,  0x2E303800)
-                                   //  uaddlv  Vd,Vn                DV_2M  0Q101110XX110000 001110nnnnnddddd   2E30 3800   Vd,Vn      (vector)
+INST1(uaddlv,  "uaddlv", 0, 0, IF_DV_2T,  0x2E303800)
+                                   //  uaddlv  Vd,Vn                DV_2T  0Q101110XX110000 001110nnnnnddddd   2E30 3800   Vd,Vn      (vector)
 
-INST1(umaxv,   "umaxv",  0, 0, IF_DV_2M,  0x2E30A800)
-                                   //  umaxv   Vd,Vn                DV_2M  0Q101110XX110000 101010nnnnnddddd   2E30 A800   Vd,Vn      (vector)
+INST1(umaxv,   "umaxv",  0, 0, IF_DV_2T,  0x2E30A800)
+                                   //  umaxv   Vd,Vn                DV_2T  0Q101110XX110000 101010nnnnnddddd   2E30 A800   Vd,Vn      (vector)
 
-INST1(uminv,   "uminv",  0, 0, IF_DV_2M,  0x2E31A800)
-                                   //  uminv   Vd,Vn                DV_2M  0Q101110XX110001 101010nnnnnddddd   2E31 A800   Vd,Vn      (vector)
+INST1(uminv,   "uminv",  0, 0, IF_DV_2T,  0x2E31A800)
+                                   //  uminv   Vd,Vn                DV_2T  0Q101110XX110001 101010nnnnnddddd   2E31 A800   Vd,Vn      (vector)
 
 INST1(fmaxnmv, "fmaxnmv",0, 0, IF_DV_2R,  0x2E30C800)
                                    //  fmaxnmv Vd,Vn                DV_2R  0Q1011100X110000 110010nnnnnddddd   2E30 C800   Vd,Vn      (vector)

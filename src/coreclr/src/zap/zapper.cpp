@@ -668,11 +668,6 @@ Zapper::~Zapper()
             _ASSERTE(m_hJitLib != NULL);
             _ASSERTE(m_pJitCompiler != NULL);
 
-            // We're unloading the fallback JIT dll, so clear the fallback shim. We do this even though
-            // we'll unload the main JIT below, in case there are other places that have loaded the main JIT
-            // but not the fallback JIT (note that LoadLibrary reference counts the number of loads that have been done).
-            m_pJitCompiler->setRealJit(nullptr);
-
             FreeLibrary(m_hJitLegacy);
         }
 #endif

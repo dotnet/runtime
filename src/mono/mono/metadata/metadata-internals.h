@@ -1223,6 +1223,12 @@ mono_assembly_get_alc (MonoAssembly *assm)
 	return mono_image_get_alc (assm->image);
 }
 
+static inline MonoType*
+mono_signature_get_return_type_internal (MonoMethodSignature *sig)
+{
+	return sig->ret;
+}
+
 /**
  * mono_type_get_type_internal:
  * \param type the \c MonoType operated on

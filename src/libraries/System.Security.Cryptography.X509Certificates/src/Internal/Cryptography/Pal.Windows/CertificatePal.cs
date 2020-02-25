@@ -537,11 +537,13 @@ namespace Internal.Cryptography.Pal
             _certContext = certContext;
         }
 
-        public byte[]? Export(X509ContentType contentType, SafePasswordHandle password)
+        public byte[] Export(X509ContentType contentType, SafePasswordHandle password)
         {
             using (IExportPal storePal = StorePal.FromCertificate(this))
             {
-                return storePal.Export(contentType, password);
+                byte[]? exported = storePal.Export(contentType, password);
+                Debug.Assert(exported != null);
+                return exported;
             }
         }
     }

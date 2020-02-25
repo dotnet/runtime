@@ -8740,7 +8740,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 
         // These allocation operations probably require some augmentation -- perhaps allocSiteId,
         // something about array length...
-        case CORINFO_HELP_NEW_CROSSCONTEXT:
         case CORINFO_HELP_NEWFAST:
         case CORINFO_HELP_NEWSFAST:
         case CORINFO_HELP_NEWSFAST_FINALIZE:
