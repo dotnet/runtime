@@ -73,9 +73,9 @@ jobs:
       - eng/pipelines/libraries/*
     - subset: clrjit
       include:
-        - src/coreclr/src/jit/*
+      - src/coreclr/src/jit/*
       exclude:
-        - *
+      - *
     - subset: mono
       include:
       - src/libraries/System.Private.CoreLib/*
