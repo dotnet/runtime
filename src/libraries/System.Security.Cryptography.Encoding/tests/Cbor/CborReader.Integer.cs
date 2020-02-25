@@ -115,11 +115,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             switch (header.AdditionalInfo)
             {
-                case byte x when (x < 24):
+                case CborAdditionalInfo x when (x < CborAdditionalInfo.UnsignedInteger8BitEncoding):
                     additionalBytes = 0;
-                    return x;
+                    return (ulong)x;
 
-                case 24:
+                case CborAdditionalInfo.UnsignedInteger8BitEncoding:
                     if (_buffer.Length > 1)
                     {
                         additionalBytes = 1;
@@ -128,7 +128,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                     throw new FormatException("End of buffer");
 
-                case 25:
+                case CborAdditionalInfo.UnsignedInteger16BitEncoding:
                     if (_buffer.Length > 2)
                     {
                         additionalBytes = 2;
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                     throw new FormatException("End of buffer");
 
-                case 26:
+                case CborAdditionalInfo.UnsignedInteger32BitEncoding:
                     if (_buffer.Length > 4)
                     {
                         additionalBytes = 4;
@@ -146,7 +146,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                     throw new FormatException("End of buffer");
 
-                case 27:
+                case CborAdditionalInfo.UnsignedInteger64BitEncoding:
                     if (_buffer.Length > 2)
                     {
                         additionalBytes = 8;
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
                     throw new FormatException("End of buffer");
 
-                case 31:
+                case CborAdditionalInfo.IndefiniteLength:
                     throw new NotImplementedException("indefinite length support");
 
                 default:

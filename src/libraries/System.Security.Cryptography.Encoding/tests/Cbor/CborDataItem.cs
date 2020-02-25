@@ -18,18 +18,27 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         Special = 7,
     }
 
+    internal enum CborAdditionalInfo : byte
+    {
+        UnsignedInteger8BitEncoding = 24,
+        UnsignedInteger16BitEncoding = 25,
+        UnsignedInteger32BitEncoding = 26,
+        UnsignedInteger64BitEncoding = 27,
+        IndefiniteLength = 31,
+    }
+
     /// Represents the Cbor Data item initial byte structure
     internal struct CborDataItem
     {
         private const byte AdditionalInformationMask = 0b000_11111;
         public readonly byte InitialByte;
 
-        public CborDataItem(CborMajorType majorType, byte additionalInfo)
+        public CborDataItem(CborMajorType majorType, CborAdditionalInfo additionalInfo)
         {
             Debug.Assert((byte)majorType < 8, "CBOR Major Type is out of range");
             Debug.Assert((byte)additionalInfo < 32, "CBOR initial byte additional info is out of range");
 
-            InitialByte = (byte)(((byte)majorType << 5) | additionalInfo);
+            InitialByte = (byte)(((byte)majorType << 5) | (byte)additionalInfo);
         }
 
         public CborDataItem(byte initialByte)
@@ -38,6 +47,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         public CborMajorType MajorType => (CborMajorType)(InitialByte >> 5);
-        public byte AdditionalInfo => (byte)(InitialByte & AdditionalInformationMask);
+        public CborAdditionalInfo AdditionalInfo => (CborAdditionalInfo)(InitialByte & AdditionalInformationMask);
     }
 }

@@ -34,33 +34,33 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             if (value < 24)
             {
                 EnsureWriteCapacity(1);
-                _buffer[_offset++] = new CborDataItem(type, (byte)value).InitialByte;
+                _buffer[_offset++] = new CborDataItem(type, (CborAdditionalInfo)value).InitialByte;
             }
             else if (value <= byte.MaxValue)
             {
                 EnsureWriteCapacity(2);
-                _buffer[_offset] = new CborDataItem(type, 24).InitialByte;
+                _buffer[_offset] = new CborDataItem(type, CborAdditionalInfo.UnsignedInteger8BitEncoding).InitialByte;
                 _buffer[_offset + 1] = (byte)value;
                 _offset += 2;
             }
             else if (value <= ushort.MaxValue)
             {
                 EnsureWriteCapacity(3);
-                _buffer[_offset] = new CborDataItem(type, 25).InitialByte;
+                _buffer[_offset] = new CborDataItem(type, CborAdditionalInfo.UnsignedInteger16BitEncoding).InitialByte;
                 BinaryPrimitives.WriteUInt16BigEndian(_buffer.AsSpan(_offset + 1), (ushort)value);
                 _offset += 3;
             }
             else if (value <= uint.MaxValue)
             {
                 EnsureWriteCapacity(5);
-                _buffer[_offset] = new CborDataItem(type, 26).InitialByte;
+                _buffer[_offset] = new CborDataItem(type, CborAdditionalInfo.UnsignedInteger32BitEncoding).InitialByte;
                 BinaryPrimitives.WriteUInt32BigEndian(_buffer.AsSpan(_offset + 1), (uint)value);
                 _offset += 5;
             }
             else
             {
                 EnsureWriteCapacity(9);
-                _buffer[_offset] = new CborDataItem(type, 27).InitialByte;
+                _buffer[_offset] = new CborDataItem(type, CborAdditionalInfo.UnsignedInteger64BitEncoding).InitialByte;
                 BinaryPrimitives.WriteUInt64BigEndian(_buffer.AsSpan(_offset + 1), value);
                 _offset += 9;
             }
