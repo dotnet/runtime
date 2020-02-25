@@ -2835,7 +2835,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
 
         // Either not generating relocatable code, or addr must be an icon handle, or the
         // constant is zero (which we won't generate a relocation for).
-        assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0) || memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
+        assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0));
 
         if (memBase->AsIntConCommon()->AddrNeedsReloc(emitComp))
         {
