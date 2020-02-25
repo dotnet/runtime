@@ -135,8 +135,7 @@ private:
         {
             LIMITED_METHOD_CONTRACT;
 
-            int i;
-            for (i = 0; i < EventStoreLength; i++) {
+            for (int i = 0; i < EventStoreLength; i++) {
                 if (hArray[i] == NULL) {
                     hArray[i] = handle;
                     return TRUE;
