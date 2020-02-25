@@ -802,7 +802,7 @@ mono_class_is_open_constructed_type (MonoType *t);
 void
 mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod ***overrides, gint32 *num_overrides, MonoGenericContext *generic_context, MonoError *error);
 
-MONO_LLVM_INTERNAL MonoMethod*
+MonoMethod*
 mono_class_get_cctor (MonoClass *klass);
 
 MonoMethod*
@@ -1082,10 +1082,10 @@ mono_loader_init           (void);
 void
 mono_loader_cleanup        (void);
 
-MONO_LLVM_INTERNAL void
+void
 mono_loader_lock           (void);
 
-MONO_LLVM_INTERNAL void
+void
 mono_loader_unlock         (void);
 
 void
@@ -1331,7 +1331,7 @@ mono_get_image_for_generic_param (MonoGenericParam *param);
 char *
 mono_make_generic_name_string (MonoImage *image, int num);
 
-MONO_LLVM_INTERNAL MonoClass *
+MonoClass *
 mono_class_load_from_name (MonoImage *image, const char* name_space, const char *name);
 
 MonoClass*
@@ -1344,7 +1344,7 @@ gboolean
 mono_class_has_failure (const MonoClass *klass);
 
 /* Kind specific accessors */
-MONO_LLVM_INTERNAL MonoGenericClass*
+MonoGenericClass*
 mono_class_get_generic_class (MonoClass *klass);
 
 MonoGenericClass*
@@ -1509,7 +1509,7 @@ mono_class_contextbound_bit_offset (int* byte_offset_out, guint8* mask_out);
 gboolean
 mono_class_init_checked (MonoClass *klass, MonoError *error);
 
-MONO_LLVM_INTERNAL MonoType*
+MonoType*
 mono_class_enum_basetype_internal (MonoClass *klass);
 
 gboolean

@@ -72,7 +72,7 @@ typedef struct {
 void            mono_debugger_lock                          (void);
 void            mono_debugger_unlock                        (void);
 
-MONO_LLVM_INTERNAL void
+void
 mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file,
 			   GPtrArray **source_file_list, int **source_files,
 			   MonoSymSeqPoint **seq_points, int *n_seq_points);

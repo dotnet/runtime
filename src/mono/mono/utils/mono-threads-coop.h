@@ -71,9 +71,7 @@ mono_threads_suspend_policy_is_multiphase_stw_enabled (MonoThreadsSuspendPolicy 
 gboolean
 mono_threads_suspend_policy_is_blocking_transition_enabled (MonoThreadsSuspendPolicy p);
 
-MONO_LLVM_INTERNAL_EXTERN_C_BEGIN
-extern char mono_threads_suspend_policy_hidden_dont_modify MONO_LLVM_INTERNAL_NO_EXTERN_C;
-MONO_LLVM_INTERNAL_EXTERN_C_END
+extern char mono_threads_suspend_policy_hidden_dont_modify;
 
 static inline MonoThreadsSuspendPolicy
 mono_threads_suspend_policy (void) {

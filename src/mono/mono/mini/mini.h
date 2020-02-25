@@ -399,9 +399,7 @@ typedef union MonoInstSpec { // instruction specification
 	char bytes[MONO_INST_MAX];
 } MonoInstSpec;
 
-MONO_LLVM_INTERNAL_EXTERN_C_BEGIN
-extern const char mini_ins_info[] MONO_LLVM_INTERNAL_NO_EXTERN_C;
-MONO_LLVM_INTERNAL_EXTERN_C_END
+extern const char mini_ins_info[];
 extern const gint8 mini_ins_sreg_counts [];
 
 #ifndef DISABLE_JIT
@@ -2048,9 +2046,9 @@ void mono_cfg_dump_ir (MonoCompile *cfg, const char *phase_name);
 /* helper methods */
 MonoInst* mono_find_spvar_for_region        (MonoCompile *cfg, int region);
 MonoInst* mono_find_exvar_for_offset        (MonoCompile *cfg, int offset);
-MONO_LLVM_INTERNAL int mono_get_block_region_notry (MonoCompile *cfg, int region);
+int mono_get_block_region_notry (MonoCompile *cfg, int region);
 
-MONO_LLVM_INTERNAL void mono_bblock_add_inst (MonoBasicBlock *bb, MonoInst *inst);
+void mono_bblock_add_inst (MonoBasicBlock *bb, MonoInst *inst);
 void      mono_bblock_insert_after_ins      (MonoBasicBlock *bb, MonoInst *ins, MonoInst *ins_to_insert);
 void      mono_bblock_insert_before_ins     (MonoBasicBlock *bb, MonoInst *ins, MonoInst *ins_to_insert);
 void      mono_verify_bblock                (MonoBasicBlock *bb);
@@ -2058,21 +2056,21 @@ void      mono_verify_cfg                   (MonoCompile *cfg);
 void      mono_constant_fold                (MonoCompile *cfg);
 MonoInst* mono_constant_fold_ins            (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoInst *arg2, gboolean overwrite);
 int       mono_eval_cond_branch             (MonoInst *branch);
-MONO_LLVM_INTERNAL int mono_is_power_of_two (guint32 val);
+int mono_is_power_of_two (guint32 val);
 void      mono_cprop_local                  (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **acp, int acp_size);
-MONO_LLVM_INTERNAL MonoInst* mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode);
+MonoInst* mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode);
 MonoInst* mono_compile_create_var_for_vreg  (MonoCompile *cfg, MonoType *type, int opcode, int vreg);
 void      mono_compile_make_var_load        (MonoCompile *cfg, MonoInst *dest, gssize var_index);
 MonoInst* mini_get_int_to_float_spill_area  (MonoCompile *cfg);
 MonoType* mono_type_from_stack_type         (MonoInst *ins);
-MONO_LLVM_INTERNAL guint32 mono_alloc_ireg  (MonoCompile *cfg);
-MONO_LLVM_INTERNAL guint32 mono_alloc_lreg  (MonoCompile *cfg);
-MONO_LLVM_INTERNAL guint32 mono_alloc_freg  (MonoCompile *cfg);
-MONO_LLVM_INTERNAL guint32 mono_alloc_preg  (MonoCompile *cfg);
+guint32 mono_alloc_ireg  (MonoCompile *cfg);
+guint32 mono_alloc_lreg  (MonoCompile *cfg);
+guint32 mono_alloc_freg  (MonoCompile *cfg);
+guint32 mono_alloc_preg  (MonoCompile *cfg);
 guint32   mono_alloc_dreg                   (MonoCompile *cfg, MonoStackType stack_type);
-MONO_LLVM_INTERNAL guint32 mono_alloc_ireg_ref (MonoCompile *cfg);
-MONO_LLVM_INTERNAL guint32 mono_alloc_ireg_mp (MonoCompile *cfg);
-MONO_LLVM_INTERNAL guint32 mono_alloc_ireg_copy (MonoCompile *cfg, guint32 vreg);
+guint32 mono_alloc_ireg_ref (MonoCompile *cfg);
+guint32 mono_alloc_ireg_mp (MonoCompile *cfg);
+guint32 mono_alloc_ireg_copy (MonoCompile *cfg, guint32 vreg);
 void      mono_mark_vreg_as_ref             (MonoCompile *cfg, int vreg);
 void      mono_mark_vreg_as_mp              (MonoCompile *cfg, int vreg);
 
@@ -2087,10 +2085,10 @@ void      mono_optimize_branches            (MonoCompile *cfg);
 void      mono_blockset_print               (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom);
 void      mono_print_ins_index              (int i, MonoInst *ins);
 GString  *mono_print_ins_index_strbuf       (int i, MonoInst *ins);
-MONO_LLVM_INTERNAL void      mono_print_ins                    (MonoInst *ins);
+void      mono_print_ins                    (MonoInst *ins);
 void      mono_print_bb                     (MonoBasicBlock *bb, const char *msg);
 void      mono_print_code                   (MonoCompile *cfg, const char *msg);
-MONO_LLVM_INTERNAL const char* mono_inst_name (int op);
+const char* mono_inst_name (int op);
 int       mono_op_to_op_imm                 (int opcode);
 int       mono_op_imm_to_op                 (int opcode);
 int       mono_load_membase_to_load_mem     (int opcode);
@@ -2103,8 +2101,8 @@ guint32   mono_reverse_branch_op            (guint32 opcode);
 void      mono_disassemble_code             (MonoCompile *cfg, guint8 *code, int size, char *id);
 MonoJumpInfoTarget mono_call_to_patch       (MonoCallInst *call);
 void      mono_call_add_patch_info          (MonoCompile *cfg, MonoCallInst *call, int ip);
-MONO_LLVM_INTERNAL void mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target);
-MONO_LLVM_INTERNAL void mono_add_patch_info_rel (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target, int relocation);
+void mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target);
+void mono_add_patch_info_rel (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target, int relocation);
 void      mono_remove_patch_info            (MonoCompile *cfg, int ip);
 gpointer  mono_jit_compile_method_inner     (MonoMethod *method, MonoDomain *target_domain, int opt, MonoError *error);
 GList    *mono_varlist_insert_sorted        (MonoCompile *cfg, GList *list, MonoMethodVar *mv, int sort_type);
@@ -2177,7 +2175,7 @@ gpointer          mono_create_jump_trampoline (MonoDomain *domain,
 											   gboolean add_sync_wrapper,
 											   MonoError *error);
 gpointer          mono_create_class_init_trampoline (MonoVTable *vtable);
-MONO_LLVM_INTERNAL gpointer mono_create_jit_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error);
+gpointer mono_create_jit_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error);
 gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token);
 gpointer          mono_create_delegate_trampoline (MonoDomain *domain, MonoClass *klass);
 MonoDelegateTrampInfo* mono_create_delegate_trampoline_info (MonoDomain *domain, MonoClass *klass, MonoMethod *method);
@@ -2281,7 +2279,7 @@ MonoMethod*       mini_get_memcpy_method (void);
 MonoMethod*       mini_get_memset_method (void);
 int               mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass);
 
-MONO_LLVM_INTERNAL CompRelation mono_opcode_to_cond (int opcode);
+CompRelation mono_opcode_to_cond (int opcode);
 CompType          mono_opcode_to_type (int opcode, int cmp_opcode);
 CompRelation      mono_negate_cond (CompRelation cond);
 int               mono_op_imm_to_op (int opcode);
@@ -2297,8 +2295,8 @@ MonoTrampInfo*    mono_tramp_info_create (const char *name, guint8 *code, guint3
 void              mono_tramp_info_free (MonoTrampInfo *info);
 void              mono_aot_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain);
 void              mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain);
-MONO_LLVM_INTERNAL int mini_exception_id_by_name (const char *name);
-MONO_LLVM_INTERNAL gboolean mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize);
+int mini_exception_id_by_name (const char *name);
+gboolean mini_type_is_hfa (MonoType *t, int *out_nfields, int *out_esize);
 
 int               mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
 									 MonoInst *return_var, MonoInst **inline_args,
@@ -2332,7 +2330,7 @@ char*             mono_get_delegate_virtual_invoke_impl_name (gboolean load_imt_
 gpointer          mono_get_delegate_virtual_invoke_impl  (MonoMethodSignature *sig, MonoMethod *method);
 
 void      mono_codegen                          (MonoCompile *cfg);
-MONO_LLVM_INTERNAL void mono_call_inst_add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, int vreg, int hreg, int bank);
+void mono_call_inst_add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, int vreg, int hreg, int bank);
 void      mono_call_inst_add_outarg_vt          (MonoCompile *cfg, MonoCallInst *call, MonoInst *outarg_vt);
 
 /* methods that must be provided by the arch-specific port */
@@ -2351,7 +2349,7 @@ gpointer  mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info);
 guint8*   mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gboolean aot);
 gpointer  mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean is_v4, gboolean aot);
 gpointer  mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot);
-MONO_LLVM_INTERNAL guint8 *mono_arch_create_llvm_native_thunk (MonoDomain *domain, guint8* addr);
+guint8 *mono_arch_create_llvm_native_thunk (MonoDomain *domain, guint8* addr);
 gpointer  mono_arch_get_get_tls_tramp (void);
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg);
 GList    *mono_arch_get_global_int_regs         (MonoCompile *cfg);
@@ -2381,7 +2379,7 @@ MonoInst *mono_arch_emit_inst_for_method        (MonoCompile *cfg, MonoMethod *c
 void      mono_arch_decompose_opts              (MonoCompile *cfg, MonoInst *ins);
 void      mono_arch_decompose_long_opts         (MonoCompile *cfg, MonoInst *ins);
 GSList*   mono_arch_get_delegate_invoke_impls   (void);
-MONO_LLVM_INTERNAL LLVMCallInfo* mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig);
+LLVMCallInfo* mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig);
 guint8*   mono_arch_emit_load_got_addr          (guint8 *start, guint8 *code, MonoCompile *cfg, MonoJumpInfo **ji);
 guint8*   mono_arch_emit_load_aotconst          (guint8 *start, guint8 *code, MonoJumpInfo **ji, MonoJumpInfoType tramp_type, gconstpointer target);
 GSList*   mono_arch_get_cie_program             (void);
@@ -2452,7 +2450,7 @@ gboolean mono_arch_is_int_overflow              (void *sigctx, void *info);
 void     mono_arch_invalidate_method            (MonoJitInfo *ji, void *func, gpointer func_arg);
 guint32  mono_arch_get_patch_offset             (guint8 *code);
 gpointer*mono_arch_get_delegate_method_ptr_addr (guint8* code, host_mgreg_t *regs);
-MONO_LLVM_INTERNAL void mono_arch_create_vars   (MonoCompile *cfg);
+void mono_arch_create_vars   (MonoCompile *cfg);
 void     mono_arch_save_unwind_info             (MonoCompile *cfg);
 void     mono_arch_register_lowlevel_calls      (void);
 gpointer mono_arch_get_unbox_trampoline         (MonoMethod *m, gpointer addr);
@@ -2517,7 +2515,7 @@ void     mono_free_altstack                     (MonoJitTlsData *tls);
 gpointer mono_altstack_restore_prot             (host_mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp);
 MonoJitInfo* mini_jit_info_table_find           (MonoDomain *domain, gpointer addr, MonoDomain **out_domain);
 MonoJitInfo* mini_jit_info_table_find_ext       (MonoDomain *domain, gpointer addr, gboolean allow_trampolines, MonoDomain **out_domain);
-G_EXTERN_C void mono_resume_unwind              (MonoContext *ctx) MONO_LLVM_INTERNAL_NO_EXTERN_C;
+G_EXTERN_C void mono_resume_unwind              (MonoContext *ctx);
 
 MonoJitInfo * mono_find_jit_info                (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset, gboolean *managed);
 
@@ -2646,7 +2644,7 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot,
 gpointer
 mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgctx, guint32 slot, MonoError *error);
 
-MONO_LLVM_INTERNAL const char*
+const char*
 mono_rgctx_info_type_to_str (MonoRgctxInfoType type);
 
 MonoJumpInfoType
@@ -2682,7 +2680,7 @@ mono_method_is_generic_impl (MonoMethod *method);
 gboolean
 mono_method_is_generic_sharable (MonoMethod *method, gboolean allow_type_vars);
 
-MONO_LLVM_INTERNAL gboolean
+gboolean
 mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_vars, gboolean allow_partial, gboolean allow_gsharedvt);
 
 gboolean
@@ -2721,18 +2719,18 @@ typedef enum {
 	SHARE_MODE_GSHAREDVT = 0x1,
 } GetSharedMethodFlags;
 
-MONO_LLVM_INTERNAL MonoType* mini_get_underlying_type (MonoType *type);
+MonoType* mini_get_underlying_type (MonoType *type);
 MonoType* mini_type_get_underlying_type (MonoType *type);
 MonoClass* mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context);
 MonoMethod* mini_get_shared_method_to_register (MonoMethod *method);
-MONO_LLVM_INTERNAL MonoMethod* mini_get_shared_method_full (MonoMethod *method, GetSharedMethodFlags flags, MonoError *error);
+MonoMethod* mini_get_shared_method_full (MonoMethod *method, GetSharedMethodFlags flags, MonoError *error);
 MonoType* mini_get_shared_gparam (MonoType *t, MonoType *constraint);
 int mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry);
 
 int mini_type_stack_size (MonoType *t, int *align);
 int mini_type_stack_size_full (MonoType *t, guint32 *align, gboolean pinvoke);
 void mini_type_to_eval_stack_type (MonoCompile *cfg, MonoType *type, MonoInst *inst);
-MONO_LLVM_INTERNAL guint mono_type_to_regmove (MonoCompile *cfg, MonoType *type);
+guint mono_type_to_regmove (MonoCompile *cfg, MonoType *type);
 
 void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint8 *start, MonoBasicBlock *bb);
 
@@ -2752,17 +2750,17 @@ void mono_time_track_end (gint64 *time, gint64 start);
 void mono_update_jit_stats (MonoCompile *cfg);
 
 gboolean mini_type_is_reference (MonoType *type);
-MONO_LLVM_INTERNAL gboolean mini_type_is_vtype (MonoType *t);
-MONO_LLVM_INTERNAL gboolean mini_type_var_is_vt (MonoType *type);
+gboolean mini_type_is_vtype (MonoType *t);
+gboolean mini_type_var_is_vt (MonoType *type);
 gboolean mini_is_gsharedvt_type (MonoType *t);
-MONO_LLVM_INTERNAL gboolean mini_is_gsharedvt_klass (MonoClass *klass);
+gboolean mini_is_gsharedvt_klass (MonoClass *klass);
 gboolean mini_is_gsharedvt_signature (MonoMethodSignature *sig);
-MONO_LLVM_INTERNAL gboolean mini_is_gsharedvt_variable_type (MonoType *t);
-MONO_LLVM_INTERNAL gboolean mini_is_gsharedvt_variable_klass (MonoClass *klass);
+gboolean mini_is_gsharedvt_variable_type (MonoType *t);
+gboolean mini_is_gsharedvt_variable_klass (MonoClass *klass);
 gboolean mini_is_gsharedvt_sharable_method (MonoMethod *method);
-MONO_LLVM_INTERNAL gboolean mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig);
+gboolean mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig);
 gboolean mini_is_gsharedvt_sharable_inst (MonoGenericInst *inst);
-MONO_LLVM_INTERNAL gboolean mini_method_is_default_method (MonoMethod *m);
+gboolean mini_method_is_default_method (MonoMethod *m);
 gboolean mini_method_needs_mrgctx (MonoMethod *m);
 gpointer mini_method_get_rgctx (MonoMethod *m);
 void mini_init_gsctx (MonoDomain *domain, MonoMemPool *mp, MonoGenericContext *context, MonoGenericSharingContext *gsctx);
@@ -2902,7 +2900,7 @@ MonoInst*   mono_emit_native_types_intrinsics (MonoCompile *cfg, MonoMethod *cme
 gsize       mini_magic_type_size (MonoCompile *cfg, MonoType *type);
 gboolean    mini_magic_is_int_type (MonoType *t);
 gboolean    mini_magic_is_float_type (MonoType *t);
-MONO_LLVM_INTERNAL MonoType* mini_native_type_replace_type (MonoType *type);
+MonoType* mini_native_type_replace_type (MonoType *type);
 
 MonoMethod*
 mini_method_to_shared (MonoMethod *method); // null if not shared
