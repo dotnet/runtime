@@ -2835,7 +2835,13 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
 
         // Either not generating relocatable code, or addr must be an icon handle, or the
         // constant is zero (which we won't generate a relocation for).
-        assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0));
+        //
+        // On x86 we can have an indirection of a non-handle int constant without a reloc.
+        // The return value of FitsInAddrBase determines whether we mark the int constant node
+        // as contained or not (see Lowering::ContainCheckIndir)
+        //
+        assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0) ||
+               memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
 
         if (memBase->AsIntConCommon()->AddrNeedsReloc(emitComp))
         {
