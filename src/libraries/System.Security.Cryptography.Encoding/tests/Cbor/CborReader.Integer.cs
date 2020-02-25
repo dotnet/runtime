@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     return value;
 
                 default:
-                    throw new ArgumentException("Data item type mismatch");
+                    throw new InvalidOperationException("Data item type mismatch");
             }
         }
 
@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     return value;
 
                 default:
-                    throw new ArgumentException("Data item type mismatch");
+                    throw new InvalidOperationException("Data item type mismatch");
             }
         }
 
