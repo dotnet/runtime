@@ -332,7 +332,7 @@ recurse:
 		}
 		if (CallInst *calli = dyn_cast<CallInst> (val)) {
 			return calli->hasRetAttr (Attribute::NonNull);
-		} 
+		}
 		if (InvokeInst *calli = dyn_cast<InvokeInst> (val)) {
 			return calli->hasRetAttr (Attribute::NonNull);
 		}
