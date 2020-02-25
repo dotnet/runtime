@@ -86,6 +86,15 @@ jobs:
         artifactName: $(buildProductArtifactName)
         displayName: 'product build'
 
+    # Build packages
+    ${{ if ne(parameters.llvm, true) }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci /p:MonoEnableLLVM=${{ parameters.llvm }} -pack
+          displayName: Build nupkg
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci /p:MonoEnableLLVM=${{ parameters.llvm }} -pack
+          displayName: Build nupkg
+
     # Publish Logs
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
