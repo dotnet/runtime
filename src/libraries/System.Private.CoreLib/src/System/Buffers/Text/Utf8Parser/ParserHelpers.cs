@@ -52,6 +52,27 @@ namespace System.Buffers.Text
             return (uint)(i - '0') <= ('9' - '0');
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryConvertToDigit(int byteValue, out int digit)
+        {
+            digit = byteValue - '0';
+            return (uint)digit <= 9;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryGetDigitAt(ReadOnlySpan<byte> source, IntPtr index, out int digit)
+        {
+            if (source.TryGetElementAt(index, out byte tempByte) && TryConvertToDigit(tempByte, out digit))
+            {
+                return true;
+            }
+            else
+            {
+                digit = default;
+                return false;
+            }
+        }
+
         //
         // Enable use of ThrowHelper from TryParse() routines without introducing dozens of non-code-coveraged "value= default; bytesConsumed = 0; return false" boilerplate.
         //

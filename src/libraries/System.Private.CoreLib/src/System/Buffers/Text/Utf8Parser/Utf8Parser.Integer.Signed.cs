@@ -127,27 +127,27 @@ namespace System.Buffers.Text
         /// </exceptions>
         public static bool TryParse(ReadOnlySpan<byte> source, out int value, out int bytesConsumed, char standardFormat = default)
         {
-            switch (standardFormat)
+            int standardFormatLowercase;
+
+            if (standardFormat == default
+                || ((standardFormatLowercase = standardFormat | 0x20) == 'g')
+                || (standardFormatLowercase == 'd'))
             {
-                case default(char):
-                case 'g':
-                case 'G':
-                case 'd':
-                case 'D':
-                    return TryParseInt32D(source, out value, out bytesConsumed);
-
-                case 'n':
-                case 'N':
-                    return TryParseInt32N(source, out value, out bytesConsumed);
-
-                case 'x':
-                case 'X':
-                    value = default;
-                    return TryParseUInt32X(source, out Unsafe.As<int, uint>(ref value), out bytesConsumed);
-
-                default:
-                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
+                return TryParseInt32D(source, out value, out bytesConsumed);
             }
+
+            if (standardFormatLowercase == 'n')
+            {
+                return TryParseInt32N(source, out value, out bytesConsumed);
+            }
+
+            if (standardFormatLowercase != 'x')
+            {
+                ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+            }
+
+            value = default;
+            return TryParseUInt32X(source, out Unsafe.As<int, uint>(ref value), out bytesConsumed);
         }
 
         /// <summary>

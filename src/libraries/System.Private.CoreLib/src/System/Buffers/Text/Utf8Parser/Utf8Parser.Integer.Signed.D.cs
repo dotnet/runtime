@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Buffers.Text
 {
     public static partial class Utf8Parser
@@ -194,134 +196,111 @@ namespace System.Buffers.Text
 
         private static bool TryParseInt32D(ReadOnlySpan<byte> source, out int value, out int bytesConsumed)
         {
-            if (source.Length < 1)
+            if (source.IsEmpty)
                 goto FalseExit;
 
-            int sign = 1;
-            int index = 0;
-            int num = source[index];
-            if (num == '-')
-            {
-                sign = -1;
-                index++;
-                if ((uint)index >= (uint)source.Length)
-                    goto FalseExit;
-                num = source[index];
-            }
-            else if (num == '+')
-            {
-                index++;
-                if ((uint)index >= (uint)source.Length)
-                    goto FalseExit;
-                num = source[index];
-            }
+            int sign = 0;
+            IntPtr index = IntPtr.Zero;
+            int answer = source[0];
 
-            int answer = 0;
+        TryAgain:
 
-            if (ParserHelpers.IsDigit(num))
+            if (ParserHelpers.TryConvertToDigit(answer, out answer))
             {
-                if (num == '0')
+                if (answer == 0)
                 {
                     do
                     {
-                        index++;
-                        if ((uint)index >= (uint)source.Length)
-                            goto Done;
-                        num = source[index];
-                    } while (num == '0');
-                    if (!ParserHelpers.IsDigit(num))
-                        goto Done;
+                        index += 1;
+                        if (!source.TryGetElementAt(index, out byte thisByte))
+                            goto ReturnZero;
+                        answer = thisByte;
+                    } while (answer == '0');
+                    if (!ParserHelpers.TryConvertToDigit(answer, out answer))
+                        goto ReturnZero;
                 }
 
-                answer = num - '0';
-                index++;
+                index += 1;
 
-                if ((uint)index >= (uint)source.Length)
+                if (!ParserHelpers.TryGetDigitAt(source, index, out int num))
                     goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
+                index += 1;
+                answer = 10 * answer + num;
 
-                if ((uint)index >= (uint)source.Length)
+                if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
+                index += 1;
+                answer = 10 * answer + num;
 
-                if ((uint)index >= (uint)source.Length)
+                if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
+                index += 1;
+                answer = 10 * answer + num;
 
-                if ((uint)index >= (uint)source.Length)
+                if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
+                index += 1;
+                answer = 10 * answer + num;
 
-                if ((uint)index >= (uint)source.Length)
+                if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
+                index += 1;
+                answer = 10 * answer + num;
 
-                if ((uint)index >= (uint)source.Length)
+                if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
+                index += 1;
+                answer = 10 * answer + num;
 
-                if ((uint)index >= (uint)source.Length)
+                if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
+                index += 1;
+                answer = 10 * answer + num;
 
-                if ((uint)index >= (uint)source.Length)
+                if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
-                answer = 10 * answer + num - '0';
+                index += 1;
+                answer = 10 * answer + num;
 
                 // Potential overflow
-                if ((uint)index >= (uint)source.Length)
+                if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                num = source[index];
-                if (!ParserHelpers.IsDigit(num))
-                    goto Done;
-                index++;
+                index += 1;
                 if (answer > int.MaxValue / 10)
                     goto FalseExit; // Overflow
-                answer = answer * 10 + num - '0';
-                // if sign < 0, (-1 * sign + 1) / 2 = 1
-                // else, (-1 * sign + 1) / 2 = 0
-                if ((uint)answer > (uint)int.MaxValue + (-1 * sign + 1) / 2)
+                answer = answer * 10 + num;
+
+                // if sign = 0, checks answer against 0x7FFFFFFF (int.MaxValue)
+                // if sign = -1, checks answer against 0x80000000 (int.MinValue)
+                if ((uint)answer > (uint)(int.MaxValue - sign))
                     goto FalseExit; // Overflow
 
-                if ((uint)index >= (uint)source.Length)
-                    goto Done;
-                if (!ParserHelpers.IsDigit(source[index]))
+
+                if (!ParserHelpers.TryGetDigitAt(source, index, out _))
                     goto Done;
 
                 // Guaranteed overflow
                 goto FalseExit;
+            }
+            else
+            {
+                if (answer == '-' - '0')
+                {
+                    sign = -1;
+                }
+                else if (answer != '+' - '0')
+                {
+                    goto FalseExit;
+                }
+
+                if (index != IntPtr.Zero || (uint)1 >= (uint)source.Length)
+                {
+                    goto FalseExit;
+                }
+
+                answer = source[1];
+                index += 1;
+                goto TryAgain;
             }
 
         FalseExit:
@@ -329,9 +308,16 @@ namespace System.Buffers.Text
             value = default;
             return false;
 
+        ReturnZero:
+            answer = 0;
+
         Done:
-            bytesConsumed = index;
-            value = answer * sign;
+            bytesConsumed = index.ToInt32Unchecked();
+
+            // If sign = 0, value = (answer ^ 0) - 0 = answer
+            // If sign = -1, value = (answer ^ -1) - (-1) = ~answer + 1 = -answer
+            Debug.Assert(sign == 0 || sign == -1);
+            value = (answer ^ sign) - sign;
             return true;
         }
 

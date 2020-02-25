@@ -310,6 +310,26 @@ namespace System
         }
 
         /// <summary>
+        /// If <paramref name="index"/> is within the span, dereferences the element at
+        /// that index, outs it via <paramref name="value"/>, and returns <see langword="true"/>.
+        /// Otherwise returns <see langword="false"/>.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe bool TryGetElementAt(IntPtr index, out T value)
+        {
+            if ((nuint)(void*)index >= (uint)_length)
+            {
+                value = default!;
+                return false;
+            }
+            else
+            {
+                value = Unsafe.Add(ref _pointer.Value, index);
+                return true;
+            }
+        }
+
+        /// <summary>
         /// Returns true if left and right point at the same memory and have the same length.  Note that
         /// this does *not* check to see if the *contents* are equal.
         /// </summary>

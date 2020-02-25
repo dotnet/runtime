@@ -98,6 +98,12 @@ namespace System
 #endif
         }
 
+        /// <summary>
+        /// Returns the low 32 bits of this <see cref="IntPtr"/> instance.
+        /// No arithmetic overflow check is performed.
+        /// </summary>
+        internal unsafe int ToInt32Unchecked() => (int)_value;
+
         [NonVersionable]
         public unsafe long ToInt64() =>
             (nint)_value;
