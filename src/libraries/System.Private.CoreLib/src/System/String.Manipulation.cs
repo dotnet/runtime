@@ -1815,9 +1815,9 @@ namespace System
             // Trim specified characters.
             if ((trimType & TrimType.Head) != 0)
             {
-                for (; start < Length; start++)
+                for (start = 0; start < Length; start++)
                 {
-                    int i;
+                    int i = 0;
                     char ch = this[start];
                     for (i = 0; i < trimCharsLength; i++)
                     {
@@ -1838,7 +1838,7 @@ namespace System
             {
                 for (end = Length - 1; end >= start; end--)
                 {
-                    int i;
+                    int i = 0;
                     char ch = this[end];
                     for (i = 0; i < trimCharsLength; i++)
                     {
