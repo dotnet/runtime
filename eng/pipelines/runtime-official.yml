@@ -61,6 +61,28 @@ stages:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
 
   #
+  # Build Mono release
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - OSX_x64
+      - Linux_x64
+      - Linux_arm
+      - Linux_arm64
+      - Linux_musl_x64
+      # - Linux_musl_arm64
+      - Windows_NT_x64
+      # - Windows_NT_x86
+      # - Windows_NT_arm
+      # - Windows_NT_arm64
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+
+  #
   # Build libraries using live CoreLib from CoreCLR
   #
   - template: /eng/pipelines/common/platform-matrix.yml
