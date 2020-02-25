@@ -1836,7 +1836,7 @@ namespace System
 
             if ((trimType & TrimType.Tail) != 0)
             {
-                for (; end >= start; end--)
+                for (end = Length - 1; end >= start; end--)
                 {
                     int i;
                     char ch = this[end];
