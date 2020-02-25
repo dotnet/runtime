@@ -5,7 +5,7 @@ build_test_wrappers()
     if [[ "$__BuildTestWrappers" -ne -0 ]]; then
         echo "${__MsgPrefix}Creating test wrappers..."
 
-	if [[ __Mono=1 ]]; then
+	if [[ __Mono -eq 1 ]]; then
 		echo "Excluding mono test failures"
 		export __EXCLUDE_MONO_FAILURES="true"
 	fi
