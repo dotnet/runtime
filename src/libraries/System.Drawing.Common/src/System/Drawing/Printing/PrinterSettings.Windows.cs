@@ -614,10 +614,10 @@ namespace System.Drawing.Printing
         }
 
         //whatever the call stack calling HardMarginX and HardMarginY here is safe
-        public Graphics? CreateMeasurementGraphics(bool honorOriginAtMargins)
+        public Graphics CreateMeasurementGraphics(bool honorOriginAtMargins)
         {
             Graphics g = CreateMeasurementGraphics();
-            if (g != null && honorOriginAtMargins)
+            if (honorOriginAtMargins)
             {
                 g.TranslateTransform(-_defaultPageSettings.HardMarginX, -_defaultPageSettings.HardMarginY);
                 g.TranslateTransform(_defaultPageSettings.Margins.Left, _defaultPageSettings.Margins.Top);
@@ -635,10 +635,10 @@ namespace System.Drawing.Printing
         }
 
         //whatever the call stack calling HardMarginX and HardMarginY here is safe
-        public Graphics? CreateMeasurementGraphics(PageSettings pageSettings, bool honorOriginAtMargins)
+        public Graphics CreateMeasurementGraphics(PageSettings pageSettings, bool honorOriginAtMargins)
         {
             Graphics g = CreateMeasurementGraphics();
-            if (g != null && honorOriginAtMargins)
+            if (honorOriginAtMargins)
             {
                 g.TranslateTransform(-pageSettings.HardMarginX, -pageSettings.HardMarginY);
                 g.TranslateTransform(pageSettings.Margins.Left, pageSettings.Margins.Top);

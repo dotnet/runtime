@@ -221,8 +221,7 @@ namespace System.Drawing.Printing
                 return paper_sources;
             }
         }
-        public
-        string? PrintFileName
+        public string? PrintFileName
         {
             get { return print_filename; }
             set { print_filename = value; }
@@ -525,9 +524,9 @@ namespace System.Drawing.Printing
             bool ICollection.IsSynchronized { get { return false; } }
             object ICollection.SyncRoot { get { return this; } }
 
-            public virtual string? this[int index]
+            public virtual string this[int index]
             {
-                get { return _Strings[index] as string; }
+                get { return (_Strings[index] as string)!; }
             }
             [EditorBrowsable(EditorBrowsableState.Never)]
             public int Add(string value) { return _Strings.Add(value); }

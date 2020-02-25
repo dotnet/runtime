@@ -69,7 +69,7 @@ namespace System.Drawing.Printing
             PrintPreviewGraphics printGraphics = new PrintPreviewGraphics(document, e);
             _graphics = Graphics.FromImage(metafile);
 
-            if (_graphics != null && document.OriginAtMargins)
+            if (document.OriginAtMargins)
             {
                 // Adjust the origin of the graphics object to be at the
                 // user-specified margin location
@@ -84,7 +84,7 @@ namespace System.Drawing.Printing
                 _graphics.TranslateTransform(document.DefaultPageSettings.Margins.Left, document.DefaultPageSettings.Margins.Top);
             }
 
-            _graphics!.PrintingHelper = printGraphics;
+            _graphics.PrintingHelper = printGraphics;
 
             if (UseAntiAlias)
             {

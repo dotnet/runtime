@@ -26,13 +26,14 @@ namespace System.Drawing
             private bool _frameDirty;
             private readonly bool _animated;
             private EventHandler? _onFrameChangedHandler;
-            private readonly int[]? _frameDelay;
+            private readonly int[] _frameDelay;
             private int _frameTimer;
 
             public ImageInfo(Image image)
             {
                 _image = image;
                 _animated = ImageAnimator.CanAnimate(image);
+                _frameDelay = null!; // guaranteed to be initialized by the final check
 
                 if (_animated)
                 {

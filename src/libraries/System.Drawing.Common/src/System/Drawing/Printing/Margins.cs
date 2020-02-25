@@ -215,7 +215,7 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Tests whether two <see cref='Margins'/> objects are identical.
         /// </summary>
-        public static bool operator ==(Margins m1, Margins m2)
+        public static bool operator ==(Margins? m1, Margins? m2)
         {
             if (m1 is null)
             {
@@ -232,7 +232,7 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Tests whether two <see cref='Margins'/> objects are different.
         /// </summary>
-        public static bool operator !=(Margins m1, Margins m2) => !(m1 == m2);
+        public static bool operator !=(Margins? m1, Margins? m2) => !(m1 == m2);
 
         /// <summary>
         /// Provides some interesting information for the Margins in String form.

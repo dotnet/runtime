@@ -480,12 +480,12 @@ namespace System.Drawing
         public void DrawRectangle(System.Drawing.Pen pen, float x, float y, float width, float height) { }
         public void DrawRectangles(System.Drawing.Pen pen, System.Drawing.RectangleF[] rects) { }
         public void DrawRectangles(System.Drawing.Pen pen, System.Drawing.Rectangle[] rects) { }
-        public void DrawString(string s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.PointF point) { }
-        public void DrawString(string s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.PointF point, System.Drawing.StringFormat format) { }
-        public void DrawString(string s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.RectangleF layoutRectangle) { }
-        public void DrawString(string s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.RectangleF layoutRectangle, System.Drawing.StringFormat? format) { }
-        public void DrawString(string s, System.Drawing.Font font, System.Drawing.Brush brush, float x, float y) { }
-        public void DrawString(string s, System.Drawing.Font font, System.Drawing.Brush brush, float x, float y, System.Drawing.StringFormat format) { }
+        public void DrawString(string? s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.PointF point) { }
+        public void DrawString(string? s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.PointF point, System.Drawing.StringFormat? format) { }
+        public void DrawString(string? s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.RectangleF layoutRectangle) { }
+        public void DrawString(string? s, System.Drawing.Font font, System.Drawing.Brush brush, System.Drawing.RectangleF layoutRectangle, System.Drawing.StringFormat? format) { }
+        public void DrawString(string? s, System.Drawing.Font font, System.Drawing.Brush brush, float x, float y) { }
+        public void DrawString(string? s, System.Drawing.Font font, System.Drawing.Brush brush, float x, float y, System.Drawing.StringFormat? format) { }
         public void EndContainer(System.Drawing.Drawing2D.GraphicsContainer container) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point destPoint, System.Drawing.Graphics.EnumerateMetafileProc callback) { }
         public void EnumerateMetafile(System.Drawing.Imaging.Metafile metafile, System.Drawing.Point destPoint, System.Drawing.Graphics.EnumerateMetafileProc callback, System.IntPtr callbackData) { }
@@ -580,14 +580,14 @@ namespace System.Drawing
         public bool IsVisible(int x, int y, int width, int height) { throw null; }
         public bool IsVisible(float x, float y) { throw null; }
         public bool IsVisible(float x, float y, float width, float height) { throw null; }
-        public System.Drawing.Region[] MeasureCharacterRanges(string text, System.Drawing.Font font, System.Drawing.RectangleF layoutRect, System.Drawing.StringFormat stringFormat) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, System.Drawing.PointF origin, System.Drawing.StringFormat stringFormat) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, System.Drawing.SizeF layoutArea) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, System.Drawing.SizeF layoutArea, System.Drawing.StringFormat? stringFormat) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, System.Drawing.SizeF layoutArea, System.Drawing.StringFormat? stringFormat, out int charactersFitted, out int linesFilled) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, int width) { throw null; }
-        public System.Drawing.SizeF MeasureString(string text, System.Drawing.Font font, int width, System.Drawing.StringFormat format) { throw null; }
+        public System.Drawing.Region[] MeasureCharacterRanges(string? text, System.Drawing.Font font, System.Drawing.RectangleF layoutRect, System.Drawing.StringFormat? stringFormat) { throw null; }
+        public System.Drawing.SizeF MeasureString(string? text, System.Drawing.Font font) { throw null; }
+        public System.Drawing.SizeF MeasureString(string? text, System.Drawing.Font font, System.Drawing.PointF origin, System.Drawing.StringFormat? stringFormat) { throw null; }
+        public System.Drawing.SizeF MeasureString(string? text, System.Drawing.Font font, System.Drawing.SizeF layoutArea) { throw null; }
+        public System.Drawing.SizeF MeasureString(string? text, System.Drawing.Font font, System.Drawing.SizeF layoutArea, System.Drawing.StringFormat? stringFormat) { throw null; }
+        public System.Drawing.SizeF MeasureString(string? text, System.Drawing.Font font, System.Drawing.SizeF layoutArea, System.Drawing.StringFormat? stringFormat, out int charactersFitted, out int linesFilled) { throw null; }
+        public System.Drawing.SizeF MeasureString(string? text, System.Drawing.Font font, int width) { throw null; }
+        public System.Drawing.SizeF MeasureString(string? text, System.Drawing.Font font, int width, System.Drawing.StringFormat? format) { throw null; }
         public void MultiplyTransform(System.Drawing.Drawing2D.Matrix matrix) { }
         public void MultiplyTransform(System.Drawing.Drawing2D.Matrix matrix, System.Drawing.Drawing2D.MatrixOrder order) { }
         public void ReleaseHdc() { }
@@ -717,7 +717,7 @@ namespace System.Drawing
         public int GetFrameCount(System.Drawing.Imaging.FrameDimension dimension) { throw null; }
         public static int GetPixelFormatSize(System.Drawing.Imaging.PixelFormat pixfmt) { throw null; }
         public System.Drawing.Imaging.PropertyItem? GetPropertyItem(int propid) { throw null; }
-        public System.Drawing.Image GetThumbnailImage(int thumbWidth, int thumbHeight, System.Drawing.Image.GetThumbnailImageAbort callback, System.IntPtr callbackData) { throw null; }
+        public System.Drawing.Image GetThumbnailImage(int thumbWidth, int thumbHeight, System.Drawing.Image.GetThumbnailImageAbort? callback, System.IntPtr callbackData) { throw null; }
         public static bool IsAlphaPixelFormat(System.Drawing.Imaging.PixelFormat pixfmt) { throw null; }
         public static bool IsCanonicalPixelFormat(System.Drawing.Imaging.PixelFormat pixfmt) { throw null; }
         public static bool IsExtendedPixelFormat(System.Drawing.Imaging.PixelFormat pixfmt) { throw null; }
@@ -728,8 +728,8 @@ namespace System.Drawing
         public void Save(string filename) { }
         public void Save(string filename, System.Drawing.Imaging.ImageCodecInfo encoder, System.Drawing.Imaging.EncoderParameters? encoderParams) { }
         public void Save(string filename, System.Drawing.Imaging.ImageFormat format) { }
-        public void SaveAdd(System.Drawing.Image image, System.Drawing.Imaging.EncoderParameters encoderParams) { }
-        public void SaveAdd(System.Drawing.Imaging.EncoderParameters encoderParams) { }
+        public void SaveAdd(System.Drawing.Image image, System.Drawing.Imaging.EncoderParameters? encoderParams) { }
+        public void SaveAdd(System.Drawing.Imaging.EncoderParameters? encoderParams) { }
         public int SelectActiveFrame(System.Drawing.Imaging.FrameDimension dimension, int frameIndex) { throw null; }
         public void SetPropertyItem(System.Drawing.Imaging.PropertyItem propitem) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -738,11 +738,11 @@ namespace System.Drawing
     public sealed partial class ImageAnimator
     {
         internal ImageAnimator() { }
-        public static void Animate(System.Drawing.Image? image, System.EventHandler onFrameChangedHandler) { }
+        public static void Animate(System.Drawing.Image image, System.EventHandler onFrameChangedHandler) { }
         public static bool CanAnimate(System.Drawing.Image? image) { throw null; }
-        public static void StopAnimate(System.Drawing.Image? image, System.EventHandler onFrameChangedHandler) { }
+        public static void StopAnimate(System.Drawing.Image image, System.EventHandler onFrameChangedHandler) { }
         public static void UpdateFrames() { }
-        public static void UpdateFrames(System.Drawing.Image? image) { }
+        public static void UpdateFrames(System.Drawing.Image image) { }
     }
     public sealed partial class Pen : System.MarshalByRefObject, System.ICloneable, System.IDisposable
     {
@@ -965,11 +965,11 @@ namespace System.Drawing
         public bool IsVisible(System.Drawing.RectangleF rect, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(int x, int y, System.Drawing.Graphics g) { throw null; }
         public bool IsVisible(int x, int y, int width, int height) { throw null; }
-        public bool IsVisible(int x, int y, int width, int height, System.Drawing.Graphics g) { throw null; }
+        public bool IsVisible(int x, int y, int width, int height, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(float x, float y) { throw null; }
-        public bool IsVisible(float x, float y, System.Drawing.Graphics g) { throw null; }
+        public bool IsVisible(float x, float y, System.Drawing.Graphics? g) { throw null; }
         public bool IsVisible(float x, float y, float width, float height) { throw null; }
-        public bool IsVisible(float x, float y, float width, float height, System.Drawing.Graphics g) { throw null; }
+        public bool IsVisible(float x, float y, float width, float height, System.Drawing.Graphics? g) { throw null; }
         public void MakeEmpty() { }
         public void MakeInfinite() { }
         public void ReleaseHrgn(System.IntPtr regionHandle) { }
@@ -2218,9 +2218,9 @@ namespace System.Drawing.Imaging
         public void SetBrushRemapTable(System.Drawing.Imaging.ColorMap[] map) { }
         public void SetColorKey(System.Drawing.Color colorLow, System.Drawing.Color colorHigh) { }
         public void SetColorKey(System.Drawing.Color colorLow, System.Drawing.Color colorHigh, System.Drawing.Imaging.ColorAdjustType type) { }
-        public void SetColorMatrices(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrix grayMatrix) { }
-        public void SetColorMatrices(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrix grayMatrix, System.Drawing.Imaging.ColorMatrixFlag flags) { }
-        public void SetColorMatrices(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrix grayMatrix, System.Drawing.Imaging.ColorMatrixFlag mode, System.Drawing.Imaging.ColorAdjustType type) { }
+        public void SetColorMatrices(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrix? grayMatrix) { }
+        public void SetColorMatrices(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrix? grayMatrix, System.Drawing.Imaging.ColorMatrixFlag flags) { }
+        public void SetColorMatrices(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrix? grayMatrix, System.Drawing.Imaging.ColorMatrixFlag mode, System.Drawing.Imaging.ColorAdjustType type) { }
         public void SetColorMatrix(System.Drawing.Imaging.ColorMatrix newColorMatrix) { }
         public void SetColorMatrix(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrixFlag flags) { }
         public void SetColorMatrix(System.Drawing.Imaging.ColorMatrix newColorMatrix, System.Drawing.Imaging.ColorMatrixFlag mode, System.Drawing.Imaging.ColorAdjustType type) { }
@@ -2353,12 +2353,12 @@ namespace System.Drawing.Imaging
         public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit) { }
         public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type) { }
         public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type, string? description) { }
-        public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, string description) { }
+        public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.Rectangle frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, string? description) { }
         public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect) { }
         public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit) { }
         public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type) { }
         public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, System.Drawing.Imaging.EmfType type, string? description) { }
-        public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, string desc) { }
+        public Metafile(string fileName, System.IntPtr referenceHdc, System.Drawing.RectangleF frameRect, System.Drawing.Imaging.MetafileFrameUnit frameUnit, string? desc) { }
         public System.IntPtr GetHenhmetafile() { throw null; }
         public System.Drawing.Imaging.MetafileHeader GetMetafileHeader() { throw null; }
         public static System.Drawing.Imaging.MetafileHeader GetMetafileHeader(System.IntPtr henhmetafile) { throw null; }
@@ -2786,9 +2786,9 @@ namespace System.Drawing.Printing
         public int ToPage { get { throw null; } set { } }
         public object Clone() { throw null; }
         public System.Drawing.Graphics CreateMeasurementGraphics() { throw null; }
-        public System.Drawing.Graphics? CreateMeasurementGraphics(bool honorOriginAtMargins) { throw null; }
+        public System.Drawing.Graphics CreateMeasurementGraphics(bool honorOriginAtMargins) { throw null; }
         public System.Drawing.Graphics CreateMeasurementGraphics(System.Drawing.Printing.PageSettings pageSettings) { throw null; }
-        public System.Drawing.Graphics? CreateMeasurementGraphics(System.Drawing.Printing.PageSettings pageSettings, bool honorOriginAtMargins) { throw null; }
+        public System.Drawing.Graphics CreateMeasurementGraphics(System.Drawing.Printing.PageSettings pageSettings, bool honorOriginAtMargins) { throw null; }
         public System.IntPtr GetHdevmode() { throw null; }
         public System.IntPtr GetHdevmode(System.Drawing.Printing.PageSettings pageSettings) { throw null; }
         public System.IntPtr GetHdevnames() { throw null; }
@@ -2910,7 +2910,7 @@ namespace System.Drawing.Printing
         public StandardPrintController() { }
         public override void OnEndPage(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintPageEventArgs e) { }
         public override void OnEndPrint(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintEventArgs e) { }
-        public override System.Drawing.Graphics? OnStartPage(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintPageEventArgs e) { throw null; }
+        public override System.Drawing.Graphics OnStartPage(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintPageEventArgs e) { throw null; }
         public override void OnStartPrint(System.Drawing.Printing.PrintDocument document, System.Drawing.Printing.PrintEventArgs e) { }
     }
 }

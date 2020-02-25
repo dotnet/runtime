@@ -126,7 +126,7 @@ namespace System.Drawing
             return item;
         }
 
-        public Image GetThumbnailImage(int thumbWidth, int thumbHeight, Image.GetThumbnailImageAbort callback, IntPtr callbackData)
+        public Image GetThumbnailImage(int thumbWidth, int thumbHeight, Image.GetThumbnailImageAbort? callback, IntPtr callbackData)
         {
             if ((thumbWidth <= 0) || (thumbHeight <= 0))
                 throw new OutOfMemoryException(SR.InvalidThumbnailSize);

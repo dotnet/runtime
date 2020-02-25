@@ -1400,32 +1400,32 @@ namespace System.Drawing
         /// <summary>
         /// Draws a string with the specified font.
         /// </summary>
-        public void DrawString(string s, Font font, Brush brush, float x, float y)
+        public void DrawString(string? s, Font font, Brush brush, float x, float y)
         {
             DrawString(s, font, brush, new RectangleF(x, y, 0, 0), null);
         }
 
-        public void DrawString(string s, Font font, Brush brush, PointF point)
+        public void DrawString(string? s, Font font, Brush brush, PointF point)
         {
             DrawString(s, font, brush, new RectangleF(point.X, point.Y, 0, 0), null);
         }
 
-        public void DrawString(string s, Font font, Brush brush, float x, float y, StringFormat format)
+        public void DrawString(string? s, Font font, Brush brush, float x, float y, StringFormat? format)
         {
             DrawString(s, font, brush, new RectangleF(x, y, 0, 0), format);
         }
 
-        public void DrawString(string s, Font font, Brush brush, PointF point, StringFormat format)
+        public void DrawString(string? s, Font font, Brush brush, PointF point, StringFormat? format)
         {
             DrawString(s, font, brush, new RectangleF(point.X, point.Y, 0, 0), format);
         }
 
-        public void DrawString(string s, Font font, Brush brush, RectangleF layoutRectangle)
+        public void DrawString(string? s, Font font, Brush brush, RectangleF layoutRectangle)
         {
             DrawString(s, font, brush, layoutRectangle, null);
         }
 
-        public void DrawString(string s, Font font, Brush brush, RectangleF layoutRectangle, StringFormat? format)
+        public void DrawString(string? s, Font font, Brush brush, RectangleF layoutRectangle, StringFormat? format)
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
@@ -1445,10 +1445,10 @@ namespace System.Drawing
         }
 
         public SizeF MeasureString(
-            string text,
+            string? text,
             Font font,
             SizeF layoutArea,
-            StringFormat stringFormat,
+            StringFormat? stringFormat,
             out int charactersFitted,
             out int linesFilled)
         {
@@ -1479,7 +1479,7 @@ namespace System.Drawing
             return boundingBox.Size;
         }
 
-        public SizeF MeasureString(string text, Font font, PointF origin, StringFormat? stringFormat)
+        public SizeF MeasureString(string? text, Font font, PointF origin, StringFormat? stringFormat)
         {
             if (string.IsNullOrEmpty(text))
                 return SizeF.Empty;
@@ -1503,9 +1503,9 @@ namespace System.Drawing
             return boundingBox.Size;
         }
 
-        public SizeF MeasureString(string text, Font font, SizeF layoutArea) => MeasureString(text, font, layoutArea, null);
+        public SizeF MeasureString(string? text, Font font, SizeF layoutArea) => MeasureString(text, font, layoutArea, null);
 
-        public SizeF MeasureString(string text, Font font, SizeF layoutArea, StringFormat? stringFormat)
+        public SizeF MeasureString(string? text, Font font, SizeF layoutArea, StringFormat? stringFormat)
         {
             if (string.IsNullOrEmpty(text))
                 return SizeF.Empty;
@@ -1529,22 +1529,22 @@ namespace System.Drawing
             return boundingBox.Size;
         }
 
-        public SizeF MeasureString(string text, Font font)
+        public SizeF MeasureString(string? text, Font font)
         {
             return MeasureString(text, font, new SizeF(0, 0));
         }
 
-        public SizeF MeasureString(string text, Font font, int width)
+        public SizeF MeasureString(string? text, Font font, int width)
         {
             return MeasureString(text, font, new SizeF(width, 999999));
         }
 
-        public SizeF MeasureString(string text, Font font, int width, StringFormat format)
+        public SizeF MeasureString(string? text, Font font, int width, StringFormat? format)
         {
             return MeasureString(text, font, new SizeF(width, 999999), format);
         }
 
-        public Region[] MeasureCharacterRanges(string text, Font font, RectangleF layoutRect, StringFormat stringFormat)
+        public Region[] MeasureCharacterRanges(string? text, Font font, RectangleF layoutRect, StringFormat? stringFormat)
         {
             if (string.IsNullOrEmpty(text))
                 return Array.Empty<Region>();

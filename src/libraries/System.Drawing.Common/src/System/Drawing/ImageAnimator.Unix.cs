@@ -105,7 +105,7 @@ namespace System.Drawing
             thread.Start();
         }
 
-        public static bool CanAnimate(Image image)
+        public static bool CanAnimate(Image? image)
         {
             if (image == null)
                 return false;
@@ -144,7 +144,7 @@ namespace System.Drawing
         }
 
 
-        public static void UpdateFrames(Image? image)
+        public static void UpdateFrames(Image image)
         {
             if (image == null)
                 return;

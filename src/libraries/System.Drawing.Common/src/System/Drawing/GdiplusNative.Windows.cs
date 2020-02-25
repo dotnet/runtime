@@ -240,7 +240,7 @@ namespace System.Drawing
             internal static extern int GdipGetImageBounds(HandleRef image, out RectangleF gprectf, out GraphicsUnit unit);
 
             [DllImport(LibraryName, ExactSpelling = true)]
-            internal static extern int GdipGetImageThumbnail(HandleRef image, int thumbWidth, int thumbHeight, out IntPtr thumbImage, Image.GetThumbnailImageAbort callback, IntPtr callbackdata);
+            internal static extern int GdipGetImageThumbnail(HandleRef image, int thumbWidth, int thumbHeight, out IntPtr thumbImage, Image.GetThumbnailImageAbort? callback, IntPtr callbackdata);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetImagePalette(HandleRef image, IntPtr palette, int size);

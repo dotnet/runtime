@@ -93,7 +93,7 @@ namespace System.Drawing
         /// <summary>
         ///     Advances the frame in the specified image. The new frame is drawn the next time the image is rendered.
         /// </summary>
-        public static void UpdateFrames(Image? image)
+        public static void UpdateFrames(Image image)
         {
             if (!s_anyFrameDirty || image == null || s_imageInfoList == null)
             {
@@ -194,7 +194,7 @@ namespace System.Drawing
         ///     Adds an image to the image manager.  If the image does not support animation this method does nothing.
         ///     This method creates the image list and spawns the animation thread the first time it is called.
         /// </summary>
-        public static void Animate(Image? image, EventHandler onFrameChangedHandler)
+        public static void Animate(Image image, EventHandler onFrameChangedHandler)
         {
             if (image == null)
             {
@@ -315,7 +315,7 @@ namespace System.Drawing
         /// <summary>
         ///     Removes an image from the image manager so it is no longer animated.
         /// </summary>
-        public static void StopAnimate(Image? image, EventHandler onFrameChangedHandler)
+        public static void StopAnimate(Image image, EventHandler onFrameChangedHandler)
         {
             // Make sure we have a list of images
             if (image == null || s_imageInfoList == null)

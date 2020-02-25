@@ -258,7 +258,7 @@ namespace System.Drawing
         /// <summary>
         /// Adds an <see cref='EncoderParameters'/> to this <see cref='Image'/>.
         /// </summary>
-        public void SaveAdd(EncoderParameters encoderParams)
+        public void SaveAdd(EncoderParameters? encoderParams)
         {
             IntPtr encoder = IntPtr.Zero;
             if (encoderParams != null)
@@ -282,7 +282,7 @@ namespace System.Drawing
         /// <summary>
         /// Adds an <see cref='EncoderParameters'/> to the specified <see cref='Image'/>.
         /// </summary>
-        public void SaveAdd(Image image, EncoderParameters encoderParams)
+        public void SaveAdd(Image image, EncoderParameters? encoderParams)
         {
             IntPtr encoder = IntPtr.Zero;
 
@@ -374,7 +374,7 @@ namespace System.Drawing
         /// <summary>
         /// Returns the thumbnail for this <see cref='Image'/>.
         /// </summary>
-        public Image GetThumbnailImage(int thumbWidth, int thumbHeight, GetThumbnailImageAbort callback, IntPtr callbackData)
+        public Image GetThumbnailImage(int thumbWidth, int thumbHeight, GetThumbnailImageAbort? callback, IntPtr callbackData)
         {
             IntPtr thumbImage = IntPtr.Zero;
 

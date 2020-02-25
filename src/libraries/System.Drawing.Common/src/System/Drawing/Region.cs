@@ -346,7 +346,7 @@ namespace System.Drawing
 
         public bool IsVisible(PointF point) => IsVisible(point, null);
 
-        public bool IsVisible(float x, float y, Graphics g) => IsVisible(new PointF(x, y), g);
+        public bool IsVisible(float x, float y, Graphics? g) => IsVisible(new PointF(x, y), g);
 
         public bool IsVisible(PointF point, Graphics? g)
         {
@@ -363,7 +363,7 @@ namespace System.Drawing
 
         public bool IsVisible(RectangleF rect) => IsVisible(rect, null);
 
-        public bool IsVisible(float x, float y, float width, float height, Graphics g) => IsVisible(new RectangleF(x, y, width, height), g);
+        public bool IsVisible(float x, float y, float width, float height, Graphics? g) => IsVisible(new RectangleF(x, y, width, height), g);
 
         public bool IsVisible(RectangleF rect, Graphics? g)
         {
@@ -376,7 +376,7 @@ namespace System.Drawing
             return isVisible != 0;
         }
 
-        public bool IsVisible(int x, int y, Graphics g) => IsVisible(new Point(x, y), g);
+        public bool IsVisible(int x, int y, Graphics? g) => IsVisible(new Point(x, y), g);
 
         public bool IsVisible(Point point) => IsVisible(point, null);
 
@@ -395,7 +395,7 @@ namespace System.Drawing
 
         public bool IsVisible(Rectangle rect) => IsVisible(rect, null);
 
-        public bool IsVisible(int x, int y, int width, int height, Graphics g) => IsVisible(new Rectangle(x, y, width, height), g);
+        public bool IsVisible(int x, int y, int width, int height, Graphics? g) => IsVisible(new Rectangle(x, y, width, height), g);
 
         public bool IsVisible(Rectangle rect, Graphics? g)
         {
