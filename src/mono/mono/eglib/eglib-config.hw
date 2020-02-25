@@ -62,9 +62,19 @@ typedef int pid_t;
 /* disable the following warnings 
  * C4100: The formal parameter is not referenced in the body of the function. The unreferenced parameter is ignored. 
  * C4127: conditional expression is constant
+FIXME msvc-disabled-warnings.h instead.
 */
 #pragma warning(disable:4100 4127)
 #endif
 
-typedef void * GPid;
+/* Define to 1 if you have the `fork' function. */
+#undef HAVE_FORK
+
+/* Define to 1 if you have the `execv' function. */
+/* Windows does have it, but mono does not use it on Windows. */
+#undef HAVE_EXECV
+
+/* Define to 1 if you have the `getdtablesize' function. */
+#undef HAVE_GETDTABLESIZE
+
 #endif

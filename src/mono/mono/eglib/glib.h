@@ -26,6 +26,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <inttypes.h>
+
 #ifdef _MSC_VER
 #include <eglib-config.hw>
 #else
@@ -1048,6 +1049,10 @@ gboolean  g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***a
 gchar    *g_shell_unquote    (const gchar *quoted_string, GError **gerror);
 gchar    *g_shell_quote      (const gchar *unquoted_string);
 
+//#if defined (HAVE_FORK) && defined (HAVE_EXECV)
+
+//#define HAVE_G_SPAWN 1
+
 /*
  * Spawn
  */
@@ -1063,9 +1068,31 @@ typedef enum {
 
 typedef void (*GSpawnChildSetupFunc) (gpointer user_data);
 
+// Visual C++ runtime provides int getpid () and int _getpid ().
+// Win32 provides DWORD GetCurrentProcessId () (32bit unsigned long).
+// Posix provides pid_t.
+// g_spawn_async_with_pipes wants to return a HANDLE, i.e. void*.
+//
+// This is not really used.
+#ifdef G_OS_WIN32
+typedef void* GPid;
+#else
+#include <unistd.h>
+typedef pid_t GPid;
+#endif
+
 gboolean g_spawn_command_line_sync (const gchar *command_line, gchar **standard_output, gchar **standard_error, gint *exit_status, GError **gerror);
+
 gboolean g_spawn_async_with_pipes  (const gchar *working_directory, gchar **argv, gchar **envp, GSpawnFlags flags, GSpawnChildSetupFunc child_setup,
 				gpointer user_data, GPid *child_pid, gint *standard_input, gint *standard_output, gint *standard_error, GError **gerror);
+
+//#else
+
+// Win32 could implement these functions easily enough if needed.
+
+//#define HAVE_G_SPAWN 0
+
+//#endif
 
 int eg_getdtablesize (void);
 

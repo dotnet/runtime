@@ -273,6 +273,15 @@
 /* Version number of package */
 #define VERSION "#MONO_VERSION#"
 
+/* Define to 1 if you have the `execv' function. */
+#undef HAVE_EXECV
+
+/* Define to 1 if you have the `fork' function. */
+#undef HAVE_FORK
+
+/* Define to 1 if you have the `getdtablesize' function. */
+#undef HAVE_GETDTABLESIZE
+
 #else
 
 /* Not building under MSVC, use autogen.sh generated config.h */

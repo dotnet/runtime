@@ -25,6 +25,13 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
+#ifdef _WIN32
+
+#error Remove gspawn.c from the Win32 build definition.
+
+#else
+
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,6 +67,9 @@
 #ifdef G_OS_WIN32
 #include <io.h>
 #include <winsock2.h>
+#endif
+
+#if HAVE_G_SPAWN
 #define open _open
 #define close _close
 #define read _read
@@ -72,7 +82,13 @@
 #define set_error_cond(cond,msg, ...) do { if ((cond) && gerror != NULL) *gerror = g_error_new (G_LOG_DOMAIN, 1, msg, __VA_ARGS__); } while (0)
 #define set_error_status(status,msg, ...) do { if (gerror != NULL) *gerror = g_error_new (G_LOG_DOMAIN, status, msg, __VA_ARGS__); } while (0)
 #define NO_INTR(var,cmd) do { (var) = (cmd); } while ((var) == -1 && errno == EINTR)
-#define CLOSE_PIPE(p) do { close (p [0]); close (p [1]); } while (0)
+
+static void
+mono_close_pipe (int pipes [2])
+{
+	close (pipes [0]);
+	close (pipes [1]);
+}
 
 #if defined(__APPLE__)
 #if defined (TARGET_OSX)
@@ -88,6 +104,7 @@ G_END_DECLS
 static char *mono_environ[1] = { NULL };
 #define environ mono_environ
 #endif /* defined (TARGET_OSX) */
+
 #elif defined(_MSC_VER)
 /* MS defines this in stdlib.h */
 #else
@@ -96,7 +113,6 @@ extern char **environ;
 G_END_DECLS
 #endif
 
-#if !defined (G_OS_WIN32) && defined (HAVE_FORK) && defined (HAVE_EXECV)
 static int
 safe_read (int fd, gchar *buffer, gint count, GError **gerror)
 {
@@ -215,9 +231,11 @@ write_all (int fd, const void *vbuf, size_t n)
 	
 	return nwritten;
 }
-#endif /* !defined (G_OS_WIN32) && defined (HAVE_FORK) && defined (HAVE_EXECV) */
 
-#if !defined(G_OS_WIN32) && defined(HAVE_GETDTABLESIZE)
+#endif // HAVE_G_SPAWN
+
+#if defined (HAVE_GETDTABLESIZE)
+
 int
 eg_getdtablesize (void)
 {
@@ -232,13 +250,12 @@ eg_getdtablesize (void)
 	return getdtablesize ();
 #endif
 }
-#else
-int
-eg_getdtablesize (void)
-{
-	g_error ("Should not be called");
-}
+
 #endif
+
+#if HAVE_G_SPAWN
+
+// This code is presently not used, except to test it.
 
 gboolean
 g_spawn_command_line_sync (const gchar *command_line,
@@ -247,12 +264,6 @@ g_spawn_command_line_sync (const gchar *command_line,
 				gint *exit_status,
 				GError **gerror)
 {
-#ifdef G_OS_WIN32
-	return TRUE;
-#elif !defined (HAVE_FORK) || !defined (HAVE_EXECV)
-	fprintf (stderr, "g_spawn_command_line_sync not supported on this platform\n");
-	return FALSE;
-#else
 	pid_t pid;
 	gchar **argv;
 	gint argc;
@@ -269,7 +280,7 @@ g_spawn_command_line_sync (const gchar *command_line,
 
 	if (standard_error && !create_pipe (stderr_pipe, gerror)) {
 		if (standard_output) {
-			CLOSE_PIPE (stdout_pipe);
+			mono_close_pipe (stdout_pipe);
 		}
 		return FALSE;
 	}
@@ -306,6 +317,7 @@ g_spawn_command_line_sync (const gchar *command_line,
 	}
 
 	g_strfreev (argv);
+
 	if (standard_output)
 		close (stdout_pipe [1]);
 
@@ -327,13 +339,11 @@ g_spawn_command_line_sync (const gchar *command_line,
 		*exit_status = WEXITSTATUS (status);
 	}
 	return TRUE;
-#endif
 }
 
-/*
- * This is the only use we have in mono/metadata
-!g_spawn_async_with_pipes (NULL, (char**)addr_argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, &child_pid, &ch_in, &ch_out, NULL, NULL)
-*/
+// This function is used only in test code and in the reduced form:
+// mini/debugger-agent.c(1090): res = g_spawn_async_with_pipes (NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
 gboolean
 g_spawn_async_with_pipes (const gchar *working_directory,
 			gchar **argv,
@@ -347,12 +357,6 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			gint *standard_error,
 			GError **gerror)
 {
-#ifdef G_OS_WIN32
-	return TRUE;
-#elif !defined (HAVE_FORK) || !defined (HAVE_EXECVE)
-	fprintf (stderr, "g_spawn_async_with_pipes is not supported on this platform\n");
-	return FALSE;
-#else
 	pid_t pid;
 	int info_pipe [2];
 	int in_pipe [2] = { -1, -1 };
@@ -366,29 +370,29 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 		return FALSE;
 
 	if (standard_output && !create_pipe (out_pipe, gerror)) {
-		CLOSE_PIPE (info_pipe);
+		mono_close_pipe (info_pipe);
 		return FALSE;
 	}
 
 	if (standard_error && !create_pipe (err_pipe, gerror)) {
-		CLOSE_PIPE (info_pipe);
-		CLOSE_PIPE (out_pipe);
+		mono_close_pipe (info_pipe);
+		mono_close_pipe (out_pipe);
 		return FALSE;
 	}
 
 	if (standard_input && !create_pipe (in_pipe, gerror)) {
-		CLOSE_PIPE (info_pipe);
-		CLOSE_PIPE (out_pipe);
-		CLOSE_PIPE (err_pipe);
+		mono_close_pipe (info_pipe);
+		mono_close_pipe (out_pipe);
+		mono_close_pipe (err_pipe);
 		return FALSE;
 	}
 
 	pid = fork ();
 	if (pid == -1) {
-		CLOSE_PIPE (info_pipe);
-		CLOSE_PIPE (out_pipe);
-		CLOSE_PIPE (err_pipe);
-		CLOSE_PIPE (in_pipe);
+		mono_close_pipe (info_pipe);
+		mono_close_pipe (out_pipe);
+		mono_close_pipe (err_pipe);
+		mono_close_pipe (in_pipe);
 		set_error ("%s", "Error in fork ()");
 		return FALSE;
 	}
@@ -483,10 +487,10 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 		/* Wait for the first child if two are created */
 		NO_INTR (w, waitpid (pid, &status, 0));
 		if (status == 1 || w == -1) {
-			CLOSE_PIPE (info_pipe);
-			CLOSE_PIPE (out_pipe);
-			CLOSE_PIPE (err_pipe);
-			CLOSE_PIPE (in_pipe);
+			mono_close_pipe (info_pipe);
+			mono_close_pipe (out_pipe);
+			mono_close_pipe (err_pipe);
+			mono_close_pipe (in_pipe);
 			set_error ("Error in fork (): %d", status);
 			return FALSE;
 		}
@@ -522,5 +526,9 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 	if (standard_error)
 		*standard_error = err_pipe [0];
 	return TRUE;
-#endif
 }
+
+#endif // HAVE_G_SPAWN
+
+extern const char mono_eglib_quash_empty_file_warning_gspawn;
+extern const char mono_eglib_quash_empty_file_warning_gspawn = 0;

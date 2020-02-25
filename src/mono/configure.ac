@@ -5109,13 +5109,11 @@ case $host in
     PATHSEP='\\'
     SEARCHSEP=';'
     OS="WIN32"
-    PIDTYPE='void *'
     ;;
 *)
     PATHSEP='/'
     SEARCHSEP=':'
     OS="UNIX"
-    PIDTYPE='int'
     ;;
 esac
 
@@ -5145,7 +5143,6 @@ AC_SUBST(ORDER)
 AC_SUBST(PATHSEP)
 AC_SUBST(SEARCHSEP)
 AC_SUBST(OS)
-AC_SUBST(PIDTYPE)
 
 # Defined for all targets/platforms using classic Windows API support.
 AC_DEFINE(HAVE_CLASSIC_WINAPI_SUPPORT, 1, [Use classic Windows API support])

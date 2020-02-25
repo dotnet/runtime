@@ -38,6 +38,10 @@ typedef @GSSIZE@ gssize;
 #define G_BREAKPOINT() do { printf ("MONO: BREAKPOINT\n"); abort (); } while (0)
 #endif
 
-typedef @PIDTYPE@ GPid;
+/* Define to 1 if you have the `fork' function. */
+#undef HAVE_FORK
+
+/* Define to 1 if you have the `execv' function. */
+#undef HAVE_EXECV
 
 #endif
