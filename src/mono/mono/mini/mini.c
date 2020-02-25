@@ -2866,7 +2866,6 @@ insert_safepoints (MonoCompile *cfg)
 
 	g_assert (mini_safepoints_enabled ());
 
-#ifndef MONO_LLVM_LOADED
 	if (COMPILE_LLVM (cfg)) {
 		if (!cfg->llvm_only) {
 			/* We rely on LLVM's safepoints insertion capabilities. */
@@ -2875,7 +2874,6 @@ insert_safepoints (MonoCompile *cfg)
 			return;
 		}
 	}
-#endif
 
 	if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
@@ -4335,7 +4333,7 @@ mini_get_cpu_features (MonoCompile* cfg)
 #if !defined(MONO_CROSS_COMPILE)
 	if (!cfg->compile_aot || cfg->use_current_cpu) {
 		// detect current CPU features if we are in JIT mode or AOT with use_current_cpu flag.
-#if defined(ENABLE_LLVM) && !defined(MONO_LLVM_LOADED)
+#if defined(ENABLE_LLVM)
 		features = mono_llvm_get_cpu_features (); // llvm has a nice built-in API to detect features
 #elif defined(TARGET_AMD64)
 		features = mono_arch_get_cpu_features ();
