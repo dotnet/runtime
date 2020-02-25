@@ -24,13 +24,13 @@ parameters:
 
 jobs:
 - template: xplat-pipeline-job.yml
-  paths:
-    include:
-    - src/coreclr/src/jit/*
-    exclude:
-    - *
-    
   parameters:
+    paths:
+      include:
+      - src/coreclr/src/jit/*
+      exclude:
+      - *
+      
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
