@@ -2463,20 +2463,28 @@ public:
             }
 
 #ifdef FEATURE_SIMD
-            // SIMD types will cause a SIMD register to be spilled/restored
+            // SIMD types may cause a SIMD register to be spilled/restored in the prolog and epilog.
             //
             if (varTypeIsSIMD(candidate->Expr()->TypeGet()))
             {
+                // We don't have complete information about when these extra spilled/restore will be needed.
+                // Instead we are conservative and assume that each SIMD CSE that is live across a call
+                // will cause an additional spill/restore in the prolog and epilog.
+                //
                 int spillSimdRegInProlog = 1;
 
                 // If we have a SIMD32 that is live across a call we have even higher spill costs
                 //
                 if (candidate->Expr()->TypeGet() == TYP_SIMD32)
                 {
-                    spillSimdRegInProlog++; // we likely need to spill an extra register to save the upper half
+                    // Additionally for a simd32 CSE candidate we assume that and second spilled/restore will be needed.
+                    // (to hold the upper half of the simd32 register that isn't preserved across the call)
+                    //
+                    spillSimdRegInProlog++;
 
-                    // Increase the cse_use_cost since at use sites we have to generate code to spill/restore
-                    // the upper half of the YMM register
+                    // We also increase the CSE use cost here to because we may have to generate instructions
+                    // to move the upper half of the simd32 before and after a call.
+                    //
                     cse_use_cost += 2;
                 }
 
