@@ -219,7 +219,7 @@ struct ProfilingScanContext;
 
 #else // FEATURE_EVENT_TRACE
 
-#include "etmdummy.h"
+#include "../gc/env/etmdummy.h"
 #endif // FEATURE_EVENT_TRACE
 
 #ifndef FEATURE_REDHAWK
@@ -245,7 +245,9 @@ extern UINT32 g_nClrInstanceId;
 #define TRACE_LEVEL_VERBOSE     5   // Detailed traces from intermediate steps
 
 #define DEF_LTTNG_KEYWORD_ENABLED 1
+#ifdef FEATURE_EVENT_TRACE
 #include "clrproviders.h"
+#endif
 #include "clrconfig.h"
 
 class XplatEventLoggerConfiguration
@@ -388,9 +390,10 @@ public:
         {
             ActivateAllKeywordsOfAllProviders();
         }
+#ifdef FEATURE_EVENT_TRACE
         else
         {
-            auto provider = GetProvider(providerName);
+            LTTNG_TRACE_CONTEXT *provider = GetProvider(providerName);
             if (provider == nullptr)
             {
                 return;
@@ -399,20 +402,23 @@ public:
             provider->Level = level;
             provider->IsEnabled = true;
         }
+#endif
     }
 
     static void ActivateAllKeywordsOfAllProviders()
     {
+#ifdef FEATURE_EVENT_TRACE
         for (LTTNG_TRACE_CONTEXT * const provider : ALL_LTTNG_PROVIDERS_CONTEXT)
         {
             provider->EnabledKeywordsBitmask = (ULONGLONG)(-1);
             provider->Level = TRACE_LEVEL_VERBOSE;
             provider->IsEnabled = true;
         }
+#endif
     }
 
 private:
-
+#ifdef FEATURE_EVENT_TRACE
     static LTTNG_TRACE_CONTEXT * const GetProvider(LPCWSTR providerName)
     {
         auto length = wcslen(providerName);
@@ -425,6 +431,7 @@ private:
         }
         return nullptr;
     }
+#endif
 };
 
 class XplatEventLogger
@@ -437,6 +444,7 @@ public:
         return configEventLogging.val(CLRConfig::EXTERNAL_EnableEventLog);
     }
 
+#ifdef FEATURE_EVENT_TRACE
     inline static bool IsProviderEnabled(DOTNET_TRACE_CONTEXT providerCtx)
     {
         return providerCtx.LttngProvider->IsEnabled;
@@ -458,7 +466,7 @@ public:
         }
         return false;
     }
-
+#endif
 
     /*
     This method is where COMPlus_LTTngConfig environment variable is parsed and is registered with the runtime provider
@@ -1204,6 +1212,10 @@ namespace ETW
 #else
                 static bool IsEnabled() { return false; }
                 static void SendSettings() {}
+                static void SendPause() {}
+                static void SendResume(UINT32 newMethodCount) {}
+                static void SendBackgroundJitStart(UINT32 pendingMethodCount) {}
+                static void SendBackgroundJitStop(UINT32 pendingMethodCount, UINT32 jittedMethodCount) {}
 #endif
 
                 DISABLE_CONSTRUCT_COPY(Runtime);
