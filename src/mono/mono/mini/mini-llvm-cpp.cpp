@@ -373,7 +373,7 @@ mono_llvm_call_args (LLVMValueRef wrapped_calli)
 	InvokeInst *invoke = dyn_cast <InvokeInst> (calli);
 	g_assert (call || invoke);
 
-	unsigned int numOperands = 0;
+	unsigned int numOperands;
 
 	if (call)
 		numOperands = call->getNumArgOperands ();
