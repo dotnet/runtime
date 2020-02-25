@@ -10,6 +10,7 @@ parameters:
   pool: ''
   condition: true
   llvm: false
+  isOfficialBuild: false
   crossrootfsDir: ''
 
 ### Product build
