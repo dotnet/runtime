@@ -121,7 +121,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             if (sinkEntry.Empty)
                 RemoveMethod(sinkEntry);
 
-            if (_methods.Empty)
+            if (_methods == null || _methods.Empty)
             {
                 Dispose();
             }
