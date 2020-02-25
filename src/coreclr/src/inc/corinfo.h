@@ -217,11 +217,11 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 9C412381-94A6-4F35-B2B6-60AFB2495B72 */
-    0x9c412381,
-    0x94a6,
-    0x4f35,
-    { 0xb2, 0xb6, 0x60, 0xaf, 0xb2, 0x49, 0x5b, 0x72 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* b2e40020-6125-41e4-a0fc-821127ec192a */
+    0xb2e40020,
+    0x6125,
+    0x41e4,
+    {0xa0, 0xfc, 0x82, 0x11, 0x27, 0xec, 0x19, 0x2a}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1275,6 +1275,7 @@ struct CORINFO_LOOKUP_KIND
 //
 #define CORINFO_MAXINDIRECTIONS 4
 #define CORINFO_USEHELPER ((WORD) 0xffff)
+#define CORINFO_NO_SIZE_CHECK ((WORD) 0xffff)
 
 struct CORINFO_RUNTIME_LOOKUP
 {
@@ -1297,6 +1298,7 @@ struct CORINFO_RUNTIME_LOOKUP
     // If set, test the lowest bit and dereference if set (see code:FixupPointer)
     bool                    testForFixup;
 
+    WORD                    sizeOffset;
     SIZE_T                  offsets[CORINFO_MAXINDIRECTIONS];
 
     // If set, first offset is indirect.
