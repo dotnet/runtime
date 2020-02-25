@@ -529,6 +529,8 @@ public:
         return m_pArrayDataPtr + m_CurrentPos;
     }
 
+    void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
+
 private:
     LargeHeapHandleBucket *m_pNext;
     int m_ArraySize;
@@ -554,6 +556,8 @@ public:
 
     // Release object handles allocated using AllocateHandles().
     void ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased);
+
+    void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
 private:
     // The buckets of object handles.

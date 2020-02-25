@@ -671,10 +671,6 @@ public:
     void NotifyDebuggerUnload();
 
     inline BOOL IsCollectible();
-    //
-    //  GC API
-    //
-    void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
 
  private:
