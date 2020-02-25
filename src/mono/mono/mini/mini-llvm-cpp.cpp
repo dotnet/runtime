@@ -325,26 +325,27 @@ mono_llvm_is_nonnull (LLVMValueRef wrapped)
 	// Argument to function
 	Value *val = unwrap (wrapped);
 
-	while (val) {
+recurse:
+	if (val) {
 		if (Argument *arg = dyn_cast<Argument> (val)) {
 			return arg->hasNonNullAttr ();
-		} else if (CallInst *calli = dyn_cast<CallInst> (val)) {
+		}
+		if (CallInst *calli = dyn_cast<CallInst> (val)) {
 			return calli->hasRetAttr (Attribute::NonNull);
-		} else if (InvokeInst *calli = dyn_cast<InvokeInst> (val)) {
+		} 
+		if (InvokeInst *calli = dyn_cast<InvokeInst> (val)) {
 			return calli->hasRetAttr (Attribute::NonNull);
-		} else if (LoadInst *loadi = dyn_cast<LoadInst> (val)) {
+		}
+		if (LoadInst *loadi = dyn_cast<LoadInst> (val)) {
 			return loadi->getMetadata("nonnull") != nullptr; // nonnull <index>
-		} else if (Instruction *inst = dyn_cast<Instruction> (val)) {
+		}
+		if (Instruction *inst = dyn_cast<Instruction> (val)) {
 			// If not a load or a function argument, the only case for us to
 			// consider is that it's a bitcast. If so, recurse on what was casted.
 			if (inst->getOpcode () == LLVMBitCast) {
 				val = inst->getOperand (0);
-				continue;
+				goto recurse;
 			}
-
-			return FALSE;
-		} else {
-			return FALSE;
 		}
 	}
 	return FALSE;
