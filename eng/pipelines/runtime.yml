@@ -71,6 +71,11 @@ jobs:
       - eng/pipelines/installer/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
+    - subset: clrjit
+      include:
+        - src/coreclr/src/jit/*
+      exclude:
+        - *
     - subset: mono
       include:
       - src/libraries/System.Private.CoreLib/*
@@ -463,7 +468,7 @@ jobs:
       liveLibrariesBuildConfig: Release
       condition: >-
         or(
-          eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_clrjit.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
