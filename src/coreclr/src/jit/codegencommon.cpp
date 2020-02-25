@@ -6348,8 +6348,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         noway_assert((blkSize % sizeof(int)) == 0);
         assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // initReg is not a live
                                                                                    // incoming argument reg
-        // Is smaller then simd size we won't bother trying to align
-        if (blkSize < XMM_REGSIZE_BYTES)
+        // Smaller then 2 x simd size we won't bother trying to align or use simd
+        if (blkSize < 2 * XMM_REGSIZE_BYTES)
         {
             zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
@@ -6417,27 +6417,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
             // The loop is unrolled 3 times so we do not move to the loop block until it
             // will loop at least once so the threshold is 6.
-            const int loopThreshold = 6 * XMM_REGSIZE_BYTES;
-            // Is remaining aligned still at least vector length
-            if (blkSize < XMM_REGSIZE_BYTES)
-            {
-                zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
-                int i   = 0;
-                for (; i + REGSIZE_BYTES <= blkSize; i += REGSIZE_BYTES)
-                {
-                    emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, alignedLclLo + i);
-                }
-#ifdef TARGET_64BIT
-                assert(i == blkSize || (i + sizeof(int) == blkSize));
-                if (i != blkSize)
-                {
-                    emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, alignedLclLo + i);
-                    i += sizeof(int);
-                }
-#endif // TARGET_64BIT
-                assert(i == blkSize);
-            }
-            else if (blkSize < loopThreshold)
+            if (blkSize < 6 * XMM_REGSIZE_BYTES)
             {
                 // Generate the following code:
                 //
