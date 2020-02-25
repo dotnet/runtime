@@ -9,12 +9,6 @@
 #include <string>
 #include <vector>
 
-#if TARGET_64BIT
-#define TARGET_WORDSIZE 64
-#else
-#define TARGET_WORDSIZE 32
-#endif
-
 #ifndef ElfW
 /* We use this macro to refer to ELF types independent of the native wordsize.
    `ElfW(TYPE)' is used in place of `Elf32_TYPE' or `Elf64_TYPE'.  */

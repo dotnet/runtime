@@ -200,7 +200,7 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
         return hr;
     }
     // Add the dac table memory in coreclr
-    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem((TADDR)dacTableAddress, sizeof(g_dacGlobals)); )
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem(dacTableAddress, sizeof(g_dacGlobals)); )
 #endif
 
     // Cannot use CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
