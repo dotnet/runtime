@@ -61,8 +61,7 @@
     <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\"</HelixCommand>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(HelixCommand)' == ''">
-    <Message Importance="High" Text="MonoEnvOptions: $(MonoEnvOptions)" />
+  <PropertyGroup Condition="'$(HelixCommand)' == ''">    
     <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(TargetsWindows)' == 'true'">set MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
     <HelixPreCommands Condition="'$(MonoEnvOptions)' != '' and '$(TargetsWindows)' == 'false'">export MONO_ENV_OPTIONS='$(MonoEnvOptions)'</HelixPreCommands>
 
@@ -109,6 +108,8 @@
         <Timeout>$(_timeoutSpan)</Timeout>
       </HelixWorkItem>
     </ItemGroup>
+
+    <Message Importance="High" Text="MonoEnvOptions: $(MonoEnvOptions)" />
 
   </Target>
 
