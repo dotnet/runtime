@@ -33,10 +33,12 @@ public:
 
         EventStoreElem *walk;
         EventStoreElem *next;
-
-        for (walk = m_Store; walk; walk = next) {
+        
+        walk = m_Store;
+        while(walk) {
             next = walk->next;
             delete (walk);
+            walk = next;
         }
     }
 
