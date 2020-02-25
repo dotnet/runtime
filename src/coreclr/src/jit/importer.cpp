@@ -20669,7 +20669,11 @@ bool Compiler::impIsClassExact(CORINFO_CLASS_HANDLE classHnd)
     if ((flags & flagsMask) == (CORINFO_FLG_FINAL | CORINFO_FLG_ARRAY))
     {
         CORINFO_CLASS_HANDLE arrayElementHandle = nullptr;
-        if (info.compCompHnd->getChildType(classHnd, &arrayElementHandle) == CORINFO_TYPE_CLASS)
+        CorInfoType          type
+            = info.compCompHnd->getChildType(classHnd, &arrayElementHandle);
+
+        if ((type == CORINFO_TYPE_CLASS) || (type == CORINFO_TYPE_VALUECLASS) ||
+            (type == CORINFO_TYPE_STRING))
         {
             return impIsClassExact(arrayElementHandle);
         }

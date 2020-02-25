@@ -12505,17 +12505,28 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     // if both classes are "final" (e.g. System.String[]) we can replace the comparison
     // with `true/false` + null check.
     if ((objCls != NO_CLASS_HANDLE) &&
-        // double check if it's final via impIsClassExact
-        impIsClassExact(objCls) && impIsClassExact(clsHnd))
+        // double check if it's final via impIsClassExact for arrays
+        (pIsExact || impIsClassExact(objCls)) && impIsClassExact(clsHnd))
     {
         const bool typesAreEqual = objCls == clsHnd;
         const bool operatorIsEQ  = oper == GT_EQ;
-        const int  compareResult = operatorIsEQ ^ typesAreEqual ? 0 : 1;
+        GenTree*   compareResult = gtNewIconNode((operatorIsEQ ^ typesAreEqual) ? 0 : 1);
 
-        // we still have to emit a null-check
-        // obj.GetType == typeof() -> (nullcheck) true/false
-        GenTree* nullcheck = gtNewNullCheck(objOp, compCurBB);
-        return gtNewOperNode(GT_COMMA, tree->TypeGet(), nullcheck, gtNewIconNode(compareResult));
+        if (!pIsNonNull)
+        {
+            // we still have to emit a null-check
+            // obj.GetType == typeof() -> (nullcheck) true/false
+            GenTree* nullcheck = gtNewNullCheck(objOp, compCurBB);
+            return gtNewOperNode(GT_COMMA, tree->TypeGet(), nullcheck, compareResult);
+        }
+        else if (objOp->gtFlags & GTF_ALL_EFFECT)
+        {
+            return gtNewOperNode(GT_COMMA, tree->TypeGet(), objOp, compareResult);
+        }
+        else
+        {
+            return compareResult;
+        }
     }
 
     GenTree* const objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, objOp);
