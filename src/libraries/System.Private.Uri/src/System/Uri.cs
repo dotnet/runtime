@@ -902,35 +902,58 @@ namespace System
                 // Do we have a valid local path right in m_string?
                 if (NotAny(Flags.HostNotCanonical | Flags.PathNotCanonical | Flags.ShouldBeCompressed))
                 {
-                    start = IsUncPath ? _info.Offset.Host - 2 : _info.Offset.Path;
-
-                    ValueStringBuilder localPath = str.Length <= 256
-                        ? new ValueStringBuilder(stackalloc char[256])
-                        : new ValueStringBuilder(str.Length);
-
                     if ((IsImplicitFile
                         && _info.Offset.Host == (IsDosPath ? 0 : 2)
                         && _info.Offset.Query == _info.Offset.End))
                     {
-                        localPath.Append(str);
-                    }
-                    else if (IsDosPath && (str[start] == '/' || str[start] == '\\'))
-                    {
-                        localPath.Append(str.AsSpan(start + 1, _info.Offset.Query - start - 1));
+                        start = 0;
                     }
                     else
                     {
-                        localPath.Append(str.AsSpan(start, _info.Offset.Query - start));
+                        start = IsUncPath ? _info.Offset.Host - 2 : _info.Offset.Path;
+
+                        if (IsDosPath && (str[start] == '/' || str[start] == '\\'))
+                        {
+                            start++;
+                        }
                     }
 
-                    // Should be a rare case, convert c|\ into c:\
-                    if (IsDosPath && localPath[1] == '|')
+                    ReadOnlySpan<char> localPath = str.AsSpan(start, _info.Offset.Query - start);
+
+                    bool hasForwardSlashes = localPath.Contains('/');
+                    bool replacePipe = IsDosPath && localPath[1] == '|';
+
+                    if (hasForwardSlashes || replacePipe)
                     {
-                        localPath[1] = ':';
+                        return string.Create(localPath.Length, (str, start, hasForwardSlashes, replacePipe), (buffer, state) =>
+                        {
+                            ReadOnlySpan<char> localPath = state.str.AsSpan(state.start, buffer.Length);
+
+                            if (state.hasForwardSlashes)
+                            {
+                                for (int i = 0; i < localPath.Length; i++)
+                                {
+                                    char currentChar = localPath[i];
+                                    buffer[i] = currentChar == '/' ? '\\' : currentChar;
+                                }
+                            }
+                            else
+                            {
+                                localPath.CopyTo(buffer);
+                            }
+
+                            // Should be a rare case, convert c|\ into c:\
+                            if (state.replacePipe)
+                            {
+                                buffer[1] = ':';
+                            }
+                        });
                     }
 
-                    // check for all back slashes
-                    localPath.Replace('/', '\\');
+                    if (str.Length == localPath.Length)
+                    {
+                        return str;
+                    }
 
                     return localPath.ToString();
                 }
@@ -4311,7 +4334,7 @@ namespace System
 
             if (hasUnicode)
             {
-                string temp = UriHelper.StripBidiControlCharacter(pString, start, end - start);
+                string temp = UriHelper.StripBidiControlCharacters(pString, start, end - start);
                 try
                 {
                     newHost += ((temp != null) ? temp.Normalize(NormalizationForm.FormC) : null);
@@ -4966,9 +4989,9 @@ namespace System
             char c1 = relativePart[0];
 
             //check a special case for the base as DOS path and a rooted relative string
-            if (basePart.IsDosPath
-                && (c1 == '/' || c1 == '\\')
-                && (relativePart.Length == 1 || (relativePart[1] != '/' && relativePart[1] != '\\')))
+            if (basePart.IsDosPath &&
+                (c1 == '/' || c1 == '\\') &&
+                (relativePart.Length == 1 || (relativePart[1] != '/' && relativePart[1] != '\\')))
             {
                 // take relative part appended to the base string after the drive letter
                 int idx = basePart.OriginalString.IndexOf(':');
@@ -5146,7 +5169,7 @@ namespace System
             char c2 = (!basePart.IsImplicitFile && basePart.Syntax.InFact(UriSyntaxFlags.MayHaveFragment)) ? '#' : c_DummyChar;
 
             // assuming c_DummyChar may not happen in an unicode uri string
-            index = c1 == c_DummyChar && c2 == c_DummyChar
+            index = (c1 & c2) == c_DummyChar
                 ? -1
                 : relativePart.AsSpan().IndexOfAny(c1, c2);
 

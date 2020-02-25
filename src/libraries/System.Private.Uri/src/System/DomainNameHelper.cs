@@ -229,7 +229,7 @@ namespace System
                 return hostname.ToLowerInvariant();
             }
 
-            string bidiStrippedHost = UriHelper.StripBidiControlCharacter(hostname);
+            string bidiStrippedHost = UriHelper.StripBidiControlCharacters(hostname);
 
             try
             {
@@ -298,7 +298,7 @@ namespace System
             if (end <= start)
                 return idn;
 
-            string unescapedHostname = UriHelper.StripBidiControlCharacter(hostname, start, (end - start));
+            string unescapedHostname = UriHelper.StripBidiControlCharacters(hostname, start, (end - start));
 
             string? unicodeEqvlHost = null;
             int curPos = 0;
