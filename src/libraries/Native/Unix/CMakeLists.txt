@@ -90,7 +90,9 @@ endif ()
 
 if(CLR_CMAKE_TARGET_ANDROID)
     add_definitions(-DTARGET_ANDROID)
-    include_directories(SYSTEM "${CROSS_ROOTFS}/usr/include")
+    if(CROSS_ROOTFS)
+        include_directories(SYSTEM "${CROSS_ROOTFS}/usr/include")
+    endif()
 endif()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
@@ -171,6 +173,8 @@ if(CLR_CMAKE_TARGET_UNIX)
         endif()
     elseif (CLR_CMAKE_TARGET_IOS)
         # No object stripping for iOS
+    elseif (CLR_CMAKE_TARGET_ANDROID)
+        # No object stripping for Android
     elseif (CLR_CMAKE_TARGET_ARCH_WASM)
         # No object stripping for WASM
     else (CLR_CMAKE_TARGET_DARWIN)
@@ -221,13 +225,17 @@ add_subdirectory(System.Native)
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
 if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable
+if (NOT CLR_CMAKE_TARGET_ANDROID)  # TODO: reenable
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
 endif()
+endif()
 if (NOT CLR_CMAKE_TARGET_IOS)
+if (NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS) # TODO: reenable
     # disable System.Security.Cryptography.Native build on iOS,
     # only used for interacting with OpenSSL which isn't useful there
     add_subdirectory(System.Security.Cryptography.Native)
+endif()
 endif()
 endif()
 

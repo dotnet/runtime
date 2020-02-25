@@ -39,19 +39,21 @@ if(NOT WIN32)
     set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
   endfunction()
 
-  locate_toolchain_exec(ar CMAKE_AR)
-  locate_toolchain_exec(link CMAKE_LINKER)
-  locate_toolchain_exec(nm CMAKE_NM)
+  if(NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS)
+    locate_toolchain_exec(ar CMAKE_AR)
+    locate_toolchain_exec(link CMAKE_LINKER)
+    locate_toolchain_exec(nm CMAKE_NM)
+  endif()
 
   if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     locate_toolchain_exec(ranlib CMAKE_RANLIB)
   endif()
 
-  if(NOT CLR_CMAKE_TARGET_DARWIN AND NOT CLR_CMAKE_TARGET_IOS)
+  if(NOT CLR_CMAKE_TARGET_DARWIN AND NOT CLR_CMAKE_TARGET_IOS AND (NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS))
     locate_toolchain_exec(objdump CMAKE_OBJDUMP)
 
-    if(CMAKE_SYSTEM_NAME STREQUAL Android)
-      set(TOOSET_PREFIX ${ANDROID_TOOLCHAIN_PREFIX})
+    if(CLR_CMAKE_TARGET_ANDROID)
+      set(TOOLSET_PREFIX ${ANDROID_TOOLCHAIN_PREFIX})
     elseif(CMAKE_CROSSCOMPILING AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD AND (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR
        CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL arm))
       set(TOOLSET_PREFIX "${TOOLCHAIN}-")

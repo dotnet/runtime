@@ -2,6 +2,9 @@ project(System.IO.Compression.Native C)
 
 if (CLR_CMAKE_TARGET_WASM)
     add_definitions(-s USE_ZLIB)
+elseif (CLR_CMAKE_TARGET_ANDROID)
+    # need special case here since we want to link against libz.so but find_package() would resolve libz.a
+    set(ZLIB_LIBRARIES z)
 else ()
     find_package(ZLIB REQUIRED)
 endif ()
