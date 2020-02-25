@@ -11,12 +11,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Implements major type 0 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public ulong ReadUInt64()
         {
-            ReadInitialByte(out CborDataItem header);
+            CborDataItem header = ReadInitialByte();
 
             switch (header.MajorType)
             {
                 case CborMajorType.UnsignedInteger:
-                    ulong value = ReadUnsignedInteger(in header, out int additionalBytes);
+                    ulong value = ReadUnsignedInteger(header, out int additionalBytes);
                     AdvanceBuffer(1 + additionalBytes);
                     return value;
 
@@ -27,12 +27,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public bool TryReadUInt64(out ulong value)
         {
-            ReadInitialByte(out CborDataItem header);
+            CborDataItem header = ReadInitialByte();
 
             switch (header.MajorType)
             {
                 case CborMajorType.UnsignedInteger:
-                    value = ReadUnsignedInteger(in header, out int additionalBytes);
+                    value = ReadUnsignedInteger(header, out int additionalBytes);
                     AdvanceBuffer(1 + additionalBytes);
                     return true;
 
@@ -48,17 +48,17 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             long value;
             int additionalBytes;
 
-            ReadInitialByte(out CborDataItem header);
+            CborDataItem header = ReadInitialByte();
 
             switch (header.MajorType)
             {
                 case CborMajorType.UnsignedInteger:
-                    value = checked((long)ReadUnsignedInteger(in header, out additionalBytes));
+                    value = checked((long)ReadUnsignedInteger(header, out additionalBytes));
                     AdvanceBuffer(1 + additionalBytes);
                     return value;
 
                 case CborMajorType.NegativeInteger:
-                    value = checked(-1 - (long)ReadUnsignedInteger(in header, out additionalBytes));
+                    value = checked(-1 - (long)ReadUnsignedInteger(header, out additionalBytes));
                     AdvanceBuffer(1 + additionalBytes);
                     return value;
 
@@ -72,12 +72,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             ulong result;
             int additionalBytes;
 
-            ReadInitialByte(out CborDataItem header);
+            CborDataItem header = ReadInitialByte();
 
             switch (header.MajorType)
             {
                 case CborMajorType.UnsignedInteger:
-                    result = ReadUnsignedInteger(in header, out additionalBytes);
+                    result = ReadUnsignedInteger(header, out additionalBytes);
                     if (result > long.MaxValue)
                     {
                         value = 0;
@@ -91,7 +91,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     }
 
                 case CborMajorType.NegativeInteger:
-                    result = ReadUnsignedInteger(in header, out additionalBytes);
+                    result = ReadUnsignedInteger(header, out additionalBytes);
                     if (result > long.MaxValue)
                     {
                         value = 0;
@@ -111,7 +111,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         // Unsigned integer decoding https://tools.ietf.org/html/rfc7049#section-2.1
-        private ulong ReadUnsignedInteger(in CborDataItem header, out int additionalBytes)
+        private ulong ReadUnsignedInteger(CborDataItem header, out int additionalBytes)
         {
             switch (header.AdditionalInfo)
             {

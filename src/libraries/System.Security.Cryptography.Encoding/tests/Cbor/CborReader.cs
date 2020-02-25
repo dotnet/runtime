@@ -13,29 +13,31 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _buffer = buffer;
         }
 
-        private void ReadInitialByte(out CborDataItem result)
+        private CborDataItem ReadInitialByte()
         {
             if (_buffer.IsEmpty)
             {
                 throw new FormatException("end of buffer");
             }
 
-            result = new CborDataItem(_buffer[0]);
+            return new CborDataItem(_buffer[0]);
         }
 
-        private void ReadInitialByte(out CborDataItem result, CborMajorType expectedType)
+        private CborDataItem ReadInitialByte(CborMajorType expectedType)
         {
             if (_buffer.IsEmpty)
             {
                 throw new FormatException("end of buffer");
             }
 
-            result = new CborDataItem(_buffer[0]);
+            CborDataItem result = new CborDataItem(_buffer[0]);
 
             if (expectedType != result.MajorType)
             {
                 throw new ArgumentException("Major type does not match expected type");
             }
+
+            return result;
         }
 
         private bool TryReadInitialByte(out CborDataItem result)

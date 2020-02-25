@@ -13,8 +13,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Implements major type 2 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public byte[] ReadByteString()
         {
-            ReadInitialByte(out CborDataItem header, expectedType: CborMajorType.ByteString);
-            int length = checked((int)ReadUnsignedInteger(in header, out int additionalBytes));
+            CborDataItem header = ReadInitialByte(expectedType: CborMajorType.ByteString);
+            int length = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
             byte[] result = new byte[length];
             _buffer.Slice(1 + additionalBytes, length).CopyTo(result);
             AdvanceBuffer(1 + additionalBytes + length);
@@ -24,8 +24,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Implements major type 3 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public string ReadUtf8String()
         {
-            ReadInitialByte(out CborDataItem header, expectedType: CborMajorType.Utf8String);
-            int length = checked((int)ReadUnsignedInteger(in header, out int additionalBytes));
+            CborDataItem header = ReadInitialByte(expectedType: CborMajorType.Utf8String);
+            int length = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
             ReadOnlySpan<byte> encodedString = _buffer.Slice(1 + additionalBytes, length);
             string result = s_utf8Encoding.GetString(encodedString);
             AdvanceBuffer(1 + additionalBytes + length);
