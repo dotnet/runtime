@@ -80,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 MetadataReader mdReader = _nodeFactory.CompilationModuleGroup.CompilationModuleSet.Single().MetadataReader;
                 _assemblyRefCount = mdReader.GetTableRowCount(TableIndex.AssemblyRef) + 1;
-                for (int assemblyRefIndex = 1; assemblyRefIndex <= _assemblyRefCount; assemblyRefIndex++)
+                for (int assemblyRefIndex = 1; assemblyRefIndex < _assemblyRefCount; assemblyRefIndex++)
                 {
                     AssemblyReferenceHandle assemblyRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
                     AssemblyReference assemblyRef = mdReader.GetAssemblyReference(assemblyRefHandle);
