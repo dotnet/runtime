@@ -1520,7 +1520,6 @@ mono_domain_assembly_postload_search (MonoAssemblyLoadContext *alc, MonoAssembly
 static void
 add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 {
-	gint i;
 	GSList *tmp;
 	gboolean destroy_ht = FALSE;
 
@@ -1536,7 +1535,7 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 			g_hash_table_add (ht, tmp->data);
 		}
 	}
-	
+
 	if (!g_hash_table_lookup (ht, ass)) {
 		mono_assembly_addref (ass);
 		domain->domain_assemblies = g_slist_append (domain->domain_assemblies, ass);
@@ -1545,7 +1544,7 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 
 #ifndef ENABLE_NETCORE
 	if (ass->image->references) {
-		for (i = 0; i < ass->image->nreferences; i++) {
+		for (int i = 0; i < ass->image->nreferences; i++) {
 			MonoAssembly *ref = ass->image->references [i];
 			if (ref && ref != REFERENCE_MISSING) {
 				if (!g_hash_table_lookup (ht, ref))
@@ -1566,7 +1565,6 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 static void
 add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass)
 {
-	gint i;
 	GSList *tmp;
 
 	g_assert (ass != NULL);

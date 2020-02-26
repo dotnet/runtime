@@ -431,6 +431,7 @@ struct _MonoImage {
 	 */
 	MonoAssembly **references;
 	int nreferences;
+	mono_mutex_t references_lock;
 
 	/* Code files in the assembly. The main assembly has a "file" table and also a "module"
 	 * table, where the module table is a subset of the file table. We track both lists,
@@ -1214,6 +1215,18 @@ mono_image_get_alc (MonoImage *image)
 #else
 	return image->alc;
 #endif
+}
+
+static inline void
+mono_image_references_lock (MonoImage *image)
+{
+	mono_os_mutex_lock (&image->references_lock);
+}
+
+static inline void
+mono_image_references_unlock (MonoImage *image)
+{
+	mono_os_mutex_unlock (&image->references_lock);
 }
 
 static inline
