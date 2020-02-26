@@ -1,6 +1,10 @@
 <Project DefaultTargets="Build" TreatAsLocalProperty="AdditionalBuildTargetFrameworks">
   <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
 
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'"> 
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\System.Utf8String.Experimental\src\System.Utf8String.Experimental.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
     <Project Include="$(MSBuildThisFileDirectory)*\src\*.csproj" Exclude="@(ProjectExclusions)" />
     <Project Include="$(MSBuildThisFileDirectory)*\src\*.ilproj" Exclude="@(ProjectExclusions)" />

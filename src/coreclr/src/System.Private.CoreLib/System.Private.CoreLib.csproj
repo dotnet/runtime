@@ -300,8 +300,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureUtf8String)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Char8.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Utf8Extensions.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Utf8String.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Utf8String.Comparison.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Utf8String.Construction.cs" />
@@ -309,7 +307,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Utf8String.Enumeration.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Utf8String.Manipulation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Utf8String.Searching.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Utf8StringSplitOptions.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.Comparison.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.Conversion.cs" />
@@ -414,7 +411,6 @@
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DateTime.Windows.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\ApplicationModel.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\RuntimeEventSourceHelper.Windows.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />

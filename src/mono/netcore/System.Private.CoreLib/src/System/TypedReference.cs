@@ -96,7 +96,7 @@ namespace System
 			return __reftype (value).TypeHandle;
 		}
 
-		public unsafe static void SetTypedReference (TypedReference target, Object value)
+		public unsafe static void SetTypedReference (TypedReference target, Object? value)
 		{
 			throw new NotSupportedException ();
 		}
