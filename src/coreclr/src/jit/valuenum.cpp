@@ -6797,6 +6797,41 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 {
     genTreeOps oper = tree->OperGet();
 
+#ifdef FEATURE_SIMD
+    if ((JitConfig.JitDisableSimdVN() & 1) == 1)
+    {
+        // This Jit Config forces the previous behavior of value numbering for SIMD nodes
+        if (oper == GT_SIMD)
+        {
+            tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_UNKNOWN));
+            return;
+        }
+    }
+#endif
+
+#ifdef FEATURE_HW_INTRINSICS
+    if ((JitConfig.JitDisableSimdVN() & 2) == 2)
+    {
+        // This Jit Config forces the previous behavior of value numbering for HW Intrinsic nodes
+        if (oper == GT_HWINTRINSIC)
+        {
+            tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_UNKNOWN));
+
+            GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
+            assert(hwIntrinsicNode != nullptr);
+
+            // For safety/correctness we must mutate the global heap valuenumber
+            //  for any HW intrinsic that performs a memory store operation
+            if (hwIntrinsicNode->OperIsMemoryStore())
+            {
+                fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
+            }
+
+            return;
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     var_types typ = tree->TypeGet();
     if (GenTree::OperIsConst(oper))
     {

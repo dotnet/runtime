@@ -136,6 +136,12 @@ CONFIG_INTEGER(ShouldInjectFault, W("InjectFault"), 0)
 CONFIG_INTEGER(StressCOMCall, W("StressCOMCall"), 0)
 CONFIG_INTEGER(TailcallStress, W("TailcallStress"), 0)
 CONFIG_INTEGER(TreesBeforeAfterMorph, W("JitDumpBeforeAfterMorph"), 0) // If 1, display each tree before/after morphing
+CONFIG_INTEGER(JitDisableSimdVN, W("JitDisableSimdVN"), 0) // Default 0, ValueNumbering of SIMD nodes and HW Intrinsic
+                                                           // nodes enabled
+                                                           // If 1, then disable ValueNumbering of SIMD nodes
+                                                           // If 2, then disable ValueNumbering of HW Intrinsic nodes
+                                                           // If 3, disable both SIMD and HW Intrinsic nodes
+
 CONFIG_METHODSET(JitBreak, W("JitBreak")) // Stops in the importer when compiling a specified method
 CONFIG_METHODSET(JitDebugBreak, W("JitDebugBreak"))
 CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Dumps disassembly for specified method
