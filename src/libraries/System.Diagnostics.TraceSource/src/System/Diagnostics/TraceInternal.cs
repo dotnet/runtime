@@ -14,10 +14,9 @@ namespace System.Diagnostics
     {
         private class TraceProvider : DebugProvider
         {
-#pragma warning disable CS8763
-            [DoesNotReturn]
+#pragma warning disable CS8770 // Method lacks `[DoesNotReturn]` annotation to match overridden member.
             public override void Fail(string? message, string? detailMessage) { TraceInternal.Fail(message, detailMessage); }
-#pragma warning restore CS8763
+#pragma warning restore CS8770
             public override void OnIndentLevelChanged(int indentLevel)
             {
                 lock (TraceInternal.critSec)

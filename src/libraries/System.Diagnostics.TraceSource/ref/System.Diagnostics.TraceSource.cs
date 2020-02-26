@@ -222,7 +222,7 @@ namespace System.Diagnostics
         public virtual void Fail(string? message) { }
         public virtual void Fail(string? message, string? detailMessage) { }
         public virtual void Flush() { }
-        protected internal virtual string[]? GetSupportedAttributes() { throw null; }
+        protected virtual string[]? GetSupportedAttributes() { throw null; }
         public virtual void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, object? data) { }
         public virtual void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, params object[]? data) { }
         public virtual void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id) { }
