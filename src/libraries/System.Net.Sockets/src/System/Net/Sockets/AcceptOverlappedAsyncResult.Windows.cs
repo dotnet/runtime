@@ -40,10 +40,10 @@ namespace System.Net.Sockets
                     safeHandle.DangerousAddRef(ref refAdded);
                     IntPtr handle = safeHandle.DangerousGetHandle();
 
-                    byte[] buffer = _buffer!;
+                    Debug.Assert(_buffer != null);
                     _listenSocket.GetAcceptExSockaddrs(
-                        Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0),
-                        buffer.Length - (_addressBufferLength * 2),
+                        Marshal.UnsafeAddrOfPinnedArrayElement(_buffer, 0),
+                        _buffer.Length - (_addressBufferLength * 2),
                         _addressBufferLength,
                         _addressBufferLength,
                         out localAddr,
@@ -112,15 +112,15 @@ namespace System.Net.Sockets
             // condition where tracing is disabled between a calling check and here, in which case the assert
             // may fire erroneously.
             Debug.Assert(NetEventSource.IsEnabled);
+            Debug.Assert(_buffer != null);
 
-            byte[] buffer = _buffer!;
             if (size > -1)
             {
-                NetEventSource.DumpBuffer(this, buffer, 0, Math.Min((int)size, buffer.Length));
+                NetEventSource.DumpBuffer(this, _buffer, 0, Math.Min((int)size, _buffer.Length));
             }
             else
             {
-                NetEventSource.DumpBuffer(this, buffer);
+                NetEventSource.DumpBuffer(this, _buffer);
             }
         }
 

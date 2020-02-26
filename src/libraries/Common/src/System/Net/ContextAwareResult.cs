@@ -159,7 +159,7 @@ namespace System.Net
                     {
                         NetEventSource.Fail(this, "Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling ContextCopy (unless it's only called after FinishPostingAsyncOp).");
                     }
-                    lock (_lock!) { }
+                    lock (_lock) { }
                 }
 
                 if (InternalPeekCompleted)

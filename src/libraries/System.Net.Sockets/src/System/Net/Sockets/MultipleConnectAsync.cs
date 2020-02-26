@@ -261,7 +261,7 @@ namespace System.Net.Sockets
                     NetEventSource.Fail(null, "attemptSocket is null!");
                 }
 
-                bool pending = attemptSocket!.ConnectAsync(args);
+                bool pending = attemptSocket.ConnectAsync(args);
                 if (!pending)
                 {
                     InternalConnectCallback(null, args);
