@@ -19,7 +19,7 @@ namespace System.Net
                     throw new Win32Exception((int)SecurityStatusPalErrorCode.InvalidHandle);
                 }
 
-                string? name = NegotiateStreamPal.QueryContextAssociatedName(_securityContext);
+                string? name = NegotiateStreamPal.QueryContextAssociatedName(_securityContext!);
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"NTAuthentication: The context is associated with [{name}]");
                 return name;
             }

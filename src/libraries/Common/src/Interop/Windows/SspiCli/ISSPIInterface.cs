@@ -24,7 +24,7 @@ namespace System.Net
         int VerifySignature(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber);
 
         int QueryContextChannelBinding(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute attribute, out SafeFreeContextBufferChannelBinding refHandle);
-        int QueryContextAttributes(SafeDeleteContext? phContext, Interop.SspiCli.ContextAttribute attribute, Span<byte> buffer, Type? handleType, out SafeHandle? refHandle);
+        int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute attribute, Span<byte> buffer, Type? handleType, out SafeHandle? refHandle);
         int QuerySecurityContextToken(SafeDeleteContext phContext, out SecurityContextTokenHandle phToken);
         int CompleteAuthToken(ref SafeDeleteSslContext? refContext, in SecurityBuffer inputBuffer);
         int ApplyControlToken(ref SafeDeleteContext? refContext, in SecurityBuffer inputBuffer);

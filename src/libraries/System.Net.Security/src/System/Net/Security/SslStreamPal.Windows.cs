@@ -145,7 +145,7 @@ namespace System.Net.Security
             return AcquireCredentialsHandle(direction, secureCredential);
         }
 
-        internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteContext? context)
+        internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteContext context)
         {
             Interop.SecPkgContext_ApplicationProtocol alpnContext = default;
             bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPISecureChannel, context, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_APPLICATION_PROTOCOL, ref alpnContext);
@@ -315,7 +315,7 @@ namespace System.Net.Security
             return SSPIWrapper.QueryContextChannelBinding(GlobalSSPI.SSPISecureChannel, securityContext, (Interop.SspiCli.ContextAttribute)attribute);
         }
 
-        public static void QueryContextStreamSizes(SafeDeleteContext? securityContext, out StreamSizes streamSizes)
+        public static void QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes)
         {
             SecPkgContext_StreamSizes interopStreamSizes = default;
             bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPISecureChannel, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_STREAM_SIZES, ref interopStreamSizes);
@@ -323,7 +323,7 @@ namespace System.Net.Security
             streamSizes = new StreamSizes(interopStreamSizes);
         }
 
-        public static void QueryContextConnectionInfo(SafeDeleteContext? securityContext, out SslConnectionInfo connectionInfo)
+        public static void QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
         {
             SecPkgContext_ConnectionInfo interopConnectionInfo = default;
             bool success = SSPIWrapper.QueryBlittableContextAttributes(

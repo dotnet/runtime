@@ -134,7 +134,7 @@ namespace System.Net
             throw new NotSupportedException();
         }
 
-        public unsafe int QueryContextAttributes(SafeDeleteContext? context, Interop.SspiCli.ContextAttribute attribute, Span<byte> buffer, Type? handleType, out SafeHandle? refHandle)
+        public unsafe int QueryContextAttributes(SafeDeleteContext context, Interop.SspiCli.ContextAttribute attribute, Span<byte> buffer, Type? handleType, out SafeHandle? refHandle)
         {
             refHandle = null;
             if (handleType != null)
@@ -155,7 +155,7 @@ namespace System.Net
 
             fixed (byte* bufferPtr = buffer)
             {
-                return SafeFreeContextBuffer.QueryContextAttributes(context!, attribute, bufferPtr, refHandle);
+                return SafeFreeContextBuffer.QueryContextAttributes(context, attribute, bufferPtr, refHandle);
             }
         }
 

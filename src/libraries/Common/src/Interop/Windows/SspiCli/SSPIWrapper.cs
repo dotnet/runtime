@@ -370,7 +370,7 @@ namespace System.Net
             return result;
         }
 
-        public static bool QueryBlittableContextAttributes<T>(ISSPIInterface secModule, SafeDeleteContext? securityContext, Interop.SspiCli.ContextAttribute contextAttribute, ref T attribute) where T : unmanaged
+        public static bool QueryBlittableContextAttributes<T>(ISSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute contextAttribute, ref T attribute) where T : unmanaged
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(null, contextAttribute);
 
@@ -431,7 +431,7 @@ namespace System.Net
             return true;
         }
 
-        public static string? QueryStringContextAttributes(ISSPIInterface secModule, SafeDeleteContext? securityContext, Interop.SspiCli.ContextAttribute contextAttribute)
+        public static string? QueryStringContextAttributes(ISSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute contextAttribute)
         {
             Debug.Assert(
                 contextAttribute == Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NAMES ||

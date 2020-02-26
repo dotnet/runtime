@@ -856,11 +856,11 @@ namespace System.Net.Security
             if (_negotiatedApplicationProtocol == default)
             {
                 // try to get ALPN info unless we already have it. (renegotiation)
-                byte[]? alpnResult = SslStreamPal.GetNegotiatedApplicationProtocol(_securityContext);
+                byte[]? alpnResult = SslStreamPal.GetNegotiatedApplicationProtocol(_securityContext!);
                 _negotiatedApplicationProtocol = alpnResult == null ? default : new SslApplicationProtocol(alpnResult, false);
             }
 
-            SslStreamPal.QueryContextStreamSizes(_securityContext, out StreamSizes streamSizes);
+            SslStreamPal.QueryContextStreamSizes(_securityContext!, out StreamSizes streamSizes);
 
             try
             {

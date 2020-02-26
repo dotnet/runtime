@@ -124,7 +124,7 @@ namespace System.Net
             }
             fixed (byte* bufferPtr = buffer)
             {
-                return SafeFreeContextBuffer.QueryContextAttributes(phContext!, attribute, bufferPtr, refHandle);
+                return SafeFreeContextBuffer.QueryContextAttributes(phContext, attribute, bufferPtr, refHandle);
             }
         }
 
