@@ -28,7 +28,7 @@ NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUT
     int nativeImageCount = m_nativeImages.GetCount();
     for (int nativeImageIndex = 0; nativeImageIndex < nativeImageCount; nativeImageIndex++)
     {
-        NativeImage *nativeImage = m_nativeImages.Get(nativeImageIndex);
+        NativeImage *nativeImage = m_nativeImages[nativeImageIndex];
         if (nativeImage->Matches(nativeImageName, loadContext))
         {
             return nativeImage;
@@ -61,77 +61,3 @@ NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUT
     
     return NULL;
 }
-
-AssemblyLoadContext::NativeImageList::NativeImageList()
-{
-}
-
-bool AssemblyLoadContext::NativeImageList::IsEmpty()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    return (m_array.GetCount() == 0);
-}
-
-void AssemblyLoadContext::NativeImageList::Clear()
-{
-    CONTRACTL {
-        NOTHROW;
-        WRAPPER(GC_TRIGGERS); // Triggers only in MODE_COOPERATIVE (by taking the lock)
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    m_array.Clear();
-}
-
-int32_t AssemblyLoadContext::NativeImageList::GetCount()
-{
-    CONTRACTL {
-        NOTHROW;
-        WRAPPER(GC_TRIGGERS); // Triggers only in MODE_COOPERATIVE (by taking the lock)
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    return m_array.GetCount();
-}
-
-#ifndef DACCESS_COMPILE
-// Doesn't lock the assembly list (caller has to hold the lock already).
-NativeImage* AssemblyLoadContext::NativeImageList::Get(int32_t index)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    return (NativeImage *)m_array.Get(index);
-}
-
-void AssemblyLoadContext::NativeImageList::Set(int32_t index, NativeImage* nativeImage)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    m_array.Set(index, dac_cast<PTR_VOID>(nativeImage));
-}
-
-HRESULT AssemblyLoadContext::NativeImageList::Append(NativeImage* nativeImage)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    return m_array.Append(nativeImage);
-}
-#endif

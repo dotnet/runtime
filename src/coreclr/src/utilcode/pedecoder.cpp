@@ -2355,21 +2355,21 @@ READYTORUN_HEADER *PEDecoder::FindNativeReadyToRunHeader() const
     }
     
     const uint8_t *imageBase = (const uint8_t *)GetBase();
-    const uint8_t *exportDirectory = imageBase + exportDirectoryEntry->VirtualAddress;
+    const uint8_t *exportDirectory = imageBase + VAL32(exportDirectoryEntry->VirtualAddress);
     
-    uint32_t namePointerCount = VAL32(&exportDirectoryEntry[0x18]); // +0x18: number of name pointers
-    uint32_t addressTableRVA = VAL32(&exportDirectoryEntry[0x1C]); // +0x1C: export address table RVA
-    uint32_t namePointersRVA = VAL32(&exportDirectoryEntry[0x20]); // +0x20: name pointer RVA
+    uint32_t namePointerCount = VAL32(*(const uint32_t *)&exportDirectory[0x18]); // +0x18: number of name pointers
+    uint32_t addressTableRVA = VAL32(*(const uint32_t *)&exportDirectory[0x1C]); // +0x1C: export address table RVA
+    uint32_t namePointersRVA = VAL32(*(const uint32_t *)&exportDirectory[0x20]); // +0x20: name pointer RVA
 
     for (uint32_t nameIndex = 0; nameIndex < namePointerCount; nameIndex++)
     {
-        uint32_t namePointerRVA = VAL32(&imageBase[namePointersRVA + sizeof(uint32_t) * nameIndex]);
+        uint32_t namePointerRVA = VAL32(*(const uint32_t *)&imageBase[namePointersRVA + sizeof(uint32_t) * nameIndex]);
         if (namePointerRVA != 0)
         {
             const char *namePointer = (const char *)&imageBase[namePointerRVA];
             if (!strcmp(namePointer, "RTR_HEADER"))
             {
-                uint32_t headerRVA = VAL32(&imageBase[addressTableRVA + sizeof(uint32_t) * nameIndex]);
+                uint32_t headerRVA = VAL32(*(const uint32_t *)&imageBase[addressTableRVA + sizeof(uint32_t) * nameIndex]);
                 return (READYTORUN_HEADER *)&imageBase[headerRVA];
             }
         }

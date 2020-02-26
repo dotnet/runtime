@@ -24,24 +24,7 @@ public:
     NativeImage *LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName);
 
 private:
-    class NativeImageList
-    {
-    private:
-        ArrayList m_array;
-
-    public:
-        NativeImageList();
-    
-        void Clear();
-
-        bool IsEmpty();
-        int32_t GetCount();
-        NativeImage* Get(int32_t index);
-        void Set(int32_t index, NativeImage* nativeImage);
-        HRESULT Append(NativeImage* nativeImage);
-    };
-
-    NativeImageList m_nativeImages;
+    SArray<NativeImage *> m_nativeImages;
 };
 
 #endif
