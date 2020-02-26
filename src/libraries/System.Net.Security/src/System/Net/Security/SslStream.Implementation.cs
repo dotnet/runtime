@@ -336,11 +336,34 @@ namespace System.Net.Security
             {
                 await FillHandshakeBufferAsync(adapter, frameSize).ConfigureAwait(false);
             }
+            // At this point, we have at least one TLS frame.
 
-            ProtocolToken token = _context.NextMessage(_handshakeBuffer.ActiveReadOnlySpan.Slice(0, frameSize));
-            _handshakeBuffer.Discard(frameSize);
+            return ProcessBlob(frameSize);
+        }
 
-            return token;
+        // Calls crypto on received data. No IO inside.
+        private ProtocolToken ProcessBlob(int frameSize)
+        {
+            int chunkSize = frameSize;
+
+            ReadOnlySpan<byte> availableData = _handshakeBuffer.ActiveReadOnlySpan;
+            _handshakeBuffer.Discard(chunkSize);
+
+            // Often more TLS messages fit into same packet. Get as many complete frames as we can.
+            while (_handshakeBuffer.ActiveLength > SecureChannel.ReadHeaderSize)
+            {
+                frameSize= GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
+                if (_handshakeBuffer.ActiveLength >= frameSize)
+                {
+                    chunkSize+=frameSize;
+                    _handshakeBuffer.Discard(frameSize);
+                    continue;
+                }
+
+                break;
+            }
+
+            return _context.NextMessage(availableData.Slice(0, chunkSize));
         }
 
         //
