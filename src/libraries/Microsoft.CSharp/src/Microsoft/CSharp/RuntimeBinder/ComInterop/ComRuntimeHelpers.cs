@@ -741,12 +741,4 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         #endregion
     }
-
-    internal static class NativeMethods
-    {
-        [System.Runtime.Versioning.ResourceExposure(System.Runtime.Versioning.ResourceScope.None)]
-        [System.Runtime.Versioning.ResourceConsumption(System.Runtime.Versioning.ResourceScope.Process, System.Runtime.Versioning.ResourceScope.Process)]
-        [DllImport("oleaut32.dll", PreserveSig = false)]
-        internal static extern void VariantClear(IntPtr variant);
-    }
 }

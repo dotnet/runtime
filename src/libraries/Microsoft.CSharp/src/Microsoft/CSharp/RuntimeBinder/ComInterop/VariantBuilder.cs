@@ -92,7 +92,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
                 case VarEnum.VT_NULL:
                     // paramVariants._elementN.SetAsNull();
-                    return Expression.Call(variant, typeof(Variant).GetMethod("SetAsNull"));
+                    return Expression.Call(variant, typeof(Variant).GetMethod("SetAsNULL"));
 
                 default:
                     Debug.Assert(false, "Unexpected VarEnum");

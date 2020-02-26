@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>Microsoft.CSharp</AssemblyName>
     <RootNamespace>Microsoft.CSharp</RootNamespace>
@@ -219,7 +219,19 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\TypeUtils.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\UnknownArgBuilder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VarEnumSelector.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\Variant.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\Variant.Extended.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\Variant.cs">
+        <Link>Common\System\Runtime\InteropServices\Variant.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\IDispatch.cs">
+        <Link>Common\System\Runtime\InteropServices\IDispatch.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs">
+      <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
+    </Compile>
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantArgBuilder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantArray.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantBuilder.cs" />
