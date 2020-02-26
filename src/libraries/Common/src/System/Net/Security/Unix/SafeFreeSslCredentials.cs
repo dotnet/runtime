@@ -16,18 +16,18 @@ namespace System.Net.Security
 {
     internal sealed class SafeFreeSslCredentials : SafeFreeCredentials
     {
-        private SafeX509Handle _certHandle = null!;
-        private SafeEvpPKeyHandle _certKeyHandle = null!;
+        private SafeX509Handle? _certHandle;
+        private SafeEvpPKeyHandle? _certKeyHandle;
         private SslProtocols _protocols = SslProtocols.None;
         private EncryptionPolicy _policy;
         private bool _isInvalid = false;
 
-        internal SafeX509Handle CertHandle
+        internal SafeX509Handle? CertHandle
         {
             get { return _certHandle; }
         }
 
-        internal SafeEvpPKeyHandle CertKeyHandle
+        internal SafeEvpPKeyHandle? CertKeyHandle
         {
             get { return _certKeyHandle; }
         }

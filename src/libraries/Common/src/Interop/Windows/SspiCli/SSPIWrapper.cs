@@ -457,7 +457,7 @@ namespace System.Net
                     return null;
                 }
 
-                string result = Marshal.PtrToStringUni(sspiHandle.DangerousGetHandle())!;
+                string? result = Marshal.PtrToStringUni(sspiHandle.DangerousGetHandle());
                 if (NetEventSource.IsEnabled) NetEventSource.Exit(null, result);
                 return result;
             }
