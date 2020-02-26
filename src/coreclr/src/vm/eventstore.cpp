@@ -33,7 +33,7 @@ public:
 
         EventStoreElem *walk;
         EventStoreElem *next;
-        
+
         walk = m_Store;
         while (walk) {
             next = walk->next;
