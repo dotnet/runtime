@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         // Implements major type 3 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
-        public string ReadUtf8String()
+        public string ReadTextString()
         {
             CborDataItem header = ReadInitialByte(expectedType: CborMajorType.Utf8String);
             int length = checked((int)ReadUnsignedInteger(header, out int additionalBytes));

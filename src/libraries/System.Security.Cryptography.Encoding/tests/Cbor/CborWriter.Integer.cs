@@ -9,13 +9,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     internal partial class CborWriter
     {
         // Implements major type 0 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
-        public void Write(ulong value)
+        public void WriteUInt64(ulong value)
         {
             WriteUnsignedInteger(CborMajorType.UnsignedInteger, value);
         }
 
         // Implements major type 0,1 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
-        public void Write(long value)
+        public void WriteInt64(long value)
         {
             if (value < 0)
             {

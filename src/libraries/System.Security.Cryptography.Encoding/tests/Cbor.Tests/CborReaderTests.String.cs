@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborValueReader(data);
-            string actualResult = reader.ReadUtf8String();
+            string actualResult = reader.ReadTextString();
             Assert.Equal(expectedValue, actualResult);
         }
     }

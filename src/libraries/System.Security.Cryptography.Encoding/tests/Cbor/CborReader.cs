@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (expectedType != result.MajorType)
             {
-                throw new ArgumentException("Major type does not match expected type");
+                throw new InvalidOperationException("Major type does not match expected type.");
             }
 
             return result;

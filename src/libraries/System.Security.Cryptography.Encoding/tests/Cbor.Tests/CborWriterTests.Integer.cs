@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            writer.Write(input);
+            writer.WriteInt64(input);
             Assert.Equal(expectedEncoding, writer.ToArray());
         }
 
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            writer.Write(input);
+            writer.WriteUInt64(input);
             Assert.Equal(expectedEncoding, writer.ToArray());
         }
     }
