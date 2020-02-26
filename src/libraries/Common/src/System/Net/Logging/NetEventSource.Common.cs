@@ -265,7 +265,9 @@ namespace System.Net
         /// <param name="formattableString">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
+#if NETCOREAPP
         [DoesNotReturn]
+#endif
         public static void Fail(object? thisOrContextObject, FormattableString formattableString, [CallerMemberName] string? memberName = null)
         {
             // Don't call DebugValidateArg on args, as we expect Fail to be used in assert/failure situations
@@ -280,7 +282,9 @@ namespace System.Net
         /// <param name="message">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
+#if NETCOREAPP
         [DoesNotReturn]
+#endif
         public static void Fail(object? thisOrContextObject, object message, [CallerMemberName] string? memberName = null)
         {
             // Don't call DebugValidateArg on args, as we expect Fail to be used in assert/failure situations
