@@ -382,7 +382,7 @@ mono_llvm_call_args (LLVMValueRef wrapped_calli)
 
 	LLVMValueRef *ret = g_malloc (sizeof (LLVMValueRef) * numOperands);
 
-	for (unsigned int i=0; i < numOperands; i++) {
+	for (unsigned int i = 0; i < numOperands; i++) {
 		if (call)
 			ret [i] = wrap (call->getArgOperand (i));
 		else
