@@ -6807,7 +6807,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             return;
         }
     }
-#endif
+#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
     if ((JitConfig.JitDisableSimdVN() & 2) == 2)
