@@ -502,8 +502,7 @@ End
 // used to remember which types have been logged (to avoid duplicate logging of the
 // same type).
 Crst EtwTypeLogHash
-    AcquiredAfter AllowedFiles Cer TPMethodTable SingleUseLock
-    AcquiredBefore AvailableParamTypes ConnectionNameTable DeadlockDetection DebuggerController
+    AcquiredAfter AllowedFiles Cer SingleUseLock TPMethodTable
 End
 
 Crst Remoting
