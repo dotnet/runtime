@@ -30,7 +30,7 @@ namespace System
 
         public static AppDomain CurrentDomain => s_domain;
 
-        public string? BaseDirectory => AppContext.BaseDirectory;
+        public string BaseDirectory => AppContext.BaseDirectory;
 
         public string? RelativeSearchPath => null;
 

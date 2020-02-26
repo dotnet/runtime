@@ -68,12 +68,12 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new InvalidOperationException(SR.Cryptography_ECC_NamedCurvesOnly);
             }
 
-            string curveOid = ecParameters.Curve.Oid.Value;
+            string? curveOid = ecParameters.Curve.Oid.Value;
             byte[] curveOidEncoded;
 
             if (string.IsNullOrEmpty(curveOid))
             {
-                string friendlyName = ecParameters.Curve.Oid.FriendlyName;
+                string friendlyName = ecParameters.Curve.Oid.FriendlyName!;
 
                 // Translate the three curves that were supported Windows 7-8.1, but emit no Oid.Value;
                 // otherwise just wash the friendly name back through Oid to see if we can get a value.
@@ -88,11 +88,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
             {
-                writer.WriteObjectIdentifier(curveOid);
+                writer.WriteObjectIdentifier(curveOid!);
                 curveOidEncoded = writer.Encode();
             }
 
-            Debug.Assert(ecParameters.Q.X.Length == ecParameters.Q.Y.Length);
+            Debug.Assert(ecParameters.Q.X!.Length == ecParameters.Q.Y!.Length);
             byte[] uncompressedPoint = new byte[1 + ecParameters.Q.X.Length + ecParameters.Q.Y.Length];
 
             // Uncompressed point (0x04)

@@ -102,7 +102,7 @@ namespace System.Collections
             Debug.Assert(divisor <= int.MaxValue);
 
             ulong lowbits = multiplier * value;
-            // 64bit * 64bit => 128bit isn't currently supported by Math https://github.com/dotnet/corefx/issues/41822
+            // 64bit * 64bit => 128bit isn't currently supported by Math https://github.com/dotnet/runtime/issues/31184
             // otherwise we'd want this to be (uint)Math.BigMul(lowbits, divisor, out _)
             uint highbits = (uint)((((lowbits >> 32) + 1) * divisor) >> 32);
 

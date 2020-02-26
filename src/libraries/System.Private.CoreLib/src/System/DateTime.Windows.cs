@@ -121,7 +121,7 @@ namespace System
             {
                 // GetSystemTimePreciseAsFileTime exists and we'd like to use it.  However, on
                 // misconfigured systems, it's possible for the "precise" time to be inaccurate:
-                //     https://github.com/dotnet/coreclr/issues/14187
+                //     https://github.com/dotnet/runtime/issues/9014
                 // If it's inaccurate, though, we expect it to be wildly inaccurate, so as a
                 // workaround/heuristic, we get both the "normal" and "precise" times, and as
                 // long as they're close, we use the precise one. This workaround can be removed

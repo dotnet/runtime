@@ -724,7 +724,8 @@ TESTS_CS_SRC=		\
 	bug-gh-9507.cs	\
 	async-generic-enum.cs \
 	null-blob-main.cs \
-	last-error.cs
+	last-error.cs \
+	bug-gh-17285.cs
 
 # some tests fail to compile on mcs
 if CSC_IS_ROSLYN

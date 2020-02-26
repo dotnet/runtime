@@ -42,7 +42,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetFileName(path));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/27552")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/25242")]
         [Theory,
             MemberData(nameof(TestData_GetPathRoot_Windows)),
             MemberData(nameof(TestData_GetPathRoot_Unc)),
@@ -273,7 +273,7 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            // https://github.com/dotnet/corefx/issues/11965
+            // https://github.com/dotnet/runtime/issues/18664
             InlineData(@"\\LOCALHOST\share\test.txt.~SS", @"\\LOCALHOST\share\test.txt.~SS"),
             InlineData(@"\\LOCALHOST\share1", @"\\LOCALHOST\share1"),
             InlineData(@"\\LOCALHOST\share3\dir", @"\\LOCALHOST\share3\dir"),

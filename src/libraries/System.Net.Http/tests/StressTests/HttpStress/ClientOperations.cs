@@ -391,7 +391,7 @@ namespace HttpStress
                 ("POST Duplex Dispose",
                 async ctx =>
                 {
-                    // try to reproduce conditions described in https://github.com/dotnet/corefx/issues/39819
+                    // try to reproduce conditions described in https://github.com/dotnet/runtime/issues/30393
                     string content = ctx.GetRandomString(0, ctx.MaxContentLength);
 
                     using var req = new HttpRequestMessage(HttpMethod.Post, "/duplex") { Content = new StringDuplexContent(content) };

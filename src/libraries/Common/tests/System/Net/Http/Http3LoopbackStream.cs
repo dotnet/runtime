@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace System.Net.Test.Common
 {
 
-    public sealed class Http3LoopbackStream : IDisposable
+    internal sealed class Http3LoopbackStream : IDisposable
     {
         private const int MaximumVarIntBytes = 8;
         private const long VarIntMax = (1L << 62) - 1;
@@ -59,24 +59,27 @@ namespace System.Net.Test.Common
             await SendFrameAsync(SettingsFrame, buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
         }
 
-        public async Task SendHeadersFrameAsync(ICollection<HttpHeaderData> headers)
+        public async Task SendHeadersFrameAsync(IEnumerable<HttpHeaderData> headers)
         {
-            int bufferLength = QPackEncoder.MaxPrefixLength;
+            int bufferLength = QPackTestEncoder.MaxPrefixLength;
 
             foreach (HttpHeaderData header in headers)
             {
+                Debug.Assert(header.Name != null);
+                Debug.Assert(header.Value != null);
+
                 // Two varints for length, and double the name/value lengths to account for expanding Huffman coding.
-                bufferLength += QPackEncoder.MaxVarIntLength * 2 + header.Name.Length * 2 + header.Value.Length * 2;
+                bufferLength += QPackTestEncoder.MaxVarIntLength * 2 + header.Name.Length * 2 + header.Value.Length * 2;
             }
 
             var buffer = new byte[bufferLength];
             int bytesWritten = 0;
 
-            bytesWritten += QPackEncoder.EncodePrefix(buffer.AsSpan(bytesWritten), 0, 0);
+            bytesWritten += QPackTestEncoder.EncodePrefix(buffer.AsSpan(bytesWritten), 0, 0);
 
             foreach (HttpHeaderData header in headers)
             {
-                bytesWritten += QPackEncoder.EncodeHeader(buffer.AsSpan(bytesWritten), header.Name, header.Value, header.HuffmanEncoded ? QPackFlags.HuffmanEncode : QPackFlags.None);
+                bytesWritten += QPackTestEncoder.EncodeHeader(buffer.AsSpan(bytesWritten), header.Name, header.Value, header.HuffmanEncoded ? QPackFlags.HuffmanEncode : QPackFlags.None);
             }
 
             await SendFrameAsync(HeadersFrame, buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
@@ -100,9 +103,10 @@ namespace System.Net.Test.Common
             await _stream.WriteAsync(framePayload).ConfigureAwait(false);
         }
 
-        public void ShutdownSend()
+        public async Task ShutdownSendAsync()
         {
             _stream.Shutdown();
+            await _stream.ShutdownWriteCompleted().ConfigureAwait(false);
         }
 
         static int EncodeHttpInteger(long longToEncode, Span<byte> buffer)
@@ -176,14 +180,14 @@ namespace System.Net.Test.Common
         {
             HttpRequestData request = new HttpRequestData { RequestId = Http3LoopbackConnection.GetRequestId(_stream) };
 
-            (int prefixLength, int requiredInsertCount, int deltaBase) = QPackDecoder.DecodePrefix(buffer);
+            (int prefixLength, int requiredInsertCount, int deltaBase) = QPackTestDecoder.DecodePrefix(buffer);
             if (requiredInsertCount != 0 || deltaBase != 0) throw new Exception("QPack dynamic table not yet supported.");
 
             buffer = buffer.Slice(prefixLength);
 
             while (!buffer.IsEmpty)
             {
-                (int headerLength, HttpHeaderData header) = QPackDecoder.DecodeHeader(buffer);
+                (int headerLength, HttpHeaderData header) = QPackTestDecoder.DecodeHeader(buffer);
 
                 request.Headers.Add(header);
                 buffer = buffer.Slice(headerLength);
@@ -247,7 +251,6 @@ namespace System.Net.Test.Common
         public async Task<long?> ReadInteger()
         {
             byte[] buffer = new byte[MaximumVarIntBytes];
-            int bufferAvailableOffset = -1;
             int bufferActiveLength = 0;
 
             long integerValue;
@@ -255,14 +258,14 @@ namespace System.Net.Test.Common
 
             do
             {
-                bytesRead = await _stream.ReadAsync(buffer.AsMemory(++bufferAvailableOffset, 1)).ConfigureAwait(false);
+                bytesRead = await _stream.ReadAsync(buffer.AsMemory(bufferActiveLength++, 1)).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
-                    return bufferActiveLength == 0 ? (long?)null : throw new Exception("Unable to read varint; unexpected end of stream.");
+                    return bufferActiveLength == 1 ? (long?)null : throw new Exception("Unable to read varint; unexpected end of stream.");
                 }
                 Debug.Assert(bytesRead == 1);
             }
-            while (!TryDecodeHttpInteger(buffer.AsSpan(0, ++bufferActiveLength), out integerValue, out bytesRead));
+            while (!TryDecodeHttpInteger(buffer.AsSpan(0, bufferActiveLength), out integerValue, out bytesRead));
 
             Debug.Assert(bytesRead == bufferActiveLength);
 

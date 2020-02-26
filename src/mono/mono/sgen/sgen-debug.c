@@ -26,6 +26,9 @@
 #include "mono/sgen/sgen-pinning.h"
 #include "mono/sgen/sgen-client.h"
 
+#if _MSC_VER
+#pragma warning(disable:4312) // FIXME pointer cast to different size
+#endif
 
 #ifndef DISABLE_SGEN_DEBUG_HELPERS
 
@@ -516,7 +519,7 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 			mword w = *ctxcurrent;
 
 			if (w >= (mword)obj && w < (mword)obj + size)
-				SGEN_LOG (0, "Object %p referenced in saved reg %d of thread %p (id %p)", obj, (int) (ctxcurrent - ctxstart), info, (gpointer)mono_thread_info_get_tid (info));
+				SGEN_LOG (0, "Object %p referenced in saved reg %d of thread %p (id %p)", obj, (int) (ctxcurrent - ctxstart), info, (gpointer)(gsize)mono_thread_info_get_tid (info));
 		}
 	} FOREACH_THREAD_END
 #endif

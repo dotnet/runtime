@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
         internal int Version;
         internal System.Security.Cryptography.Pkcs.Asn1.MessageImprint MessageImprint;
-        internal Oid ReqPolicy;
+        internal Oid? ReqPolicy;
         internal ReadOnlyMemory<byte>? Nonce;
         internal bool CertReq;
         internal System.Security.Cryptography.Asn1.X509ExtensionAsn[] Extensions;

@@ -11,47 +11,52 @@ using System.Runtime.InteropServices;
 
 internal class Program
 {
-    public static bool IsTimestampByte(int i)
-    {
-        return i >= 136 && i < 140;
-    }
-
     public static int CompareDLLs(string folder1, string folder2)
     {
         int result = 100;
 
+        string superIlcFolder1 = Directory.GetDirectories(folder1, "CPAOT*").First();
+        string superIlcFolder2 = Directory.GetDirectories(folder2, "CPAOT*").First();
+
         // Check for files that failed compilation with one of the seeds but not the other
-        HashSet<string> uniqueFilenames = new HashSet<string>(Directory.GetFiles(folder1, "*.dll").Select(Path.GetFileName));
-        uniqueFilenames.SymmetricExceptWith(Directory.GetFiles(folder2, "*.dll").Select(Path.GetFileName));
+        HashSet<string> uniqueFilenames = new HashSet<string>(Directory.GetFiles(superIlcFolder1, "*.dll").Select(Path.GetFileName));
+        uniqueFilenames.SymmetricExceptWith(Directory.GetFiles(superIlcFolder2, "*.dll").Select(Path.GetFileName));
         foreach (string uniqueFilename in uniqueFilenames)
         {
             Console.WriteLine($"{uniqueFilename} was found in only one of the output folders.");
             result = 1;
         }
 
-        foreach (string filename in Directory.GetFiles(folder1, "*.dll").Select(Path.GetFileName))
+        foreach (string filename in Directory.GetFiles(superIlcFolder1, "*.dll").Select(Path.GetFileName))
         {
             if (uniqueFilenames.Contains(filename))
                 continue;
 
-            byte[] file1 = File.ReadAllBytes(Path.Combine(folder1, Path.GetFileName(filename)));
-            byte[] file2 = File.ReadAllBytes(Path.Combine(folder2, Path.GetFileName(filename)));
+            byte[] file1 = File.ReadAllBytes(Path.Combine(superIlcFolder1, Path.GetFileName(filename)));
+            byte[] file2 = File.ReadAllBytes(Path.Combine(superIlcFolder2, Path.GetFileName(filename)));
 
             if (file1.Length != file2.Length)
             {
                 Console.WriteLine(filename);
                 Console.WriteLine($"Expected ReadyToRun'd files to be identical but they have different sizes ({file1.Length} and {file2.Length})");
                 result = 1;
+                continue;
             }
 
+            int byteDifferentCount = 0;
             for (int i = 0; i < file1.Length; ++i)
             {
-                if (file1[i] != file2[i] && !IsTimestampByte(i))
+                if (file1[i] != file2[i])
                 {
-                    Console.WriteLine(filename);
-                    Console.WriteLine($"Difference at non-timestamp byte {i}");
-                    result = 1;
+                    ++byteDifferentCount;
                 }
+            }
+
+            if (byteDifferentCount > 0)
+            {
+                result = 1;
+                Console.WriteLine($"Error: Found {byteDifferentCount} different bytes in {filename}");
+                continue;
             }
 
             Console.WriteLine($"Files of length {file1.Length} were identical.");
@@ -61,10 +66,26 @@ internal class Program
 
     public static string OSExeSuffix(string path) => (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? path + ".exe" : path);
 
-    public static void CompileWithSeed(int seed, string outDir)
+    private static void PrepareCompilationInputFolder(string coreRootFolder, string compilationInputFolder)
     {
-        string coreRootPath = Environment.GetEnvironmentVariable("CORE_ROOT");
-        string superIlcPath = Path.Combine(coreRootPath, "ReadyToRun.SuperIlc", OSExeSuffix("ReadyToRun.SuperIlc"));
+        if (Directory.Exists(compilationInputFolder))
+        {
+            Directory.Delete(compilationInputFolder, true);
+        }
+        Directory.CreateDirectory(compilationInputFolder);
+
+        CopyDeterminismTestAssembly(coreRootFolder, compilationInputFolder, "System.Private.CoreLib.dll");
+    }
+
+    private static void CopyDeterminismTestAssembly(string coreRootFolder, string compilationInputFolder, string fileName)
+    {
+        File.Copy(Path.Combine(coreRootFolder, fileName), Path.Combine(compilationInputFolder, fileName));
+    }
+
+    public static bool CompileWithSeed(int seed, string coreRootPath, string compilationInputFolder, string outDir)
+    {
+        string superIlcPath = Path.Combine(coreRootPath, "ReadyToRun.SuperIlc", "ReadyToRun.SuperIlc.dll");
+        string coreRunPath = Path.Combine(coreRootPath, OSExeSuffix("corerun"));
 
         Console.WriteLine($"================================== Compiling with seed {seed} ==================================");
         Environment.SetEnvironmentVariable("CoreRT_DeterminismSeed", seed.ToString());
@@ -73,14 +94,25 @@ internal class Program
             Directory.Delete(outDir, true);
         }
         Directory.CreateDirectory(outDir);
-        ProcessStartInfo processStartInfo = new ProcessStartInfo(superIlcPath, $"compile-directory -cr {coreRootPath} -in {coreRootPath} --nojit --noexe --large-bubble --release --nocleanup -out {outDir}");
-        Process.Start(processStartInfo).WaitForExit();
+        ProcessStartInfo processStartInfo = new ProcessStartInfo(coreRunPath, $"{superIlcPath} compile-directory -cr {coreRootPath} -in {compilationInputFolder} --nojit --noexe --large-bubble --release --nocleanup -out {outDir}");
+        var process = Process.Start(processStartInfo);
+        process.WaitForExit();
+        if (process.ExitCode != 0)
+        {
+            Console.WriteLine($"Compilation failed. {processStartInfo.FileName} {processStartInfo.Arguments} failed with exit code {process.ExitCode}");
+        }
+        return 0 == process.ExitCode;
     }
 
     public static int Main()
     {
-        CompileWithSeed(1, "seed1");
-        CompileWithSeed(2, "seed2");
+        string coreRootPath = Environment.GetEnvironmentVariable("CORE_ROOT");
+        string compilationInputFolder = "TestAssemblies";
+        PrepareCompilationInputFolder(coreRootPath, compilationInputFolder);
+        if (!CompileWithSeed(1, coreRootPath, compilationInputFolder, "seed1"))
+            return 1;
+        if (!CompileWithSeed(2, coreRootPath, compilationInputFolder, "seed2"))
+            return 1;
         return CompareDLLs("seed1", "seed2");
     }
 }

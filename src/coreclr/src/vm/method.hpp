@@ -3469,6 +3469,9 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
+        // No lock needed here. In the case of a generic dictionary expansion, the values of the old dictionary
+        // slots are copied to the newly allocated dictionary, and the old dictionary is kept around. Whether we
+        // return the old or new dictionary here, the values of the instantiation arguments will always be the same.
         return Instantiation(IMD_GetMethodDictionary()->GetInstantiation(), m_wNumGenericArgs);
     }
 
@@ -3574,11 +3577,24 @@ public:
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
             return pIMD->m_pDictLayout.GetValueMaybeNull();
         }
-        else
-        if (IMD_IsSharedByGenericMethodInstantiations())
+        else if (IMD_IsSharedByGenericMethodInstantiations())
             return m_pDictLayout.GetValueMaybeNull();
         else
             return NULL;
+    }
+
+    void IMD_SetDictionaryLayout(DictionaryLayout* pNewLayout)
+    {
+        WRAPPER_NO_CONTRACT;
+        if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
+        {
+            InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
+            pIMD->m_pDictLayout.SetValueMaybeNull(pNewLayout);
+        }
+        else if (IMD_IsSharedByGenericMethodInstantiations())
+        {
+            m_pDictLayout.SetValueMaybeNull(pNewLayout);
+        }
     }
 #endif // !DACCESS_COMPILE
 

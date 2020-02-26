@@ -30,7 +30,10 @@ static class PathExtensions
     /// </summary>
     const int DirectoryDeletionBackoffMilliseconds = 500;
 
-    internal static string OSExeSuffix(this string path) => (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? path + ".exe" : path);
+    internal static string AppendOSExeSuffix(this string path) => (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? path + ".exe" : path);
+
+    internal static string AppendOSDllSuffix(this string path) => path +
+        (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".dll" : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? ".dylib" : ".so");
 
     internal static string ToAbsolutePath(this string argValue) => Path.GetFullPath(argValue);
 

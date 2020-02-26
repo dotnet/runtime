@@ -24,6 +24,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22110", TestRuntimes.Mono)]
         public void LoadFromStream_Location_IsEmpty()
         {
             Assembly assembly = new TestStreamLoadContext().LoadFromAssemblyName(new AssemblyName("TinyAssembly"));

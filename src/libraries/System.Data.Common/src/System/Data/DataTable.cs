@@ -3690,7 +3690,7 @@ namespace System.Data
             IndexField[] indexDesc = Array.Empty<IndexField>();
             if ((null != sortString) && (0 < sortString.Length))
             {
-                string[] split = sortString.Split(new char[] { ',' });
+                string[] split = sortString.Split(',');
                 indexDesc = new IndexField[split.Length];
 
                 for (int i = 0; i < split.Length; i++)
@@ -3702,12 +3702,12 @@ namespace System.Data
                     bool descending = false;
                     if (length >= 5 && string.Compare(current, length - 4, " ASC", 0, 4, StringComparison.OrdinalIgnoreCase) == 0)
                     {
-                        current = current.Substring(0, length - 4).Trim();
+                        current = current.AsSpan(0, length - 4).Trim().ToString();
                     }
                     else if (length >= 6 && string.Compare(current, length - 5, " DESC", 0, 5, StringComparison.OrdinalIgnoreCase) == 0)
                     {
                         descending = true;
-                        current = current.Substring(0, length - 5).Trim();
+                        current = current.AsSpan(0, length - 5).Trim().ToString();
                     }
 
                     // handle brackets.

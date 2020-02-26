@@ -28,6 +28,10 @@
 #include "utils/mono-threads.h"
 #include "utils/mono-threads-debug.h"
 
+#if _MSC_VER
+#pragma warning(disable:4312) // FIXME pointer cast to different size
+#endif
+
 #define TV_DECLARE SGEN_TV_DECLARE
 #define TV_GETTIME SGEN_TV_GETTIME
 #define TV_ELAPSED SGEN_TV_ELAPSED
@@ -419,7 +423,7 @@ sgen_unified_suspend_stop_world (void)
 
 		stopped_ip = (gpointer) (MONO_CONTEXT_GET_IP (&info->client_info.ctx));
 
-		sgen_binary_protocol_thread_suspend ((gpointer) mono_thread_info_get_tid (info), stopped_ip);
+		sgen_binary_protocol_thread_suspend ((gpointer)(gsize)mono_thread_info_get_tid (info), stopped_ip);
 
 		THREADS_STW_DEBUG ("[GC-STW-SUSPEND-END] thread %p is suspended, stopped_ip = %p, stack = %p -> %p\n",
 			mono_thread_info_get_tid (info), stopped_ip, info->client_info.stack_start, info->client_info.stack_start ? info->client_info.info.stack_end : NULL);
