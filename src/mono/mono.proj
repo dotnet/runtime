@@ -54,6 +54,9 @@
         <_MonoConfigureParams>$(_MonoConfigureParams) AR=$(_MonoTuple)-ar</_MonoConfigureParams>
         <_MonoConfigureParams>$(_MonoConfigureParams) STRIP=$(_MonoTuple)-strip</_MonoConfigureParams>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetsLinux)' == true">
+        <_MonoExtraCFLAGS>$(_MonoExtraCFLAGS) -Wl,--build-id</_MonoExtraCFLAGS>
+    </PropertyGroup>
     <PropertyGroup>
         <_MonoConfigureParams Condition="'$(MonoEnableLLVM)' == 'true'">$(_MonoConfigureParams) --with-llvm=$(MonoLLVMDir) </_MonoConfigureParams>
         <_MonoConfigureParams>$(_MonoConfigureParams) --enable-maintainer-mode --enable-compile-warnings --with-core=only </_MonoConfigureParams>
