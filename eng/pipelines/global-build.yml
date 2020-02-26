@@ -90,5 +90,5 @@ jobs:
     - Windows_NT_x64
     jobParameters:
       testGroup: innerloop
-      nameSuffix: Runtime_Release
+      nameSuffix: Mono_Libraries
       buildArgs: -subsetCategory libraries-mono

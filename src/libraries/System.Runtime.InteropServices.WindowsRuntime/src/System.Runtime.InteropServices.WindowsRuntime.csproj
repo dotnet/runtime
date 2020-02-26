@@ -8,6 +8,13 @@
     <GenFacadesIgnoreMissingType Condition="'$(RuntimeFlavor)' == 'Mono'">true</GenFacadesIgnoreMissingType>
     <RunApiCompat Condition="'$(RuntimeFlavor)' == 'Mono'">false</RunApiCompat>
   </PropertyGroup>
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+    <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.DefaultInterfaceAttribute" />
+    <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.IActivationFactory" />
+    <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.InterfaceImplementedInVersionAttribute" />
+    <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.ReadOnlyArrayAttribute" />
+    <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.WriteOnlyArrayAttribute" />
+  </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" Condition="'$(TargetsWindows)'=='true'" />
     <Reference Include="System.Runtime" Condition="'$(TargetsWindows)'!='true'" />

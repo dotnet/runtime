@@ -38,8 +38,12 @@
     </ItemGroup>
   </Target>
 
+  <!-- 
+    The check must use != Mono because we don't consistently set this value to CoreCLR
+    https://github.com/dotnet/runtime/issues/32884
+  -->
   <Target Name="GetFilesFromCoreCLR" 
-          Condition="'$(RuntimeFlavor)' == 'CoreCLR'"
+          Condition="'$(RuntimeFlavor)' != 'Mono'"
           Returns="@(CoreCLRFiles)"
           DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" />
 
