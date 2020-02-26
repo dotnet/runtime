@@ -411,7 +411,7 @@ mono_wrapper_info_create (MonoMethodBuilder *mb, WrapperSubtype subtype);
 void
 mono_marshal_set_wrapper_info (MonoMethod *method, WrapperInfo *info);
 
-MONO_LLVM_INTERNAL WrapperInfo*
+WrapperInfo*
 mono_marshal_get_wrapper_info (MonoMethod *wrapper);
 
 MonoMethod *
@@ -450,16 +450,16 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type);
 MonoMethod *
 mono_marshal_get_icall_wrapper (MonoJitICallInfo *callinfo, gboolean check_exceptions);
 
-MONO_LLVM_INTERNAL MonoMethod *
+MonoMethod *
 mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype);
 
-MONO_LLVM_INTERNAL const char *
+const char *
 mono_marshal_get_aot_init_wrapper_name (MonoAotInitSubtype subtype);
 
-MONO_LLVM_INTERNAL MonoMethod *
+MonoMethod *
 mono_marshal_get_llvm_func_wrapper (MonoLLVMFuncWrapperSubtype subtype);
 
-MONO_LLVM_INTERNAL MonoMethod *
+MonoMethod *
 mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, gboolean aot);
 
 MonoMethod *
@@ -650,7 +650,7 @@ mono_win32_compat_MoveMemory (gpointer dest, gconstpointer source, gsize length)
 MONO_API void
 mono_win32_compat_ZeroMemory (gpointer dest, gsize length);
 
-MONO_LLVM_INTERNAL void
+void
 mono_marshal_find_nonzero_bit_offset (guint8 *buf, int len, int *byte_offset, guint8 *bitmask);
 
 MonoMethodSignature*
