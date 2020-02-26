@@ -2562,7 +2562,7 @@ public:
                             byteCount++;
                             goto EncodeChar;
                         }
-                        if (ch > 0){
+                        if (ch > 0) {
                             goto ProcessChar;
                         }
                         
