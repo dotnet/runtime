@@ -50,7 +50,7 @@ namespace System.Drawing
                 get
                 {
                     LocalDataStoreSlot slot = Thread.GetNamedDataSlot(ThreadDataSlotName);
-                    IDictionary threadData = (IDictionary)Thread.GetData(slot);
+                    IDictionary? threadData = (IDictionary?)Thread.GetData(slot);
                     if (threadData == null)
                     {
                         threadData = new Hashtable();
@@ -406,7 +406,7 @@ namespace System.Drawing
         public static extern int DocumentProperties(HandleRef hwnd, HandleRef hPrinter, string pDeviceName, IntPtr /*DEVMODE*/ pDevModeOutput, IntPtr /*DEVMODE*/ pDevModeInput, int fMode);
 
         [DllImport(ExternDll.Winspool, SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern int EnumPrinters(int flags, string name, int level, IntPtr pPrinterEnum/*buffer*/,
+        public static extern int EnumPrinters(int flags, string? name, int level, IntPtr pPrinterEnum/*buffer*/,
                                               int cbBuf, out int pcbNeeded, out int pcReturned);
 
         [DllImport(ExternDll.Gdi32, SetLastError = true, CharSet = CharSet.Auto)]
@@ -486,9 +486,9 @@ namespace System.Drawing
         public class DOCINFO
         {
             public int cbSize = 20;
-            public string lpszDocName;
-            public string lpszOutput;
-            public string lpszDatatype;
+            public string? lpszDocName;
+            public string? lpszOutput;
+            public string? lpszDatatype;
             public int fwType;
         }
 
@@ -510,8 +510,8 @@ namespace System.Drawing
             public IntPtr lCustData;
             public IntPtr lpfnPrintHook;
             public IntPtr lpfnSetupHook;
-            public string lpPrintTemplateName;
-            public string lpSetupTemplateName;
+            public string? lpPrintTemplateName;
+            public string? lpSetupTemplateName;
             public IntPtr hPrintTemplate;
             public IntPtr hSetupTemplate;
         }
@@ -534,8 +534,8 @@ namespace System.Drawing
             public IntPtr lCustData;
             public IntPtr lpfnPrintHook;
             public IntPtr lpfnSetupHook;
-            public string lpPrintTemplateName;
-            public string lpSetupTemplateName;
+            public string? lpPrintTemplateName;
+            public string? lpSetupTemplateName;
             public IntPtr hPrintTemplate;
             public IntPtr hSetupTemplate;
         }
@@ -613,7 +613,7 @@ namespace System.Drawing
         public class DEVMODE
         {
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
-            public string dmDeviceName;
+            public string? dmDeviceName;
             public short dmSpecVersion;
             public short dmDriverVersion;
             public short dmSize;
@@ -633,7 +633,7 @@ namespace System.Drawing
             public short dmTTOption;
             public short dmCollate;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
-            public string dmFormName;
+            public string? dmFormName;
             public short dmLogPixels;
             public int dmBitsPerPel;
             public int dmPelsWidth;

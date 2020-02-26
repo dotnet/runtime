@@ -5053,6 +5053,13 @@ struct GenTreeIndir : public GenTreeOp
         return gtOp1;
     }
 
+    void SetAddr(GenTree* addr)
+    {
+        assert(addr != nullptr);
+        assert(addr->TypeIs(TYP_I_IMPL, TYP_BYREF));
+        gtOp1 = addr;
+    }
+
     // these methods provide an interface to the indirection node which
     bool     HasBase();
     bool     HasIndex();

@@ -30,8 +30,6 @@ protected:
 
 // A phase that accepts a lambda for the actions done by the phase.
 //
-// Would prefer to use std::function via <functional> here, but seemingly can't.
-//
 template <typename A>
 class ActionPhase final : public Phase
 {
@@ -64,7 +62,8 @@ void DoPhase(Compiler* _compiler, Phases _phase, A _action)
 class CompilerPhase final : public Phase
 {
 public:
-    CompilerPhase(Compiler* _compiler, Phases _phase, void (Compiler::*_action)()) : Phase(_compiler, _phase)
+    CompilerPhase(Compiler* _compiler, Phases _phase, void (Compiler::*_action)())
+        : Phase(_compiler, _phase), action(_action)
     {
     }
 

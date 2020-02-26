@@ -10,6 +10,7 @@
 #include "windows.h"
 #include <stdio.h>
 #include "mscoree.h"
+#include "coreclrhost.h"
 #include <Logger.h>
 #include "palclr.h"
 #include "sstring.h"
@@ -42,17 +43,20 @@ class HostEnvironment
     PathString m_hostDirectoryPath;
 
     // The name of this module, without the path
-    const wchar_t *m_hostExeName;
+    SString m_hostExeName;
 
     // The list of paths to the assemblies that will be trusted by CoreCLR
     SString m_tpaList;
 
-    ICLRRuntimeHost4* m_CLRRuntimeHost;
+    coreclr_initialize_ptr m_CLRRuntimeHostInitialize;
+
+    coreclr_execute_assembly_ptr m_CLRRuntimeHostExecute;
+
+    coreclr_shutdown_2_ptr m_CLRRuntimeHostShutdown;
 
     HMODULE m_coreCLRModule;
 
     Logger *m_log;
-
 
     // Attempts to load CoreCLR.dll from the given directory.
     // On success pins the dll, sets m_coreCLRDirectoryPath and returns the HMODULE.
@@ -91,7 +95,10 @@ public:
     PathString m_coreCLRDirectoryPath;
 
     HostEnvironment(Logger *logger)
-        : m_log(logger), m_CLRRuntimeHost(nullptr) {
+        : m_log(logger)
+        , m_CLRRuntimeHostInitialize(nullptr)
+        , m_CLRRuntimeHostExecute(nullptr)
+        , m_CLRRuntimeHostShutdown(nullptr) {
 
             // Discover the path to this exe's module. All other files are expected to be in the same directory.
             WszGetModuleFileName(::GetModuleHandleW(nullptr), m_hostPath);
@@ -124,11 +131,13 @@ public:
             }
 
             // Try to load CoreCLR from the directory that coreRun is in
-            if (!m_coreCLRModule) {
+            if (!m_coreCLRModule)
+            {
                 m_coreCLRModule = TryLoadCoreCLR(m_hostDirectoryPath);
             }
 
-            if (!m_coreCLRModule) {
+            if (!m_coreCLRModule)
+            {
 
                 // Failed to load. Try to load from the well-known location.
                 wchar_t coreCLRInstallPath[MAX_LONGPATH];
@@ -137,7 +146,8 @@ public:
 
             }
 
-            if (m_coreCLRModule) {
+            if (m_coreCLRModule)
+            {
 
                 // Save the directory that CoreCLR was found in
                 DWORD modulePathLength = WszGetModuleFileName(m_coreCLRModule, m_coreCLRDirectoryPath);
@@ -147,7 +157,26 @@ public:
                 m_coreCLRDirectoryPath.FindBack(lastBackslash, W('\\'));
                 m_coreCLRDirectoryPath.Truncate(lastBackslash + 1);
 
-            } else {
+                m_CLRRuntimeHostInitialize = (coreclr_initialize_ptr)GetProcAddress(m_coreCLRModule, "coreclr_initialize");
+                if (!m_CLRRuntimeHostInitialize)
+                {
+                    *m_log << W("Failed to find function coreclr_initialize in ") << coreCLRDll << Logger::endl;
+                }
+
+                m_CLRRuntimeHostExecute = (coreclr_execute_assembly_ptr)GetProcAddress(m_coreCLRModule, "coreclr_execute_assembly");
+                if (!m_CLRRuntimeHostExecute)
+                {
+                    *m_log << W("Failed to find function coreclr_execute_assembly in ") << coreCLRDll << Logger::endl;
+                }
+
+                m_CLRRuntimeHostShutdown = (coreclr_shutdown_2_ptr)GetProcAddress(m_coreCLRModule, "coreclr_shutdown_2");
+                if (!m_CLRRuntimeHostShutdown)
+                {
+                    *m_log << W("Failed to find function coreclr_shutdown_2 in ") << coreCLRDll << Logger::endl;
+                }
+            }
+            else
+            {
                 *m_log << W("Unable to load ") << coreCLRDll << Logger::endl;
             }
     }
@@ -248,7 +277,7 @@ public:
 
     // Returns the semicolon-separated list of paths to runtime dlls that are considered trusted.
     // On first call, scans the coreclr directory for dlls and adds them all to the list.
-    const wchar_t * GetTpaList() {
+    const SString& GetTpaList() {
         if (m_tpaList.IsEmpty()) {
             const wchar_t *rgTPAExtensions[] = {
                         W("*.ni.dll"),		// Probe for .ni.dll first so that it's preferred if ni and il coexist in the same dir
@@ -280,47 +309,70 @@ public:
     }
 
     // Returns the path to the host module
-    const wchar_t * GetHostPath() {
+    const SString& GetHostPath() {
         return m_hostPath;
     }
 
     // Returns the path to the host module
-    const wchar_t * GetHostExeName() {
+    const SString& GetHostExeName() {
         return m_hostExeName;
     }
 
-    // Returns the ICLRRuntimeHost4 instance, loading it from CoreCLR.dll if necessary, or nullptr on failure.
-    ICLRRuntimeHost4* GetCLRRuntimeHost() {
-        if (!m_CLRRuntimeHost) {
-
-            if (!m_coreCLRModule) {
-                *m_log << W("Unable to load ") << coreCLRDll << Logger::endl;
-                return nullptr;
-            }
-
-            *m_log << W("Finding GetCLRRuntimeHost(...)") << Logger::endl;
-
-            FnGetCLRRuntimeHost pfnGetCLRRuntimeHost =
-                (FnGetCLRRuntimeHost)::GetProcAddress(m_coreCLRModule, "GetCLRRuntimeHost");
-
-            if (!pfnGetCLRRuntimeHost) {
-                *m_log << W("Failed to find function GetCLRRuntimeHost in ") << coreCLRDll << Logger::endl;
-                return nullptr;
-            }
-
-            *m_log << W("Calling GetCLRRuntimeHost(...)") << Logger::endl;
-
-            HRESULT hr = pfnGetCLRRuntimeHost(IID_ICLRRuntimeHost4, (IUnknown**)&m_CLRRuntimeHost);
-            if (FAILED(hr)) {
-                *m_log << W("Failed to get ICLRRuntimeHost4 interface. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
-                return nullptr;
-            }
-        }
-
-        return m_CLRRuntimeHost;
+    bool IsHostLoaded() {
+        return m_coreCLRModule && m_CLRRuntimeHostInitialize && m_CLRRuntimeHostExecute && m_CLRRuntimeHostShutdown;
     }
 
+    HRESULT InitializeHost(
+        const char *exePath,
+        const char *appDomainFriendlyName,
+        int propertyCount,
+        const char **propertyKeys,
+        const char **propertyValues,
+        void **hostHandle,
+        unsigned int *domainId)
+    {
+        if (m_CLRRuntimeHostInitialize)
+        {
+            return m_CLRRuntimeHostInitialize(exePath, appDomainFriendlyName, propertyCount, propertyKeys, propertyValues, hostHandle, domainId);
+        }
+        else
+        {
+            return E_FAIL;
+        }
+    }
 
+    HRESULT ExecuteAssembly(
+        void *hostHandle,
+        unsigned int domainId,
+        int argc,
+        const char **argv,
+        const char *managedAssemblyPath,
+        unsigned int *exitCode)
+    {
+        if (m_CLRRuntimeHostExecute)
+        {
+            return m_CLRRuntimeHostExecute(hostHandle, domainId, argc, argv, managedAssemblyPath, exitCode);
+        }
+        else
+        {
+            return E_FAIL;
+        }
+    }
+
+    HRESULT ShutdownHost(
+        void *hostHandle,
+        unsigned int domainId,
+        int *latchedExitCode)
+    {
+        if (m_CLRRuntimeHostShutdown)
+        {
+            return m_CLRRuntimeHostShutdown(hostHandle, domainId, latchedExitCode);
+        }
+        else
+        {
+            return E_FAIL;
+        }
+    }
 };
 
 // Creates the startup flags for the runtime, starting with the default startup
@@ -466,9 +518,158 @@ bool TryLoadHostPolicy(StackSString& hostPolicyPath)
     return hMod != nullptr;
 }
 
+HRESULT InitializeHost(
+    Logger& log,
+    HostEnvironment& host,
+    const SString& appPath,
+    const SString& appNiPath,
+    const SString& nativeDllSearchDirs,
+    const SString& appLocalWinmetadata,
+    void **hostHandle,
+    unsigned int *domainId)
+{
+    StackScratchBuffer hostExeNameUTF8;
+    StackScratchBuffer tpaListUTF8;
+    StackScratchBuffer appPathUTF8;
+    StackScratchBuffer appNiPathUTF8;
+    StackScratchBuffer nativeDllSearchDirsUTF8;
+    StackScratchBuffer appLocalWinmetadataUTF8;
+
+    STARTUP_FLAGS flags = CreateStartupFlags();
+
+    //-------------------------------------------------------------
+
+    // Initialize host.
+
+    // Allowed property names:
+    // APPBASE
+    // - The base path of the application from which the exe and other assemblies will be loaded
+    //
+    // TRUSTED_PLATFORM_ASSEMBLIES
+    // - The list of complete paths to each of the fully trusted assemblies
+    //
+    // APP_PATHS
+    // - The list of paths which will be probed by the assembly loader
+    //
+    // APP_NI_PATHS
+    // - The list of additional paths that the assembly loader will probe for ngen images
+    //
+    // NATIVE_DLL_SEARCH_DIRECTORIES
+    // - The list of paths that will be probed for native DLLs called by PInvoke
+    //
+    const char* property_keys[] = {
+        "TRUSTED_PLATFORM_ASSEMBLIES",
+        "APP_PATHS",
+        "APP_NI_PATHS",
+        "NATIVE_DLL_SEARCH_DIRECTORIES",
+        "APP_LOCAL_WINMETADATA",
+        "System.GC.Server",
+        "System.GC.Concurrent"
+    };
+
+    const char* property_values[] = {
+        // TRUSTED_PLATFORM_ASSEMBLIES
+        host.GetTpaList().GetUTF8(tpaListUTF8),
+        // APP_PATHS
+        appPath.GetUTF8(appPathUTF8),
+        // APP_NI_PATHS
+        appNiPath.GetUTF8(appNiPathUTF8),
+        // NATIVE_DLL_SEARCH_DIRECTORIES
+        nativeDllSearchDirs.GetUTF8(nativeDllSearchDirsUTF8),
+        // APP_LOCAL_WINMETADATA
+        appLocalWinmetadata.GetUTF8(appLocalWinmetadataUTF8),
+        // System.GC.Server
+        flags & STARTUP_SERVER_GC ? "true" : "false",
+        // System.GC.Concurrent
+        flags & STARTUP_CONCURRENT_GC ? "true" : "false"
+    };
+
+    log << W("Initialize host") << Logger::endl;
+    for (int idx = 0; idx < ARRAYSIZE(property_keys); idx++)
+    {
+        log << property_keys[idx] << W("=") << property_values[idx] << Logger::endl;
+    }
+
+    HRESULT hr = host.InitializeHost(
+        NULL,
+        host.GetHostExeName().GetUTF8(hostExeNameUTF8),
+        ARRAYSIZE(property_keys),
+        property_keys,
+        property_values,
+        hostHandle,
+        domainId);
+
+    if (FAILED(hr))
+    {
+        log << W("Failed to initialize host. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
+    }
+
+    return hr;
+}
+
+HRESULT ExecuteAssembly(
+    Logger& log,
+    HostEnvironment& host,
+    const SString& managedAssemblyFullName,
+    void *hostHandle,
+    unsigned int domainId,
+    int argc,
+    const wchar_t *argv[],
+    unsigned int *exitCode)
+{
+    NewArrayHolder<const char*> argvUTF8Holder;
+    NewArrayHolder<SString> argvUTF8Values;
+    if (argc && argv)
+    {
+        argvUTF8Holder = new (nothrow) const char*[argc];
+        argvUTF8Values = new (nothrow) SString[argc];
+        if (argvUTF8Holder.GetValue() && argvUTF8Values.GetValue())
+        {
+            StackSString conversionBuffer;
+            for (int i = 0; i < argc; i++)
+            {
+                conversionBuffer.Set(argv[i]);
+                conversionBuffer.ConvertToUTF8(argvUTF8Values[i]);
+                argvUTF8Holder[i] = argvUTF8Values[i].GetUTF8NoConvert();
+            }
+        }
+    }
+
+    ActivationContext cxt{ log, managedAssemblyFullName.GetUnicode() };
+    ClrInstanceDetails current{ hostHandle, domainId };
+
+    log << W("Executing assembly: ") << managedAssemblyFullName << Logger::endl;
+
+    StackScratchBuffer managedAssemblyFullNameUTF8;
+    HRESULT hr = host.ExecuteAssembly(hostHandle, domainId, argc, argvUTF8Holder.GetValue(), managedAssemblyFullName.GetUTF8(managedAssemblyFullNameUTF8), exitCode);
+    if (FAILED(hr))
+    {
+        log << W("Failed call to ExecuteAssembly. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
+    }
+
+    return hr;
+}
+
+HRESULT ShutdownHost(
+    Logger& log,
+    HostEnvironment& host,
+    void *hostHandle,
+    unsigned int domainId,
+    unsigned int *exitCode)
+{
+    log << W("Shutting down host") << Logger::endl;
+
+    HRESULT hr = host.ShutdownHost(hostHandle, domainId, (int *)exitCode);
+    if (FAILED(hr))
+    {
+        log << W("Failed to shutdown host. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
+    }
+
+    return hr;
+}
+
 bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbose, const bool waitForDebugger, DWORD &exitCode)
 {
-
     // Assume failure
     exitCode = -1;
 
@@ -503,7 +704,8 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
         appPathPtr = appPath.OpenUnicodeBuffer(size - 1);
         length = WszGetFullPathName(exeName, size, appPathPtr, &filePart);
     }
-    if (length == 0 || length >= size || filePart == NULL) {
+    if (length == 0 || length >= size || filePart == NULL)
+    {
         log << W("Failed to get full path: ") << exeName << Logger::endl;
         log << W("Error code: ") << GetLastError() << Logger::endl;
         return false;
@@ -522,7 +724,8 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     DWORD dwAttrib = WszGetFileAttributes(appLocalWinmetadata);
     bool appLocalWinMDexists = dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
 
-    if (!appLocalWinMDexists) {
+    if (!appLocalWinMDexists)
+    {
         appLocalWinmetadata.Clear();
     }
     appNiPath.Set(appPath);
@@ -552,112 +755,18 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
         }
     }
 
-    // Start the CoreCLR
-
-    ICLRRuntimeHost4 *host = hostEnvironment.GetCLRRuntimeHost();
-    if (!host) {
-        return false;
-    }
-
-    HRESULT hr;
-
-
-    STARTUP_FLAGS flags = CreateStartupFlags();
-    log << W("Setting ICLRRuntimeHost4 startup flags") << Logger::endl;
-    log << W("Server GC enabled: ") << HAS_FLAG(flags, STARTUP_FLAGS::STARTUP_SERVER_GC) << Logger::endl;
-    log << W("Concurrent GC enabled: ") << HAS_FLAG(flags, STARTUP_FLAGS::STARTUP_CONCURRENT_GC) << Logger::endl;
-
-    // Default startup flags
-    hr = host->SetStartupFlags(flags);
-    if (FAILED(hr)) {
-        log << W("Failed to set startup flags. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
-        return false;
-    }
-
-    log << W("Starting ICLRRuntimeHost4") << Logger::endl;
-
-    hr = host->Start();
-    if (FAILED(hr)) {
-        log << W("Failed to start CoreCLR. ERRORCODE: ") << Logger::hresult << hr << Logger:: endl;
-        return false;
-    }
-
-    //-------------------------------------------------------------
-
-    // Create an AppDomain
-
-    // Allowed property names:
-    // APPBASE
-    // - The base path of the application from which the exe and other assemblies will be loaded
-    //
-    // TRUSTED_PLATFORM_ASSEMBLIES
-    // - The list of complete paths to each of the fully trusted assemblies
-    //
-    // APP_PATHS
-    // - The list of paths which will be probed by the assembly loader
-    //
-    // APP_NI_PATHS
-    // - The list of additional paths that the assembly loader will probe for ngen images
-    //
-    // NATIVE_DLL_SEARCH_DIRECTORIES
-    // - The list of paths that will be probed for native DLLs called by PInvoke
-    //
-    const wchar_t *property_keys[] = {
-        W("TRUSTED_PLATFORM_ASSEMBLIES"),
-        W("APP_PATHS"),
-        W("APP_NI_PATHS"),
-        W("NATIVE_DLL_SEARCH_DIRECTORIES"),
-        W("APP_LOCAL_WINMETADATA")
-    };
-    const wchar_t *property_values[] = {
-        // TRUSTED_PLATFORM_ASSEMBLIES
-        hostEnvironment.GetTpaList(),
-        // APP_PATHS
-        appPath,
-        // APP_NI_PATHS
-        appNiPath,
-        // NATIVE_DLL_SEARCH_DIRECTORIES
-        nativeDllSearchDirs,
-        // APP_LOCAL_WINMETADATA
-        appLocalWinmetadata
-    };
-
-    log << W("Creating an AppDomain") << Logger::endl;
-    for (int idx = 0; idx < sizeof(property_keys) / sizeof(wchar_t*); idx++)
+    if (!hostEnvironment.IsHostLoaded())
     {
-        log << property_keys[idx] << W("=") << property_values[idx] << Logger::endl;
+        return false;
     }
 
-    DWORD domainId;
+    HRESULT hr = E_FAIL;
+    void* hostHandle = nullptr;
+    DWORD domainId = 0;
 
-    hr = host->CreateAppDomainWithManager(
-        hostEnvironment.GetHostExeName(),   // The friendly name of the AppDomain
-        // Flags:
-        // APPDOMAIN_ENABLE_PLATFORM_SPECIFIC_APPS
-        // - By default CoreCLR only allows platform neutral assembly to be run. To allow
-        //   assemblies marked as platform specific, include this flag
-        //
-        // APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP
-        // - Allows sandboxed applications to make P/Invoke calls and use COM interop
-        //
-        // APPDOMAIN_SECURITY_SANDBOXED
-        // - Enables sandboxing. If not set, the app is considered full trust
-        //
-        // APPDOMAIN_IGNORE_UNHANDLED_EXCEPTION
-        // - Prevents the application from being torn down if a managed exception is unhandled
-        //
-        APPDOMAIN_ENABLE_PLATFORM_SPECIFIC_APPS |
-        APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP |
-        APPDOMAIN_DISABLE_TRANSPARENCY_ENFORCEMENT,
-        NULL,                // Name of the assembly that contains the AppDomainManager implementation
-        NULL,                    // The AppDomainManager implementation type name
-        sizeof(property_keys)/sizeof(wchar_t*),  // The number of properties
-        property_keys,
-        property_values,
-        &domainId);
-
-    if (FAILED(hr)) {
-        log << W("Failed call to CreateAppDomainWithManager. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
+    hr = InitializeHost(log, hostEnvironment, appPath, appNiPath, nativeDllSearchDirs, appLocalWinmetadata, &hostHandle, (unsigned int*)&domainId);
+    if (FAILED(hr))
+    {
         return false;
     }
 
@@ -678,61 +787,21 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
         }
     }
 
+    hr = ExecuteAssembly(log, hostEnvironment, managedAssemblyFullName, hostHandle, domainId, argc - 1, (argc - 1) ? &(argv[1]) : NULL, (unsigned int*)&exitCode);
+    if (FAILED(hr))
     {
-        ActivationContext cxt{ log, managedAssemblyFullName.GetUnicode() };
-        ClrInstanceDetails current{ host, domainId };
-
-        hr = host->ExecuteAssembly(domainId, managedAssemblyFullName, argc - 1, (argc - 1) ? &(argv[1]) : NULL, &exitCode);
-        if (FAILED(hr))
-        {
-            log << W("Failed call to ExecuteAssembly. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
-            return false;
-        }
-
-        log << W("App exit value = ") << exitCode << Logger::endl;
-    }
-
-    //-------------------------------------------------------------
-
-    // Unload the AppDomain
-
-    log << W("Unloading the AppDomain") << Logger::endl;
-
-    hr = host->UnloadAppDomain2(
-        domainId,
-        true,
-        (int *)&exitCode);                          // Wait until done
-
-    if (FAILED(hr)) {
-        log << W("Failed to unload the AppDomain. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
         return false;
     }
 
-    log << W("App domain unloaded exit value = ") << exitCode << Logger::endl;
+    log << W("App exit value = ") << exitCode << Logger::endl;
 
-    //-------------------------------------------------------------
-
-    // Stop the host
-
-    log << W("Stopping the host") << Logger::endl;
-
-    hr = host->Stop();
-
-    if (FAILED(hr)) {
-        log << W("Failed to stop the host. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
+    hr = ShutdownHost(log, hostEnvironment, hostHandle, domainId, (unsigned int*)&exitCode);
+    if (FAILED(hr))
+    {
         return false;
     }
-
-    //-------------------------------------------------------------
-
-    // Release the reference to the host
-
-    log << W("Releasing ICLRRuntimeHost4") << Logger::endl;
-
-    host->Release();
 
     return true;
-
 }
 
 void showHelp() {

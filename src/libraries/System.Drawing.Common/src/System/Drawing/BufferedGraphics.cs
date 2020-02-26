@@ -14,7 +14,7 @@ namespace System.Drawing
     /// </summary>
     public sealed partial class BufferedGraphics : IDisposable
     {
-        private Graphics _targetGraphics;
+        private Graphics? _targetGraphics;
         private readonly IntPtr _targetDC;
 
         /// <summary>

@@ -37,7 +37,7 @@ namespace System.Drawing
         /// <summary>
         ///     A list of images to be animated.
         /// </summary>
-        private static List<ImageInfo> s_imageInfoList;
+        private static List<ImageInfo>? s_imageInfoList;
 
         /// <summary>
         ///     A variable to flag when an image or images need to be updated due to the selection of a new frame
@@ -50,7 +50,7 @@ namespace System.Drawing
         /// <summary>
         ///     The thread used for animating the images.
         /// </summary>
-        private static Thread s_animationThread;
+        private static Thread? s_animationThread;
 
         /// <summary>
         ///     Lock that allows either concurrent read-access to the images list for multiple threads, or write-
@@ -201,7 +201,7 @@ namespace System.Drawing
                 return;
             }
 
-            ImageInfo imageInfo = null;
+            ImageInfo? imageInfo = null;
 
             // See comment in the class header about locking the image ref.
 #pragma warning disable CA2002
@@ -285,7 +285,7 @@ namespace System.Drawing
         /// <summary>
         ///    Whether or not the image has multiple time-based frames.
         /// </summary>
-        public static bool CanAnimate(Image image)
+        public static bool CanAnimate(Image? image)
         {
             if (image == null)
             {

@@ -54,7 +54,7 @@ namespace System.Drawing.Printing
         private float hardMarginX;
         private float hardMarginY;
         private RectangleF printableArea;
-        private PrinterSettings printerSettings;
+        private PrinterSettings printerSettings = null!;
 #pragma warning restore 649
 
         public PageSettings() : this(new PrinterSettings())
