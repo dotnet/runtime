@@ -56,7 +56,7 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(assembly.Version, assemblyName.Version);
                 Assert.Equal(assembly.Name, assemblyName.Name);
                 Assert.Equal(assembly.ContentType, assemblyName.ContentType);
-                Assert.Null(assemblyName.CultureName);
+                Assert.Empty(assemblyName.CultureName);
                 Assert.Equal(Configuration.Assemblies.AssemblyHashAlgorithm.SHA1, assemblyName.HashAlgorithm);
                 Assert.Equal(assembly.Flags, assemblyName.Flags);
                 Assert.NotNull(assemblyName.GetPublicKeyToken());
@@ -95,7 +95,7 @@ namespace System.Reflection.Metadata.Tests
                     Assert.Equal(item.Version, assemblyName.Version);
                     Assert.Equal(item.Name, assemblyName.Name);
                     Assert.Equal(item.ContentType, assemblyName.ContentType);
-                    Assert.Null(assemblyName.CultureName);
+                    Assert.Empty(assemblyName.CultureName);
                     Assert.Equal(Configuration.Assemblies.AssemblyHashAlgorithm.SHA1, assemblyName.HashAlgorithm);
                     Assert.Null(assemblyName.GetPublicKey());
                     Assert.Null(assemblyName.GetPublicKeyToken());

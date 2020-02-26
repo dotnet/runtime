@@ -9,7 +9,7 @@ namespace System.Reflection.Metadata
         internal AssemblyName GetAssemblyName(StringHandle nameHandle, Version version, StringHandle cultureHandle, BlobHandle publicKeyOrTokenHandle, AssemblyHashAlgorithm assemblyHashAlgorithm, AssemblyFlags flags)
         {
             string name = GetString(nameHandle);
-            string? cultureName = (!cultureHandle.IsNil) ? GetString(cultureHandle) : null;
+            string? cultureName = (!cultureHandle.IsNil) ? GetString(cultureHandle) : string.Empty;
             var hashAlgorithm = (Configuration.Assemblies.AssemblyHashAlgorithm)assemblyHashAlgorithm;
             byte[]? publicKeyOrToken = !publicKeyOrTokenHandle.IsNil ? GetBlobBytes(publicKeyOrTokenHandle) : null;
 
