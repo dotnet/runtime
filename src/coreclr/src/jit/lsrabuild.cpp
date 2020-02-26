@@ -2603,7 +2603,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
         assert((tree->GetRegNum() == REG_NA) || (dstCandidates == genRegMask(tree->GetRegByIndex(multiRegIdx))));
     }
 
-    RegisterType type = getDefType(tree);
+    RegisterType type;
     if (!tree->IsMultiRegNode())
     {
         type = getDefType(tree);
@@ -2611,6 +2611,11 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
     else
     {
         type = tree->GetRegTypeByIndex(multiRegIdx);
+    }
+
+    if (varTypeIsFloating(type) || varTypeIsSIMD(type))
+    {
+        compiler->compFloatingPointUsed = true;
     }
 
     Interval* interval = newInterval(type);
@@ -3035,7 +3040,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     GenTree*     op1 = storeLoc->gtGetOp1();
     int          srcCount;
     RefPosition* singleUseRef = nullptr;
-    LclVarDsc*   varDsc       = &compiler->lvaTable[storeLoc->GetLclNum()];
+    LclVarDsc*   varDsc       = compiler->lvaGetDesc(storeLoc->GetLclNum());
 
 // First, define internal registers.
 #ifdef FEATURE_SIMD
@@ -3103,7 +3108,8 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         srcCount                = 1;
         regMaskTP srcCandidates = RBM_NONE;
 #ifdef TARGET_X86
-        if (varTypeIsByte(storeLoc))
+        var_types type = varDsc->GetRegisterType(storeLoc);
+        if (varTypeIsByte(type))
         {
             srcCandidates = allByteRegs();
         }

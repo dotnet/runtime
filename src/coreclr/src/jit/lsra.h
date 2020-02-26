@@ -1072,7 +1072,16 @@ private:
     // Get the type that this tree defines.
     var_types getDefType(GenTree* tree)
     {
-        return tree->TypeGet();
+        var_types type = tree->TypeGet();
+        if (type == TYP_STRUCT)
+        {
+            assert(tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+            GenTreeLclVar* lclVar = tree->AsLclVar();
+            LclVarDsc*     varDsc = compiler->lvaGetDesc(lclVar);
+            type                  = varDsc->GetRegisterType(lclVar);
+        }
+        assert(type != TYP_UNDEF && type != TYP_STRUCT);
+        return type;
     }
 
     // Managing internal registers during the BuildNode process.
@@ -1551,7 +1560,6 @@ private:
     void BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates = RBM_NONE);
     void BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask);
 
-    int BuildStoreLoc(GenTree* tree);
     int BuildReturn(GenTree* tree);
 #ifdef TARGET_XARCH
     // This method, unlike the others, returns the number of sources, since it may be called when

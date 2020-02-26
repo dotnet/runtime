@@ -299,35 +299,58 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_STORE_LCL_FLD:
         {
             GenTreeLclVarCommon* const store = node->AsLclVarCommon();
-            GenTree*                   op1   = store->gtGetOp1();
-            if ((varTypeUsesFloatReg(store) != varTypeUsesFloatReg(op1)) && !store->IsPhiDefn() &&
-                (op1->TypeGet() != TYP_STRUCT))
+            GenTree*                   src   = store->gtGetOp1();
+            if ((varTypeUsesFloatReg(store) != varTypeUsesFloatReg(src)) && !store->IsPhiDefn() &&
+                (src->TypeGet() != TYP_STRUCT))
             {
                 if (m_lsra->isRegCandidate(comp->lvaGetDesc(store->GetLclNum())))
                 {
-                    GenTreeUnOp* bitcast =
-                        new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, store->TypeGet(), store->gtOp1, nullptr);
-                    store->gtOp1 = bitcast;
+                    GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, store->TypeGet(), src, nullptr);
+                    store->gtOp1         = bitcast;
+                    src                  = store->gtGetOp1();
                     BlockRange().InsertBefore(store, bitcast);
                     ContainCheckBitCast(bitcast);
                 }
                 else
                 {
                     // This is an actual store, we'll just retype it.
-                    store->gtType = op1->TypeGet();
+                    store->gtType = src->TypeGet();
                 }
             }
-            // TODO-1stClassStructs: Once we remove the requirement that all struct stores
-            // are block stores (GT_STORE_BLK or GT_STORE_OBJ), here is where we would put the local
-            // store under a block store if codegen will require it.
-            if ((node->TypeGet() == TYP_STRUCT) && (node->gtGetOp1()->OperGet() != GT_PHI))
+
+            if ((node->TypeGet() == TYP_STRUCT) && (src->OperGet() != GT_PHI))
             {
+                LclVarDsc* varDsc = comp->lvaGetDesc(store);
 #if FEATURE_MULTIREG_RET
-                GenTree* src = node->gtGetOp1();
-                assert((src->OperGet() == GT_CALL) && src->AsCall()->HasMultiRegRetVal());
-#else  // !FEATURE_MULTIREG_RET
-                assert(!"Unexpected struct local store in Lowering");
-#endif // !FEATURE_MULTIREG_RET
+                if (src->OperGet() == GT_CALL)
+                {
+                    assert(src->AsCall()->HasMultiRegRetVal());
+                }
+                else
+#endif // FEATURE_MULTIREG_RET
+                    if (!src->OperIs(GT_LCL_VAR) || varDsc->GetLayout()->GetRegisterType() == TYP_UNDEF)
+                {
+                    GenTreeLclVar* addr = comp->gtNewLclVarAddrNode(store->GetLclNum(), TYP_BYREF);
+
+                    addr->gtFlags |= GTF_VAR_DEF;
+                    assert(!addr->IsPartialLclFld(comp));
+                    addr->gtFlags |= GTF_DONT_CSE;
+
+                    // Create the assignment node.
+                    store->ChangeOper(GT_STORE_OBJ);
+
+                    store->gtFlags = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
+#ifndef JIT32_GCENCODER
+                    store->AsObj()->gtBlkOpGcUnsafe = false;
+#endif
+                    store->AsObj()->gtBlkOpKind = GenTreeObj::BlkOpKindInvalid;
+                    store->AsObj()->SetLayout(varDsc->GetLayout());
+                    store->AsObj()->SetAddr(addr);
+                    store->AsObj()->SetData(src);
+                    BlockRange().InsertBefore(store, addr);
+                    LowerBlockStore(store->AsObj());
+                    break;
+                }
             }
             LowerStoreLoc(node->AsLclVarCommon());
             break;
