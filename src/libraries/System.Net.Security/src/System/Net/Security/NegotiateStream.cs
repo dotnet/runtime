@@ -49,21 +49,21 @@ namespace System.Net.Security
 #endif
         }
 
-        public virtual IAsyncResult BeginAuthenticateAsClient(AsyncCallback asyncCallback, object? asyncState)
+        public virtual IAsyncResult BeginAuthenticateAsClient(AsyncCallback? asyncCallback, object? asyncState)
         {
             return BeginAuthenticateAsClient((NetworkCredential)CredentialCache.DefaultCredentials, null, string.Empty,
                                            ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification,
                                            asyncCallback, asyncState);
         }
 
-        public virtual IAsyncResult BeginAuthenticateAsClient(NetworkCredential credential, string targetName, AsyncCallback asyncCallback, object? asyncState)
+        public virtual IAsyncResult BeginAuthenticateAsClient(NetworkCredential credential, string targetName, AsyncCallback? asyncCallback, object? asyncState)
         {
             return BeginAuthenticateAsClient(credential, null, targetName,
                                            ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification,
                                            asyncCallback, asyncState);
         }
 
-        public virtual IAsyncResult BeginAuthenticateAsClient(NetworkCredential credential, ChannelBinding? binding, string targetName, AsyncCallback asyncCallback, object? asyncState)
+        public virtual IAsyncResult BeginAuthenticateAsClient(NetworkCredential credential, ChannelBinding? binding, string targetName, AsyncCallback? asyncCallback, object? asyncState)
         {
             return BeginAuthenticateAsClient(credential, binding, targetName,
                                              ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification,
@@ -75,7 +75,7 @@ namespace System.Net.Security
             string targetName,
             ProtectionLevel requiredProtectionLevel,
             TokenImpersonationLevel allowedImpersonationLevel,
-            AsyncCallback asyncCallback,
+            AsyncCallback? asyncCallback,
             object? asyncState)
         {
             return BeginAuthenticateAsClient(credential, null, targetName,
@@ -89,7 +89,7 @@ namespace System.Net.Security
             string targetName,
             ProtectionLevel requiredProtectionLevel,
             TokenImpersonationLevel allowedImpersonationLevel,
-            AsyncCallback asyncCallback,
+            AsyncCallback? asyncCallback,
             object? asyncState)
         {
 #if DEBUG
@@ -147,12 +147,12 @@ namespace System.Net.Security
 #endif
         }
 
-        public virtual IAsyncResult BeginAuthenticateAsServer(AsyncCallback asyncCallback, object? asyncState)
+        public virtual IAsyncResult BeginAuthenticateAsServer(AsyncCallback? asyncCallback, object? asyncState)
         {
             return BeginAuthenticateAsServer((NetworkCredential)CredentialCache.DefaultCredentials, null, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification, asyncCallback, asyncState);
         }
 
-        public virtual IAsyncResult BeginAuthenticateAsServer(ExtendedProtectionPolicy? policy, AsyncCallback asyncCallback, object? asyncState)
+        public virtual IAsyncResult BeginAuthenticateAsServer(ExtendedProtectionPolicy? policy, AsyncCallback? asyncCallback, object? asyncState)
         {
             return BeginAuthenticateAsServer((NetworkCredential)CredentialCache.DefaultCredentials, policy, ProtectionLevel.EncryptAndSign, TokenImpersonationLevel.Identification, asyncCallback, asyncState);
         }
