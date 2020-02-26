@@ -3508,7 +3508,7 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
     {
         CrstHolder _crst(GetHashCrst());
         
-        s_pAllLoggedTypes->allLoggedTypesHash.Lookup(pLoaderModule);
+        pLoggedTypesFromModule = s_pAllLoggedTypes->allLoggedTypesHash.Lookup(pLoaderModule);
     }
 
     if (pLoggedTypesFromModule == NULL)
