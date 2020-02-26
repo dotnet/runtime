@@ -31,6 +31,9 @@
 #undef REALLY_INCLUDE_CLASS_DEF
 #endif
 
+#if _MSC_VER
+#pragma warning (disable:4457) // variable shadow
+#endif
 
 struct MonoMethodDesc {
 	char *name_space;

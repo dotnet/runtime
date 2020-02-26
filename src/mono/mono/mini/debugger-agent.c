@@ -114,10 +114,6 @@
 
 #define THREAD_TO_INTERNAL(thread) (thread)->internal_thread
 
-#if _MSC_VER
-#pragma warning(disable:4312) // FIXME pointer cast to different size
-#endif
-
 typedef struct {
 	gboolean enabled;
 	char *transport;
@@ -2769,7 +2765,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 
 	mono_thread_info_safe_suspend_and_run ((MonoNativeThreadId)(gsize)thread->tid, FALSE, debugger_interrupt_critical, &interrupt_data);
 	if (!interrupt_data.valid_info) {
-		DEBUG_PRINTF (1, "[%p] mono_thread_info_suspend_sync () failed for %p...\n", (gpointer) (gsize) mono_native_thread_id_get (), (gpointer)tid);
+		DEBUG_PRINTF (1, "[%p] mono_thread_info_suspend_sync () failed for %p...\n", (gpointer)(gsize)mono_native_thread_id_get (), (gpointer)(gsize)tid);
 		/* 
 		 * Attached thread which died without detaching.
 		 */

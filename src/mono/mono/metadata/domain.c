@@ -56,6 +56,10 @@
 
 //#define DEBUG_DOMAIN_UNLOAD 1
 
+#if _MSC_VER
+#pragma warning(disable:4456) // variable shadow
+#endif
+
 #define GET_APPDOMAIN    mono_tls_get_domain
 #define SET_APPDOMAIN(x) do { \
 	MonoThreadInfo *info; \

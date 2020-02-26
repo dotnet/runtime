@@ -50,6 +50,10 @@
 #include <errno.h>
 #include "icall-decl.h"
 
+#if _MSC_VER
+#pragma warning(disable:4456) // variable shadow
+#endif
+
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
 

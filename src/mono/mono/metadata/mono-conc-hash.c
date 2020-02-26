@@ -15,6 +15,10 @@
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-threads-coop.h>
 
+#if _MSC_VER
+#pragma warning (disable:4457) // variable shadow
+#endif
+
 #define INITIAL_SIZE 32
 #define LOAD_FACTOR 0.75f
 #define PTR_TOMBSTONE ((gpointer)(ssize_t)-1)

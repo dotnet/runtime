@@ -34,6 +34,11 @@
 #include "mono/utils/mono-memory-model.h"
 #include "mono/utils/mono-proclib.h"
 
+#if _MSC_VER
+#pragma warning(disable:4189) // local variable is initialized but not referenced
+#pragma warning(disable:4456) // declaration of 'j' hides previous local declaration
+#endif
+
 static int ms_block_size;
 
 /*

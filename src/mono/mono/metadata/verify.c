@@ -35,6 +35,10 @@
 #include <string.h>
 #include <ctype.h>
 
+#if _MSC_VER
+#pragma warning (disable:4456) // variable shadow
+#endif
+
 static MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_OFF;
 static gboolean verify_all = FALSE;
 

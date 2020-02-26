@@ -34,6 +34,11 @@
 #include <string.h>
 #include <ctype.h>
 
+#if _MSC_VER
+#pragma warning(disable:4456) // variable shadow
+#pragma warning(disable:4457) // variable shadow
+#endif
+
 #ifndef DISABLE_VERIFIER
 /*
  TODO add fail fast mode

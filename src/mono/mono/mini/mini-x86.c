@@ -41,6 +41,10 @@
 #include "aot-runtime.h"
 #include "mini-runtime.h"
 
+#if _MSC_VER
+#pragma warning(disable:4146) // unary minus signed/unsigned
+#endif
+
 #ifndef TARGET_WIN32
 #ifdef MONO_XEN_OPT
 static gboolean optimize_for_xen = TRUE;

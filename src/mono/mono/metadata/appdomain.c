@@ -80,6 +80,10 @@
 #include "object-internals.h"
 #include "icall-decl.h"
 
+#if _MSC_VER
+#pragma warning(disable:4090) // volatile varies
+#endif
+
 typedef struct
 {
 	int runtime_count;

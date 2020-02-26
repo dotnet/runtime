@@ -45,6 +45,10 @@
 
 #include "test.h"
 
+#if _MSC_VER
+#pragma warning(disable:4456) // declaration of 'j' hides previous local declaration
+#endif
+
 extern gint global_passed, global_tests;
 static gchar *last_result = NULL;
 

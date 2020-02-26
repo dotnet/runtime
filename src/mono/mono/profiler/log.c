@@ -2934,7 +2934,6 @@ signal_helper_thread (char c)
 		if (connect (client_socket, (SOCKADDR *)&client_addr, sizeof (client_addr)) == SOCKET_ERROR) {
 			if (WSAGetLastError () == WSAEWOULDBLOCK) {
 				fd_set wfds;
-				int max_fd = -1;
 
 				FD_ZERO (&wfds);
 				FD_SET (client_socket, &wfds);

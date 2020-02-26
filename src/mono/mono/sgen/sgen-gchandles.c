@@ -15,6 +15,12 @@
 #include "mono/sgen/sgen-array-list.h"
 #include "mono/utils/mono-membar.h"
 
+#if _MSC_VER
+#pragma warning(disable:4146) // unary minus operator applied to unsigned type, result still unsigned
+#pragma warning(disable:4189) // local variable is initialized but not referenced
+#pragma warning(disable:4456) // declaration of 'j' hides previous local declaration
+#endif
+
 #ifdef HEAVY_STATISTICS
 static volatile guint32 stat_gc_handles_allocated = 0;
 static volatile guint32 stat_gc_handles_max_allocated = 0;

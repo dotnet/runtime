@@ -32,6 +32,10 @@
 #include "class-init.h"
 #include "icall-decl.h"
 
+#if _MSC_VER
+#pragma warning(disable:4090) // different volatile
+#endif
+
 static MonoUnhandledExceptionFunc unhandled_exception_hook = NULL;
 static gpointer unhandled_exception_hook_data = NULL;
 

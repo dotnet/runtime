@@ -32,6 +32,10 @@
 #include "mini.h"
 #include "ir-emit.h"
 
+#if _MSC_VER
+#pragma warning (disable:4146) // unary minus operator applied to unsigned type, result still unsigned
+#endif
+
 #ifndef MONO_ARCH_IS_OP_MEMBASE
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) FALSE
 #endif

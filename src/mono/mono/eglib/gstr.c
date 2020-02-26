@@ -723,6 +723,11 @@ g_filename_to_uri (const gchar *filename, const gchar *hostname, GError **gerror
 	return ret;
 }
 
+#if _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4702) // unreachable code
+#endif
+
 static int
 decode (char p)
 {
@@ -735,6 +740,10 @@ decode (char p)
 	g_assert_not_reached ();
 	return 0;
 }
+
+#if _MSC_VER
+#pragma warning(pop)
+#endif
 
 gchar *
 g_filename_from_uri (const gchar *uri, gchar **hostname, GError **gerror)

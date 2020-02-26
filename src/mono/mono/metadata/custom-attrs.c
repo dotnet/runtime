@@ -28,6 +28,13 @@
 #include "mono/metadata/icall-decl.h"
 #include "mono/utils/checked-build.h"
 
+#if _MSC_VER
+#pragma warning(disable:4090) // volatile
+#pragma warning(disable:4456) // variable shadow
+#pragma warning(disable:4457) // variable shadow
+#pragma warning(disable:4702) // unreachable code
+#endif
+
 #define CHECK_ADD4_OVERFLOW_UN(a, b) ((guint32)(0xFFFFFFFFU) - (guint32)(b) < (guint32)(a))
 #define CHECK_ADD8_OVERFLOW_UN(a, b) ((guint64)(0xFFFFFFFFFFFFFFFFUL) - (guint64)(b) < (guint64)(a))
 

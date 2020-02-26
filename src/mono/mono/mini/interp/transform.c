@@ -32,6 +32,10 @@
 #include "interp.h"
 #include "transform.h"
 
+#if _MSC_VER
+#pragma warning (disable:4456) // variable shadow
+#endif
+
 MonoInterpStats mono_interp_stats;
 
 #define DEBUG 0

@@ -51,6 +51,10 @@ static guint64 large_objects;
 static guint64 bloby_objects;
 #endif
 
+#if _MSC_VER
+#pragma warning(disable:4189) // local variable is initialized but not referenced
+#endif
+
 mword
 sgen_card_table_number_of_cards_in_range (mword address, mword size)
 {

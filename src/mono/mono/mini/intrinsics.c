@@ -20,6 +20,10 @@
 #include <mono/metadata/monitor.h>
 #include <mono/utils/mono-memory-model.h>
 
+#if _MSC_VER
+#pragma warning (disable:4456) // variable shadow
+#endif
+
 static GENERATE_GET_CLASS_WITH_CACHE (runtime_helpers, "System.Runtime.CompilerServices", "RuntimeHelpers")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
 

@@ -423,15 +423,22 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 // though any type is ok.
 #define MONO_HANDLE_GET_BOOL(handle, field) (MONO_BOOL (MONO_HANDLE_GETVAL (handle, field)))
 
+#ifdef _MSC_VER
+#define MONO_MSC_WARNING_SUPPRESS(warn, body) __pragma (warning (suppress:warn)) body
+#else
+#define MONO_MSC_WARNING_SUPPRESS(warn, body) body
+#endif
+
 // handle->field = (type)value, for non-managed pointers
 // This would be easier to write with the gcc extension typeof,
 // but it is not widely enough implemented (i.e. Microsoft C).
 // The value copy is needed in cases computing value causes a GC
 #define MONO_HANDLE_SETVAL(HANDLE, FIELD, TYPE, VALUE) do {	\
+	MONO_MSC_WARNING_SUPPRESS (4189, /* local initialized but not used */ \
 		TYPE __val = (VALUE);	\
 		if (0) { TYPE * typecheck G_GNUC_UNUSED = &MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (HANDLE)->FIELD); } \
 		MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE))->FIELD = __val); \
-	 } while (0)
+	) } while (0)
 
 // handle [idx] = value (for managed pointers)
 #define MONO_HANDLE_ARRAY_SETREF(HANDLE, IDX, VALUE) do {	\

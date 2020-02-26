@@ -33,6 +33,9 @@
 #undef REALLY_INCLUDE_CLASS_DEF
 #endif
 
+#if _MSC_VER
+#pragma warning(disable:4456) // variable shadow
+#endif
 
 gboolean mono_print_vtable = FALSE;
 gboolean mono_align_small_structs = FALSE;

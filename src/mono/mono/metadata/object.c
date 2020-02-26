@@ -61,7 +61,7 @@
 #include "icall-signatures.h"
 
 #if _MSC_VER
-#pragma warning(disable:4312) // FIXME pointer cast to different size
+#pragma warning(disable:4090) // volatile mixup
 #endif
 
 // If no symbols in an object file in a static library are referenced, its exports will not be exported.
@@ -262,7 +262,7 @@ mono_thread_set_main (MonoThread *thread)
 	static gboolean registered = FALSE;
 
 	if (!registered) {
-		void *key = thread->internal_thread ? (void *) MONO_UINT_TO_NATIVE_THREAD_ID (thread->internal_thread->tid) : NULL;
+		void *key = thread->internal_thread ? (void*)(gsize)MONO_UINT_TO_NATIVE_THREAD_ID (thread->internal_thread->tid) : NULL;
 		MONO_GC_REGISTER_ROOT_SINGLE (main_thread, MONO_ROOT_SOURCE_THREADING, key, "Thread Main Object");
 		registered = TRUE;
 	}

@@ -52,6 +52,10 @@
 #include <mono/utils/bsearch.h>
 #include <mono/utils/checked-build.h>
 
+#if _MSC_VER
+#pragma warning(disable:4456) // variable shadow
+#endif
+
 MonoStats mono_stats;
 
 /* Statistics */

@@ -22,7 +22,9 @@ mono_win32_handle_tls_callback_type (MonoWin32TLSCallbackType callback_type)
 {
 	/* Makes sure our tls callback doesn't get optimized away. */
 	extern const PIMAGE_TLS_CALLBACK __mono_win32_tls_callback;
+MONO_DISABLE_WARNING(4189) //  '__tls_callback': local variable is initialized but not referenced [C:\s\mono2\msvc\libmini.vcxproj]
 	const volatile PIMAGE_TLS_CALLBACK __tls_callback = __mono_win32_tls_callback;
+MONO_RESTORE_WARNING
 
 	if (mono_win32_tls_callback_type == MONO_WIN32_TLS_CALLBACK_TYPE_NONE)
 		mono_win32_tls_callback_type = callback_type;

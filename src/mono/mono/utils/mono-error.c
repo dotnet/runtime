@@ -18,6 +18,11 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/object-internals.h>
 
+#if _MSC_VER
+#pragma warning(disable:4090) // const/volatile varies
+#pragma warning(disable:4456) // declaration of 'j' hides previous local declaration
+#endif
+
 #define set_error_messagev() do { \
 	if (msg_format && !(error->full_message = g_strdup_vprintf (msg_format, args))) \
 			error->flags |= MONO_ERROR_INCOMPLETE; \

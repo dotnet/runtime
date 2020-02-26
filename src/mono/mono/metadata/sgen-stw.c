@@ -28,10 +28,6 @@
 #include "utils/mono-threads.h"
 #include "utils/mono-threads-debug.h"
 
-#if _MSC_VER
-#pragma warning(disable:4312) // FIXME pointer cast to different size
-#endif
-
 #define TV_DECLARE SGEN_TV_DECLARE
 #define TV_GETTIME SGEN_TV_GETTIME
 #define TV_ELAPSED SGEN_TV_ELAPSED
@@ -440,7 +436,7 @@ sgen_unified_suspend_restart_world (void)
 			g_assert (mono_thread_info_begin_resume (info));
 			THREADS_STW_DEBUG ("[GC-STW-RESUME-WORLD] RESUME thread %p\n", mono_thread_info_get_tid (info));
 
-			sgen_binary_protocol_thread_restart ((gpointer) mono_thread_info_get_tid (info));
+			sgen_binary_protocol_thread_restart ((gpointer)(gsize)mono_thread_info_get_tid (info));
 		} else {
 			THREADS_STW_DEBUG ("[GC-STW-RESUME-WORLD] IGNORE thread %p, reason %d\n", mono_thread_info_get_tid (info), reason);
 		}

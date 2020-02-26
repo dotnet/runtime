@@ -40,7 +40,8 @@
 #include "mono/utils/mono-tls-inline.h"
 
 #if _MSC_VER
-#pragma warning(disable:4312) // FIXME pointer cast to different size
+#pragma warning(disable:4090) // volatile
+#pragma warning(disable:4146) // unary minus signed/unsigned
 #endif
 
 #ifdef HEAVY_STATISTICS
@@ -2149,9 +2150,9 @@ sgen_client_thread_attach (SgenThreadInfo* info)
 	if (mono_gc_get_gc_callbacks ()->thread_attach_func)
 		info->client_info.runtime_data = mono_gc_get_gc_callbacks ()->thread_attach_func ();
 
-	sgen_binary_protocol_thread_register ((gpointer)mono_thread_info_get_tid (info));
+	sgen_binary_protocol_thread_register ((gpointer)(gsize)mono_thread_info_get_tid (info));
 
-	SGEN_LOG (3, "registered thread %p (%p) stack end %p", info, (gpointer)mono_thread_info_get_tid (info), info->client_info.info.stack_end);
+	SGEN_LOG (3, "registered thread %p (%p) stack end %p", info, (gpointer)(gsize)mono_thread_info_get_tid (info), info->client_info.info.stack_end);
 
 	info->client_info.info.handle_stack = mono_handle_stack_alloc ();
 }
@@ -2185,8 +2186,8 @@ sgen_client_thread_detach_with_lock (SgenThreadInfo *p)
 		p->client_info.runtime_data = NULL;
 	}
 
-	sgen_binary_protocol_thread_unregister ((gpointer)tid);
-	SGEN_LOG (3, "unregister thread %p (%p)", p, (gpointer)tid);
+	sgen_binary_protocol_thread_unregister ((gpointer)(gsize)tid);
+	SGEN_LOG (3, "unregister thread %p (%p)", p, (gpointer)(gsize)tid);
 
 	HandleStack *handles = p->client_info.info.handle_stack;
 	p->client_info.info.handle_stack = NULL;
@@ -2321,7 +2322,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 			skip_reason = 4;
 		}
 
-		sgen_binary_protocol_scan_stack ((gpointer)mono_thread_info_get_tid (info), info->client_info.stack_start, info->client_info.info.stack_end, skip_reason);
+		sgen_binary_protocol_scan_stack ((gpointer)(gsize)mono_thread_info_get_tid (info), info->client_info.stack_start, info->client_info.info.stack_end, skip_reason);
 
 		if (skip_reason) {
 			if (precise) {

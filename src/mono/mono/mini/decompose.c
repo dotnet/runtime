@@ -21,6 +21,10 @@
 #define MONO_MATH_DECLARE_ALL 1
 #include <mono/utils/mono-math.h>
 
+#if _MSC_VER
+#pragma warning (disable:4146) // unary minus operator applied to unsigned type, result still unsigned
+#endif
+
 #ifndef DISABLE_JIT
 
 /*

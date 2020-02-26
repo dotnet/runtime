@@ -49,6 +49,10 @@
 #include "mini-runtime.h"
 #include "aot-runtime.h"
 
+#if _MSC_VER
+#pragma warning(disable:4146) // unary minus operator applied to unsigned type
+#endif
+
 #ifdef MONO_XEN_OPT
 static gboolean optimize_for_xen = TRUE;
 #else

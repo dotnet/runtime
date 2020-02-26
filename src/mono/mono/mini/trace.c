@@ -27,10 +27,6 @@
 #include "trace.h"
 #include <mono/metadata/callspec.h>
 
-#if _MSC_VER
-#pragma warning(disable:4312) // FIXME pointer cast to different size
-#endif
-
 #if defined (HOST_ANDROID) || (defined (TARGET_IOS) && defined (TARGET_IOS))
 #  undef printf
 #  define printf(...) g_log("mono", G_LOG_LEVEL_MESSAGE, __VA_ARGS__)
@@ -82,7 +78,7 @@ static void indent (int diff) {
 		indent_level += diff;
 	if (start_time == 0)
 		start_time = mono_100ns_ticks ();
-	printf ("[%p: %.5f %d] ", (void*)mono_native_thread_id_get (), seconds_since_start (), indent_level);
+	printf ("[%p: %.5f %d] ", (void*)(gsize)mono_native_thread_id_get (), seconds_since_start (), indent_level);
 	if (diff > 0)
 		indent_level += diff;
 }

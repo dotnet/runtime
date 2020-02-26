@@ -102,6 +102,10 @@
 #include "mono/metadata/icall-signatures.h"
 #include "mono/utils/mono-tls-inline.h"
 
+#if _MSC_VER
+#pragma warning (disable:4146) // unary minus operator applied to unsigned type, result still unsigned
+#endif
+
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
 MonoMethodDesc *mono_stats_method_desc;

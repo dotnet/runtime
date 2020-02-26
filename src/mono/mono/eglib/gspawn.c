@@ -73,13 +73,6 @@
 #define set_error_status(status,msg, ...) do { if (gerror != NULL) *gerror = g_error_new (G_LOG_DOMAIN, status, msg, __VA_ARGS__); } while (0)
 #define NO_INTR(var,cmd) do { (var) = (cmd); } while ((var) == -1 && errno == EINTR)
 
-static void
-mono_close_pipe (int p [2])
-{
-	close (p [0]);
-	close (p [1]);
-}
-
 #if defined(__APPLE__)
 #if defined (TARGET_OSX)
 /* Apple defines this in crt_externs.h but doesn't provide that header for 
@@ -103,6 +96,14 @@ G_END_DECLS
 #endif
 
 #if !defined (G_OS_WIN32) && defined (HAVE_FORK) && defined (HAVE_EXECV)
+
+static void
+mono_close_pipe (int p [2])
+{
+	close (p [0]);
+	close (p [1]);
+}
+
 static int
 safe_read (int fd, gchar *buffer, gint count, GError **gerror)
 {

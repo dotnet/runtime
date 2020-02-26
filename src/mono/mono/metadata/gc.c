@@ -54,7 +54,8 @@
 #include "icall-decl.h"
 
 #if _MSC_VER
-#pragma warning(disable:4312) // FIXME pointer cast to different size
+#pragma warning(disable:4456) // declaration of 'j' hides previous local declaration
+#pragma warning(disable:4457) // declaration of 'text' hides function parameter
 #endif
 
 typedef struct DomainFinalizationReq {
@@ -1109,7 +1110,7 @@ mono_gc_cleanup (void)
 
 					g_assert (ret == MONO_THREAD_INFO_WAIT_RET_SUCCESS_0);
 
-					mono_threads_add_joinable_thread ((gpointer)(MONO_UINT_TO_NATIVE_THREAD_ID (gc_thread->tid)));
+					mono_threads_add_joinable_thread ((gpointer)(gsize)MONO_UINT_TO_NATIVE_THREAD_ID (gc_thread->tid));
 					break;
 				}
 

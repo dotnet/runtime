@@ -72,6 +72,10 @@ static const gint16 opidx [] = {
 #define ARCH_PREFIX ""
 //#define ARCH_PREFIX "powerpc64-linux-gnu-"
 
+#if _MSC_VER
+#pragma warning(disable:4702) // unreachable code
+#endif
+
 const char*
 mono_inst_name (int op) {
 #ifndef DISABLE_LOGGING

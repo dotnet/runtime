@@ -36,6 +36,10 @@
 #include "external-only.h"
 #include "icall-decl.h"
 
+#if _MSC_VER
+#pragma warning(disable:4457) // variable shadow
+#endif
+
 /*
  * Pull the list of opcodes
  */
@@ -1154,6 +1158,9 @@ mono_monitor_get_object_monitor_gchandle (MonoObject *object)
  * Returns the offsets and sizes of two members of the
  * MonoThreadsSync struct.  The Monitor ASM fastpaths need this.
  */
+
+MONO_DISABLE_WARNING(4101) // unused local
+
 void
 mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset)
 {
@@ -1164,6 +1171,8 @@ mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset)
 	*status_offset = ENCODE_OFF_SIZE (MONO_STRUCT_OFFSET (MonoThreadsSync, status), sizeof (ts.status));
 	*nest_offset = ENCODE_OFF_SIZE (MONO_STRUCT_OFFSET (MonoThreadsSync, nest), sizeof (ts.nest));
 }
+
+MONO_RESTORE_WARNING
 
 static MonoBoolean
 mono_monitor_try_enter_loop_if_interrupted (MonoObject *obj, guint32 ms,

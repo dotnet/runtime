@@ -121,7 +121,10 @@
 #include "mono/utils/mono-signal-handler.h"
 
 #if _MSC_VER
-#pragma warning(disable:4047) // FIXME differs in levels of indirection
+#pragma warning (disable:4047) // differs in levels of indirection
+#pragma warning (disable:4090) // volatile mixup
+#pragma warning (disable:4456) // variable shadow
+#pragma warning (disable:4457) // variable shadow
 #endif
 
 //#define MONO_DEBUG_ICALLARRAY

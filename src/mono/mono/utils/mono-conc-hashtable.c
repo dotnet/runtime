@@ -11,6 +11,10 @@
 #include "mono-conc-hashtable.h"
 #include <mono/utils/hazard-pointer.h>
 
+#if _MSC_VER
+#pragma warning(disable:4457) // declaration of 'j' hides previous local declaration
+#endif
+
 /* Configuration knobs. */
 
 #define INITIAL_SIZE 32

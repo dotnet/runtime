@@ -23,6 +23,10 @@
 #define PROTECTED_DACL_SECURITY_INFORMATION	0x80000000L
 #endif
 
+#if _MSC_VER
+#pragma warning(disable:4456) // variable shadow
+#endif
+
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 
 static gunichar2*

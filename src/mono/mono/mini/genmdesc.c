@@ -12,6 +12,10 @@
 #include <string.h>
 #include <mono/metadata/opcodes.h>
 
+#if _MSC_VER
+#pragma warning(disable:4702) // unreachable code
+#endif
+
 #define MINI_OP(a,b,dest,src1,src2) b,
 #define MINI_OP3(a,b,dest,src1,src2,src3) b,
 /* keep in sync with the enum in mini.h */

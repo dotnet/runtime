@@ -49,6 +49,11 @@
 #endif
 #include "icall-decl.h"
 
+#if _MSC_VER
+#pragma warning(disable:4090) // volatile mismatch
+#pragma warning(disable:4456) // variable shadow
+#endif
+
 static GENERATE_GET_CLASS_WITH_CACHE (marshal_as_attribute, "System.Runtime.InteropServices", "MarshalAsAttribute");
 #ifndef DISABLE_REFLECTION_EMIT
 static GENERATE_GET_CLASS_WITH_CACHE (module_builder, "System.Reflection.Emit", "ModuleBuilder");

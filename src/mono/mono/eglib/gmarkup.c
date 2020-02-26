@@ -46,6 +46,10 @@
 
 #define set_error(msg, ...) do { if (gerror != NULL) *gerror = g_error_new (GINT_TO_POINTER (1), 1, msg, __VA_ARGS__); } while (0);
 
+#if _MSC_VER
+#pragma warning(disable:4457) // declaration of 'j' hides previous local declaration
+#endif
+
 typedef enum {
 	START,
 	START_ELEMENT,

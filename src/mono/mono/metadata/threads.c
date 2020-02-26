@@ -69,7 +69,9 @@
 #include <signal.h>
 
 #if _MSC_VER
-#pragma warning(disable:4312) // FIXME pointer cast to different size
+#pragma warning(disable:4090) // volatile mixup
+#pragma warning(disable:4312) // pointer cast to different size
+#pragma warning(disable:4456) // variable shadow
 #endif
 
 #if defined(HOST_WIN32)

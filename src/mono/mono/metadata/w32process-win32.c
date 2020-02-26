@@ -40,6 +40,10 @@
 
 #include "icall-decl.h"
 
+#if _MSC_VER
+#pragma warning(disable:4146) // unary minus unsigned vs. signed
+#endif
+
 void
 mono_w32process_init (void)
 {

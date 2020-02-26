@@ -34,6 +34,10 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/bsearch.h>
 
+#if _MSC_VER
+#pragma warning(disable:4457) // variable shadow
+#endif
+
 #ifndef DISABLE_MDB
 
 #include <fcntl.h>

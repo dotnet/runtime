@@ -33,6 +33,10 @@
  * collection, not for debugging scans.
  */
 
+#if _MSC_VER
+#pragma warning(disable:4456) // local variable is initialized but not referenced
+#endif
+
 {
 #ifndef SCAN_OBJECT_NOVTABLE
 #if defined(SGEN_HEAVY_BINARY_PROTOCOL) && defined(SCAN_OBJECT_PROTOCOL)

@@ -63,6 +63,11 @@
 #include "icall-decl.h"
 #include "icall-signatures.h"
 
+#if _MSC_VER
+#pragma warning(disable:4456) // variable shadow
+#pragma warning(disable:4457) // variable shadow
+#endif
+
 static void
 mono_string_utf16len_to_builder (MonoStringBuilderHandle sb, const gunichar2 *text, gsize len, MonoError *error);
 
@@ -5357,7 +5362,7 @@ ptr_to_structure (gconstpointer src, MonoObjectHandle dst, MonoError *error)
 {
 	MonoMethod *method = mono_marshal_get_ptr_to_struct (mono_handle_class (dst));
 
-	gpointer pa [ ] = { &src, MONO_HANDLE_RAW (dst) };
+	gpointer pa [ ] = { (gpointer)&src, MONO_HANDLE_RAW (dst) };
 
 	// FIXMEcoop? mono_runtime_invoke_handle causes a GC assertion failure in marshal2 with interpreter
 	mono_runtime_invoke_checked (method, NULL, pa, error);

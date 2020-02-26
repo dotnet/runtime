@@ -2,6 +2,10 @@
 
 #include "test.h"
 
+#if _MSC_VER
+#pragma warning(disable:4702) // unreachable code
+#endif
+
 /*
  * g_utf16_to_utf8
  */

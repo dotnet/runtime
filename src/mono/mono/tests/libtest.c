@@ -42,6 +42,10 @@ extern "C" {
 extern __declspec(dllimport) void __stdcall CoTaskMemFree(void *ptr);
 #endif
 
+#if _MSC_VER
+#pragma warning(disable:4702) // unreachable code
+#endif
+
 typedef int (STDCALL *SimpleDelegate) (int a);
 
 #if defined(WIN32) && defined (_MSC_VER)

@@ -27,7 +27,8 @@
 #include "mono/sgen/sgen-client.h"
 
 #if _MSC_VER
-#pragma warning(disable:4312) // FIXME pointer cast to different size
+#pragma warning(disable:4312) // pointer cast to different size
+#pragma warning(disable:4702) // unreachable code
 #endif
 
 #ifndef DISABLE_SGEN_DEBUG_HELPERS

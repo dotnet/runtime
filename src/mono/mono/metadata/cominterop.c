@@ -2632,6 +2632,11 @@ cominterop_ccw_release_impl (MonoCCWInterface* ccwe)
 #ifdef HOST_WIN32
 static const IID MONO_IID_IMarshal = {0x3, 0x0, 0x0, {0xC0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x46}};
 
+#if _MSC_VER
+#pragma warning (push)
+#pragma warning (disable:4189) // local variable initialized but not used
+#endif
+
 /* All ccw objects are free threaded */
 static int
 cominterop_ccw_getfreethreadedmarshaler (MonoCCW* ccw, MonoObjectHandle object, gpointer* ppv, MonoError *error)
@@ -2645,6 +2650,11 @@ cominterop_ccw_getfreethreadedmarshaler (MonoCCW* ccw, MonoObjectHandle object, 
 	return ccw->free_marshaler ? mono_IUnknown_QueryInterface (ccw->free_marshaler, &MONO_IID_IMarshal, ppv)
 				   : MONO_E_NOINTERFACE;
 }
+
+#if _MSC_VER
+#pragma warning (pop)
+#endif
+
 #endif
 
 static int STDCALL 

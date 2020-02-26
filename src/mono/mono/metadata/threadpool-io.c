@@ -17,6 +17,10 @@
 #include <glib.h>
 #include <mono/metadata/threadpool-io.h>
 
+#if _MSC_VER
+#pragma warning(disable:4456) // variable shadow
+#endif
+
 #ifndef DISABLE_SOCKETS
 
 #if defined(HOST_WIN32)
