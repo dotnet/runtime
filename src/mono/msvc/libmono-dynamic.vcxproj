@@ -204,16 +204,16 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="build-external-btls.vcxproj">
+    <ProjectReference Include="build-external-btls.vcxproj" Condition="'$(MONO_ENABLE_NETCORE)'=='false'">
       <Project>{e41ddf41-0916-454b-a7c2-6e410e45cafd}</Project>
     </ProjectReference>
-    <ProjectReference Include="build-external-llvm.vcxproj">
+    <ProjectReference Include="build-external-llvm.vcxproj" Condition="'$(MONO_ENABLE_NETCORE)'=='false'">
       <Project>{c3d4c623-55f8-4653-980d-61aa629b4e1d}</Project>
     </ProjectReference>
     <ProjectReference Include="genmdesc.vcxproj">
       <Project>{b7098dfa-31e6-4006-8a15-1c9a4e925149}</Project>
     </ProjectReference>
-    <ProjectReference Include="libgc.vcxproj">
+    <ProjectReference Include="libgc.vcxproj" Condition="'$(MONO_TARGET_GC)'=='boehm'">
       <Project>{eb56000b-c80b-4e8b-908d-d84d31b517d3}</Project>
     </ProjectReference>
   </ItemGroup>
@@ -229,7 +229,7 @@
   <Import Project="mono.external.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
-  <Target Name="_SetupMonoLLVMCompileItems" Condition="$(MONO_ENABLE_LLVM)=='true'">
+  <Target Name="_SetupMonoLLVMCompileItems" Condition="'$(MONO_ENABLE_LLVM)'=='true'">
     <ItemGroup>
       <ClCompile>
         <AdditionalIncludeDirectories>$(MONO_LLVM_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -242,7 +242,7 @@
       </ClCompile>
     </ItemGroup>
   </Target>
-  <Target Name="_SetupMonoLLVMLinkItems" Condition="$(MONO_ENABLE_LLVM)=='true'">
+  <Target Name="_SetupMonoLLVMLinkItems" Condition="'$(MONO_ENABLE_LLVM)'=='true'">
     <ItemGroup>
       <Link>
         <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(Link.AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
