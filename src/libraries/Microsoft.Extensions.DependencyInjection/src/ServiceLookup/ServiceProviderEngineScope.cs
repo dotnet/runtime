@@ -98,7 +98,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                             var vt = asyncDisposable.DisposeAsync();
                             if (!vt.IsCompletedSuccessfully)
                             {
-                                return Await(i, vt);
+                                return Await(i, vt, toDispose);
                             }
 
                             // If its a IValueTaskSource backed ValueTask,
@@ -119,7 +119,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             return default;
 
-            async ValueTask Await(int i, ValueTask vt)
+            static async ValueTask Await(int i, ValueTask vt, List<object> toDispose)
             {
                 await vt;
 
