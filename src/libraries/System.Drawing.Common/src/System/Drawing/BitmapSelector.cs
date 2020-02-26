@@ -20,8 +20,8 @@ namespace System.Drawing
         /// For performance, the suffix is cached in a static variable so it only has to be read
         /// once per appdomain.
         /// </remarks>
-        private static string s_suffix;
-        internal static string Suffix
+        private static string? s_suffix;
+        internal static string? Suffix
         {
             get
             {
@@ -72,9 +72,9 @@ namespace System.Drawing
         }
 
         // Calls assembly.GetManifestResourceStream in a try/catch and returns null if not found
-        private static Stream GetResourceStreamHelper(Assembly assembly, Type type, string name)
+        private static Stream? GetResourceStreamHelper(Assembly assembly, Type type, string name)
         {
-            Stream stream = null;
+            Stream? stream = null;
             try
             {
                 stream = assembly.GetManifestResourceStream(type, name);
@@ -90,7 +90,7 @@ namespace System.Drawing
             return DoesAssemblyHaveCustomAttribute(assembly, assembly.GetType(typeName));
         }
 
-        private static bool DoesAssemblyHaveCustomAttribute(Assembly assembly, Type attrType)
+        private static bool DoesAssemblyHaveCustomAttribute(Assembly assembly, Type? attrType)
         {
             if (attrType != null)
             {
@@ -140,7 +140,7 @@ namespace System.Drawing
         /// The manifest resource stream corresponding to <paramref name="originalName"/> with the
         /// current suffix applied; or if that is not found, the stream corresponding to <paramref name="originalName"/>.
         /// </returns>
-        public static Stream GetResourceStream(Assembly assembly, Type type, string originalName)
+        public static Stream? GetResourceStream(Assembly assembly, Type type, string originalName)
         {
             if (Suffix != string.Empty)
             {
@@ -150,7 +150,7 @@ namespace System.Drawing
                     if (SameAssemblyOptIn(assembly))
                     {
                         string newName = AppendSuffix(originalName);
-                        Stream stream = GetResourceStreamHelper(assembly, type, newName);
+                        Stream? stream = GetResourceStreamHelper(assembly, type, newName);
                         if (stream != null)
                         {
                             return stream;
@@ -173,7 +173,7 @@ namespace System.Drawing
                         Assembly satellite = Assembly.Load(assemblyName);
                         if (satellite != null)
                         {
-                            Stream stream = GetResourceStreamHelper(satellite, type, originalName);
+                            Stream? stream = GetResourceStreamHelper(satellite, type, originalName);
                             if (stream != null)
                             {
                                 return stream;
@@ -201,7 +201,7 @@ namespace System.Drawing
         /// The manifest resource stream corresponding to <paramref name="originalName"/> with the
         /// current suffix applied; or if that is not found, the stream corresponding to <paramref name="originalName"/>.
         /// </returns>
-        public static Stream GetResourceStream(Type type, string originalName)
+        public static Stream? GetResourceStream(Type type, string originalName)
         {
             return GetResourceStream(type.Module.Assembly, type, originalName);
         }
@@ -218,7 +218,7 @@ namespace System.Drawing
         /// </returns>
         public static Icon CreateIcon(Type type, string originalName)
         {
-            return new Icon(GetResourceStream(type, originalName));
+            return new Icon(GetResourceStream(type, originalName)!);
         }
 
         /// <summary>
@@ -233,7 +233,7 @@ namespace System.Drawing
         /// </returns>
         public static Bitmap CreateBitmap(Type type, string originalName)
         {
-            return new Bitmap(GetResourceStream(type, originalName));
+            return new Bitmap(GetResourceStream(type, originalName)!);
         }
     }
 }
