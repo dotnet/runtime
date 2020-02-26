@@ -954,7 +954,7 @@ void DomainFile::EagerFixups()
         GetCurrentModule()->RunEagerFixups();
 #endif
 
-        PEImageLayout * pLayout = GetCurrentModule()->GetReadyToRunInfo()->GetCompositeInfo()->GetImage();
+        PEImageLayout * pLayout = GetCurrentModule()->GetReadyToRunInfo()->GetImage();
 
         TADDR base = dac_cast<TADDR>(pLayout->GetBase());
 

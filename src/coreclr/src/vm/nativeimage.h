@@ -7,10 +7,8 @@
 
 #include "readytoruninfo.h"
 
-/// <summary>
-/// This structure is used in NativeImage to map simple names of component assemblies
-/// to their indices within the component assembly header table.
-/// </summary>
+// This structure is used in NativeImage to map simple names of component assemblies
+// to their indices within the component assembly header table.
 struct AssemblyNameIndex
 {
     SString Name;
@@ -36,23 +34,20 @@ class ReadyToRunInfo;
 class PEFile;
 class PEImage;
 
-/// <summary>
-/// This class represents a native ReadyToRun image. As of today, this file format is used
-/// as the compiled native code cache in composite R2R Crossgen2 build mode. Moving forward
-/// we plan to add support for OS-specific native executables (ELF on Linux, MachO on OSX).
-///
-/// The native image is identified by a well-known public export 'RTR_HEADER' pointing to the
-/// master READYTORUN_HEADER structure for the entire file. For composite R2R executables
-/// built by crossgenning a larger number of input MSIL assemblies the READYTORUN_HEADER
-/// contains a section named ComponentAssemblies that points to READYTORUN_CORE_HEADER
-/// structures representing the individual component assemblies and per-assembly sections.
-/// </summary>
+// This class represents a  ReadyToRun image with native OS-specific envelope. As of today,
+// this file format is used as the compiled native code cache in composite R2R Crossgen2
+// build mode. Moving forward we plan to add support for OS-specific native executables
+// (ELF on Linux, MachO on OSX).
+//
+// The native image is identified by a well-known public export 'RTR_HEADER' pointing to the
+// master READYTORUN_HEADER structure for the entire file. For composite R2R executables
+// built by crossgenning a larger number of input MSIL assemblies the READYTORUN_HEADER
+// contains a section named ComponentAssemblies that points to READYTORUN_CORE_HEADER
+// structures representing the individual component assemblies and per-assembly sections.
 class NativeImage
 {
 private:
-    AssemblyLoadContext *m_pLoadContext;
     LPCUTF8 m_utf8SimpleName;
-    bool m_runEagerFixups;
     
     NewHolder<ReadyToRunInfo> m_pReadyToRunInfo;
     IMDInternalImport *m_pManifestMetadata;
@@ -61,6 +56,9 @@ private:
     IMAGE_DATA_DIRECTORY *m_pComponentAssemblies;
     uint32_t m_componentAssemblyCount;
     SHash<AssemblyNameIndexHashTraits> m_assemblySimpleNameToIndexMap;
+    
+    Crst m_eagerFixupsLock;
+    bool m_eagerFixupsHaveRun;
 
 private:
     NativeImage(
@@ -78,15 +76,16 @@ public:
         LPCUTF8 nativeImageName,
         LoaderAllocator *pLoaderAllocator);
 
-    bool Matches(LPCUTF8 utf8SimpleName, const AssemblyLoadContext *pLoadContext) const;
+    bool Matches(LPCUTF8 utf8SimpleName) const;
 
-    bool EagerFixupsNeedToRun();
+    Crst *EagerFixupsLock() { return &m_eagerFixupsLock; }
+    bool EagerFixupsHaveRun() const  { return m_eagerFixupsHaveRun; }
+    void SetEagerFixupsHaveRun() { m_eagerFixupsHaveRun = true; }
 
     uint32_t GetComponentAssemblyCount() const { return m_componentAssemblyCount; }
     ReadyToRunInfo *GetReadyToRunInfo() const { return m_pReadyToRunInfo; }
     IMDInternalImport *GetManifestMetadata() const { return m_pManifestMetadata; }
 
-    AssemblyLoadContext *GetAssemblyLoadContext() const { return m_pLoadContext; }
     Assembly *LoadComponentAssembly(uint32_t rowid);
     
     PTR_READYTORUN_CORE_HEADER GetComponentAssemblyHeader(const SString& assemblySimpleName);

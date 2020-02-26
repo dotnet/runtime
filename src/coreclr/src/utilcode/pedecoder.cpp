@@ -2321,8 +2321,8 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
 
     if (HasCorHeader())
     {
-        IMAGE_DATA_DIRECTORY* pDir = &GetCorHeader()->ManagedNativeHeader;
-
+        IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->ManagedNativeHeader;
+    
         if (VAL32(pDir->Size) >= sizeof(READYTORUN_HEADER) && CheckDirectory(pDir))
         {
             PTR_READYTORUN_HEADER pHeader = PTR_READYTORUN_HEADER((TADDR)GetDirectoryData(pDir));
@@ -2333,7 +2333,7 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
             }
         }
     }
-    
+
     READYTORUN_HEADER *nativeReadyToRunHeader = FindNativeReadyToRunHeader();
     if (nativeReadyToRunHeader != NULL)
     {
@@ -2346,20 +2346,35 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
 
 READYTORUN_HEADER *PEDecoder::FindNativeReadyToRunHeader() const
 {
-#ifndef DACCESS_COMPILE
-    // Get the export directory entry
-    PIMAGE_DATA_DIRECTORY exportDirectoryEntry = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT);
-    if (exportDirectoryEntry->VirtualAddress == 0 || exportDirectoryEntry->Size == 0)
+    uint32_t readyToRunHeaderRVA = GetExport("RTR_HEADER");
+    if (readyToRunHeaderRVA == 0 || readyToRunHeaderRVA + sizeof(READYTORUN_HEADER) > GetSize())
     {
         return NULL;
     }
+#ifndef DACCESS_COMPILE
+    BYTE *imageBase = (BYTE *)GetBase();
+    return (READYTORUN_HEADER *)&imageBase[readyToRunHeaderRVA];
+#else
+    return NULL;
+#endif
+}
+
+uint32_t PEDecoder::GetExport(LPCSTR exportName) const
+{
+#ifndef DACCESS_COMPILE
+    // Get the export directory entry
+    PIMAGE_DATA_DIRECTORY pExportDirectoryEntry = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT);
+    if (pExportDirectoryEntry->VirtualAddress == 0 || pExportDirectoryEntry->Size == 0)
+    {
+        return 0;
+    }
     
     const uint8_t *imageBase = (const uint8_t *)GetBase();
-    const uint8_t *exportDirectory = imageBase + VAL32(exportDirectoryEntry->VirtualAddress);
+    const IMAGE_EXPORT_DIRECTORY *pExportDir = (const IMAGE_EXPORT_DIRECTORY *)GetDirectoryData(pExportDirectoryEntry);
     
-    uint32_t namePointerCount = VAL32(*(const uint32_t *)&exportDirectory[0x18]); // +0x18: number of name pointers
-    uint32_t addressTableRVA = VAL32(*(const uint32_t *)&exportDirectory[0x1C]); // +0x1C: export address table RVA
-    uint32_t namePointersRVA = VAL32(*(const uint32_t *)&exportDirectory[0x20]); // +0x20: name pointer RVA
+    uint32_t namePointerCount = VAL32(pExportDir->NumberOfNames);
+    uint32_t addressTableRVA = VAL32(pExportDir->AddressOfFunctions);
+    uint32_t namePointersRVA = VAL32(pExportDir->AddressOfNames);
 
     for (uint32_t nameIndex = 0; nameIndex < namePointerCount; nameIndex++)
     {
@@ -2367,16 +2382,16 @@ READYTORUN_HEADER *PEDecoder::FindNativeReadyToRunHeader() const
         if (namePointerRVA != 0)
         {
             const char *namePointer = (const char *)&imageBase[namePointerRVA];
-            if (!strcmp(namePointer, "RTR_HEADER"))
+            if (!strcmp(namePointer, exportName))
             {
                 uint32_t headerRVA = VAL32(*(const uint32_t *)&imageBase[addressTableRVA + sizeof(uint32_t) * nameIndex]);
-                return (READYTORUN_HEADER *)&imageBase[headerRVA];
+                return headerRVA;
             }
         }
     }
 #endif
 
-    return NULL;
+    return 0;
 }
 
 //

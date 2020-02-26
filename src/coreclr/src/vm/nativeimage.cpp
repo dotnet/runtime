@@ -29,6 +29,7 @@ NativeImage::NativeImage(
     LPCUTF8 nativeImageName,
     LoaderAllocator *pLoaderAllocator,
     AllocMemTracker& amTracker)
+    : m_eagerFixupsLock(CrstNativeImageEagerFixups)
 {
     CONTRACTL
     {
@@ -39,14 +40,13 @@ NativeImage::NativeImage(
     CONTRACTL_END;
 
     LoaderHeap *pHeap = pLoaderAllocator->GetHighFrequencyHeap();
-    m_pLoadContext = pPeFile->GetAssemblyLoadContext();
     m_utf8SimpleName = nativeImageName;
     m_pPeImage = pPeImage;
-    m_runEagerFixups = true;
+    m_eagerFixupsHaveRun = false;
     
     m_pReadyToRunInfo.Assign(new (amTracker.Track(pHeap->AllocMem((S_SIZE_T)sizeof(ReadyToRunInfo))))
         ReadyToRunInfo(/*pModule*/ NULL, pPeImage->GetLoadedLayout(), pHeader, /*compositeImage*/ NULL, &amTracker), /*takeOwnership*/ TRUE);
-    m_pComponentAssemblies = m_pReadyToRunInfo->GetCompositeInfo()->FindSection(ReadyToRunSectionType::ComponentAssemblies);
+    m_pComponentAssemblies = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ComponentAssemblies);
     m_componentAssemblyCount = m_pComponentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY);
     
     // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
@@ -66,16 +66,9 @@ NativeImage::NativeImage(
     }
 }
 
-bool NativeImage::Matches(LPCUTF8 utf8SimpleName, const AssemblyLoadContext *pLoadContext) const
+bool NativeImage::Matches(LPCUTF8 utf8SimpleName) const
 {
-    return pLoadContext == m_pLoadContext && !strcmp(utf8SimpleName, m_utf8SimpleName);
-}
-
-bool NativeImage::EagerFixupsNeedToRun()
-{
-    bool runEagerFixups = m_runEagerFixups;
-    m_runEagerFixups = false;
-    return runEagerFixups;
+    return !_stricmp(utf8SimpleName, m_utf8SimpleName);
 }
 
 NativeImage *NativeImage::Open(
@@ -89,10 +82,8 @@ NativeImage *NativeImage::Open(
     {
         return NULL;
     }
-    LoaderHeap *pHeap = pLoaderAllocator->GetHighFrequencyHeap();
     AllocMemTracker amTracker;
-    NativeImage *result = new (amTracker.Track(pHeap->AllocMem((S_SIZE_T)sizeof(NativeImage))))
-        NativeImage(pPeFile, pPeImage, pHeader, nativeImageName, pLoaderAllocator, amTracker);
+    NativeImage *result = new NativeImage(pPeFile, pPeImage, pHeader, nativeImageName, pLoaderAllocator, amTracker);
     amTracker.SuppressRelease();
     return result;
 }

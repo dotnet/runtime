@@ -2758,6 +2758,7 @@ public:
                            PTR_CORCOMPILE_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
                            PEDecoder * pNativeImage);
     void RunEagerFixups();
+    void RunEagerFixupsUnlocked();
 
     Module *GetModuleFromIndex(DWORD ix);
     Module *GetModuleFromIndexIfLoaded(DWORD ix);

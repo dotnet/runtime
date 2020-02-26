@@ -83,9 +83,10 @@ public:
     static PTR_ReadyToRunInfo Initialize(Module * pModule, AllocMemTracker *pamTracker);
 
     bool IsComponentAssembly() const { return m_isComponentAssembly; }
-    const ReadyToRunCoreInfo * GetComponentInfo() const { return &m_component; }
-    const ReadyToRunCoreInfo * GetCompositeInfo() const { return m_pComposite; }
     NativeImage * GetNativeImage() const { return m_pNativeImage; }
+
+    PTR_PEImageLayout GetImage() const { return m_pComposite->GetImage(); }
+    IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const { return m_pComposite->FindSection(type); }
 
     PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups);
 
@@ -199,6 +200,8 @@ private:
 
     MethodDesc *TryGetMethodDescForEntryPoint(TADDR entryPointRVA);
     void SetMethodDescForEntryPoint(TADDR entryPointRVA, MethodDesc *methodDesc);
+    
+    ReadyToRunCoreInfo *GetComponentInfo() { return &m_component; }
 };
 
 class DynamicHelpers

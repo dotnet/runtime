@@ -351,6 +351,9 @@ class PEDecoder
     BOOL HasNativeEntryPoint() const;
     void *GetNativeEntryPoint() const;
 
+    // Look up a named symbol in the export directory
+    uint32_t GetExport(LPCSTR exportName) const;
+
 #ifdef _DEBUG
     // Stress mode for relocations
     static BOOL GetForceRelocs();
@@ -405,7 +408,7 @@ class PEDecoder
     CORCOMPILE_HEADER *FindNativeHeader() const;
     READYTORUN_HEADER *FindReadyToRunHeader() const;
     READYTORUN_HEADER *FindNativeReadyToRunHeader() const;
-
+    
     // Flat mapping utilities
     RVA InternalAddressToRva(SIZE_T address) const;
 

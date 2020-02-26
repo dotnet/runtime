@@ -29,7 +29,7 @@ NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUT
     for (int nativeImageIndex = 0; nativeImageIndex < nativeImageCount; nativeImageIndex++)
     {
         NativeImage *nativeImage = m_nativeImages[nativeImageIndex];
-        if (nativeImage->Matches(nativeImageName, loadContext))
+        if (nativeImage->Matches(nativeImageName))
         {
             return nativeImage;
         }

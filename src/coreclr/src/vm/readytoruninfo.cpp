@@ -630,7 +630,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     {
         // In multi-assembly composite images, per assembly sections are stored next to their core headers.
         m_pCompositeInfo = pNativeImage->GetReadyToRunInfo();
-        m_pComposite = m_pCompositeInfo->GetCompositeInfo();
+        m_pComposite = m_pCompositeInfo->GetComponentInfo();
         SString componentAssemblyName(SString::Utf8, pModule->GetSimpleName());
         if (pNativeImage->GetComponentAssemblyCount() == 1)
         {
@@ -884,7 +884,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 
         if (fFixups)
         {
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetCompositeInfo()->GetLayout()->GetBase()) + offset))
+            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset))
             {
 #ifndef CROSSGEN_COMPILE
                 pConfig->SetReadyToRunRejectedPrecompiledCode();
@@ -901,7 +901,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
 
     _ASSERTE(id < m_nRuntimeFunctions);
-    pEntryPoint = dac_cast<TADDR>(GetCompositeInfo()->GetLayout()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
+    pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
     m_pCompositeInfo->SetMethodDescForEntryPoint(pEntryPoint, pMD);
 
 #ifndef CROSSGEN_COMPILE
@@ -1095,7 +1095,7 @@ MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc_NoRestore()
     }
 
     _ASSERTE(id < m_pInfo->m_nRuntimeFunctions);
-    PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetCompositeInfo()->GetLayout()->GetBase()) + m_pInfo->m_pRuntimeFunctions[id].BeginAddress;
+    PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetImage()->GetBase()) + m_pInfo->m_pRuntimeFunctions[id].BeginAddress;
 
     return m_pInfo->GetMethodDescForEntryPoint(pEntryPoint);
 }

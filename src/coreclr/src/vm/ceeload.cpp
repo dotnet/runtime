@@ -446,7 +446,7 @@ void Module::InitializeForProfiling()
         if (m_methodProfileList != nullptr)
         {
             ReadyToRunInfo * pInfo = GetReadyToRunInfo();
-            PEImageLayout *  pImage = pInfo->GetCompositeInfo()->GetImage();
+            PEImageLayout *  pImage = pInfo->GetImage();
 
             // Enable profiling if the ZapBBInstr value says to
             m_nativeImageProfiling = GetAssembly()->IsInstrumented();
@@ -4094,7 +4094,7 @@ PEImageLayout * Module::GetNativeOrReadyToRunImage()
 
 #ifdef FEATURE_READYTORUN
     if (IsReadyToRun())
-        return GetReadyToRunInfo()->GetCompositeInfo()->GetImage();
+        return GetReadyToRunInfo()->GetImage();
 #endif
 
     return GetNativeImage();
@@ -10516,12 +10516,34 @@ void Module::RunEagerFixups()
     // TODO: Verify that eager fixup dependency graphs can contain no cycles
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-    NativeImage *compositeImage = GetCompositeNativeImage();
-    if (compositeImage != NULL && !compositeImage->EagerFixupsNeedToRun())
+    NativeImage *compositeNativeImage = GetCompositeNativeImage();
+    if (compositeNativeImage != NULL)
     {
-        return;
+        // For composite images, multiple modules may request initializing eager fixups
+        // from multiple threads so we need to lock their resolution.
+        if (compositeNativeImage->EagerFixupsHaveRun())
+        {
+            return;
+        }
+        CrstHolder compositeEagerFixups(compositeNativeImage->EagerFixupsLock());
+        if (compositeNativeImage->EagerFixupsHaveRun())
+        {
+            return;
+        }
+        RunEagerFixupsUnlocked();
+        compositeNativeImage->SetEagerFixupsHaveRun();
     }
+    else
+    {
+        // Per-module eager fixups don't need locking
+        RunEagerFixupsUnlocked();
+    }
+}
 
+void Module::RunEagerFixupsUnlocked()
+{
+    COUNT_T nSections;
+    PTR_CORCOMPILE_IMPORT_SECTION pSections = GetImportSections(&nSections);
     PEImageLayout *pNativeImage = GetNativeOrReadyToRunImage();
 
     for (COUNT_T iSection = 0; iSection < nSections; iSection++)
