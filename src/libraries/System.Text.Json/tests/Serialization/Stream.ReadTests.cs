@@ -16,6 +16,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.DeserializeAsync<string>((Stream)null));
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.DeserializeAsync((Stream)null, (Type)null));
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.DeserializeAsync((Stream)null, typeof(string)));
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.DeserializeAsync(new MemoryStream(), (Type)null));
         }
 
