@@ -331,10 +331,10 @@ void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t fl
 {
     LIMITED_METHOD_CONTRACT;
 
+    DWORD memFlags = (flags & VirtualReserveFlags::WriteWatch) ? (MEM_RESERVE | MEM_WRITE_WATCH) : MEM_RESERVE;
+
     if (node == NUMA_NODE_UNDEFINED)
     {
-        DWORD memFlags = (flags & VirtualReserveFlags::WriteWatch) ? (MEM_RESERVE | MEM_WRITE_WATCH) : MEM_RESERVE;
-
         // This is not strictly necessary for a correctness standpoint. Windows already guarantees
         // allocation granularity alignment when using MEM_RESERVE, so aligning the size here has no effect.
         // However, ClrVirtualAlloc does expect the size to be aligned to the allocation granularity.
@@ -350,7 +350,7 @@ void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t fl
     }
     else
     {
-        return NumaNodeInfo::VirtualAllocExNuma (::GetCurrentProcess (), NULL, size, MEM_RESERVE, PAGE_READWRITE, node);
+        return NumaNodeInfo::VirtualAllocExNuma (::GetCurrentProcess (), NULL, size, memFlags, PAGE_READWRITE, node);
     }
 }
 

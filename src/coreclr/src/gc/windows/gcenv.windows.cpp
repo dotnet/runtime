@@ -739,14 +739,14 @@ void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t fl
     assert((alignment & (alignment - 1)) == 0);
     assert(alignment <= 0x10000);
 
+    DWORD memFlags = (flags & VirtualReserveFlags::WriteWatch) ? (MEM_RESERVE | MEM_WRITE_WATCH) : MEM_RESERVE;
     if (node == NUMA_NODE_UNDEFINED)
     {
-        DWORD memFlags = (flags & VirtualReserveFlags::WriteWatch) ? (MEM_RESERVE | MEM_WRITE_WATCH) : MEM_RESERVE;
         return ::VirtualAlloc (nullptr, size, memFlags, PAGE_READWRITE);
     }
     else
     {
-        return ::VirtualAllocExNuma (::GetCurrentProcess (), NULL, size, MEM_RESERVE, PAGE_READWRITE, node);
+        return ::VirtualAllocExNuma (::GetCurrentProcess (), NULL, size, memFlags, PAGE_READWRITE, node);
     }
 }
 
