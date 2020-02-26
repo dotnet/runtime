@@ -4770,7 +4770,7 @@ void CodeGen::genCheckUseBlockInit()
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_64BIT
-#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
+#if defined(TARGET_AMD64)
 
     // We can clear using aligned SIMD so the threshold is lower,
     // and clears in order which is better for auto-prefetching
@@ -6356,7 +6356,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         noway_assert((blkSize % sizeof(int)) == 0);
         assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // initReg is not a live
 // incoming argument reg
-#if defined(TARGET_64BIT) && defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
+#if defined(TARGET_AMD64)
         // We will align on x64 so can use the aligned mov
         instruction simdMov = INS_movaps;
         // Aligning low we want to move up to next boundary
@@ -6368,7 +6368,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             assert((alignedLclLo - untrLclLo) <= REGSIZE_BYTES);
             minSimdSize = XMM_REGSIZE_BYTES + REGSIZE_BYTES;
         }
-#else // !(TARGET_64BIT && defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES)
+#else // !defined(TARGET_AMD64)
         // We aren't going to try and align on 32bit or if there are no guarantees on SIMD alignment
         instruction simdMov      = INS_movups;
         int         alignedLclLo = untrLclLo;
@@ -6382,14 +6382,14 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             {
                 emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
             }
-#ifdef TARGET_64BIT
+#if defined(TARGET_AMD64)
             assert(i == blkSize || (i + sizeof(int) == blkSize));
             if (i != blkSize)
             {
                 emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
                 i += sizeof(int);
             }
-#endif // TARGET_64BIT
+#endif // defined(TARGET_AMD64)
             assert(i == blkSize);
         }
         else
@@ -6403,7 +6403,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             regNumber zeroSIMDReg = genRegNumFromMask(RBM_XMM4);
 #endif // UNIX_AMD64_ABI
 
-#if defined(TARGET_64BIT) && defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
+#if defined(TARGET_AMD64)
             // Aligning high we want to move down to previous boundary
             int alignedLclHi = untrLclHi & -XMM_REGSIZE_BYTES;
 
@@ -6423,10 +6423,9 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
                 int i = 0;
-                if (REGSIZE_BYTES <= alignmentLoBlkSize)
+                for (; i + REGSIZE_BYTES <= alignmentLoBlkSize; i += REGSIZE_BYTES)
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
-                    i += REGSIZE_BYTES;
                 }
                 assert(i == alignmentLoBlkSize || (i + sizeof(int) == alignmentLoBlkSize));
                 if (i != alignmentLoBlkSize)
@@ -6437,7 +6436,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
                 assert(i == alignmentLoBlkSize);
             }
-#else // !(TARGET_64BIT && defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES)
+#else // !defined(TARGET_AMD64)
             // While we aren't aligning the start, we still want to
             // zero anything that is not in a 16 byte chunk at end
             int alignmentBlkSize   = blkSize & -XMM_REGSIZE_BYTES;
@@ -6545,14 +6544,14 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, alignedLclHi + i);
                 }
-#ifdef TARGET_64BIT
+#if defined(TARGET_AMD64)
                 assert(i == alignmentHiBlkSize || (i + sizeof(int) == alignmentHiBlkSize));
                 if (i != alignmentHiBlkSize)
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, alignedLclHi + i);
                     i += sizeof(int);
                 }
-#endif // TARGET_64BIT
+#endif // defined(TARGET_AMD64)
                 assert(i == alignmentHiBlkSize);
             }
         }
