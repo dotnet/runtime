@@ -368,26 +368,17 @@ mono_llvm_calls_using (LLVMValueRef wrapped_local)
 LLVMValueRef *
 mono_llvm_call_args (LLVMValueRef wrapped_calli)
 {
-	Value *calli = unwrap(wrapped_calli);
+	Value *calli = unwrap (wrapped_calli);
 	CallInst *call = dyn_cast <CallInst> (calli);
 	InvokeInst *invoke = dyn_cast <InvokeInst> (calli);
 	g_assert (call || invoke);
 
-	unsigned int numOperands = 0;
+	const guint numOperands = call ? call->getNumArgOperands () : invoke->getNumArgOperands ();
 
-	if (call)
-		numOperands = call->getNumArgOperands ();
-	else
-		numOperands = invoke->getNumArgOperands ();
+	LLVMValueRef *ret = g_new (LLVMValueRef, numOperands);
 
-	LLVMValueRef *ret = g_malloc (sizeof (LLVMValueRef) * numOperands);
-
-	for (int i=0; i < numOperands; i++) {
-		if (call)
-			ret [i] = wrap (call->getArgOperand (i));
-		else
-			ret [i] = wrap (invoke->getArgOperand (i));
-	}
+	for (guint i = 0; i < numOperands; i++)
+		ret [i] = wrap (call ? call->getArgOperand (i) : invoke->getArgOperand (i));
 
 	return ret;
 }
