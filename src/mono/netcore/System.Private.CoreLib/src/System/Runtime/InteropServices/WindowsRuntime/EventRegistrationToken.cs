@@ -4,9 +4,6 @@
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
-    // Event registration tokens are 64 bit opaque structures returned from WinRT style event adders, in order
-    // to signify a registration of a particular delegate to an event.  The token's only real use is to
-    // unregister the same delgate from the event at a later time.
     public struct EventRegistrationToken : IEquatable<EventRegistrationToken>
     {
         [CLSCompliant(false)]

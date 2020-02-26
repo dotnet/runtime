@@ -97,7 +97,7 @@ if ($vs) {
   $env:DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=InitializeDotNetCli -install:$false
 
   # This tells .NET Core not to go looking for .NET Core in other places
-  $env:DOTNET_MULTILEVEL_LOOKUPss=0;
+  $env:DOTNET_MULTILEVEL_LOOKUP=0;
 
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);

@@ -9,8 +9,6 @@ namespace System
 {
     internal static class ApplicationModel
     {
-        // TODO: this is a readonly field in CoreCLR. Use PR to find the better 
-        // approach here since it seems wrong for this to differ between runtimes
         internal static bool IsUap => throw new PlatformNotSupportedException();
     }
 }
