@@ -391,6 +391,24 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        public static void RunTaskCompletionSourceTests_SetCanceled()
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
+
+            tcs.SetCanceled(cts.Token);
+
+            Assert.Equal(TaskStatus.Canceled, tcs.Task.Status);
+
+            var ae = Assert.Throws<AggregateException>(() => tcs.Task.Result);
+            var tce = Assert.IsType<TaskCanceledException>(ae.InnerException);
+            Assert.Equal(cts.Token, tce.CancellationToken);
+
+            // Try to cancel again
+            Assert.Throws<InvalidOperationException>(() => tcs.SetCanceled(cts.Token));
+        }
+
+        [Fact]
         public static void RunTaskCompletionSourceTests_CancellationTests()
         {
             // Test that cancellation is persistent

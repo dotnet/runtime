@@ -175,7 +175,7 @@ struct _MonoArray {
 	mono_64bitaligned_t vector [MONO_ZERO_LEN_ARRAY];
 };
 
-#define MONO_SIZEOF_MONO_ARRAY (MONO_STRUCT_OFFSET (MonoArray, vector))
+#define MONO_SIZEOF_MONO_ARRAY (MONO_STRUCT_OFFSET_CONSTANT (MonoArray, vector))
 
 struct _MonoString {
 	MonoObject object;
@@ -1489,25 +1489,6 @@ struct _MonoReflectionGenericClass {
 
 /* Safely access System.Reflection.Emit.TypeBuilderInstantiation from native code */
 TYPED_HANDLE_DECL (MonoReflectionGenericClass);
-
-typedef struct {
-	MonoObject  obj;
-	MonoString *name;
-	MonoString *codebase;
-	gint32 major, minor, build, revision;
-	MonoObject  *cultureInfo;
-	guint32     flags;
-	guint32     hashalg;
-	MonoObject  *keypair;
-	MonoArray   *publicKey;
-	MonoArray   *keyToken;
-	guint32     versioncompat;
-	MonoObject *version;
-	guint32     processor_architecture;
-} MonoReflectionAssemblyName;
-
-/* Safely access System.Reflection.AssemblyName from native code */
-TYPED_HANDLE_DECL (MonoReflectionAssemblyName);
 
 typedef struct {
 	MonoObject  obj;

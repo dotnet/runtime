@@ -126,6 +126,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15101", TestRuntimes.Mono)]
         public void PtrToStructure_ZeroPointer_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("ptr", () => Marshal.PtrToStructure(IntPtr.Zero, (object)new SomeTestStruct()));

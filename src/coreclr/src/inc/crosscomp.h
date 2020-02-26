@@ -18,7 +18,7 @@
 #define MAKE_TARGET_DLLNAME_W(name) name W(".dll")
 #define MAKE_TARGET_DLLNAME_A(name) name ".dll"
 #else // TARGET_WINDOWS
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 #define MAKE_TARGET_DLLNAME_W(name) W("lib") name W(".dylib")
 #define MAKE_TARGET_DLLNAME_A(name)  "lib" name  ".dylib"
 #else
@@ -113,37 +113,15 @@ typedef struct DECLSPEC_ALIGN(8) _T_CONTEXT {
 // each frame function.
 //
 
-#ifndef TARGET_UNIX
-#ifdef HOST_X86
-typedef struct _RUNTIME_FUNCTION {
+#if defined(HOST_WINDOWS)
+typedef struct _T_RUNTIME_FUNCTION {
     DWORD BeginAddress;
     DWORD UnwindData;
-} RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
-
-//
-// Define unwind history table structure.
-//
-
-#define UNWIND_HISTORY_TABLE_SIZE 12
-
-typedef struct _UNWIND_HISTORY_TABLE_ENTRY {
-    DWORD ImageBase;
-    PRUNTIME_FUNCTION FunctionEntry;
-} UNWIND_HISTORY_TABLE_ENTRY, *PUNWIND_HISTORY_TABLE_ENTRY;
-
-typedef struct _UNWIND_HISTORY_TABLE {
-    DWORD Count;
-    BYTE  LocalHint;
-    BYTE  GlobalHint;
-    BYTE  Search;
-    BYTE  Once;
-    DWORD LowAddress;
-    DWORD HighAddress;
-    UNWIND_HISTORY_TABLE_ENTRY Entry[UNWIND_HISTORY_TABLE_SIZE];
-} UNWIND_HISTORY_TABLE, *PUNWIND_HISTORY_TABLE;
-#endif // HOST_X86
-#endif // !TARGET_UNIX
-
+} T_RUNTIME_FUNCTION, *PT_RUNTIME_FUNCTION;
+#else // HOST_WINDOWS
+#define T_RUNTIME_FUNCTION RUNTIME_FUNCTION
+#define PT_RUNTIME_FUNCTION PRUNTIME_FUNCTION
+#endif // HOST_WINDOWS
 
 //
 // Nonvolatile context pointer record.
@@ -177,7 +155,7 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 //
 
 typedef
-PRUNTIME_FUNCTION
+PT_RUNTIME_FUNCTION
 (*PGET_RUNTIME_FUNCTION_CALLBACK) (
     IN DWORD64 ControlPc,
     IN PVOID Context
@@ -186,27 +164,18 @@ PRUNTIME_FUNCTION
 typedef struct _T_DISPATCHER_CONTEXT {
     ULONG ControlPc;
     ULONG ImageBase;
-    PRUNTIME_FUNCTION FunctionEntry;
+    PT_RUNTIME_FUNCTION FunctionEntry;
     ULONG EstablisherFrame;
     ULONG TargetPc;
     PT_CONTEXT ContextRecord;
     PEXCEPTION_ROUTINE LanguageHandler;
     PVOID HandlerData;
-    PUNWIND_HISTORY_TABLE HistoryTable;
+    PVOID HistoryTable;
     ULONG ScopeIndex;
     BOOLEAN ControlPcIsUnwound;
     PUCHAR NonVolatileRegisters;
 } T_DISPATCHER_CONTEXT, *PT_DISPATCHER_CONTEXT;
 
-#if defined(TARGET_UNIX) || defined(HOST_X86)
-#define T_RUNTIME_FUNCTION RUNTIME_FUNCTION
-#define PT_RUNTIME_FUNCTION PRUNTIME_FUNCTION
-#else
-typedef struct _T_RUNTIME_FUNCTION {
-    DWORD BeginAddress;
-    DWORD UnwindData;
-} T_RUNTIME_FUNCTION, *PT_RUNTIME_FUNCTION;
-#endif
 
 #elif defined(HOST_AMD64) && defined(TARGET_ARM64)  // Host amd64 managing ARM64 related code
 
@@ -339,7 +308,7 @@ typedef struct _T_DISPATCHER_CONTEXT {
     PCONTEXT ContextRecord;
     PEXCEPTION_ROUTINE LanguageHandler;
     PVOID HandlerData;
-    PUNWIND_HISTORY_TABLE HistoryTable;
+    PVOID HistoryTable;
     DWORD ScopeIndex;
     BOOLEAN ControlPcIsUnwound;
     PBYTE  NonVolatileRegisters;

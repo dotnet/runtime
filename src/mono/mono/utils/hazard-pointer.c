@@ -26,6 +26,10 @@
 #include <mono/utils/mono-counters.h>
 #endif
 
+#if _MSC_VER
+#pragma warning(disable:4312) // FIXME pointer cast to different size
+#endif
+
 typedef struct {
 	gpointer p;
 	MonoHazardousFreeFunc free_func;
@@ -119,7 +123,7 @@ mono_thread_small_id_alloc (void)
 		int num_pages = (hazard_table_size * sizeof (MonoThreadHazardPointers) + pagesize - 1) / pagesize;
 
 		if (hazard_table == NULL) {
-			hazard_table = (MonoThreadHazardPointers *volatile) mono_valloc (NULL,
+			hazard_table = (MonoThreadHazardPointers*) mono_valloc (NULL,
 				sizeof (MonoThreadHazardPointers) * HAZARD_TABLE_MAX_SIZE,
 				table_prot, MONO_MEM_ACCOUNT_HAZARD_POINTERS);
 		}

@@ -605,7 +605,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/21876", TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22626", TestPlatforms.Linux)]
         [MemberData(nameof(UnaryCancelingOperators))]
         [MemberData(nameof(BinaryCancelingOperators))]
         [MemberData(nameof(OrderCancelingOperators))]

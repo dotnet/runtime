@@ -479,9 +479,9 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(SecureAndNonSecure_IPBasedUri_MemberData))]
         public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)
         {
-            if (LoopbackServerFactory.IsHttp2)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20)
             {
-                throw new SkipTestException("Host header is not supported on HTTP/2.");
+                throw new SkipTestException("Host header is not supported on HTTP/2 and later.");
             }
 
             var options = new LoopbackServer.Options { Address = address, UseSsl= useSsl };
@@ -717,7 +717,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler)
             {
-                return; // see https://github.com/dotnet/corefx/issues/39136#issuecomment-508330958
+                return; // see https://github.com/dotnet/runtime/issues/30115#issuecomment-508330958
             }
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -871,9 +871,9 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal("X-Underscore_Name", requestData.GetSingleHeaderValue("X-Underscore_Name"));
                     Assert.Equal("End", requestData.GetSingleHeaderValue("X-End"));
 
-                    if (LoopbackServerFactory.IsHttp2)
+                    if (LoopbackServerFactory.Version >= HttpVersion.Version20)
                     {
-                        // HTTP/2 forbids  certain headers or values.
+                        // HTTP/2 and later forbids certain headers or values.
                         Assert.Equal("trailers", requestData.GetSingleHeaderValue("TE"));
                         Assert.Equal(0, requestData.GetHeaderValueCount("Upgrade"));
                         Assert.Equal(0, requestData.GetHeaderValueCount("Proxy-Connection"));
@@ -904,9 +904,9 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly_MemberData))]
         public async Task GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(string newline, string fold, bool dribble)
         {
-            if (LoopbackServerFactory.IsHttp2)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20)
             {
-                throw new SkipTestException("Folding is not supported on HTTP/2.");
+                throw new SkipTestException("Folding is not supported on HTTP/2 and later.");
             }
 
             // Using examples from https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Response_fields
@@ -1035,9 +1035,9 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task GetAsync_NonTraditionalChunkSizes_Accepted()
         {
-            if (LoopbackServerFactory.IsHttp2)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20)
             {
-                throw new SkipTestException("Chunking is not supported on HTTP/2.");
+                throw new SkipTestException("Chunking is not supported on HTTP/2 and later.");
             }
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -1259,9 +1259,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(null)]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked)
         {
-            if (LoopbackServerFactory.IsHttp2 && chunked == true)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20 && chunked == true)
             {
-                throw new SkipTestException("Chunking is not supported on HTTP/2.");
+                throw new SkipTestException("Chunking is not supported on HTTP/2 and later.");
             }
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -2068,9 +2068,9 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (LoopbackServerFactory.IsHttp2)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20)
             {
-                throw new SkipTestException("Upgrade is not supported on HTTP/2");
+                throw new SkipTestException("Upgrade is not supported on HTTP/2 and later");
             }
 
             var clientFinished = new TaskCompletionSource<bool>();
@@ -2238,9 +2238,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpStatusCode.MethodNotAllowed, "")]
         public async Task GetAsync_CallMethod_ExpectedStatusLine(HttpStatusCode statusCode, string reasonPhrase)
         {
-            if (LoopbackServerFactory.IsHttp2)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20)
             {
-                // Custom messages are not supported on HTTP2.
+                // Custom messages are not supported on HTTP2 and later.
                 return;
             }
 
@@ -2365,7 +2365,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         // .NET Framework also allows the HttpWebRequest and HttpClient APIs to send a request using 'TRACE'
                         // verb and a request body. The usual response from a server is "400 Bad Request".
-                        // See here for more info: https://github.com/dotnet/corefx/issues/9023
+                        // See here for more info: https://github.com/dotnet/runtime/issues/17475
                         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
                     }
                     else
@@ -2541,7 +2541,7 @@ namespace System.Net.Http.Functional.Tests
         }
 #endregion
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public async Task GetAsync_InvalidUrl_ExpectedExceptionThrown()
         {
             string invalidUri = $"http://{Configuration.Sockets.InvalidHost}";

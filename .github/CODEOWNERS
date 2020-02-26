@@ -1,8 +1,8 @@
 # Users referenced in this file will automatically be requested as reviewers for PRs that modify the given paths.
 # See https://help.github.com/articles/about-code-owners/
 
-/src/libraries/Common/src/System/Net/Http/aspnetcore/               @dotnet/http2
-/src/libraries/Common/tests/Tests/System/Net/aspnetcore/            @dotnet/http2
+/src/libraries/Common/src/System/Net/Http/aspnetcore/               @dotnet/http
+/src/libraries/Common/tests/Tests/System/Net/aspnetcore/            @dotnet/http
 /src/libraries/System.Text.Json/                                    @ahsonkhan @steveharter @layomia @Jozkee
 /src/libraries/System.Buffers/                                      @ahsonkhan
 /src/libraries/System.Memory/                                       @ahsonkhan

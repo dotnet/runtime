@@ -155,6 +155,7 @@ namespace System.ComponentModel.Composition
         #endregion
     }
 
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class AdaptingCollectionTests
     {
         public interface IContract { }

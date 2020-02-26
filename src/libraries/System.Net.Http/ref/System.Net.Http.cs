@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Net.Http
@@ -128,9 +128,9 @@ namespace System.Net.Http
         protected HttpContent() { }
         public System.Net.Http.Headers.HttpContentHeaders Headers { get { throw null; } }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream) { throw null; }
-        public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Net.TransportContext context) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Net.TransportContext context, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected virtual System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected virtual System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public void Dispose() { }
@@ -186,6 +186,8 @@ namespace System.Net.Http
         public HttpRequestException() { }
         public HttpRequestException(string message) { }
         public HttpRequestException(string message, System.Exception inner) { }
+        public HttpRequestException(string message, System.Exception inner, System.Net.HttpStatusCode? statusCode) { }
+        public System.Net.HttpStatusCode? StatusCode { get { throw null; } }
     }
     public partial class HttpRequestMessage : System.IDisposable
     {

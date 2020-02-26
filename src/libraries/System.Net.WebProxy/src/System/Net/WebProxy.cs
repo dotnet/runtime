@@ -12,18 +12,18 @@ namespace System.Net
 {
     public class WebProxy : IWebProxy, ISerializable
     {
-        private ArrayList _bypassList;
-        private Regex[] _regExBypassList;
+        private ArrayList? _bypassList;
+        private Regex[]? _regexBypassList;
 
-        public WebProxy() : this((Uri)null, false, null, null) { }
+        public WebProxy() : this((Uri?)null, false, null, null) { }
 
-        public WebProxy(Uri Address) : this(Address, false, null, null) { }
+        public WebProxy(Uri? Address) : this(Address, false, null, null) { }
 
-        public WebProxy(Uri Address, bool BypassOnLocal) : this(Address, BypassOnLocal, null, null) { }
+        public WebProxy(Uri? Address, bool BypassOnLocal) : this(Address, BypassOnLocal, null, null) { }
 
-        public WebProxy(Uri Address, bool BypassOnLocal, string[] BypassList) : this(Address, BypassOnLocal, BypassList, null) { }
+        public WebProxy(Uri? Address, bool BypassOnLocal, string[]? BypassList) : this(Address, BypassOnLocal, BypassList, null) { }
 
-        public WebProxy(Uri Address, bool BypassOnLocal, string[] BypassList, ICredentials Credentials)
+        public WebProxy(Uri? Address, bool BypassOnLocal, string[]? BypassList, ICredentials? Credentials)
         {
             this.Address = Address;
             this.Credentials = Credentials;
@@ -31,7 +31,7 @@ namespace System.Net
             if (BypassList != null)
             {
                 _bypassList = new ArrayList(BypassList);
-                UpdateRegExList(true);
+                UpdateRegexList(true);
             }
         }
 
@@ -40,27 +40,27 @@ namespace System.Net
         {
         }
 
-        public WebProxy(string Address)
+        public WebProxy(string? Address)
             : this(CreateProxyUri(Address), false, null, null)
         {
         }
 
-        public WebProxy(string Address, bool BypassOnLocal)
+        public WebProxy(string? Address, bool BypassOnLocal)
             : this(CreateProxyUri(Address), BypassOnLocal, null, null)
         {
         }
 
-        public WebProxy(string Address, bool BypassOnLocal, string[] BypassList)
+        public WebProxy(string? Address, bool BypassOnLocal, string[]? BypassList)
             : this(CreateProxyUri(Address), BypassOnLocal, BypassList, null)
         {
         }
 
-        public WebProxy(string Address, bool BypassOnLocal, string[] BypassList, ICredentials Credentials)
+        public WebProxy(string? Address, bool BypassOnLocal, string[]? BypassList, ICredentials? Credentials)
             : this(CreateProxyUri(Address), BypassOnLocal, BypassList, Credentials)
         {
         }
 
-        public Uri Address { get; set; }
+        public Uri? Address { get; set; }
 
         public bool BypassProxyOnLocal { get; set; }
 
@@ -70,13 +70,13 @@ namespace System.Net
             set
             {
                 _bypassList = new ArrayList(value);
-                UpdateRegExList(true);
+                UpdateRegexList(true);
             }
         }
 
         public ArrayList BypassArrayList => _bypassList ?? (_bypassList = new ArrayList());
 
-        public ICredentials Credentials { get; set; }
+        public ICredentials? Credentials { get; set; }
 
         public bool UseDefaultCredentials
         {
@@ -84,7 +84,7 @@ namespace System.Net
             set { Credentials = value ? CredentialCache.DefaultCredentials : null; }
         }
 
-        public Uri GetProxy(Uri destination)
+        public Uri? GetProxy(Uri destination)
         {
             if (destination == null)
             {
@@ -94,23 +94,23 @@ namespace System.Net
             return IsBypassed(destination) ? destination : Address;
         }
 
-        private static Uri CreateProxyUri(string address) =>
+        private static Uri? CreateProxyUri(string? address) =>
             address == null ? null :
             address.IndexOf("://", StringComparison.Ordinal) == -1 ? new Uri("http://" + address) :
             new Uri(address);
 
-        private void UpdateRegExList(bool canThrow)
+        private void UpdateRegexList(bool canThrow)
         {
-            Regex[] regExBypassList = null;
-            ArrayList bypassList = _bypassList;
+            Regex[]? regexBypassList = null;
+            ArrayList? bypassList = _bypassList;
             try
             {
                 if (bypassList != null && bypassList.Count > 0)
                 {
-                    regExBypassList = new Regex[bypassList.Count];
+                    regexBypassList = new Regex[bypassList.Count];
                     for (int i = 0; i < bypassList.Count; i++)
                     {
-                        regExBypassList[i] = new Regex((string)bypassList[i], RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                        regexBypassList[i] = new Regex((string)bypassList[i]!, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
                     }
                 }
             }
@@ -118,27 +118,27 @@ namespace System.Net
             {
                 if (!canThrow)
                 {
-                    _regExBypassList = null;
+                    _regexBypassList = null;
                     return;
                 }
                 throw;
             }
 
             // Update field here, as it could throw earlier in the loop
-            _regExBypassList = regExBypassList;
+            _regexBypassList = regexBypassList;
         }
 
         private bool IsMatchInBypassList(Uri input)
         {
-            UpdateRegExList(false);
+            UpdateRegexList(false);
 
-            if (_regExBypassList != null)
+            if (_regexBypassList != null)
             {
                 string matchUriString = input.IsDefaultPort ?
                     input.Scheme + "://" + input.Host :
                     input.Scheme + "://" + input.Host + ":" + input.Port.ToString();
 
-                foreach (Regex r in _regExBypassList)
+                foreach (Regex r in _regexBypassList)
                 {
                     if (r.IsMatch(matchUriString))
                     {
@@ -159,8 +159,7 @@ namespace System.Net
 
             string hostString = host.Host;
 
-            IPAddress hostAddress;
-            if (IPAddress.TryParse(hostString, out hostAddress))
+            if (IPAddress.TryParse(hostString, out IPAddress? hostAddress))
             {
                 return IPAddress.IsLoopback(hostAddress) || IsAddressLocal(hostAddress);
             }

@@ -741,7 +741,6 @@ unwinder_unwind_frame (Unwinder *unwinder,
 					   host_mgreg_t **save_locations,
 					   StackFrameInfo *frame)
 {
-	gpointer parent;
 	if (unwinder->in_interp) {
 		memcpy (new_ctx, ctx, sizeof (MonoContext));
 
@@ -760,12 +759,10 @@ unwinder_unwind_frame (Unwinder *unwinder,
 
 		unwinder->in_interp = mini_get_interp_callbacks ()->frame_iter_next (&unwinder->interp_iter, frame);
 		if (frame->type == FRAME_TYPE_INTERP) {
-			parent = mini_get_interp_callbacks ()->frame_get_parent (frame->interp_frame);
-			if (parent)
-				unwinder->last_frame_addr = mini_get_interp_callbacks ()->frame_get_native_stack_addr (parent);
-			else
-				unwinder->last_frame_addr = NULL;
+			const gpointer parent = mini_get_interp_callbacks ()->frame_get_parent (frame->interp_frame);
+			unwinder->last_frame_addr = parent;
 		}
+
 		if (!unwinder->in_interp)
 			return unwinder_unwind_frame (unwinder, domain, jit_tls, prev_ji, ctx, new_ctx, trace, lmf, save_locations, frame);
 		return TRUE;
@@ -1786,6 +1783,9 @@ mono_summarize_unmanaged_stack (MonoThreadSummary *out)
 
 		if (out->unmanaged_frames [i].str_descr [0] != '\0')
 			out->unmanaged_frames [i].unmanaged_data.has_name = TRUE;
+
+		out->hashes.offset_free_hash = summarize_offset_free_hash (out->hashes.offset_free_hash, frame);
+		out->hashes.offset_rich_hash = summarize_offset_rich_hash (out->hashes.offset_rich_hash, frame);
 	}
 #endif
 
@@ -2684,7 +2684,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 					msg = g_strdup ("(System.Exception.Message property not available)");
 				}
 			}
-			g_print ("[%p:] EXCEPTION handling: %s.%s: %s\n", (void*)mono_native_thread_id_get (), m_class_get_name_space (mono_object_class (obj)), m_class_get_name (mono_object_class (obj)), msg);
+			g_print ("[%p:] EXCEPTION handling: %s.%s: %s\n", (void*)(gsize)mono_native_thread_id_get (), m_class_get_name_space (mono_object_class (obj)), m_class_get_name (mono_object_class (obj)), msg);
 			g_free (msg);
 			if (mono_ex && mono_trace_eval_exception (mono_object_class (mono_ex)))
 				mono_print_thread_dump_from_ctx (ctx);
@@ -2941,7 +2941,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						 * like the call which transitioned to JITted code has succeeded, but the
 						 * return value register etc. is not set, so we have to be careful.
 						 */
-						mini_get_interp_callbacks ()->set_resume_state (jit_tls, mono_ex, ei, frame.interp_frame, ei->handler_start);
+						mini_get_interp_callbacks ()->set_resume_state (jit_tls, ex_obj, ei, frame.interp_frame, ei->handler_start);
 						/* Undo the IP adjustment done by mono_arch_unwind_frame () */
 						/* ip == 0 means an interpreter frame */
 						if (MONO_CONTEXT_GET_IP (ctx) != 0)

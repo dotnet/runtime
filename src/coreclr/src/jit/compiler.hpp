@@ -1260,6 +1260,25 @@ inline GenTree* Compiler::gtNewIndir(var_types typ, GenTree* addr)
     return indir;
 }
 
+//------------------------------------------------------------------------------
+// gtNewNullCheck : Helper to create a null check node.
+//
+// Arguments:
+//    addr        -  Address to null check
+//    basicBlock  -  Basic block of the node
+//
+// Return Value:
+//    New GT_NULLCHECK node
+
+inline GenTree* Compiler::gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock)
+{
+    GenTree* nullCheck = gtNewOperNode(GT_NULLCHECK, TYP_BYTE, addr);
+    nullCheck->gtFlags |= GTF_EXCEPT;
+    basicBlock->bbFlags |= BBF_HAS_NULLCHECK;
+    optMethodFlags |= OMF_HAS_NULLCHECK;
+    return nullCheck;
+}
+
 /*****************************************************************************
  *
  *  Create (and check for) a "nothing" node, i.e. a node that doesn't produce
@@ -2895,15 +2914,6 @@ inline bool Compiler::shouldDumpASCIITrees()
 inline int getJitStressLevel()
 {
     return JitConfig.JitStress();
-}
-
-/*****************************************************************************
- *  Should we do the strict check for non-virtual call to the virtual method?
- */
-
-inline DWORD StrictCheckForNonVirtualCallToVirtualMethod()
-{
-    return JitConfig.JitStrictCheckForNonVirtualCallToVirtualMethod() == 1;
 }
 
 #endif // DEBUG

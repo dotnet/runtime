@@ -2432,13 +2432,11 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         return nullptr;
     }
 
-#ifdef FEATURE_CORECLR
-    // For coreclr, we also exit early if the method is not a JIT Intrinsic (which requires the [Intrinsic] attribute).
+    // Exit early if the method is not a JIT Intrinsic (which requires the [Intrinsic] attribute).
     if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) == 0)
     {
         return nullptr;
     }
-#endif // FEATURE_CORECLR
 
     // Get base type and intrinsic Id
     var_types                baseType = TYP_UNKNOWN;

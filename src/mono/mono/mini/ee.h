@@ -15,7 +15,7 @@
 #ifndef __MONO_EE_H__
 #define __MONO_EE_H__
 
-#define MONO_EE_API_VERSION 0xe
+#define MONO_EE_API_VERSION 0xf
 
 typedef struct _MonoInterpStackIter MonoInterpStackIter;
 
@@ -36,7 +36,7 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (void, init_delegate, (MonoDelegate *del, MonoError *error)) \
 	MONO_EE_CALLBACK (void, delegate_ctor, (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error)) \
 	MONO_EE_CALLBACK (gpointer, get_remoting_invoke, (MonoMethod *method, gpointer imethod, MonoError *error)) \
-	MONO_EE_CALLBACK (void, set_resume_state, (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip)) \
+	MONO_EE_CALLBACK (void, set_resume_state, (MonoJitTlsData *jit_tls, MonoObject *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip)) \
 	MONO_EE_CALLBACK (void, get_resume_state, (const MonoJitTlsData *jit_tls, gboolean *has_resume_state, MonoInterpFrameHandle *interp_frame, gpointer *handler_ip)) \
 	MONO_EE_CALLBACK (gboolean, run_finally, (StackFrameInfo *frame, int clause_index, gpointer handler_ip, gpointer handler_ip_end)) \
 	MONO_EE_CALLBACK (gboolean, run_filter, (StackFrameInfo *frame, MonoException *ex, int clause_index, gpointer handler_ip, gpointer handler_ip_end)) \
@@ -51,7 +51,6 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (gpointer, frame_get_local, (MonoInterpFrameHandle frame, int pos)) \
 	MONO_EE_CALLBACK (gpointer, frame_get_this, (MonoInterpFrameHandle frame)) \
 	MONO_EE_CALLBACK (gpointer, frame_get_res, (MonoInterpFrameHandle frame)) \
-	MONO_EE_CALLBACK (gpointer, frame_get_native_stack_addr, (MonoInterpFrameHandle frame)) \
 	MONO_EE_CALLBACK (void, frame_arg_to_data, (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gpointer data)) \
 	MONO_EE_CALLBACK (void, data_to_frame_arg, (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gconstpointer data)) \
 	MONO_EE_CALLBACK (gpointer, frame_arg_to_storage, (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index)) \

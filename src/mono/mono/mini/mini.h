@@ -2682,7 +2682,7 @@ mono_method_is_generic_impl (MonoMethod *method);
 gboolean
 mono_method_is_generic_sharable (MonoMethod *method, gboolean allow_type_vars);
 
-gboolean
+MONO_LLVM_INTERNAL gboolean
 mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_vars, gboolean allow_partial, gboolean allow_gsharedvt);
 
 gboolean
@@ -2725,7 +2725,7 @@ MONO_LLVM_INTERNAL MonoType* mini_get_underlying_type (MonoType *type);
 MonoType* mini_type_get_underlying_type (MonoType *type);
 MonoClass* mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context);
 MonoMethod* mini_get_shared_method_to_register (MonoMethod *method);
-MonoMethod* mini_get_shared_method_full (MonoMethod *method, GetSharedMethodFlags flags, MonoError *error);
+MONO_LLVM_INTERNAL MonoMethod* mini_get_shared_method_full (MonoMethod *method, GetSharedMethodFlags flags, MonoError *error);
 MonoType* mini_get_shared_gparam (MonoType *t, MonoType *constraint);
 int mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry);
 

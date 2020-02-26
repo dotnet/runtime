@@ -3234,6 +3234,9 @@ public:
 
     void SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssembly);
 #endif // !defined(DACCESS_COMPILE)
+
+    // For protecting dictionary layout slot expansions
+    CrstExplicitInit        m_DictionaryCrst;
 };
 
 //

@@ -59,7 +59,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             public override SubjectIdentifierOrKey OriginatorIdentifierOrKey =>
                 _asn.Originator.ToSubjectIdentifierOrKey();
 
-            public override CryptographicAttributeObject OtherKeyAttribute
+            public override CryptographicAttributeObject? OtherKeyAttribute
             {
                 get
                 {
@@ -81,7 +81,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                     if (rid.RKeyId.Value.Other.Value.KeyAttr != null)
                     {
-                        rawData = rid.RKeyId.Value.Other.Value.KeyAttr.Value.ToArray();
+                        rawData = rid.RKeyId.Value.Other.Value.KeyAttr!.Value.ToArray();
                     }
 
                     Pkcs9AttributeObject pkcs9AttributeObject = new Pkcs9AttributeObject(oid, rawData);

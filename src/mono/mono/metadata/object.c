@@ -60,6 +60,10 @@
 #include "icall-decl.h"
 #include "icall-signatures.h"
 
+#if _MSC_VER
+#pragma warning(disable:4312) // FIXME pointer cast to different size
+#endif
+
 // If no symbols in an object file in a static library are referenced, its exports will not be exported.
 // There are a few workarounds:
 // 1. Link to .o/.obj files directly on the link command line,

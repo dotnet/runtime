@@ -270,7 +270,7 @@ namespace System.Linq.Parallel
                         while (_source.MoveNext(ref current!, ref key))
                         {
                             if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                                CancellationState.ThrowIfCanceled(_cancellationToken);
+                                _cancellationToken.ThrowIfCancellationRequested();;
 
                             // Add the current element to our buffer.
                             buffer.Add(new Pair<TResult, TKey>(current, key));
