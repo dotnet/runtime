@@ -142,13 +142,22 @@ namespace System.Net.Sockets
 
         private bool IsAio => _aioContext.Ring != null;
 
+        private bool IsBusyDoingAio = false;
+
         // True if we've don't have sufficient active sockets to allow allocating a new engine.
         private bool HasLowNumberOfSockets
         {
             get
             {
-                return IntPtr.Size == 4 ? _outstandingHandles.ToInt32() < MinHandlesForAdditionalEngine.ToInt32() :
-                                          _outstandingHandles.ToInt64() < MinHandlesForAdditionalEngine.ToInt64();
+                if (IsAio)
+                {
+                    return _outstandingHandles.ToInt64() < 32 || !IsBusyDoingAio;
+                }
+                else
+                {
+                    return IntPtr.Size == 4 ? _outstandingHandles.ToInt32() < MinHandlesForAdditionalEngine.ToInt32()
+                                            : _outstandingHandles.ToInt64() < MinHandlesForAdditionalEngine.ToInt64();
+                }
             }
         }
 
@@ -284,7 +293,7 @@ namespace System.Net.Sockets
                 }
 
                 Interop.Sys.AioContext aioContext = default;
-                if (Interop.Sys.IoSetup(EventBufferCount, &aioContext) == 0)
+                if (Interop.Sys.IsAioSupported() && Interop.Sys.IoSetup(EventBufferCount, &aioContext) == 0)
                 {
                     _aioEvents = (Interop.Sys.IoEvent*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoEvent) * EventBufferCount);
                     _aioBlocks = (Interop.Sys.IoControlBlock*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock) * EventBufferCount);
@@ -397,7 +406,9 @@ namespace System.Net.Sockets
             while (!shutdown)
             {
                 int numEvents = EventBufferCount;
+                long timestampBeforeWait = Stopwatch.GetTimestamp();
                 Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, _buffer, &numEvents);
+                long timestampAfterWait = Stopwatch.GetTimestamp();
                 if (err != Interop.Error.SUCCESS)
                 {
                     throw new InternalException(err);
@@ -447,6 +458,10 @@ namespace System.Net.Sockets
                     {
                         batchedOperations[events[i].Data].HandleBatchEvent(in events[i]);
                     }
+
+                    long timestampAfterAio = Stopwatch.GetTimestamp();
+
+                    IsBusyDoingAio = (timestampAfterAio - timestampAfterWait) >= (timestampAfterWait - timestampBeforeWait) * 13;
                 }
             }
         }
