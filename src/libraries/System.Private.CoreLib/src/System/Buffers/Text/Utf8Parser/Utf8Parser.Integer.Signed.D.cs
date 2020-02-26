@@ -4,6 +4,13 @@
 
 using System.Diagnostics;
 
+#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
+#if TARGET_64BIT
+using nint = System.Int64;
+#else
+using nint = System.Int32;
+#endif
+
 namespace System.Buffers.Text
 {
     public static partial class Utf8Parser
@@ -200,7 +207,7 @@ namespace System.Buffers.Text
                 goto FalseExit;
 
             int sign = 0;
-            IntPtr index = IntPtr.Zero;
+            nint index = 0;
             int answer = source[0];
 
         TryAgain:
@@ -211,7 +218,7 @@ namespace System.Buffers.Text
                 {
                     do
                     {
-                        index += 1;
+                        index++;
                         if (!source.TryGetElementAt(index, out byte thisByte))
                             goto ReturnZero;
                         answer = thisByte;
@@ -220,52 +227,52 @@ namespace System.Buffers.Text
                         goto ReturnZero;
                 }
 
-                index += 1;
+                index++;
 
                 if (!ParserHelpers.TryGetDigitAt(source, index, out int num))
                     goto Done;
-                index += 1;
+                index++;
                 answer = 10 * answer + num;
 
                 if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                index += 1;
+                index++;
                 answer = 10 * answer + num;
 
                 if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                index += 1;
+                index++;
                 answer = 10 * answer + num;
 
                 if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                index += 1;
+                index++;
                 answer = 10 * answer + num;
 
                 if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                index += 1;
+                index++;
                 answer = 10 * answer + num;
 
                 if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                index += 1;
+                index++;
                 answer = 10 * answer + num;
 
                 if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                index += 1;
+                index++;
                 answer = 10 * answer + num;
 
                 if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                index += 1;
+                index++;
                 answer = 10 * answer + num;
 
                 // Potential overflow
                 if (!ParserHelpers.TryGetDigitAt(source, index, out num))
                     goto Done;
-                index += 1;
+                index++;
                 if (answer > int.MaxValue / 10)
                     goto FalseExit; // Overflow
                 answer = answer * 10 + num;
@@ -293,13 +300,13 @@ namespace System.Buffers.Text
                     goto FalseExit;
                 }
 
-                if (index != IntPtr.Zero || (uint)1 >= (uint)source.Length)
+                if (index != 0 || (uint)1 >= (uint)source.Length)
                 {
                     goto FalseExit;
                 }
 
                 answer = source[1];
-                index += 1;
+                index++;
                 goto TryAgain;
             }
 
@@ -312,7 +319,7 @@ namespace System.Buffers.Text
             answer = 0;
 
         Done:
-            bytesConsumed = index.ToInt32Unchecked();
+            bytesConsumed = (int)index;
 
             // If sign = 0, value = (answer ^ 0) - 0 = answer
             // If sign = -1, value = (answer ^ -1) - (-1) = ~answer + 1 = -answer
