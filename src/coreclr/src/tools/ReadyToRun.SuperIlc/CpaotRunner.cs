@@ -17,9 +17,12 @@ namespace ReadyToRun.SuperIlc
     {
         public override CompilerIndex Index => CompilerIndex.CPAOT;
 
-        protected override string CompilerRelativePath => "crossgen2";
+        // Crossgen2 runs on top of corerun.
+        protected override string CompilerRelativePath => "";
 
-        protected override string CompilerFileName => "crossgen2".AppendOSExeSuffix();
+        protected override string CompilerFileName => "corerun".AppendOSExeSuffix();
+
+        private string Crossgen2Path => Path.Combine(_options.CoreRootDirectory.FullName, "crossgen2", "crossgen2.dll");
 
         private List<string> _resolvedReferences;
 
@@ -29,6 +32,13 @@ namespace ReadyToRun.SuperIlc
             // Set SuperIlc parallelism to a low enough value that ensures that each Crossgen2 invocation gets to use its parallelism
             if (options.DegreeOfParallelism == 0)
                 options.DegreeOfParallelism = 2;
+        }
+
+        public override ProcessParameters CompilationProcess(string outputFileName, IEnumerable<string> inputAssemblyFileNames)
+        {
+            ProcessParameters processParameters = base.CompilationProcess(outputFileName, inputAssemblyFileNames);
+            processParameters.Arguments = $"{Crossgen2Path} {processParameters.Arguments}";
+            return processParameters;
         }
 
         protected override ProcessParameters ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
