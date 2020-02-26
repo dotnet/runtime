@@ -26,9 +26,9 @@
       Exclude="$(RefPath)$(MSBuildProjectName).dll" />
   </ItemGroup>
 
-  <Target Name="AddSystemPrivateCoreLibReferencePath" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" BeforeTargets="ResolveReferences">
+  <Target Name="AddSystemPrivateCoreLibReferencePath" DependsOnTargets="GetFilesFromRuntime" BeforeTargets="ResolveReferences">
     <ItemGroup>
-      <ReferencePath Include="@(CoreCLRFiles)" Condition="'%(FileName)%(Extension)' == 'System.Private.CoreLib.dll'" />
+      <ReferencePath Include="@(RuntimeFiles)" Condition="'%(FileName)%(Extension)' == 'System.Private.CoreLib.dll'" />
     </ItemGroup>
   </Target>
 </Project>
