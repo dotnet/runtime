@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
-using System.Net;
-using System.Net.Http;
+using System.Diagnostics;
 using System.Net.Security;
 using System.Net.Test.Common;
-using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
@@ -121,6 +121,37 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     client.GetAsync(System.Net.Test.Common.Configuration.Http.SecureRemoteEchoServer));
                 Assert.True(ex.GetBaseException() is CustomException);
             }
+        }
+
+        [Fact]
+        public async Task UseClientCertOnHttp2_ClientCertValid_Success()
+        {
+            //Debugger.Launch();
+            await Http2LoopbackServer.CreateClientAndServerAsync(
+                async address =>
+                {
+                    var handler = new WinHttpHandler();
+                    handler.ServerCertificateValidationCallback = CustomServerCertificateValidationCallback;
+                    handler.ClientCertificates.Add(Test.Common.Configuration.Certificates.GetClientCertificate());
+                    handler.ClientCertificateOption = ClientCertificateOption.Manual;
+                    using (var client = new HttpClient(handler))
+                    using (HttpResponseMessage response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, address) {Version = HttpVersion.Version20 }))
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        Assert.True(_validationCallbackHistory.WasCalled);
+
+                        //ConfirmValidCertificate(System.Net.Test.Common.Configuration.Http.Host);
+                    }
+                },
+                async s =>
+                {
+                    using (Http2LoopbackConnection connection = await s.EstablishConnectionAsync().ConfigureAwait(false))
+                    {
+                        int streamId = await connection.ReadRequestHeaderAsync();
+
+                        await connection.SendDefaultResponseAsync(streamId);
+                    }
+                }, new Http2Options { ClientCertificateRequired = false });
         }
 
         private void ConfirmValidCertificate(string expectedHostName)

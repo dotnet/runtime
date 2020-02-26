@@ -181,9 +181,14 @@ namespace System.Net.Test.Common
             }
         }
 
-        public static async Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<Http2LoopbackServer, Task> serverFunc, int timeout = 60_000)
+        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<Http2LoopbackServer, Task> serverFunc, int timeout = 60_000)
         {
-            using (var server = Http2LoopbackServer.CreateServer())
+            return CreateClientAndServerAsync(clientFunc, serverFunc, null, timeout);
+        }
+
+        public static async Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<Http2LoopbackServer, Task> serverFunc, Http2Options http2Options, int timeout = 60_000)
+        {
+            using (var server = Http2LoopbackServer.CreateServer(http2Options ?? new Http2Options()))
             {
                 Task clientTask = clientFunc(server.Address);
                 Task serverTask = serverFunc(server);
@@ -196,6 +201,8 @@ namespace System.Net.Test.Common
     public class Http2Options : GenericLoopbackOptions
     {
         public int ListenBacklog { get; set; } = 1;
+
+        public bool ClientCertificateRequired { get; set; }
 
         public Http2Options()
         {
