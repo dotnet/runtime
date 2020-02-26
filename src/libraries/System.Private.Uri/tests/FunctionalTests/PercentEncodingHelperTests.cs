@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Tests;
 using Xunit;
 
 namespace System.PrivateUri.Tests
@@ -46,28 +45,28 @@ namespace System.PrivateUri.Tests
             yield return Pair("%CA" + "%E4%88%B2", "%CA" + '䈲');
 
             // 4 valid UTF8 bytes followed by 5 invalid UTF8 bytes
-            yield return Pair("%F4%80%80%BA" + "%FD%80%80%BA%CD", char.ConvertFromUtf32(0x10003A) + "%FD%80%80%BA%CD");
+            yield return Pair("%F4%80%80%BA" + "%FD%80%80%BA%CD", "\U0010003A" + "%FD%80%80%BA%CD");
 
             // BIDI char
-            yield return Pair("%E2%80%8E", ((char)0x200E).ToString());
+            yield return Pair("%E2%80%8E", "\u200E");
 
             // Char Block: 3400..4DBF-CJK Unified Ideographs Extension A
-            yield return Pair("%E4%88%B2", ((char)0x4232).ToString());
+            yield return Pair("%E4%88%B2", "\u4232");
 
             // BIDI char followed by a valid 3-byte UTF8 sequence (ク)
-            yield return Pair("%E2%80%8E" + "%E3%82%AF", (char)0x200E + "ク");
+            yield return Pair("%E2%80%8E" + "%E3%82%AF", "\u200E" + "ク");
 
             // BIDI char followed by invalid UTF8 bytes
-            yield return Pair("%E2%80%8E" + "%F0%90%90", (char)0x200E + "%F0%90%90");
+            yield return Pair("%E2%80%8E" + "%F0%90%90", "\u200E" + "%F0%90%90");
 
             // Input string:                %98%C8%D4%F3 %D4%A8 %7A %CF%DE %41 %16
             // Valid Unicode sequences:                  %D4%A8 %7A        %41 %16
             yield return Pair("%98%C8%D4%F3" + "%D4%A8" + "%7A" + "%CF%DE" + "%41" + "%16",
-                "%98%C8%D4%F3" + 'Ԩ' + 'z' + "%CF%DE" + 'A' + (char)0x16);
+                "%98%C8%D4%F3" + 'Ԩ' + 'z' + "%CF%DE" + 'A' + '\x16');
 
             // 2-byte marker, valid 4-byte sequence, continuation byte
             yield return Pair("%C6" + "%F3%BC%A1%B8" + "%B5",
-                "%C6" + char.ConvertFromUtf32(0xFC878) + "%B5");
+                "%C6" + "\U000FC878" + "%B5");
         }
 
         [Theory]
@@ -75,11 +74,6 @@ namespace System.PrivateUri.Tests
         public static void UnescapeDataString_UnescapesUtf8Sequences(string stringToUnescape, string expected)
         {
             Assert.Equal(expected, Uri.UnescapeDataString(stringToUnescape));
-
-            using (new ThreadCultureChange("zh-cn"))
-            {
-                Assert.Equal(expected, Uri.UnescapeDataString(stringToUnescape));
-            }
         }
     }
 }
