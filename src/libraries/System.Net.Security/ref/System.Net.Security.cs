@@ -222,7 +222,7 @@ namespace System.Net.Security
         public void Write(byte[] buffer) { }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
     public enum TlsCipherSuite : ushort
@@ -579,8 +579,8 @@ namespace System.Security.Authentication
     {
         public InvalidCredentialException() { }
         protected InvalidCredentialException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
-        public InvalidCredentialException(string message) { }
-        public InvalidCredentialException(string message, System.Exception innerException) { }
+        public InvalidCredentialException(string? message) { }
+        public InvalidCredentialException(string? message, System.Exception? innerException) { }
     }
 }
 namespace System.Security.Authentication.ExtendedProtection
@@ -614,7 +614,7 @@ namespace System.Security.Authentication.ExtendedProtection
     public partial class ServiceNameCollection : System.Collections.ReadOnlyCollectionBase
     {
         public ServiceNameCollection(System.Collections.ICollection items) { }
-        public bool Contains(string searchServiceName) { throw null; }
+        public bool Contains(string? searchServiceName) { throw null; }
         public System.Security.Authentication.ExtendedProtection.ServiceNameCollection Merge(System.Collections.IEnumerable serviceNames) { throw null; }
         public System.Security.Authentication.ExtendedProtection.ServiceNameCollection Merge(string serviceName) { throw null; }
     }

@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net;
 
@@ -54,9 +55,9 @@ namespace System.Security.Authentication.ExtendedProtection
             }
         }
 
-        public bool Contains(string searchServiceName)
+        public bool Contains(string? searchServiceName)
         {
-            string searchName = NormalizeServiceName(searchServiceName);
+            string? searchName = NormalizeServiceName(searchServiceName);
 
             foreach (string? serviceName in InnerList)
             {
@@ -133,7 +134,7 @@ namespace System.Security.Authentication.ExtendedProtection
         /// <summary>
         /// Normalize, check for duplicates, and add if the value is unique.
         /// </summary>
-        private void AddIfNew(string serviceName)
+        private void AddIfNew([MaybeNull]string serviceName)
         {
             if (string.IsNullOrEmpty(serviceName))
             {
@@ -164,7 +165,7 @@ namespace System.Security.Authentication.ExtendedProtection
         // prefix/host:port
         // prefix/host/DistinguishedName
         // prefix/host:port/DistinguishedName
-        private static string NormalizeServiceName(string inputServiceName)
+        private static string? NormalizeServiceName(string? inputServiceName)
         {
             if (string.IsNullOrWhiteSpace(inputServiceName))
             {

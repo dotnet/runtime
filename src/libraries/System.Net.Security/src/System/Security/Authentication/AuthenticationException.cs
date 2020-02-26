@@ -39,9 +39,9 @@ namespace System.Security.Authentication
     {
         public InvalidCredentialException() { }
 
-        public InvalidCredentialException(string message) : base(message) { }
+        public InvalidCredentialException(string? message) : base(message) { }
 
-        public InvalidCredentialException(string message, Exception innerException) : base(message, innerException) { }
+        public InvalidCredentialException(string? message, Exception? innerException) : base(message, innerException) { }
 
         protected InvalidCredentialException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
