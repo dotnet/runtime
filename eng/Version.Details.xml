@@ -86,37 +86,37 @@
       <Uri>https://github.com/microsoft/vstest</Uri>
       <Sha>57527561e6342aaaaca4012dc14d25ad08c0a326</Sha>
     </Dependency>
-    <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="5.0.0-beta.20118.1">
+    <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="5.0.0-beta.20125.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>d08f5c335e32348b986440b61c75bce196b96da8</Sha>
+      <Sha>d23c3e1f4dcc30fcf16b9e53c90b7eaab6f08311</Sha>
     </Dependency>
-    <Dependency Name="System.Drawing.Common.TestData" Version="5.0.0-beta.20118.1">
+    <Dependency Name="System.Drawing.Common.TestData" Version="5.0.0-beta.20125.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>d08f5c335e32348b986440b61c75bce196b96da8</Sha>
+      <Sha>d23c3e1f4dcc30fcf16b9e53c90b7eaab6f08311</Sha>
     </Dependency>
-    <Dependency Name="System.IO.Compression.TestData" Version="5.0.0-beta.20118.1">
+    <Dependency Name="System.IO.Compression.TestData" Version="5.0.0-beta.20125.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>d08f5c335e32348b986440b61c75bce196b96da8</Sha>
+      <Sha>d23c3e1f4dcc30fcf16b9e53c90b7eaab6f08311</Sha>
     </Dependency>
-    <Dependency Name="System.IO.Packaging.TestData" Version="5.0.0-beta.20118.1">
+    <Dependency Name="System.IO.Packaging.TestData" Version="5.0.0-beta.20125.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>d08f5c335e32348b986440b61c75bce196b96da8</Sha>
+      <Sha>d23c3e1f4dcc30fcf16b9e53c90b7eaab6f08311</Sha>
     </Dependency>
-    <Dependency Name="System.Net.TestData" Version="5.0.0-beta.20118.1">
+    <Dependency Name="System.Net.TestData" Version="5.0.0-beta.20125.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>d08f5c335e32348b986440b61c75bce196b96da8</Sha>
+      <Sha>d23c3e1f4dcc30fcf16b9e53c90b7eaab6f08311</Sha>
     </Dependency>
-    <Dependency Name="System.Private.Runtime.UnicodeData" Version="5.0.0-beta.20118.1">
+    <Dependency Name="System.Private.Runtime.UnicodeData" Version="5.0.0-beta.20125.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>d08f5c335e32348b986440b61c75bce196b96da8</Sha>
+      <Sha>d23c3e1f4dcc30fcf16b9e53c90b7eaab6f08311</Sha>
     </Dependency>
-    <Dependency Name="System.Security.Cryptography.X509Certificates.TestData" Version="5.0.0-beta.20118.1">
+    <Dependency Name="System.Security.Cryptography.X509Certificates.TestData" Version="5.0.0-beta.20125.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>d08f5c335e32348b986440b61c75bce196b96da8</Sha>
+      <Sha>d23c3e1f4dcc30fcf16b9e53c90b7eaab6f08311</Sha>
     </Dependency>
-    <Dependency Name="System.Windows.Extensions.TestData" Version="5.0.0-beta.20118.1">
+    <Dependency Name="System.Windows.Extensions.TestData" Version="5.0.0-beta.20125.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>d08f5c335e32348b986440b61c75bce196b96da8</Sha>
+      <Sha>d23c3e1f4dcc30fcf16b9e53c90b7eaab6f08311</Sha>
     </Dependency>
     <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="6.0.1-alpha.1.20124.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
