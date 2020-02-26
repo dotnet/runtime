@@ -190,8 +190,10 @@ namespace System.Buffers.Text
             return true;
         }
 
-        private static bool TryParseInt32N(ReadOnlySpan<byte> source, out int value, out int bytesConsumed)
+        private static bool TryParseInt32N(in ReadOnlySpan<byte> refToSource, out int value, out int bytesConsumed)
         {
+            ReadOnlySpan<byte> source = refToSource; // local copy to enregister span fields
+
             if (source.Length < 1)
                 goto FalseExit;
 

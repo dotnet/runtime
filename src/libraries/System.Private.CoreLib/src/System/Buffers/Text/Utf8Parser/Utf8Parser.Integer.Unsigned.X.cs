@@ -172,8 +172,10 @@ namespace System.Buffers.Text
             return true;
         }
 
-        private static bool TryParseUInt32X(ReadOnlySpan<byte> source, out uint value, out int bytesConsumed)
+        private static bool TryParseUInt32X(in ReadOnlySpan<byte> refToSource, out uint value, out int bytesConsumed)
         {
+            ReadOnlySpan<byte> source = refToSource; // local copy to enregister span fields
+
             if (source.Length < 1)
             {
                 bytesConsumed = 0;

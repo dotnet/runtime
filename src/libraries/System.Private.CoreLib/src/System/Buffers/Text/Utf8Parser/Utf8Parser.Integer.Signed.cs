@@ -148,7 +148,8 @@ namespace System.Buffers.Text
                     return TryParseUInt32X(source, out Unsafe.As<int, uint>(ref value), out bytesConsumed);
 
                 default:
-                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
+                    ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                    goto FastPath; // will never get hit
             }
         }
 
