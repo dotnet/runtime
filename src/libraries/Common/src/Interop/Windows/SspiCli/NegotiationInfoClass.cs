@@ -29,10 +29,10 @@ namespace System.Net
                 if (negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_COMPLETE ||
                     negotiationState == Interop.SspiCli.SECPKG_NEGOTIATION_OPTIMISTIC)
                 {
-                    string name;
+                    string? name;
                     unsafe
                     {
-                        name = Marshal.PtrToStringUni(((SecurityPackageInfo*)packageInfo)->Name)!;
+                        name = Marshal.PtrToStringUni(((SecurityPackageInfo*)packageInfo)->Name);
                     }
 
                     if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"packageInfo:{packageInfo} negotiationState:{negotiationState:x} name:{name}");

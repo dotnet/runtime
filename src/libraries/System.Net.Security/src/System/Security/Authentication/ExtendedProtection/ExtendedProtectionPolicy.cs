@@ -41,7 +41,7 @@ namespace System.Security.Authentication.ExtendedProtection
 
         public ExtendedProtectionPolicy(PolicyEnforcement policyEnforcement,
                                         ProtectionScenario protectionScenario,
-                                        ICollection customServiceNames)
+                                        ICollection? customServiceNames)
             : this(policyEnforcement, protectionScenario,
                    customServiceNames == null ? (ServiceNameCollection?)null : new ServiceNameCollection(customServiceNames))
         {
