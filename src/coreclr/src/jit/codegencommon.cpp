@@ -4770,9 +4770,16 @@ void CodeGen::genCheckUseBlockInit()
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_64BIT
+#if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
+
+    // We can clear using aligned SIMD so the threshold is lower,
+    // and clears in order which is better for auto-prefetching
+    genUseBlockInit = genInitStkLclCnt > (largeGcStructs + 4);
+
+#else // !(TARGET_64BIT && defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES)
 
     genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 8));
-
+#endif
 #else
 
     genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4));
@@ -6339,17 +6346,34 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
 #elif defined(TARGET_XARCH)
         assert(compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported);
-        emitter*  emit     = GetEmitter();
-        regNumber frameReg = genFramePointerReg();
-        regNumber zeroReg  = REG_NA;
-        int       blkSize  = untrLclHi - untrLclLo;
+        emitter*  emit        = GetEmitter();
+        regNumber frameReg    = genFramePointerReg();
+        regNumber zeroReg     = REG_NA;
+        int       blkSize     = untrLclHi - untrLclLo;
+        int       minSimdSize = XMM_REGSIZE_BYTES;
 
         assert(blkSize >= 0);
         noway_assert((blkSize % sizeof(int)) == 0);
         assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // initReg is not a live
-                                                                                   // incoming argument reg
-        // Smaller then 2 x simd size we won't bother trying to align or use simd
-        if (blkSize < 2 * XMM_REGSIZE_BYTES)
+// incoming argument reg
+#if defined(TARGET_64BIT) && defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
+        // We will align on x64 so can use the aligned mov
+        instruction simdMov = INS_movaps;
+        // Aligning low we want to move up to next boundary
+        int alignedLclLo = (untrLclLo + (XMM_REGSIZE_BYTES - 1)) & -XMM_REGSIZE_BYTES;
+
+        if (untrLclLo != alignedLclLo)
+        {
+            // If unaligned and smaller then 1.5 x SIMD size we won't bother trying to align
+            assert((alignedLclLo - untrLclLo) <= REGSIZE_BYTES);
+            minSimdSize = XMM_REGSIZE_BYTES + REGSIZE_BYTES;
+        }
+#else // !(TARGET_64BIT && defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES)
+        // We aren't going to try and align on 32bit or if there are no guarantees on SIMD alignment
+        instruction simdMov      = INS_movups;
+        int         alignedLclLo = untrLclLo;
+#endif
+        if (blkSize < minSimdSize)
         {
             zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
@@ -6379,8 +6403,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             regNumber zeroSIMDReg = genRegNumFromMask(RBM_XMM4);
 #endif // UNIX_AMD64_ABI
 
-            // Aligning low we want to move up to next boundary
-            int alignedLclLo = (untrLclLo + (XMM_REGSIZE_BYTES - 1)) & -XMM_REGSIZE_BYTES;
+#if defined(TARGET_64BIT) && defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
             // Aligning high we want to move down to previous boundary
             int alignedLclHi = untrLclHi & -XMM_REGSIZE_BYTES;
 
@@ -6400,21 +6423,30 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
                 int i = 0;
-                for (; i + REGSIZE_BYTES <= alignmentLoBlkSize; i += REGSIZE_BYTES)
+                if (REGSIZE_BYTES <= alignmentLoBlkSize)
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
+                    i += REGSIZE_BYTES;
                 }
-#ifdef TARGET_64BIT
                 assert(i == alignmentLoBlkSize || (i + sizeof(int) == alignmentLoBlkSize));
                 if (i != alignmentLoBlkSize)
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
                     i += sizeof(int);
                 }
-#endif // TARGET_64BIT
+
                 assert(i == alignmentLoBlkSize);
             }
+#else // !(TARGET_64BIT && defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES)
+            // While we aren't aligning the start, we still want to
+            // zero anything that is not in a 16 byte chunk at end
+            int alignmentBlkSize   = blkSize & -XMM_REGSIZE_BYTES;
+            int alignmentHiBlkSize = blkSize - alignmentBlkSize;
+            int alignedLclHi       = untrLclLo + alignmentBlkSize;
+            blkSize                = alignmentBlkSize;
 
+            assert((blkSize + alignmentHiBlkSize) == (untrLclHi - untrLclLo));
+#endif
             // The loop is unrolled 3 times so we do not move to the loop block until it
             // will loop at least once so the threshold is 6.
             if (blkSize < 6 * XMM_REGSIZE_BYTES)
@@ -6432,7 +6464,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 int i = 0;
                 for (int regSize = XMM_REGSIZE_BYTES; i + regSize <= blkSize; i += regSize)
                 {
-                    emit->emitIns_AR_R(INS_movups, EA_ATTR(regSize), zeroSIMDReg, frameReg, alignedLclLo + i);
+                    emit->emitIns_AR_R(simdMov, EA_ATTR(regSize), zeroSIMDReg, frameReg, alignedLclLo + i);
                 }
 
                 assert(i == blkSize);
@@ -6442,12 +6474,12 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 // Generate the following code:
                 //
                 //    xorps    xmm4, xmm4
-                //    ;movups xmmword ptr[ebp/esp-loOFFS], xmm4          ; alignment to 3x
-                //    ;movups xmmword ptr[ebp/esp-loOFFS + 10H], xmm4    ;
+                //    ;movaps xmmword ptr[ebp/esp-loOFFS], xmm4          ; alignment to 3x
+                //    ;movaps xmmword ptr[ebp/esp-loOFFS + 10H], xmm4    ;
                 //    mov rax, - <size>                                  ; start offset from hi
-                //    movups xmmword ptr[rbp + rax + hiOFFS      ], xmm4 ; <--+
-                //    movups xmmword ptr[rbp + rax + hiOFFS + 10H], xmm4 ;    |
-                //    movups xmmword ptr[rbp + rax + hiOFFS + 20H], xmm4 ;    | Loop
+                //    movaps xmmword ptr[rbp + rax + hiOFFS      ], xmm4 ; <--+
+                //    movaps xmmword ptr[rbp + rax + hiOFFS + 10H], xmm4 ;    |
+                //    movaps xmmword ptr[rbp + rax + hiOFFS + 20H], xmm4 ;    | Loop
                 //    add rax, 48                                        ;    |
                 //    jne SHORT  -5 instr                                ; ---+
 
@@ -6459,12 +6491,12 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 {
                     blkSize -= XMM_REGSIZE_BYTES;
                     // Not a multiple of 3 so add extra stores at end of block
-                    emit->emitIns_AR_R(INS_movups, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, alignedLclLo);
+                    emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, alignedLclLo);
                     if (extraSimd == 2)
                     {
                         blkSize -= XMM_REGSIZE_BYTES;
                         // If removing 2 x simd makes it a multiple of 3, an extra 2 are needed
-                        emit->emitIns_AR_R(INS_movups, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg,
+                        emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg,
                                            alignedLclLo + XMM_REGSIZE_BYTES);
                     }
                 }
@@ -6485,11 +6517,11 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 // Set loop counter
                 emit->emitIns_R_I(INS_mov, EA_PTRSIZE, initReg, -(ssize_t)blkSize);
                 // Loop start
-                emit->emitIns_ARX_R(INS_movups, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, initReg, 1,
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, initReg, 1,
                                     alignedLclHi);
-                emit->emitIns_ARX_R(INS_movups, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, initReg, 1,
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, initReg, 1,
                                     alignedLclHi + XMM_REGSIZE_BYTES);
-                emit->emitIns_ARX_R(INS_movups, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, initReg, 1,
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, initReg, 1,
                                     alignedLclHi + 2 * XMM_REGSIZE_BYTES);
 
                 emit->emitIns_R_I(INS_add, EA_PTRSIZE, initReg, XMM_REGSIZE_BYTES * 3);
