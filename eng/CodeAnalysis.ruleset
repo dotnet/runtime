@@ -95,7 +95,7 @@
       <Rule Id="CA2007" Action="Warning" />          <!-- Consider calling ConfigureAwait on the awaited task -->
       <Rule Id="CA2008" Action="Warning" />          <!-- Do not create tasks without passing a TaskScheduler -->
       <Rule Id="CA2009" Action="Warning" />          <!-- Do not call ToImmutableCollection on an ImmutableCollection value -->
-      <Rule Id="CA2010" Action="Warning" />          <!-- Always consume the value returned by methods marked with PreserveSigAttribute -->
+      <Rule Id="CA2010" Action="None" />             <!-- Always consume the value returned by methods marked with PreserveSigAttribute -->
       <Rule Id="CA2011" Action="Warning" />          <!-- Avoid infinite recursion -->
       <Rule Id="CA2012" Action="Warning" />          <!-- Use ValueTasks correctly -->
       <Rule Id="CA2100" Action="None" />             <!-- Review SQL queries for security vulnerabilities -->
