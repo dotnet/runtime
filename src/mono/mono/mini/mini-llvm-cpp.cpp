@@ -590,7 +590,7 @@ mono_llvm_check_cpu_features (const CpuFeatureAliasFlag *features, int length)
 	int flags = 0;
 	llvm::StringMap<bool> HostFeatures;
 	if (llvm::sys::getHostCPUFeatures (HostFeatures)) {
-		for (int i=0; i<length; i++) {
+		for (int i = 0; i < length; i++) {
 			CpuFeatureAliasFlag feature = features [i];
 			if (HostFeatures [feature.alias])
 				flags |= feature.flag;
