@@ -21,10 +21,9 @@ public:
     STDMETHOD(GetBinderID)(
         /* [retval][out] */ UINT_PTR* pBinderId);
 
-    NativeImage *LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName, int nativeImageNameLength);
+    NativeImage *LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName);
 
 private:
-    // Multi-thread safe access to the list of composite R2R images
     class NativeImageList
     {
     private:
@@ -33,16 +32,15 @@ private:
     public:
         NativeImageList();
     
-        void Clear_Unlocked();
+        void Clear();
 
-        bool IsEmpty_Unlocked();
-        int32_t GetCount_Unlocked();
-        NativeImage* Get_UnlockedNoReference(int32_t index);
-        void Set_Unlocked(int32_t index, NativeImage* nativeImage);
-        HRESULT Append_Unlocked(NativeImage* nativeImage);
+        bool IsEmpty();
+        int32_t GetCount();
+        NativeImage* Get(int32_t index);
+        void Set(int32_t index, NativeImage* nativeImage);
+        HRESULT Append(NativeImage* nativeImage);
     };
 
-    // Conceptually a list of NativeImage structures, protected by lock AppDomain::GetAssemblyListLock
     NativeImageList m_nativeImages;
 };
 

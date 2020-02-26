@@ -451,7 +451,7 @@ namespace R2RDump
                 case ReadyToRunSectionType.OwnerCompositeExecutable:
                     int oceOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
                     Decoder decoder = Encoding.UTF8.GetDecoder();
-                    int charLength = decoder.GetCharCount(_r2r.Image, oceOffset, section.Size);
+                    int charLength = decoder.GetCharCount(_r2r.Image, oceOffset, section.Size - 1); // exclude the zero terminator
                     char[] charArray = new char[charLength];
                     decoder.GetChars(_r2r.Image, oceOffset, section.Size, charArray, 0, flush: true);
                     string ownerCompositeExecutable = new string(charArray);

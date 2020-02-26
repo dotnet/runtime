@@ -40,6 +40,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.RequireInitialPointerAlignment();
             builder.AddSymbol(this);
             builder.EmitBytes(Encoding.UTF8.GetBytes(_ownerExecutableName));
+            builder.EmitByte(0); // zero string terminator
             return builder.ToObjectData();
         }
     }

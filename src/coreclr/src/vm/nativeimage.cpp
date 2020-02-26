@@ -27,7 +27,6 @@ NativeImage::NativeImage(
     PEImage *pPeImage,
     READYTORUN_HEADER *pHeader,
     LPCUTF8 nativeImageName,
-    uint8_t nativeImageNameLength,
     LoaderAllocator *pLoaderAllocator,
     AllocMemTracker& amTracker)
 {
@@ -42,7 +41,6 @@ NativeImage::NativeImage(
     LoaderHeap *pHeap = pLoaderAllocator->GetHighFrequencyHeap();
     m_pLoadContext = pPeFile->GetAssemblyLoadContext();
     m_utf8SimpleName = nativeImageName;
-    m_utf8SimpleNameLength = nativeImageNameLength;
     m_pPeImage = pPeImage;
     m_runEagerFixups = true;
     
@@ -68,9 +66,9 @@ NativeImage::NativeImage(
     }
 }
 
-bool NativeImage::Matches(LPCUTF8 utf8SimpleName, uint32_t utf8Length, const AssemblyLoadContext *pLoadContext) const
+bool NativeImage::Matches(LPCUTF8 utf8SimpleName, const AssemblyLoadContext *pLoadContext) const
 {
-    return pLoadContext == m_pLoadContext && utf8Length == m_utf8SimpleNameLength && !memcmp(utf8SimpleName, m_utf8SimpleName, utf8Length);
+    return pLoadContext == m_pLoadContext && !strcmp(utf8SimpleName, m_utf8SimpleName);
 }
 
 bool NativeImage::EagerFixupsNeedToRun()
@@ -83,8 +81,7 @@ bool NativeImage::EagerFixupsNeedToRun()
 NativeImage *NativeImage::Open(
     PEFile *pPeFile,
     PEImage *pPeImage,
-    LPCUTF8 compositeImageName,
-    uint8_t compositeImageNameLength,
+    LPCUTF8 nativeImageName,
     LoaderAllocator *pLoaderAllocator)
 {
     READYTORUN_HEADER *pHeader = pPeImage->GetLoadedLayout()->GetReadyToRunHeader();
@@ -95,7 +92,7 @@ NativeImage *NativeImage::Open(
     LoaderHeap *pHeap = pLoaderAllocator->GetHighFrequencyHeap();
     AllocMemTracker amTracker;
     NativeImage *result = new (amTracker.Track(pHeap->AllocMem((S_SIZE_T)sizeof(NativeImage))))
-        NativeImage(pPeFile, pPeImage, pHeader, compositeImageName, compositeImageNameLength, pLoaderAllocator, amTracker);
+        NativeImage(pPeFile, pPeImage, pHeader, nativeImageName, pLoaderAllocator, amTracker);
     amTracker.SuppressRelease();
     return result;
 }

@@ -36,12 +36,22 @@ class ReadyToRunInfo;
 class PEFile;
 class PEImage;
 
+/// <summary>
+/// This class represents a native ReadyToRun image. As of today, this file format is used
+/// as the compiled native code cache in composite R2R Crossgen2 build mode. Moving forward
+/// we plan to add support for OS-specific native executables (ELF on Linux, MachO on OSX).
+///
+/// The native image is identified by a well-known public export 'RTR_HEADER' pointing to the
+/// master READYTORUN_HEADER structure for the entire file. For composite R2R executables
+/// built by crossgenning a larger number of input MSIL assemblies the READYTORUN_HEADER
+/// contains a section named ComponentAssemblies that points to READYTORUN_CORE_HEADER
+/// structures representing the individual component assemblies and per-assembly sections.
+/// </summary>
 class NativeImage
 {
 private:
     AssemblyLoadContext *m_pLoadContext;
     LPCUTF8 m_utf8SimpleName;
-    uint32_t m_utf8SimpleNameLength;
     bool m_runEagerFixups;
     
     NewHolder<ReadyToRunInfo> m_pReadyToRunInfo;
@@ -58,7 +68,6 @@ private:
         PEImage *peImage,
         READYTORUN_HEADER *header,
         LPCUTF8 nativeImageName,
-        uint8_t nativeImageNameLength,
         LoaderAllocator *loaderAllocator,
         AllocMemTracker& amTracker);
 
@@ -67,10 +76,9 @@ public:
         PEFile *pPeFile,
         PEImage *pPeImage,
         LPCUTF8 nativeImageName,
-        uint8_t nativeImageNameLength,
         LoaderAllocator *pLoaderAllocator);
 
-    bool Matches(LPCUTF8 utf8SimpleName, uint32_t utf8Length, const AssemblyLoadContext *pLoadContext) const;
+    bool Matches(LPCUTF8 utf8SimpleName, const AssemblyLoadContext *pLoadContext) const;
 
     bool EagerFixupsNeedToRun();
 

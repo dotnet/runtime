@@ -2355,57 +2355,28 @@ READYTORUN_HEADER *PEDecoder::FindNativeReadyToRunHeader() const
     }
     
     const uint8_t *imageBase = (const uint8_t *)GetBase();
-    uint32_t exportDirectory = exportDirectoryEntry->VirtualAddress;
+    const uint8_t *exportDirectory = imageBase + exportDirectoryEntry->VirtualAddress;
     
-    uint32_t namePointerCount;
-    uint32_t addressTableRVA;
-    uint32_t namePointersRVA;
-
-    if (!ReadUInt32(exportDirectoryEntry->VirtualAddress + 0x18, namePointerCount) || // +0x18: number of name pointers
-        !ReadUInt32(exportDirectoryEntry->VirtualAddress + 0x1C, addressTableRVA) || // +0x1C: export address table RVA
-        !ReadUInt32(exportDirectoryEntry->VirtualAddress + 0x20, namePointersRVA)) // +0x20: name pointer RVA
-    {
-        return NULL;
-    }
+    uint32_t namePointerCount = VAL32(&exportDirectoryEntry[0x18]); // +0x18: number of name pointers
+    uint32_t addressTableRVA = VAL32(&exportDirectoryEntry[0x1C]); // +0x1C: export address table RVA
+    uint32_t namePointersRVA = VAL32(&exportDirectoryEntry[0x20]); // +0x20: name pointer RVA
 
     for (uint32_t nameIndex = 0; nameIndex < namePointerCount; nameIndex++)
     {
-        uint32_t namePointerRVA;
-        if (ReadUInt32(namePointersRVA + sizeof(uint32_t) * nameIndex, namePointerRVA) &&
-            namePointerRVA != 0 &&
-            namePointerRVA + 11 <= GetSize()) // we need at least 11 bytes to encode the string RTR_HEADER and the terminating null
+        uint32_t namePointerRVA = VAL32(&imageBase[namePointersRVA + sizeof(uint32_t) * nameIndex]);
+        if (namePointerRVA != 0)
         {
             const char *namePointer = (const char *)&imageBase[namePointerRVA];
             if (!strcmp(namePointer, "RTR_HEADER"))
             {
-                uint32_t headerRVA;
-                if (ReadUInt32(addressTableRVA + sizeof(uint32_t) * nameIndex, headerRVA))
-                {
-                    return (READYTORUN_HEADER *)&imageBase[headerRVA];
-                }
+                uint32_t headerRVA = VAL32(&imageBase[addressTableRVA + sizeof(uint32_t) * nameIndex]);
+                return (READYTORUN_HEADER *)&imageBase[headerRVA];
             }
         }
     }
 #endif
 
     return NULL;
-}
-
-bool PEDecoder::ReadUInt32(int offset, uint32_t& outValue) const
-{
-    outValue = 0;
-
-    if (offset < 0 || (uint32_t)offset + sizeof(int) > GetSize())
-    {
-        return false;
-    }
-
-#ifndef DACCESS_COMPILE
-    const BYTE *base = (const BYTE *)GetBase() + offset;
-    outValue = (base[0] << 0) | (base[1] << 8) | (base[2] << 16) | (base[3] << 24);
-#endif
-
-    return true;
 }
 
 //

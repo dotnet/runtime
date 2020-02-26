@@ -16,27 +16,20 @@ HRESULT AssemblyLoadContext::GetBinderID(
     return S_OK;
 }
 
-NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName, int nativeImageNameLength)
+NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName)
 {
-    CONTRACTL
-    {
-        if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM();); }
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifndef DACCESS_COMPILE
     BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
     AssemblyLoadContext *loadContext = componentModule->GetFile()->GetAssemblyLoadContext();
     PTR_LoaderAllocator moduleLoaderAllocator = componentModule->GetLoaderAllocator();
 
-    int nativeImageCount = m_nativeImages.GetCount_Unlocked();
+    int nativeImageCount = m_nativeImages.GetCount();
     for (int nativeImageIndex = 0; nativeImageIndex < nativeImageCount; nativeImageIndex++)
     {
-        NativeImage *nativeImage = m_nativeImages.Get_UnlockedNoReference(nativeImageIndex);
-        if (nativeImage->Matches(nativeImageName, nativeImageNameLength, loadContext))
+        NativeImage *nativeImage = m_nativeImages.Get(nativeImageIndex);
+        if (nativeImage->Matches(nativeImageName, loadContext))
         {
             return nativeImage;
         }
@@ -50,7 +43,7 @@ NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUT
         pathDirLength = (lastPathSeparatorIter - path.Begin()) + 1;
     }
 
-    SString compositeImageFileName(SString::Utf8, nativeImageName, nativeImageNameLength);
+    SString compositeImageFileName(SString::Utf8, nativeImageName);
     SString fullPath;
     fullPath.Set(path, path.Begin(), (COUNT_T)pathDirLength);
     fullPath += compositeImageFileName;
@@ -58,10 +51,10 @@ NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUT
     PTR_PEImage peImage = PEImage::OpenImage(fullPath);
     PTR_PEFile peFile = PEFile::Open(peImage);
 
-    NativeImage *nativeImage = NativeImage::Open(peFile, peImage, nativeImageName, nativeImageNameLength, moduleLoaderAllocator);
+    NativeImage *nativeImage = NativeImage::Open(peFile, peImage, nativeImageName, moduleLoaderAllocator);
     if (nativeImage != NULL)
     {
-        m_nativeImages.Append_Unlocked(nativeImage);
+        m_nativeImages.Append(nativeImage);
         return nativeImage;
     }
 #endif
@@ -73,7 +66,7 @@ AssemblyLoadContext::NativeImageList::NativeImageList()
 {
 }
 
-bool AssemblyLoadContext::NativeImageList::IsEmpty_Unlocked()
+bool AssemblyLoadContext::NativeImageList::IsEmpty()
 {
     CONTRACTL {
         NOTHROW;
@@ -84,7 +77,7 @@ bool AssemblyLoadContext::NativeImageList::IsEmpty_Unlocked()
     return (m_array.GetCount() == 0);
 }
 
-void AssemblyLoadContext::NativeImageList::Clear_Unlocked()
+void AssemblyLoadContext::NativeImageList::Clear()
 {
     CONTRACTL {
         NOTHROW;
@@ -95,7 +88,7 @@ void AssemblyLoadContext::NativeImageList::Clear_Unlocked()
     m_array.Clear();
 }
 
-int32_t AssemblyLoadContext::NativeImageList::GetCount_Unlocked()
+int32_t AssemblyLoadContext::NativeImageList::GetCount()
 {
     CONTRACTL {
         NOTHROW;
@@ -108,7 +101,7 @@ int32_t AssemblyLoadContext::NativeImageList::GetCount_Unlocked()
 
 #ifndef DACCESS_COMPILE
 // Doesn't lock the assembly list (caller has to hold the lock already).
-NativeImage* AssemblyLoadContext::NativeImageList::Get_UnlockedNoReference(int32_t index)
+NativeImage* AssemblyLoadContext::NativeImageList::Get(int32_t index)
 {
     CONTRACTL {
         NOTHROW;
@@ -120,7 +113,7 @@ NativeImage* AssemblyLoadContext::NativeImageList::Get_UnlockedNoReference(int32
     return (NativeImage *)m_array.Get(index);
 }
 
-void AssemblyLoadContext::NativeImageList::Set_Unlocked(int32_t index, NativeImage* nativeImage)
+void AssemblyLoadContext::NativeImageList::Set(int32_t index, NativeImage* nativeImage)
 {
     CONTRACTL {
         NOTHROW;
@@ -131,7 +124,7 @@ void AssemblyLoadContext::NativeImageList::Set_Unlocked(int32_t index, NativeIma
     m_array.Set(index, dac_cast<PTR_VOID>(nativeImage));
 }
 
-HRESULT AssemblyLoadContext::NativeImageList::Append_Unlocked(NativeImage* nativeImage)
+HRESULT AssemblyLoadContext::NativeImageList::Append(NativeImage* nativeImage)
 {
     CONTRACTL {
         NOTHROW;

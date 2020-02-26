@@ -491,13 +491,11 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
 {
     READYTORUN_SECTION * pSections = (READYTORUN_SECTION*)(pHeader + 1);
     LPCUTF8 ownerCompositeExecutableName = NULL;
-    uint32_t ownerCompositeExecutableNameLength = 0;
     for (DWORD i = 0; i < pHeader->CoreHeader.NumberOfSections; i++)
     {
         if (pSections[i].Type == ReadyToRunSectionType::OwnerCompositeExecutable)
         {
             ownerCompositeExecutableName = (LPCUTF8)pLayout->GetBase() + pSections[i].Section.VirtualAddress;
-            ownerCompositeExecutableNameLength = pSections[i].Section.Size;
             break;
         }
     }
@@ -509,7 +507,7 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
         {
             loadContext = (AssemblyLoadContext *)AppDomain::GetCurrentDomain()->CreateBinderContext();
         }
-        return loadContext->LoadNativeImage(pModule, ownerCompositeExecutableName, ownerCompositeExecutableNameLength);
+        return loadContext->LoadNativeImage(pModule, ownerCompositeExecutableName);
     }
     
     return NULL;
