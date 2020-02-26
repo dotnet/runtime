@@ -95,11 +95,11 @@ NESTED_ENTRY StubDispatchFixupStub, _TEXT, ProcessCLRException
 
         PROLOG_WITH_TRANSITION_BLOCK
 
-        lea             rcx, [rsp + __PWTB_TransitionBlock] ; pTransitionBlock
-        mov             rdx, r11                            ; indirection cell address
+        lea             rcx, [rsp + __PWTB_TransitionBlock]  ; pTransitionBlock
+        mov             rdx, r11                             ; indirection cell address
 
-        mov             r8,0                                ; sectionIndex
-        mov             r9,0                                ; pModule
+        xor             r8,r8                                ; sectionIndex
+        xor             r9,r9                                ; pModule
 
         call            StubDispatchFixupWorker
 
