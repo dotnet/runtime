@@ -222,6 +222,42 @@ interface IEventTestSinkEx : IDispatch
 };
 
 [
+    object,
+    uuid(73C84B89-D82B-4AD6-A9DA-D887D6152571)
+]
+interface IParametersTest : IDispatch
+{
+    HRESULT Optional(
+        [in, optional] VARIANT first,
+        [in, optional] VARIANT second,
+        [in, out, optional] VARIANT *third,
+        [out, retval] SAFEARRAY(int) *ret);
+
+    HRESULT DefaultValue(
+        [in, defaultvalue(1)] VARIANT first,
+        [in, defaultvalue(2)] VARIANT second,
+        [in, out, defaultvalue(3)] VARIANT *third,
+        [out, retval] SAFEARRAY(int) *ret);
+
+    HRESULT Mixed(
+        [in] VARIANT first,
+        [in, defaultvalue(2)] VARIANT second,
+        [in, out, optional] VARIANT *third,
+        [out, retval] SAFEARRAY(int) *ret);
+
+    HRESULT Required(
+        [in] int first,
+        [in] int second,
+        [in, out] int *third,
+        [out, retval] SAFEARRAY(int) *ret);
+
+    [vararg]
+    HRESULT VarArgs(
+        [in] SAFEARRAY(VARIANT) args,
+        [out, retval] SAFEARRAY(int) *ret);
+};
+
+[
     uuid(0971AD7E-3D4A-4C44-B0A3-A518AC88DFE1)
 ]
 library DynamicTestLib
@@ -255,4 +291,12 @@ library DynamicTestLib
         [source] interface IEventTestSink;
         [source] interface IEventTestSinkEx;
     };
+
+    [
+        uuid(787FEAF2-34F6-4244-884A-0A142DAB3B77)
+    ]
+    coclass ParametersTest
+    {
+        [default] interface IParametersTest;
+    }
 }

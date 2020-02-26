@@ -23,6 +23,7 @@ set(SOURCES
     DispatchImpl.cpp
     DynamicTestServer.cpp
     EventTest.cpp
+    ParametersTest.cpp
     Exports.def
     ${IDL_OUTPUT_DIRECTORY}/${IDL_NAME}_i.c)
 
