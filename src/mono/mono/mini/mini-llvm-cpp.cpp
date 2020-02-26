@@ -375,7 +375,7 @@ mono_llvm_call_args (LLVMValueRef wrapped_calli)
 
 	unsigned int numOperands;
 
-	if (call){
+	if (call) {
 		numOperands = call->getNumArgOperands ();
 
 		LLVMValueRef *ret = g_malloc (sizeof (LLVMValueRef) * numOperands);
@@ -385,8 +385,7 @@ mono_llvm_call_args (LLVMValueRef wrapped_calli)
 		}
 
 		return ret;
-	}
-	else {
+	} else {
 		numOperands = invoke->getNumArgOperands ();
 
 		LLVMValueRef *ret = g_malloc (sizeof (LLVMValueRef) * numOperands);
