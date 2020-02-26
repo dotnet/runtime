@@ -12,7 +12,7 @@ namespace System.Diagnostics
     public class CorrelationManager
     {
         private readonly AsyncLocal<Guid> _activityId = new AsyncLocal<Guid>();
-        private readonly AsyncLocal<StackNode> _stack = new AsyncLocal<StackNode>();
+        private readonly AsyncLocal<StackNode?> _stack = new AsyncLocal<StackNode?>();
         private readonly Stack _stackWrapper;
 
         internal CorrelationManager()
@@ -40,7 +40,7 @@ namespace System.Diagnostics
 
         private sealed class StackNode
         {
-            internal StackNode(object value, StackNode prev = null)
+            internal StackNode(object? value, StackNode? prev = null)
             {
                 Value = value;
                 Prev = prev;
@@ -48,15 +48,15 @@ namespace System.Diagnostics
             }
 
             internal int Count { get; }
-            internal object Value { get; }
-            internal StackNode Prev { get; }
+            internal object? Value { get; }
+            internal StackNode? Prev { get; }
         }
 
         private sealed class AsyncLocalStackWrapper : Stack
         {
-            private readonly AsyncLocal<StackNode> _stack;
+            private readonly AsyncLocal<StackNode?> _stack;
 
-            internal AsyncLocalStackWrapper(AsyncLocal<StackNode> stack)
+            internal AsyncLocalStackWrapper(AsyncLocal<StackNode?> stack)
             {
                 Debug.Assert(stack != null);
                 _stack = stack;
@@ -70,11 +70,11 @@ namespace System.Diagnostics
 
             public override IEnumerator GetEnumerator() => GetEnumerator(_stack.Value);
 
-            public override object Peek() => _stack.Value?.Value;
+            public override object? Peek() => _stack.Value?.Value;
 
-            public override bool Contains(object obj)
+            public override bool Contains(object? obj)
             {
-                for (StackNode n = _stack.Value; n != null; n = n.Prev)
+                for (StackNode? n = _stack.Value; n != null; n = n.Prev)
                 {
                     if (obj == null)
                     {
@@ -90,13 +90,13 @@ namespace System.Diagnostics
 
             public override void CopyTo(Array array, int index)
             {
-                for (StackNode n = _stack.Value; n != null; n = n.Prev)
+                for (StackNode? n = _stack.Value; n != null; n = n.Prev)
                 {
                     array.SetValue(n.Value, index++);
                 }
             }
 
-            private IEnumerator GetEnumerator(StackNode n)
+            private IEnumerator GetEnumerator(StackNode? n)
             {
                 while (n != null)
                 {
@@ -105,31 +105,31 @@ namespace System.Diagnostics
                 }
             }
 
-            public override object Pop()
+            public override object? Pop()
             {
-                StackNode n = _stack.Value;
+                StackNode? n = _stack.Value;
                 if (n == null)
                 {
                     base.Pop(); // used to throw proper exception
                 }
-                _stack.Value = n.Prev;
+                _stack.Value = n!.Prev;
                 return n.Value;
             }
 
-            public override void Push(object obj)
+            public override void Push(object? obj)
             {
                 _stack.Value = new StackNode(obj, _stack.Value);
             }
 
-            public override object[] ToArray()
+            public override object?[] ToArray()
             {
-                StackNode n = _stack.Value;
+                StackNode? n = _stack.Value;
                 if (n == null)
                 {
                     return Array.Empty<object>();
                 }
 
-                var results = new List<object>();
+                var results = new List<object?>();
                 do
                 {
                     results.Add(n.Value);

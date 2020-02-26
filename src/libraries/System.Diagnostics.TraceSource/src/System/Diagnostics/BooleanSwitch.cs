@@ -18,12 +18,12 @@ namespace System.Diagnostics
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.BooleanSwitch'/>
         /// class.</para>
         /// </devdoc>
-        public BooleanSwitch(string displayName, string description)
+        public BooleanSwitch(string displayName, string? description)
             : base(displayName, description)
         {
         }
 
-        public BooleanSwitch(string displayName, string description, string defaultSwitchValue)
+        public BooleanSwitch(string displayName, string? description, string defaultSwitchValue)
             : base(displayName, description, defaultSwitchValue)
         { }
 

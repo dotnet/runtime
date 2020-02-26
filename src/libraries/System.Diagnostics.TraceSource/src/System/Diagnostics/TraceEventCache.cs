@@ -14,7 +14,7 @@ namespace System.Diagnostics
     {
         private long _timeStamp = -1;
         private DateTime _dateTime = DateTime.MinValue;
-        private string _stackTrace = null;
+        private string? _stackTrace = null;
 
         public DateTime DateTime
         {

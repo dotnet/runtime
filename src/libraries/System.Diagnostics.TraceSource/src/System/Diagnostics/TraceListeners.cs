@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -13,11 +14,11 @@ namespace System.Diagnostics
     /// </devdoc>
     public class TraceListenerCollection : IList
     {
-        private readonly List<TraceListener> _list;
+        private readonly List<TraceListener?> _list;
 
         internal TraceListenerCollection()
         {
-            _list = new List<TraceListener>(1);
+            _list = new List<TraceListener?>(1);
         }
 
         /// <devdoc>
@@ -28,7 +29,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return _list[i];
+                return _list[i]!;
             }
 
             set
@@ -41,13 +42,13 @@ namespace System.Diagnostics
         /// <devdoc>
         /// <para>Gets the first <see cref='System.Diagnostics.TraceListener'/> in the list with the specified name.</para>
         /// </devdoc>
-        public TraceListener this[string name]
+        public TraceListener? this[string name]
         {
             get
             {
-                foreach (TraceListener listener in this)
+                foreach (TraceListener? listener in this)
                 {
-                    if (listener.Name == name)
+                    if (listener!.Name == name)
                         return listener;
                 }
                 return null;
@@ -126,7 +127,7 @@ namespace System.Diagnostics
         ///    <para>Checks whether the list contains the specified
         ///       listener.</para>
         /// </devdoc>
-        public bool Contains(TraceListener listener)
+        public bool Contains(TraceListener? listener)
         {
             return ((IList)this).Contains(listener);
         }
@@ -162,7 +163,7 @@ namespace System.Diagnostics
         /// <devdoc>
         ///    <para>Gets the index of the specified listener.</para>
         /// </devdoc>
-        public int IndexOf(TraceListener listener)
+        public int IndexOf(TraceListener? listener)
         {
             return ((IList)this).IndexOf(listener);
         }
@@ -184,7 +185,7 @@ namespace System.Diagnostics
         ///       Removes the specified instance of the <see cref='System.Diagnostics.TraceListener'/> class from the list.
         ///    </para>
         /// </devdoc>
-        public void Remove(TraceListener listener)
+        public void Remove(TraceListener? listener)
         {
             ((IList)this).Remove(listener);
         }
@@ -195,7 +196,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void Remove(string name)
         {
-            TraceListener listener = this[name];
+            TraceListener? listener = this[name];
             if (listener != null)
                 ((IList)this).Remove(listener);
         }
@@ -212,7 +213,7 @@ namespace System.Diagnostics
         }
 
         /// <internalonly/>
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get
             {
@@ -221,7 +222,7 @@ namespace System.Diagnostics
 
             set
             {
-                TraceListener listener = value as TraceListener;
+                TraceListener? listener = value as TraceListener;
                 if (listener == null)
                     throw new ArgumentException(SR.MustAddListener, nameof(value));
                 InitializeListener(listener);
@@ -248,9 +249,9 @@ namespace System.Diagnostics
         }
 
         /// <internalonly/>
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
-            TraceListener listener = value as TraceListener;
+            TraceListener? listener = value as TraceListener;
             if (listener == null)
                 throw new ArgumentException(SR.MustAddListener, nameof(value));
 
@@ -263,21 +264,21 @@ namespace System.Diagnostics
         }
 
         /// <internalonly/>
-        bool IList.Contains(object value)
+        bool IList.Contains(object? value)
         {
-            return _list.Contains((TraceListener)value);
+            return _list.Contains((TraceListener?)value);
         }
 
         /// <internalonly/>
-        int IList.IndexOf(object value)
+        int IList.IndexOf(object? value)
         {
-            return _list.IndexOf((TraceListener)value);
+            return _list.IndexOf((TraceListener?)value);
         }
 
         /// <internalonly/>
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
-            TraceListener listener = value as TraceListener;
+            TraceListener? listener = value as TraceListener;
             if (listener == null)
                 throw new ArgumentException(SR.MustAddListener, nameof(value));
 
@@ -285,16 +286,16 @@ namespace System.Diagnostics
 
             lock (TraceInternal.critSec)
             {
-                _list.Insert(index, (TraceListener)value);
+                _list.Insert(index, (TraceListener?)value);
             }
         }
 
         /// <internalonly/>
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
             lock (TraceInternal.critSec)
             {
-                _list.Remove((TraceListener)value);
+                _list.Remove((TraceListener)value!);
             }
         }
 
