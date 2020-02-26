@@ -38,7 +38,7 @@ namespace System.Net
         // True indicates this instance is for Server and will use AcceptSecurityContext SSPI API.
         internal bool IsServer => _isServer;
 
-        internal string ClientSpecifiedSpn
+        internal string? ClientSpecifiedSpn
         {
             get
             {
@@ -47,7 +47,7 @@ namespace System.Net
                     _clientSpecifiedSpn = GetClientSpecifiedSpn();
                 }
 
-                return _clientSpecifiedSpn!;
+                return _clientSpecifiedSpn;
             }
         }
 

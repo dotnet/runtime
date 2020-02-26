@@ -412,7 +412,7 @@ namespace System.Net.Security
                 return true;
             }
 
-            string clientSpn = _context.ClientSpecifiedSpn;
+            string? clientSpn = _context.ClientSpecifiedSpn;
 
             if (string.IsNullOrEmpty(clientSpn))
             {
@@ -581,10 +581,10 @@ namespace System.Net.Security
                 message = _framer.EndReadMessage(ar);
             }
 
-            ProcessReceivedBlob(message!, lazyResult);
+            ProcessReceivedBlob(message, lazyResult);
         }
 
-        private void ProcessReceivedBlob(byte[] message, LazyAsyncResult? lazyResult)
+        private void ProcessReceivedBlob(byte[]? message, LazyAsyncResult? lazyResult)
         {
             // This is an EOF otherwise we would get at least *empty* message but not a null one.
             if (message == null)
@@ -751,7 +751,7 @@ namespace System.Net.Security
             {
                 NegoState authState = (NegoState)lazyResult.AsyncObject;
                 byte[]? message = authState._framer!.EndReadMessage(transportResult);
-                authState.ProcessReceivedBlob(message!, lazyResult);
+                authState.ProcessReceivedBlob(message, lazyResult);
             }
             catch (Exception e)
             {
