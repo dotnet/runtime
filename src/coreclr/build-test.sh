@@ -84,7 +84,7 @@ generate_layout()
     MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
     export MSBUILDDEBUGPATH
 
-    __BuildProperties="-p:OSGroup=${__BuildOS} -p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
+    __BuildProperties="-p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
 
     # =========================================================================================
     # ===
@@ -303,7 +303,7 @@ build_Tests()
     MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
     export MSBUILDDEBUGPATH
 
-    __BuildProperties="-p:OSGroup=${__BuildOS} -p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
+    __BuildProperties="-p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
 
     # =========================================================================================
     # ===

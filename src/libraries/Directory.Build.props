@@ -1,4 +1,4 @@
-<Project TreatAsLocalProperty="OSGroup">
+<Project TreatAsLocalProperty="BuildOS">
   <PropertyGroup>
     <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
   </PropertyGroup>
@@ -33,8 +33,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <OSGroup Condition="'$(OSGroup)' == ''">$(DefaultOSGroup)</OSGroup>
-    <BuildOS>$(OSGroup)</BuildOS>
+    <BuildOS Condition="'$(BuildOS)' == ''">$(DefaultOSGroup)</BuildOS>
   </PropertyGroup>
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" />
   
@@ -42,16 +41,16 @@
     <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm'">arm</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm64'">arm64</ArchGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(OSGroup)' == 'WebAssembly'">wasm</ArchGroup>
+    <ArchGroup Condition="'$(ArchGroup)' == '' and '$(BuildOS)' == 'WebAssembly'">wasm</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
 
     <!-- RuntimeOS is calculated based on the build system OS, however if building for WebAssembly we need to let
          the build system to use webassembly as the RuntimeOS for produced package RIDs. -->
-    <RuntimeOS Condition="'$(OSGroup)' == 'WebAssembly'">$(OSGroup.ToLowerInvariant())</RuntimeOS>
+    <RuntimeOS Condition="'$(OSGrBuildOSoup)' == 'WebAssembly'">$(BuildOS.ToLowerInvariant())</RuntimeOS>
  
     <!-- Initialize BuildSettings from the individual properties if it wasn't already explicitly set -->
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
-    <BuildSettings Condition="'$(BuildSettings)' == ''">$(BuildTargetFramework)-$(OSGroup)-$(Configuration)-$(ArchGroup)</BuildSettings>
+    <BuildSettings Condition="'$(BuildSettings)' == ''">$(BuildTargetFramework)-$(BuildOS)-$(Configuration)-$(ArchGroup)</BuildSettings>
   </PropertyGroup>
   
   <Choose>
@@ -130,7 +129,7 @@
   <!-- Common repo directories -->
   <PropertyGroup>
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
-    <NativeBinDir>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'native', '$(BuildTargetFramework)-$(OSGroup)-$(Configuration)-$(ArchGroup)'))</NativeBinDir>
+    <NativeBinDir>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'native', '$(BuildTargetFramework)-$(BuildOS)-$(Configuration)-$(ArchGroup)'))</NativeBinDir>
 
     <PkgDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'pkg'))</PkgDir>
   </PropertyGroup>
@@ -153,7 +152,7 @@
     <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(RuntimeOS.SubString(0, $(_runtimeOSVersionIndex)))</_runtimeOSFamily>
     <_portableOS>linux</_portableOS>
     <_portableOS Condition="'$(RuntimeOS)' == 'linux-musl'">linux-musl</_portableOS>
-    <_portableOS Condition="'$(_runtimeOSFamily)' == 'win' or '$(OSGroup)' == 'Windows_NT'">win</_portableOS>
+    <_portableOS Condition="'$(_runtimeOSFamily)' == 'win' or '$(BuildOS)' == 'Windows_NT'">win</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'osx'">osx</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">freebsd</_portableOS>
     <_portableOS Condition="'$(RuntimeOS)' == 'WebAssembly'">webassembly</_portableOS>
@@ -169,15 +168,15 @@
 
     <!-- There are no WebAssembly tools, so use the default ones -->
     <_buildingInOSX>$([MSBuild]::IsOSPlatform('OSX'))</_buildingInOSX>
-    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(OSGroup)' == 'Windows_NT'">win-x64</ToolRuntimeRID>
-    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(OSGroup)' != 'Windows_NT' and $(_buildingInOSX)">osx-x64</ToolRuntimeRID>
-    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(OSGroup)' != 'Windows_NT' and !$(_buildingInOSX)">linux-x64</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(BuildOS)' == 'Windows_NT'">win-x64</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(BuildOS)' != 'Windows_NT' and $(_buildingInOSX)">osx-x64</ToolRuntimeRID>
+    <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(BuildOS)' != 'Windows_NT' and !$(_buildingInOSX)">linux-x64</ToolRuntimeRID>
 
     <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
-    <_portableOS Condition="'$(OSGroup)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
+    <_portableOS Condition="'$(BuildOS)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
 
     <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
-    <_portableOS Condition="'$(OSGroup)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
+    <_portableOS Condition="'$(BuildOS)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
 
     <_packageRID />
     <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(ArchGroup)</_packageRID>
@@ -223,7 +222,7 @@
     <DebugType>portable</DebugType>
 
     <!-- Empty DebugType when building for netfx and in windows so that it is set to full or pdbonly later -->
-    <DebugType Condition="'$(TargetsNetFx)' == 'true' and '$(OSGroup)' == 'Windows_NT'" />
+    <DebugType Condition="'$(TargetsNetFx)' == 'true' and '$(BuildOS)' == 'Windows_NT'" />
 
     <!-- Workaround for codecov issue https://github.com/tonerdo/coverlet/issues/312 -->
     <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>
@@ -301,7 +300,7 @@
     <ILAsmToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsToolsetDir)', 'ilasm'))</ILAsmToolPath>
 
     <!-- Helix properties -->
-    <OSPlatformConfig>$(OSGroup).$(Platform).$(Configuration)</OSPlatformConfig>
+    <OSPlatformConfig>$(BuildOS).$(Platform).$(Configuration)</OSPlatformConfig>
     <AnyOSPlatformConfig>AnyOS.AnyCPU.$(Configuration)</AnyOSPlatformConfig>
     <UnixPlatformConfig>Unix.$(Platform).$(Configuration)</UnixPlatformConfig>
     <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>

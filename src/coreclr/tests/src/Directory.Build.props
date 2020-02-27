@@ -57,20 +57,20 @@
 
   <!-- Expose the target OS in a more convenient fashion -->
   <PropertyGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(OSPlatformConfig.StartsWith('Windows'))">Windows_NT</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(OSPlatformConfig.StartsWith('Linux'))">Linux</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(OSPlatformConfig.StartsWith('OSX'))">OSX</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(OSPlatformConfig.StartsWith('FreeBSD'))">FreeBSD</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'==''">AnyOS</OSGroup>
+    <BuildOS Condition="'$(BuildOS)'=='' and $(OSPlatformConfig.StartsWith('Windows'))">Windows_NT</BuildOS>
+    <BuildOS Condition="'$(BuildOS)'=='' and $(OSPlatformConfig.StartsWith('Linux'))">Linux</BuildOS>
+    <BuildOS Condition="'$(BuildOS)'=='' and $(OSPlatformConfig.StartsWith('OSX'))">OSX</BuildOS>
+    <BuildOS Condition="'$(BuildOS)'=='' and $(OSPlatformConfig.StartsWith('FreeBSD'))">FreeBSD</BuildOS>
+    <BuildOS Condition="'$(BuildOS)'==''">AnyOS</BuildOS>
   </PropertyGroup>
 
-  <!-- Setup properties per OSGroup -->
+  <!-- Setup properties per BuildOS -->
   <Choose>
-    <When Condition="'$(OSGroup)'=='AnyOS'">
+    <When Condition="'$(BuildOS)'=='AnyOS'">
       <PropertyGroup>
       </PropertyGroup>
     </When>
-    <When Condition="'$(OSGroup)'=='Windows_NT'">
+    <When Condition="'$(BuildOS)'=='Windows_NT'">
       <PropertyGroup>
         <!-- Since cross compilation of test builds on Windows is possible, the
              TargetsWindows property may already be set. Only set the property if
@@ -79,21 +79,21 @@
         <TestNugetRuntimeId>win-$(__BuildArch)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
-    <When Condition="'$(OSGroup)'=='Linux'">
+    <When Condition="'$(BuildOS)'=='Linux'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsLinux>true</TargetsLinux>
         <TestNugetRuntimeId>ubuntu.14.04-$(__BuildArch)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
-    <When Condition="'$(OSGroup)'=='OSX'">
+    <When Condition="'$(BuildOS)'=='OSX'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsOSX>true</TargetsOSX>
         <TestNugetRuntimeId>osx.10.12-$(__BuildArch)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
-    <When Condition="'$(OSGroup)'=='FreeBSD'">
+    <When Condition="'$(BuildOS)'=='FreeBSD'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsFreeBSD>true</TargetsFreeBSD>
@@ -102,7 +102,7 @@
     </When>
     <Otherwise>
       <PropertyGroup>
-        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown OSGroup [$(OSGroup)] specificed in your project.</ConfigurationErrorMsg>
+        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown BuildOS [$(BuildOS)] specificed in your project.</ConfigurationErrorMsg>
       </PropertyGroup>
     </Otherwise>
   </Choose>
@@ -123,7 +123,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(OSGroup)' != 'FreeBSD' AND '$(OSGroup)' != 'Linux' AND '$(OSGroup)' != 'OSX'">true</TargetsUnknownUnix>
+    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(BuildOS)' != 'FreeBSD' AND '$(BuildOS)' != 'Linux' AND '$(BuildOS)' != 'OSX'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
   </PropertyGroup>

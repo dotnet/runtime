@@ -438,9 +438,6 @@
     </PropertyGroup>
     <Exec Command="&quot;$(PYTHON)&quot; $(MSBuildThisFileDirectory)..\scripts\check-definitions.py &quot;$(ProjectDir.TrimEnd('\'))&quot; &quot;$(CMakeDefinitionSaveFile)&quot; &quot;$(DefineConstants)&quot; &quot;$(IgnoreDefineConstants)&quot; " />
   </Target>
-  <PropertyGroup Condition="'$(BuildOS)' == 'Windows_NT'">
-    <OSGroup>Windows_NT</OSGroup>
-  </PropertyGroup>
   <PropertyGroup>
     <FeatureAsyncCausalityTracer Condition="'$(FeatureCominterop)' == 'true'">true</FeatureAsyncCausalityTracer>
   </PropertyGroup>

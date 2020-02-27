@@ -13,10 +13,10 @@
     <IsRuntimeAssembly>true</IsRuntimeAssembly>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(OutDirName)'))</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)</IntermediateOutputPath>
-    <!-- Use runtime assemblies for the TargetFramework, using build configuration OSGroup -->
-    <RefPath>$(ArtifactsBinDir)runtime/$(BuildTargetFramework)-$(OSGroup)-$(Configuration)-$(ArchGroup)/</RefPath>
-    <CoreCLROSGroup>$(OSGroup)</CoreCLROSGroup>
-    <MonoOSGroup>$(OSGroup)</MonoOSGroup>
+    <!-- Use runtime assemblies for the TargetFramework, using BuildOS -->
+    <RefPath>$(ArtifactsBinDir)runtime/$(BuildTargetFramework)-$(BuildOS)-$(Configuration)-$(ArchGroup)/</RefPath>
+    <CoreCLROSGroup>$(BuildOS)</CoreCLROSGroup>
+    <MonoOSGroup>$(BuildOS)</MonoOSGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
 
