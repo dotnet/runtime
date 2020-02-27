@@ -3380,6 +3380,18 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 static MONO_NEVER_INLINE void
 interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error)
 {
+	// This function must not return, except via one path at the end,
+	// so these variables can be restored.
+	const struct {
+		const guint16* state_ip;
+		InterpFrame* next_free;
+	} previous_frame = {
+		frame->state.ip,
+		frame->next_free
+	};
+	frame->state.ip = NULL; // Do not loop here to return to pending calls in the caller.
+	frame->next_free = NULL; // Do not add to the alloca-based free list from the caller.
+
 	InterpMethod *cmethod;
 	MonoException *ex;
 	gboolean is_void;
@@ -7050,6 +7062,9 @@ exit_frame:
 	if (!clause_args)
 		pop_frame (context, frame);
 
+	frame->state.ip = previous_frame.state_ip;
+	frame->next_free = previous_frame.next_free;
+
 	DEBUG_LEAVE ();
 }
 
@@ -7134,24 +7149,15 @@ interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip
 	ThreadContext *context = get_context ();
 	const unsigned short *old_ip = iframe->ip;
 	FrameClauseArgs clause_args;
-	const guint16 *state_ip;
 
 	memset (&clause_args, 0, sizeof (FrameClauseArgs));
 	clause_args.start_with_ip = (const guint16*)handler_ip;
 	clause_args.end_at_ip = (const guint16*)handler_ip_end;
 	clause_args.exit_clause = clause_index;
 
-	state_ip = iframe->state.ip;
-	iframe->state.ip = NULL;
-
-	InterpFrame* const next_free = iframe->next_free;
-	iframe->next_free = NULL;
-
 	ERROR_DECL (error);
 	interp_exec_method (iframe, context, &clause_args, error);
 
-	iframe->next_free = next_free;
-	iframe->state.ip = state_ip;
 	iframe->state.clause_args = NULL;
 	if (context->has_resume_state) {
 		return TRUE;
