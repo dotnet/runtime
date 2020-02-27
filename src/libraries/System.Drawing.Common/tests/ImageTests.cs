@@ -158,6 +158,9 @@ namespace System.Drawing.Tests
                 }
             };
 
+#if !NETFRAMEWORK
+            // NetFX doesn't support pointer-type encoder parameters, and doesn't define Encoder.ImageItems. Skip this test
+            // on NetFX.
             yield return new object[]
             {
                 ImageFormat.Jpeg,
@@ -170,6 +173,7 @@ namespace System.Drawing.Tests
                     Encoder.ImageItems.Guid
                 }
             };
+#endif
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
