@@ -2319,44 +2319,20 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
     }
     CONTRACTL_END;
 
-    if (HasCorHeader())
-    {
-        IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->ManagedNativeHeader;
-    
-        if (VAL32(pDir->Size) >= sizeof(READYTORUN_HEADER) && CheckDirectory(pDir))
-        {
-            PTR_READYTORUN_HEADER pHeader = PTR_READYTORUN_HEADER((TADDR)GetDirectoryData(pDir));
-            if (pHeader->Signature == READYTORUN_SIGNATURE)
-            {
-                const_cast<PEDecoder*>(this)->m_pReadyToRunHeader = pHeader;
-                return pHeader;
-            }
-        }
-    }
+    IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->ManagedNativeHeader;
 
-    READYTORUN_HEADER *nativeReadyToRunHeader = FindNativeReadyToRunHeader();
-    if (nativeReadyToRunHeader != NULL)
+    if (VAL32(pDir->Size) >= sizeof(READYTORUN_HEADER) && CheckDirectory(pDir))
     {
-        return nativeReadyToRunHeader;
+        PTR_READYTORUN_HEADER pHeader = PTR_READYTORUN_HEADER((TADDR)GetDirectoryData(pDir));
+        if (pHeader->Signature == READYTORUN_SIGNATURE)
+        {
+            const_cast<PEDecoder*>(this)->m_pReadyToRunHeader = pHeader;
+            return pHeader;
+        }
     }
 
     const_cast<PEDecoder *>(this)->m_flags |= FLAG_HAS_NO_READYTORUN_HEADER;
     return NULL;
-}
-
-READYTORUN_HEADER *PEDecoder::FindNativeReadyToRunHeader() const
-{
-    uint32_t readyToRunHeaderRVA = GetExport("RTR_HEADER");
-    if (readyToRunHeaderRVA == 0 || readyToRunHeaderRVA + sizeof(READYTORUN_HEADER) > GetSize())
-    {
-        return NULL;
-    }
-#ifndef DACCESS_COMPILE
-    BYTE *imageBase = (BYTE *)GetBase();
-    return (READYTORUN_HEADER *)&imageBase[readyToRunHeaderRVA];
-#else
-    return NULL;
-#endif
 }
 
 uint32_t PEDecoder::GetExport(LPCSTR exportName) const

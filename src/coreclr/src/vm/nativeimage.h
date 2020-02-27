@@ -70,6 +70,8 @@ private:
         AllocMemTracker& amTracker);
 
 public:
+    ~NativeImage();
+
     static NativeImage *Open(
         PEFile *pPeFile,
         PEImageLayout *pPeImageLayout,

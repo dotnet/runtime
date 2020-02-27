@@ -407,7 +407,6 @@ class PEDecoder
     IMAGE_COR20_HEADER *FindCorHeader() const;
     CORCOMPILE_HEADER *FindNativeHeader() const;
     READYTORUN_HEADER *FindReadyToRunHeader() const;
-    READYTORUN_HEADER *FindNativeReadyToRunHeader() const;
     
     // Flat mapping utilities
     RVA InternalAddressToRva(SIZE_T address) const;

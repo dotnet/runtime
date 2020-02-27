@@ -1397,6 +1397,7 @@ inline READYTORUN_HEADER * PEDecoder::GetReadyToRunHeader() const
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckNTHeaders());
+        PRECONDITION(HasCorHeader());
         PRECONDITION(HasReadyToRunHeader());
         NOTHROW;
         GC_NOTRIGGER;

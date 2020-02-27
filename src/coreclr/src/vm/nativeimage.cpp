@@ -66,6 +66,14 @@ NativeImage::NativeImage(
     }
 }
 
+NativeImage::~NativeImage()
+{
+    if (m_pManifestMetadata != NULL)
+    {
+        m_pManifestMetadata->Release();
+    }
+}
+
 bool NativeImage::Matches(LPCUTF8 utf8SimpleName) const
 {
     return !_stricmp(utf8SimpleName, m_utf8SimpleName);
@@ -77,15 +85,20 @@ NativeImage *NativeImage::Open(
     LPCUTF8 nativeImageName,
     LoaderAllocator *pLoaderAllocator)
 {
-    READYTORUN_HEADER *pHeader = pPeImageLayout->GetReadyToRunHeader();
-    if (pHeader == NULL)
+#ifndef DACCESS_COMPILE
+    uint32_t headerRVA = pPeImageLayout->GetExport("RTR_HEADER");
+    if (headerRVA + sizeof(READYTORUN_HEADER) > pPeImageLayout->GetSize())
     {
         return NULL;
     }
+    READYTORUN_HEADER *pHeader = (READYTORUN_HEADER *)((BYTE *)pPeImageLayout->GetBase() + headerRVA);
     AllocMemTracker amTracker;
     NativeImage *result = new NativeImage(pPeFile, pPeImageLayout, pHeader, nativeImageName, pLoaderAllocator, amTracker);
     amTracker.SuppressRelease();
     return result;
+#else
+    return NULL;
+#endif
 }
 
 Assembly *NativeImage::LoadComponentAssembly(uint32_t rowid)
