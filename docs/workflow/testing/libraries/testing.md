@@ -22,7 +22,7 @@ libraries -test /p:WithoutCategories=IgnoreForCI
 
 ## Running tests on the command line
 
-To build tests you need to pass the `-buildtests` flag to build.cmd/sh or if you want to build both src and tests you pass `-buildtests` flag (`libraries -restore -build -buildtests`). Note that you need to specify -restore and -build additionally as those are only implicit if no action is passed in.
+To build tests you need to pass the `-buildtests` flag to `build.cmd/sh` or if you want to build both src and tests you pass `-buildtests` flag (`libraries -restore -build -buildtests`). Note that you need to specify `-restore` and `-build` additionally as those are only implicit if no action is passed in.
 
 If you are interested in building and running the tests only for a specific library, then there are two different ways to do it:
 
@@ -45,6 +45,13 @@ There may be multiple projects in some directories so you may need to specify th
 To quickly run or debug a single test from the command line, set the XunitMethodName property, e.g.:
 ```cmd
 dotnet build /t:BuildAndTest /p:XunitMethodName={FullyQualifiedNamespace}.{ClassName}.{MethodName}
+```
+
+#### Running outer loop tests
+
+To run all tests, incl. outer loop tests (which are typically slower or less reliable)
+```cmd
+dotnet build /t:BuildAndTest /p:Outerloop=true
 ```
 
 #### Running tests in a different target framework
