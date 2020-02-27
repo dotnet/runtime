@@ -348,12 +348,20 @@ namespace System.Net.Security
             int chunkSize = frameSize;
 
             ReadOnlySpan<byte> availableData = _handshakeBuffer.ActiveReadOnlySpan;
+            // Discard() does not touch data, it just increases start index so next
+            // ActiveSpan will exclude the "discarded" data.
             _handshakeBuffer.Discard(frameSize);
 
             // Often more TLS messages fit into same packet. Get as many complete frames as we can.
             while (_handshakeBuffer.ActiveLength > SecureChannel.ReadHeaderSize)
             {
-                frameSize = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
+                ReadOnlySpan<byte> remainingData = _handshakeBuffer.ActiveReadOnlySpan;
+                if (remainingData[0] >= (int)FrameType.AppData)
+                {
+                    break;
+                }
+
+                frameSize = GetFrameSize(remainingData);
                 if (_handshakeBuffer.ActiveLength >= frameSize)
                 {
                     chunkSize += frameSize;
