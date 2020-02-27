@@ -91,7 +91,7 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeByte;
             _numberOfValues = 1;
-            _parameterValue = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(byte)));
+            _parameterValue = Marshal.AllocHGlobal(sizeof(byte));
 
             if (_parameterValue == IntPtr.Zero)
                 throw Gdip.StatusException(Gdip.OutOfMemory);
@@ -109,7 +109,7 @@ namespace System.Drawing.Imaging
             else
                 _parameterValueType = EncoderParameterValueType.ValueTypeByte;
             _numberOfValues = 1;
-            _parameterValue = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(byte)));
+            _parameterValue = Marshal.AllocHGlobal(sizeof(byte));
 
             if (_parameterValue == IntPtr.Zero)
                 throw Gdip.StatusException(Gdip.OutOfMemory);
@@ -124,7 +124,7 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeShort;
             _numberOfValues = 1;
-            _parameterValue = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(short)));
+            _parameterValue = Marshal.AllocHGlobal(sizeof(short));
 
             if (_parameterValue == IntPtr.Zero)
                 throw Gdip.StatusException(Gdip.OutOfMemory);
@@ -139,7 +139,7 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeLong;
             _numberOfValues = 1;
-            _parameterValue = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(int)));
+            _parameterValue = Marshal.AllocHGlobal(sizeof(int));
 
             if (_parameterValue == IntPtr.Zero)
                 throw Gdip.StatusException(Gdip.OutOfMemory);
@@ -154,7 +154,7 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeRational;
             _numberOfValues = 1;
-            int size = Marshal.SizeOf(typeof(int));
+            int size = sizeof(int);
             _parameterValue = Marshal.AllocHGlobal(2 * size);
 
             if (_parameterValue == IntPtr.Zero)
@@ -171,7 +171,7 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeLongRange;
             _numberOfValues = 1;
-            int size = Marshal.SizeOf(typeof(int));
+            int size = sizeof(int);
             _parameterValue = Marshal.AllocHGlobal(2 * size);
 
             if (_parameterValue == IntPtr.Zero)
@@ -190,7 +190,7 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeRationalRange;
             _numberOfValues = 1;
-            int size = Marshal.SizeOf(typeof(int));
+            int size = sizeof(int);
             _parameterValue = Marshal.AllocHGlobal(4 * size);
 
             if (_parameterValue == IntPtr.Zero)
@@ -257,7 +257,7 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeShort;
             _numberOfValues = value.Length;
-            int size = Marshal.SizeOf(typeof(short));
+            int size = sizeof(short);
 
             _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * size));
 
@@ -274,7 +274,7 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeLong;
             _numberOfValues = value.Length;
-            int size = Marshal.SizeOf(typeof(int));
+            int size = sizeof(int);
 
             _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * size));
 
@@ -301,7 +301,7 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeRational;
             _numberOfValues = numerator.Length;
-            int size = Marshal.SizeOf(typeof(int));
+            int size = sizeof(int);
 
             _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * 2 * size));
 
@@ -325,7 +325,7 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeLongRange;
             _numberOfValues = rangebegin.Length;
-            int size = Marshal.SizeOf(typeof(int));
+            int size = sizeof(int);
 
             _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * 2 * size));
 
@@ -353,7 +353,7 @@ namespace System.Drawing.Imaging
 
             _parameterValueType = EncoderParameterValueType.ValueTypeRationalRange;
             _numberOfValues = numerator1.Length;
-            int size = Marshal.SizeOf(typeof(int));
+            int size = sizeof(int);
 
             _parameterValue = Marshal.AllocHGlobal(checked(_numberOfValues * 4 * size));
 
