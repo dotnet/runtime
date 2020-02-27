@@ -8992,10 +8992,16 @@ public:
 //-------------------------- Global Compiler Data ------------------------------------
 
 #ifdef DEBUG
-    static unsigned s_compMethodsCount; // to produce unique label names
-    unsigned        compGenTreeID;
-    unsigned        compStatementID;
-    unsigned        compBasicBlockID;
+private:
+    static LONG s_compMethodsCount; // to produce unique label names
+#endif
+
+public:
+#ifdef DEBUG
+    LONG     compMethodID;
+    unsigned compGenTreeID;
+    unsigned compStatementID;
+    unsigned compBasicBlockID;
 #endif
 
     BasicBlock* compCurBB;   // the current basic block in process

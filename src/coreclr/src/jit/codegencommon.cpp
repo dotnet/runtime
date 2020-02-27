@@ -998,7 +998,7 @@ void CodeGen::genLogLabel(BasicBlock* bb)
 #ifdef DEBUG
     if (compiler->opts.dspCode)
     {
-        printf("\n      L_M%03u_" FMT_BB ":\n", Compiler::s_compMethodsCount, bb->bbNum);
+        printf("\n      L_M%03u_" FMT_BB ":\n", compiler->compMethodID, bb->bbNum);
     }
 #endif
 }
@@ -10474,7 +10474,7 @@ void CodeGen::genIPmappingDisp(unsigned mappingNum, Compiler::IPmappingDsc* ipMa
     }
 
     printf(" ");
-    ipMapping->ipmdNativeLoc.Print();
+    ipMapping->ipmdNativeLoc.Print(compiler->compMethodID);
     // We can only call this after code generation. Is there any way to tell when it's legal to call?
     // printf(" [%x]", ipMapping->ipmdNativeLoc.CodeOffset(GetEmitter()));
 
