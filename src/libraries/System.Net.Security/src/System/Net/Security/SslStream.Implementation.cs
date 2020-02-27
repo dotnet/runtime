@@ -43,23 +43,13 @@ namespace System.Net.Security
             AppData = 23
         }
 
-        //
-        // This block is used to rule the >>re-handshakes<< that are concurrent with read/write I/O requests.
-        //
-        private const int LockNone = 0;
-        private const int LockWrite = 1;
-        private const int LockHandshake = 2;
-        private const int LockPendingWrite = 3;
-        private const int LockRead = 4;
-        private const int LockPendingRead = 6;
+        private object _handshakeLock = new object();
+        private TaskCompletionSource<bool> _handshakeWaiter = null;
 
         private const int FrameOverhead = 32;
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
         private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
         private ArrayBuffer _handshakeBuffer;
-
-        private int _lockWriteState;
-        private int _lockReadState;
 
         private void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback localCallback)
         {
@@ -175,7 +165,29 @@ namespace System.Net.Security
         private SecurityStatusPal EncryptData(ReadOnlyMemory<byte> buffer, ref byte[] outBuffer, out int outSize)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            return _context.Encrypt(buffer, ref outBuffer, out outSize);
+
+            TaskCompletionSource<bool> waiter = null;
+            while (true)
+            {
+                if (waiter != null)
+                {
+                    waiter.Task.Wait();
+                    _handshakeWaiter = null;
+                }
+
+                lock (_handshakeLock)
+                {
+                    waiter = _handshakeWaiter;
+                    if (_handshakeWaiter != null)
+                    {
+                        // avoid waiting under lock.
+                        continue;
+                    }
+
+                    var ret = _context.Encrypt(buffer, ref outBuffer, out outSize);
+                    return ret;
+                }
+            }
         }
 
         private SecurityStatusPal DecryptData()
@@ -217,14 +229,7 @@ namespace System.Net.Security
         private async Task ReplyOnReAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, byte[] buffer)
             where TIOAdapter : ISslIOAdapter
         {
-            lock (SyncLock)
-            {
-                // Note we are already inside the read, so checking for already going concurrent handshake.
-                _lockReadState = LockHandshake;
-            }
-
             await ForceAuthenticationAsync(adapter, receiveFirst: false, buffer).ConfigureAwait(false);
-            FinishHandshakeRead(LockNone);
         }
 
         // reAuthenticationData is only used on Windows in case of renegotiation.
@@ -395,169 +400,6 @@ namespace System.Net.Security
             return true;
         }
 
-        private void FinishHandshakeRead(int newState)
-        {
-            lock (SyncLock)
-            {
-                // Lock is redundant here. Included for clarity.
-                int lockState = Interlocked.Exchange(ref _lockReadState, newState);
-
-                if (lockState != LockPendingRead)
-                {
-                    return;
-                }
-
-                _lockReadState = LockRead;
-            }
-        }
-
-        // Returns:
-        // -1    - proceed
-        // 0     - queued
-        // X     - some bytes are ready, no need for IO
-        private int CheckEnqueueRead(Memory<byte> buffer)
-        {
-            ThrowIfExceptionalOrNotAuthenticated();
-
-            int lockState = Interlocked.CompareExchange(ref _lockReadState, LockRead, LockNone);
-            if (lockState != LockHandshake)
-            {
-                // Proceed, no concurrent handshake is ongoing so no need for a lock.
-                return -1;
-            }
-
-            LazyAsyncResult lazyResult = null;
-            lock (SyncLock)
-            {
-                // Check again under lock.
-                if (_lockReadState != LockHandshake)
-                {
-                    // The other thread has finished before we grabbed the lock.
-                    _lockReadState = LockRead;
-                    return -1;
-                }
-
-                _lockReadState = LockPendingRead;
-            }
-            // Need to exit from lock before waiting.
-            lazyResult.InternalWaitForCompletion();
-            ThrowIfExceptionalOrNotAuthenticated();
-            return -1;
-        }
-
-        private ValueTask<int> CheckEnqueueReadAsync(Memory<byte> buffer)
-        {
-            ThrowIfExceptionalOrNotAuthenticated();
-
-            int lockState = Interlocked.CompareExchange(ref _lockReadState, LockRead, LockNone);
-            if (lockState != LockHandshake)
-            {
-                // Proceed, no concurrent handshake is ongoing so no need for a lock.
-                return new ValueTask<int>(-1);
-            }
-
-            lock (SyncLock)
-            {
-                // Check again under lock.
-                if (_lockReadState != LockHandshake)
-                {
-                    // The other thread has finished before we grabbed the lock.
-                    _lockReadState = LockRead;
-                    return new ValueTask<int>(-1);
-                }
-
-                _lockReadState = LockPendingRead;
-                TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>(buffer, TaskCreationOptions.RunContinuationsAsynchronously);
-                return new ValueTask<int>(taskCompletionSource.Task);
-            }
-        }
-
-        private Task CheckEnqueueWriteAsync()
-        {
-            ThrowIfExceptionalOrNotAuthenticated();
-
-            // Clear previous request.
-            int lockState = Interlocked.CompareExchange(ref _lockWriteState, LockWrite, LockNone);
-            if (lockState != LockHandshake)
-            {
-                return Task.CompletedTask;
-            }
-
-            lock (SyncLock)
-            {
-                if (_lockWriteState != LockHandshake)
-                {
-                    ThrowIfExceptionalOrNotAuthenticated();
-                    return Task.CompletedTask;
-                }
-
-                _lockWriteState = LockPendingWrite;
-                TaskCompletionSource<int> completionSource = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
-                return completionSource.Task;
-            }
-        }
-
-        private void CheckEnqueueWrite()
-        {
-            // Clear previous request.
-            int lockState = Interlocked.CompareExchange(ref _lockWriteState, LockWrite, LockNone);
-            if (lockState != LockHandshake)
-            {
-                // Proceed with write.
-                return;
-            }
-
-            LazyAsyncResult lazyResult = null;
-            lock (SyncLock)
-            {
-                if (_lockWriteState != LockHandshake)
-                {
-                    // Handshake has completed before we grabbed the lock.
-                    ThrowIfExceptionalOrNotAuthenticated();
-                    return;
-                }
-
-                _lockWriteState = LockPendingWrite;
-            }
-
-            // Need to exit from lock before waiting.
-            lazyResult.InternalWaitForCompletion();
-            ThrowIfExceptionalOrNotAuthenticated();
-            return;
-        }
-
-        private void FinishWrite()
-        {
-            int lockState = Interlocked.CompareExchange(ref _lockWriteState, LockNone, LockWrite);
-            if (lockState != LockHandshake)
-            {
-                return;
-            }
-        }
-
-        private void FinishHandshake(Exception e)
-        {
-            lock (SyncLock)
-            {
-                if (e != null)
-                {
-                    SetException(e);
-                }
-
-                // Release read if any.
-                FinishHandshakeRead(LockNone);
-
-                // If there is a pending write we want to keep it's lock state.
-                int lockState = Interlocked.CompareExchange(ref _lockWriteState, LockNone, LockHandshake);
-                if (lockState != LockPendingWrite)
-                {
-                    return;
-                }
-
-                _lockWriteState = LockWrite;
-            }
-        }
-
         private async ValueTask WriteAsyncChunked<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
             where TIOAdapter : struct, ISslIOAdapter
         {
@@ -572,14 +414,6 @@ namespace System.Net.Security
         private ValueTask WriteSingleChunk<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
             where TIOAdapter : struct, ISslIOAdapter
         {
-            // Request a write IO slot.
-            Task ioSlot = writeAdapter.WriteLockAsync();
-            if (!ioSlot.IsCompletedSuccessfully)
-            {
-                // Operation is async and has been queued, return.
-                return WaitForWriteIOSlot(writeAdapter, ioSlot, buffer);
-            }
-
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length + FrameOverhead);
             byte[] outBuffer = rentedBuffer;
 
@@ -596,18 +430,11 @@ namespace System.Net.Security
             if (t.IsCompletedSuccessfully)
             {
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
-                FinishWrite();
                 return t;
             }
             else
             {
                 return CompleteAsync(t, rentedBuffer);
-            }
-
-            async ValueTask WaitForWriteIOSlot(TIOAdapter wAdapter, Task lockTask, ReadOnlyMemory<byte> buff)
-            {
-                await lockTask.ConfigureAwait(false);
-                await WriteSingleChunk(wAdapter, buff).ConfigureAwait(false);
             }
 
             async ValueTask CompleteAsync(ValueTask writeTask, byte[] bufferToReturn)
@@ -619,7 +446,6 @@ namespace System.Net.Security
                 finally
                 {
                     ArrayPool<byte>.Shared.Return(bufferToReturn);
-                    FinishWrite();
                 }
             }
         }
@@ -687,12 +513,6 @@ namespace System.Net.Security
                         return CopyDecryptedData(buffer);
                     }
 
-                    int copyBytes = await adapter.ReadLockAsync(buffer).ConfigureAwait(false);
-                    if (copyBytes > 0)
-                    {
-                        return copyBytes;
-                    }
-
                     ResetReadBuffer();
 
                     // Read the next frame header.
@@ -734,7 +554,17 @@ namespace System.Net.Security
                     // DecryptData will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
                     _decryptedBytesOffset = _internalOffset;
                     _decryptedBytesCount = payloadBytes;
-                    SecurityStatusPal status = DecryptData();
+
+
+                    SecurityStatusPal status;
+                    lock (_handshakeLock)
+                    {
+                        status = DecryptData();
+                        if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
+                        {
+                            _handshakeWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                        }
+                    }
 
                     // Treat the bytes we just decrypted as consumed
                     // Note, we won't do another buffer read until the decrypted bytes are processed
@@ -887,8 +717,6 @@ namespace System.Net.Security
             }
             catch (Exception e)
             {
-                FinishWrite();
-
                 if (e is IOException || (e is OperationCanceledException && writeAdapter.CancellationToken.IsCancellationRequested))
                 {
                     throw;
