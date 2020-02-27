@@ -3795,6 +3795,7 @@ _SetMinOpts:
         !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) && !opts.compDbgCode)
     {
         info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_MIN_OPT);
+        opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER1);
         compSwitchedToMinOpts = true;
     }
 
