@@ -23,7 +23,7 @@
 #define FOREACH_REGISTER_FILE(file) (file) = &(this->intRegState);
 #endif
 
-class CodeGen : public CodeGenInterface
+class CodeGen final : public CodeGenInterface
 {
     friend class emitter;
     friend class DisAssembler;
@@ -33,6 +33,11 @@ public:
     CodeGen(Compiler* theCompiler);
 
     virtual void genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode);
+
+    void genGenerateMachineCode();
+    void genEmitMachineCode();
+    void genEmitUnwindDebugGCandEH();
+
     // TODO-Cleanup: Abstract out the part of this that finds the addressing mode, and
     // move it to Lower
     virtual bool genCreateAddrMode(GenTree*  addr,
@@ -186,6 +191,12 @@ protected:
     // the current (pending) label ref, a label which has been referenced but not yet seen
     BasicBlock* genPendingCallLabel;
 
+    void**   codePtr;
+    ULONG*   nativeSizeOfCode;
+    unsigned codeSize;
+    void*    coldCodePtr;
+    void*    consPtr;
+
 #ifdef DEBUG
     // Last instr we have displayed for dspInstrs
     unsigned genCurDispOffset;
@@ -241,6 +252,9 @@ protected:
     // Prolog/epilog generation
     //
     //-------------------------------------------------------------------------
+
+    unsigned prologSize;
+    unsigned epilogSize;
 
     //
     // Prolog functions and data (there are a few exceptions for more generally used things)
@@ -1490,6 +1504,37 @@ inline void CodeGen::inst_FS_TT(instruction ins, GenTree* tree)
 inline void CodeGen::inst_RV_CL(instruction ins, regNumber reg, var_types type)
 {
     inst_RV(ins, reg, type);
+}
+
+/*****************************************************************************/
+
+// A simple phase that just invokes a method on the codegen instance
+//
+class CodeGenPhase final : public Phase
+{
+public:
+    CodeGenPhase(CodeGen* _codeGen, Phases _phase, void (CodeGen::*_action)())
+        : Phase(_codeGen->GetCompiler(), _phase), codeGen(_codeGen), action(_action)
+    {
+    }
+
+protected:
+    virtual void DoPhase() override
+    {
+        (codeGen->*action)();
+    }
+
+private:
+    CodeGen* codeGen;
+    void (CodeGen::*action)();
+};
+
+// Wrapper for using CodeGenPhase
+//
+inline void DoPhase(CodeGen* _codeGen, Phases _phase, void (CodeGen::*_action)())
+{
+    CodeGenPhase phase(_codeGen, _phase, _action);
+    phase.Run();
 }
 
 #endif // _CODEGEN_H_

@@ -2025,13 +2025,16 @@ void CodeGen::genInsertNopForUnwinder(BasicBlock* block)
 
 #endif // FEATURE_EH_FUNCLETS
 
-/*****************************************************************************
- *
- *  Generate code for the function.
- */
-
+//----------------------------------------------------------------------
+// genGenerateCode: Generate code for the function.
+//
+// Arguments:
+//     codePtr [OUT] - address of generated code
+//     nativeSizeOfCode [OUT] - length of generated code in bytes
+//
 void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 {
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -2040,12 +2043,19 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
     }
 #endif
 
-    unsigned codeSize;
-    unsigned prologSize;
-    unsigned epilogSize;
+    this->codePtr          = codePtr;
+    this->nativeSizeOfCode = nativeSizeOfCode;
 
-    void* consPtr;
+    DoPhase(this, PHASE_GENERATE_CODE, &CodeGen::genGenerateMachineCode);
+    DoPhase(this, PHASE_EMIT_CODE, &CodeGen::genEmitMachineCode);
+    DoPhase(this, PHASE_EMIT_GCEH, &CodeGen::genEmitUnwindDebugGCandEH);
+}
 
+//----------------------------------------------------------------------
+// genGenerateMachineCode -- determine which machine instructions to emit
+//
+void CodeGen::genGenerateMachineCode()
+{
 #ifdef DEBUG
     genInterruptibleUsed = true;
 
@@ -2237,7 +2247,13 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
     GetEmitter()->emitJumpDistBind();
 
     /* The code is now complete and final; it should not change after this. */
+}
 
+//----------------------------------------------------------------------
+// genEmitMachineCode -- emit the actual machine instruction code
+//
+void CodeGen::genEmitMachineCode()
+{
     /* Compute the size of the code sections that we are going to ask the VM
        to allocate. Note that this might not be precisely the size of the
        code we emit, though it's fatal if we emit more code than the size we
@@ -2283,8 +2299,6 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 
 #endif // DISPLAY_SIZES
 
-    void* coldCodePtr;
-
     bool trackedStackPtrsContig; // are tracked stk-ptrs contiguous ?
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
@@ -2296,13 +2310,9 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
     trackedStackPtrsContig = !compiler->opts.compDbgEnC;
 #endif
 
-    compiler->EndPhase(PHASE_GENERATE_CODE);
-
     codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
                                             IsFullPtrRegMapRequired(), compiler->compHndBBtabCount, &prologSize,
                                             &epilogSize, codePtr, &coldCodePtr, &consPtr);
-
-    compiler->EndPhase(PHASE_EMIT_CODE);
 
 #ifdef DEBUG
     assert(compiler->compCodeGenDone == false);
@@ -2367,7 +2377,13 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
     // Don't start a method in the last 7 bytes of a 16-byte alignment area
     //   unless we are generating SMALL_CODE
     // noway_assert( (((unsigned)(*codePtr) % 16) <= 8) || (compiler->compCodeOpt() == SMALL_CODE));
+}
 
+//----------------------------------------------------------------------
+// genEmitUnwindDebugGCandEH: emit unwind, debug, gc, and EH info
+//
+void CodeGen::genEmitUnwindDebugGCandEH()
+{
     /* Now that the code is issued, we can finalize and emit the unwind data */
 
     compiler->unwindEmit(*codePtr, coldCodePtr);
@@ -2504,8 +2520,6 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
     grossNCsize += codeSize + dataSize;
 
 #endif // DISPLAY_SIZES
-
-    compiler->EndPhase(PHASE_EMIT_GCEH);
 }
 
 /*****************************************************************************
