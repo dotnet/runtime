@@ -4796,45 +4796,48 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
     //
     // We don't need a copy if this is the last use of an implicit by-ref local.
     //
-    // We can't determine that all of the time, but if there is only
-    // one use and the method has no loops, then this use must be the last.
     if (opts.OptimizationEnabled())
     {
-        GenTreeLclVarCommon* lcl = nullptr;
-
-        if (argx->OperIsLocal())
-        {
-            lcl = argx->AsLclVarCommon();
-        }
-        else if ((argx->OperGet() == GT_OBJ) && argx->AsIndir()->Addr()->OperIsLocal())
-        {
-            lcl = argx->AsObj()->Addr()->AsLclVarCommon();
-        }
+        GenTreeLclVarCommon* const lcl = argx->IsImplicitByrefParameterValue(this);
 
         if (lcl != nullptr)
         {
-            unsigned varNum = lcl->AsLclVarCommon()->GetLclNum();
-            if (lvaIsImplicitByRefLocal(varNum))
+            unsigned             varNum           = lcl->AsLclVarCommon()->GetLclNum();
+            LclVarDsc*           varDsc           = lvaGetDesc(varNum);
+            const unsigned short totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
+
+            // We don't have liveness so we rely on other indications of last use.
+            //
+            // We handle these cases:
+            //
+            // * (must not copy) If the call is a tail call, the use is a last use.
+            //   We must skip the copy if we have a fast tail call.
+            //
+            // * (must copy) However the current slow tail call helper always copies
+            //   the tail call args from the current frame, so we must copy
+            //   if the tail call is a slow tail call.
+            //
+            // * (may not copy) if the call is noreturn, the use is a last use.
+            //
+            // * (may not copy) if there is exactly one use of the local in the method,
+            //   and the call is not in loop, this is a last use.
+            //
+            const bool isTailCallLastUse = call->IsTailCall();
+            const bool isCallLastUse     = (totalAppearances == 1) && !fgMightHaveLoop();
+            const bool isNoReturnLastUse = call->IsNoReturn();
+            if (!call->IsTailCallViaHelper() && (isTailCallLastUse || isCallLastUse || isNoReturnLastUse))
             {
-                LclVarDsc* varDsc = &lvaTable[varNum];
-                // JIT_TailCall helper has an implicit assumption that all tail call arguments live
-                // on the caller's frame. If an argument lives on the caller caller's frame, it may get
-                // overwritten if that frame is reused for the tail call. Therefore, we should always copy
-                // struct parameters if they are passed as arguments to a tail call.
-                if (!call->IsTailCallViaHelper() && (varDsc->lvRefCnt(RCS_EARLY) == 1) && !fgMightHaveLoop())
-                {
-                    assert(!call->IsTailCall());
+                varDsc->setLvRefCnt(0, RCS_EARLY);
+                args->SetNode(lcl);
+                assert(argEntry->GetNode() == lcl);
 
-                    varDsc->setLvRefCnt(0, RCS_EARLY);
-                    args->SetNode(lcl);
-                    assert(argEntry->GetNode() == lcl);
-
-                    JITDUMP("did not have to make outgoing copy for V%2d", varNum);
-                    return;
-                }
+                JITDUMP("did not need to make outgoing copy for last use of implicit byref V%2d\n", varNum);
+                return;
             }
         }
     }
+
+    JITDUMP("making an outgoing copy for struct arg\n");
 
     if (fgOutgoingArgTemps == nullptr)
     {
@@ -6550,7 +6553,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 //
 // Windows Amd64:
 //    A fast tail call can be made whenever the number of callee arguments
-//    is larger than or equal to the number of caller arguments, or we have four
+//    is less than or equal to the number of caller arguments, or we have four
 //    or fewer callee arguments. This is because, on Windows AMD64, each
 //    argument uses exactly one register or one 8-byte stack slot. Thus, we only
 //    need to count arguments, and not be concerned with the size of each
@@ -6688,12 +6691,30 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 
         if (arg->isStruct)
         {
-            // Byref struct arguments are not allowed to fast tail call as the information
-            // of the caller's stack is lost when the callee is compiled.
             if (arg->passedByRef)
             {
-                hasByrefParameter = true;
-                break;
+                // If we're optimizing, we may be able to pass our caller's byref to our callee,
+                // and so still be able to tail call.
+                GenTreeLclVarCommon* const lcl = arg->GetNode()->IsImplicitByrefParameterValue(this);
+
+                // For this to work we must not have promoted the parameter; if we've promoted
+                // then we'll make a local struct at the call.
+                //
+                // We could handle this if there was some way to copy back to the original struct.
+                if (opts.OptimizationEnabled() && (lcl != nullptr) && !lvaGetDesc(lcl)->lvPromoted)
+                {
+                    // We can still tail call in this case, provided we
+                    // suppress the copy in fgMakeOutgoingStructArgCopy
+                    JITDUMP("Arg [%06u] is unpromoted implicit byref V%02u\n", dspTreeID(arg->GetNode()),
+                            lcl->GetLclNum());
+                }
+                else
+                {
+                    // We can't tail call in this case; note the reason why
+                    // and skip looking at the rest of the args.
+                    hasByrefParameter = true;
+                    break;
+                }
             }
         }
     }
@@ -6748,17 +6769,18 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #endif // DEBUG
     };
 
-// Note on vararg methods:
-// If the caller is vararg method, we don't know the number of arguments passed by caller's caller.
-// But we can be sure that in-coming arg area of vararg caller would be sufficient to hold its
-// fixed args. Therefore, we can allow a vararg method to fast tail call other methods as long as
-// out-going area required for callee is bounded by caller's fixed argument space.
-//
-// Note that callee being a vararg method is not a problem since we can account the params being passed.
-//
-// We will currently decide to not fast tail call on Windows armarch if the caller or callee is a vararg
-// method. This is due to the ABI differences for native vararg methods for these platforms. There is
-// work required to shuffle arguments to the correct locations.
+    // Note on vararg methods:
+    // If the caller is vararg method, we don't know the number of arguments passed by caller's caller.
+    // But we can be sure that in-coming arg area of vararg caller would be sufficient to hold its
+    // fixed args. Therefore, we can allow a vararg method to fast tail call other methods as long as
+    // out-going area required for callee is bounded by caller's fixed argument space.
+    //
+    // Note that callee being a vararg method is not a problem since we can account the params being passed.
+    //
+    // We will currently decide to not fast tail call on Windows armarch if the caller or callee is a vararg
+    // method. This is due to the ABI differences for native vararg methods for these platforms. There is
+    // work required to shuffle arguments to the correct locations.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if (defined(TARGET_WINDOWS) && defined(TARGET_ARM)) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64))
     if (info.compIsVarArgs || callee->IsVarargs())
@@ -6836,13 +6858,18 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     // It cannot be an inline candidate
     assert(!call->IsInlineCandidate());
 
-    auto failTailCall = [&](const char* reason) {
+    auto failTailCall = [&](const char* reason, unsigned lclNum = BAD_VAR_NUM) {
 #ifdef DEBUG
         if (verbose)
         {
             printf("\nRejecting tail call in morph for call ");
             printTreeID(call);
-            printf(": %s\n", reason);
+            printf(": %s", reason);
+            if (lclNum != BAD_VAR_NUM)
+            {
+                printf(" V%02u", lclNum);
+            }
+            printf("\n");
         }
 #endif
 
@@ -6946,9 +6973,9 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         //
         if (call->IsImplicitTailCall())
         {
-            if (varDsc->lvHasLdAddrOp)
+            if (varDsc->lvHasLdAddrOp && !lvaIsImplicitByRefLocal(varNum))
             {
-                failTailCall("Local address taken");
+                failTailCall("Local address taken", varNum);
                 return nullptr;
             }
             if (varDsc->lvAddrExposed)
@@ -6971,20 +6998,20 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                 }
                 else
                 {
-                    failTailCall("Local address taken");
+                    failTailCall("Local address taken", varNum);
                     return nullptr;
                 }
             }
             if (varDsc->lvPromoted && varDsc->lvIsParam && !lvaIsImplicitByRefLocal(varNum))
             {
-                failTailCall("Has Struct Promoted Param");
+                failTailCall("Has Struct Promoted Param", varNum);
                 return nullptr;
             }
             if (varDsc->lvPinned)
             {
                 // A tail call removes the method from the stack, which means the pinning
                 // goes away for the callee.  We can't allow that.
-                failTailCall("Has Pinned Vars");
+                failTailCall("Has Pinned Vars", varNum);
                 return nullptr;
             }
         }
@@ -16828,8 +16855,23 @@ void Compiler::fgRetypeImplicitByRefArgs()
                 // through the pointer parameter, the same as we'd do for this
                 // parameter if it weren't promoted at all (otherwise the initialization
                 // of the new temp would just be a needless memcpy at method entry).
-                bool undoPromotion = (lvaGetPromotionType(newVarDsc) == PROMOTION_TYPE_DEPENDENT) ||
-                                     (varDsc->lvRefCnt(RCS_EARLY) <= varDsc->lvFieldCnt);
+                //
+                // Otherwise, see how many appearances there are. We keep two early ref counts: total
+                // number of references to the struct or some field, and how many of these are
+                // arguments to calls. We undo promotion unless we see enougn non-call uses.
+                //
+                const unsigned totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
+                const unsigned callAppearances  = varDsc->lvRefCntWtd(RCS_EARLY);
+                assert(totalAppearances >= callAppearances);
+                const unsigned nonCallAppearances = totalAppearances - callAppearances;
+
+                bool undoPromotion = ((lvaGetPromotionType(newVarDsc) == PROMOTION_TYPE_DEPENDENT) ||
+                                      (nonCallAppearances <= varDsc->lvFieldCnt));
+
+                JITDUMP("%s promotion of implicit by-ref V%02u: %s total: %u non-call: %u fields: %u\n",
+                        undoPromotion ? "Undoing" : "Keeping", lclNum,
+                        (lvaGetPromotionType(newVarDsc) == PROMOTION_TYPE_DEPENDENT) ? "dependent;" : "",
+                        totalAppearances, nonCallAppearances, varDsc->lvFieldCnt);
 
                 if (!undoPromotion)
                 {
@@ -16863,7 +16905,7 @@ void Compiler::fgRetypeImplicitByRefArgs()
                     {
                         // Set the new parent.
                         fieldVarDsc->lvParentLcl = newLclNum;
-                        // Clear the ref count field; it is used to communicate the nubmer of references
+                        // Clear the ref count field; it is used to communicate the number of references
                         // to the implicit byref parameter when morphing calls that pass the implicit byref
                         // out as an outgoing argument value, but that doesn't pertain to this field local
                         // which is now a field of a non-arg local.
