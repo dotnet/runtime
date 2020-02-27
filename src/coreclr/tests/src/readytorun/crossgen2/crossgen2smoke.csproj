@@ -6,7 +6,7 @@
     <CLRTestPriority>0</CLRTestPriority>
 
     <!-- Crossgen2 currently targets only x64 -->
-    <DisableProjectBuild Condition="'$(Platform)' != 'x64'">true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(BuildArch)' != 'x64'">true</DisableProjectBuild>
 
     <!-- Generate ILDLL so that the DLL can be the crossgenned assembly -->
     <TargetExt>.ildll</TargetExt>
