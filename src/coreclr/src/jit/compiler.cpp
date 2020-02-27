@@ -4910,6 +4910,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
 
+    // We're done -- set the active phase to the last phase
+    // (which isn't really a phase)
+    mostRecentlyActivePhase = PHASE_POST_EMIT;
+
 #ifdef FEATURE_JIT_METHOD_PERF
     if (pCompJitTimer)
     {
