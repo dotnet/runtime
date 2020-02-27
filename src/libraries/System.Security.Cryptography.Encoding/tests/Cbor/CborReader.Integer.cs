@@ -123,22 +123,22 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     return (ulong)x;
 
                 case CborAdditionalInfo.UnsignedInteger8BitEncoding:
-                    EnsureBuffer(1);
+                    EnsureBuffer(2);
                     additionalBytes = 1;
                     return _buffer[1];
 
                 case CborAdditionalInfo.UnsignedInteger16BitEncoding:
-                    EnsureBuffer(2);
+                    EnsureBuffer(3);
                     additionalBytes = 2;
                     return BinaryPrimitives.ReadUInt16BigEndian(_buffer.Slice(1));
 
                 case CborAdditionalInfo.UnsignedInteger32BitEncoding:
-                    EnsureBuffer(4);
+                    EnsureBuffer(5);
                     additionalBytes = 4;
                     return BinaryPrimitives.ReadUInt32BigEndian(_buffer.Slice(1));
 
                 case CborAdditionalInfo.UnsignedInteger64BitEncoding:
-                    EnsureBuffer(8);
+                    EnsureBuffer(9);
                     additionalBytes = 8;
                     return BinaryPrimitives.ReadUInt64BigEndian(_buffer.Slice(1));
 

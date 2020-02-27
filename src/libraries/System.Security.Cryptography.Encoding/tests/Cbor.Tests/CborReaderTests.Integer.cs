@@ -27,6 +27,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(1000000000000, "1b000000e8d4a51000")]
         [InlineData(-1, "20")]
         [InlineData(-10, "29")]
+        [InlineData(-24, "37")]
         [InlineData(-100, "3863")]
         [InlineData(-1000, "3903e7")]
         [InlineData(byte.MaxValue, "18ff")]
@@ -130,6 +131,36 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 var reader = new CborValueReader(data);
                 reader.ReadUInt64();
             });
+        }
+
+        [Theory]
+        // all possible encodings for the value 23
+        [InlineData("17")]
+        [InlineData("1817")]
+        [InlineData("190017")]
+        [InlineData("1a00000017")]
+        [InlineData("1b0000000000000017")]
+        public static void UInt64Reader_SingleValue_ShouldSupportNonCanonicalEncodings(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborValueReader(data);
+            ulong result = reader.ReadUInt64();
+            Assert.Equal(23ul, result);
+        }
+
+        [Theory]
+        // all possible encodings for the value -24
+        [InlineData("37")]
+        [InlineData("3817")]
+        [InlineData("390017")]
+        [InlineData("3a00000017")]
+        [InlineData("3b0000000000000017")]
+        public static void Int64Reader_SingleValue_ShouldSupportNonCanonicalEncodings(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborValueReader(data);
+            long result = reader.ReadInt64();
+            Assert.Equal(-24, result);
         }
     }
 }
