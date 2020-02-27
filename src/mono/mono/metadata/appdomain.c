@@ -1538,6 +1538,7 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 
 	if (!g_hash_table_lookup (ht, ass)) {
 		mono_assembly_addref (ass);
+		g_hash_table_add (ht, ass);
 		domain->domain_assemblies = g_slist_append (domain->domain_assemblies, ass);
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to domain %s, ref_count=%d", ass->aname.name, ass, domain->friendly_name, ass->ref_count);
 	}
