@@ -158,25 +158,7 @@ public sealed class FinalizerTest {
 
 
     public static int Main(string[] args) {
-
-        uint sizeInMB = 0;
-        try {
-            sizeInMB = UInt32.Parse(args[0]);
-        } catch (Exception e) {
-            if ( (e is IndexOutOfRangeException) || (e is FormatException) || (e is OverflowException) ) {
-                Console.WriteLine("args: uint - number of MB to allocate");
-                return 0;
-            }
-            throw;
-        }
-
-        int availableMem = MemCheck.GetPhysicalMem();
-        if (availableMem != -1 && availableMem < sizeInMB){
-            sizeInMB = (uint)(availableMem > 300 ? 300 : (availableMem / 2));
-            Console.WriteLine("Not enough memory. Allocating " + sizeInMB + "MB instead.");
-        }
-
-        FinalizerTest test = new FinalizerTest(sizeInMB);
+        FinalizerTest test = new FinalizerTest(MemCheck.ParseSizeMBAndLimitByAvailableMem(args));
 
         if (test.RunTests()) {
             Console.WriteLine("Test passed");

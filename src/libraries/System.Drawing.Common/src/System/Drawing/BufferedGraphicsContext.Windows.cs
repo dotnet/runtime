@@ -18,8 +18,8 @@ namespace System.Drawing
         private IntPtr _compatDC;
         private IntPtr _dib;
         private IntPtr _oldBitmap;
-        private Graphics _compatGraphics;
-        private BufferedGraphics _buffer;
+        private Graphics? _compatGraphics;
+        private BufferedGraphics? _buffer;
         private int _busy;
         private bool _invalidateWhenFree;
 
@@ -30,7 +30,7 @@ namespace System.Drawing
         /// <summary>
         /// Returns a BufferedGraphics that is matched for the specified target HDC object.
         /// </summary>
-        private BufferedGraphics AllocBuffer(Graphics targetGraphics, IntPtr targetDC, Rectangle targetRectangle)
+        private BufferedGraphics AllocBuffer(Graphics? targetGraphics, IntPtr targetDC, Rectangle targetRectangle)
         {
             int oldBusy = Interlocked.CompareExchange(ref _busy, BufferBusyPainting, BufferFree);
 
@@ -304,7 +304,7 @@ namespace System.Drawing
                 // Create the DIB section. Let Win32 allocate the memory and return
                 // a pointer to the bitmap surface.
                 hbmRet = SafeNativeMethods.CreateDIBSection(new HandleRef(null, hdc), ref pbmi, NativeMethods.DIB_RGB_COLORS, ref ppvBits, IntPtr.Zero, 0);
-                Win32Exception ex = null;
+                Win32Exception? ex = null;
                 if (hbmRet == IntPtr.Zero)
                 {
                     ex = new Win32Exception(Marshal.GetLastWin32Error());

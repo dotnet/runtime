@@ -229,6 +229,8 @@ namespace Internal.JitInterface
                 _compilation.NodeFactory.Target.MinimumFunctionAlignment :
                 _compilation.NodeFactory.Target.OptimumFunctionAlignment;
 
+            alignment = Math.Max(alignment, _codeAlignment);
+
             var objectData = new ObjectNode.ObjectData(_code,
                                                        relocs,
                                                        alignment,
@@ -2489,6 +2491,7 @@ namespace Internal.JitInterface
 
         private byte[] _code;
         private byte[] _coldCode;
+        private int _codeAlignment;
 
         private byte[] _roData;
 
@@ -2508,11 +2511,25 @@ namespace Internal.JitInterface
             if (coldCodeSize != 0)
                 coldCodeBlock = (void*)GetPin(_coldCode = new byte[coldCodeSize]);
 
+            _codeAlignment = -1;
+            if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+            {
+                _codeAlignment = 32;
+            }
+            else if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+            {
+                _codeAlignment = 16;
+            }
+
             if (roDataSize != 0)
             {
                 int alignment = 8;
 
-                if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+                if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+                {
+                    alignment = 32;
+                }
+                else if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
                 {
                     alignment = 16;
                 }

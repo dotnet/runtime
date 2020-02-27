@@ -2833,9 +2833,16 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         // Absolute addresses marked as contained should fit within the base of addr mode.
         assert(memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
 
-        // Either not generating relocatable code, or addr must be an icon handle, or the
-        // constant is zero (which we won't generate a relocation for).
-        assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0));
+        // If we reach here, either:
+        // - we are not generating relocatable code, (typically the non-AOT JIT case)
+        // - the base address is a handle represented by an integer constant,
+        // - the base address is a constant zero, or
+        // - the base address is a constant that fits into the memory instruction (this can happen on x86).
+        //   This last case is captured in the FitsInAddrBase method which is used by Lowering to determine that it can
+        //   be contained.
+        //
+        assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0) ||
+               memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
 
         if (memBase->AsIntConCommon()->AddrNeedsReloc(emitComp))
         {

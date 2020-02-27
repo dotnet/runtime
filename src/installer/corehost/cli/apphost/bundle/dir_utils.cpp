@@ -56,7 +56,10 @@ void dir_utils_t::remove_directory_tree(const pal::string_t& path)
 
     for (const pal::string_t &dir : dirs)
     {
-        remove_directory_tree(dir);
+        pal::string_t dir_path = path;
+        append_path(&dir_path, dir.c_str());
+
+        remove_directory_tree(dir_path);
     }
 
     std::vector<pal::string_t> files;
@@ -64,9 +67,12 @@ void dir_utils_t::remove_directory_tree(const pal::string_t& path)
 
     for (const pal::string_t &file : files)
     {
-        if (!pal::remove(file.c_str()))
+        pal::string_t file_path = path;
+        append_path(&file_path, file.c_str());
+
+        if (!pal::remove(file_path.c_str()))
         {
-            trace::warning(_X("Failed to remove temporary file [%s]."), file.c_str());
+            trace::warning(_X("Failed to remove temporary file [%s]."), file_path.c_str());
         }
     }
 
@@ -90,4 +96,47 @@ void dir_utils_t::fixup_path_separator(pal::string_t& path)
             path[pos] = DIR_SEPARATOR;
         }
     }
+}
+
+// Retry the rename operation with some wait in between the attempts.
+// This is an attempt to workaround for possible file locking caused by AV software.
+
+bool dir_utils_t::rename_with_retries(pal::string_t& old_name, pal::string_t& new_name, bool& dir_exists)
+{
+    for (int retry_count=0; retry_count < 500; retry_count++)
+    {
+        if (pal::rename(old_name.c_str(), new_name.c_str()) == 0)
+        {
+            return true;
+        }
+        bool should_retry = errno == EACCES;
+
+        if (pal::directory_exists(new_name))
+        {
+            // Check directory_exists() on each run, because a concurrent process may have
+            // created the new_name directory.
+            //
+            // The rename() operation above fails with errono == EACCESS if 
+            // * Directory new_name already exists, or
+            // * Paths are invalid paths, or
+            // * Due to locking/permission problems.
+            // Therefore, we need to perform the directory_exists() check again.
+
+            dir_exists = true;
+            return false;
+        }
+
+        if (should_retry)
+        {
+            trace::info(_X("Retrying Rename [%s] to [%s] due to EACCES error"), old_name.c_str(), new_name.c_str());
+            pal::sleep(100);
+            continue;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    return false;
 }

@@ -2412,11 +2412,11 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 
 #ifdef USING_VARIABLE_LIVE_RANGE
                 // Report the home change for this variable
-                varLiveKeeper->siUpdateVariableLiveRange(varDsc, lcl->GetLclNum())
+                varLiveKeeper->siUpdateVariableLiveRange(varDsc, lcl->GetLclNum());
 #endif // USING_VARIABLE_LIVE_RANGE
 
-                    // The new location is going live
-                    genUpdateRegLife(varDsc, /*isBorn*/ true, /*isDying*/ false DEBUGARG(treeNode));
+                // The new location is going live
+                genUpdateRegLife(varDsc, /*isBorn*/ true, /*isDying*/ false DEBUGARG(treeNode));
             }
         }
     }
