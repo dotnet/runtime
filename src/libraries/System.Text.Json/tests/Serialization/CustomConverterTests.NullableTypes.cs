@@ -111,5 +111,19 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<TestStructInvalidClass>(@"{""MyInt"":null}"));
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<TestStructInvalidClass>(@"{""MyInt"":1}"));
         }
+
+        [Fact]
+        public static void NullableStandardValueTypeTest()
+        {
+            {
+                int? myInt = JsonSerializer.Deserialize<int?>("null");
+                Assert.False(myInt.HasValue);
+            }
+
+            {
+                int? myInt = JsonSerializer.Deserialize<int?>("1");
+                Assert.Equal(1, myInt.Value);
+            }
+        }
     }
 }
