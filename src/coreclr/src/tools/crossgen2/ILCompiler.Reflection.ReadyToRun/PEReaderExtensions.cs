@@ -70,6 +70,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
 
             BlobReader namePointerReader = peImage.GetReader(peReader.GetOffset(namePointerRVA), sizeof(int) * namePointerCount);
+            StringBuilder nameBuilder = new StringBuilder();
             for (int entryIndex = 0; entryIndex < namePointerCount; entryIndex++)
             {
                 int nameRVA = namePointerReader.ReadInt32();
@@ -77,7 +78,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     int nameOffset = peReader.GetOffset(nameRVA);
                     BlobReader nameReader = peImage.GetReader(nameOffset, peImage.Length - nameOffset);
-                    StringBuilder nameBuilder = new StringBuilder();
+                    nameBuilder.Clear();
                     for (byte ascii; (ascii = nameReader.ReadByte()) != 0;)
                     {
                         nameBuilder.Append((char)ascii);
