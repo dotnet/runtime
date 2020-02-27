@@ -41,5 +41,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             writer.WriteTextString(input);
             AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
         }
+
+        [Fact]
+        public static void WriteTextString_InvalidUnicodeString_ShouldThrowEncoderFallbackException()
+        {
+            // NB Xunit's InlineDataAttribute will corrupt string literals containing invalid unicode
+            string invalidUnicodeString = "\ud800";
+            using var writer = new CborWriter();
+            Assert.Throws<System.Text.EncoderFallbackException>(() => writer.WriteTextString(invalidUnicodeString));
+        }
     }
 }

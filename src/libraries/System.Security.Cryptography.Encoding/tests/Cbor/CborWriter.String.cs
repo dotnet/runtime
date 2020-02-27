@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal partial class CborWriter
     {
-        private static readonly System.Text.Encoding s_utf8Encoding = System.Text.Encoding.UTF8;
+        private static readonly System.Text.Encoding s_utf8Encoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         // Implements major type 2 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public void WriteByteString(ReadOnlySpan<byte> value)
