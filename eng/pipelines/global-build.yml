@@ -91,4 +91,4 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: Mono_Libraries
-      buildArgs: -subsetCategory libraries-mono
+      buildArgs: -subsetCategory libraries-mono /p:RuntimeFlavor=Mono
