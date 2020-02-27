@@ -6464,7 +6464,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 int i = 0;
                 for (; i < blkSize; i += XMM_REGSIZE_BYTES)
                 {
-                    emit->emitIns_AR_R(simdMov, EA_ATTR(regSize), zeroSIMDReg, frameReg, alignedLclLo + i);
+                    emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, alignedLclLo + i);
                 }
 
                 assert(i == blkSize);
