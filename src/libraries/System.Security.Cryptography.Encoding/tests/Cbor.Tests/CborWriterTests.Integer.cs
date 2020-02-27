@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(-2 - uint.MaxValue, "3b0000000100000000")]
         [InlineData(long.MinValue, "3b7fffffffffffffff")]
         [InlineData(long.MaxValue, "1b7fffffffffffffff")]
-        public static void SingleValue_Int64Writer_HappyPath(long input, string hexExpectedEncoding)
+        public static void Int64Writer_SingleValue_HappyPath(long input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
@@ -70,7 +70,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData((ulong)uint.MaxValue + 1, "1b0000000100000000")]
         [InlineData(long.MaxValue, "1b7fffffffffffffff")]
         [InlineData(ulong.MaxValue, "1bffffffffffffffff")]
-        public static void SingleValue_UInt64Writer_HappyPath(ulong input, string hexExpectedEncoding)
+        public static void UInt64Writer_SingleValue_HappyPath(ulong input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();

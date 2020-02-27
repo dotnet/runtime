@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("", "40")]
         [InlineData("01020304", "4401020304")]
         [InlineData("ffffffffffffffffffffffffffff", "4effffffffffffffffffffffffffff")]
-        public static void SingleValue_ReadByteString_HappyPath(string hexExpectedValue, string hexEncoding)
+        public static void ReadByteString_SingleValue_HappyPath(string hexExpectedValue, string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             byte[] expectedValue = hexExpectedValue.HexToByteArray();
@@ -33,8 +33,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("\"\\", "62225c")]
         [InlineData("\u00fc", "62c3bc")]
         [InlineData("\u6c34", "63e6b0b4")]
-        [InlineData("\ud800\udd51", "64f0908591")]  
-        public static void SingleValue_ReadTextString_HappyPath(string expectedValue, string hexEncoding)
+        [InlineData("\ud800\udd51", "64f0908591")]
+        public static void ReadTextString_SingleValue_HappyPath(string expectedValue, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborValueReader(data);
