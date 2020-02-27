@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
@@ -15,24 +16,15 @@ namespace System.Diagnostics.Tests
             using (ActivitySource source = new ActivitySource("Source1"))
             {
                 Assert.Equal("Source1", source.Name);
-                Assert.True(ActivitySource.ActiveList.Count() > 0);
-                Assert.Same(source, ActivitySource.ActiveList.FirstOrDefault(c => c.Name == source.Name));
-
-                using (ActivitySource source1 = new ActivitySource("Source1"))
-                {
-                    Assert.NotSame(source, source1);
-                }
             }
-
-            Assert.Null(ActivitySource.ActiveList.FirstOrDefault(c => c.Name == "Source1"));
         }
 
         [Fact]
-        public void CreateActivityTest()
+        public void StartActivityTest()
         {
             using (ActivitySource source = new ActivitySource("Source2"))
             {
-                using (Activity activity = source.CreateActivity())
+                using (Activity activity = source.StartActivity())
                 {
                     // No listener, activity should be null
                     Assert.Null(activity);
@@ -43,85 +35,67 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void SourceListenerTests()
         {
-            int count = 0;
+            Listener listener;
 
-            EventHandler<ActivitySourceEventArgs> eventHandler = (o, a) =>
+            using (listener = new Listener(enableListening: false, createActivities: false))
             {
-                Assert.Equal(ActivitySourceEventOperation.SourceCreated, a.Operation);
-                count++;
-            };
-
-            ActivitySource.OperationEvent += eventHandler;
-
-            using (ActivitySource source = new ActivitySource("Source3"))
-            {
-                Assert.Equal(1, count);
-                using (ActivitySource source1 = new ActivitySource("Source4"))
+                ActivitySource.AddListener(listener);
+                using (ActivitySource source = new ActivitySource("Source3"))
                 {
-                    Assert.Equal(2, count);
-                    using (ActivitySource source2 = new ActivitySource("Source5"))
+                    using (Activity activity = source.StartActivity())
                     {
-                        Assert.Equal(3, count);
+                        // There is a listener which will not intereseted to listen to any source.
+                        Assert.Null(activity);
+                        Assert.Equal(0, listener.Count);
+                        Assert.Equal(0, listener.SourceNames.Count());
                     }
                 }
             }
 
-            using (ActivitySource source = new ActivitySource("Source6"))
+            using (listener = new Listener(enableListening: true, createActivities: false))
             {
-                Assert.Equal(4, count);
-
-                ActivitySource.OperationEvent -= eventHandler;
-
-                using (ActivitySource source1 = new ActivitySource("Source7"))
+                ActivitySource.AddListener(listener);
+                using (ActivitySource source = new ActivitySource("Source4"))
                 {
-                    Assert.Equal(4, count);
+                    using (Activity activity = source.StartActivity())
+                    {
+                        // There is a listener which is listening but not allowing to create any activity.
+                        Assert.Null(activity);
+                        Assert.Equal(0, listener.Count);
+                        Assert.Equal(1, listener.SourceNames.Count());
+                    }
                 }
             }
-        }
 
-        [Fact]
-        public void ActivityListenerTests()
-        {
-            int count = 0;
-
-            EventHandler<ActivitySourceEventArgs> eventHandler = (o, a) => {
-                if (a.Operation == ActivitySourceEventOperation.ActivityStarted)
-                {
-                    count++;
-                }
-                else if (a.Operation == ActivitySourceEventOperation.ActivityStopped)
-                {
-                    count--;
-                }
-                else
-                {
-                    Assert.True(false, "Shouldn't get Operation value different than ActivityStarted or ActivityStopped");
-                }
-            };
-
-            using (ActivitySource source = new ActivitySource("Source8"))
+            using (listener = new Listener(enableListening: true, createActivities: true))
             {
-                source.ActivityEvent += eventHandler;
-
-                using (Activity activity = source.CreateActivity())
+                ActivitySource.AddListener(listener);
+                using (ActivitySource source = new ActivitySource("Source5"))
                 {
-                    Assert.NotNull(activity);
-                    Assert.Equal(1, count);
-                    using (Activity activity1 = source.CreateActivity())
+                    Assert.Equal(0, listener.Count);
+                    Assert.Equal(1, listener.SourceNames.Count());
+
+                    using (Activity activity = source.StartActivity())
                     {
-                        Assert.NotNull(activity1);
-                        Assert.Equal(2, count);
+                        Assert.NotNull(activity);
+
+                        // We should already got Activity start event
+                        Assert.Equal(1, listener.Count);
                     }
-                    Assert.Equal(1, count);
-                }
-                Assert.Equal(0, count);
 
-                source.ActivityEvent -= eventHandler;
+                    // We should already got Activity stop event
+                    Assert.Equal(0, listener.Count);
 
-                using (Activity activity = source.CreateActivity())
-                {
-                    Assert.Null(activity);
-                    Assert.Equal(0, count);
+                    using (ActivitySource source1 = new ActivitySource("Source5"))
+                    {
+                        Assert.Equal(2, listener.SourceNames.Count());
+                        foreach (string s in listener.SourceNames)
+                        {
+                            // We are listening to 2 sources with the same name.
+                            Assert.Equal("Source5", s);
+                        }
+                    }
+
                 }
             }
         }
@@ -129,22 +103,59 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void CreateActivityFromContextTests()
         {
-            EventHandler<ActivitySourceEventArgs> eventHandler = (o, a) => { };
-
-            using (ActivitySource source = new ActivitySource("Source9"))
+            using (Listener listener = new Listener(enableListening: true, createActivities: true))
             {
-                source.ActivityEvent += eventHandler; // to ensure creating non-null activity.
+                ActivitySource.AddListener(listener);
 
-                ActivityContext context = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "Key=Value");
-                using (Activity activity = source.CreateActivity(context))
+                using (ActivitySource source = new ActivitySource("Source6"))
                 {
-                    Assert.NotNull(activity);
-                    Assert.Equal(context.TraceId, activity.TraceId);
-                    Assert.Equal(context.SpanId, activity.ParentSpanId);
-                    Assert.Equal(context.TraceFlags, activity.ActivityTraceFlags);
-                    Assert.Equal(context.TraceState, activity.TraceStateString);
+                    Assert.Equal(0, listener.Count);
+
+                    ActivityContext context = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "Key=Value");
+                    using (Activity activity = source.StartActivity(context))
+                    {
+                        Assert.Equal(1, listener.Count);
+
+                        Assert.NotNull(activity);
+                        Assert.Equal(context.TraceId, activity.TraceId);
+                        Assert.Equal(context.SpanId, activity.ParentSpanId);
+                        Assert.Equal(context.TraceFlags, activity.ActivityTraceFlags);
+                        Assert.Equal(context.TraceState, activity.TraceStateString);
+                    }
                 }
             }
         }
     }
+
+    public class Listener : ActivityListener
+    {
+        private bool _enableListening;
+        private bool _createActivities;
+
+        private List<string> _sourceNames = new List<string>();
+
+        public Listener(bool enableListening, bool createActivities)
+        {
+            _enableListening = enableListening;
+            _createActivities = createActivities;
+        }
+
+        public int Count { get; set; }
+
+        public IEnumerable<string> SourceNames => _sourceNames;
+
+        public override bool EnableListening(string activitySourceName)
+        {
+            if (_enableListening)
+                _sourceNames.Add(activitySourceName);
+
+            return _enableListening;
+        }
+
+        public override bool ShouldCreateActivity(string activitySourceName, ActivityContext context, IEnumerable<ActivityLink> links) => _createActivities;
+
+        public override void OnActivityStarted(Activity a) { Count++; }
+
+        public override void OnActivityStopped(Activity a) { Count--;}
+   }
 }

@@ -5,6 +5,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace System.Diagnostics
 {
     public partial class Activity : IDisposable
@@ -127,12 +129,6 @@ namespace System.Diagnostics
         public System.Diagnostics.Activity StartActivity(System.Diagnostics.Activity activity, object? args) { throw null; }
         public void StopActivity(System.Diagnostics.Activity activity, object? args) { }
     }
-    public enum ActivitySourceEventOperation
-    {
-        SourceCreated = 0,
-        ActivityStarted = 1,
-        ActivityStopped = 2
-    }
     public enum ActivityKind
     {
         Internal = 1,
@@ -140,11 +136,6 @@ namespace System.Diagnostics
         Client = 3,
         Producer = 4,
         Consumer = 5,
-    }
-    public sealed class ActivitySourceEventArgs : System.EventArgs
-    {
-        private ActivitySourceEventArgs() { throw null; }
-        public System.Diagnostics.ActivitySourceEventOperation Operation { get; }
     }
     public readonly struct ActivityContext : IEquatable<ActivityContext>
     {
@@ -170,12 +161,19 @@ namespace System.Diagnostics
     {
         private ActivitySource() { throw null; }
         public ActivitySource(string name) { throw null; }
-        public static event EventHandler<System.Diagnostics.ActivitySourceEventArgs>? OperationEvent { add { } remove { } }
-        public event EventHandler<System.Diagnostics.ActivitySourceEventArgs>? ActivityEvent { add { } remove { } }
-        public static System.Collections.Generic.IEnumerable<System.Diagnostics.ActivitySource> ActiveList => throw null;
         public string Name { get; }
-        public Activity? CreateActivity() { throw null; }
-        public Activity? CreateActivity(System.Diagnostics.ActivityContext context, System.Collections.Generic.IEnumerable<ActivityLink>? links = null, System.DateTimeOffset startTime = default) { throw null; }
+        public Activity? StartActivity() { throw null; }
+        public Activity? StartActivity(System.Diagnostics.ActivityContext context, System.Collections.Generic.IEnumerable<ActivityLink>? links = null, System.DateTimeOffset startTime = default) { throw null; }
         public void Dispose() { }
+        public static void AddListener(ActivityListener listener) {}
     }
+    public abstract class ActivityListener : IDisposable
+    {
+        public virtual bool EnableListening(string activitySourceName) { throw null; }
+        public virtual bool ShouldCreateActivity(string activitySourceName, ActivityContext context, IEnumerable<ActivityLink>? links) { throw null; }
+        public virtual void OnActivityStarted(Activity a) { throw null; }
+        public virtual void OnActivityStopped(Activity a) { throw null; }
+        public void Dispose() { throw null; }
+        protected virtual void Dispose(bool disposing) { throw null; }
+   }
 }

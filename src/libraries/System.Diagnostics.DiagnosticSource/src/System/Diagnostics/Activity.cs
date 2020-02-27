@@ -581,6 +581,8 @@ namespace System.Diagnostics
                 }
 
                 SetCurrent(Parent);
+
+                _source?.NotifyActivityStop(this);
             }
         }
 
@@ -786,7 +788,6 @@ namespace System.Diagnostics
             if (!IsFinished)
             {
                 Stop();
-                _source?.RaiseActivityEvent(this, ActivitySourceEventArgs.s_activityStopped);
             }
         }
 
@@ -876,8 +877,6 @@ namespace System.Diagnostics
             activity.StartTimeUtc = startTime == default ? GetUtcNow() : startTime.DateTime;
 
             SetCurrent(activity);
-
-            source.RaiseActivityEvent(activity, ActivitySourceEventArgs.s_activityStarted);
 
             return activity;
         }

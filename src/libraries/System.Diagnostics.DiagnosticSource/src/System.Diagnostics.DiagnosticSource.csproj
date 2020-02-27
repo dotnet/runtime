@@ -36,7 +36,7 @@
     <Compile Include="System\Diagnostics\ActivityKind.cs" />
     <Compile Include="System\Diagnostics\ActivityLink.cs" />
     <Compile Include="System\Diagnostics\ActivitySource.cs" />
-    <Compile Include="System\Diagnostics\ActivitySourceEventArgs.cs" />
+    <Compile Include="System\Diagnostics\ActivityListener.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
