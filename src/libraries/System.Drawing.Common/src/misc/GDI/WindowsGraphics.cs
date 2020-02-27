@@ -25,7 +25,7 @@ namespace System.Drawing.Internal
         // Note: this dc is only disposed when owned (created) by the WindowsGraphics.
         private DeviceContext _dc;
         private bool _disposeDc;
-        private Graphics _graphics; // cached when initialized FromGraphics to be able to call g.ReleaseHdc from Dispose.
+        private Graphics? _graphics; // cached when initialized FromGraphics to be able to call g.ReleaseHdc from Dispose.
 
 #if GDI_FINALIZATION_WATCH
         private string AllocationSite = DbgUtil.StackTrace;
@@ -54,11 +54,11 @@ namespace System.Drawing.Internal
         {
             Debug.Assert(g != null, "null Graphics object.");
 
-            WindowsRegion wr = null;
-            float[] elements = null;
+            WindowsRegion? wr = null;
+            float[]? elements = null;
 
-            Region clipRgn = null;
-            Matrix worldTransf = null;
+            Region? clipRgn = null;
+            Matrix? worldTransf = null;
 
             if ((properties & ApplyGraphicsProperties.TranslateTransform) != 0 || (properties & ApplyGraphicsProperties.Clipping) != 0)
             {
@@ -162,7 +162,7 @@ namespace System.Drawing.Internal
                 }
                 finally
                 {
-                    _dc = null;
+                    _dc = null!;
                 }
             }
         }

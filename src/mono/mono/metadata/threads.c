@@ -68,6 +68,10 @@
 
 #include <signal.h>
 
+#if _MSC_VER
+#pragma warning(disable:4312) // FIXME pointer cast to different size
+#endif
+
 #if defined(HOST_WIN32)
 #include <objbase.h>
 #include <sys/timeb.h>
@@ -910,7 +914,7 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 	if (thread_static_info.offset || thread_static_info.idx > 0) {
 		/* get the current allocated size */
 		guint32 offset = MAKE_SPECIAL_STATIC_OFFSET (thread_static_info.idx, thread_static_info.offset, 0);
-		mono_alloc_static_data (&internal->static_data, offset, (void *) MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid), TRUE);
+		mono_alloc_static_data (&internal->static_data, offset, (void*)(gsize)MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid), TRUE);
 	}
 
 	mono_threads_unlock ();
@@ -1836,13 +1840,13 @@ mono_sleep_internal (gint32 ms, MonoBoolean allow_interruption, MonoError *error
 void
 ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms, MonoBoolean allow_interruption, MonoError *error)
 {
-	return mono_sleep_internal (ms, allow_interruption, error);
+	mono_sleep_internal (ms, allow_interruption, error);
 }
 #else
 void
 ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms, MonoError *error)
 {
-	return mono_sleep_internal (ms, TRUE, error);
+	mono_sleep_internal (ms, TRUE, error);
 }
 
 void

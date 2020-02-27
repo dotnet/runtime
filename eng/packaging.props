@@ -12,7 +12,7 @@
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
 
     <!-- Used by PackageLibs.targets -->
-    <XmlDocFileRoot>$(NuGetPackageRoot)$(MicrosoftPrivateIntellisensePackage)/$(MicrosoftPrivateIntellisenseVersion)/xmldocs/netcoreapp</XmlDocFileRoot>
+    <XmlDocFileRoot>$(NuGetPackageRoot)$(MicrosoftPrivateIntellisensePackage)/$(MicrosoftPrivateIntellisenseVersion)/IntellisenseFiles/netcoreapp</XmlDocFileRoot>
 
     <!-- By default the packaging targets will package desktop facades as ref,
          but we don't use this as we now build partial-reference-facades. -->
@@ -39,8 +39,6 @@
     <HarvestStablePackage>false</HarvestStablePackage>
     <!-- Validation will fail in case we were relying on harvested assets or assets not built to satisfy stated support -->
     <SkipValidatePackage>true</SkipValidatePackage>
-    <!-- Include All BuildConfigurations in package, so that whatever we're building for source build is included -->
-    <PackageConfigurations>$(BuildConfigurations)</PackageConfigurations>
   </PropertyGroup>
 
   <Import Condition="Exists('$(PkgDir)baseline\baseline.props') and '$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(PkgDir)baseline\baseline.props" />

@@ -65,7 +65,7 @@ namespace System.Drawing.Printing
             }
         }
 
-        private protected SafeDeviceModeHandle _modeHandle = null;
+        private protected SafeDeviceModeHandle? _modeHandle = null;
 
         /// <remarks>
         /// If you have nested PrintControllers, this method won't get called on the inner one.
@@ -145,7 +145,7 @@ namespace System.Drawing.Printing
                 }
 
                 PrintPageEventArgs pageEvent = CreatePrintPageEvent(queryEvent.PageSettings);
-                Graphics graphics = OnStartPage(document, pageEvent);
+                Graphics? graphics = OnStartPage(document, pageEvent);
                 pageEvent.SetGraphics(graphics);
 
                 try
@@ -171,7 +171,7 @@ namespace System.Drawing.Printing
 
         private bool PrintLoopOptimized(PrintDocument document)
         {
-            PrintPageEventArgs pageEvent = null;
+            PrintPageEventArgs? pageEvent = null;
             PageSettings documentPageSettings = (PageSettings)document.DefaultPageSettings.Clone();
             QueryPageSettingsEventArgs queryEvent = new QueryPageSettingsEventArgs(documentPageSettings);
             while (true)
@@ -198,14 +198,14 @@ namespace System.Drawing.Printing
                         pageEvent.CopySettingsToDevMode = false;
                     }
 
-                    Graphics graphics = OnStartPage(document, pageEvent);
+                    Graphics? graphics = OnStartPage(document, pageEvent);
                     pageEvent.SetGraphics(graphics);
                 }
                 else
                 {
                     // Page settings were customized, so use the customized ones in the start page event.
                     pageEvent = CreatePrintPageEvent(queryEvent.PageSettings);
-                    Graphics graphics = OnStartPage(document, pageEvent);
+                    Graphics? graphics = OnStartPage(document, pageEvent);
                     pageEvent.SetGraphics(graphics);
                 }
 
@@ -216,7 +216,7 @@ namespace System.Drawing.Printing
                 }
                 finally
                 {
-                    pageEvent.Graphics.Dispose();
+                    pageEvent.Graphics!.Dispose();
                     pageEvent.SetGraphics(null);
                 }
 

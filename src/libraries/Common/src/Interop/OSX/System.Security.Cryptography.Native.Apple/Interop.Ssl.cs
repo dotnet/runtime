@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -301,8 +301,8 @@ internal static partial class Interop
 
         internal static unsafe void SslCtxSetAlpnProtos(SafeSslHandle ctx, List<SslApplicationProtocol> protocols)
         {
-            SafeCreateHandle cfProtocolsRefs = null;
-            SafeCreateHandle[] cfProtocolsArrayRef = null;
+            SafeCreateHandle? cfProtocolsRefs = null;
+            SafeCreateHandle[]? cfProtocolsArrayRef = null;
             try
             {
                 if (protocols.Count == 1 && protocols[0] == SslApplicationProtocol.Http2)
@@ -353,7 +353,7 @@ internal static partial class Interop
             }
         }
 
-        internal static byte[] SslGetAlpnSelected(SafeSslHandle ssl)
+        internal static byte[]? SslGetAlpnSelected(SafeSslHandle ssl)
         {
             SafeCFDataHandle protocol;
 

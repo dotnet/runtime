@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Globalization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -40,22 +41,26 @@ namespace System
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		[DoesNotReturn]
 		public extern static void Exit (int exitCode);
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		public extern static string[] GetCommandLineArgs ();
 
+		[DoesNotReturn]
 		public static void FailFast (string message)
 		{
 			FailFast (message, null, null);
 		}
 
+		[DoesNotReturn]
 		public static void FailFast(string message, Exception exception)
 		{
 			FailFast (message, exception, null);
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		[DoesNotReturn]
 		public extern static void FailFast (string message, Exception exception, string errorSource);
 	}
 

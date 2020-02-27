@@ -948,16 +948,6 @@
     ]
   },
   {
-    "Name": "System.Json",
-    "Description": "Provides standards-based support for the serialization of JavaScript Object Notation (JSON).",
-    "CommonTypes": [
-      "System.Json.JsonArray",
-      "System.Json.JsonObject",
-      "System.Json.JsonPrimitive",
-      "System.Json.JsonValue"
-    ]
-  },
-  {
     "Name": "System.Linq",
     "Description": "Provides classes and interfaces that supports queries that use Language-Integrated Query (LINQ).",
     "CommonTypes": [

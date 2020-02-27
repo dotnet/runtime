@@ -91,19 +91,16 @@ namespace System.Linq.Parallel
         {
             return
                 (HashCodeMask &
-                    (_elementComparer == null ?
-                        (element == null ? NULL_ELEMENT_HASH_CODE : element.GetHashCode()) :
-                        _elementComparer.GetHashCode(element)))
-                        % _distributionMod;
+                    (element == null ? NULL_ELEMENT_HASH_CODE : (_elementComparer?.GetHashCode(element) ?? element.GetHashCode())))
+                % _distributionMod;
         }
 
         internal int GetHashCode(THashKey key)
         {
             return
                 (HashCodeMask &
-                    (_keyComparer == null ?
-                        (key == null ? NULL_ELEMENT_HASH_CODE : key.GetHashCode()) :
-                        _keyComparer.GetHashCode(key))) % _distributionMod;
+                    (key == null ? NULL_ELEMENT_HASH_CODE : (_keyComparer?.GetHashCode(key) ?? key.GetHashCode())))
+                % _distributionMod;
         }
     }
 }

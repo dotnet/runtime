@@ -186,7 +186,7 @@ namespace System
             }
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return (int)(byte*)index;
         Found1:
             return (int)(byte*)(index + 1);
@@ -290,7 +290,7 @@ namespace System
 
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return index;
         Found1:
             return index + 1;
@@ -393,7 +393,7 @@ namespace System
             }
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return index;
         Found1:
             return index + 1;
@@ -533,7 +533,7 @@ namespace System
 
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return length;
         Found1:
             return length + 1;
@@ -636,7 +636,7 @@ namespace System
 
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return length;
         Found1:
             return length + 1;
@@ -739,7 +739,7 @@ namespace System
 
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return length;
         Found1:
             return length + 1;
@@ -862,7 +862,7 @@ namespace System
         Equal:
             return true;
 
-        NotEqual: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        NotEqual: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return false;
         }
 

@@ -154,10 +154,10 @@ namespace System.Net.NetworkInformation
         {
             int timeIndex = pingOutput.IndexOf("time=", StringComparison.Ordinal);
             int afterTime = timeIndex + "time=".Length;
-            int msIndex = pingOutput.IndexOf("ms", afterTime);
+            int msIndex = pingOutput.IndexOf("ms", afterTime, StringComparison.Ordinal);
             int numLength = msIndex - afterTime - 1;
-            string timeSubstring = pingOutput.Substring(afterTime, numLength);
-            double parsedRtt = double.Parse(timeSubstring, CultureInfo.InvariantCulture);
+            ReadOnlySpan<char> timeSubstring = pingOutput.AsSpan(afterTime, numLength);
+            double parsedRtt = double.Parse(timeSubstring, provider: CultureInfo.InvariantCulture);
             return (long)Math.Round(parsedRtt);
         }
     }

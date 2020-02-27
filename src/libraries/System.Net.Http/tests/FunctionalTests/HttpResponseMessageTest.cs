@@ -105,12 +105,14 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var m = new HttpResponseMessage(HttpStatusCode.MultipleChoices))
             {
-                Assert.Throws<HttpRequestException>(() => m.EnsureSuccessStatusCode());
+                var ex = Assert.Throws<HttpRequestException>(() => m.EnsureSuccessStatusCode());
+                Assert.Equal(HttpStatusCode.MultipleChoices, ex.StatusCode);
             }
 
             using (var m = new HttpResponseMessage(HttpStatusCode.BadGateway))
             {
-                Assert.Throws<HttpRequestException>(() => m.EnsureSuccessStatusCode());
+                var ex = Assert.Throws<HttpRequestException>(() => m.EnsureSuccessStatusCode());
+                Assert.Equal(HttpStatusCode.BadGateway, ex.StatusCode);
             }
 
             using (var response = new HttpResponseMessage(HttpStatusCode.OK))

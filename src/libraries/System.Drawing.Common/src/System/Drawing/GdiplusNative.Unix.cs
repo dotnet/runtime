@@ -400,13 +400,13 @@ namespace System.Drawing
             internal static extern int GdipRecordMetafileFromDelegate_linux(StreamGetHeaderDelegate getHeader,
                 StreamGetBytesDelegate getBytes, StreamPutBytesDelegate putBytes, StreamSeekDelegate doSeek,
                 StreamCloseDelegate close, StreamSizeDelegate size, IntPtr hdc, EmfType type, ref RectangleF frameRect,
-                MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+                MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
             [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipRecordMetafileFromDelegateI_linux(StreamGetHeaderDelegate getHeader,
                 StreamGetBytesDelegate getBytes, StreamPutBytesDelegate putBytes, StreamSeekDelegate doSeek,
                 StreamCloseDelegate close, StreamSizeDelegate size, IntPtr hdc, EmfType type, ref Rectangle frameRect,
-                MetafileFrameUnit frameUnit, string description, out IntPtr metafile);
+                MetafileFrameUnit frameUnit, string? description, out IntPtr metafile);
 
             [DllImport(LibraryName, ExactSpelling = true)]
             internal static extern int GdipGetPostScriptGraphicsContext(

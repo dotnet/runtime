@@ -68,7 +68,6 @@ void Compiler::lvaInit()
     lvaVarargsBaseOfStkArgs = BAD_VAR_NUM;
 #endif // TARGET_X86
     lvaVarargsHandleArg = BAD_VAR_NUM;
-    lvaSecurityObject   = BAD_VAR_NUM;
     lvaStubArgumentVar  = BAD_VAR_NUM;
     lvaArg0Var          = BAD_VAR_NUM;
     lvaMonAcquired      = BAD_VAR_NUM;
@@ -85,6 +84,8 @@ void Compiler::lvaInit()
     lvaCurEpoch = 0;
 
     structPromotionHelper = new (this, CMK_Generic) StructPromotionHelper(this);
+
+    lvaEnregEHVars = (((opts.compFlags & CLFLG_REGVAR) != 0) && JitConfig.EnableEHWriteThru());
 }
 
 /*****************************************************************************/
@@ -2102,7 +2103,7 @@ bool Compiler::StructPromotionHelper::TryPromoteStructField(lvaStructFieldInfo& 
 //
 void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 {
-    LclVarDsc* varDsc = &compiler->lvaTable[lclNum];
+    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
 
     // We should never see a reg-sized non-field-addressed struct here.
     assert(!varDsc->lvRegStruct);
@@ -2166,11 +2167,13 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 #endif
 
         // Lifetime of field locals might span multiple BBs, so they must be long lifetime temps.
-        unsigned varNum = compiler->lvaGrabTemp(false DEBUGARG(bufp));
+        const unsigned varNum = compiler->lvaGrabTemp(false DEBUGARG(bufp));
 
-        varDsc = &compiler->lvaTable[lclNum]; // lvaGrabTemp can reallocate the lvaTable
+        // lvaGrabTemp can reallocate the lvaTable, so
+        // refresh the cached varDsc for lclNum.
+        varDsc = compiler->lvaGetDesc(lclNum);
 
-        LclVarDsc* fieldVarDsc       = &compiler->lvaTable[varNum];
+        LclVarDsc* fieldVarDsc       = compiler->lvaGetDesc(varNum);
         fieldVarDsc->lvType          = pFieldInfo->fldType;
         fieldVarDsc->lvExactSize     = pFieldInfo->fldSize;
         fieldVarDsc->lvIsStructField = true;
@@ -2179,6 +2182,13 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         fieldVarDsc->lvFldOrdinal    = pFieldInfo->fldOrdinal;
         fieldVarDsc->lvParentLcl     = lclNum;
         fieldVarDsc->lvIsParam       = varDsc->lvIsParam;
+
+        // This new local may be the first time we've seen a long typed local.
+        if (fieldVarDsc->lvType == TYP_LONG)
+        {
+            compiler->compLongUsed = true;
+        }
+
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
         // Reset the implicitByRef flag.
@@ -2377,9 +2387,11 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum)
 //
 void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
 {
-    LclVarDsc* varDsc = lvaGetDesc(varNum);
+    noway_assert(varNum < lvaCount);
 
-    INDEBUG(varDsc->lvLiveInOutOfHndlr = 1);
+    LclVarDsc* varDsc = &lvaTable[varNum];
+
+    varDsc->lvLiveInOutOfHndlr = 1;
 
     if (varDsc->lvPromoted)
     {
@@ -2388,12 +2400,27 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
         for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
         {
             noway_assert(lvaTable[i].lvIsStructField);
-            INDEBUG(lvaTable[i].lvLiveInOutOfHndlr = 1);
-            lvaSetVarDoNotEnregister(i DEBUGARG(DNER_LiveInOutOfHandler));
+            lvaTable[i].lvLiveInOutOfHndlr = 1;
+            if (!lvaEnregEHVars)
+            {
+                lvaSetVarDoNotEnregister(i DEBUGARG(DNER_LiveInOutOfHandler));
+            }
         }
     }
 
-    lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
+    if (!lvaEnregEHVars)
+    {
+        lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
+    }
+#ifdef JIT32_GCENCODER
+    else if (lvaKeepAliveAndReportThis() && (varNum == info.compThisArg))
+    {
+        // For the JIT32_GCENCODER, when lvaKeepAliveAndReportThis is true, we must either keep the "this" pointer
+        // in the same register for the entire method, or keep it on the stack. If it is EH-exposed, we can't ever
+        // keep it in a register, since it must also be live on the stack. Therefore, we won't attempt to allocate it.
+        lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
+    }
+#endif // JIT32_GCENCODER
 }
 
 /*****************************************************************************
@@ -4107,8 +4134,20 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
                     case GT_STORE_LCL_VAR:
                     case GT_STORE_LCL_FLD:
                     {
-                        const unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
-                        lvaTable[lclNum].incRefCnts(weight, this);
+                        LclVarDsc* varDsc = lvaGetDesc(node->AsLclVarCommon());
+                        // If this is an EH var, use a zero weight for defs, so that we don't
+                        // count those in our heuristic for register allocation, since they always
+                        // must be stored, so there's no value in enregistering them at defs; only
+                        // if there are enough uses to justify it.
+                        if (varDsc->lvLiveInOutOfHndlr && !varDsc->lvDoNotEnregister &&
+                            ((node->gtFlags & GTF_VAR_DEF) != 0))
+                        {
+                            varDsc->incRefCnts(0, this);
+                        }
+                        else
+                        {
+                            varDsc->incRefCnts(weight, this);
+                        }
                         break;
                     }
 
@@ -5725,15 +5764,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaMonAcquired, lvaLclSize(lvaMonAcquired), stkOffs);
     }
 
-    if (opts.compNeedSecurityCheck)
-    {
-#ifdef JIT32_GCENCODER
-        /* This can't work without an explicit frame, so make sure */
-        noway_assert(codeGen->isFramePointerUsed());
-#endif
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaSecurityObject, TARGET_POINTER_SIZE, stkOffs);
-    }
-
 #ifdef JIT32_GCENCODER
     if (lvaLocAllocSPvar != BAD_VAR_NUM)
     {
@@ -5935,7 +5965,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #ifdef JIT32_GCENCODER
                 lclNum == lvaLocAllocSPvar ||
 #endif // JIT32_GCENCODER
-                lclNum == lvaSecurityObject)
+                false)
             {
                 assert(varDsc->lvStkOffs != BAD_STK_OFFS);
                 continue;
@@ -6826,7 +6856,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         {
             printf("V");
         }
-        if (varDsc->lvLiveInOutOfHndlr)
+        if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
         {
             printf("H");
         }

@@ -32,9 +32,6 @@ struct JitInterfaceCallbacks
     int (* pInvokeMarshalingRequired)(void * thisHandle, CorInfoException** ppException, void* method, void* callSiteSig);
     int (* satisfiesMethodConstraints)(void * thisHandle, CorInfoException** ppException, void* parent, void* method);
     int (* isCompatibleDelegate)(void * thisHandle, CorInfoException** ppException, void* objCls, void* methodParentCls, void* method, void* delegateCls, int* pfIsOpenDelegate);
-    int (* isInstantiationOfVerifiedGeneric)(void * thisHandle, CorInfoException** ppException, void* method);
-    void (* initConstraintsForVerification)(void * thisHandle, CorInfoException** ppException, void* method, int* pfHasCircularClassConstraints, int* pfHasCircularMethodConstraint);
-    int (* canSkipMethodVerification)(void * thisHandle, CorInfoException** ppException, void* ftnHandle);
     void (* methodMustBeLoadedBeforeCodeIsRun)(void * thisHandle, CorInfoException** ppException, void* method);
     void* (* mapMethodDeclToMethodImpl)(void * thisHandle, CorInfoException** ppException, void* method);
     void (* getGSCookie)(void * thisHandle, CorInfoException** ppException, void* pCookieVal, void** ppCookieVal);
@@ -43,10 +40,9 @@ struct JitInterfaceCallbacks
     void (* findSig)(void * thisHandle, CorInfoException** ppException, void* module, unsigned sigTOK, void* context, void* sig);
     void (* findCallSiteSig)(void * thisHandle, CorInfoException** ppException, void* module, unsigned methTOK, void* context, void* sig);
     void* (* getTokenTypeAsHandle)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
-    int (* canSkipVerification)(void * thisHandle, CorInfoException** ppException, void* module);
     int (* isValidToken)(void * thisHandle, CorInfoException** ppException, void* module, unsigned metaTOK);
     int (* isValidStringRef)(void * thisHandle, CorInfoException** ppException, void* module, unsigned metaTOK);
-    int (* shouldEnforceCallvirtRestriction)(void * thisHandle, CorInfoException** ppException, void* scope);
+    const wchar_t* (* getStringLiteral)(void * thisHandle, CorInfoException** ppException, void* module, unsigned metaTOK, int* length);
     int (* asCorInfoType)(void * thisHandle, CorInfoException** ppException, void* cls);
     const char* (* getClassName)(void * thisHandle, CorInfoException** ppException, void* cls);
     const char* (* getClassNameFromMetadata)(void * thisHandle, CorInfoException** ppException, void* cls, const char** namespaceName);
@@ -54,7 +50,6 @@ struct JitInterfaceCallbacks
     int (* appendClassName)(void * thisHandle, CorInfoException** ppException, wchar_t** ppBuf, int* pnBufLen, void* cls, int fNamespace, int fFullInst, int fAssembly);
     int (* isValueClass)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (* canInlineTypeCheck)(void * thisHandle, CorInfoException** ppException, void* cls, int source);
-    int (* canInlineTypeCheckWithObjectVTable)(void * thisHandle, CorInfoException** ppException, void* cls);
     unsigned int (* getClassAttribs)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (* isStructRequiringStackAllocRetBuf)(void * thisHandle, CorInfoException** ppException, void* cls);
     void* (* getClassModule)(void * thisHandle, CorInfoException** ppException, void* cls);
@@ -75,7 +70,6 @@ struct JitInterfaceCallbacks
     int (* getNewArrHelper)(void * thisHandle, CorInfoException** ppException, void* arrayCls);
     int (* getCastingHelper)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, bool fThrowing);
     int (* getSharedCCtorHelper)(void * thisHandle, CorInfoException** ppException, void* clsHnd);
-    int (* getSecurityPrologHelper)(void * thisHandle, CorInfoException** ppException, void* ftn);
     void* (* getTypeForBox)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (* getBoxHelper)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (* getUnBoxHelper)(void * thisHandle, CorInfoException** ppException, void* cls);
@@ -104,14 +98,13 @@ struct JitInterfaceCallbacks
     void* (* getFieldClass)(void * thisHandle, CorInfoException** ppException, void* field);
     int (* getFieldType)(void * thisHandle, CorInfoException** ppException, void* field, void* structType, void* memberParent);
     unsigned (* getFieldOffset)(void * thisHandle, CorInfoException** ppException, void* field);
-    bool (* isWriteBarrierHelperRequired)(void * thisHandle, CorInfoException** ppException, void* field);
     void (* getFieldInfo)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* callerHandle, int flags, void* pResult);
     bool (* isFieldStatic)(void * thisHandle, CorInfoException** ppException, void* fldHnd);
     void (* getBoundaries)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned int* cILOffsets, unsigned int** pILOffsets, void* implictBoundaries);
     void (* setBoundaries)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned int cMap, void* pMap);
     void (* getVars)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned int* cVars, void* vars, bool* extendOthers);
     void (* setVars)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned int cVars, void* vars);
-    void* (* allocateArray)(void * thisHandle, CorInfoException** ppException, unsigned int cBytes);
+    void* (* allocateArray)(void * thisHandle, CorInfoException** ppException, size_t cBytes);
     void (* freeArray)(void * thisHandle, CorInfoException** ppException, void* array);
     void* (* getArgNext)(void * thisHandle, CorInfoException** ppException, void* args);
     int (* getArgType)(void * thisHandle, CorInfoException** ppException, void* sig, void* args, void* vcTypeRet);
@@ -145,9 +138,7 @@ struct JitInterfaceCallbacks
     void* (* embedMethodHandle)(void * thisHandle, CorInfoException** ppException, void* handle, void** ppIndirection);
     void* (* embedFieldHandle)(void * thisHandle, CorInfoException** ppException, void* handle, void** ppIndirection);
     void (* embedGenericHandle)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, int fEmbedParent, void* pResult);
-    void (* getLocationOfThisType)(void * thisHandle, CorInfoException** ppException, CORINFO_LOOKUP_KIND* _return, void* context);
-    void* (* getPInvokeUnmanagedTarget)(void * thisHandle, CorInfoException** ppException, void* method, void** ppIndirection);
-    void* (* getAddressOfPInvokeFixup)(void * thisHandle, CorInfoException** ppException, void* method, void** ppIndirection);
+    void (* getLocationOfThisType)(void * thisHandle, CorInfoException** ppException, void* context, void* pLookupKind);
     void (* getAddressOfPInvokeTarget)(void * thisHandle, CorInfoException** ppException, void* method, void* pLookup);
     void* (* GetCookieForPInvokeCalliSig)(void * thisHandle, CorInfoException** ppException, void* szMetaSig, void** ppIndirection);
     bool (* canGetCookieForPInvokeCalliSig)(void * thisHandle, CorInfoException** ppException, void* szMetaSig);
@@ -170,12 +161,10 @@ struct JitInterfaceCallbacks
     void (* MethodCompileComplete)(void * thisHandle, CorInfoException** ppException, void* methHnd);
     void* (* getTailCallCopyArgsThunk)(void * thisHandle, CorInfoException** ppException, void* pSig, int flags);
     bool (* convertPInvokeCalliToCall)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, bool mustConvert);
-    void* (* getMemoryManager)(void * thisHandle, CorInfoException** ppException);
     void (* allocMem)(void * thisHandle, CorInfoException** ppException, unsigned int hotCodeSize, unsigned int coldCodeSize, unsigned int roDataSize, unsigned int xcptnsCount, int flag, void** hotCodeBlock, void** coldCodeBlock, void** roDataBlock);
     void (* reserveUnwindInfo)(void * thisHandle, CorInfoException** ppException, int isFunclet, int isColdCode, unsigned int unwindSize);
     void (* allocUnwindInfo)(void * thisHandle, CorInfoException** ppException, unsigned char* pHotCode, unsigned char* pColdCode, unsigned int startOffset, unsigned int endOffset, unsigned int unwindSize, unsigned char* pUnwindBlock, int funcKind);
     void* (* allocGCInfo)(void * thisHandle, CorInfoException** ppException, size_t size);
-    void (* yieldExecution)(void * thisHandle, CorInfoException** ppException);
     void (* setEHcount)(void * thisHandle, CorInfoException** ppException, unsigned cEH);
     void (* setEHinfo)(void * thisHandle, CorInfoException** ppException, unsigned EHnumber, void* clause);
     int (* logMsg)(void * thisHandle, CorInfoException** ppException, unsigned level, const char* fmt, va_list args);
@@ -186,7 +175,6 @@ struct JitInterfaceCallbacks
     void (* recordCallSite)(void * thisHandle, CorInfoException** ppException, unsigned int instrOffset, void* callSig, void* methodHandle);
     void (* recordRelocation)(void * thisHandle, CorInfoException** ppException, void* location, void* target, unsigned short fRelocType, unsigned short slotNum, int addlDelta);
     unsigned short (* getRelocTypeHint)(void * thisHandle, CorInfoException** ppException, void* target);
-    void (* getModuleNativeEntryPointRange)(void * thisHandle, CorInfoException** ppException, void** pStart, void** pEnd);
     unsigned int (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoException** ppException);
     unsigned int (* getJitFlags)(void * thisHandle, CorInfoException** ppException, void* flags, unsigned int sizeInBytes);
 
@@ -394,32 +382,6 @@ public:
         return _ret;
     }
 
-    virtual int isInstantiationOfVerifiedGeneric(void* method)
-    {
-        CorInfoException* pException = nullptr;
-        int _ret = _callbacks->isInstantiationOfVerifiedGeneric(_thisHandle, &pException, method);
-        if (pException != nullptr)
-            throw pException;
-        return _ret;
-    }
-
-    virtual void initConstraintsForVerification(void* method, int* pfHasCircularClassConstraints, int* pfHasCircularMethodConstraint)
-    {
-        CorInfoException* pException = nullptr;
-        _callbacks->initConstraintsForVerification(_thisHandle, &pException, method, pfHasCircularClassConstraints, pfHasCircularMethodConstraint);
-        if (pException != nullptr)
-            throw pException;
-    }
-
-    virtual int canSkipMethodVerification(void* ftnHandle)
-    {
-        CorInfoException* pException = nullptr;
-        int _ret = _callbacks->canSkipMethodVerification(_thisHandle, &pException, ftnHandle);
-        if (pException != nullptr)
-            throw pException;
-        return _ret;
-    }
-
     virtual void methodMustBeLoadedBeforeCodeIsRun(void* method)
     {
         CorInfoException* pException = nullptr;
@@ -486,15 +448,6 @@ public:
         return _ret;
     }
 
-    virtual int canSkipVerification(void* module)
-    {
-        CorInfoException* pException = nullptr;
-        int _ret = _callbacks->canSkipVerification(_thisHandle, &pException, module);
-        if (pException != nullptr)
-            throw pException;
-        return _ret;
-    }
-
     virtual int isValidToken(void* module, unsigned metaTOK)
     {
         CorInfoException* pException = nullptr;
@@ -513,10 +466,10 @@ public:
         return _ret;
     }
 
-    virtual int shouldEnforceCallvirtRestriction(void* scope)
+    virtual const wchar_t* getStringLiteral(void* module, unsigned metaTOK, int* length)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _callbacks->shouldEnforceCallvirtRestriction(_thisHandle, &pException, scope);
+        const wchar_t* _ret = _callbacks->getStringLiteral(_thisHandle, &pException, module, metaTOK, length);
         if (pException != nullptr)
             throw pException;
         return _ret;
@@ -580,15 +533,6 @@ public:
     {
         CorInfoException* pException = nullptr;
         int _ret = _callbacks->canInlineTypeCheck(_thisHandle, &pException, cls, source);
-        if (pException != nullptr)
-            throw pException;
-        return _ret;
-    }
-
-    virtual int canInlineTypeCheckWithObjectVTable(void* cls)
-    {
-        CorInfoException* pException = nullptr;
-        int _ret = _callbacks->canInlineTypeCheckWithObjectVTable(_thisHandle, &pException, cls);
         if (pException != nullptr)
             throw pException;
         return _ret;
@@ -768,15 +712,6 @@ public:
     {
         CorInfoException* pException = nullptr;
         int _ret = _callbacks->getSharedCCtorHelper(_thisHandle, &pException, clsHnd);
-        if (pException != nullptr)
-            throw pException;
-        return _ret;
-    }
-
-    virtual int getSecurityPrologHelper(void* ftn)
-    {
-        CorInfoException* pException = nullptr;
-        int _ret = _callbacks->getSecurityPrologHelper(_thisHandle, &pException, ftn);
         if (pException != nullptr)
             throw pException;
         return _ret;
@@ -1032,15 +967,6 @@ public:
         return _ret;
     }
 
-    virtual bool isWriteBarrierHelperRequired(void* field)
-    {
-        CorInfoException* pException = nullptr;
-        bool _ret = _callbacks->isWriteBarrierHelperRequired(_thisHandle, &pException, field);
-        if (pException != nullptr)
-            throw pException;
-        return _ret;
-    }
-
     virtual void getFieldInfo(void* pResolvedToken, void* callerHandle, int flags, void* pResult)
     {
         CorInfoException* pException = nullptr;
@@ -1090,7 +1016,7 @@ public:
             throw pException;
     }
 
-    virtual void* allocateArray(unsigned int cBytes)
+    virtual void* allocateArray(size_t cBytes)
     {
         CorInfoException* pException = nullptr;
         void* _ret = _callbacks->allocateArray(_thisHandle, &pException, cBytes);
@@ -1365,23 +1291,12 @@ public:
             throw pException;
     }
 
-    virtual CORINFO_LOOKUP_KIND getLocationOfThisType(void* context);
-    virtual void* getPInvokeUnmanagedTarget(void* method, void** ppIndirection)
+    virtual void getLocationOfThisType(void* context, void* pLookupKind)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _callbacks->getPInvokeUnmanagedTarget(_thisHandle, &pException, method, ppIndirection);
+        _callbacks->getLocationOfThisType(_thisHandle, &pException, context, pLookupKind);
         if (pException != nullptr)
             throw pException;
-        return _ret;
-    }
-
-    virtual void* getAddressOfPInvokeFixup(void* method, void** ppIndirection)
-    {
-        CorInfoException* pException = nullptr;
-        void* _ret = _callbacks->getAddressOfPInvokeFixup(_thisHandle, &pException, method, ppIndirection);
-        if (pException != nullptr)
-            throw pException;
-        return _ret;
     }
 
     virtual void getAddressOfPInvokeTarget(void* method, void* pLookup)
@@ -1576,7 +1491,6 @@ public:
         return _ret;
     }
 
-    virtual void* getMemoryManager();
     virtual void allocMem(unsigned int hotCodeSize, unsigned int coldCodeSize, unsigned int roDataSize, unsigned int xcptnsCount, int flag, void** hotCodeBlock, void** coldCodeBlock, void** roDataBlock)
     {
         CorInfoException* pException = nullptr;
@@ -1608,14 +1522,6 @@ public:
         if (pException != nullptr)
             throw pException;
         return _ret;
-    }
-
-    virtual void yieldExecution()
-    {
-        CorInfoException* pException = nullptr;
-        _callbacks->yieldExecution(_thisHandle, &pException);
-        if (pException != nullptr)
-            throw pException;
     }
 
     virtual void setEHcount(unsigned cEH)
@@ -1701,14 +1607,6 @@ public:
         if (pException != nullptr)
             throw pException;
         return _ret;
-    }
-
-    virtual void getModuleNativeEntryPointRange(void** pStart, void** pEnd)
-    {
-        CorInfoException* pException = nullptr;
-        _callbacks->getModuleNativeEntryPointRange(_thisHandle, &pException, pStart, pEnd);
-        if (pException != nullptr)
-            throw pException;
     }
 
     virtual unsigned int getExpectedTargetArchitecture()

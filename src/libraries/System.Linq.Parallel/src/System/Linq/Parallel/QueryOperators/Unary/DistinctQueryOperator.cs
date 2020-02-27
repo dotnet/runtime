@@ -157,7 +157,7 @@ namespace System.Linq.Parallel
                 while (_source.MoveNext(ref current, ref keyUnused))
                 {
                     if ((_outputLoopCount.Value++ & CancellationState.POLL_INTERVAL) == 0)
-                        CancellationState.ThrowIfCanceled(_cancellationToken);
+                        _cancellationToken.ThrowIfCancellationRequested();;
 
                     // We ensure we never return duplicates by tracking them in our set.
                     if (_hashLookup.Add(current.First))
@@ -235,7 +235,7 @@ namespace System.Linq.Parallel
                     while (_source.MoveNext(ref elem, ref orderKey))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         // For each element, we track the smallest order key for that element that we saw so far
                         TKey oldEntry;

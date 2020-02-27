@@ -33,10 +33,10 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             public override int Version => _asn.Version;
 
-            internal byte[] DecryptCek(X509Certificate2 cert, RSA privateKey, out Exception exception)
+            internal byte[]? DecryptCek(X509Certificate2? cert, RSA? privateKey, out Exception? exception)
             {
                 ReadOnlyMemory<byte>? parameters = _asn.KeyEncryptionAlgorithm.Parameters;
-                string keyEncryptionAlgorithm = _asn.KeyEncryptionAlgorithm.Algorithm.Value;
+                string? keyEncryptionAlgorithm = _asn.KeyEncryptionAlgorithm.Algorithm.Value;
 
                 switch (keyEncryptionAlgorithm)
                 {
@@ -61,15 +61,15 @@ namespace Internal.Cryptography.Pal.AnyOS
                 return DecryptCekCore(cert, privateKey, _asn.EncryptedKey.Span, keyEncryptionAlgorithm, parameters, out exception);
             }
 
-            internal static byte[] DecryptCekCore(
-                X509Certificate2 cert,
-                RSA privateKey,
+            internal static byte[]? DecryptCekCore(
+                X509Certificate2? cert,
+                RSA? privateKey,
                 ReadOnlySpan<byte> encryptedKey,
-                string keyEncryptionAlgorithm,
+                string? keyEncryptionAlgorithm,
                 ReadOnlyMemory<byte>? algorithmParameters,
-                out Exception exception)
+                out Exception? exception)
             {
-                RSAEncryptionPadding encryptionPadding;
+                RSAEncryptionPadding? encryptionPadding;
 
                 switch (keyEncryptionAlgorithm)
                 {
@@ -96,7 +96,8 @@ namespace Internal.Cryptography.Pal.AnyOS
                 }
                 else
                 {
-                    using (RSA rsa = cert.GetRSAPrivateKey())
+                    Debug.Assert(cert != null);
+                    using (RSA? rsa = cert.GetRSAPrivateKey())
                     {
                         return DecryptKey(rsa, encryptionPadding, encryptedKey, out exception);
                     }
@@ -168,7 +169,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 throw new CryptographicException(SR.Cryptography_Cms_UnknownAlgorithm);
             }
 
-            using (RSA rsa = recipient.Certificate.GetRSAPublicKey())
+            using (RSA rsa = recipient.Certificate.GetRSAPublicKey()!)
             {
                 ktri.EncryptedKey = rsa.Encrypt(cek, padding);
             }
@@ -177,11 +178,11 @@ namespace Internal.Cryptography.Pal.AnyOS
             return ktri;
         }
 
-        private static byte[] DecryptKey(
-            RSA privateKey,
+        private static byte[]? DecryptKey(
+            RSA? privateKey,
             RSAEncryptionPadding encryptionPadding,
             ReadOnlySpan<byte> encryptedKey,
-            out Exception exception)
+            out Exception? exception)
         {
             if (privateKey == null)
             {
@@ -190,7 +191,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             }
 
 #if NETCOREAPP || NETSTANDARD2_1
-            byte[] cek = null;
+            byte[]? cek = null;
             int cekLength = 0;
 
             try

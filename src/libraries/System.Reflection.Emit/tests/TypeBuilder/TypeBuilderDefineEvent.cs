@@ -27,6 +27,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(TestData))]
         public void DefineEvent(string name, EventAttributes attributes, Type eventType, string expectedName, EventAttributes expectedAttributes)
         {

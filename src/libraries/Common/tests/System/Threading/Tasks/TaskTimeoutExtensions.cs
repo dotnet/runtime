@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 /// <summary>
-/// Task timeout helper based on http://blogs.msdn.com/b/pfxteam/archive/2011/11/10/10235834.aspx
+/// Task timeout helper based on https://devblogs.microsoft.com/pfxteam/crafting-a-task-timeoutafter-method/
 /// </summary>
 namespace System.Threading.Tasks
 {

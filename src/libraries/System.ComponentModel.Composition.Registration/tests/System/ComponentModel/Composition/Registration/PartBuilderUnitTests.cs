@@ -126,6 +126,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
     public class PartBuilderUnitTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32744", TestRuntimes.Mono)]
         public void ManyConstructorsControllerFindLongestConstructor_ShouldSucceed()
         {
             var ctx = new RegistrationBuilder();
@@ -154,6 +155,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32744", TestRuntimes.Mono)]
         public void ManyConstructorsControllerFindLongestConstructorAndImportByName_ShouldSucceed()
         {
             var ctx = new RegistrationBuilder();
@@ -191,6 +193,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32744", TestRuntimes.Mono)]
         public void LongestConstructorWithAttribute_ShouldSucceed()
         {
             var ctx = new RegistrationBuilder();
@@ -210,6 +213,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32744", TestRuntimes.Mono)]
         public void LongestConstructorShortestWithAttribute_ShouldSucceed()
         {
             var ctx = new RegistrationBuilder();
@@ -229,6 +233,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32744", TestRuntimes.Mono)]
         public void AmbiguousConstructorWithAttributeAppliedToOne_ShouldSucceed()
         {
             var ctx = new RegistrationBuilder();
@@ -250,6 +255,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32744", TestRuntimes.Mono)]
         public void AmbiguousConstructor_ShouldFail()
         {
             var ctx = new RegistrationBuilder();

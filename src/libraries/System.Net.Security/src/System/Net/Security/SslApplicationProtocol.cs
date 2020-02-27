@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Text;
 
@@ -54,7 +55,7 @@ namespace System.Net.Security
         public bool Equals(SslApplicationProtocol other) =>
             ((ReadOnlySpan<byte>)_readOnlyProtocol).SequenceEqual(other._readOnlyProtocol);
 
-        public override bool Equals(object obj) => obj is SslApplicationProtocol protocol && Equals(protocol);
+        public override bool Equals(object? obj) => obj is SslApplicationProtocol protocol && Equals(protocol);
 
         public override int GetHashCode()
         {

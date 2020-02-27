@@ -1326,7 +1326,7 @@ mono_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, M
 	guint32 len;
 
 	if (mono_aot_only)
-		code = mono_aot_create_specific_trampoline (mono_defaults.corlib, arg1, tramp_type, domain, &len);
+		code = mono_aot_create_specific_trampoline (arg1, tramp_type, domain, &len);
 	else
 		code = mono_arch_create_specific_trampoline (arg1, tramp_type, domain, &len);
 	mono_lldb_save_specific_trampoline_info (arg1, tramp_type, domain, code, len);

@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization
             if (writing)
             {
                 // Comparer used here to always do a Reference Equality comparison on serialization which is where we use the objects as the TKey in our dictionary.
-                _objectToReferenceIdMap = new Dictionary<object, string>(ReferenceEqualsEqualityComparer<object>.Comparer);
+                _objectToReferenceIdMap = new Dictionary<object, string>(ReferenceEqualityComparer.Instance);
                 _referenceIdToObjectMap = null;
             }
             else
@@ -58,16 +58,14 @@ namespace System.Text.Json.Serialization
         /// <returns></returns>
         public bool TryGetOrAddReferenceOnSerialize(object value, out string referenceId)
         {
-            if (!_objectToReferenceIdMap!.TryGetValue(value, out referenceId!))
+            bool result = _objectToReferenceIdMap!.TryGetValue(value, out referenceId!);
+            if (!result)
             {
                 _referenceCount++;
                 referenceId = _referenceCount.ToString();
                 _objectToReferenceIdMap.Add(value, referenceId);
-
-                return false;
             }
-
-            return true;
+            return result;
         }
 
         /// <summary>

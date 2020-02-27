@@ -334,6 +334,18 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static <#= typeName #> FusedMultiplySubtractNegated(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => <#= className #>.FusedMultiplyAdd(op2, op3, -op1);
 
+        public static <#= typeName #> MaxNumber(<#= typeName #> op1, <#= typeName #> op2) => <#= typeName #>.IsNaN(op1) ? op2 : (<#= typeName #>.IsNaN(op2) ? op1 : <#= className #>.Max(op1, op2));
+
+        public static <#= typeName #> MaxNumberPairwise(<#= typeName #>[] op1, int i) => Pairwise(MaxNumber, op1, i);
+
+        public static <#= typeName #> MaxNumberPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(MaxNumber, op1, op2, i);
+
+        public static <#= typeName #> MinNumber(<#= typeName #> op1, <#= typeName #> op2) => <#= typeName #>.IsNaN(op1) ? op2 : (<#= typeName #>.IsNaN(op2) ? op1 : <#= className #>.Min(op1, op2));
+
+        public static <#= typeName #> MinNumberPairwise(<#= typeName #>[] op1, int i) => Pairwise(MinNumber, op1, i);
+
+        public static <#= typeName #> MinNumberPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
+
 <#
         }
 
@@ -342,9 +354,21 @@ namespace JIT.HardwareIntrinsics.Arm
 #>
         public static <#= typeName #> Add(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 + op2);
 
+        public static <#= typeName #> AddPairwise(<#= typeName #>[] op1, int i) => Pairwise(Add, op1, i);
+
+        public static <#= typeName #> AddPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(Add, op1, op2, i);
+
         public static <#= typeName #> Max(<#= typeName #> op1, <#= typeName #> op2) => Math.Max(op1, op2);
 
+        public static <#= typeName #> MaxPairwise(<#= typeName #>[] op1, int i) => Pairwise(Max, op1, i);
+
+        public static <#= typeName #> MaxPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(Max, op1, op2, i);
+
         public static <#= typeName #> Min(<#= typeName #> op1, <#= typeName #> op2) => Math.Min(op1, op2);
+
+        public static <#= typeName #> MinPairwise(<#= typeName #>[] op1, int i) => Pairwise(Min, op1, i);
+
+        public static <#= typeName #> MinPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(Min, op1, op2, i);
 
         public static <#= typeName #> Multiply(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 * op2);
 
@@ -353,6 +377,30 @@ namespace JIT.HardwareIntrinsics.Arm
         public static <#= typeName #> MultiplySubtract(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => (<#= typeName #>)(op1 - (<#= typeName #>)(op2 * op3));
 
         public static <#= typeName #> Subtract(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 - op2);
+
+        private static <#= typeName #> Pairwise(Func<<#= typeName #>, <#= typeName #>, <#= typeName #>> pairOp, <#= typeName #>[] op1, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private static <#= typeName #> Pairwise(Func<<#= typeName #>, <#= typeName #>, <#= typeName #>> pairOp, <#= typeName #>[] op1, <#= typeName #>[] op2, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
+            }
+        }
 
 <#
         }
@@ -364,6 +412,33 @@ namespace JIT.HardwareIntrinsics.Arm
 
 <#
         }
+
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "float", "double" })
+        {
 #>
+        public static <#= typeName #> AddAcross(<#= typeName #>[] op1) => Reduce(Add, op1);
+
+        public static <#= typeName #> MaxAcross(<#= typeName #>[] op1) => Reduce(Max, op1);
+
+        public static <#= typeName #> MinAcross(<#= typeName #>[] op1) => Reduce(Min, op1);
+
+        private static <#= typeName #> Reduce(Func<<#= typeName #>, <#= typeName #>, <#= typeName #>> reduceOp, <#= typeName #>[] op1)
+        {
+            <#= typeName #> acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+<#
+        }
+#>
+        public static float MaxNumberAcross(float[] op1) => Reduce(MaxNumber, op1);
+
+        public static float MinNumberAcross(float[] op1) => Reduce(MinNumber, op1);
     }
 }

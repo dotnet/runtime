@@ -2550,7 +2550,7 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "4.6.0",
       "InboxOn": {
         "monoandroid10": "Any",
         "monotouch10": "Any",
@@ -2562,8 +2562,7 @@
       "AssemblyVersionInPackageVersion": {
         "2.0.5.0": "4.4.0",
         "2.0.6.0": "4.5.0",
-        "2.0.7.0": "4.6.0",
-        "5.0.0.0": "5.0.0"
+        "2.0.7.0": "4.6.0"
       }
     },
     "System.Linq": {

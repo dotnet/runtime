@@ -3268,14 +3268,13 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
         if (IsCanonicalGenericInstantiation(pKey->GetInstantiation()))
         {
             typeHnd = CreateTypeHandleForTypeDefThrowing(pKey->GetModule(),
-                                                            pKey->GetTypeToken(),
-                                                            pKey->GetInstantiation(),
-                                                            pamTracker);
+                                                         pKey->GetTypeToken(),
+                                                         pKey->GetInstantiation(),
+                                                         pamTracker);
         }
         else
         {
-            typeHnd = CreateTypeHandleForNonCanonicalGenericInstantiation(pKey,
-                                                                                        pamTracker);
+            typeHnd = CreateTypeHandleForNonCanonicalGenericInstantiation(pKey, pamTracker);
         }
 #if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
         if (Nullable::IsNullableType(typeHnd))
