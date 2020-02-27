@@ -3,10 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-using Microsoft.Win32.SafeHandles;
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal partial class Interop
 {
@@ -19,11 +18,13 @@ internal partial class Interop
                 long maximumSize,
                 string? name)
         {
-            // split the long into two ints
-            int capacityHigh, capacityLow;
-            SplitLong(maximumSize, out capacityHigh, out capacityLow);
-
-            return CreateFileMapping(hFile, ref securityAttributes, pageProtection, capacityHigh, capacityLow, name);
+            return CreateFileMapping(
+                hFile,
+                ref securityAttributes,
+                pageProtection,
+                dwMaximumSizeHigh: (int)(maximumSize >> 32), // Split the maximumSize long into two ints
+                dwMaximumSizeLow: (int)maximumSize,
+                name);
         }
 
         public static SafeMemoryMappedFileHandle CreateFileMapping(
@@ -33,11 +34,13 @@ internal partial class Interop
                 long maximumSize,
                 string? name)
         {
-            // split the long into two ints
-            int capacityHigh, capacityLow;
-            SplitLong(maximumSize, out capacityHigh, out capacityLow);
-
-            return CreateFileMapping(hFile, ref securityAttributes, pageProtection, capacityHigh, capacityLow, name);
+            return CreateFileMapping(
+                hFile,
+                ref securityAttributes,
+                pageProtection,
+                dwMaximumSizeHigh: (int)(maximumSize >> 32), // Split the maximumSize long into two ints
+                dwMaximumSizeLow: (int)maximumSize,
+                name);
         }
 
         [DllImport(Libraries.Kernel32, EntryPoint = "CreateFileMappingW", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -57,12 +60,5 @@ internal partial class Interop
             int dwMaximumSizeHigh,
             int dwMaximumSizeLow,
             string? lpName);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SplitLong(long number, out int high, out int low)
-        {
-            high = unchecked((int)(number >> 32));
-            low = unchecked((int)(number & 0x00000000FFFFFFFFL));
-        }
     }
 }

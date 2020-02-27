@@ -23,53 +23,18 @@ internal partial class Interop
         }
     }
 
-    public static SafeMemoryMappedFileHandle CreateFileMapping(
-            SafeFileHandle hFile,
-            ref Kernel32.SECURITY_ATTRIBUTES securityAttributes,
-            int pageProtection,
-            long maximumSize,
-            string? name)
-    {
-        // split the long into two ints
-        int capacityHigh, capacityLow;
-        Kernel32.SplitLong(maximumSize, out capacityHigh, out capacityLow);
-
-        return Kernel32.CreateFileMapping(hFile, ref securityAttributes, pageProtection, capacityHigh, capacityLow, name);
-    }
-
-    public static SafeMemoryMappedFileHandle CreateFileMapping(
-            IntPtr hFile,
-            ref Kernel32.SECURITY_ATTRIBUTES securityAttributes,
-            int pageProtection,
-            long maximumSize,
-            string? name)
-    {
-        // split the long into two ints
-        int capacityHigh, capacityLow;
-        Kernel32.SplitLong(maximumSize, out capacityHigh, out capacityLow);
-
-        return Kernel32.CreateFileMapping(hFile, ref securityAttributes, pageProtection, capacityHigh, capacityLow, name);
-    }
-
     public static SafeMemoryMappedViewHandle MapViewOfFile(
             SafeMemoryMappedFileHandle hFileMappingObject,
             int desiredAccess,
             long fileOffset,
             UIntPtr numberOfBytesToMap)
     {
-        // split the long into two ints
-        int offsetHigh, offsetLow;
-        Kernel32.SplitLong(fileOffset, out offsetHigh, out offsetLow);
-
-        return Kernel32.MapViewOfFile(hFileMappingObject, desiredAccess, offsetHigh, offsetLow, numberOfBytesToMap);
-    }
-
-    public static SafeMemoryMappedFileHandle OpenFileMapping(
-            int desiredAccess,
-            bool inheritHandle,
-            string name)
-    {
-        return Kernel32.OpenFileMapping(desiredAccess, inheritHandle, name);
+        return Kernel32.MapViewOfFile(
+            hFileMappingObject,
+            desiredAccess,
+            dwFileOffsetHigh: (int)(fileOffset >> 32), // Split the fileOffset long into two ints
+            dwFileOffsetLow: (int)fileOffset,
+            numberOfBytesToMap);
     }
 
     public static IntPtr VirtualAlloc(

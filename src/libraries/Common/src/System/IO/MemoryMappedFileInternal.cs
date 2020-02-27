@@ -6,6 +6,19 @@ namespace System.IO.MemoryMappedFiles
 {
     internal static partial class MemoryMappedFileInternal
     {
+        // Ensures the passed fileStream is rooted while the MemoryMappedFile lives,
+        // and helps avoid disposing the fileStream when the MemoryMappedFile is disposed.
+        internal class FileStreamRooter : IDisposable
+        {
+            private readonly FileStream? _fileStreamToRoot;
+
+            public FileStreamRooter(FileStream? fileStreamToRoot) => _fileStreamToRoot = fileStreamToRoot;
+
+            public void Dispose()
+            {
+            }
+        }
+
         internal const int DefaultSize = 0;
 
         // This converts a MemoryMappedFileRights to its corresponding native FILE_MAP_XXX value to be used when creating new views.

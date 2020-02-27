@@ -4,6 +4,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.IO.MemoryMappedFiles
 {
@@ -11,7 +12,7 @@ namespace System.IO.MemoryMappedFiles
     {
         private readonly SafeMemoryMappedFileHandle _handle;
         private readonly bool _leaveOpen;
-        private readonly FileStream? _fileStream;
+        private readonly IDisposable? _fileStream;
 
         /// <summary>
         /// Initializes a new instance of a memory-mapped file using an existing safe handle and leaves the handle open after the memory-mapped file is disposed.
@@ -44,11 +45,10 @@ namespace System.IO.MemoryMappedFiles
         /// Initializes a new instance of a memory-mapped file using an existing safe handle, the file stream of the , and the option to leave the file stream open.
         /// </summary>
         /// <param name="handle">A safe handle that represents a memory-mapped file for sequential access.</param>
-        /// <param name="fileStream">A stream opened for the file.</param>
-        /// <param name="leaveOpen">Whether the file stream should be left open or not.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="handle" /> or <paramref name="fileStream" /> is <see langword="null" />.</exception>
+        /// <param name="fileStream">An optional disposable object that needs to get rooted during the lifetime of the memory mapped file, and then needs to get disposed when the memory mapped file is disposed. This object should ideally be the <see cref="FileStream" /> associated with the <paramref name="handle" />.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException"><paramref name="handle" /> is closed or invalid.</exception>
-        private MemoryMappedFile(SafeMemoryMappedFileHandle handle, FileStream fileStream, bool leaveOpen)
+        public MemoryMappedFile(SafeMemoryMappedFileHandle handle, IDisposable? fileStream)
         {
             if (handle == null)
             {
@@ -65,14 +65,9 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_HandleIsInvalid);
             }
 
-            if (fileStream == null)
-            {
-                throw new ArgumentNullException(nameof(fileStream));
-            }
-
             _handle = handle;
+            _leaveOpen = (fileStream == null);
             _fileStream = fileStream;
-            _leaveOpen = leaveOpen;
         }
 
         // Factory Method Group #1: Opens an existing named memory mapped file. The native OpenFileMapping call
@@ -223,7 +218,7 @@ namespace System.IO.MemoryMappedFiles
 
             Debug.Assert(handle != null);
             Debug.Assert(!handle.IsInvalid);
-            return new MemoryMappedFile(handle, fileStream, false);
+            return new MemoryMappedFile(handle, fileStream);
         }
 
         public static MemoryMappedFile CreateFromFile(FileStream fileStream,
@@ -237,7 +232,11 @@ namespace System.IO.MemoryMappedFiles
             SafeMemoryMappedFileHandle handle = CreateCore(fileStream, mapName, inheritability,
                 access, MemoryMappedFileOptions.None, updatedCapacity);
 
-            return new MemoryMappedFile(handle, fileStream, leaveOpen);
+            IDisposable disposable = leaveOpen ?
+                new MemoryMappedFileInternal.FileStreamRooter(fileStream) :
+                (IDisposable)fileStream;
+
+            return new MemoryMappedFile(handle, disposable);
         }
 
         // Factory Method Group #3: Creates a new empty memory mapped file.  Such memory mapped files are ideal

@@ -21,7 +21,7 @@ namespace System.IO.MemoryMappedFiles
         /// This parameter cannot be <see langword= "null" />.</param>
         /// <param name="inheritability">One of the enumeration values that specifies whether a handle to the memory-mapped file can be inherited by a child process.
         /// The default is <see cref="HandleInheritability.None" />.</param>
-        /// <param name="leaveOpen">This parameter is unused: the <paramref name="fileStream" /> will be left open after the current object is disposed.</param>
+        /// <param name="leaveOpen">If set to <see langword="true" />, the <paramref name="fileStream" /> will be left open after the current memory mapped file instance is disposed; if set to <see langword="false" />, the <paramref name="fileStream" /> will be closed when the current memory mapped file instance is disposed.</param>
         /// <returns>A memory-mapped file that has the specified characteristics.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="fileStream" /> or <paramref name="memoryMappedFileSecurity" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException"><paramref name="mapName" /> is <see langword="null" /> or empty.
@@ -58,7 +58,12 @@ namespace System.IO.MemoryMappedFiles
             fixed (byte* pSecurityDescriptor = memoryMappedFileSecurity.GetSecurityDescriptorBinaryForm())
             {
                 SafeMemoryMappedFileHandle handle = MemoryMappedFileInternal.CreateCore(fileStream, mapName, access, MemoryMappedFileOptions.None, updatedCapacity, MemoryMappedFileInternal.GetSecAttrs(pSecurityDescriptor, inheritability));
-                return new MemoryMappedFile(handle); // This constructor leaves the handle open
+
+                IDisposable disposable = leaveOpen ?
+                    new MemoryMappedFileInternal.FileStreamRooter(fileStream) :
+                    (IDisposable)fileStream;
+
+                return new MemoryMappedFile(handle, disposable);
             }
         }
 

@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using Xunit;
 
 namespace System.IO
 {
-    public class FileSystemAclExtensionsTests
+    public class FileSystemAclExtensionsTests : AclTestBase
     {
         private const int DefaultBufferSize = 4096;
 
@@ -580,38 +578,6 @@ namespace System.IO
             FileSecurity actualSecurity = actualInfo.GetAccessControl();
 
             VerifyAccessSecurity(expectedSecurity, actualSecurity);
-        }
-
-        private void VerifyAccessSecurity(CommonObjectSecurity expectedSecurity, CommonObjectSecurity actualSecurity)
-        {
-            Assert.Equal(typeof(FileSystemRights), expectedSecurity.AccessRightType);
-
-            Assert.Equal(typeof(FileSystemRights), actualSecurity.AccessRightType);
-
-            List<FileSystemAccessRule> expectedAccessRules = expectedSecurity.GetAccessRules(includeExplicit: true, includeInherited: false, typeof(SecurityIdentifier))
-                .Cast<FileSystemAccessRule>().ToList();
-
-            List<FileSystemAccessRule> actualAccessRules = actualSecurity.GetAccessRules(includeExplicit: true, includeInherited: false, typeof(SecurityIdentifier))
-                .Cast<FileSystemAccessRule>().ToList();
-
-            Assert.Equal(expectedAccessRules.Count, actualAccessRules.Count);
-            if (expectedAccessRules.Count > 0)
-            {
-                Assert.All(expectedAccessRules, actualAccessRule =>
-                {
-                    int count = expectedAccessRules.Count(expectedAccessRule => AreAccessRulesEqual(expectedAccessRule, actualAccessRule));
-                    Assert.True(count > 0);
-                });
-            }
-        }
-
-        private bool AreAccessRulesEqual(FileSystemAccessRule expectedRule, FileSystemAccessRule actualRule)
-        {
-            return
-                expectedRule.AccessControlType == actualRule.AccessControlType &&
-                expectedRule.FileSystemRights  == actualRule.FileSystemRights &&
-                expectedRule.InheritanceFlags  == actualRule.InheritanceFlags &&
-                expectedRule.PropagationFlags  == actualRule.PropagationFlags;
         }
 
         #endregion

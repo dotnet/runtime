@@ -5,22 +5,15 @@
 using System.Collections.Generic;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
-using System.Runtime.Versioning;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Threading;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Xunit;
 
 namespace System.IO
 {
-    public class MemoryMappedFileAclTests : FileCleanupTestBase
+    public class MemoryMappedFileAclTests : AclTestBase
     {
-        private const long StandardCapacity = 4096;
-
-
-        #region Tests
-
         // CreateFromFile
 
         [Fact]
@@ -107,43 +100,88 @@ namespace System.IO
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        // On Core, the leaveOpen boolean is ignored, so when the MemoryMappedFile is disposed, the FileStream will be left opened (not disposed).
-        public void CreateFromFile_AlwaysLeaveOpen(bool leaveOpen)
-        {
-            using TempFile file = new TempFile(GetTestFilePath(), StandardCapacity);
-            using FileStream fileStream = GetFileStreamWithSecurity(file.Path);
-            MemoryMappedFile mmf = CreateFromFile(fileStream, leaveOpen: leaveOpen);
-            mmf.Dispose();
-
-            Assert.False(fileStream.SafeFileHandle.IsClosed);
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
-        // On Framework, the leaveOpen value is saved by MemoryMappedFile. When it's true, and the MMF is disposed, the underlying filestream is also disposed.
         public void CreateFromFile_RespectLeaveOpen(bool leaveOpen)
         {
             using TempFile file = new TempFile(GetTestFilePath(), StandardCapacity);
-            using FileStream fileStream = GetFileStreamWithSecurity(file.Path);
+
+            using FileStream fileStream = GetFileStreamWithSecurity(file.Path); // Created with full control
+            Assert.True(fileStream.CanRead);
+            Assert.True(fileStream.CanWrite);
+
             MemoryMappedFile mmf = CreateFromFile(fileStream, leaveOpen: leaveOpen);
             mmf.Dispose();
 
-            Assert.NotEqual(leaveOpen, fileStream.SafeFileHandle.IsClosed);
+            Assert.Equal(leaveOpen, fileStream.CanRead);
+            Assert.Equal(leaveOpen, fileStream.CanWrite);
         }
 
-        //[Theory]
-        //[InlineData(MemoryMappedFileRights.ReadExecute)]
-        //[InlineData(MemoryMappedFileRights.TakeOwnership)]
-        //[InlineData(MemoryMappedFileRights.AccessSystemSecurity)]
-        //public void CreateFromFile_VerifySecurity(MemoryMappedFileRights rights)
-        //{
-        //    using TempFile file = new TempFile(GetTestFilePath(), StandardCapacity);
-        //    MemoryMappedFileSecurity security = GetSecurity(rights, AccessControlType.Allow);
-        //    using MemoryMappedFile mmf = CreateFromFile(file, security: security);
-        //}
+        [Fact]
+        public void CreateFromFile_DisposeFileStream_BeforeOpeningMemoryMappedFile()
+        {
+            using TempFile file = new TempFile(GetTestFilePath(), StandardCapacity);
+
+            using FileStream fileStream = GetFileStreamWithSecurity(file.Path);
+
+            using MemoryMappedFile mmf = CreateFromFile(fileStream);
+            
+            fileStream.Dispose(); // Close it before accessing the memory mapped file data
+
+            using (MemoryMappedViewAccessor mmva = mmf.CreateViewAccessor(0, 1, MemoryMappedFileAccess.ReadWrite))
+            {
+                byte b = mmva.ReadByte(0);
+            }
+
+            using (MemoryMappedViewStream mmvs = mmf.CreateViewStream(0, 1, MemoryMappedFileAccess.ReadWrite))
+            {
+                int b = mmvs.ReadByte();
+            }
+            
+        }
+
+        [Theory]
+        //// //[InlineData(MemoryMappedFileRights.AccessSystemSecurity)] // mmf.GetAccessControl() excludes this right
+        [InlineData(MemoryMappedFileRights.ChangePermissions)]
+        [InlineData(MemoryMappedFileRights.CopyOnWrite)]
+        [InlineData(MemoryMappedFileRights.Delete)]
+        [InlineData(MemoryMappedFileRights.Execute)]
+        [InlineData(MemoryMappedFileRights.FullControl)]
+        [InlineData(MemoryMappedFileRights.Read)]
+        [InlineData(MemoryMappedFileRights.ReadExecute)]
+        [InlineData(MemoryMappedFileRights.ReadPermissions)]
+        [InlineData(MemoryMappedFileRights.ReadWrite)]
+        [InlineData(MemoryMappedFileRights.ReadWriteExecute)]
+        [InlineData(MemoryMappedFileRights.TakeOwnership)]
+        [InlineData(MemoryMappedFileRights.Write)]
+        public void CreateFromFile_VerifySecurities(MemoryMappedFileRights mmfRights)
+        {
+            string path = GetTestFilePath();
+            FileInfo fileInfo = new FileInfo(path);
+
+            FileSystemRights fsRights = FileSystemRights.FullControl;
+            AccessControlType controlType = AccessControlType.Allow;
+            WellKnownSidType sid = WellKnownSidType.BuiltinUsersSid;
+            SecurityIdentifier identity = new SecurityIdentifier(sid, null);
+
+            FileSystemAccessRule fsAccessRule = new FileSystemAccessRule(identity, fsRights, controlType);
+            AccessRule<MemoryMappedFileRights> mmfAccessRule = new AccessRule<MemoryMappedFileRights>(identity, mmfRights, controlType);
+
+            FileSecurity expectedFileSecurity = new FileSecurity();
+            MemoryMappedFileSecurity expectedMmfSecurity = new MemoryMappedFileSecurity();
+
+            expectedFileSecurity.AddAccessRule(fsAccessRule);
+            expectedMmfSecurity.AddAccessRule(mmfAccessRule);
+
+            // FileInfo.Create will create the file
+            // Notice the fsRights are the same that were passed to fsAccessRule
+            using (FileStream fileStream = fileInfo.Create(FileMode.OpenOrCreate, fsRights, FileShare.ReadWrite, 4096, FileOptions.None, expectedFileSecurity))
+            {
+                using MemoryMappedFile mmf = MemoryMappedFileAcl.CreateFromFile(fileStream, CreateUniqueMapName(), StandardCapacity, MemoryMappedFileAccess.ReadWriteExecute, expectedMmfSecurity, HandleInheritability.None, leaveOpen: true);
+                VerifyAccessSecurity(expectedFileSecurity, fileStream.GetAccessControl());
+                VerifyAccessSecurity(expectedMmfSecurity, mmf.GetAccessControl());
+            }
+
+            fileInfo.Delete();
+        }
 
 
         // CreateNew
@@ -162,7 +200,7 @@ namespace System.IO
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => CreateNew(capacity: capacity));
         }
 
-        [ConditionalFact(typeof(MemoryMappedFileAclTests), nameof(MemoryMappedFileAclTests.IsAddressSpaceWithIntPtrSize4))]
+        [ConditionalFact(typeof(MemoryMappedFileAclTests), nameof(IsAddressSpaceWithIntPtrSize4))]
         public void CreateNew_CapacityLargerThanLogicalAddressSpace()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => CreateNew(capacity: long.MaxValue));
@@ -212,15 +250,41 @@ namespace System.IO
             Assert.NotNull(mmf);
         }
 
-        //[Theory]
-        //[InlineData(MemoryMappedFileRights.ReadExecute)]
-        //[InlineData(MemoryMappedFileRights.TakeOwnership)]
-        //[InlineData(MemoryMappedFileRights.AccessSystemSecurity)]
-        //public void CreateNew_VerifySecurity(MemoryMappedFileRights rights)
-        //{
-        //    MemoryMappedFileSecurity security = GetSecurity(rights, AccessControlType.Allow);
-        //    using MemoryMappedFile mmf = CreateNew(security: security);
-        //}
+        [Theory]
+        // [InlineData(MemoryMappedFileRights.AccessSystemSecurity)] // mmf.GetAccessControl() excludes this right
+        [InlineData(MemoryMappedFileRights.ChangePermissions)]
+        [InlineData(MemoryMappedFileRights.CopyOnWrite)]
+        [InlineData(MemoryMappedFileRights.Delete)]
+        [InlineData(MemoryMappedFileRights.Execute)]
+        [InlineData(MemoryMappedFileRights.FullControl)]
+        [InlineData(MemoryMappedFileRights.Read)]
+        [InlineData(MemoryMappedFileRights.ReadExecute)]
+        [InlineData(MemoryMappedFileRights.ReadPermissions)]
+        [InlineData(MemoryMappedFileRights.ReadWrite)]
+        [InlineData(MemoryMappedFileRights.ReadWriteExecute)]
+        [InlineData(MemoryMappedFileRights.TakeOwnership)]
+        [InlineData(MemoryMappedFileRights.Write)]
+        public void CreateNew_VerifySecurity(MemoryMappedFileRights rights)
+        {
+            string path = GetTestFilePath();
+            using TempFile file = new TempFile(path, StandardCapacity);
+            FileInfo fileInfo = new FileInfo(file.Path);
+
+            AccessControlType controlType = AccessControlType.Allow;
+            WellKnownSidType sid = WellKnownSidType.BuiltinUsersSid;
+            SecurityIdentifier identity = new SecurityIdentifier(sid, null);
+
+            AccessRule<MemoryMappedFileRights> accessRule
+                = new AccessRule<MemoryMappedFileRights>(identity, rights, controlType);
+
+            MemoryMappedFileSecurity expectedSecurity = new MemoryMappedFileSecurity();
+
+            expectedSecurity.AddAccessRule(accessRule);
+
+            using MemoryMappedFile mmf = MemoryMappedFileAcl.CreateNew(CreateUniqueMapName(), StandardCapacity, MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileOptions.None, expectedSecurity, HandleInheritability.None);
+
+            VerifyAccessSecurity(expectedSecurity, mmf.GetAccessControl());
+        }
 
 
         // CreateOrOpen
@@ -288,10 +352,42 @@ namespace System.IO
             AssertExtensions.Throws<ArgumentException>("access", () => CreateOrOpen(access: MemoryMappedFileAccess.Write));
         }
 
-        #endregion
+        [Theory]
+        //[InlineData(MemoryMappedFileRights.AccessSystemSecurity)] // mmf.GetAccessControl() excludes this right
+        [InlineData(MemoryMappedFileRights.ChangePermissions)]
+        [InlineData(MemoryMappedFileRights.CopyOnWrite)]
+        [InlineData(MemoryMappedFileRights.Delete)]
+        [InlineData(MemoryMappedFileRights.Execute)]
+        [InlineData(MemoryMappedFileRights.FullControl)]
+        [InlineData(MemoryMappedFileRights.Read)]
+        [InlineData(MemoryMappedFileRights.ReadExecute)]
+        [InlineData(MemoryMappedFileRights.ReadPermissions)]
+        [InlineData(MemoryMappedFileRights.ReadWrite)]
+        [InlineData(MemoryMappedFileRights.ReadWriteExecute)]
+        [InlineData(MemoryMappedFileRights.TakeOwnership)]
+        [InlineData(MemoryMappedFileRights.Write)]
+        public void CreateOrOpen_VerifySecurity(MemoryMappedFileRights rights)
+        {
+            string path = GetTestFilePath();
+            using TempFile file = new TempFile(path, StandardCapacity);
+            FileInfo fileInfo = new FileInfo(file.Path);
 
+            AccessControlType controlType = AccessControlType.Allow;
+            WellKnownSidType sid = WellKnownSidType.BuiltinUsersSid;
+            SecurityIdentifier identity = new SecurityIdentifier(sid, null);
 
-        #region Helper methods
+            AccessRule<MemoryMappedFileRights> accessRule
+                = new AccessRule<MemoryMappedFileRights>(identity, rights, controlType);
+
+            MemoryMappedFileSecurity expectedSecurity = new MemoryMappedFileSecurity();
+
+            expectedSecurity.AddAccessRule(accessRule);
+
+            using MemoryMappedFile mmf = MemoryMappedFileAcl.CreateOrOpen(CreateUniqueMapName(), StandardCapacity, MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileOptions.None, expectedSecurity, HandleInheritability.None);
+
+            VerifyAccessSecurity(expectedSecurity, mmf.GetAccessControl());
+        }
+
 
         // CreateFromFile
 
@@ -360,8 +456,10 @@ namespace System.IO
             bool leaveOpen = false)
         {
             MemoryMappedFile mmf = MemoryMappedFileAcl.CreateFromFile(fileStream, mapName, capacity, access, security, inheritability, leaveOpen);
-            MemoryMappedFileSecurity actualSecurity = mmf.GetAccessControl();
-            VerifySecurity(mmf, security);
+            if (security != null)
+            {
+                VerifyAccessSecurity(security, mmf.GetAccessControl());
+            }
             return mmf;
         }
 
@@ -406,7 +504,10 @@ namespace System.IO
             HandleInheritability inheritability = HandleInheritability.None)
         {
             MemoryMappedFile mmf = MemoryMappedFileAcl.CreateNew(mapName, capacity, access, options, security, inheritability);
-            VerifySecurity(mmf, security);
+            if (security != null)
+            {
+                VerifyAccessSecurity(security, mmf.GetAccessControl());
+            }
             return mmf;
         }
 
@@ -451,14 +552,19 @@ namespace System.IO
             HandleInheritability inheritability = HandleInheritability.None)
         {
             MemoryMappedFile mmf = MemoryMappedFileAcl.CreateOrOpen(mapName, capacity, access, options, security, inheritability);
-            VerifySecurity(mmf, security);
+            if (security != null)
+            {
+                VerifyAccessSecurity(security, mmf.GetAccessControl());
+            }
             return mmf;
         }
 
 
-        // Shared
+        // Private shared
 
-        internal static bool IsAddressSpaceWithIntPtrSize4 => IntPtr.Size == 4;
+        private const long StandardCapacity = 4096;
+
+        private static bool IsAddressSpaceWithIntPtrSize4 => IntPtr.Size == 4;
 
         private static string CreateUniqueMapName() => Guid.NewGuid().ToString("N");
 
@@ -493,40 +599,5 @@ namespace System.IO
 
             return fileInfo.Create(FileMode.OpenOrCreate, FileSystemRights.FullControl, FileShare.ReadWrite, 4096, FileOptions.None, fileSecurity);
         }
-
-        private void VerifySecurity(MemoryMappedFile mmf, MemoryMappedFileSecurity expectedSecurity)
-        {
-            Assert.NotNull(mmf);
-
-            MemoryMappedFileSecurity actualSecurity = mmf.GetAccessControl();
-
-            Assert.Equal(typeof(MemoryMappedFileRights), expectedSecurity.AccessRightType);
-            Assert.Equal(typeof(MemoryMappedFileRights), actualSecurity.AccessRightType);
-
-            List<AccessRule> expectedAccessRules = expectedSecurity.GetAccessRules(includeExplicit: true, includeInherited: true, typeof(SecurityIdentifier)).Cast<AccessRule>().ToList();
-            List<AccessRule> actualAccessRules = actualSecurity.GetAccessRules(includeExplicit: true, includeInherited: true, typeof(SecurityIdentifier)).Cast<AccessRule>().ToList();
-
-            Assert.Equal(expectedAccessRules.Count, actualAccessRules.Count);
-
-            if (expectedAccessRules.Count > 0)
-            {
-                Assert.All(expectedAccessRules, actualAccessRule =>
-                {
-                    int count = expectedAccessRules.Count(expectedAccessRule => AreAccessRulesEqual(expectedAccessRule, actualAccessRule));
-                    Assert.True(count > 0);
-                });
-            }
-        }
-
-        private bool AreAccessRulesEqual(AccessRule expectedRule, AccessRule actualRule)
-        {
-            return
-                expectedRule.IdentityReference.Value == actualRule.IdentityReference.Value &&
-                expectedRule.AccessControlType == actualRule.AccessControlType &&
-                expectedRule.InheritanceFlags  == actualRule.InheritanceFlags &&
-                expectedRule.PropagationFlags  == actualRule.PropagationFlags;
-        }
-
-        #endregion
     }
 }

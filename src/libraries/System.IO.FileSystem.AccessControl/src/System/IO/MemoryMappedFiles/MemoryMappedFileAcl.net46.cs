@@ -15,6 +15,9 @@ namespace System.IO.MemoryMappedFiles
             HandleInheritability inheritability,
             bool leaveOpen)
         {
+            if (memoryMappedFileSecurity == null)
+                throw new ArgumentNullException(nameof(memoryMappedFileSecurity));
+
             return MemoryMappedFile.CreateFromFile(fileStream, mapName, capacity, access, memoryMappedFileSecurity, inheritability, leaveOpen);
         }
 
@@ -26,6 +29,9 @@ namespace System.IO.MemoryMappedFiles
             MemoryMappedFileSecurity memoryMappedFileSecurity,
             HandleInheritability inheritability)
         {
+            if (memoryMappedFileSecurity == null)
+                throw new ArgumentNullException(nameof(memoryMappedFileSecurity));
+
             return MemoryMappedFile.CreateNew(mapName, capacity, access, options, memoryMappedFileSecurity, inheritability);
         }
 
@@ -37,16 +43,28 @@ namespace System.IO.MemoryMappedFiles
             MemoryMappedFileSecurity memoryMappedFileSecurity,
             HandleInheritability inheritability)
         {
+            if (memoryMappedFileSecurity == null)
+                throw new ArgumentNullException(nameof(memoryMappedFileSecurity));
+
             return MemoryMappedFile.CreateOrOpen(mapName, capacity, access, options, memoryMappedFileSecurity, inheritability);
         }
 
         public static MemoryMappedFileSecurity GetAccessControl(this MemoryMappedFile memoryMappedFile)
         {
+            if (memoryMappedFile == null)
+                throw new ArgumentNullException(nameof(memoryMappedFile));
+
             return memoryMappedFile.GetAccessControl();
         }
 
         public static void SetAccessControl(this MemoryMappedFile memoryMappedFile, MemoryMappedFileSecurity memoryMappedFileSecurity)
         {
+            if (memoryMappedFile == null)
+                throw new ArgumentNullException(nameof(memoryMappedFile));
+
+            if (memoryMappedFileSecurity == null)
+                throw new ArgumentNullException(nameof(memoryMappedFileSecurity));
+
             memoryMappedFile.SetAccessControl(memoryMappedFileSecurity);
         }
     }
