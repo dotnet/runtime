@@ -80,6 +80,37 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        // all possible definite-length encodings for the value 23
+        [InlineData("17")]
+        [InlineData("1817")]
+        [InlineData("190017")]
+        [InlineData("1a00000017")]
+        [InlineData("1b0000000000000017")]
+        public static void UInt64Reader_SingleValue_ShouldSupportNonCanonicalEncodings(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborValueReader(data);
+            ulong result = reader.ReadUInt64();
+            Assert.Equal(23ul, result);
+        }
+
+        [Theory]
+        // all possible definite-length encodings for the value -24
+        [InlineData("37")]
+        [InlineData("3817")]
+        [InlineData("390017")]
+        [InlineData("3a00000017")]
+        [InlineData("3b0000000000000017")]
+        public static void Int64Reader_SingleValue_ShouldSupportNonCanonicalEncodings(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborValueReader(data);
+            long result = reader.ReadInt64();
+            Assert.Equal(-24, result);
+        }
+
+
+        [Theory]
         [InlineData("1b8000000000000000")] // long.MaxValue + 1
         [InlineData("3b8000000000000000")] // long.MinValue - 1
         [InlineData("1bffffffffffffffff")] // ulong.MaxValue
@@ -110,10 +141,64 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData("40")] // empty text string
         [InlineData("60")] // empty byte string
-        public static void Int64Reader_StringValues_ShouldThrowInvalidOperationException(string hexEncoding)
+        [InlineData("f6")] // null
+        [InlineData("80")] // []
+        [InlineData("a0")] // {}
+        [InlineData("f97e00")] // NaN
+        [InlineData("fb3ff199999999999a")] // 1.1
+        public static void Int64Reader_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            Assert.Throws<InvalidOperationException>(() =>
+            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() =>
+            {
+                var reader = new CborValueReader(data);
+                reader.ReadInt64();
+            });
+
+            Assert.Equal("Data item type mismatch", exn.Message);
+        }
+
+        [Theory]
+        [InlineData("40")] // empty text string
+        [InlineData("60")] // empty byte string
+        [InlineData("f6")] // null
+        [InlineData("80")] // []
+        [InlineData("a0")] // {}
+        [InlineData("f97e00")] // NaN
+        [InlineData("fb3ff199999999999a")] // 1.1
+        public static void UInt64Reader_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() =>
+                {
+                    var reader = new CborValueReader(data);
+                    reader.ReadUInt64();
+                });
+
+            Assert.Equal("Data item type mismatch", exn.Message);
+        }
+
+        [Theory]
+        // Invalid initial bytes with numeric major type
+        [InlineData("1c")]
+        [InlineData("1d")]
+        [InlineData("1e")]
+        [InlineData("3c")]
+        [InlineData("3d")]
+        [InlineData("3e")]
+        // valid initial bytes missing required data
+        [InlineData("18")]
+        [InlineData("1912")]
+        [InlineData("1a000000")]
+        [InlineData("1b00000000000000")]
+        [InlineData("38")]
+        [InlineData("3912")]
+        [InlineData("3a000000")]
+        [InlineData("3b00000000000000")]
+        public static void Int64Reader_InvalidData_ShouldThrowFormatException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            Assert.Throws<FormatException>(() =>
             {
                 var reader = new CborValueReader(data);
                 reader.ReadInt64();
@@ -121,46 +206,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData("40")] // empty text string
-        [InlineData("60")] // empty byte string
-        public static void UInt64Reader_StringValues_ShouldThrowInvalidOperationException(string hexEncoding)
+        [InlineData("1f")]
+        [InlineData("3f")]
+        public static void Int64Reader_IndefiniteLengthIntegers_ShouldThrowNotImplementedException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            Assert.Throws<InvalidOperationException>(() =>
+            Assert.Throws<NotImplementedException>(() =>
             {
                 var reader = new CborValueReader(data);
-                reader.ReadUInt64();
+                reader.ReadInt64();
             });
-        }
-
-        [Theory]
-        // all possible encodings for the value 23
-        [InlineData("17")]
-        [InlineData("1817")]
-        [InlineData("190017")]
-        [InlineData("1a00000017")]
-        [InlineData("1b0000000000000017")]
-        public static void UInt64Reader_SingleValue_ShouldSupportNonCanonicalEncodings(string hexEncoding)
-        {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborValueReader(data);
-            ulong result = reader.ReadUInt64();
-            Assert.Equal(23ul, result);
-        }
-
-        [Theory]
-        // all possible encodings for the value -24
-        [InlineData("37")]
-        [InlineData("3817")]
-        [InlineData("390017")]
-        [InlineData("3a00000017")]
-        [InlineData("3b0000000000000017")]
-        public static void Int64Reader_SingleValue_ShouldSupportNonCanonicalEncodings(string hexEncoding)
-        {
-            byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborValueReader(data);
-            long result = reader.ReadInt64();
-            Assert.Equal(-24, result);
         }
     }
 }
