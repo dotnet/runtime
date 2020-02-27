@@ -15,6 +15,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             CborDataItem header = ReadInitialByte(expectedType: CborMajorType.ByteString);
             int length = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
+            EnsureBuffer(1 + additionalBytes + length);
             byte[] result = new byte[length];
             _buffer.Slice(1 + additionalBytes, length).CopyTo(result);
             AdvanceBuffer(1 + additionalBytes + length);
@@ -26,6 +27,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             CborDataItem header = ReadInitialByte(expectedType: CborMajorType.Utf8String);
             int length = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
+            EnsureBuffer(1 + additionalBytes + length);
             ReadOnlySpan<byte> encodedString = _buffer.Slice(1 + additionalBytes, length);
             string result = s_utf8Encoding.GetString(encodedString);
             AdvanceBuffer(1 + additionalBytes + length);

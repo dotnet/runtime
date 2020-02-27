@@ -120,40 +120,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     return (ulong)x;
 
                 case CborAdditionalInfo.UnsignedInteger8BitEncoding:
-                    if (_buffer.Length > 1)
-                    {
-                        additionalBytes = 1;
-                        return _buffer[1];
-                    }
-
-                    throw new FormatException("End of buffer");
+                    EnsureBuffer(1);
+                    additionalBytes = 1;
+                    return _buffer[1];
 
                 case CborAdditionalInfo.UnsignedInteger16BitEncoding:
-                    if (_buffer.Length > 2)
-                    {
-                        additionalBytes = 2;
-                        return BinaryPrimitives.ReadUInt16BigEndian(_buffer.Slice(1));
-                    }
-
-                    throw new FormatException("End of buffer");
+                    EnsureBuffer(2);
+                    additionalBytes = 2;
+                    return BinaryPrimitives.ReadUInt16BigEndian(_buffer.Slice(1));
 
                 case CborAdditionalInfo.UnsignedInteger32BitEncoding:
-                    if (_buffer.Length > 4)
-                    {
-                        additionalBytes = 4;
-                        return BinaryPrimitives.ReadUInt32BigEndian(_buffer.Slice(1));
-                    }
-
-                    throw new FormatException("End of buffer");
+                    EnsureBuffer(4);
+                    additionalBytes = 4;
+                    return BinaryPrimitives.ReadUInt32BigEndian(_buffer.Slice(1));
 
                 case CborAdditionalInfo.UnsignedInteger64BitEncoding:
-                    if (_buffer.Length > 8)
-                    {
-                        additionalBytes = 8;
-                        return BinaryPrimitives.ReadUInt64BigEndian(_buffer.Slice(1));
-                    }
-
-                    throw new FormatException("End of buffer");
+                    EnsureBuffer(8);
+                    additionalBytes = 8;
+                    return BinaryPrimitives.ReadUInt64BigEndian(_buffer.Slice(1));
 
                 case CborAdditionalInfo.IndefiniteLength:
                     throw new NotImplementedException("indefinite length support");

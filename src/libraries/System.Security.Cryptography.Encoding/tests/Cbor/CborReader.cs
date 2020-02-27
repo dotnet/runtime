@@ -56,5 +56,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             _buffer = _buffer.Slice(length);
         }
+
+        private void EnsureBuffer(int length)
+        {
+            if (_buffer.Length < length)
+            {
+                throw new FormatException("end of buffer");
+            }
+        }
     }
 }
