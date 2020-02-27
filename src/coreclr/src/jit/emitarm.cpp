@@ -7072,8 +7072,8 @@ void emitter::emitDispInsHelp(
                 {
                     printf("reloc ");
                 }
-                printf("%s ADDRESS J_M%03u_DS%02u", (id->idIns() == INS_movw) ? "LOW" : "HIGH",
-                       Compiler::s_compMethodsCount, imm);
+                printf("%s ADDRESS J_M%03u_DS%02u", (id->idIns() == INS_movw) ? "LOW" : "HIGH", emitComp->compMethodID,
+                       imm);
 
                 // After the MOVT, dump the table
                 if (id->idIns() == INS_movt)
@@ -7085,7 +7085,7 @@ void emitter::emitDispInsHelp(
 
                     if (isBound)
                     {
-                        printf("\n\n    J_M%03u_DS%02u LABEL   DWORD", Compiler::s_compMethodsCount, imm);
+                        printf("\n\n    J_M%03u_DS%02u LABEL   DWORD", emitComp->compMethodID, imm);
 
                         /* Display the label table (it's stored as "BasicBlock*" values) */
 
@@ -7098,7 +7098,7 @@ void emitter::emitDispInsHelp(
                             lab = (insGroup*)emitCodeGetCookie(*bbp++);
                             assert(lab);
 
-                            printf("\n            DD      G_M%03u_IG%02u", Compiler::s_compMethodsCount, lab->igNum);
+                            printf("\n            DD      G_M%03u_IG%02u", emitComp->compMethodID, lab->igNum);
                         } while (--cnt);
                     }
                 }
@@ -7407,9 +7407,9 @@ void emitter::emitDispInsHelp(
         case IF_T2_M1: // Load Label
             emitDispReg(id->idReg1(), attr, true);
             if (id->idIsBound())
-                printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
+                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
             else
-                printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             break;
 
         case IF_T1_I: // Special Compare-and-branch
@@ -7452,9 +7452,9 @@ void emitter::emitDispInsHelp(
                 }
             }
             else if (id->idIsBound())
-                printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
+                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
             else
-                printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
         }
         break;
 

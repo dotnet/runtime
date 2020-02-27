@@ -48,7 +48,7 @@ private:
     A action;
 };
 
-// Wrapper for using ActionPhase
+// Wrappers for using ActionPhase
 //
 template <typename A>
 void DoPhase(Compiler* _compiler, Phases _phase, A _action)

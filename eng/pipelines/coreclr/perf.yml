@@ -52,7 +52,7 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: release
     platforms:
     - Linux_x64
@@ -60,20 +60,6 @@ jobs:
     - Windows_NT_x86
     jobParameters:
       testGroup: perf
-      useVsPreviewPool: false
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: Release
-    platforms:
-    - Linux_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    jobParameters:
-      useVsPreviewPool: true
-      liveRuntimeBuildConfig: release
-
     
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

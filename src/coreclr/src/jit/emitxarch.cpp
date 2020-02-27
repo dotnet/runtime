@@ -7746,7 +7746,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             {
                 printf("reloc ");
             }
-            printf("J_M%03u_DS%02u", Compiler::s_compMethodsCount, id->idDebugOnlyInfo()->idMemCookie);
+            printf("J_M%03u_DS%02u", emitComp->compMethodID, id->idDebugOnlyInfo()->idMemCookie);
 
             disp -= id->idDebugOnlyInfo()->idMemCookie;
         }
@@ -7884,7 +7884,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
 #else
 #define SIZE_LETTER "D"
 #endif
-        printf("\n\n    J_M%03u_DS%02u LABEL   " SIZE_LETTER "WORD", Compiler::s_compMethodsCount, jtno);
+        printf("\n\n    J_M%03u_DS%02u LABEL   " SIZE_LETTER "WORD", emitComp->compMethodID, jtno);
 
         /* Display the label table (it's stored as "BasicBlock*" values) */
 
@@ -7897,7 +7897,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             lab = (insGroup*)emitCodeGetCookie(*bbp++);
             assert(lab);
 
-            printf("\n            D" SIZE_LETTER "      G_M%03u_IG%02u", Compiler::s_compMethodsCount, lab->igNum);
+            printf("\n            D" SIZE_LETTER "      G_M%03u_IG%02u", emitComp->compMethodID, lab->igNum);
         } while (--cnt);
     }
 }
@@ -8961,11 +8961,11 @@ void emitter::emitDispIns(
 
             if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
+                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
             }
             else
             {
-                printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
             break;
 

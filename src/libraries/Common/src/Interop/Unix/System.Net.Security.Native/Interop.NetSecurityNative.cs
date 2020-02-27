@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -79,9 +80,9 @@ internal static partial class Interop
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
             bool isNtlmOnly,
-            SafeGssNameHandle targetName,
+            SafeGssNameHandle? targetName,
             uint reqFlags,
-            byte[] inputBytes,
+            byte[]? inputBytes,
             int inputLength,
             ref GssBuffer token,
             out uint retFlags,
@@ -95,9 +96,9 @@ internal static partial class Interop
             bool isNtlmOnly,
             IntPtr cbt,
             int cbtSize,
-            SafeGssNameHandle targetName,
+            SafeGssNameHandle? targetName,
             uint reqFlags,
-            byte[] inputBytes,
+            byte[]? inputBytes,
             int inputLength,
             ref GssBuffer token,
             out uint retFlags,
@@ -108,7 +109,7 @@ internal static partial class Interop
             out Status minorStatus,
             SafeGssCredHandle acceptorCredHandle,
             ref SafeGssContextHandle acceptContextHandle,
-            byte[] inputBytes,
+            byte[]? inputBytes,
             int inputLength,
             ref GssBuffer token,
             out uint retFlags,
@@ -122,13 +123,13 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_GetUser")]
         internal static extern Status GetUser(
             out Status minorStatus,
-            SafeGssContextHandle acceptContextHandle,
+            SafeGssContextHandle? acceptContextHandle,
             ref GssBuffer token);
 
         [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_Wrap")]
         private static extern Status Wrap(
             out Status minorStatus,
-            SafeGssContextHandle contextHandle,
+            SafeGssContextHandle? contextHandle,
             bool isEncrypt,
             byte[] inputBytes,
             int offset,
@@ -138,7 +139,7 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_Unwrap")]
         private static extern Status Unwrap(
             out Status minorStatus,
-            SafeGssContextHandle contextHandle,
+            SafeGssContextHandle? contextHandle,
             byte[] inputBytes,
             int offset,
             int count,
@@ -146,7 +147,7 @@ internal static partial class Interop
 
         internal static Status WrapBuffer(
             out Status minorStatus,
-            SafeGssContextHandle contextHandle,
+            SafeGssContextHandle? contextHandle,
             bool isEncrypt,
             byte[] inputBytes,
             int offset,
@@ -162,7 +163,7 @@ internal static partial class Interop
 
         internal static Status UnwrapBuffer(
             out Status minorStatus,
-            SafeGssContextHandle contextHandle,
+            SafeGssContextHandle? contextHandle,
             byte[] inputBytes,
             int offset,
             int count,
