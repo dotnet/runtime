@@ -142,16 +142,16 @@ namespace System.Net
         {
             if (disposing)
             {
-                if (null != _sslContext)
+                SafeSslHandle sslContext = _sslContext;
+                if (null != sslContext)
                 {
-                    lock (_sslContext)
+                    lock (sslContext)
                     {
                         _inputBuffer.Dispose();
                         _outputBuffer.Dispose();
                     }
 
-                    _sslContext.Dispose();
-                    _sslContext = null;
+                    sslContext.Dispose();
                 }
             }
 
