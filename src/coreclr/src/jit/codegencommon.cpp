@@ -6365,8 +6365,9 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         if (untrLclLo != alignedLclLo)
         {
             // If unaligned and smaller then 1.5 x SIMD size we won't bother trying to align
-            assert((alignedLclLo - untrLclLo) <= REGSIZE_BYTES);
-            minSimdSize = XMM_REGSIZE_BYTES + REGSIZE_BYTES;
+            assert((alignedLclLo - untrLclLo) < XMM_REGSIZE_BYTES);
+            minSimdSize = ((alignedLclLo - untrLclLo) > REGSIZE_BYTES) ? 2 * XMM_REGSIZE_BYTES
+                                                                       : XMM_REGSIZE_BYTES + REGSIZE_BYTES;
         }
 #else // !defined(TARGET_AMD64)
         // We aren't going to try and align on 32bit or if there are no guarantees on SIMD alignment
