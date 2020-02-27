@@ -12503,6 +12503,39 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         objOp = opOther->AsCall()->gtCallThisArg->GetNode();
     }
 
+    bool                 pIsExact   = false;
+    bool                 pIsNonNull = false;
+    CORINFO_CLASS_HANDLE objCls     = gtGetClassHandle(objOp, &pIsExact, &pIsNonNull);
+
+    // if both classes are "final" (e.g. System.String[]) we can replace the comparison
+    // with `true/false` + null check.
+    if ((objCls != NO_CLASS_HANDLE) && (pIsExact || impIsClassExact(objCls)))
+    {
+        TypeCompareState tcs = info.compCompHnd->compareTypesForEquality(objCls, clsHnd);
+        if (tcs != TypeCompareState::May)
+        {
+            const bool operatorIsEQ  = oper == GT_EQ;
+            const bool typesAreEqual = tcs == TypeCompareState::Must;
+            GenTree*   compareResult = gtNewIconNode((operatorIsEQ ^ typesAreEqual) ? 0 : 1);
+
+            if (!pIsNonNull)
+            {
+                // we still have to emit a null-check
+                // obj.GetType == typeof() -> (nullcheck) true/false
+                GenTree* nullcheck = gtNewNullCheck(objOp, compCurBB);
+                return gtNewOperNode(GT_COMMA, tree->TypeGet(), nullcheck, compareResult);
+            }
+            else if (objOp->gtFlags & GTF_ALL_EFFECT)
+            {
+                return gtNewOperNode(GT_COMMA, tree->TypeGet(), objOp, compareResult);
+            }
+            else
+            {
+                return compareResult;
+            }
+        }
+    }
+
     GenTree* const objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, objOp);
 
     // Update various flags
