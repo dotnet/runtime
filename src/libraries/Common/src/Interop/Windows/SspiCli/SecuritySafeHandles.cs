@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -51,7 +52,7 @@ namespace System.Net.Security
         internal static int EnumeratePackages(out int pkgnum, out SafeFreeContextBuffer pkgArray)
         {
             int res = -1;
-            SafeFreeContextBuffer_SECURITY pkgArray_SECURITY = null;
+            SafeFreeContextBuffer_SECURITY? pkgArray_SECURITY = null;
             res = Interop.SspiCli.EnumerateSecurityPackagesW(out pkgnum, out pkgArray_SECURITY);
             pkgArray = pkgArray_SECURITY;
 
@@ -75,7 +76,7 @@ namespace System.Net.Security
         // This method switches between three non-interruptible helper methods.  (This method can't be both non-interruptible and
         // reference imports from all three DLLs - doing so would cause all three DLLs to try to be bound to.)
         //
-        public static unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, byte* buffer, SafeHandle refHandle)
+        public static unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, byte* buffer, SafeHandle? refHandle)
         {
             int status = (int)Interop.SECURITY_STATUS.InvalidHandle;
 
@@ -335,7 +336,7 @@ namespace System.Net.Security
         //
         internal SafeFreeCredentials Target;
 
-        internal static SafeCredentialReference CreateReference(SafeFreeCredentials target)
+        internal static SafeCredentialReference? CreateReference(SafeFreeCredentials target)
         {
             SafeCredentialReference result = new SafeCredentialReference(target);
             if (result.IsInvalid)
@@ -359,7 +360,7 @@ namespace System.Net.Security
         {
             SafeFreeCredentials target = Target;
             target?.DangerousRelease();
-            Target = null;
+            Target = null!;
             return true;
         }
     }
@@ -387,13 +388,13 @@ namespace System.Net.Security
         private const string dummyStr = " ";
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
 
-        protected SafeFreeCredentials _EffectiveCredential;
+        protected SafeFreeCredentials? _EffectiveCredential;
 
         //-------------------------------------------------------------------
         internal static unsafe int InitializeSecurityContext(
-            ref SafeFreeCredentials inCredentials,
-            ref SafeDeleteSslContext refContext,
-            string targetName,
+            ref SafeFreeCredentials? inCredentials,
+            ref SafeDeleteSslContext? refContext,
+            string? targetName,
             Interop.SspiCli.ContextFlags inFlags,
             Interop.SspiCli.Endianness endianness,
             InputSecurityBuffers inSecBuffers,
@@ -429,7 +430,7 @@ namespace System.Net.Security
             }
 
             // Optional output buffer that may need to be freed.
-            SafeFreeContextBuffer outFreeContextBuffer = null;
+            SafeFreeContextBuffer? outFreeContextBuffer = null;
             try
             {
                 Span<Interop.SspiCli.SecBuffer> inUnmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[3];
@@ -509,7 +510,7 @@ namespace System.Net.Security
                                             inFlags,
                                             endianness,
                                             &inSecurityBufferDescriptor,
-                                            refContext,
+                                            refContext!,
                                             ref outSecurityBufferDescriptor,
                                             ref outFlags,
                                             outFreeContextBuffer);
@@ -549,7 +550,7 @@ namespace System.Net.Security
             SafeDeleteContext outContext,
             ref Interop.SspiCli.SecBufferDesc outputBuffer,
             ref Interop.SspiCli.ContextFlags attributes,
-            SafeFreeContextBuffer handleTemplate)
+            SafeFreeContextBuffer? handleTemplate)
         {
             int errorCode = (int)Interop.SECURITY_STATUS.InvalidHandle;
 
@@ -630,8 +631,8 @@ namespace System.Net.Security
 
         //-------------------------------------------------------------------
         internal static unsafe int AcceptSecurityContext(
-            ref SafeFreeCredentials inCredentials,
-            ref SafeDeleteSslContext refContext,
+            ref SafeFreeCredentials? inCredentials,
+            ref SafeDeleteSslContext? refContext,
             Interop.SspiCli.ContextFlags inFlags,
             Interop.SspiCli.Endianness endianness,
             InputSecurityBuffers inSecBuffers,
@@ -667,7 +668,7 @@ namespace System.Net.Security
             }
 
             // Optional output buffer that may need to be freed.
-            SafeFreeContextBuffer outFreeContextBuffer = null;
+            SafeFreeContextBuffer? outFreeContextBuffer = null;
             Span<Interop.SspiCli.SecBuffer> outUnmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[2];
             outUnmanagedBuffer[1].pvBuffer = IntPtr.Zero;
             try
@@ -745,7 +746,7 @@ namespace System.Net.Security
                                         &inSecurityBufferDescriptor,
                                         inFlags,
                                         endianness,
-                                        refContext,
+                                        refContext!,
                                         ref outSecurityBufferDescriptor,
                                         ref outFlags,
                                         outFreeContextBuffer);
@@ -796,7 +797,7 @@ namespace System.Net.Security
             SafeDeleteContext outContext,
             ref Interop.SspiCli.SecBufferDesc outputBuffer,
             ref Interop.SspiCli.ContextFlags outFlags,
-            SafeFreeContextBuffer handleTemplate)
+            SafeFreeContextBuffer? handleTemplate)
         {
             int errorCode = (int)Interop.SECURITY_STATUS.InvalidHandle;
 
@@ -874,7 +875,7 @@ namespace System.Net.Security
         }
 
         internal static unsafe int CompleteAuthToken(
-            ref SafeDeleteSslContext refContext,
+            ref SafeDeleteSslContext? refContext,
             in SecurityBuffer inSecBuffer)
         {
             if (NetEventSource.IsEnabled)
@@ -920,14 +921,14 @@ namespace System.Net.Security
                 bool gotRef = false;
                 try
                 {
-                    refContext.DangerousAddRef(ref gotRef);
+                    refContext!.DangerousAddRef(ref gotRef);
                     errorCode = Interop.SspiCli.CompleteAuthToken(contextHandle.IsZero ? null : &contextHandle, ref inSecurityBufferDescriptor);
                 }
                 finally
                 {
                     if (gotRef)
                     {
-                        refContext.DangerousRelease();
+                        refContext!.DangerousRelease();
                     }
                 }
             }
@@ -937,7 +938,7 @@ namespace System.Net.Security
         }
 
         internal static unsafe int ApplyControlToken(
-            ref SafeDeleteContext refContext,
+            ref SafeDeleteContext? refContext,
             in SecurityBuffer inSecBuffer)
         {
             if (NetEventSource.IsEnabled)
@@ -985,14 +986,14 @@ namespace System.Net.Security
                 bool gotRef = false;
                 try
                 {
-                    refContext.DangerousAddRef(ref gotRef);
+                    refContext!.DangerousAddRef(ref gotRef);
                     errorCode = Interop.SspiCli.ApplyControlToken(contextHandle.IsZero ? null : &contextHandle, ref inSecurityBufferDescriptor);
                 }
                 finally
                 {
                     if (gotRef)
                     {
-                        refContext.DangerousRelease();
+                        refContext!.DangerousRelease();
                     }
                 }
             }
@@ -1075,7 +1076,7 @@ namespace System.Net.Security
             return status;
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             if (IsInvalid)
             {

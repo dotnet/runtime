@@ -124,7 +124,7 @@ namespace System.Net.Sockets
                 using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
-                    int timeout = (int)_streamSocket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout);
+                    int timeout = (int)_streamSocket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout)!;
                     if (timeout == 0)
                     {
                         return -1;
@@ -161,7 +161,7 @@ namespace System.Net.Sockets
                 using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
                 {
 #endif
-                    int timeout = (int)_streamSocket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout);
+                    int timeout = (int)_streamSocket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout)!;
                     if (timeout == 0)
                     {
                         return -1;
@@ -482,7 +482,7 @@ namespace System.Net.Sockets
         // Returns:
         //
         //     An IASyncResult, representing the read.
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
 #if DEBUG
             using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
@@ -581,7 +581,7 @@ namespace System.Net.Sockets
         // Returns:
         //
         //     An IASyncResult, representing the write.
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
 #if DEBUG
             using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))

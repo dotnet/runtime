@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -27,9 +28,9 @@ internal static partial class Interop
         internal static extern SocketError WSAIoctl_Blocking(
             SafeSocketHandle socketHandle,
             [In] int ioControlCode,
-            [In] byte[] inBuffer,
+            [In] byte[]? inBuffer,
             [In] int inBufferSize,
-            [Out] byte[] outBuffer,
+            [Out] byte[]? outBuffer,
             [In] int outBufferSize,
             [Out] out int bytesTransferred,
             [In] IntPtr overlapped,
