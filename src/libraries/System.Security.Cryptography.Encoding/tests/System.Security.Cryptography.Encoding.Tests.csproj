@@ -48,7 +48,7 @@
     <Compile Include="Asn1\Writer\WriteObjectIdentifier.cs" />
     <Compile Include="Asn1\Writer\WriteUtcTime.cs" />
     <Compile Include="Asn1\Writer\WriteUtf8String.cs" />
-    <Compile Include="Cbor\CborDataItem.cs" />
+    <Compile Include="Cbor\CborInitialByte.cs" />
     <Compile Include="Cbor\CborReader.cs" />
     <Compile Include="Cbor\CborReader.Integer.cs" />
     <Compile Include="Cbor\CborReader.String.cs" />

@@ -13,24 +13,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             _buffer = buffer;
         }
 
-        private CborDataItem ReadInitialByte()
+        public CborInitialByte Peek()
         {
             if (_buffer.IsEmpty)
             {
-                throw new FormatException("end of buffer");
+                throw new InvalidOperationException("end of buffer");
             }
 
-            return new CborDataItem(_buffer[0]);
+            return new CborInitialByte(_buffer[0]);
         }
 
-        private CborDataItem ReadInitialByte(CborMajorType expectedType)
+        public CborInitialByte Peek(CborMajorType expectedType)
         {
             if (_buffer.IsEmpty)
             {
-                throw new FormatException("end of buffer");
+                throw new InvalidOperationException("end of buffer");
             }
 
-            CborDataItem result = new CborDataItem(_buffer[0]);
+            var result = new CborInitialByte(_buffer[0]);
 
             if (expectedType != result.MajorType)
             {
@@ -40,11 +40,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return result;
         }
 
-        private bool TryReadInitialByte(out CborDataItem result)
+        public bool TryPeek(out CborInitialByte result)
         {
             if (!_buffer.IsEmpty)
             {
-                result = new CborDataItem(_buffer[0]);
+                result = new CborInitialByte(_buffer[0]);
                 return true;
             }
 
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             if (_buffer.Length < length)
             {
-                throw new FormatException("end of buffer");
+                throw new FormatException("Unexpected end of buffer.");
             }
         }
     }

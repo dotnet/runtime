@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Implements major type 0 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public ulong ReadUInt64()
         {
-            CborDataItem header = ReadInitialByte();
+            CborInitialByte header = Peek();
 
             switch (header.MajorType)
             {
@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public bool TryReadUInt64(out ulong value)
         {
-            CborDataItem header = ReadInitialByte();
+            CborInitialByte header = Peek();
 
             switch (header.MajorType)
             {
@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             long value;
             int additionalBytes;
 
-            CborDataItem header = ReadInitialByte();
+            CborInitialByte header = Peek();
 
             switch (header.MajorType)
             {
@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             ulong result;
             int additionalBytes;
 
-            CborDataItem header = ReadInitialByte();
+            CborInitialByte header = Peek();
 
             switch (header.MajorType)
             {
@@ -114,7 +114,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         // Unsigned integer decoding https://tools.ietf.org/html/rfc7049#section-2.1
-        private ulong ReadUnsignedInteger(CborDataItem header, out int additionalBytes)
+        private ulong ReadUnsignedInteger(CborInitialByte header, out int additionalBytes)
         {
             switch (header.AdditionalInfo)
             {
