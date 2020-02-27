@@ -16,7 +16,7 @@ namespace System.Net.Sockets
         private static readonly bool s_supportsKeepAliveViaSocketOption = SupportsKeepAliveViaSocketOption();
         private static readonly ConditionalWeakTable<SafeSocketHandle, IOControlKeepAlive> s_socketKeepAliveTable = new ConditionalWeakTable<SafeSocketHandle, IOControlKeepAlive>();
         [ThreadStatic]
-        private static byte[] s_keepAliveValuesBuffer;
+        private static byte[]? s_keepAliveValuesBuffer;
 
         private uint _timeMs = WindowsDefaultTimeMs;
         private uint _intervalMs = WindowsDefaultIntervalMs;
@@ -37,7 +37,7 @@ namespace System.Net.Sockets
 
         public static int Get(SafeSocketHandle handle, SocketOptionName optionName)
         {
-            if (s_socketKeepAliveTable.TryGetValue(handle, out IOControlKeepAlive ioControlKeepAlive))
+            if (s_socketKeepAliveTable.TryGetValue(handle, out IOControlKeepAlive? ioControlKeepAlive))
             {
                 return optionName == SocketOptionName.TcpKeepAliveTime ?
                     MillisecondsToSeconds(ioControlKeepAlive._timeMs) :
