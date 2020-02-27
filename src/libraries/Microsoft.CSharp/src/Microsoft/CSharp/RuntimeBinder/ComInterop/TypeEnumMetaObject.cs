@@ -44,8 +44,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                         Expression.Property(
                             Expression.Property(
                                 Helpers.Convert(Expression, typeof(ComTypeEnumDesc)),
-                                typeof(ComTypeDesc).GetProperty("TypeLib")),
-                            typeof(ComTypeLibDesc).GetProperty("Guid")),
+                                typeof(ComTypeDesc).GetProperty(nameof(ComTypeDesc.TypeLib))),
+                            typeof(ComTypeLibDesc).GetProperty(nameof(ComTypeLibDesc.Guid))),
                         Expression.Constant(_desc.TypeLib.Guid)
                     )
                 )
@@ -54,7 +54,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     Expression.Equal(
                         Expression.Property(
                             Helpers.Convert(Expression, typeof(ComTypeEnumDesc)),
-                            typeof(ComTypeEnumDesc).GetProperty("TypeName")
+                            typeof(ComTypeEnumDesc).GetProperty(nameof(ComTypeEnumDesc.TypeName))
                         ),
                         Expression.Constant(_desc.TypeName)
                     )

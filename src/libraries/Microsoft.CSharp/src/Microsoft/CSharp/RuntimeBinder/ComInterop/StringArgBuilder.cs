@@ -34,7 +34,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             {
                 parameter = Expression.Property(
                     Helpers.Convert(parameter, typeof(BStrWrapper)),
-                    typeof(BStrWrapper).GetProperty("WrappedObject")
+                    typeof(BStrWrapper).GetProperty(nameof(BStrWrapper.WrappedObject))
                 );
             }
 
@@ -48,7 +48,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             // Marshal.StringToBSTR(parameter)
             return Expression.Call(
-                typeof(Marshal).GetMethod("StringToBSTR"),
+                typeof(Marshal).GetMethod(nameof(System.Runtime.InteropServices.Marshal.StringToBSTR)),
                 parameter
             );
         }
@@ -60,7 +60,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 Expression.Equal(value, Expression.Constant(IntPtr.Zero)),
                 Expression.Constant(null, typeof(string)),   // default value
                 Expression.Call(
-                    typeof(Marshal).GetMethod("PtrToStringBSTR"),
+                    typeof(Marshal).GetMethod(nameof(System.Runtime.InteropServices.Marshal.PtrToStringBSTR)),
                     value
                 )
             );

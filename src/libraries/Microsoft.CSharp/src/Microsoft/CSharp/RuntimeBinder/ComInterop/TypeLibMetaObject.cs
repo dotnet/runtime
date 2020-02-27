@@ -28,7 +28,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                                     Helpers.Convert(
                                         Expression, typeof(ComTypeLibDesc)
                                     ),
-                                    typeof(ComTypeLibDesc).GetProperty("Guid")
+                                    typeof(ComTypeLibDesc).GetProperty(nameof(ComTypeLibDesc.Guid))
                                 ),
                                 Expression.Constant(_lib.Guid)
                             )

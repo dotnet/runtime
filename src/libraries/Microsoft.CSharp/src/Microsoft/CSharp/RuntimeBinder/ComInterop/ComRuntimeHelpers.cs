@@ -665,7 +665,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             const int resultIndex = 4;
             const int exceptInfoIndex = 5;
             const int argErrIndex = 6;
-            Debug.Assert(argErrIndex + 1 == typeof(IDispatchInvokeDelegate).GetMethod("Invoke").GetParameters().Length);
+            Debug.Assert(argErrIndex + 1 == typeof(IDispatchInvokeDelegate).GetMethod(nameof(IDispatchInvokeDelegate.Invoke)).GetParameters().Length);
 
             Type[] paramTypes = new Type[argErrIndex + 1];
             paramTypes[dispatchPointerIndex] = typeof(IntPtr);
@@ -709,7 +709,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
             else
             {
-                method.Emit(OpCodes.Ldsfld, typeof(IntPtr).GetField("Zero"));
+                method.Emit(OpCodes.Ldsfld, typeof(IntPtr).GetField(nameof(IntPtr.Zero)));
             }
             EmitLoadArg(method, exceptInfoIndex);
             EmitLoadArg(method, argErrIndex);

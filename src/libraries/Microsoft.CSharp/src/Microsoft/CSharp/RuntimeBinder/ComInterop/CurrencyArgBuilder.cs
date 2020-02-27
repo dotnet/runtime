@@ -24,7 +24,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             // parameter.WrappedObject
             return Expression.Property(
                 Helpers.Convert(base.Marshal(parameter), typeof(CurrencyWrapper)),
-                "WrappedObject"
+                nameof(CurrencyWrapper.WrappedObject)
             );
         }
 
@@ -32,7 +32,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         {
             // Decimal.ToOACurrency(parameter.WrappedObject)
             return Expression.Call(
-                typeof(decimal).GetMethod("ToOACurrency"),
+                typeof(decimal).GetMethod(nameof(decimal.ToOACurrency)),
                 Marshal(parameter)
             );
         }
@@ -44,7 +44,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 Expression.New(
                     typeof(CurrencyWrapper).GetConstructor(new Type[] { typeof(decimal) }),
                     Expression.Call(
-                        typeof(decimal).GetMethod("FromOACurrency"),
+                        typeof(decimal).GetMethod(nameof(decimal.FromOACurrency)),
                         value
                     )
                 )

@@ -69,7 +69,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             return Expression.Property(
                 Helpers.Convert(comObject, typeof(ComObject)),
-                typeof(ComObject).GetProperty("RuntimeCallableWrapper", BindingFlags.NonPublic | BindingFlags.Instance)
+                typeof(ComObject).GetProperty(nameof(RuntimeCallableWrapper), BindingFlags.NonPublic | BindingFlags.Instance)
             );
         }
 
@@ -77,7 +77,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         internal static MethodCallExpression RcwToComObject(Expression rcw)
         {
             return Expression.Call(
-                typeof(ComObject).GetMethod("ObjectToComObject"),
+                typeof(ComObject).GetMethod(nameof(ObjectToComObject)),
                 Helpers.Convert(rcw, typeof(object))
             );
         }

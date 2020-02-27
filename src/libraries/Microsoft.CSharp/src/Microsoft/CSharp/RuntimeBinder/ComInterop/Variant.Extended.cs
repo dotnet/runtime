@@ -265,31 +265,31 @@ namespace System.Runtime.InteropServices
         {
             switch (varType)
             {
-                case VarEnum.VT_I1: return typeof(Variant).GetProperty("AsI1");
-                case VarEnum.VT_I2: return typeof(Variant).GetProperty("AsI2");
-                case VarEnum.VT_I4: return typeof(Variant).GetProperty("AsI4");
-                case VarEnum.VT_I8: return typeof(Variant).GetProperty("AsI8");
-                case VarEnum.VT_UI1: return typeof(Variant).GetProperty("AsUi1");
-                case VarEnum.VT_UI2: return typeof(Variant).GetProperty("AsUi2");
-                case VarEnum.VT_UI4: return typeof(Variant).GetProperty("AsUi4");
-                case VarEnum.VT_UI8: return typeof(Variant).GetProperty("AsUi8");
-                case VarEnum.VT_INT: return typeof(Variant).GetProperty("AsInt");
-                case VarEnum.VT_UINT: return typeof(Variant).GetProperty("AsUint");
-                case VarEnum.VT_BOOL: return typeof(Variant).GetProperty("AsBool");
-                case VarEnum.VT_ERROR: return typeof(Variant).GetProperty("AsError");
-                case VarEnum.VT_R4: return typeof(Variant).GetProperty("AsR4");
-                case VarEnum.VT_R8: return typeof(Variant).GetProperty("AsR8");
-                case VarEnum.VT_DECIMAL: return typeof(Variant).GetProperty("AsDecimal");
-                case VarEnum.VT_CY: return typeof(Variant).GetProperty("AsCy");
-                case VarEnum.VT_DATE: return typeof(Variant).GetProperty("AsDate");
-                case VarEnum.VT_BSTR: return typeof(Variant).GetProperty("AsBstr");
-                case VarEnum.VT_UNKNOWN: return typeof(Variant).GetProperty("AsUnknown");
-                case VarEnum.VT_DISPATCH: return typeof(Variant).GetProperty("AsDispatch");
+                case VarEnum.VT_I1: return typeof(Variant).GetProperty(nameof(AsI1));
+                case VarEnum.VT_I2: return typeof(Variant).GetProperty(nameof(AsI2));
+                case VarEnum.VT_I4: return typeof(Variant).GetProperty(nameof(AsI4));
+                case VarEnum.VT_I8: return typeof(Variant).GetProperty(nameof(AsI8));
+                case VarEnum.VT_UI1: return typeof(Variant).GetProperty(nameof(AsUi1));
+                case VarEnum.VT_UI2: return typeof(Variant).GetProperty(nameof(AsUi2));
+                case VarEnum.VT_UI4: return typeof(Variant).GetProperty(nameof(AsUi4));
+                case VarEnum.VT_UI8: return typeof(Variant).GetProperty(nameof(AsUi8));
+                case VarEnum.VT_INT: return typeof(Variant).GetProperty(nameof(AsInt));
+                case VarEnum.VT_UINT: return typeof(Variant).GetProperty(nameof(AsUint));
+                case VarEnum.VT_BOOL: return typeof(Variant).GetProperty(nameof(AsBool));
+                case VarEnum.VT_ERROR: return typeof(Variant).GetProperty(nameof(AsError));
+                case VarEnum.VT_R4: return typeof(Variant).GetProperty(nameof(AsR4));
+                case VarEnum.VT_R8: return typeof(Variant).GetProperty(nameof(AsR8));
+                case VarEnum.VT_DECIMAL: return typeof(Variant).GetProperty(nameof(AsDecimal));
+                case VarEnum.VT_CY: return typeof(Variant).GetProperty(nameof(AsCy));
+                case VarEnum.VT_DATE: return typeof(Variant).GetProperty(nameof(AsDate));
+                case VarEnum.VT_BSTR: return typeof(Variant).GetProperty(nameof(AsBstr));
+                case VarEnum.VT_UNKNOWN: return typeof(Variant).GetProperty(nameof(AsUnknown));
+                case VarEnum.VT_DISPATCH: return typeof(Variant).GetProperty(nameof(AsDispatch));
 
                 case VarEnum.VT_VARIANT:
                 case VarEnum.VT_RECORD:
                 case VarEnum.VT_ARRAY:
-                    return typeof(Variant).GetProperty("AsVariant");
+                    return typeof(Variant).GetProperty(nameof(AsVariant));
 
                 default:
                     throw new NotSupportedException();
@@ -301,32 +301,32 @@ namespace System.Runtime.InteropServices
         {
             switch (varType)
             {
-                case VarEnum.VT_I1: return typeof(Variant).GetMethod("SetAsByrefI1");
-                case VarEnum.VT_I2: return typeof(Variant).GetMethod("SetAsByrefI2");
-                case VarEnum.VT_I4: return typeof(Variant).GetMethod("SetAsByrefI4");
-                case VarEnum.VT_I8: return typeof(Variant).GetMethod("SetAsByrefI8");
-                case VarEnum.VT_UI1: return typeof(Variant).GetMethod("SetAsByrefUi1");
-                case VarEnum.VT_UI2: return typeof(Variant).GetMethod("SetAsByrefUi2");
-                case VarEnum.VT_UI4: return typeof(Variant).GetMethod("SetAsByrefUi4");
-                case VarEnum.VT_UI8: return typeof(Variant).GetMethod("SetAsByrefUi8");
-                case VarEnum.VT_INT: return typeof(Variant).GetMethod("SetAsByrefInt");
-                case VarEnum.VT_UINT: return typeof(Variant).GetMethod("SetAsByrefUint");
-                case VarEnum.VT_BOOL: return typeof(Variant).GetMethod("SetAsByrefBool");
-                case VarEnum.VT_ERROR: return typeof(Variant).GetMethod("SetAsByrefError");
-                case VarEnum.VT_R4: return typeof(Variant).GetMethod("SetAsByrefR4");
-                case VarEnum.VT_R8: return typeof(Variant).GetMethod("SetAsByrefR8");
-                case VarEnum.VT_DECIMAL: return typeof(Variant).GetMethod("SetAsByrefDecimal");
-                case VarEnum.VT_CY: return typeof(Variant).GetMethod("SetAsByrefCy");
-                case VarEnum.VT_DATE: return typeof(Variant).GetMethod("SetAsByrefDate");
-                case VarEnum.VT_BSTR: return typeof(Variant).GetMethod("SetAsByrefBstr");
-                case VarEnum.VT_UNKNOWN: return typeof(Variant).GetMethod("SetAsByrefUnknown");
-                case VarEnum.VT_DISPATCH: return typeof(Variant).GetMethod("SetAsByrefDispatch");
+                case VarEnum.VT_I1: return typeof(Variant).GetMethod(nameof(SetAsByrefI1));
+                case VarEnum.VT_I2: return typeof(Variant).GetMethod(nameof(SetAsByrefI2));
+                case VarEnum.VT_I4: return typeof(Variant).GetMethod(nameof(SetAsByrefI4));
+                case VarEnum.VT_I8: return typeof(Variant).GetMethod(nameof(SetAsByrefI8));
+                case VarEnum.VT_UI1: return typeof(Variant).GetMethod(nameof(SetAsByrefUi1));
+                case VarEnum.VT_UI2: return typeof(Variant).GetMethod(nameof(SetAsByrefUi2));
+                case VarEnum.VT_UI4: return typeof(Variant).GetMethod(nameof(SetAsByrefUi4));
+                case VarEnum.VT_UI8: return typeof(Variant).GetMethod(nameof(SetAsByrefUi8));
+                case VarEnum.VT_INT: return typeof(Variant).GetMethod(nameof(SetAsByrefInt));
+                case VarEnum.VT_UINT: return typeof(Variant).GetMethod(nameof(SetAsByrefUint));
+                case VarEnum.VT_BOOL: return typeof(Variant).GetMethod(nameof(SetAsByrefBool));
+                case VarEnum.VT_ERROR: return typeof(Variant).GetMethod(nameof(SetAsByrefError));
+                case VarEnum.VT_R4: return typeof(Variant).GetMethod(nameof(SetAsByrefR4));
+                case VarEnum.VT_R8: return typeof(Variant).GetMethod(nameof(SetAsByrefR8));
+                case VarEnum.VT_DECIMAL: return typeof(Variant).GetMethod(nameof(SetAsByrefDecimal));
+                case VarEnum.VT_CY: return typeof(Variant).GetMethod(nameof(SetAsByrefCy));
+                case VarEnum.VT_DATE: return typeof(Variant).GetMethod(nameof(SetAsByrefDate));
+                case VarEnum.VT_BSTR: return typeof(Variant).GetMethod(nameof(SetAsByrefBstr));
+                case VarEnum.VT_UNKNOWN: return typeof(Variant).GetMethod(nameof(SetAsByrefUnknown));
+                case VarEnum.VT_DISPATCH: return typeof(Variant).GetMethod(nameof(SetAsByrefDispatch));
 
                 case VarEnum.VT_VARIANT:
-                    return typeof(Variant).GetMethod("SetAsByrefVariant");
+                    return typeof(Variant).GetMethod(nameof(SetAsByrefVariant));
                 case VarEnum.VT_RECORD:
                 case VarEnum.VT_ARRAY:
-                    return typeof(Variant).GetMethod("SetAsByrefVariantIndirect");
+                    return typeof(Variant).GetMethod(nameof(SetAsByrefVariantIndirect));
 
                 default:
                     throw new NotSupportedException();

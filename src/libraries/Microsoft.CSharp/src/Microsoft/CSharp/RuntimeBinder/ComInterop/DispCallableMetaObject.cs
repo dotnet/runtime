@@ -81,7 +81,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 Expression.Constant(method),
                 Expression.Property(
                     dispCall,
-                    typeof(DispCallable).GetProperty("DispatchObject")
+                    typeof(DispCallable).GetProperty(nameof(DispCallable.DispatchObject))
                 ),
                 method
             ).Invoke();
@@ -93,8 +93,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             BindingRestrictions callableTypeRestrictions = BindingRestrictions.GetTypeRestriction(callable, typeof(DispCallable));
             Expression dispCall = Helpers.Convert(callable, typeof(DispCallable));
-            MemberExpression dispatch = Expression.Property(dispCall, typeof(DispCallable).GetProperty("DispatchComObject"));
-            MemberExpression dispId = Expression.Property(dispCall, typeof(DispCallable).GetProperty("DispId"));
+            MemberExpression dispatch = Expression.Property(dispCall, typeof(DispCallable).GetProperty(nameof(DispCallable.DispatchComObject)));
+            MemberExpression dispId = Expression.Property(dispCall, typeof(DispCallable).GetProperty(nameof(DispCallable.DispId)));
 
             BindingRestrictions dispatchRestriction = IDispatchMetaObject.IDispatchRestriction(dispatch, _callable.DispatchComObject.ComTypeDesc);
             BindingRestrictions memberRestriction = BindingRestrictions.GetExpressionRestriction(

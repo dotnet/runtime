@@ -56,7 +56,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 Expression.Constant(method),
                 Expression.Property(
                     Helpers.Convert(Expression, typeof(IDispatchComObject)),
-                    typeof(IDispatchComObject).GetProperty("DispatchObject")
+                    typeof(IDispatchComObject).GetProperty(nameof(IDispatchComObject.DispatchObject))
                 ),
                 method
             ).Invoke();
@@ -110,7 +110,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             return new DynamicMetaObject(
                 Expression.Call(
-                    typeof(ComRuntimeHelpers).GetMethod("CreateDispCallable"),
+                    typeof(ComRuntimeHelpers).GetMethod(nameof(ComRuntimeHelpers.CreateDispCallable)),
                     Helpers.Convert(Expression, typeof(IDispatchComObject)),
                     Expression.Constant(method)
                 ),
@@ -123,7 +123,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             // BoundDispEvent CreateComEvent(object rcw, Guid sourceIid, int dispid)
             Expression result =
                 Expression.Call(
-                    typeof(ComRuntimeHelpers).GetMethod("CreateComEvent"),
+                    typeof(ComRuntimeHelpers).GetMethod(nameof(ComRuntimeHelpers.CreateComEvent)),
                     ComObject.RcwFromComObject(Expression),
                     Expression.Constant(eventDesc.SourceIID),
                     Expression.Constant(eventDesc.Dispid)
@@ -195,7 +195,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 Expression dispatch =
                     Expression.Property(
                         Helpers.Convert(Expression, typeof(IDispatchComObject)),
-                        typeof(IDispatchComObject).GetProperty("DispatchObject")
+                        typeof(IDispatchComObject).GetProperty(nameof(IDispatchComObject.DispatchObject))
                     );
 
                 DynamicMetaObject result = new ComInvokeBinder(
@@ -246,7 +246,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     Expression.Equal(
                         Expression.Property(
                             Helpers.Convert(expr, typeof(IDispatchComObject)),
-                            typeof(IDispatchComObject).GetProperty("ComTypeDesc")
+                            typeof(IDispatchComObject).GetProperty(nameof(IDispatchComObject.ComTypeDesc))
                         ),
                         Expression.Constant(typeDesc)
                     )
