@@ -5,7 +5,6 @@
 #nullable enable
 using System;
 using System.Linq;
-using FsCheck.Xunit;
 using Test.Cryptography;
 using Xunit;
 #if CBOR_PROPERTY_TESTS 
