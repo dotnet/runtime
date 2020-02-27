@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 using Microsoft.CSharp.RuntimeBinder.ComInterop;
 
@@ -16,199 +17,145 @@ namespace System.Runtime.InteropServices
 
         public void SetAsByrefI1(ref sbyte value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_I1 | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertSByteByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_I1);
         }
 
         // VT_I2
 
         public void SetAsByrefI2(ref short value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_I2 | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertInt16ByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_I2);
         }
 
         // VT_I4
 
         public void SetAsByrefI4(ref int value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_I4 | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertInt32ByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_I4);
         }
 
         // VT_I8
 
         public void SetAsByrefI8(ref long value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_I8 | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertInt64ByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_I8);
         }
 
         // VT_UI1
 
         public void SetAsByrefUi1(ref byte value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_UI1 | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertByteByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_UI1);
         }
 
         // VT_UI2
 
         public void SetAsByrefUi2(ref ushort value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_UI2 | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertUInt16ByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_UI2);
         }
 
         // VT_UI4
 
         public void SetAsByrefUi4(ref uint value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_UI4 | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertUInt32ByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_UI4);
         }
 
         // VT_UI8
 
         public void SetAsByrefUi8(ref ulong value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_UI8 | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertUInt64ByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_UI8);
         }
 
         // VT_INT
 
         public void SetAsByrefInt(ref IntPtr value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_INT | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertIntPtrByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_INT);
         }
 
         // VT_UINT
 
         public void SetAsByrefUint(ref UIntPtr value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_UINT | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertUIntPtrByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_UINT);
         }
 
         // VT_BOOL
 
         public void SetAsByrefBool(ref short value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_BOOL | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertInt16ByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_BOOL);
         }
 
         // VT_ERROR
 
         public void SetAsByrefError(ref int value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_ERROR | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertInt32ByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_ERROR);
         }
 
         // VT_R4
 
         public void SetAsByrefR4(ref float value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_R4 | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertSingleByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_R4);
         }
 
         // VT_R8
 
         public void SetAsByrefR8(ref double value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_R8 | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertDoubleByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_R8);
         }
 
         // VT_DECIMAL
 
         public void SetAsByrefDecimal(ref decimal value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_DECIMAL | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertDecimalByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_DECIMAL);
         }
 
         // VT_CY
 
         public void SetAsByrefCy(ref long value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_CY | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertInt64ByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_CY);
         }
 
         // VT_DATE
 
         public void SetAsByrefDate(ref double value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_DATE | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertDoubleByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_DATE);
         }
 
         // VT_BSTR
 
         public void SetAsByrefBstr(ref IntPtr value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_BSTR | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertIntPtrByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_BSTR);
         }
 
         // VT_UNKNOWN
 
         public void SetAsByrefUnknown(ref IntPtr value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_UNKNOWN | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertIntPtrByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_UNKNOWN);
         }
 
         // VT_DISPATCH
 
         public void SetAsByrefDispatch(ref IntPtr value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_DISPATCH | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertIntPtrByrefToPtr(ref value);
-        }
-
-#pragma warning disable SA1121 // Use built-in type alias
-
-        /// <summary>
-        /// Helper method for generated code
-        /// </summary>
-        private static IntPtr GetIDispatchForObject(object value)
-        {
-#if !NETCOREAPP
-            return Marshal.GetIDispatchForObject(value);
-#else
-            return Marshal.GetComInterfaceForObject<object, IDispatch>(value);
-#endif
+            SetAsByref(ref value, VarEnum.VT_DISPATCH);
         }
 
         // VT_VARIANT
 
-        public Object AsVariant
+        public object AsVariant
         {
             get
             {
@@ -227,13 +174,11 @@ namespace System.Runtime.InteropServices
 
         public void SetAsByrefVariant(ref Variant value)
         {
-            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
-            VariantType = (VarEnum.VT_VARIANT | VarEnum.VT_BYREF);
-            _typeUnion._unionTypes._byref = UnsafeMethods.ConvertVariantByrefToPtr(ref value);
+            SetAsByref(ref value, VarEnum.VT_VARIANT);
         }
 
         // constructs a ByRef variant to pass contents of another variant ByRef.
-        public void SetAsByrefVariantIndirect(ref Variant value)
+        public unsafe void SetAsByrefVariantIndirect(ref Variant value)
         {
             Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
             Debug.Assert((value.VariantType & VarEnum.VT_BYREF) == 0, "double indirection");
@@ -251,13 +196,20 @@ namespace System.Runtime.InteropServices
                     _typeUnion._unionTypes._record = value._typeUnion._unionTypes._record;
                     break;
                 case VarEnum.VT_DECIMAL:
-                    _typeUnion._unionTypes._byref = UnsafeMethods.ConvertDecimalByrefToPtr(ref value._decimal);
+                    _typeUnion._unionTypes._byref = (IntPtr)Unsafe.AsPointer(ref value._decimal);
                     break;
                 default:
-                    _typeUnion._unionTypes._byref = UnsafeMethods.ConvertIntPtrByrefToPtr(ref value._typeUnion._unionTypes._byref);
+                    _typeUnion._unionTypes._byref = (IntPtr)Unsafe.AsPointer(ref value._typeUnion._unionTypes._byref);
                     break;
             }
             VariantType = (value.VariantType | VarEnum.VT_BYREF);
+        }
+
+        private unsafe void SetAsByref<T>(ref T value, VarEnum type)
+        {
+            Debug.Assert(IsEmpty); // The setter can only be called once as VariantClear might be needed otherwise
+            VariantType = type | VarEnum.VT_BYREF;
+            _typeUnion._unionTypes._byref = (IntPtr)Unsafe.AsPointer<T>(ref value);
         }
 
         [SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
