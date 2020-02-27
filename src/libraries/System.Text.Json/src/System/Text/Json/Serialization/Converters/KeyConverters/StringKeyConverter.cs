@@ -8,12 +8,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException();
         }
 
         public override string ReadKeyFromBytes(ReadOnlySpan<byte> bytes)
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException();
         }
 
         public override void Write(Utf8JsonWriter writer, string key, JsonSerializerOptions options)

@@ -287,19 +287,25 @@ namespace System.Text.Json
         // Get converter from the cached key converters or add a new Enum converter.
         internal JsonConverter GetOrAddKeyConverter(Type keyType, Type dictionaryType)
         {
-            if (s_keyConverters.TryGetValue(keyType, out JsonConverter? converter))
+            // Search on the cached key converters.
+            if (_keyConverters.TryGetValue(keyType, out JsonConverter? keyConverter))
             {
-                return converter;
+                return keyConverter;
+            }
+            // Search the built-in key converters.
+            if (s_keyConverters.TryGetValue(keyType, out keyConverter))
+            {
+                return keyConverter;
             }
             // short-term solution, instead of using a factory pattern like JsonStringEnumConverter,
-            // we just create the enum converter here add we add it to s_keyConverters.
+            // we just create the enum converter here add we add it to the cached _keyConverters.
             else if (keyType.IsEnum)
             {
-                converter = CreateEnumKeyConverter(keyType);
+                keyConverter = CreateEnumKeyConverter(keyType);
                 // Ignore failure case here in multi-threaded cases since the cached item will be equivalent.
-                s_keyConverters.TryAdd(keyType, converter);
+                _keyConverters.TryAdd(keyType, keyConverter);
 
-                return converter;
+                return keyConverter;
             }
             else
             {
@@ -319,6 +325,9 @@ namespace System.Text.Json
 
             return converter;
         }
+
+        // The cached key converters.
+        private readonly ConcurrentDictionary<Type, JsonConverter> _keyConverters = new ConcurrentDictionary<Type, JsonConverter>();
 
         // The global list of built-in key converters.
         private static readonly Dictionary<Type, JsonConverter> s_keyConverters = GetSupportedKeyConverters();
