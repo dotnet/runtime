@@ -194,7 +194,7 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
         // just ignore it for now.
     }
     else if (CFEqual(keyString, CFSTR("NonEmptySubject")) || CFEqual(keyString, CFSTR("GrayListedKey")) ||
-             CFEqual(keyString, CFSTR("CTRequired")))
+             CFEqual(keyString, CFSTR("CTRequired")) || CFEqual(keyString, CFSTR("GrayListedLeaf")))
     {
         // Not a "problem" that we report.
     }
