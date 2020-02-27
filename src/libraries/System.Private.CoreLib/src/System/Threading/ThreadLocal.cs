@@ -311,6 +311,7 @@ namespace System.Threading
                     && slotId >= 0   // Is the ID non-negative (i.e., instance is not disposed)?
                     && slotId < slotArray.Length   // Is the table large enough?
                     && (slot = slotArray[slotId].Value) != null   // Has a LinkedSlot object has been allocated for this ID?
+                    && (slotArray[slotId].Value!._created & (1L << withinSlotId)) != 0 // Has the slot been created?
                     && _linkedSlot!._next != null // We already linked the instance with the slot array
                     && _initialized // Has the instance *still* not been disposed (important for a race condition with Dispose)?
                     )
