@@ -326,7 +326,7 @@ namespace System.Net.Security
                 _framing = DetectFraming(_handshakeBuffer.ActiveReadOnlySpan);
             }
 
-            int frameSize= GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
+            int frameSize = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
             if (frameSize < 0)
             {
                 throw new IOException(SR.net_frame_read_size);
@@ -347,15 +347,15 @@ namespace System.Net.Security
             int chunkSize = frameSize;
 
             ReadOnlySpan<byte> availableData = _handshakeBuffer.ActiveReadOnlySpan;
-            _handshakeBuffer.Discard(chunkSize);
+            _handshakeBuffer.Discard(frameSize);
 
             // Often more TLS messages fit into same packet. Get as many complete frames as we can.
             while (_handshakeBuffer.ActiveLength > SecureChannel.ReadHeaderSize)
             {
-                frameSize= GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
+                frameSize = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
                 if (_handshakeBuffer.ActiveLength >= frameSize)
                 {
-                    chunkSize+=frameSize;
+                    chunkSize += frameSize;
                     _handshakeBuffer.Discard(frameSize);
                     continue;
                 }
