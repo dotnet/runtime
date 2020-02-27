@@ -234,6 +234,16 @@ extern UINT32 g_nClrInstanceId;
 #if defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
 #define KEYWORDZERO 0x0
 
+#define DEF_LTTNG_KEYWORD_ENABLED 1
+#ifdef FEATURE_EVENT_TRACE
+#include "clrproviders.h"
+#endif // FEATURE_EVENT_TRACE
+#include "clrconfig.h"
+
+#endif // defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+
+#if defined(FEATURE_PERFTRACING)
+
 /***************************************/
 /* Tracing levels supported by CLR ETW */
 /***************************************/
@@ -244,15 +254,6 @@ extern UINT32 g_nClrInstanceId;
 #define TRACE_LEVEL_INFORMATION 4   // Includes non-error cases such as Entry-Exit
 #define TRACE_LEVEL_VERBOSE     5   // Detailed traces from intermediate steps
 
-#define DEF_LTTNG_KEYWORD_ENABLED 1
-#ifdef FEATURE_EVENT_TRACE
-#include "clrproviders.h"
-#endif
-#include "clrconfig.h"
-
-#endif // defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
-
-#if defined(FEATURE_PERFTRACING)
 class XplatEventLoggerConfiguration
 {
 public:
@@ -369,7 +370,7 @@ private:
 
     uint32_t ParseLevel(ComponentSpan const & component) const
     {
-        int level = 5; // Verbose
+        int level = TRACE_LEVEL_VERBOSE; // Verbose
         if ((component.End - component.Start) != 0)
         {
             level = _wtoi(component.Start);

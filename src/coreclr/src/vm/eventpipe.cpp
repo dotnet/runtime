@@ -18,7 +18,6 @@
 #include "eventpipesession.h"
 #include "eventpipejsonfile.h"
 #include "eventtracebase.h"
-#include "eventtracebase.h"
 #include "sampleprofiler.h"
 #include "win32threadpool.h"
 #include "ceemain.h"
@@ -114,14 +113,18 @@ void EventPipe::EnableViaEnvironmentVariables()
     STANDARD_VM_CONTRACT;
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableEventPipe) != 0)
     {
-        LPWSTR eventpipeConfig = NULL;
-        CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeConfig, &eventpipeConfig);
-        LPCWSTR eventpipeOutputPath = Configuration::GetKnobStringValue(W("EventPipeOutputPath"));
+        CLRConfigStringHolder eventpipeConfig(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeConfig));
+        CLRConfigStringHolder configOutputPath(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeOutputPath));
         uint32_t eventpipeCircularBufferMB = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeCircularMB);
+        LPCWSTR outputPath = nullptr;
 
-        if (eventpipeOutputPath == NULL)
+        if (configOutputPath == NULL)
         {
-            eventpipeOutputPath = W("trace.nettrace");
+            outputPath = W("trace.nettrace");
+        }
+        else
+        {
+            outputPath = configOutputPath;
         }
         auto configuration = XplatEventLoggerConfiguration();
         LPWSTR configToParse = eventpipeConfig;
@@ -143,7 +146,7 @@ void EventPipe::EnableViaEnvironmentVariables()
         {
             // Count how many providers there are to parse
             static WCHAR comma = W(',');
-            while(configToParse != nullptr)
+            while (*configToParse != '\0')
             {
                 providerCnt += 1;
                 auto end = wcschr(configToParse, comma);
@@ -156,19 +159,20 @@ void EventPipe::EnableViaEnvironmentVariables()
             configToParse = eventpipeConfig;
             pProviders = new EventPipeProviderConfiguration[providerCnt];
             int i = 0;
-            while (configToParse != nullptr)
+            while (*configToParse != '\0')
             {
                 auto end = wcschr(configToParse, comma);
                 configuration.Parse(configToParse);
 
-                // SampleProfiler can't be enabled on startup yet.
-                if (wcscmp(W("Microsoft-DotNETCore-SampleProfiler"), configuration.GetProviderName()) == 0)
-                {
-                    providerCnt -= 1;
-                }
-                else if (!configuration.IsValid()) // if we find any invalid configuration, do not trace.
+                // if we find any invalid configuration, do not trace.
+                if (!configuration.IsValid())
                 {
                     return;
+                }
+                // SampleProfiler can't be enabled on startup yet.
+                else if (wcscmp(W("Microsoft-DotNETCore-SampleProfiler"), configuration.GetProviderName()) == 0)
+                {
+                    providerCnt -= 1;
                 }
                 else
                 {
@@ -191,7 +195,7 @@ void EventPipe::EnableViaEnvironmentVariables()
         if (providerCnt != 0)
         {
             uint64_t sessionID = EventPipe::Enable(
-                eventpipeOutputPath,
+                outputPath,
                 eventpipeCircularBufferMB,
                 pProviders,
                 providerCnt,
