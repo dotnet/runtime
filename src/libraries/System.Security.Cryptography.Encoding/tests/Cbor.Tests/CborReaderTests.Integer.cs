@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(-2 - uint.MaxValue, "3b0000000100000000")]
         [InlineData(long.MinValue, "3b7fffffffffffffff")]
         [InlineData(long.MaxValue, "1b7fffffffffffffff")]
-        public static void SingleValue_Int64Reader_HappyPath(long expectedResult, string hexEncoding)
+        public static void Int64Reader_SingleValue_HappyPath(long expectedResult, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborValueReader(data);
@@ -70,12 +70,66 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData((ulong)uint.MaxValue + 1, "1b0000000100000000")]
         [InlineData(long.MaxValue, "1b7fffffffffffffff")]
         [InlineData(ulong.MaxValue, "1bffffffffffffffff")]
-        public static void SingleValue_UInt64Reader_HappyPath(ulong expectedResult, string hexEncoding)
+        public static void UInt64Reader_SingleValue_HappyPath(ulong expectedResult, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborValueReader(data);
             ulong actualResult = reader.ReadUInt64();
             Assert.Equal(expectedResult, actualResult);
+        }
+
+        [Theory]
+        [InlineData("1b8000000000000000")] // long.MaxValue + 1
+        [InlineData("3b8000000000000000")] // long.MinValue - 1
+        [InlineData("1bffffffffffffffff")] // ulong.MaxValue
+        public static void Int64Reader_OutOfRangeValues_ShouldThrowOverflowException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            Assert.Throws<OverflowException>(() =>
+            {
+                var reader = new CborValueReader(data);
+                reader.ReadInt64();
+            });
+        }
+
+        [Theory]
+        [InlineData("20")] // -1
+        [InlineData("3863")] // -100
+        [InlineData("3b7fffffffffffffff")] // long.MinValue
+        public static void UInt64Reader_OutOfRangeValues_ShouldThrowOverflowException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            Assert.Throws<OverflowException>(() =>
+            {
+                var reader = new CborValueReader(data);
+                reader.ReadUInt64();
+            });
+        }
+
+        [Theory]
+        [InlineData("40")] // empty text string
+        [InlineData("60")] // empty byte string
+        public static void Int64Reader_StringValues_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                var reader = new CborValueReader(data);
+                reader.ReadInt64();
+            });
+        }
+
+        [Theory]
+        [InlineData("40")] // empty text string
+        [InlineData("60")] // empty byte string
+        public static void UInt64Reader_StringValues_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                var reader = new CborValueReader(data);
+                reader.ReadUInt64();
+            });
         }
     }
 }

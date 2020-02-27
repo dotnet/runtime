@@ -20,6 +20,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     AdvanceBuffer(1 + additionalBytes);
                     return value;
 
+                case CborMajorType.NegativeInteger:
+                    throw new OverflowException();
+
                 default:
                     throw new InvalidOperationException("Data item type mismatch");
             }
