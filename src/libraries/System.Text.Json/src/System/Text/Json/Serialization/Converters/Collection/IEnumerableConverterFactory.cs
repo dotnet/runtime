@@ -30,6 +30,7 @@ namespace System.Text.Json.Serialization.Converters
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.ConcurrentStackOfTConverter`2")]
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.DefaultArrayConverter`2")]
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.DictionaryOfStringTValueConverter`2")]
+        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.DictionaryOfTKeyTValueConverter`3")]
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.ICollectionOfTConverter`2")]
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.IDictionaryOfStringTValueConverter`2")]
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.IEnumerableOfTConverter`2")]
@@ -49,6 +50,7 @@ namespace System.Text.Json.Serialization.Converters
             Type converterType;
             Type[] genericArgs;
             Type? elementType = null;
+            Type? dictionaryKeyType = null;
             Type? actualTypeToConvert;
 
             // Array
@@ -69,19 +71,13 @@ namespace System.Text.Json.Serialization.Converters
                 converterType = typeof(ListOfTConverter<,>);
                 elementType = actualTypeToConvert.GetGenericArguments()[0];
             }
-            // Dictionary<string,> or deriving from Dictionary<string,>
+            // Dictionary<TKey,> or deriving from Dictionary<TKey,>
             else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericBaseClass(typeof(Dictionary<,>))) != null)
             {
                 genericArgs = actualTypeToConvert.GetGenericArguments();
-                if (genericArgs[0] == typeof(string))
-                {
-                    converterType = typeof(DictionaryOfStringTValueConverter<,>);
-                    elementType = genericArgs[1];
-                }
-                else
-                {
-                    return null;
-                }
+                converterType = typeof(DictionaryOfTKeyTValueConverter<,,>);
+                dictionaryKeyType = genericArgs[0];
+                elementType = genericArgs[1];
             }
             // Immutable dictionaries from System.Collections.Immutable, e.g. ImmutableDictionary<string, TValue>
             else if (typeToConvert.IsImmutableDictionaryType())
@@ -216,13 +212,21 @@ namespace System.Text.Json.Serialization.Converters
             if (converterType != null)
             {
                 Type genericType;
-                if (converterType.GetGenericArguments().Length == 1)
+
+                int numberOfGenericArgs = converterType.GetGenericArguments().Length;
+
+                if (numberOfGenericArgs == 1)
                 {
                     genericType = converterType.MakeGenericType(typeToConvert);
                 }
-                else
+                else if (numberOfGenericArgs == 2)
                 {
                     genericType = converterType.MakeGenericType(typeToConvert, elementType!);
+                }
+                else
+                {
+                    Debug.Assert(numberOfGenericArgs == 3);
+                    genericType = converterType.MakeGenericType(typeToConvert, dictionaryKeyType!, elementType!);
                 }
 
                 converter = (JsonConverter)Activator.CreateInstance(

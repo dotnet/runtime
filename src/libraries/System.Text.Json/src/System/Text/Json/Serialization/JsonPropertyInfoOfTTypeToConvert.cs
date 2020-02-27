@@ -124,7 +124,6 @@ namespace System.Text.Json
             }
             else
             {
-                state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PolicyProperty;
                 success = Converter.TryWriteDataExtensionProperty(writer, value, Options, ref state);
             }
 

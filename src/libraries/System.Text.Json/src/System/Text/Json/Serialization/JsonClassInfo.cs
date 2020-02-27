@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json
 {
@@ -68,7 +69,23 @@ namespace System.Text.Json
             }
         }
 
+        private JsonConverter? _keyConverter;
+        public JsonConverter KeyConverter
+        {
+            get
+            {
+                if (_keyConverter == null)
+                {
+                    Debug.Assert(KeyType != null);
+                    _keyConverter = Options.GetOrAddKeyConverter(KeyType, Type);
+                }
+
+                return _keyConverter;
+            }
+        }
+
         public Type? ElementType { get; set; }
+        public Type? KeyType { get; set; }
 
         public JsonSerializerOptions Options { get; private set; }
 
@@ -193,8 +210,13 @@ namespace System.Text.Json
                         PolicyProperty = CreatePolicyProperty(type, runtimeType, converter!, ClassType, options);
                     }
                     break;
-                case ClassType.Enumerable:
                 case ClassType.Dictionary:
+                    {
+                        Debug.Assert(converter!.KeyType != null);
+                        KeyType = converter.KeyType;
+                        goto case ClassType.Enumerable;
+                    }
+                case ClassType.Enumerable:
                     {
                         ElementType = elementType;
                         PolicyProperty = CreatePolicyProperty(type, runtimeType, converter!, ClassType, options);

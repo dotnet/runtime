@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Buffers.Text;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Text.Json

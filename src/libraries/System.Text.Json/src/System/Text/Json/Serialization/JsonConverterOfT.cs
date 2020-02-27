@@ -319,6 +319,7 @@ namespace System.Text.Json.Serialization
 
                 // Ignore the naming policy for extension data.
                 state.Current.IgnoreDictionaryKeyPolicy = true;
+                state.Current.DeclaredJsonPropertyInfo = state.Current.JsonClassInfo.ElementClassInfo!.PolicyProperty!;
 
                 success = dictionaryConverter.OnWriteResume(writer, value, options, ref state);
                 if (success)

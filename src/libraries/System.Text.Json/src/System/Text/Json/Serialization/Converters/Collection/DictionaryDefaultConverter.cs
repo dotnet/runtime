@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Text;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -10,13 +13,13 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Default base class implementation of <cref>JsonDictionaryConverter{TCollection}</cref> .
     /// </summary>
-    internal abstract class DictionaryDefaultConverter<TCollection, TValue>
-        : JsonDictionaryConverter<TCollection>
+    internal abstract class DictionaryDefaultConverter<TCollection, TKey, TValue>
+        : JsonDictionaryConverter<TCollection> where TKey : notnull
     {
         /// <summary>
         /// When overridden, adds the value to the collection.
         /// </summary>
-        protected abstract void Add(TValue value, JsonSerializerOptions options, ref ReadStack state);
+        protected abstract void Add(TKey key, TValue value, JsonSerializerOptions options, ref ReadStack state);
 
         /// <summary>
         /// When overridden, converts the temporary collection held in state.Current.ReturnValue to the final collection.
@@ -30,6 +33,8 @@ namespace System.Text.Json.Serialization.Converters
         protected virtual void CreateCollection(ref ReadStack state) { }
 
         internal override Type ElementType => typeof(TValue);
+
+        internal override Type KeyType => typeof(TKey);
 
         protected static JsonConverter<TValue> GetElementConverter(ref ReadStack state)
         {
@@ -62,6 +67,8 @@ namespace System.Text.Json.Serialization.Converters
             return converter;
         }
 
+        protected static KeyConverter<TKey> GetKeyConverter(JsonClassInfo classInfo) => (KeyConverter<TKey>)classInfo.KeyConverter;
+
         internal sealed override bool OnTryRead(
             ref Utf8JsonReader reader,
             Type typeToConvert,
@@ -69,6 +76,10 @@ namespace System.Text.Json.Serialization.Converters
             ref ReadStack state,
             [MaybeNullWhen(false)] out TCollection value)
         {
+            // Get the key converter at the very beginning; will throw NSE if there is no converter for TKey.
+            // This is performed at the very beginning to avoid processing unsupported types.
+            KeyConverter<TKey> keyConverter = GetKeyConverter(state.Current.JsonClassInfo);
+
             bool shouldReadPreservedReferences = options.ReferenceHandling.ShouldReadPreservedReferences();
 
             if (!state.SupportContinuation && !shouldReadPreservedReferences)
@@ -102,11 +113,12 @@ namespace System.Text.Json.Serialization.Converters
                         }
 
                         state.Current.JsonPropertyNameAsString = reader.GetString();
+                        keyConverter.OnTryRead(ref reader, keyConverter.TypeToConvert, options, ref state, out TKey key);
 
                         // Read the value and add.
                         reader.ReadWithVerify();
                         TValue element = elementConverter.Read(ref reader, typeof(TValue), options);
-                        Add(element, options, ref state);
+                        Add(key, element, options, ref state);
                     }
                 }
                 else
@@ -127,13 +139,14 @@ namespace System.Text.Json.Serialization.Converters
                             ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
                         }
 
-                        state.Current.JsonPropertyNameAsString = reader.GetString();
+                        state.Current.JsonPropertyNameAsString = reader.GetString()!;
+                        keyConverter.OnTryRead(ref reader, keyConverter.TypeToConvert, options, ref state, out TKey key);
 
                         reader.ReadWithVerify();
 
                         // Get the value from the converter and add it.
                         elementConverter.TryRead(ref reader, typeof(TValue), options, ref state, out TValue element);
-                        Add(element, options, ref state);
+                        Add(key, element, options, ref state);
                     }
                 }
             }
@@ -219,16 +232,16 @@ namespace System.Text.Json.Serialization.Converters
 
                         state.Current.PropertyState = StackFramePropertyState.Name;
 
+                        ReadOnlySpan<byte> propertyName = reader.GetSpan();
                         // Verify property doesn't contain metadata.
                         if (shouldReadPreservedReferences)
                         {
-                            ReadOnlySpan<byte> propertyName = reader.GetSpan();
                             if (propertyName.Length > 0 && propertyName[0] == '$')
                             {
                                 ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
                             }
                         }
-
+                        state.Current.DictionaryKeyName = propertyName.ToArray();
                         state.Current.JsonPropertyNameAsString = reader.GetString();
                     }
 
@@ -245,6 +258,8 @@ namespace System.Text.Json.Serialization.Converters
 
                     if (state.Current.PropertyState < StackFramePropertyState.TryRead)
                     {
+                        keyConverter.OnTryRead(ref reader, keyConverter.TypeToConvert, options, ref state, out TKey key);
+
                         // Get the value from the converter and add it.
                         bool success = elementConverter.TryRead(ref reader, typeof(TValue), options, ref state, out TValue element);
                         if (!success)
@@ -253,7 +268,7 @@ namespace System.Text.Json.Serialization.Converters
                             return false;
                         }
 
-                        Add(element, options, ref state);
+                        Add(key, element, options, ref state);
                         state.Current.EndElement();
                     }
                 }

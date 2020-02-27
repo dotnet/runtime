@@ -65,6 +65,33 @@ namespace System.Text.Json
             return utf8String;
         }
 
+        // TODO: Borrowing this from https://github.com/dotnet/runtime/pull/32669/files#diff-82b934371fff193b37c85635239bb6ebR70
+        // Remove when that PR is in or remove from #32669 if this gets in first.
+        public static ReadOnlySpan<byte> GetUnescapedSpan(ReadOnlySpan<byte> utf8Source, int idx)
+        {
+            // The escaped name is always >= than the unescaped, so it is safe to use escaped name for the buffer length.
+            int length = utf8Source.Length;
+            byte[]? pooledName = null;
+
+            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[length] :
+                (pooledName = ArrayPool<byte>.Shared.Rent(length));
+
+            Unescape(utf8Source, utf8Unescaped, idx, out int written);
+            Debug.Assert(written > 0);
+
+            ReadOnlySpan<byte> propertyName = utf8Unescaped.Slice(0, written).ToArray();
+            Debug.Assert(!propertyName.IsEmpty);
+
+            if (pooledName != null)
+            {
+                new Span<byte>(pooledName, 0, written).Clear();
+                ArrayPool<byte>.Shared.Return(pooledName);
+            }
+
+            return propertyName;
+        }
+
         public static bool UnescapeAndCompare(ReadOnlySpan<byte> utf8Source, ReadOnlySpan<byte> other)
         {
             Debug.Assert(utf8Source.Length >= other.Length && utf8Source.Length / JsonConstants.MaxExpansionFactorWhileEscaping <= other.Length);

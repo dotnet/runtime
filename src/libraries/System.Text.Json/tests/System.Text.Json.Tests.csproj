@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <DefineConstants Condition="'$(TargetsNetFx)' != 'true'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
@@ -58,6 +58,7 @@
     <Compile Include="Serialization\CustomConverterTests.Callback.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
     <Compile Include="Serialization\DictionaryTests.cs" />
+    <Compile Include="Serialization\DictionaryTests.KeyConverter.cs" />
     <Compile Include="Serialization\DictionaryTests.KeyPolicy.cs" />
     <Compile Include="Serialization\EnumConverterTests.cs" />
     <Compile Include="Serialization\EnumTests.cs" />

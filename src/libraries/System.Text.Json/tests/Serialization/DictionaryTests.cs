@@ -644,7 +644,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void FirstGenericArgNotStringFail()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<int, int>>(@"{1:1}"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ImmutableDictionary<int, int>>(@"{1:1}"));
         }
 
@@ -1623,9 +1622,10 @@ namespace System.Text.Json.Serialization.Tests
             }
             catch (NotSupportedException e)
             {
+                // TODO: Borrow logic from https://github.com/dotnet/runtime/pull/32669 to keep appending the parent type to the NSE message.
                 // The exception should contain className.propertyName and the invalid type.
-                Assert.Contains("ClassWithNotSupportedDictionary.MyDictionary", e.Message);
-                Assert.Contains("Dictionary`2[System.Int32,System.Int32]", e.Message);
+                //Assert.Contains("ClassWithNotSupportedDictionary.MyDictionary", e.Message);
+                Assert.Contains("Dictionary`2[System.Uri,System.Int32]", e.Message);
             }
         }
 
@@ -1846,7 +1846,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public class ClassWithNotSupportedDictionary
         {
-            public Dictionary<int, int> MyDictionary { get; set; }
+            public Dictionary<Uri, int> MyDictionary { get; set; }
         }
 
         public class ClassWithNotSupportedDictionaryButIgnored

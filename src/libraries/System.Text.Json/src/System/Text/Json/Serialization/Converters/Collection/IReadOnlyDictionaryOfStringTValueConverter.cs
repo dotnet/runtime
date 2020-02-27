@@ -8,10 +8,10 @@ using System.Diagnostics;
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class IReadOnlyDictionaryOfStringTValueConverter<TCollection, TValue>
-        : DictionaryDefaultConverter<TCollection, TValue>
+        : DictionaryDefaultConverter<TCollection, string,  TValue>
         where TCollection : IReadOnlyDictionary<string, TValue>
     {
-        protected override void Add(TValue value, JsonSerializerOptions options, ref ReadStack state)
+        protected override void Add(string _, TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
             Debug.Assert(state.Current.ReturnValue is Dictionary<string, TValue>);
 

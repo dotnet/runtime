@@ -3,23 +3,20 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
     /// <summary>
-    /// Converter for Dictionary{string, TValue} that (de)serializes as a JSON object with properties
+    /// Converter for Dictionary{TKey, TValue} that (de)serializes as a JSON object with properties
     /// representing the dictionary element key and value.
     /// </summary>
-    internal sealed class DictionaryOfStringTValueConverter<TCollection, TValue>
-        : DictionaryDefaultConverter<TCollection, TValue>
-        where TCollection : Dictionary<string, TValue>
+    internal sealed class DictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>
+        : DictionaryDefaultConverter<TCollection, TKey, TValue>
+        where TCollection : Dictionary<TKey, TValue>
+        where TKey : notnull
     {
-        protected override void Add(TValue value, JsonSerializerOptions options, ref ReadStack state)
+        protected override void Add(TKey key, TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
-            Debug.Assert(state.Current.ReturnValue is TCollection);
-
-            string key = state.Current.JsonPropertyNameAsString!;
             ((TCollection)state.Current.ReturnValue!)[key] = value;
         }
 
@@ -39,7 +36,12 @@ namespace System.Text.Json.Serialization.Converters
             JsonSerializerOptions options,
             ref WriteStack state)
         {
-            Dictionary<string, TValue>.Enumerator enumerator;
+            // Get the key converter at the very beginning; will throw NSE if there is no converter for TKey.
+            // This is performed at the very beginning to avoid processing unsupported types.
+            KeyConverter<TKey> keyConverter = GetKeyConverter(state.Current.JsonClassInfo);
+
+            Dictionary<TKey, TValue>.Enumerator enumerator;
+
             if (state.Current.CollectionEnumerator == null)
             {
                 enumerator = value.GetEnumerator();
@@ -50,20 +52,19 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                Debug.Assert(state.Current.CollectionEnumerator is Dictionary<string, TValue>.Enumerator);
-                enumerator = (Dictionary<string, TValue>.Enumerator)state.Current.CollectionEnumerator;
+                enumerator = (Dictionary<TKey, TValue>.Enumerator)state.Current.CollectionEnumerator;
             }
 
-            JsonConverter<TValue> converter = GetValueConverter(ref state);
-            if (!state.SupportContinuation && converter.CanUseDirectReadOrWrite)
+            JsonConverter<TValue> valueConverter = GetValueConverter(ref state);
+
+            if (!state.SupportContinuation && valueConverter.CanUseDirectReadOrWrite)
             {
                 // Fast path that avoids validation and extra indirection.
                 do
                 {
-                    string key = GetKeyName(enumerator.Current.Key, ref state, options);
-                    writer.WritePropertyName(key);
+                    keyConverter.OnTryWrite(writer, enumerator.Current.Key, options, ref state);
                     // TODO: https://github.com/dotnet/runtime/issues/32523
-                    converter.Write(writer, enumerator.Current.Value!, options);
+                    valueConverter.Write(writer, enumerator.Current.Value!, options);
                 } while (enumerator.MoveNext());
             }
             else
@@ -77,14 +78,14 @@ namespace System.Text.Json.Serialization.Converters
                     }
 
                     TValue element = enumerator.Current.Value;
+
                     if (state.Current.PropertyState < StackFramePropertyState.Name)
                     {
                         state.Current.PropertyState = StackFramePropertyState.Name;
-                        string key = GetKeyName(enumerator.Current.Key, ref state, options);
-                        writer.WritePropertyName(key);
+                        keyConverter.OnTryWrite(writer, enumerator.Current.Key, options, ref state);
                     }
 
-                    if (!converter.TryWrite(writer, element, options, ref state))
+                    if (!valueConverter.TryWrite(writer, element, options, ref state))
                     {
                         state.Current.CollectionEnumerator = enumerator;
                         return false;

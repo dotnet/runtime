@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Converters;
 
@@ -280,6 +281,74 @@ namespace System.Text.Json
                 yield return new UInt32Converter();
                 yield return new UInt64Converter();
                 yield return new UriConverter();
+            }
+        }
+
+        // Get converter from the cached key converters or add a new Enum converter.
+        internal JsonConverter GetOrAddKeyConverter(Type keyType, Type dictionaryType)
+        {
+            if (s_keyConverters.TryGetValue(keyType, out JsonConverter? converter))
+            {
+                return converter;
+            }
+            // short-term solution, instead of using a factory pattern like JsonStringEnumConverter,
+            // we just create the enum converter here add we add it to s_keyConverters.
+            else if (keyType.IsEnum)
+            {
+                converter = CreateEnumKeyConverter(keyType);
+                // Ignore failure case here in multi-threaded cases since the cached item will be equivalent.
+                s_keyConverters.TryAdd(keyType, converter);
+
+                return converter;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(dictionaryType);
+                return null;
+            }
+        }
+
+        private JsonConverter CreateEnumKeyConverter(Type type)
+        {
+            JsonConverter converter = (JsonConverter)Activator.CreateInstance(
+                typeof(EnumKeyConverter<>).MakeGenericType(type),
+                BindingFlags.Instance | BindingFlags.Public,
+                binder: null,
+                Array.Empty<object>(),
+                culture: null)!;
+
+            return converter;
+        }
+
+        // The global list of built-in key converters.
+        private static readonly Dictionary<Type, JsonConverter> s_keyConverters = GetSupportedKeyConverters();
+
+        private const int NumberOfKeyConverters = 4;
+
+        private static Dictionary<Type, JsonConverter> GetSupportedKeyConverters()
+        {
+            var converters = new Dictionary<Type, JsonConverter>(NumberOfKeyConverters);
+
+            // Use a dictionary for simple converters.
+            foreach (JsonConverter converter in KeyConverters)
+            {
+                converters.Add(converter.TypeToConvert, converter);
+            }
+
+            Debug.Assert(NumberOfKeyConverters == converters.Count);
+
+            return converters;
+        }
+
+        private static IEnumerable<JsonConverter> KeyConverters
+        {
+            get
+            {
+                // When adding to this, update NumberOfKeyConverters above.
+                yield return new StringKeyConverter();
+                yield return new Int32KeyConverter();
+                yield return new GuidKeyConverter();
+                yield return new ObjectKeyConverter();
             }
         }
     }

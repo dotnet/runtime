@@ -583,6 +583,11 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
+            return TryGetInt32AfterValidation(out value);
+        }
+
+        internal bool TryGetInt32AfterValidation(out int value)
+        {
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
             if (Utf8Parser.TryParse(span, out int tmp, out int bytesConsumed)
                 && span.Length == bytesConsumed)
@@ -945,6 +950,11 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
             }
 
+            return TryGetGuidAfterValidation(out value);
+        }
+
+        internal bool TryGetGuidAfterValidation(out Guid value)
+        {
             ReadOnlySpan<byte> span = stackalloc byte[0];
 
             if (HasValueSequence)
