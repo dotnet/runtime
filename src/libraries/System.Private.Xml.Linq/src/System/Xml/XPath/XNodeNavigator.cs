@@ -546,9 +546,13 @@ namespace System.Xml.XPath
                         mask &= ~TextMask;
                     }
                     XNode next = null;
-                    for (XNode node = currentNode; node != null; node = next)
+                    for (XNode node = currentNode; ; node = next)
                     {
                         next = node.NextNode;
+                        if (next == null)
+                        {
+                            break;
+                        }
                         if (((1 << (int)next.NodeType) & mask) != 0 && !(node is XText && next is XText))
                         {
                             _source = next;

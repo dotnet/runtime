@@ -623,7 +623,7 @@ namespace System.Drawing.Drawing2D
             Gdip.CheckStatus(status);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, Point origin, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, Point origin, StringFormat? format)
         {
             Rectangle layout = default;
             layout.X = origin.X;
@@ -631,7 +631,7 @@ namespace System.Drawing.Drawing2D
             AddString(s, family, style, emSize, layout, format);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, PointF origin, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, PointF origin, StringFormat? format)
         {
             RectangleF layout = default;
             layout.X = origin.X;
@@ -639,7 +639,7 @@ namespace System.Drawing.Drawing2D
             AddString(s, family, style, emSize, layout, format);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, Rectangle layoutRect, StringFormat? format)
         {
             if (family == null)
                 throw new ArgumentException(nameof(family));
@@ -650,7 +650,7 @@ namespace System.Drawing.Drawing2D
             Gdip.CheckStatus(status);
         }
 
-        public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat format)
+        public void AddString(string s, FontFamily family, int style, float emSize, RectangleF layoutRect, StringFormat? format)
         {
             if (family == null)
                 throw new ArgumentException(nameof(family));
@@ -692,7 +692,7 @@ namespace System.Drawing.Drawing2D
             Flatten(matrix, FlatnessDefault);
         }
 
-        public void Flatten(Matrix matrix, float flatness)
+        public void Flatten(Matrix? matrix, float flatness)
         {
             IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.NativeMatrix;
             int status = Gdip.GdipFlattenPath(_nativePath, m, flatness);
@@ -705,12 +705,12 @@ namespace System.Drawing.Drawing2D
             return GetBounds(null, null);
         }
 
-        public RectangleF GetBounds(Matrix matrix)
+        public RectangleF GetBounds(Matrix? matrix)
         {
             return GetBounds(matrix, null);
         }
 
-        public RectangleF GetBounds(Matrix matrix, Pen pen)
+        public RectangleF GetBounds(Matrix? matrix, Pen? pen)
         {
             RectangleF retval;
             IntPtr m = (matrix == null) ? IntPtr.Zero : matrix.NativeMatrix;
@@ -743,17 +743,17 @@ namespace System.Drawing.Drawing2D
             return IsOutlineVisible(x, y, pen, null);
         }
 
-        public bool IsOutlineVisible(Point pt, Pen pen, Graphics graphics)
+        public bool IsOutlineVisible(Point pt, Pen pen, Graphics? graphics)
         {
             return IsOutlineVisible(pt.X, pt.Y, pen, graphics);
         }
 
-        public bool IsOutlineVisible(PointF pt, Pen pen, Graphics graphics)
+        public bool IsOutlineVisible(PointF pt, Pen pen, Graphics? graphics)
         {
             return IsOutlineVisible(pt.X, pt.Y, pen, graphics);
         }
 
-        public bool IsOutlineVisible(int x, int y, Pen pen, Graphics graphics)
+        public bool IsOutlineVisible(int x, int y, Pen pen, Graphics? graphics)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
@@ -767,7 +767,7 @@ namespace System.Drawing.Drawing2D
             return result;
         }
 
-        public bool IsOutlineVisible(float x, float y, Pen pen, Graphics graphics)
+        public bool IsOutlineVisible(float x, float y, Pen pen, Graphics? graphics)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));
@@ -801,17 +801,17 @@ namespace System.Drawing.Drawing2D
             return IsVisible(x, y, null);
         }
 
-        public bool IsVisible(Point pt, Graphics graphics)
+        public bool IsVisible(Point pt, Graphics? graphics)
         {
             return IsVisible(pt.X, pt.Y, graphics);
         }
 
-        public bool IsVisible(PointF pt, Graphics graphics)
+        public bool IsVisible(PointF pt, Graphics? graphics)
         {
             return IsVisible(pt.X, pt.Y, graphics);
         }
 
-        public bool IsVisible(int x, int y, Graphics graphics)
+        public bool IsVisible(int x, int y, Graphics? graphics)
         {
             bool retval;
 
@@ -824,7 +824,7 @@ namespace System.Drawing.Drawing2D
             return retval;
         }
 
-        public bool IsVisible(float x, float y, Graphics graphics)
+        public bool IsVisible(float x, float y, Graphics? graphics)
         {
             bool retval;
 
@@ -856,17 +856,17 @@ namespace System.Drawing.Drawing2D
             Warp(destPoints, srcRect, null, WarpMode.Perspective, FlatnessDefault);
         }
 
-        public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix matrix)
+        public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix? matrix)
         {
             Warp(destPoints, srcRect, matrix, WarpMode.Perspective, FlatnessDefault);
         }
 
-        public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix matrix, WarpMode warpMode)
+        public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix? matrix, WarpMode warpMode)
         {
             Warp(destPoints, srcRect, matrix, warpMode, FlatnessDefault);
         }
 
-        public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix matrix, WarpMode warpMode, float flatness)
+        public void Warp(PointF[] destPoints, RectangleF srcRect, Matrix? matrix, WarpMode warpMode, float flatness)
         {
             if (destPoints == null)
                 throw new ArgumentNullException(nameof(destPoints));
@@ -884,12 +884,12 @@ namespace System.Drawing.Drawing2D
             Widen(pen, null, FlatnessDefault);
         }
 
-        public void Widen(Pen pen, Matrix matrix)
+        public void Widen(Pen pen, Matrix? matrix)
         {
             Widen(pen, matrix, FlatnessDefault);
         }
 
-        public void Widen(Pen pen, Matrix matrix, float flatness)
+        public void Widen(Pen pen, Matrix? matrix, float flatness)
         {
             if (pen == null)
                 throw new ArgumentNullException(nameof(pen));

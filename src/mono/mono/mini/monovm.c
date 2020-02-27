@@ -123,7 +123,7 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	size_t basename_len = strlen (basename);
 
 	for (int i = 0; i < a->assembly_count; ++i) {
-		if (basename_len == a->basename_lens [i] && !strncmp (basename, a->basenames [i], a->basename_lens [i])) {
+		if (basename_len == a->basename_lens [i] && !g_strncasecmp (basename, a->basenames [i], a->basename_lens [i])) {
 			MonoAssemblyOpenRequest req;
 			mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, default_alc);
 			req.request.predicate = predicate;

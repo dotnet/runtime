@@ -75,11 +75,6 @@ typedef ptrdiff_t ssize_t;
 #define MONO_RESTORE_WARNING
 #endif
 
-#define MONO_LLVM_INTERNAL			/* nothing */
-#define MONO_LLVM_INTERNAL_NO_EXTERN_C		/* nothing */
-#define MONO_LLVM_INTERNAL_EXTERN_C_BEGIN	/* nothing */
-#define MONO_LLVM_INTERNAL_EXTERN_C_END		/* nothing */
-
 /* Used to mark internal functions used by the profiler modules */
 #define MONO_PROFILER_API MONO_API
 

@@ -707,7 +707,15 @@ describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis)
 
 	while (obj && (f = mono_class_get_fields_internal (obj->vtable->klass, &iter))) {
 		DEBUG_PRINTF (2, "mono_class_get_fields_internal - %s - %x\n", f->name, f->type->type);
-		if (isAsyncLocalThis &&  (f->name[0] != '<' || (f->name[0] == '<' &&  f->name[1] == '>'))) {
+		if (isAsyncLocalThis && f->name[0] == '<' && f->name[1] == '>') {
+			if (g_str_has_suffix (f->name, "__this")) {
+				char *class_name = mono_class_full_name (obj->vtable->klass);
+				mono_wasm_add_properties_var ("this");
+				gpointer field_value = (guint8*)obj + f->offset;
+
+				describe_value (f->type, field_value);
+			}
+
 			continue;
 		}
 		if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
@@ -775,14 +783,17 @@ describe_async_method_locals (InterpFrame *frame, MonoMethod *method)
 	if (mono_debug_lookup_method_async_debug_info (method)) {
 		addr = mini_get_interp_callbacks ()->frame_get_this (frame);
 		MonoObject *obj = *(MonoObject**)addr;
-		describe_object_properties(get_object_id(obj), TRUE);		
+		describe_object_properties(get_object_id(obj), TRUE);
 	}
 }
 
 static void
-describe_this (InterpFrame *frame, MonoMethod *method)
+describe_non_async_this (InterpFrame *frame, MonoMethod *method)
 {
 	gpointer addr = NULL;
+	if (mono_debug_lookup_method_async_debug_info (method))
+		return;
+
 	if (mono_method_signature_internal (method)->hasthis) {
 		addr = mini_get_interp_callbacks ()->frame_get_this (frame);
 		MonoObject *obj = *(MonoObject**)addr;
@@ -849,7 +860,7 @@ describe_variables_on_frame (MonoStackFrameInfo *info, MonoContext *ctx, gpointe
 	}
 
 	describe_async_method_locals (frame, method);
-	describe_this (frame, method);
+	describe_non_async_this (frame, method);
 
 	return TRUE;
 }

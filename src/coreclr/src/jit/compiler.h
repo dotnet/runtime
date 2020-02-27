@@ -883,7 +883,7 @@ public:
                (lvIsParam || lvAddrExposed || lvIsStructField);
     }
 
-    bool lvNormalizeOnStore()
+    bool lvNormalizeOnStore() const
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
@@ -925,7 +925,7 @@ public:
     }
 
     // Returns the layout of a struct variable.
-    ClassLayout* GetLayout()
+    ClassLayout* GetLayout() const
     {
         assert(varTypeIsStruct(lvType));
         return m_layout;
@@ -946,6 +946,35 @@ public:
     LclSsaVarDsc* GetPerSsaData(unsigned ssaNum)
     {
         return lvPerSsaData.GetSsaDef(ssaNum);
+    }
+
+    //------------------------------------------------------------------------
+    // GetRegisterType: Determine register type for that local var.
+    //
+    // Arguments:
+    //    tree - node that uses the local, its type is checked first.
+    //
+    // Return Value:
+    //    TYP_UNDEF if the layout is enregistrable, register type otherwise.
+    //
+    var_types GetRegisterType(const GenTreeLclVarCommon* tree) const
+    {
+        var_types targetType = tree->gtType;
+
+#ifdef DEBUG
+        // Ensure that lclVar nodes are typed correctly.
+        if (tree->OperIs(GT_STORE_LCL_VAR) && lvNormalizeOnStore())
+        {
+            // TODO: update that assert to work with TypeGet() == TYP_STRUCT case.
+            // assert(targetType == genActualType(TypeGet()));
+        }
+#endif
+
+        if (targetType != TYP_STRUCT)
+        {
+            return targetType;
+        }
+        return GetLayout()->GetRegisterType();
     }
 
 #ifdef DEBUG
@@ -4645,6 +4674,16 @@ public:
     // Does value-numbering for an intrinsic tree.
     void fgValueNumberIntrinsic(GenTree* tree);
 
+#ifdef FEATURE_SIMD
+    // Does value-numbering for a GT_SIMD tree
+    void fgValueNumberSimd(GenTree* tree);
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+    // Does value-numbering for a GT_HWINTRINSIC tree
+    void fgValueNumberHWIntrinsic(GenTree* tree);
+#endif // FEATURE_HW_INTRINSICS
+
     // Does value-numbering for a call.  We interpret some helper calls.
     void fgValueNumberCall(GenTreeCall* call);
 
@@ -4668,6 +4707,9 @@ public:
 
     // Adds the exception set for the current tree node which is performing a overflow checking operation
     void fgValueNumberAddExceptionSetForOverflow(GenTree* tree);
+
+    // Adds the exception set for the current tree node which is performing a bounds check operation
+    void fgValueNumberAddExceptionSetForBoundsCheck(GenTree* tree);
 
     // Adds the exception set for the current tree node which is performing a ckfinite operation
     void fgValueNumberAddExceptionSetForCkFinite(GenTree* tree);
@@ -6160,6 +6202,12 @@ protected:
 
         treeStmtLst* csdTreeList; // list of matching tree nodes: head
         treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
+
+        // ToDo: This can be removed when gtGetStructHandleIfPresent stops guessing
+        // and GT_IND nodes always have valid struct handle.
+        //
+        CORINFO_CLASS_HANDLE csdStructHnd; // The class handle, currently needed to create a SIMD LclVar in PerformCSE
+        bool                 csdStructHndMismatch;
 
         ValueNum defExcSetPromise; // The exception set that is now required for all defs of this CSE.
                                    // This will be set to NoVN if we decide to abandon this CSE
@@ -8159,6 +8207,13 @@ public:
         return TARGET_POINTER_SIZE;
 #endif // !FEATURE_SIMD
     }
+
+#ifdef FEATURE_SIMD
+    static bool vnEncodesResultTypeForSIMDIntrinsic(SIMDIntrinsicID intrinsicId);
+#endif // !FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+    static bool vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID);
+#endif // FEATURE_HW_INTRINSICS
 
 private:
     // These routines need not be enclosed under FEATURE_SIMD since lvIsSIMDType()

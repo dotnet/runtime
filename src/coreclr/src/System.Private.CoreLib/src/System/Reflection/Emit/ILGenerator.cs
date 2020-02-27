@@ -1102,12 +1102,12 @@ namespace System.Reflection.Emit
             Emit(OpCodes.Call, prop);
             Emit(OpCodes.Ldloc, localBuilder);
             Type[] parameterTypes = new Type[1];
-            object cls = localBuilder.LocalType;
+            Type cls = localBuilder.LocalType;
             if (cls is TypeBuilder || cls is EnumBuilder)
             {
                 throw new ArgumentException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             }
-            parameterTypes[0] = (Type)cls;
+            parameterTypes[0] = cls;
             MethodInfo? mi = prop.ReturnType.GetMethod("WriteLine", parameterTypes);
             if (mi == null)
             {
@@ -1142,17 +1142,18 @@ namespace System.Reflection.Emit
                 Emit(OpCodes.Ldfld, fld);
             }
             Type[] parameterTypes = new Type[1];
-            object cls = fld.FieldType;
+            Type cls = fld.FieldType;
             if (cls is TypeBuilder || cls is EnumBuilder)
             {
                 throw new NotSupportedException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             }
-            parameterTypes[0] = (Type)cls;
+            parameterTypes[0] = cls;
             MethodInfo? mi = prop.ReturnType.GetMethod("WriteLine", parameterTypes);
             if (mi == null)
             {
                 throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(fld));
             }
+
             Emit(OpCodes.Callvirt, mi);
         }
 

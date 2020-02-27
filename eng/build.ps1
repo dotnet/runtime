@@ -70,8 +70,11 @@ if ($vs) {
 
   # Microsoft.DotNet.CoreSetup.sln is special - hosting tests are currently meant to run on the
   # bootstrapped .NET Core, not on the live-built runtime.
-  if ([System.IO.Path]::GetFileName($vs) -ieq "Microsoft.DotNet.CoreSetup.sln") {
+  if (([System.IO.Path]::GetFileName($vs) -ieq "Microsoft.DotNet.CoreSetup.sln") -or ($vs -ieq "Microsoft.DotNet.CoreSetup")) {
     if (-Not (Test-Path $vs)) {
+      if (-Not ( $vs.endswith(".sln"))) {
+          $vs = "$vs.sln"
+      }
       $vs = Join-Path "$PSScriptRoot\..\src\installer" $vs
     }
 

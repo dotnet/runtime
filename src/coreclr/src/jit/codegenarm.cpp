@@ -963,8 +963,10 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
 
     if (!isRegCandidate && !(tree->gtFlags & GTF_SPILLED))
     {
-        GetEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), emitTypeSize(tree), tree->GetRegNum(), tree->GetLclNum(),
-                                  0);
+        const LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
+        var_types        type   = varDsc->GetRegisterType(tree);
+
+        GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), tree->GetRegNum(), tree->GetLclNum(), 0);
         genProduceReg(tree);
     }
 }
@@ -1017,17 +1019,6 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 //
 void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 {
-    var_types targetType = tree->TypeGet();
-    regNumber targetReg  = tree->GetRegNum();
-    emitter*  emit       = GetEmitter();
-
-    unsigned varNum = tree->GetLclNum();
-    assert(varNum < compiler->lvaCount);
-    LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
-
-    // Ensure that lclVar nodes are typed correctly.
-    assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
-
     GenTree* data = tree->gtOp1;
 
     // var = call, where call returns a multi-reg return value
@@ -1036,40 +1027,51 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     {
         genMultiRegCallStoreToLocal(tree);
     }
-    else if (tree->TypeGet() == TYP_LONG)
-    {
-        genStoreLongLclVar(tree);
-    }
     else
     {
-        genConsumeRegs(data);
+        unsigned varNum = tree->GetLclNum();
+        assert(varNum < compiler->lvaCount);
+        LclVarDsc* varDsc     = compiler->lvaGetDesc(varNum);
+        var_types  targetType = varDsc->GetRegisterType(tree);
 
-        assert(!data->isContained());
-        regNumber dataReg = data->GetRegNum();
-        assert(dataReg != REG_NA);
-
-        if (targetReg == REG_NA) // store into stack based LclVar
+        if (targetType == TYP_LONG)
         {
-            inst_set_SV_var(tree);
-
-            instruction ins  = ins_Store(targetType);
-            emitAttr    attr = emitTypeSize(targetType);
-
-            emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
-
-            // Updating variable liveness after instruction was emitted
-            genUpdateLife(tree);
-
-            varDsc->SetRegNum(REG_STK);
+            genStoreLongLclVar(tree);
         }
-        else // store into register (i.e move into register)
+        else
         {
-            if (dataReg != targetReg)
+            genConsumeRegs(data);
+
+            assert(!data->isContained());
+            regNumber dataReg = data->GetRegNum();
+            assert(dataReg != REG_NA);
+
+            regNumber targetReg = tree->GetRegNum();
+
+            if (targetReg == REG_NA) // store into stack based LclVar
             {
-                // Assign into targetReg when dataReg (from op1) is not the same register
-                inst_RV_RV(ins_Copy(targetType), targetReg, dataReg, targetType);
+                inst_set_SV_var(tree);
+
+                instruction ins  = ins_Store(targetType);
+                emitAttr    attr = emitTypeSize(targetType);
+
+                emitter* emit = GetEmitter();
+                emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
+
+                // Updating variable liveness after instruction was emitted
+                genUpdateLife(tree);
+
+                varDsc->SetRegNum(REG_STK);
             }
-            genProduceReg(tree);
+            else // store into register (i.e move into register)
+            {
+                if (dataReg != targetReg)
+                {
+                    // Assign into targetReg when dataReg (from op1) is not the same register
+                    inst_RV_RV(ins_Copy(targetType), targetReg, dataReg, targetType);
+                }
+                genProduceReg(tree);
+            }
         }
     }
 }
