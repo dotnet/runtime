@@ -55,6 +55,20 @@ namespace System.Text.Tests
             }
         }
 
+        public static bool IsLatin1(this Encoding encoding)
+        {
+            return encoding != null
+                && encoding.CodePage == 28591; // hardcoded Latin-1 code page
+        }
+
+        public static bool IsLatin1BestFitFallback(this EncoderFallback fallback)
+        {
+            // We rely on the type name because the type itself isn't public.
+
+            return fallback != null
+                && fallback.GetType().Name == "EncoderLatin1BestFitFallback";
+        }
+
         private static unsafe void VerifyGetBytes(Encoding encoding, string source, int index, int count, byte[] bytes, int byteIndex, byte[] expectedBytes)
         {
             byte[] originalBytes = (byte[])bytes.Clone();

@@ -101,13 +101,52 @@ namespace System.Text.Tests
 
         private static byte[] GetBytes(string source, int index, int count)
         {
-            byte[] bytes = new byte[count];
+            return NarrowCharsToBytesWithReplacement(source.AsSpan(index, count));
+        }
+
+        private static byte[] NarrowCharsToBytesWithReplacement(ReadOnlySpan<char> source)
+        {
+            byte[] bytes = new byte[source.Length];
             for (int i = 0; i < bytes.Length; i++)
             {
-                char c = source[i + index];
+                char c = source[i];
                 bytes[i] = c <= 0xFF ? (byte)c : (byte)'?';
             }
             return bytes;
+        }
+
+        [Theory]
+        [MemberData(nameof(Encode_ReplacesSurrogatesWithQuestionMark_TestData))]
+        public void Encode_ReplacesSurrogatesWithQuestionMark(Encoding encoding)
+        {
+            char[] testInput = "\U0001F603abc\U0001F603".ToCharArray(); // U+1F603 = SMILING FACE WITH OPEN MOUTH
+            byte[] expectedBytes = NarrowCharsToBytesWithReplacement(testInput);
+
+            // First, test Encoding.GetBytes(char[]).
+
+            Assert.Equal(expectedBytes, encoding.GetBytes(testInput));
+
+            // Next, try using the encoder fallback mechanism.
+
+            Encoder encoder = encoding.GetEncoder();
+            Assert.NotNull(encoder);
+
+            byte[] outputBuffer = new byte[7];
+            encoder.Convert(testInput, outputBuffer.AsSpan(0, 5), false /* flush */, out int charsConsumed, out int bytesWritten, out bool completed);
+            Assert.Equal(5, bytesWritten);
+            Assert.False(completed);
+
+            encoder.Convert(testInput.AsSpan(charsConsumed), outputBuffer.AsSpan(bytesWritten), true /* flush */, out charsConsumed, out bytesWritten, out completed);
+            Assert.Equal(2, bytesWritten);
+            Assert.True(completed);
+
+            Assert.Equal(expectedBytes, outputBuffer);
+        }
+
+        public static IEnumerable<object[]> Encode_ReplacesSurrogatesWithQuestionMark_TestData()
+        {
+            yield return new object[] { Encoding.GetEncoding("latin1") }; // uses best fit encoding by default
+            yield return new object[] { Encoding.GetEncoding("latin1", EncoderFallback.ReplacementFallback, DecoderFallback.ExceptionFallback) };
         }
     }
 }

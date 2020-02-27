@@ -1417,7 +1417,7 @@ namespace System.Text
                     }
                 }
 
-                // Build up the UTF-8 vector and perform the store.
+                // Build up the ASCII vector and perform the store.
 
                 asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorSecond);
 

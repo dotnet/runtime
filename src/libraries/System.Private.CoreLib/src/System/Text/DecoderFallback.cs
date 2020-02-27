@@ -11,15 +11,12 @@ namespace System.Text
 {
     public abstract class DecoderFallback
     {
-        private static DecoderFallback? s_replacementFallback; // Default fallback, uses no best fit & "?"
-        private static DecoderFallback? s_exceptionFallback;
+        // Default fallback, uses no best fit & "?"
+        private static readonly DecoderReplacementFallback s_replacementFallback = new DecoderReplacementFallback();
+        public static DecoderFallback ReplacementFallback => s_replacementFallback;
 
-        public static DecoderFallback ReplacementFallback =>
-            s_replacementFallback ?? Interlocked.CompareExchange(ref s_replacementFallback, new DecoderReplacementFallback(), null) ?? s_replacementFallback;
-
-
-        public static DecoderFallback ExceptionFallback =>
-            s_exceptionFallback ?? Interlocked.CompareExchange<DecoderFallback?>(ref s_exceptionFallback, new DecoderExceptionFallback(), null) ?? s_exceptionFallback;
+        private static readonly DecoderExceptionFallback s_exceptionFallback = new DecoderExceptionFallback();
+        public static DecoderFallback ExceptionFallback => s_exceptionFallback;
 
         // Fallback
         //
