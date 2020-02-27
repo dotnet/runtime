@@ -24,7 +24,7 @@ AssemblyNameIndex::AssemblyNameIndex(const SString& name, int32_t index)
 
 NativeImage::NativeImage(
     PEFile *pPeFile,
-    PEImage *pPeImage,
+    PEImageLayout *pPeImageLayout,
     READYTORUN_HEADER *pHeader,
     LPCUTF8 nativeImageName,
     LoaderAllocator *pLoaderAllocator,
@@ -41,16 +41,16 @@ NativeImage::NativeImage(
 
     LoaderHeap *pHeap = pLoaderAllocator->GetHighFrequencyHeap();
     m_utf8SimpleName = nativeImageName;
-    m_pPeImage = pPeImage;
+    m_pPeImageLayout = pPeImageLayout;
     m_eagerFixupsHaveRun = false;
     
     m_pReadyToRunInfo.Assign(new (amTracker.Track(pHeap->AllocMem((S_SIZE_T)sizeof(ReadyToRunInfo))))
-        ReadyToRunInfo(/*pModule*/ NULL, pPeImage->GetLoadedLayout(), pHeader, /*compositeImage*/ NULL, &amTracker), /*takeOwnership*/ TRUE);
+        ReadyToRunInfo(/*pModule*/ NULL, pPeImageLayout, pHeader, /*compositeImage*/ NULL, &amTracker), /*takeOwnership*/ TRUE);
     m_pComponentAssemblies = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ComponentAssemblies);
     m_componentAssemblyCount = m_pComponentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY);
     
     // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
-    m_pManifestMetadata = pPeImage->GetNativeMDImport();
+    m_pManifestMetadata = LoadManifestMetadata();
 
     HENUMInternal assemblyEnum;
     HRESULT hr = m_pManifestMetadata->EnumAllInit(mdtAssemblyRef, &assemblyEnum);
@@ -73,17 +73,17 @@ bool NativeImage::Matches(LPCUTF8 utf8SimpleName) const
 
 NativeImage *NativeImage::Open(
     PEFile *pPeFile,
-    PEImage *pPeImage,
+    PEImageLayout *pPeImageLayout,
     LPCUTF8 nativeImageName,
     LoaderAllocator *pLoaderAllocator)
 {
-    READYTORUN_HEADER *pHeader = pPeImage->GetLoadedLayout()->GetReadyToRunHeader();
+    READYTORUN_HEADER *pHeader = pPeImageLayout->GetReadyToRunHeader();
     if (pHeader == NULL)
     {
         return NULL;
     }
     AllocMemTracker amTracker;
-    NativeImage *result = new NativeImage(pPeFile, pPeImage, pHeader, nativeImageName, pLoaderAllocator, amTracker);
+    NativeImage *result = new NativeImage(pPeFile, pPeImageLayout, pHeader, nativeImageName, pLoaderAllocator, amTracker);
     amTracker.SuppressRelease();
     return result;
 }
@@ -106,11 +106,32 @@ PTR_READYTORUN_CORE_HEADER NativeImage::GetComponentAssemblyHeader(const SString
     const AssemblyNameIndex *assemblyNameIndex = m_assemblySimpleNameToIndexMap.Lookup(simpleName);
     if (assemblyNameIndex != NULL)
     {
-        const BYTE *pImageBase = (const BYTE *)m_pPeImage->GetLoadedLayout()->GetBase();
+        const BYTE *pImageBase = (const BYTE *)m_pPeImageLayout->GetBase();
         const READYTORUN_COMPONENT_ASSEMBLIES_ENTRY *componentAssembly =
             (const READYTORUN_COMPONENT_ASSEMBLIES_ENTRY *)&pImageBase[m_pComponentAssemblies->VirtualAddress] + assemblyNameIndex->Index;
         return (PTR_READYTORUN_CORE_HEADER)&pImageBase[componentAssembly->ReadyToRunCoreHeader.VirtualAddress];
     }
 #endif
     return NULL;
+}
+
+IMDInternalImport *NativeImage::LoadManifestMetadata()
+{
+    IMAGE_DATA_DIRECTORY *pMeta = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ManifestMetadata);
+
+    if (pMeta == NULL)
+    {
+        return NULL;
+    }
+
+    IMDInternalImport *pNewImport = NULL;
+#ifndef DACCESS_COMPILE
+    IfFailThrow(GetMetaDataInternalInterface((BYTE *)m_pPeImageLayout->GetBase() + VAL32(pMeta->VirtualAddress),
+                                             VAL32(pMeta->Size),
+                                             ofRead,
+                                             IID_IMDInternalImport,
+                                             (void **) &pNewImport));
+
+#endif
+    return pNewImport;
 }

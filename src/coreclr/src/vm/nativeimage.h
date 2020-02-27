@@ -51,7 +51,7 @@ private:
     
     NewHolder<ReadyToRunInfo> m_pReadyToRunInfo;
     IMDInternalImport *m_pManifestMetadata;
-    PEImage *m_pPeImage;
+    PEImageLayout *m_pPeImageLayout;
     
     IMAGE_DATA_DIRECTORY *m_pComponentAssemblies;
     uint32_t m_componentAssemblyCount;
@@ -63,7 +63,7 @@ private:
 private:
     NativeImage(
         PEFile *peFile,
-        PEImage *peImage,
+        PEImageLayout *peImageLayout,
         READYTORUN_HEADER *header,
         LPCUTF8 nativeImageName,
         LoaderAllocator *loaderAllocator,
@@ -72,7 +72,7 @@ private:
 public:
     static NativeImage *Open(
         PEFile *pPeFile,
-        PEImage *pPeImage,
+        PEImageLayout *pPeImageLayout,
         LPCUTF8 nativeImageName,
         LoaderAllocator *pLoaderAllocator);
 
@@ -89,6 +89,9 @@ public:
     Assembly *LoadComponentAssembly(uint32_t rowid);
     
     PTR_READYTORUN_CORE_HEADER GetComponentAssemblyHeader(const SString& assemblySimpleName);
+    
+private:
+    IMDInternalImport *LoadManifestMetadata();
 };
 
 #endif

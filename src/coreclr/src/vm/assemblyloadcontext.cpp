@@ -51,7 +51,7 @@ NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUT
     PTR_PEImage peImage = PEImage::OpenImage(fullPath);
     PTR_PEFile peFile = PEFile::Open(peImage);
 
-    NativeImage *nativeImage = NativeImage::Open(peFile, peImage, nativeImageName, moduleLoaderAllocator);
+    NativeImage *nativeImage = NativeImage::Open(peFile, peImage->GetLoadedLayout(), nativeImageName, moduleLoaderAllocator);
     if (nativeImage != NULL)
     {
         m_nativeImages.Append(nativeImage);
