@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     {
 
 #if CBOR_PROPERTY_TESTS
-        private const string ReplaySeed = "";
+        private const string ReplaySeed = "(0,0)"; // set a seed for deterministic runs
         private const int MaxTests = 10_000;
 #endif
 
