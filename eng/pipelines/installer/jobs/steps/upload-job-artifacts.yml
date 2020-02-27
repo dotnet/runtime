@@ -33,10 +33,10 @@ steps:
   continueOnError: true
   condition: succeededOrFailed()
 
-- task: PublishBuildArtifacts@1
+- task: PublishPipelineArtifact@1
   displayName: Publish BuildLogs
   inputs:
-    PathtoPublish: '$(Build.StagingDirectory)/BuildLogs'
-    ArtifactName: Installer-Logs-${{ parameters.name }}-$(_BuildConfig)
+    targetPath: '$(Build.StagingDirectory)/BuildLogs'
+    artifactName: Installer-Logs-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
   condition: succeededOrFailed()

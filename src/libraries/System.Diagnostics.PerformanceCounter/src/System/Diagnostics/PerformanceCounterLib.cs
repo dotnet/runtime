@@ -465,9 +465,11 @@ namespace System.Diagnostics
                         foreach (CounterCreationData counterData in creationData)
                         {
                             ++counterIndex;
+                            string counterIndexString = counterIndex.ToString(CultureInfo.InvariantCulture);
+
                             iniWriter.WriteLine("");
                             iniWriter.Write(ConterSymbolPrefix);
-                            iniWriter.Write(counterIndex.ToString(CultureInfo.InvariantCulture));
+                            iniWriter.Write(counterIndexString);
                             iniWriter.Write("_");
                             iniWriter.Write(languageId);
                             iniWriter.Write(NameSufix);
@@ -475,7 +477,7 @@ namespace System.Diagnostics
                             iniWriter.WriteLine(counterData.CounterName);
 
                             iniWriter.Write(ConterSymbolPrefix);
-                            iniWriter.Write(counterIndex.ToString(CultureInfo.InvariantCulture));
+                            iniWriter.Write(counterIndexString);
                             iniWriter.Write("_");
                             iniWriter.Write(languageId);
                             iniWriter.Write(HelpSufix);

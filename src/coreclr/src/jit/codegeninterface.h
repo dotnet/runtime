@@ -26,11 +26,11 @@
 #include "treelifeupdater.h"
 #include "emit.h"
 
-#if 1
+#if 0
 // Enable USING_SCOPE_INFO flag to use psiScope/siScope info to report variables' locations.
 #define USING_SCOPE_INFO
 #endif
-#if 0
+#if 1
 // Enable USING_VARIABLE_LIVE_RANGE flag to use VariableLiveRange info to report variables' locations.
 // Note: if both USING_SCOPE_INFO and USING_VARIABLE_LIVE_RANGE are defined, then USING_SCOPE_INFO
 // information is reported to the debugger.
@@ -65,6 +65,11 @@ class CodeGenInterface
 public:
     CodeGenInterface(Compiler* theCompiler);
     virtual void genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode) = 0;
+
+    Compiler* GetCompiler() const
+    {
+        return compiler;
+    }
 
     // genSpillVar is called by compUpdateLifeVar.
     // TODO-Cleanup: We should handle the spill directly in CodeGen, rather than

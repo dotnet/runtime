@@ -98,7 +98,7 @@ namespace System.Runtime.CompilerServices
             AwaitUnsafeOnCompleted(ref awaiter, box);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)] // workaround boxing allocations in Tier0: https://github.com/dotnet/coreclr/issues/14474
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)] // workaround boxing allocations in Tier0: https://github.com/dotnet/runtime/issues/9120
         internal static void AwaitUnsafeOnCompleted<TAwaiter>(
             ref TAwaiter awaiter, IAsyncStateMachineBox box)
             where TAwaiter : ICriticalNotifyCompletion

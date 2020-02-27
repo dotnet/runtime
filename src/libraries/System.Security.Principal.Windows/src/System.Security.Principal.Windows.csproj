@@ -4,7 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(TargetsNetFx)' == 'true'">true</OmitResources>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_Principal</GeneratePlatformNotSupportedAssemblyMessage>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;netstandard2.0;netcoreapp2.0-Windows_NT;netcoreapp2.0-Unix;netcoreapp2.1-Windows_NT;netcoreapp2.1-Unix;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
@@ -12,11 +11,12 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsWindows)' != 'true'">
-    <!-- Work around reference source generation issue with 'notsupported' implementations -->
+    <!-- Work around 'notsupported.cs' source generation of explicit interface implementations issue -->
+    <!-- https://github.com/dotnet/arcade/issues/4722 -->
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_Principal</GeneratePlatformNotSupportedAssemblyMessage>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
-  
+
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeAccessTokenHandle.cs" />
     <Compile Include="System\Security\Principal\IdentityNotMappedException.cs" />

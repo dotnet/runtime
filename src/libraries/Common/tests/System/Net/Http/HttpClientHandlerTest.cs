@@ -717,7 +717,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler)
             {
-                return; // see https://github.com/dotnet/corefx/issues/39136#issuecomment-508330958
+                return; // see https://github.com/dotnet/runtime/issues/30115#issuecomment-508330958
             }
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -2365,7 +2365,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         // .NET Framework also allows the HttpWebRequest and HttpClient APIs to send a request using 'TRACE'
                         // verb and a request body. The usual response from a server is "400 Bad Request".
-                        // See here for more info: https://github.com/dotnet/corefx/issues/9023
+                        // See here for more info: https://github.com/dotnet/runtime/issues/17475
                         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
                     }
                     else
@@ -2541,7 +2541,7 @@ namespace System.Net.Http.Functional.Tests
         }
 #endregion
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public async Task GetAsync_InvalidUrl_ExpectedExceptionThrown()
         {
             string invalidUri = $"http://{Configuration.Sockets.InvalidHost}";

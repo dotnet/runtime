@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System
@@ -12,6 +11,7 @@ namespace System
     {
         //
         // Checks if provided non surrogate char lies in iri range
+        // This method implements the ABNF checks per https://tools.ietf.org/html/rfc3987#section-2.2
         //
         internal static bool CheckIriUnicodeRange(char unicode, bool isQuery)
         {
@@ -25,58 +25,27 @@ namespace System
         // Check if highSurr and lowSurr are a surrogate pair then
         // it checks if the combined char is in the range
         // Takes in isQuery because iri restrictions for query are different
+        // This method implements the ABNF checks per https://tools.ietf.org/html/rfc3987#section-2.2
         //
-        internal static bool CheckIriUnicodeRange(char highSurr, char lowSurr, ref bool surrogatePair, bool isQuery)
+        internal static bool CheckIriUnicodeRange(char highSurr, char lowSurr, out bool isSurrogatePair, bool isQuery)
         {
-            bool inRange = false;
-            surrogatePair = false;
-
             Debug.Assert(char.IsHighSurrogate(highSurr));
 
-            if (char.IsSurrogatePair(highSurr, lowSurr))
+            if (Rune.TryCreate(highSurr, lowSurr, out Rune rune))
             {
-                surrogatePair = true;
-                ReadOnlySpan<char> chars = stackalloc char[2] { highSurr, lowSurr };
-                string surrPair = new string(chars);
-                if (((string.CompareOrdinal(surrPair, "\U00010000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0001FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00020000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0002FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00030000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0003FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00040000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0004FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00050000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0005FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00060000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0006FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00070000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0007FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00080000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0008FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U00090000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U0009FFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U000A0000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U000AFFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U000B0000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U000BFFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U000C0000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U000CFFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U000D0000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U000DFFFD") <= 0)) ||
-                    ((string.CompareOrdinal(surrPair, "\U000E1000") >= 0)
-                        && (string.CompareOrdinal(surrPair, "\U000EFFFD") <= 0)) ||
-                    (isQuery &&
-                        (((string.CompareOrdinal(surrPair, "\U000F0000") >= 0)
-                            && (string.CompareOrdinal(surrPair, "\U000FFFFD") <= 0)) ||
-                            ((string.CompareOrdinal(surrPair, "\U00100000") >= 0)
-                            && (string.CompareOrdinal(surrPair, "\U0010FFFD") <= 0)))))
-                {
-                    inRange = true;
-                }
+                isSurrogatePair = true;
+
+                // U+xxFFFE..U+xxFFFF is always private use for all planes, so we exclude it.
+                // U+E0000..U+E0FFF is disallowed per the 'ucschar' definition in the ABNF.
+                // U+F0000 and above are only allowed for 'iprivate' per the ABNF (isQuery = true).
+
+                return ((rune.Value & 0xFFFF) < 0xFFFE)
+                    && ((uint)(rune.Value - 0xE0000) >= (0xE1000 - 0xE0000))
+                    && (isQuery || rune.Value < 0xF0000);
             }
 
-            return inRange;
+            isSurrogatePair = false;
+            return false;
         }
 
         //
@@ -84,19 +53,12 @@ namespace System
         //
         internal static bool CheckIsReserved(char ch, UriComponents component)
         {
-            if ((component != UriComponents.Scheme) &&
-                    (component != UriComponents.UserInfo) &&
-                    (component != UriComponents.Host) &&
-                    (component != UriComponents.Port) &&
-                    (component != UriComponents.Path) &&
-                    (component != UriComponents.Query) &&
-                    (component != UriComponents.Fragment)
-                )
+            if ((UriComponents.AbsoluteUri & component) == 0)
             {
-                return (component == (UriComponents)0) ? UriHelper.IsGenDelim(ch) : false;
+                return component == 0 && UriHelper.IsGenDelim(ch);
             }
 
-            return UriHelper.RFC3986ReservedMarks.IndexOf(ch) >= 0;
+            return UriHelper.RFC3986ReservedMarks.Contains(ch);
         }
 
         //
@@ -150,7 +112,7 @@ namespace System
                             int startSeq = next;
                             int byteCount = 1;
                             // lazy initialization of max size, will reuse the array for next sequences
-                            if ((object?)bytes == null)
+                            if (bytes is null)
                                 bytes = new byte[end - next];
 
                             bytes[0] = (byte)ch;
@@ -220,7 +182,7 @@ namespace System
                 {
                     // unicode
 
-                    bool escape;
+                    bool isInIriUnicodeRange;
                     bool surrogatePair = false;
 
                     char ch2 = '\0';
@@ -228,14 +190,22 @@ namespace System
                     if ((char.IsHighSurrogate(ch)) && (next + 1 < end))
                     {
                         ch2 = pInput[next + 1];
-                        escape = !CheckIriUnicodeRange(ch, ch2, ref surrogatePair, component == UriComponents.Query);
+                        isInIriUnicodeRange = CheckIriUnicodeRange(ch, ch2, out surrogatePair, component == UriComponents.Query);
                     }
                     else
                     {
-                        escape = !CheckIriUnicodeRange(ch, component == UriComponents.Query);
+                        isInIriUnicodeRange = CheckIriUnicodeRange(ch, component == UriComponents.Query);
                     }
 
-                    if (escape)
+                    if (isInIriUnicodeRange)
+                    {
+                        dest.Append(ch);
+                        if (surrogatePair)
+                        {
+                            dest.Append(ch2);
+                        }
+                    }
+                    else
                     {
                         Rune rune;
                         if (surrogatePair)
@@ -253,14 +223,6 @@ namespace System
                         foreach (byte b in encodedBytes)
                         {
                             UriHelper.EscapeAsciiChar(b, ref dest);
-                        }
-                    }
-                    else
-                    {
-                        dest.Append(ch);
-                        if (surrogatePair)
-                        {
-                            dest.Append(ch2);
                         }
                     }
 

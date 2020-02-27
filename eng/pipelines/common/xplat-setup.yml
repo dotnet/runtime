@@ -97,6 +97,7 @@ jobs:
           name: NetCorePublic-Pool
           queue: BuildPool.Windows.10.Amd64.VS2019.Open
 
+
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
       ${{ insert }}: ${{ parameters.jobParameters }}
     ${{ if ne(parameters.helixQueuesTemplate, '') }}:

@@ -8,7 +8,7 @@ namespace System.Data.Odbc.Tests
 {
     public class ReaderTests : IntegrationTestBase
     {
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/runtime/issues/20097.")]
         public void EmptyReader()
         {
             command.CommandText =
@@ -42,7 +42,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/runtime/issues/20097.")]
         public void GetValues()
         {
             command.CommandText =
@@ -75,7 +75,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/runtime/issues/20097.")]
         public void GetValueFailsWithBigIntWithBackwardsCompatibility()
         {
             command.CommandText =
@@ -110,7 +110,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/runtime/issues/20097.")]
         public void GetDataTypeName()
         {
             command.CommandText =
@@ -136,7 +136,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/runtime/issues/20097.")]
         public void GetFieldTypeIsNotSupportedInSqlite()
         {
             command.CommandText =
@@ -167,7 +167,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/runtime/issues/20097.")]
         public void IsDbNullIsNotSupportedInSqlite()
         {
             command.CommandText =
@@ -198,7 +198,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/runtime/issues/20097.")]
         public void InvalidRowIndex()
         {
             command.CommandText =
@@ -230,7 +230,7 @@ namespace System.Data.Odbc.Tests
             }
         }
 
-        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/corefx/issues/15776.")]
+        [Fact(Skip = "Native dependencies missing in CI. See https://github.com/dotnet/runtime/issues/20097.")]
         public void InvalidRowName()
         {
             command.CommandText =

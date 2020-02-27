@@ -156,13 +156,13 @@ namespace System.Security.Cryptography
     public partial struct DSAParameters
     {
         public int Counter;
-        public byte[] G;
+        public byte[]? G;
         public byte[]? J;
-        public byte[] P;
-        public byte[] Q;
+        public byte[]? P;
+        public byte[]? Q;
         public byte[]? Seed;
         public byte[]? X;
-        public byte[] Y;
+        public byte[]? Y;
     }
     public partial class DSASignatureDeformatter : System.Security.Cryptography.AsymmetricSignatureDeformatter
     {
@@ -184,15 +184,15 @@ namespace System.Security.Cryptography
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public byte[] A;
-        public byte[] B;
+        public byte[]? A;
+        public byte[]? B;
         public byte[]? Cofactor;
         public System.Security.Cryptography.ECCurve.ECCurveType CurveType;
         public System.Security.Cryptography.ECPoint G;
         public System.Security.Cryptography.HashAlgorithmName? Hash;
-        public byte[] Order;
-        public byte[] Polynomial;
-        public byte[] Prime;
+        public byte[]? Order;
+        public byte[]? Polynomial;
+        public byte[]? Prime;
         public byte[]? Seed;
         public bool IsCharacteristic2 { get { throw null; } }
         public bool IsExplicit { get { throw null; } }
@@ -332,14 +332,14 @@ namespace System.Security.Cryptography
         public byte[]? X;
         public byte[]? Y;
     }
-    public static class HKDF
+    public static partial class HKDF
     {
-        public static byte[] Extract(HashAlgorithmName hashAlgorithmName, byte[] ikm, byte[]? salt = null) { throw null; }
-        public static int Extract(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk) { throw null; }
-        public static byte[] Expand(HashAlgorithmName hashAlgorithmName, byte[] prk, int outputLength, byte[]? info = null) { throw null; }
-        public static void Expand(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) { throw null; }
-        public static byte[] DeriveKey(HashAlgorithmName hashAlgorithmName, byte[] ikm, int outputLength, byte[]? salt = null, byte[]? info = null) { throw null; }
-        public static void DeriveKey(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info) { throw null; }
+        public static byte[] DeriveKey(System.Security.Cryptography.HashAlgorithmName hashAlgorithmName, byte[] ikm, int outputLength, byte[]? salt = null, byte[]? info = null) { throw null; }
+        public static void DeriveKey(System.Security.Cryptography.HashAlgorithmName hashAlgorithmName, System.ReadOnlySpan<byte> ikm, System.Span<byte> output, System.ReadOnlySpan<byte> salt, System.ReadOnlySpan<byte> info) { }
+        public static byte[] Expand(System.Security.Cryptography.HashAlgorithmName hashAlgorithmName, byte[] prk, int outputLength, byte[]? info = null) { throw null; }
+        public static void Expand(System.Security.Cryptography.HashAlgorithmName hashAlgorithmName, System.ReadOnlySpan<byte> prk, System.Span<byte> output, System.ReadOnlySpan<byte> info) { }
+        public static byte[] Extract(System.Security.Cryptography.HashAlgorithmName hashAlgorithmName, byte[] ikm, byte[]? salt = null) { throw null; }
+        public static int Extract(System.Security.Cryptography.HashAlgorithmName hashAlgorithmName, System.ReadOnlySpan<byte> ikm, System.ReadOnlySpan<byte> salt, System.Span<byte> prk) { throw null; }
     }
     public partial class HMACMD5 : System.Security.Cryptography.HMAC
     {
@@ -601,9 +601,9 @@ namespace System.Security.Cryptography
         public byte[]? D;
         public byte[]? DP;
         public byte[]? DQ;
-        public byte[] Exponent;
+        public byte[]? Exponent;
         public byte[]? InverseQ;
-        public byte[] Modulus;
+        public byte[]? Modulus;
         public byte[]? P;
         public byte[]? Q;
     }

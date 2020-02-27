@@ -3693,8 +3693,6 @@ mini_parse_debug_option (const char *option)
 		mini_debug_options.gdb = TRUE;
 	else if (!strcmp (option, "lldb"))
 		mini_debug_options.lldb = TRUE;
-	else if (!strcmp (option, "llvm-disable-self-init"))
-		mini_debug_options.llvm_disable_self_init = TRUE;
 	else if (!strcmp (option, "llvm-disable-inlining"))
 		mini_debug_options.llvm_disable_inlining = TRUE;
 	else if (!strcmp (option, "llvm-disable-implicit-null-checks"))
@@ -4012,9 +4010,6 @@ mini_free_jit_domain_info (MonoDomain *domain)
 static gboolean
 llvm_init_inner (void)
 {
-	if (!mono_llvm_load (NULL))
-		return FALSE;
-
 	mono_llvm_init (!mono_compile_aot);
 	return TRUE;
 }
@@ -4263,12 +4258,6 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 #ifdef ENABLE_LLVM
-	if (mono_use_llvm) {
-		if (!mono_llvm_load (NULL)) {
-			mono_use_llvm = FALSE;
-			fprintf (stderr, "Mono Warning: llvm support could not be loaded.\n");
-		}
-	}
 	if (mono_use_llvm)
 		mono_llvm_init (!mono_compile_aot);
 #endif
@@ -4451,7 +4440,7 @@ register_icalls (void)
 	register_icall (mono_llvm_clear_exception, NULL, TRUE);
 	register_icall (mono_llvm_load_exception, mono_icall_sig_object, TRUE);
 	register_icall (mono_llvm_throw_corlib_exception, mono_icall_sig_void_int, TRUE);
-#if defined(ENABLE_LLVM) && !defined(MONO_LLVM_LOADED) && defined(HAVE_UNWIND_H)
+#if defined(ENABLE_LLVM) && defined(HAVE_UNWIND_H)
 	register_icall (mono_llvm_set_unhandled_exception_handler, NULL, TRUE);
 
 	// FIXME: This is broken

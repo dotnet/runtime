@@ -142,6 +142,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31792", TestRuntimes.Mono)]
         [Trait("Type", "Integration")]
         public void ImportCollectionsFromContainerOnly()
         {
@@ -162,7 +163,7 @@ namespace System.ComponentModel.Composition
 
         [Fact]
         [Trait("Type", "Integration")]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ImportCollectionsFromCatalogOnly()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -178,7 +179,7 @@ namespace System.ComponentModel.Composition
 
         [Fact]
         [Trait("Type", "Integration")]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ImportCollectionsFormContainerAndCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();

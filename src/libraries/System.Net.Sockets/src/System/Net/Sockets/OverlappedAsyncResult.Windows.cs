@@ -15,16 +15,16 @@ namespace System.Net.Sockets
     internal partial class OverlappedAsyncResult : BaseOverlappedAsyncResult
     {
         internal WSABuffer _singleBuffer;
-        internal WSABuffer[] _wsaBuffers;
+        internal WSABuffer[]? _wsaBuffers;
 
         internal IntPtr GetSocketAddressPtr()
         {
-            return Marshal.UnsafeAddrOfPinnedArrayElement(_socketAddress.Buffer, 0);
+            return Marshal.UnsafeAddrOfPinnedArrayElement(_socketAddress!.Buffer, 0);
         }
 
         internal IntPtr GetSocketAddressSizePtr()
         {
-            return Marshal.UnsafeAddrOfPinnedArrayElement(_socketAddress.Buffer, _socketAddress.GetAddressSizeOffset());
+            return Marshal.UnsafeAddrOfPinnedArrayElement(_socketAddress!.Buffer, _socketAddress.GetAddressSizeOffset());
         }
 
         internal unsafe int GetSocketAddressSize()
@@ -38,14 +38,13 @@ namespace System.Net.Sockets
         // These calls are outside the runtime and are unmanaged code, so we need
         // to prepare specific structures and ints that lie in unmanaged memory
         // since the overlapped calls may complete asynchronously.
-        internal void SetUnmanagedStructures(byte[] buffer, int offset, int size, Internals.SocketAddress socketAddress)
+        internal void SetUnmanagedStructures(byte[] buffer, int offset, int size, Internals.SocketAddress? socketAddress)
         {
             // Fill in Buffer Array structure that will be used for our send/recv Buffer
             _socketAddress = socketAddress;
             if (_socketAddress != null)
             {
-                object[] objectsToPin = null;
-                objectsToPin = new object[2];
+                object[] objectsToPin = new object[2];
                 objectsToPin[0] = buffer;
 
                 _socketAddress.CopyAddressSizeIntoBuffer();
@@ -81,7 +80,7 @@ namespace System.Net.Sockets
             object[] objectsToPin = new object[count];
             for (int i = 0; i < count; i++)
             {
-                objectsToPin[i] = buffersCopy[i].Array;
+                objectsToPin[i] = buffersCopy[i].Array!;
             }
 
             base.SetUnmanagedStructures(objectsToPin);
@@ -89,7 +88,7 @@ namespace System.Net.Sockets
             for (int i = 0; i < count; i++)
             {
                 _wsaBuffers[i].Length = buffersCopy[i].Count;
-                _wsaBuffers[i].Pointer = Marshal.UnsafeAddrOfPinnedArrayElement(buffersCopy[i].Array, buffersCopy[i].Offset);
+                _wsaBuffers[i].Pointer = Marshal.UnsafeAddrOfPinnedArrayElement(buffersCopy[i].Array!, buffersCopy[i].Offset);
             }
         }
 
@@ -98,7 +97,7 @@ namespace System.Net.Sockets
         // 1) completed synchronously.
         // 2) was pended.
         // 3) failed.
-        internal override object PostCompletion(int numBytes)
+        internal override object? PostCompletion(int numBytes)
         {
             if (ErrorCode == 0 && NetEventSource.IsEnabled)
             {

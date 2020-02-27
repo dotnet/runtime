@@ -5296,7 +5296,7 @@ namespace System.Diagnostics.Tracing
             sb.AppendLine(" <instrumentation xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:win=\"http://manifests.microsoft.com/win/2004/08/windows/events\">");
             sb.AppendLine("  <events xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
             sb.Append("<provider name=\"").Append(providerName).
-               Append("\" guid=\"{").Append(providerGuid.ToString()).Append("}");
+               Append("\" guid=\"{").Append(providerGuid.ToString()).Append('}');
             if (dllName != null)
                 sb.Append("\" resourceFileName=\"").Append(dllName).Append("\" messageFileName=\"").Append(dllName);
 

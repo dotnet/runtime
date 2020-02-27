@@ -71,11 +71,19 @@ inline bool registerTypesEquivalent(RegisterType a, RegisterType b)
 }
 
 //------------------------------------------------------------------------
-// registerTypesEquivalent: Get the set of callee-save registers of the given RegisterType
+// calleeSaveRegs: Get the set of callee-save registers of the given RegisterType
 //
 inline regMaskTP calleeSaveRegs(RegisterType rt)
 {
     return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_SAVED : RBM_FLT_CALLEE_SAVED;
+}
+
+//------------------------------------------------------------------------
+// callerSaveRegs: Get the set of caller-save registers of the given RegisterType
+//
+inline regMaskTP callerSaveRegs(RegisterType rt)
+{
+    return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_TRASH : RBM_FLT_CALLEE_TRASH;
 }
 
 //------------------------------------------------------------------------
@@ -380,10 +388,11 @@ struct LsraBlockInfo
     // 0 for fgFirstBB.
     unsigned int         predBBNum;
     BasicBlock::weight_t weight;
-    bool                 hasCriticalInEdge;
-    bool                 hasCriticalOutEdge;
-    bool                 hasEHBoundaryIn;
-    bool                 hasEHBoundaryOut;
+    bool                 hasCriticalInEdge : 1;
+    bool                 hasCriticalOutEdge : 1;
+    bool                 hasEHBoundaryIn : 1;
+    bool                 hasEHBoundaryOut : 1;
+    bool                 hasEHPred : 1;
 
 #if TRACK_LSRA_STATS
     // Per block maintained LSRA statistics.
@@ -447,7 +456,6 @@ public:
         firstRefPosition  = nullptr;
         recentRefPosition = nullptr;
         lastRefPosition   = nullptr;
-        isActive          = false;
     }
 
     // A linked list of RefPositions.  These are only traversed in the forward
@@ -457,8 +465,6 @@ public:
     RefPosition* firstRefPosition;
     RefPosition* recentRefPosition;
     RefPosition* lastRefPosition;
-
-    bool isActive;
 
     // Get the position of the next reference which is at or greater than
     // the current location (relies upon recentRefPosition being udpated
@@ -1066,7 +1072,16 @@ private:
     // Get the type that this tree defines.
     var_types getDefType(GenTree* tree)
     {
-        return tree->TypeGet();
+        var_types type = tree->TypeGet();
+        if (type == TYP_STRUCT)
+        {
+            assert(tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+            GenTreeLclVar* lclVar = tree->AsLclVar();
+            LclVarDsc*     varDsc = compiler->lvaGetDesc(lclVar);
+            type                  = varDsc->GetRegisterType(lclVar);
+        }
+        assert(type != TYP_UNDEF && type != TYP_STRUCT);
+        return type;
     }
 
     // Managing internal registers during the BuildNode process.
@@ -1372,6 +1387,7 @@ private:
 
     // A map from bbNum to the block information used during register allocation.
     LsraBlockInfo* blockInfo;
+
     BasicBlock* findPredBlockForLiveIn(BasicBlock* block, BasicBlock* prevBlock DEBUGARG(bool* pPredBlockIsAllocated));
 
     // The order in which the blocks will be allocated.
@@ -1399,6 +1415,8 @@ private:
     unsigned int curBBNum;
     // The current location
     LsraLocation currentLoc;
+    // The first location in a cold or funclet block.
+    LsraLocation firstColdLoc;
     // The ordinal of the block we're on (i.e. this is the curBBSeqNum-th block we've allocated).
     unsigned int curBBSeqNum;
     // The number of blocks that we've sequenced.
@@ -1446,6 +1464,8 @@ private:
     VARSET_TP fpCalleeSaveCandidateVars;
     // Set of variables exposed on EH flow edges.
     VARSET_TP exceptVars;
+    // Set of variables exposed on finally edges. These must be zero-init if they are refs or if compInitMem is true.
+    VARSET_TP finallyVars;
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 #if defined(TARGET_AMD64)
@@ -1540,7 +1560,6 @@ private:
     void BuildDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates = RBM_NONE);
     void BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask);
 
-    int BuildStoreLoc(GenTree* tree);
     int BuildReturn(GenTree* tree);
 #ifdef TARGET_XARCH
     // This method, unlike the others, returns the number of sources, since it may be called when
@@ -1624,7 +1643,10 @@ public:
         : registerPreferences(registerPreferences)
         , relatedInterval(nullptr)
         , assignedReg(nullptr)
+        , varNum(0)
+        , physReg(REG_COUNT)
         , registerType(registerType)
+        , isActive(false)
         , isLocalVar(false)
         , isSplit(false)
         , isSpilled(false)
@@ -1640,11 +1662,10 @@ public:
         , isUpperVector(false)
         , isPartiallySpilled(false)
 #endif
-        , physReg(REG_COUNT)
+        , isWriteThru(false)
 #ifdef DEBUG
         , intervalIndex(0)
 #endif
-        , varNum(0)
     {
     }
 
@@ -1672,11 +1693,17 @@ public:
     // register it currently occupies.
     RegRecord* assignedReg;
 
-    // DECIDE : put this in a union or do something w/ inheritance?
-    // this is an interval for a physical register, not a allocatable entity
+    unsigned int varNum; // This is the "variable number": the index into the lvaTable array
+
+    // The register to which it is currently assigned.
+    regNumber physReg;
 
     RegisterType registerType;
-    bool         isLocalVar : 1;
+
+    // Is this Interval currently in a register and live?
+    bool isActive;
+
+    bool isLocalVar : 1;
     // Indicates whether this interval has been assigned to different registers
     bool isSplit : 1;
     // Indicates whether this interval is ever spilled
@@ -1728,14 +1755,12 @@ public:
     }
 #endif
 
-    // The register to which it is currently assigned.
-    regNumber physReg;
+    // True if this interval is associated with a lclVar that is written to memory at each definition.
+    bool isWriteThru : 1;
 
 #ifdef DEBUG
     unsigned int intervalIndex;
 #endif // DEBUG
-
-    unsigned int varNum; // This is the "variable number": the index into the lvaTable array
 
     LclVarDsc* getLocalVar(Compiler* comp)
     {
@@ -1886,8 +1911,8 @@ class RefPosition
 {
 public:
     // A RefPosition refers to either an Interval or a RegRecord. 'referent' points to one
-    // of these types. If it refers to a RegRecord, then 'isPhysRegRef' is true. If it
-    // refers to an Interval, then 'isPhysRegRef' is false.
+    // of these types. If it refers to a RegRecord, then 'isPhysRegRef()' is true. If it
+    // refers to an Interval, then 'isPhysRegRef()' is false.
     // referent can never be null.
 
     Referenceable* referent;
@@ -1951,6 +1976,9 @@ public:
 
     unsigned char reload : 1;
     unsigned char spillAfter : 1;
+    unsigned char writeThru : 1; // true if this var is defined in a register and also spilled. spillAfter must NOT be
+                                 // set.
+
     unsigned char copyReg : 1;
     unsigned char moveReg : 1; // true if this var is moved to a new register
 
@@ -1995,6 +2023,7 @@ public:
         , lastUse(false)
         , reload(false)
         , spillAfter(false)
+        , writeThru(false)
         , copyReg(false)
         , moveReg(false)
         , isPhysRegRef(false)
@@ -2068,6 +2097,11 @@ public:
         }
     }
 
+    bool IsPhysRegRef()
+    {
+        return ((refType == RefTypeFixedReg) || (refType == RefTypeKill));
+    }
+
     void setRegOptional(bool val)
     {
         regOptional = val;
@@ -2102,7 +2136,7 @@ public:
 
     RefPosition* getRangeEndRef()
     {
-        if (lastUse || nextRefPosition == nullptr)
+        if (lastUse || nextRefPosition == nullptr || spillAfter)
         {
             return this;
         }
@@ -2120,14 +2154,7 @@ public:
 
     bool isIntervalRef()
     {
-        return (!isPhysRegRef && (referent != nullptr));
-    }
-
-    // isTrueDef indicates that the RefPosition is a non-update def of a non-internal
-    // interval
-    bool isTrueDef()
-    {
-        return (refType == RefTypeDef && isIntervalRef() && !getInterval()->isInternal);
+        return (!IsPhysRegRef() && (referent != nullptr));
     }
 
     // isFixedRefOfRegMask indicates that the RefPosition has a fixed assignment to the register

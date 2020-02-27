@@ -22,6 +22,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32744", TestRuntimes.Mono)]
         public void RegistrationBuilder_WithExportDelegatesShouldNotThrow()
         {
             var rb = new RegistrationBuilder();

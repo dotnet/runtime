@@ -120,6 +120,10 @@
 #include "mono/metadata/icall-signatures.h"
 #include "mono/utils/mono-signal-handler.h"
 
+#if _MSC_VER
+#pragma warning(disable:4047) // FIXME differs in levels of indirection
+#endif
+
 //#define MONO_DEBUG_ICALLARRAY
 
 #ifdef MONO_DEBUG_ICALLARRAY
@@ -179,22 +183,7 @@ mono_icall_get_file_path_prefix (const gchar *path)
 }
 #endif /* HOST_WIN32 */
 
-#if MONO_LLVM_LOADED
-
-static
 MonoJitICallInfos mono_jit_icall_info;
-
-MonoJitICallInfos*
-mono_get_jit_icall_info (void)
-{
-	return &mono_jit_icall_info;
-}
-
-#else
-
-MonoJitICallInfos mono_jit_icall_info;
-
-#endif
 
 MonoObjectHandle
 ves_icall_System_Array_GetValueImpl (MonoArrayHandle array, guint32 pos, MonoError *error)
@@ -7745,7 +7734,12 @@ ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHa
 	} else {
 		char *msg = mono_string_handle_to_utf8 (message, error);
 		g_warning ("CLR: Managed code called FailFast, saying \"%s\"", msg);
+#ifndef DISABLE_CRASH_REPORTING
+		char *old_msg = mono_crash_save_failfast_msg (msg);
+		g_free (old_msg);
+#else
 		g_free (msg);
+#endif
 	}
 
 	if (!MONO_HANDLE_IS_NULL (exception)) {

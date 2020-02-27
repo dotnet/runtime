@@ -12,8 +12,6 @@ namespace System.Security.Cryptography.Pkcs
         private readonly SignerInfoCollection _signerInfos;
         private int _position;
 
-        private SignerInfoEnumerator() { }
-
         internal SignerInfoEnumerator(SignerInfoCollection signerInfos)
         {
             Debug.Assert(signerInfos != null);

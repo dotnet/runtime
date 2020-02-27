@@ -2176,7 +2176,9 @@ handle_enum:
 		char *str;
 		guint32 slen;
 		if (!arg) {
+MONO_DISABLE_WARNING(4309) // truncation of constant
 			*p++ = 0xFF;
+MONO_RESTORE_WARNING
 			break;
 		}
 		str = mono_string_to_utf8_checked_internal ((MonoString*)arg, error);
@@ -2201,7 +2203,9 @@ handle_enum:
 		guint32 slen;
 		MonoType *arg_type;
 		if (!arg) {
+MONO_DISABLE_WARNING(4309) // truncation of constant
 			*p++ = 0xFF;
+MONO_RESTORE_WARNING
 			break;
 		}
 handle_type:
@@ -2229,7 +2233,9 @@ handle_type:
 		MonoClass *eclass, *arg_eclass;
 
 		if (!arg) {
+MONO_DISABLE_WARNING(4309) // truncation of constant
 			*p++ = 0xff; *p++ = 0xff; *p++ = 0xff; *p++ = 0xff;
+MONO_RESTORE_WARNING
 			break;
 		}
 		len = mono_array_length_internal ((MonoArray*)arg);
@@ -2283,7 +2289,9 @@ handle_type:
 
 		if (arg == NULL) {
 			*p++ = MONO_TYPE_STRING;	// It's same hack as MS uses
+MONO_DISABLE_WARNING(4309) // truncation of constant
 			*p++ = 0xFF;
+MONO_RESTORE_WARNING
 			break;
 		}
 		

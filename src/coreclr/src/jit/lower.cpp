@@ -299,35 +299,58 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_STORE_LCL_FLD:
         {
             GenTreeLclVarCommon* const store = node->AsLclVarCommon();
-            GenTree*                   op1   = store->gtGetOp1();
-            if ((varTypeUsesFloatReg(store) != varTypeUsesFloatReg(op1)) && !store->IsPhiDefn() &&
-                (op1->TypeGet() != TYP_STRUCT))
+            GenTree*                   src   = store->gtGetOp1();
+            if ((varTypeUsesFloatReg(store) != varTypeUsesFloatReg(src)) && !store->IsPhiDefn() &&
+                (src->TypeGet() != TYP_STRUCT))
             {
                 if (m_lsra->isRegCandidate(comp->lvaGetDesc(store->GetLclNum())))
                 {
-                    GenTreeUnOp* bitcast =
-                        new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, store->TypeGet(), store->gtOp1, nullptr);
-                    store->gtOp1 = bitcast;
+                    GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, store->TypeGet(), src, nullptr);
+                    store->gtOp1         = bitcast;
+                    src                  = store->gtGetOp1();
                     BlockRange().InsertBefore(store, bitcast);
                     ContainCheckBitCast(bitcast);
                 }
                 else
                 {
                     // This is an actual store, we'll just retype it.
-                    store->gtType = op1->TypeGet();
+                    store->gtType = src->TypeGet();
                 }
             }
-            // TODO-1stClassStructs: Once we remove the requirement that all struct stores
-            // are block stores (GT_STORE_BLK or GT_STORE_OBJ), here is where we would put the local
-            // store under a block store if codegen will require it.
-            if ((node->TypeGet() == TYP_STRUCT) && (node->gtGetOp1()->OperGet() != GT_PHI))
+
+            if ((node->TypeGet() == TYP_STRUCT) && (src->OperGet() != GT_PHI))
             {
+                LclVarDsc* varDsc = comp->lvaGetDesc(store);
 #if FEATURE_MULTIREG_RET
-                GenTree* src = node->gtGetOp1();
-                assert((src->OperGet() == GT_CALL) && src->AsCall()->HasMultiRegRetVal());
-#else  // !FEATURE_MULTIREG_RET
-                assert(!"Unexpected struct local store in Lowering");
-#endif // !FEATURE_MULTIREG_RET
+                if (src->OperGet() == GT_CALL)
+                {
+                    assert(src->AsCall()->HasMultiRegRetVal());
+                }
+                else
+#endif // FEATURE_MULTIREG_RET
+                    if (!src->OperIs(GT_LCL_VAR) || varDsc->GetLayout()->GetRegisterType() == TYP_UNDEF)
+                {
+                    GenTreeLclVar* addr = comp->gtNewLclVarAddrNode(store->GetLclNum(), TYP_BYREF);
+
+                    addr->gtFlags |= GTF_VAR_DEF;
+                    assert(!addr->IsPartialLclFld(comp));
+                    addr->gtFlags |= GTF_DONT_CSE;
+
+                    // Create the assignment node.
+                    store->ChangeOper(GT_STORE_OBJ);
+
+                    store->gtFlags = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
+#ifndef JIT32_GCENCODER
+                    store->AsObj()->gtBlkOpGcUnsafe = false;
+#endif
+                    store->AsObj()->gtBlkOpKind = GenTreeObj::BlkOpKindInvalid;
+                    store->AsObj()->SetLayout(varDsc->GetLayout());
+                    store->AsObj()->SetAddr(addr);
+                    store->AsObj()->SetData(src);
+                    BlockRange().InsertBefore(store, addr);
+                    LowerBlockStore(store->AsObj());
+                    break;
+                }
             }
             LowerStoreLoc(node->AsLclVarCommon());
             break;
@@ -1659,120 +1682,10 @@ void Lowering::LowerCall(GenTree* node)
         LowerFastTailCall(call);
     }
 
-    if (comp->opts.IsJit64Compat())
-    {
-        CheckVSQuirkStackPaddingNeeded(call);
-    }
-
     ContainCheckCallOperands(call);
     JITDUMP("lowering call (after):\n");
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
-}
-
-// Though the below described issue gets fixed in intellitrace dll of VS2015 (a.k.a Dev14),
-// we still need this quirk for desktop so that older version of VS (e.g. VS2010/2012)
-// continues to work.
-// This quirk is excluded from other targets that have no back compat burden.
-//
-// Quirk for VS debug-launch scenario to work:
-// See if this is a PInvoke call with exactly one param that is the address of a struct local.
-// In such a case indicate to frame-layout logic to add 16-bytes of padding
-// between save-reg area and locals.  This is to protect against the buffer
-// overrun bug in microsoft.intellitrace.11.0.0.dll!ProfilerInterop.InitInterop().
-//
-// A work-around to this bug is to disable IntelliTrace debugging
-// (VS->Tools->Options->IntelliTrace->Enable IntelliTrace - uncheck this option).
-// The reason why this works on Jit64 is that at the point of AV the call stack is
-//
-// GetSystemInfo() Native call
-// IL_Stub generated for PInvoke declaration.
-// ProfilerInterface::InitInterop()
-// ProfilerInterface.Cctor()
-// VM asm worker
-//
-// The cctor body has just the call to InitInterop().  VM asm worker is holding
-// something in rbx that is used immediately after the Cctor call.  Jit64 generated
-// InitInterop() method is pushing the registers in the following order
-//
-//  rbx
-//  rbp
-//  rsi
-//  rdi
-//  r12
-//  r13
-//  Struct local
-//
-// Due to buffer overrun, rbx doesn't get impacted.  Whereas RyuJIT jitted code of
-// the same method is pushing regs in the following order
-//
-//  rbp
-//  rdi
-//  rsi
-//  rbx
-//  struct local
-//
-// Therefore as a fix, we add padding between save-reg area and locals to
-// make this scenario work against JB.
-//
-// Note: If this quirk gets broken due to other JIT optimizations, we should consider
-// more tolerant fix.  One such fix is to padd the struct.
-void Lowering::CheckVSQuirkStackPaddingNeeded(GenTreeCall* call)
-{
-    assert(comp->opts.IsJit64Compat());
-
-#ifdef TARGET_AMD64
-    // Confine this to IL stub calls which aren't marked as unmanaged.
-    if (call->IsPInvoke() && !call->IsUnmanaged())
-    {
-        bool     paddingNeeded  = false;
-        GenTree* firstPutArgReg = nullptr;
-        for (GenTreeCall::Use& use : call->LateArgs())
-        {
-            if (use.GetNode()->OperIs(GT_PUTARG_REG))
-            {
-                if (firstPutArgReg == nullptr)
-                {
-                    firstPutArgReg = use.GetNode();
-                    GenTree* op1   = firstPutArgReg->AsOp()->gtOp1;
-
-                    if (op1->OperGet() == GT_LCL_VAR_ADDR)
-                    {
-                        unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
-                        if (comp->lvaGetDesc(lclNum)->TypeGet() == TYP_STRUCT)
-                        {
-                            // First arg is addr of a struct local.
-                            paddingNeeded = true;
-                        }
-                        else
-                        {
-                            // Not a struct local.
-                            assert(paddingNeeded == false);
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        // First arg is not a local var addr.
-                        assert(paddingNeeded == false);
-                        break;
-                    }
-                }
-                else
-                {
-                    // Has more than one arg.
-                    paddingNeeded = false;
-                    break;
-                }
-            }
-        }
-
-        if (paddingNeeded)
-        {
-            comp->compVSQuirkStackPaddingNeeded = VSQUIRK_STACK_PAD;
-        }
-    }
-#endif // TARGET_AMD64
 }
 
 // Inserts profiler hook, GT_PROF_HOOK for a tail call node.
@@ -1896,7 +1809,6 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // Most of these checks are already done by importer or fgMorphTailCall().
     // This serves as a double sanity check.
     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0); // tail calls from synchronized methods
-    assert(!comp->opts.compNeedSecurityCheck);               // tail call from methods that need security check
     assert(!call->IsUnmanaged());                            // tail calls to unamanaged methods
     assert(!comp->compLocallocUsed);                         // tail call from methods that also do localloc
 
@@ -2200,7 +2112,6 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
     // Most of these checks are already done by importer or fgMorphTailCall().
     // This serves as a double sanity check.
     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0); // tail calls from synchronized methods
-    assert(!comp->opts.compNeedSecurityCheck);               // tail call from methods that need security check
     assert(!call->IsUnmanaged());                            // tail calls to unamanaged methods
     assert(!comp->compLocallocUsed);                         // tail call from methods that also do localloc
 

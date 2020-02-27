@@ -313,7 +313,7 @@ namespace System.Drawing
 
         private static Brush GetBrush(object key, Color color)
         {
-            Brush brush = (Brush)Gdip.ThreadData[key];
+            Brush? brush = (Brush?)Gdip.ThreadData[key];
             if (brush == null)
             {
                 brush = new SolidBrush(color);

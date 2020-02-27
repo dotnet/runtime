@@ -532,7 +532,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler)
             {
-                // Issue https://github.com/dotnet/corefx/issues/26986
+                // Issue https://github.com/dotnet/runtime/issues/24979
                 // WinHttpHandler does not process the cookie.
                 return;
             }

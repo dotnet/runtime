@@ -94,7 +94,7 @@ Sample \ref .builds file defining a constant used to filter API that were added 
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp1.1'">$(DefineConstants);netcoreapp11</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netcoreapp1.1'">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Net.Security.cs" />
@@ -128,7 +128,7 @@ Sample \src .builds file (in this case the implementation is the same in both ne
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Net.Security.csproj">
-      <TargetGroup>net463</TargetGroup>
+      <TargetFramework>net463</TargetFramework>
     </Project>
   </ItemGroup>
   <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
@@ -137,7 +137,7 @@ Sample \src .builds file (in this case the implementation is the same in both ne
 
 Tests can be similarly filtered grouping the compilation directives under:
 ```
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+  <ItemGroup Condition="'$(TargetFramework)'=='netcoreapp1.1'">
 ```
 (from `\tests\FunctionalTests\System.Net.Security.Tests.csproj`)
 
@@ -223,7 +223,7 @@ The primary thing that the library author needs to do in order to ensure the cor
 
 1. Configure the correct projects in your library's `.builds` file.
 2. Reference the `.builds` file from the package project.
-3. Provide a default PackageTargetFramework for empty-TargetGroup builds in the library's `.csproj` or `.vbproj`.
+3. Provide a default PackageTargetFramework for empty-BuildTargetFramework builds in the library's `.csproj` or `.vbproj`.
     ```
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
     ```

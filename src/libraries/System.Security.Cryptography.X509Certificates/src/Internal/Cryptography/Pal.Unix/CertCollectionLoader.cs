@@ -11,7 +11,7 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed class CertCollectionLoader : ILoaderPal
     {
-        private List<ICertificatePal> _certs;
+        private List<ICertificatePal>? _certs;
 
         internal CertCollectionLoader(List<ICertificatePal> certs)
         {
@@ -28,7 +28,7 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(collection != null);
 
-            List<ICertificatePal> localCerts = Interlocked.Exchange(ref _certs, null);
+            List<ICertificatePal>? localCerts = Interlocked.Exchange(ref _certs, null);
             Debug.Assert(localCerts != null);
 
             foreach (ICertificatePal certPal in localCerts)

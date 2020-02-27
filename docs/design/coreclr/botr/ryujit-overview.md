@@ -765,11 +765,11 @@ you want to dump. For example:
 set "COMPlus_JitDump=Main GetEnumerator"
 ```
 
-See [Setting configuration variables](../../../workflow/testing/viewing-jit-dumps.md#setting-configuration-variables) for more
+See [Setting configuration variables](../../../workflow/testing/coreclr/viewing-jit-dumps.md#setting-configuration-variables) for more
 details on this.
 
 Full instructions for dumping the compilation of some managed code can be found here:
-[viewing-jit-dumps.md](../../../workflow/testing/viewing-jit-dumps.md)
+[viewing-jit-dumps.md](../../../workflow/testing/coreclr/viewing-jit-dumps.md)
 
 ## Reading expression trees
 

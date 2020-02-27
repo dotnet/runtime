@@ -504,7 +504,10 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
     }
     else
     {
-        assert((regSet.GetMaskVars() & regMask) == 0);
+        // If this is going live, the register must not have a variable in it, except
+        // in the case of an exception variable, which may be already treated as live
+        // in the register.
+        assert(varDsc->lvLiveInOutOfHndlr || ((regSet.GetMaskVars() & regMask) == 0));
         regSet.AddMaskVars(regMask);
     }
 }
@@ -681,12 +684,14 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
     unsigned        deadVarIndex = 0;
     while (deadIter.NextElem(&deadVarIndex))
     {
-        unsigned   varNum  = lvaTrackedIndexToLclNum(deadVarIndex);
-        LclVarDsc* varDsc  = lvaGetDesc(varNum);
-        bool       isGCRef = (varDsc->TypeGet() == TYP_REF);
-        bool       isByRef = (varDsc->TypeGet() == TYP_BYREF);
+        unsigned   varNum     = lvaTrackedIndexToLclNum(deadVarIndex);
+        LclVarDsc* varDsc     = lvaGetDesc(varNum);
+        bool       isGCRef    = (varDsc->TypeGet() == TYP_REF);
+        bool       isByRef    = (varDsc->TypeGet() == TYP_BYREF);
+        bool       isInReg    = varDsc->lvIsInReg();
+        bool       isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr;
 
-        if (varDsc->lvIsInReg())
+        if (isInReg)
         {
             // TODO-Cleanup: Move the code from compUpdateLifeVar to genUpdateRegLife that updates the
             // gc sets
@@ -701,8 +706,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             }
             codeGen->genUpdateRegLife(varDsc, false /*isBorn*/, true /*isDying*/ DEBUGARG(nullptr));
         }
-        // This isn't in a register, so update the gcVarPtrSetCur.
-        else if (isGCRef || isByRef)
+        // Update the gcVarPtrSetCur if it is in memory.
+        if (isInMemory && (isGCRef || isByRef))
         {
             VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, deadVarIndex);
             JITDUMP("\t\t\t\t\t\t\tV%02u becoming dead\n", varNum);
@@ -724,13 +729,18 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
 
         if (varDsc->lvIsInReg())
         {
-#ifdef DEBUG
-            if (VarSetOps::IsMember(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex))
+            // If this variable is going live in a register, it is no longer live on the stack,
+            // unless it is an EH var, which always remains live on the stack.
+            if (!varDsc->lvLiveInOutOfHndlr)
             {
-                JITDUMP("\t\t\t\t\t\t\tRemoving V%02u from gcVarPtrSetCur\n", varNum);
-            }
+#ifdef DEBUG
+                if (VarSetOps::IsMember(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex))
+                {
+                    JITDUMP("\t\t\t\t\t\t\tRemoving V%02u from gcVarPtrSetCur\n", varNum);
+                }
 #endif // DEBUG
-            VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex);
+                VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex);
+            }
             codeGen->genUpdateRegLife(varDsc, true /*isBorn*/, false /*isDying*/ DEBUGARG(nullptr));
             regMaskTP regMask = varDsc->lvRegMask();
             if (isGCRef)
@@ -742,9 +752,9 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
                 codeGen->gcInfo.gcRegByrefSetCur |= regMask;
             }
         }
-        // This isn't in a register, so update the gcVarPtrSetCur
         else if (lvaIsGCTracked(varDsc))
         {
+            // This isn't in a register, so update the gcVarPtrSetCur to show that it's live on the stack.
             VarSetOps::AddElemD(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex);
             JITDUMP("\t\t\t\t\t\t\tV%02u becoming live\n", varNum);
         }
@@ -988,7 +998,7 @@ void CodeGen::genLogLabel(BasicBlock* bb)
 #ifdef DEBUG
     if (compiler->opts.dspCode)
     {
-        printf("\n      L_M%03u_" FMT_BB ":\n", Compiler::s_compMethodsCount, bb->bbNum);
+        printf("\n      L_M%03u_" FMT_BB ":\n", compiler->compMethodID, bb->bbNum);
     }
 #endif
 }
@@ -2015,13 +2025,16 @@ void CodeGen::genInsertNopForUnwinder(BasicBlock* block)
 
 #endif // FEATURE_EH_FUNCLETS
 
-/*****************************************************************************
- *
- *  Generate code for the function.
- */
-
+//----------------------------------------------------------------------
+// genGenerateCode: Generate code for the function.
+//
+// Arguments:
+//     codePtr [OUT] - address of generated code
+//     nativeSizeOfCode [OUT] - length of generated code in bytes
+//
 void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 {
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -2030,12 +2043,19 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
     }
 #endif
 
-    unsigned codeSize;
-    unsigned prologSize;
-    unsigned epilogSize;
+    this->codePtr          = codePtr;
+    this->nativeSizeOfCode = nativeSizeOfCode;
 
-    void* consPtr;
+    DoPhase(this, PHASE_GENERATE_CODE, &CodeGen::genGenerateMachineCode);
+    DoPhase(this, PHASE_EMIT_CODE, &CodeGen::genEmitMachineCode);
+    DoPhase(this, PHASE_EMIT_GCEH, &CodeGen::genEmitUnwindDebugGCandEH);
+}
 
+//----------------------------------------------------------------------
+// genGenerateMachineCode -- determine which machine instructions to emit
+//
+void CodeGen::genGenerateMachineCode()
+{
 #ifdef DEBUG
     genInterruptibleUsed = true;
 
@@ -2227,7 +2247,13 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
     GetEmitter()->emitJumpDistBind();
 
     /* The code is now complete and final; it should not change after this. */
+}
 
+//----------------------------------------------------------------------
+// genEmitMachineCode -- emit the actual machine instruction code
+//
+void CodeGen::genEmitMachineCode()
+{
     /* Compute the size of the code sections that we are going to ask the VM
        to allocate. Note that this might not be precisely the size of the
        code we emit, though it's fatal if we emit more code than the size we
@@ -2273,8 +2299,6 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 
 #endif // DISPLAY_SIZES
 
-    void* coldCodePtr;
-
     bool trackedStackPtrsContig; // are tracked stk-ptrs contiguous ?
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
@@ -2286,13 +2310,9 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
     trackedStackPtrsContig = !compiler->opts.compDbgEnC;
 #endif
 
-    compiler->EndPhase(PHASE_GENERATE_CODE);
-
     codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
                                             IsFullPtrRegMapRequired(), compiler->compHndBBtabCount, &prologSize,
                                             &epilogSize, codePtr, &coldCodePtr, &consPtr);
-
-    compiler->EndPhase(PHASE_EMIT_CODE);
 
 #ifdef DEBUG
     assert(compiler->compCodeGenDone == false);
@@ -2357,7 +2377,13 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
     // Don't start a method in the last 7 bytes of a 16-byte alignment area
     //   unless we are generating SMALL_CODE
     // noway_assert( (((unsigned)(*codePtr) % 16) <= 8) || (compiler->compCodeOpt() == SMALL_CODE));
+}
 
+//----------------------------------------------------------------------
+// genEmitUnwindDebugGCandEH: emit unwind, debug, gc, and EH info
+//
+void CodeGen::genEmitUnwindDebugGCandEH()
+{
     /* Now that the code is issued, we can finalize and emit the unwind data */
 
     compiler->unwindEmit(*codePtr, coldCodePtr);
@@ -2494,8 +2520,6 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
     grossNCsize += codeSize + dataSize;
 
 #endif // DISPLAY_SIZES
-
-    compiler->EndPhase(PHASE_EMIT_GCEH);
 }
 
 /*****************************************************************************
@@ -3269,6 +3293,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                           // 1 means the first part of a register argument
                           // 2, 3 or 4  means the second,third or fourth part of a multireg argument
         bool stackArg;    // true if the argument gets homed to the stack
+        bool writeThru;   // true if the argument gets homed to both stack and register
         bool processed;   // true after we've processed the argument (and it is in its final location)
         bool circular;    // true if this register participates in a circular dependency loop.
 
@@ -3605,6 +3630,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             }
 
             regArgTab[regArgNum + i].processed = false;
+            regArgTab[regArgNum + i].writeThru = (varDsc->lvIsInReg() && varDsc->lvLiveInOutOfHndlr);
 
             /* mark stack arguments since we will take care of those first */
             regArgTab[regArgNum + i].stackArg = (varDsc->lvIsInReg()) ? false : true;
@@ -3765,9 +3791,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     noway_assert(((regArgMaskLive & RBM_FLTARG_REGS) == 0) &&
                  "Homing of float argument registers with circular dependencies not implemented.");
 
-    /* Now move the arguments to their locations.
-     * First consider ones that go on the stack since they may
-     * free some registers. */
+    // Now move the arguments to their locations.
+    // First consider ones that go on the stack since they may free some registers.
+    // Also home writeThru args, since they're also homed to the stack.
 
     regArgMaskLive = regState->rsCalleeRegArgMaskLiveIn; // reset the live in to what it was at the start
     for (argNum = 0; argNum < argMax; argNum++)
@@ -3805,7 +3831,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // If this arg is never on the stack, go to the next one.
         if (varDsc->lvType == TYP_LONG)
         {
-            if (regArgTab[argNum].slot == 1 && !regArgTab[argNum].stackArg)
+            if (regArgTab[argNum].slot == 1 && !regArgTab[argNum].stackArg && !regArgTab[argNum].writeThru)
             {
                 continue;
             }
@@ -3839,7 +3865,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
         noway_assert(varDsc->lvIsParam);
         noway_assert(varDsc->lvIsRegArg);
-        noway_assert(varDsc->lvIsInReg() == false ||
+        noway_assert(varDsc->lvIsInReg() == false || varDsc->lvLiveInOutOfHndlr ||
                      (varDsc->lvType == TYP_LONG && varDsc->GetOtherReg() == REG_STK && regArgTab[argNum].slot == 2));
 
         var_types storeType = TYP_UNDEF;
@@ -3906,13 +3932,17 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #endif // USING_SCOPE_INFO
         }
 
-        /* mark the argument as processed */
-
-        regArgTab[argNum].processed = true;
-        regArgMaskLive &= ~genRegMask(srcRegNum);
+        // Mark the argument as processed, and set it as no longer live in srcRegNum,
+        // unless it is a writeThru var, in which case we home it to the stack, but
+        // don't mark it as processed until below.
+        if (!regArgTab[argNum].writeThru)
+        {
+            regArgTab[argNum].processed = true;
+            regArgMaskLive &= ~genRegMask(srcRegNum);
+        }
 
 #if defined(TARGET_ARM)
-        if (storeType == TYP_DOUBLE)
+        if ((storeType == TYP_DOUBLE) && !regArgTab[argNum].writeThru)
         {
             regArgTab[argNum + 1].processed = true;
             regArgMaskLive &= ~genRegMask(REG_NEXT(srcRegNum));
@@ -4618,7 +4648,7 @@ void CodeGen::genCheckUseBlockInit()
                     {
                         if (!varDsc->lvRegister)
                         {
-                            if (!varDsc->lvIsInReg())
+                            if (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr)
                             {
                                 // Var is on the stack at entry.
                                 initStkLclCnt +=
@@ -7233,7 +7263,9 @@ void CodeGen::genFnProlog()
             continue;
         }
 
-        if (varDsc->lvIsInReg())
+        bool isInReg    = varDsc->lvIsInReg();
+        bool isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr;
+        if (isInReg)
         {
             regMaskTP regMask = genRegMask(varDsc->GetRegNum());
             if (!varDsc->IsFloatRegType())
@@ -7264,7 +7296,7 @@ void CodeGen::genFnProlog()
                 initFltRegs |= regMask;
             }
         }
-        else
+        if (isInMemory)
         {
         INIT_STK:
 
@@ -7616,12 +7648,6 @@ void CodeGen::genFnProlog()
 #endif // !FEATURE_EH_FUNCLETS
 
     genReportGenericContextArg(initReg, &initRegZeroed);
-
-    // The local variable representing the security object must be on the stack frame
-    // and must be 0 initialized.
-    noway_assert((compiler->lvaSecurityObject == BAD_VAR_NUM) ||
-                 (compiler->lvaTable[compiler->lvaSecurityObject].lvOnFrame &&
-                  compiler->lvaTable[compiler->lvaSecurityObject].lvMustInit));
 
 #ifdef JIT32_GCENCODER
     // Initialize the LocalAllocSP slot if there is localloc in the function.
@@ -10448,7 +10474,7 @@ void CodeGen::genIPmappingDisp(unsigned mappingNum, Compiler::IPmappingDsc* ipMa
     }
 
     printf(" ");
-    ipMapping->ipmdNativeLoc.Print();
+    ipMapping->ipmdNativeLoc.Print(compiler->compMethodID);
     // We can only call this after code generation. Is there any way to tell when it's legal to call?
     // printf(" [%x]", ipMapping->ipmdNativeLoc.CodeOffset(GetEmitter()));
 
@@ -11448,9 +11474,19 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
     // Is the first "VariableLiveRange" or the previous one has been closed so its "m_EndEmitLocation" is valid
     noway_assert(m_VariableLiveRanges->empty() || m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
 
-    // Creates new live range with invalid end
-    m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
-    m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
+    if (!m_VariableLiveRanges->empty() && m_VariableLiveRanges->back().m_EndEmitLocation.IsPreviousInsNum(emit) &&
+        siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation)))
+    {
+        // The variable is being born just after the instruction at which it died.
+        // In this case, i.e. an update of the variable's value, we coalesce the live ranges.
+        m_VariableLiveRanges->back().m_EndEmitLocation.Init();
+    }
+    else
+    {
+        // Creates new live range with invalid end
+        m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
+        m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
+    }
 
 #ifdef DEBUG
     if (!m_VariableLifeBarrier->hasLiveRangesToDump())

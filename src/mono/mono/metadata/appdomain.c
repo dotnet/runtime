@@ -2506,39 +2506,6 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 	return result;
 }
 
-/**
- * mono_assembly_load_from_assemblies_path:
- *
- * \param assemblies_path directories to search for given assembly name, terminated by NULL
- * \param aname assembly name to look for
- * \param asmctx assembly load context for this load operation
- *
- * Given a NULL-terminated array of paths, look for \c name.ext, \c name, \c
- * culture/name.ext, \c culture/name/name.ext where \c ext is \c dll and \c
- * exe and try to load it in the given assembly load context.
- *
- * \returns A \c MonoAssembly if probing was successful, or NULL otherwise.
- */
-MonoAssembly*
-mono_assembly_load_from_assemblies_path (gchar **assemblies_path, MonoAssemblyName *aname, MonoAssemblyContextKind asmctx)
-{
-	MonoAssemblyCandidatePredicate predicate = NULL;
-	void* predicate_ud = NULL;
-	if (mono_loader_get_strict_assembly_name_check ()) {
-		predicate = &mono_assembly_candidate_predicate_sn_same_name;
-		predicate_ud = aname;
-	}
-	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, asmctx, mono_domain_default_alc (mono_domain_get ()));
-	req.request.predicate = predicate;
-	req.request.predicate_ud = predicate_ud;
-	MonoAssembly *result = NULL;
-	if (assemblies_path && assemblies_path[0] != NULL) {
-		result = real_load (assemblies_path, aname->culture, aname->name, &req);
-	}
-	return result;
-}
-
 /*
  * Check whenever a given assembly was already loaded in the current appdomain.
  */

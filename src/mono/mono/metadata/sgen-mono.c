@@ -39,6 +39,10 @@
 #include "icall-signatures.h"
 #include "mono/utils/mono-tls-inline.h"
 
+#if _MSC_VER
+#pragma warning(disable:4312) // FIXME pointer cast to different size
+#endif
+
 #ifdef HEAVY_STATISTICS
 static guint64 stat_wbarrier_set_arrayref = 0;
 static guint64 stat_wbarrier_value_copy = 0;
@@ -2160,7 +2164,7 @@ mono_gc_thread_detach (SgenThreadInfo *info)
 void
 mono_gc_thread_detach_with_lock (SgenThreadInfo *info)
 {
-	return sgen_thread_detach_with_lock (info);
+	sgen_thread_detach_with_lock (info);
 }
 
 void
@@ -2615,7 +2619,7 @@ mono_gc_make_descr_for_string (gsize *bitmap, int numbits)
 void
 mono_gc_register_obj_with_weak_fields (void *obj)
 {
-	return sgen_register_obj_with_weak_fields ((MonoObject*)obj);
+	sgen_register_obj_with_weak_fields ((MonoObject*)obj);
 }
 
 void*
@@ -2639,7 +2643,7 @@ mono_gc_get_allocated_bytes_for_current_thread (void)
 	info = mono_thread_info_current ();
 
 	/*There are some more allocated bytes in the current tlab that have not been recorded yet */
-	return info->total_bytes_allocated + info->tlab_next - info->tlab_start;
+	return info->total_bytes_allocated + (ptrdiff_t)(info->tlab_next - info->tlab_start);
 }
 
 guint64
@@ -3018,6 +3022,13 @@ sgen_client_handle_gc_debug (const char *opt)
 		mono_log_finalizers = TRUE;
 	} else if (!strcmp (opt, "no-managed-allocator")) {
 		sgen_set_use_managed_allocator (FALSE);
+	} else if (!strcmp (opt, "managed-allocator")) {
+		/*
+		 * This option can be used to override the disabling of the managed allocator by
+		 * the nursery canaries option. This can be used when knowing for sure that no
+		 * aot code will be used by the application.
+		 */
+		sgen_set_use_managed_allocator (TRUE);
 	} else if (!sgen_bridge_handle_gc_debug (opt)) {
 		return FALSE;
 	}

@@ -94,9 +94,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DeserializeObjectArray_36167()
+        public static void DeserializeObjectArray()
         {
-            // https://github.com/dotnet/corefx/issues/36167
+            // https://github.com/dotnet/runtime/issues/29019
             object[] data = JsonSerializer.Deserialize<object[]>("[1]");
             Assert.Equal(1, data.Length);
             Assert.IsType<JsonElement>(data[0]);

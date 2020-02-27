@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,8 +16,8 @@ namespace System.Net.Sockets
     public class TcpClient : IDisposable
     {
         private AddressFamily _family;
-        private Socket _clientSocket;
-        private NetworkStream _dataStream;
+        private Socket _clientSocket = null!; // initialized by helper called from ctor
+        private NetworkStream? _dataStream;
         private volatile int _disposed;
         private bool _active;
 
@@ -114,7 +115,7 @@ namespace System.Net.Sockets
         // Used by the class to provide the underlying network socket.
         public Socket Client
         {
-            get { return Disposed ? null : _clientSocket; }
+            get { return Disposed ? null! : _clientSocket; }
             set
             {
                 _clientSocket = value;
@@ -166,7 +167,7 @@ namespace System.Net.Sockets
             //       DNS when trying to connect. Use of AddressList[0] is
             //       bad form.
             IPAddress[] addresses = Dns.GetHostAddresses(hostname);
-            ExceptionDispatchInfo lastex = null;
+            ExceptionDispatchInfo? lastex = null;
 
             try
             {
@@ -183,7 +184,7 @@ namespace System.Net.Sockets
                             {
                                 var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                                 // Use of Interlocked.Exchanged ensures _clientSocket is written before Disposed is read.
-                                Interlocked.Exchange(ref _clientSocket, socket);
+                                Interlocked.Exchange(ref _clientSocket!, socket);
                                 if (Disposed)
                                 {
                                     // Dispose the socket so it throws ObjectDisposedException when we Connect.
@@ -196,7 +197,7 @@ namespace System.Net.Sockets
                                 }
                                 catch
                                 {
-                                    _clientSocket = null;
+                                    _clientSocket = null!;
                                     throw;
                                 }
                             }
@@ -286,23 +287,23 @@ namespace System.Net.Sockets
 
         public Task ConnectAsync(IPAddress address, int port) =>
             Task.Factory.FromAsync(
-                (targetAddess, targetPort, callback, state) => ((TcpClient)state).BeginConnect(targetAddess, targetPort, callback, state),
-                asyncResult => ((TcpClient)asyncResult.AsyncState).EndConnect(asyncResult),
+                (targetAddess, targetPort, callback, state) => ((TcpClient)state!).BeginConnect(targetAddess, targetPort, callback, state),
+                asyncResult => ((TcpClient)asyncResult.AsyncState!).EndConnect(asyncResult),
                 address, port, state: this);
 
         public Task ConnectAsync(string host, int port) =>
             Task.Factory.FromAsync(
-                (targetHost, targetPort, callback, state) => ((TcpClient)state).BeginConnect(targetHost, targetPort, callback, state),
-                asyncResult => ((TcpClient)asyncResult.AsyncState).EndConnect(asyncResult),
+                (targetHost, targetPort, callback, state) => ((TcpClient)state!).BeginConnect(targetHost, targetPort, callback, state),
+                asyncResult => ((TcpClient)asyncResult.AsyncState!).EndConnect(asyncResult),
                 host, port, state: this);
 
         public Task ConnectAsync(IPAddress[] addresses, int port) =>
             Task.Factory.FromAsync(
-                (targetAddresses, targetPort, callback, state) => ((TcpClient)state).BeginConnect(targetAddresses, targetPort, callback, state),
-                asyncResult => ((TcpClient)asyncResult.AsyncState).EndConnect(asyncResult),
+                (targetAddresses, targetPort, callback, state) => ((TcpClient)state!).BeginConnect(targetAddresses, targetPort, callback, state),
+                asyncResult => ((TcpClient)asyncResult.AsyncState!).EndConnect(asyncResult),
                 addresses, port, state: this);
 
-        public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback? requestCallback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
 
@@ -312,7 +313,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        public IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginConnect(string host, int port, AsyncCallback? requestCallback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, (string)host);
 
@@ -322,7 +323,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback? requestCallback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, addresses);
 
@@ -374,7 +375,7 @@ namespace System.Net.Sockets
             {
                 if (disposing)
                 {
-                    IDisposable dataStream = _dataStream;
+                    IDisposable? dataStream = _dataStream;
                     if (dataStream != null)
                     {
                         dataStream.Dispose();
@@ -424,36 +425,37 @@ namespace System.Net.Sockets
         // Gets or sets the size of the receive buffer in bytes.
         public int ReceiveBufferSize
         {
-            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer); }
+            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer)!; }
             set { Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, value); }
         }
 
         // Gets or sets the size of the send buffer in bytes.
         public int SendBufferSize
         {
-            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer); }
+            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer)!; }
             set { Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer, value); }
         }
 
         // Gets or sets the receive time out value of the connection in milliseconds.
         public int ReceiveTimeout
         {
-            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout); }
+            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout)!; }
             set { Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, value); }
         }
 
         // Gets or sets the send time out value of the connection in milliseconds.
         public int SendTimeout
         {
-            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout); }
+            get { return (int)Client.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout)!; }
             set { Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, value); }
         }
 
         // Gets or sets the value of the connection's linger option.
-        public LingerOption LingerState
+        [DisallowNull]
+        public LingerOption? LingerState
         {
             get { return Client.LingerState; }
-            set { Client.LingerState = value; }
+            set { Client.LingerState = value!; }
         }
 
         // Enables or disables delay when send or receive buffers are full.

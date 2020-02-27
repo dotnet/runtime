@@ -135,24 +135,22 @@ bool DiagnosticServer::Initialize()
                 szMessage);                                           // data2
         };
 
-        // char transportPath[MAX_PATH];
-        NewArrayHolder<char> transportPath = nullptr;
-        CLRConfigStringHolder wTransportPath = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DiagnosticsServerTransportPath);
+        NewArrayHolder<char> address = nullptr;
+        CLRConfigStringHolder wAddress = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DiagnosticsServerAddress);
         int nCharactersWritten = 0;
-        if (wTransportPath != nullptr)
+        if (wAddress != nullptr)
         {
-            nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, wTransportPath, -1, NULL, 0, NULL, NULL);
+            nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, wAddress, -1, NULL, 0, NULL, NULL);
             if (nCharactersWritten != 0)
             {
-                transportPath = new char[nCharactersWritten];
-                nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, wTransportPath, -1, transportPath, nCharactersWritten, NULL, NULL);
+                address = new char[nCharactersWritten];
+                nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, wAddress, -1, address, nCharactersWritten, NULL, NULL);
                 assert(nCharactersWritten != 0);
             }
         }
 
         // TODO: Should we handle/assert that (s_pIpc == nullptr)?
-        s_pIpc = IpcStream::DiagnosticsIpc::Create(
-            transportPath, ErrorCallback);
+        s_pIpc = IpcStream::DiagnosticsIpc::Create(address, ErrorCallback);
 
         if (s_pIpc != nullptr)
         {

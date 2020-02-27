@@ -101,7 +101,6 @@ typedef struct {
 	gboolean has_jitted_code;
 	gboolean static_link;
 	gboolean llvm_only;
-	gboolean llvm_disable_self_init;
 	gboolean interp;
 	GHashTable *idx_to_lmethod;
 	GHashTable *idx_to_unbox_tramp;
@@ -174,6 +173,7 @@ typedef struct {
 	gboolean llvm_only;
 	gboolean has_got_access;
 	gboolean emit_dummy_arg;
+	gboolean has_safepoints;
 	int this_arg_pindex, rgctx_arg_pindex;
 	LLVMValueRef imt_rgctx_loc;
 	GHashTable *llvm_types;
@@ -3560,7 +3560,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 #ifdef TARGET_WASM
 		// For GC stack scanning to work, have to spill all reference variables to the stack
 		// Some ref variables have type intptr
-		if (MONO_TYPE_IS_REFERENCE (var->inst_vtype) || var->inst_vtype->type == MONO_TYPE_I)
+		if (ctx->has_safepoints && (MONO_TYPE_IS_REFERENCE (var->inst_vtype) || var->inst_vtype->type == MONO_TYPE_I))
 			var->flags |= MONO_INST_INDIRECT;
 #endif
 
@@ -3745,7 +3745,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	}
 
 	/* Initialize the method if needed */
-	if (cfg->compile_aot && !ctx->module->llvm_disable_self_init) {
+	if (cfg->compile_aot) {
 		/* Emit a location for the initialization code */
 		ctx->init_bb = gen_bb (ctx, "INIT_BB");
 		ctx->inited_bb = gen_bb (ctx, "INITED_BB");
@@ -8625,8 +8625,21 @@ emit_method_inner (EmitContext *ctx)
 			}
 		}
 	}
+	if (cfg->method->wrapper_type) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
 
-#ifndef MONO_LLVM_LOADED
+		switch (info->subtype) {
+		case WRAPPER_SUBTYPE_GSHAREDVT_IN:
+		case WRAPPER_SUBTYPE_GSHAREDVT_OUT:
+		case WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG:
+		case WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG:
+			/* Arguments are not used after the call */
+			requires_safepoint = FALSE;
+			break;
+		}
+	}
+	ctx->has_safepoints = requires_safepoint;
+
 	if (!cfg->llvm_only && mono_threads_are_safepoints_enabled () && requires_safepoint) {
 		if (!cfg->compile_aot && cfg->method->wrapper_type != MONO_WRAPPER_ALLOC) {
 			LLVMSetGC (method, "coreclr");
@@ -8635,7 +8648,6 @@ emit_method_inner (EmitContext *ctx)
 			LLVMSetGC (method, "coreclr");
 		}
 	}
-#endif
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
 	mono_llvm_add_func_attr (method, LLVM_ATTR_UW_TABLE);
@@ -9039,7 +9051,7 @@ after_codegen_1:
 	}
 
 	/* Initialize the method if needed */
-	if (cfg->compile_aot && !ctx->module->llvm_disable_self_init) {
+	if (cfg->compile_aot) {
 		// FIXME: Add more shared got entries
 		ctx->builder = create_builder (ctx);
 		LLVMPositionBuilderAtEnd (ctx->builder, ctx->init_bb);
@@ -9998,7 +10010,6 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	gboolean static_link = (flags & LLVM_MODULE_FLAG_STATIC) ? 1 : 0;
 	gboolean llvm_only = (flags & LLVM_MODULE_FLAG_LLVM_ONLY) ? 1 : 0;
 	gboolean interp = (flags & LLVM_MODULE_FLAG_INTERP) ? 1 : 0;
-	gboolean llvm_disable_self_init = mini_get_debug_options ()->llvm_disable_self_init;
 
 	/* Delete previous module */
 	g_hash_table_destroy (module->plt_entries);
@@ -10018,7 +10029,6 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	module->emit_dwarf = emit_dwarf;
 	module->static_link = static_link;
 	module->llvm_only = llvm_only;
-	module->llvm_disable_self_init = llvm_disable_self_init && !llvm_only; // llvm_only implies !llvm_disable_self_init
 	module->interp = interp;
 	/* The first few entries are reserved */
 	module->max_got_offset = initial_got_size;
@@ -10156,9 +10166,6 @@ mono_llvm_fixup_aot_module (void)
 {
 	MonoLLVMModule *module = &aot_module;
 	MonoMethod *method;
-
-	if (module->llvm_disable_self_init)
-		return;
 
 	/*
 	 * Replace GOT entries for directly callable methods with the methods themselves.
@@ -10571,7 +10578,7 @@ typedef struct {
 static void
 mono_llvm_nonnull_state_update (EmitContext *ctx, LLVMValueRef lcall, MonoMethod *call_method, LLVMValueRef *args, int num_params)
 {
-	if (!ctx->module->llvm_disable_self_init && mono_aot_can_specialize (call_method)) {
+	if (mono_aot_can_specialize (call_method)) {
 		int num_passed = LLVMGetNumArgOperands (lcall);
 		g_assert (num_params <= num_passed);
 
@@ -10805,7 +10812,7 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 				if (lmethod && LLVMTypeOf (callee) == LLVMTypeOf (lmethod)) {
 					mono_llvm_replace_uses_of (callee, lmethod);
 
-					if (!module->llvm_disable_self_init && mono_aot_can_specialize (ji->data.method))
+					if (mono_aot_can_specialize (ji->data.method))
 						g_hash_table_insert (specializable, lmethod, ji->data.method);
 					mono_aot_mark_unused_llvm_plt_entry (ji);
 				}

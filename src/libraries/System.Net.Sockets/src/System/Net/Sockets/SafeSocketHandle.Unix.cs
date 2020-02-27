@@ -17,7 +17,7 @@ namespace System.Net.Sockets
         private int _sendTimeout = -1;
         private bool _nonBlocking;
         private bool _underlyingHandleNonBlocking;
-        private SocketAsyncContext _asyncContext;
+        private SocketAsyncContext? _asyncContext;
 
         private TrackedSocketOptions _trackedOptions;
         internal bool LastConnectFailed { get; set; }
@@ -104,7 +104,7 @@ namespace System.Net.Sockets
                     Interlocked.CompareExchange(ref _asyncContext, new SocketAsyncContext(this), null);
                 }
 
-                return _asyncContext;
+                return _asyncContext!;
             }
         }
 

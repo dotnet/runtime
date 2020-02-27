@@ -13,7 +13,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
-    // TODO: Replace the escaping logic with publicly shipping APIs from https://github.com/dotnet/corefx/issues/33509
+    // TODO: Replace the escaping logic with publicly shipping APIs from https://github.com/dotnet/runtime/issues/27919
     internal static partial class JsonWriterHelper
     {
         // Only allow ASCII characters between ' ' (0x20) and '~' (0x7E), inclusively,

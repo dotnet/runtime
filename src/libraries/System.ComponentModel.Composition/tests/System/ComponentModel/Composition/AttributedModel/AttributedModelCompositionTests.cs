@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.ComponentModel.Composition.AttributedModel
 {
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class AttributedModelCompositionTests
     {
         [Fact]
@@ -257,7 +258,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void MemberExports()
         {
             var exporter = PartFactory.CreateAttributed(new ObjectWithMemberExports());

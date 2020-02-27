@@ -423,7 +423,7 @@ namespace System.Net.Http
                 memberName,                   // method name
                 message);                     // message
 
-        private async ValueTask SendSettingsAsync()
+        private async Task SendSettingsAsync()
         {
             try
             {

@@ -20,18 +20,18 @@ namespace System.Security.Cryptography.Pkcs
         public SubjectIdentifier SignerIdentifier { get; }
 
         private readonly Oid _digestAlgorithm;
-        private readonly AttributeAsn[] _signedAttributes;
+        private readonly AttributeAsn[]? _signedAttributes;
         private readonly ReadOnlyMemory<byte>? _signedAttributesMemory;
         private readonly Oid _signatureAlgorithm;
         private readonly ReadOnlyMemory<byte>? _signatureAlgorithmParameters;
         private readonly ReadOnlyMemory<byte> _signature;
-        private readonly AttributeAsn[] _unsignedAttributes;
+        private readonly AttributeAsn[]? _unsignedAttributes;
 
         private readonly SignedCms _document;
-        private X509Certificate2 _signerCertificate;
-        private SignerInfo _parentSignerInfo;
-        private CryptographicAttributeObjectCollection _parsedSignedAttrs;
-        private CryptographicAttributeObjectCollection _parsedUnsignedAttrs;
+        private X509Certificate2? _signerCertificate;
+        private SignerInfo? _parentSignerInfo;
+        private CryptographicAttributeObjectCollection? _parsedSignedAttrs;
+        private CryptographicAttributeObjectCollection? _parsedUnsignedAttrs;
 
         internal SignerInfo(ref SignerInfoAsn parsedData, SignedCms ownerDocument)
         {
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public byte[] GetSignature() => _signature.ToArray();
 
-        public X509Certificate2 Certificate
+        public X509Certificate2? Certificate
         {
             get
             {
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.Pkcs
                     throw new CryptographicException(SR.Cryptography_Cms_NoSignerAtIndex);
                 }
 
-                ref AttributeAsn[] unsignedAttrs = ref parentData.UnsignedAttributes;
+                ref AttributeAsn[] unsignedAttrs = ref parentData.UnsignedAttributes!;
 
                 for (int i = 0; i < unsignedAttrs.Length; i++)
                 {
@@ -208,7 +208,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static void AddUnsignedAttribute(ref SignerInfoAsn mySigner, AsnEncodedData unsignedAttribute)
         {
-            int existingAttribute = mySigner.UnsignedAttributes == null ? -1 : FindAttributeIndexByOid(mySigner.UnsignedAttributes, unsignedAttribute.Oid);
+            int existingAttribute = mySigner.UnsignedAttributes == null ? -1 : FindAttributeIndexByOid(mySigner.UnsignedAttributes, unsignedAttribute.Oid!);
 
             if (existingAttribute == -1)
             {
@@ -232,7 +232,7 @@ namespace System.Security.Cryptography.Pkcs
             else
             {
                 // merge with existing attribute
-                ref AttributeAsn modifiedAttr = ref mySigner.UnsignedAttributes[existingAttribute];
+                ref AttributeAsn modifiedAttr = ref mySigner.UnsignedAttributes![existingAttribute];
                 int newIndex = modifiedAttr.AttrValues.Length;
                 Array.Resize(ref modifiedAttr.AttrValues, newIndex + 1);
                 modifiedAttr.AttrValues[newIndex] = unsignedAttribute.RawData;
@@ -258,11 +258,11 @@ namespace System.Security.Cryptography.Pkcs
 
             if (isOnlyValue)
             {
-                PkcsHelpers.RemoveAt(ref mySigner.UnsignedAttributes, outerIndex);
+                PkcsHelpers.RemoveAt(ref mySigner.UnsignedAttributes!, outerIndex);
             }
             else
             {
-                PkcsHelpers.RemoveAt(ref mySigner.UnsignedAttributes[outerIndex].AttrValues, innerIndex);
+                PkcsHelpers.RemoveAt(ref mySigner.UnsignedAttributes![outerIndex].AttrValues, innerIndex);
             }
         }
 
@@ -468,7 +468,7 @@ namespace System.Security.Cryptography.Pkcs
             if (extraStore == null)
                 throw new ArgumentNullException(nameof(extraStore));
 
-            X509Certificate2 certificate = Certificate;
+            X509Certificate2? certificate = Certificate;
 
             if (certificate == null)
             {
@@ -498,7 +498,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private bool CheckHash(bool compatMode)
         {
-            using (IncrementalHash hasher = PrepareDigest(compatMode))
+            using (IncrementalHash? hasher = PrepareDigest(compatMode))
             {
                 if (hasher == null)
                 {
@@ -511,28 +511,28 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        private X509Certificate2 FindSignerCertificate()
+        private X509Certificate2? FindSignerCertificate()
         {
             return FindSignerCertificate(SignerIdentifier, _document.Certificates);
         }
 
-        private static X509Certificate2 FindSignerCertificate(
+        private static X509Certificate2? FindSignerCertificate(
             SubjectIdentifier signerIdentifier,
-            X509Certificate2Collection extraStore)
+            X509Certificate2Collection? extraStore)
         {
             if (extraStore == null || extraStore.Count == 0)
             {
                 return null;
             }
 
-            X509Certificate2Collection filtered = null;
-            X509Certificate2 match = null;
+            X509Certificate2Collection? filtered = null;
+            X509Certificate2? match = null;
 
             switch (signerIdentifier.Type)
             {
                 case SubjectIdentifierType.IssuerAndSerialNumber:
                 {
-                    X509IssuerSerial issuerSerial = (X509IssuerSerial)signerIdentifier.Value;
+                    X509IssuerSerial issuerSerial = (X509IssuerSerial)signerIdentifier.Value!;
                     filtered = extraStore.Find(X509FindType.FindBySerialNumber, issuerSerial.SerialNumber, false);
 
                     foreach (X509Certificate2 cert in filtered)
@@ -548,7 +548,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
                 case SubjectIdentifierType.SubjectKeyIdentifier:
                 {
-                    filtered = extraStore.Find(X509FindType.FindBySubjectKeyIdentifier, signerIdentifier.Value, false);
+                    filtered = extraStore.Find(X509FindType.FindBySubjectKeyIdentifier, signerIdentifier.Value!, false);
 
                     if (filtered.Count > 0)
                     {
@@ -573,7 +573,7 @@ namespace System.Security.Cryptography.Pkcs
             return match;
         }
 
-        private IncrementalHash PrepareDigest(bool compatMode)
+        private IncrementalHash? PrepareDigest(bool compatMode)
         {
             HashAlgorithmName hashAlgorithmName = GetDigestAlgorithm();
 
@@ -705,7 +705,7 @@ namespace System.Security.Cryptography.Pkcs
             X509Certificate2 certificate,
             bool verifySignatureOnly)
         {
-            CmsSignature signatureProcessor = CmsSignature.ResolveAndVerifyKeyType(SignatureAlgorithm.Value, key: null);
+            CmsSignature? signatureProcessor = CmsSignature.ResolveAndVerifyKeyType(SignatureAlgorithm.Value!, key: null);
 
             if (signatureProcessor == null)
             {
@@ -741,7 +741,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 foreach (X509Extension ext in certificate.Extensions)
                 {
-                    if (ext.Oid.Value == Oids.KeyUsage)
+                    if (ext.Oid!.Value == Oids.KeyUsage)
                     {
                         if (!(ext is X509KeyUsageExtension keyUsage))
                         {
@@ -763,7 +763,7 @@ namespace System.Security.Cryptography.Pkcs
             X509Certificate2 certificate,
             bool compatMode)
         {
-            using (IncrementalHash hasher = PrepareDigest(compatMode))
+            using (IncrementalHash? hasher = PrepareDigest(compatMode))
             {
                 if (hasher == null)
                 {
@@ -802,10 +802,10 @@ namespace System.Security.Cryptography.Pkcs
 
         private HashAlgorithmName GetDigestAlgorithm()
         {
-            return PkcsHelpers.GetDigestAlgorithm(DigestAlgorithm.Value, forVerification: true);
+            return PkcsHelpers.GetDigestAlgorithm(DigestAlgorithm.Value!, forVerification: true);
         }
 
-        internal static CryptographicAttributeObjectCollection MakeAttributeCollection(AttributeAsn[] attributes)
+        internal static CryptographicAttributeObjectCollection MakeAttributeCollection(AttributeAsn[]? attributes)
         {
             var coll = new CryptographicAttributeObjectCollection();
 
@@ -868,13 +868,13 @@ namespace System.Security.Cryptography.Pkcs
             return -1;
         }
 
-        private static (int, int) FindAttributeLocation(AttributeAsn[] attributes, AsnEncodedData attribute, out bool isOnlyValue)
+        private static (int, int) FindAttributeLocation(AttributeAsn[]? attributes, AsnEncodedData attribute, out bool isOnlyValue)
         {
             if (attributes != null)
             {
                 for (int outerIndex = 0; ; outerIndex++)
                 {
-                    outerIndex = FindAttributeIndexByOid(attributes, attribute.Oid, outerIndex);
+                    outerIndex = FindAttributeIndexByOid(attributes, attribute.Oid!, outerIndex);
 
                     if (outerIndex == -1)
                     {
