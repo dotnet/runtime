@@ -763,7 +763,7 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHa
 		MonoStringHandle root_app_base = MONO_HANDLE_NEW_GET (MonoString, root_setup, application_base);
 		if (!MONO_HANDLE_IS_NULL (root_app_base)) {
 			/* N.B. new string is in the new domain */
-			uint32_t gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, root_app_base), TRUE);
+			MonoGCHandle gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, root_app_base), TRUE);
 			MonoStringHandle s = mono_string_new_utf16_handle (data, mono_string_chars_internal (MONO_HANDLE_RAW (root_app_base)), mono_string_handle_length (root_app_base), error);
 			mono_gchandle_free_internal (gchandle);
 			if (!is_ok (error)) {
@@ -2784,7 +2784,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomainHandle ad,
 		mono_error_set_out_of_memory (error, "Could not allocate %ud bytes to copy raw assembly data", raw_assembly_len);
 		return refass;
 	}
-	uint32_t gchandle;
+	MonoGCHandle gchandle;
 	mono_byte *raw_data = (mono_byte*) MONO_ARRAY_HANDLE_PIN (raw_assembly, gchar, 0, &gchandle);
 	memcpy (assembly_data, raw_data, raw_assembly_len);
 	mono_gchandle_free_internal (gchandle); /* unpin */
@@ -2794,7 +2794,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomainHandle ad,
 
 	mono_byte *raw_symbol_data = NULL;
 	guint32 symbol_len = 0;
-	uint32_t symbol_gchandle = 0;
+	MonoGCHandle symbol_gchandle = 0;
 	if (!MONO_HANDLE_IS_NULL (raw_symbol_store)) {
 		symbol_len = mono_array_handle_length (raw_symbol_store);
 		raw_symbol_data = (mono_byte*) MONO_ARRAY_HANDLE_PIN (raw_symbol_store, mono_byte, 0, &symbol_gchandle);
@@ -3105,7 +3105,7 @@ ves_icall_System_AppDomain_InternalGetProcessGuid (MonoStringHandle newguid, Mon
 		mono_domain_unlock (mono_root_domain);
 		return mono_string_new_utf16_handle (mono_domain_get (), process_guid, sizeof(process_guid)/2, error);
 	}
-	uint32_t gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, newguid), TRUE);
+	MonoGCHandle gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, newguid), TRUE);
 	memcpy (process_guid, mono_string_chars_internal (MONO_HANDLE_RAW (newguid)), sizeof(process_guid));
 	mono_gchandle_free_internal (gchandle);
 	process_guid_set = TRUE;

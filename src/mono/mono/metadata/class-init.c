@@ -1015,7 +1015,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 		mono_class_set_type_load_failure (klass, "Could not create array type '%s[]'", full_name);
 		g_free (full_name);
 	} else if (eclass->enumtype && !mono_class_enum_basetype_internal (eclass)) {
-		guint32 ref_info_handle = mono_class_get_ref_info_handle (eclass);
+		MonoGCHandle ref_info_handle = mono_class_get_ref_info_handle (eclass);
 		if (!ref_info_handle || eclass->wastypebuilder) {
 			g_warning ("Only incomplete TypeBuilder objects are allowed to be an enum without base_type");
 			g_assert (ref_info_handle && !eclass->wastypebuilder);

@@ -42,7 +42,7 @@
 uint32_t
 mono_gchandle_new (MonoObject *obj, mono_bool pinned)
 {
-	MONO_EXTERNAL_ONLY_GC_UNSAFE (uint32_t, mono_gchandle_new_internal (obj, pinned));
+	MONO_EXTERNAL_ONLY_GC_UNSAFE (uint32_t, (uint32_t)(size_t)mono_gchandle_new_internal (obj, pinned));
 }
 
 /**
@@ -69,7 +69,7 @@ mono_gchandle_new (MonoObject *obj, mono_bool pinned)
 uint32_t
 mono_gchandle_new_weakref (MonoObject *obj, mono_bool track_resurrection)
 {
-	MONO_EXTERNAL_ONLY_GC_UNSAFE (uint32_t, mono_gchandle_new_weakref_internal (obj, track_resurrection));
+	MONO_EXTERNAL_ONLY_GC_UNSAFE (uint32_t, (uint32_t)(size_t)mono_gchandle_new_weakref_internal (obj, track_resurrection));
 }
 
 /**
@@ -85,7 +85,7 @@ mono_gchandle_new_weakref (MonoObject *obj, mono_bool track_resurrection)
 MonoObject*
 mono_gchandle_get_target (uint32_t gchandle)
 {
-	MONO_EXTERNAL_ONLY_GC_UNSAFE (MonoObject*, mono_gchandle_get_target_internal (gchandle));
+	MONO_EXTERNAL_ONLY_GC_UNSAFE (MonoObject*, mono_gchandle_get_target_internal ((MonoGCHandle)(size_t)gchandle));
 }
 
 /**
@@ -104,7 +104,7 @@ mono_gchandle_free (uint32_t gchandle)
 	 * the gchandle code is lockfree.  SGen calls back into Mono which
 	 * fires a profiler event, so the profiler must be prepared to be
 	 * called from threads that aren't attached to Mono. */
-	MONO_EXTERNAL_ONLY_VOID (mono_gchandle_free_internal (gchandle));
+	MONO_EXTERNAL_ONLY_VOID (mono_gchandle_free_internal ((MonoGCHandle)(size_t)gchandle));
 }
 
 /* GC write barriers support */

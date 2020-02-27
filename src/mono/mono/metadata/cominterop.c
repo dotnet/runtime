@@ -101,7 +101,7 @@ mono_string_to_bstr_impl (MonoStringHandle s, MonoError *error)
 	if (MONO_HANDLE_IS_NULL (s))
 		return NULL;
 
-	gchandle_t gchandle = 0;
+	MonoGCHandle gchandle = NULL;
 	mono_bstr const res = mono_ptr_to_bstr (mono_string_handle_pin_chars (s, &gchandle), mono_string_handle_length (s));
 	mono_gchandle_free_internal (gchandle);
 	return res;
@@ -158,7 +158,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (com_default_interface_attribute, "System.R
  */
 typedef struct {
 	guint32 ref_count;
-	guint32 gc_handle;
+	MonoGCHandle gc_handle;
 	GHashTable* vtable_hash;
 #ifdef  HOST_WIN32
 	MonoIUnknown *free_marshaler; // actually IMarshal
@@ -1813,7 +1813,7 @@ mono_System_ComObject_ReleaseInterfaces (MonoComObjectHandle obj)
 		return;
 
 	mono_cominterop_lock ();
-	guint32 const gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (rcw_hash, MONO_HANDLE_GETVAL (obj, iunknown)));
+	MonoGCHandle gchandle = (MonoGCHandle)g_hash_table_lookup (rcw_hash, MONO_HANDLE_GETVAL (obj, iunknown));
 	if (gchandle) {
 		mono_gchandle_free_internal (gchandle);
 		g_hash_table_remove (rcw_hash, MONO_HANDLE_GETVAL (obj, iunknown));
@@ -1836,9 +1836,9 @@ ves_icall_System_ComObject_ReleaseInterfaces (MonoComObjectHandle obj, MonoError
 static gboolean    
 cominterop_rcw_finalizer (gpointer key, gpointer value, gpointer user_data)
 {
-	gchandle_t gchandle = 0;
+	MonoGCHandle gchandle = NULL;
 
-	gchandle = GPOINTER_TO_UINT (value);
+	gchandle = (MonoGCHandle)value;
 	if (gchandle) {
 		MonoComInteropProxy* proxy = (MonoComInteropProxy*)mono_gchandle_get_target_internal (gchandle);
 
@@ -1897,12 +1897,12 @@ void
 ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropProxy *volatile* proxy_handle)
 {
 #ifndef DISABLE_COM
-	guint32 const gchandle = mono_gchandle_new_weakref_internal ((MonoObject*)*proxy_handle, FALSE);
+	MonoGCHandle gchandle = mono_gchandle_new_weakref_internal ((MonoObject*)*proxy_handle, FALSE);
 
 	mono_cominterop_lock ();
 	if (!rcw_hash)
 		rcw_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	g_hash_table_insert (rcw_hash, pUnk, GUINT_TO_POINTER (gchandle));
+	g_hash_table_insert (rcw_hash, pUnk, gchandle);
 	mono_cominterop_unlock ();
 #else
 	g_assert_not_reached ();
@@ -1916,11 +1916,11 @@ ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoComInteropP
 
 #ifndef DISABLE_COM
 
-	gchandle_t gchandle = 0;
+	MonoGCHandle gchandle = NULL;
 
 	mono_cominterop_lock ();
 	if (rcw_hash)
-		gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (rcw_hash, pUnk));
+		gchandle = (MonoGCHandle)g_hash_table_lookup (rcw_hash, pUnk);
 	mono_cominterop_unlock ();
 	if (!gchandle)
 		return;
@@ -1947,7 +1947,7 @@ ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoComInteropP
  *
  * Returns: the corresponding object for the CCW
  */
-static gchandle_t
+static MonoGCHandle
 cominterop_get_ccw_gchandle (MonoCCWInterface* ccw_entry, gboolean verify)
 {
 	/* no CCW's exist yet */
@@ -1962,14 +1962,14 @@ cominterop_get_ccw_gchandle (MonoCCWInterface* ccw_entry, gboolean verify)
 static MonoObjectHandle
 cominterop_get_ccw_handle (MonoCCWInterface* ccw_entry, gboolean verify)
 {
-	gchandle_t const gchandle = cominterop_get_ccw_gchandle (ccw_entry, verify);
+	MonoGCHandle const gchandle = cominterop_get_ccw_gchandle (ccw_entry, verify);
 	return gchandle ? mono_gchandle_get_target_handle (gchandle) : NULL_HANDLE;
 }
 
 static MonoObject*
 cominterop_get_ccw_object (MonoCCWInterface* ccw_entry, gboolean verify)
 {
-	gchandle_t const gchandle = cominterop_get_ccw_gchandle (ccw_entry, verify);
+	MonoGCHandle const gchandle = cominterop_get_ccw_gchandle (ccw_entry, verify);
 	return gchandle ? mono_gchandle_get_target_internal (gchandle) : NULL;
 }
 
@@ -2340,7 +2340,7 @@ mono_marshal_free_ccw_handle (MonoObjectHandle object)
 		gboolean destroy_ccw = is_null || is_equal;
 		if (is_null) {
 			MonoCCWInterface* ccw_entry = (MonoCCWInterface *)g_hash_table_lookup (ccw_iter->vtable_hash, mono_class_get_iunknown_class ());
-			gchandle_t gchandle = 0;
+			MonoGCHandle gchandle = NULL;
 			if (!(ccw_entry && (gchandle = cominterop_get_ccw_gchandle (ccw_entry, FALSE)) && mono_gchandle_target_equal (gchandle, object)))
 				destroy_ccw = FALSE;
 		}
@@ -2586,7 +2586,7 @@ cominterop_ccw_addref_impl (MonoCCWInterface* ccwe)
 	g_assert (ccw->gc_handle);
 	gint32 const ref_count = mono_atomic_inc_i32 ((gint32*)&ccw->ref_count);
 	if (ref_count == 1) {
-		guint32 oldhandle = ccw->gc_handle;
+		MonoGCHandle oldhandle = ccw->gc_handle;
 		g_assert (oldhandle);
 		/* since we now have a ref count, alloc a strong handle*/
 		ccw->gc_handle = mono_gchandle_from_handle (mono_gchandle_get_target_handle (oldhandle), FALSE);
@@ -2621,7 +2621,7 @@ cominterop_ccw_release_impl (MonoCCWInterface* ccwe)
 	gint32 const ref_count = mono_atomic_dec_i32 ((gint32*)&ccw->ref_count);
 	if (ref_count == 0) {
 		/* allow gc of object */
-		guint32 oldhandle = ccw->gc_handle;
+		MonoGCHandle oldhandle = ccw->gc_handle;
 		g_assert (oldhandle);
 		ccw->gc_handle = mono_gchandle_new_weakref_from_handle (mono_gchandle_get_target_handle (oldhandle));
 		mono_gchandle_free_internal (oldhandle);

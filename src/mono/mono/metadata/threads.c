@@ -855,7 +855,7 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 	MonoThreadInfo *info;
 	MonoInternalThread *internal;
 	MonoDomain *domain, *root_domain;
-	guint32 gchandle;
+	MonoGCHandle gchandle;
 
 	g_assert (thread);
 
@@ -960,7 +960,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	MonoThreadInfo *info;
 	MonoInternalThread *value;
 	gboolean removed;
-	guint32 gchandle;
+	MonoGCHandle gchandle;
 
 	g_assert (mono_thread_internal_is_current (thread));
 
@@ -1663,7 +1663,7 @@ mono_thread_construct_internal (MonoThreadObjectHandle this_obj_handle)
 
 	internal->state = ThreadState_Unstarted;
 
-	int const thread_gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, this_obj_handle), TRUE);
+	MonoGCHandle thread_gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, this_obj_handle), TRUE);
 
 	MonoThreadObject *this_obj = MONO_HANDLE_RAW (this_obj_handle);
 
@@ -2079,7 +2079,7 @@ byte_array_to_domain (MonoArrayHandle arr, MonoDomain *domain, MonoError *error)
 	struct {
 		MonoArrayHandle handle;
 		gpointer p;
-		guint gchandle;
+		MonoGCHandle gchandle;
 	}
 	source = { arr },
 	dest = { mono_array_new_handle (domain, mono_defaults.byte_class, size, error) };
@@ -3290,7 +3290,7 @@ mono_threads_register_app_context (MonoAppContextHandle ctx, MonoError *error)
 	if (!context_queue)
 		context_queue = mono_gc_reference_queue_new_internal (free_context);
 
-	gpointer gch = GUINT_TO_POINTER (mono_gchandle_new_weakref_from_handle (MONO_HANDLE_CAST (MonoObject, ctx)));
+	MonoGCHandle gch = mono_gchandle_new_weakref_from_handle (MONO_HANDLE_CAST (MonoObject, ctx));
 	g_hash_table_insert (contexts, gch, gch);
 
 	/*
@@ -3299,7 +3299,7 @@ mono_threads_register_app_context (MonoAppContextHandle ctx, MonoError *error)
 	 * handle in the reference queue callback.
 	 */
 	ContextStaticData *data = g_new0 (ContextStaticData, 1);
-	data->gc_handle = GPOINTER_TO_UINT (gch);
+	data->gc_handle = gch;
 	MONO_HANDLE_SETVAL (ctx, data, ContextStaticData*, data);
 
 	context_adjust_static_data (ctx);
@@ -3373,7 +3373,7 @@ static void
 thread_detach (MonoThreadInfo *info)
 {
 	MonoInternalThread *internal;
-	guint32 gchandle;
+	MonoGCHandle gchandle;
 
 	/* If a delegate is passed to native code and invoked on a thread we dont
 	 * know about, marshal will register it with mono_threads_attach_coop, but
@@ -3970,7 +3970,7 @@ get_thread_dump (MonoThreadInfo *info, gpointer ud)
 typedef struct {
 	int nthreads, max_threads;
 
-	guint32 *threads;
+	MonoGCHandle *threads;
 } CollectThreadsUserData;
 
 typedef struct {
@@ -3993,7 +3993,7 @@ collect_thread (gpointer key, gpointer value, gpointer user)
  * THREADS should be an array allocated on the stack.
  */
 static int
-collect_threads (guint32 *thread_handles, int max_threads)
+collect_threads (MonoGCHandle *thread_handles, int max_threads)
 {
 	CollectThreadsUserData ud;
 
@@ -4100,7 +4100,7 @@ mono_threads_perform_thread_dump (void)
 {
 	FILE* output_file = NULL;
 	ThreadDumpUserData ud;
-	guint32 thread_array [128];
+	MonoGCHandle thread_array [128];
 	int tindex, nthreads;
 
 	if (!thread_dump_requested)
@@ -4132,7 +4132,7 @@ mono_threads_perform_thread_dump (void)
 	ud.max_frames = 256;
 
 	for (tindex = 0; tindex < nthreads; ++tindex) {
-		guint32 handle = thread_array [tindex];
+		MonoGCHandle handle = thread_array [tindex];
 		MonoInternalThread *thread = (MonoInternalThread *) mono_gchandle_get_target_internal (handle);
 		dump_thread (thread, &ud, output_file != NULL ? output_file : stdout);
 		mono_gchandle_free_internal (handle);
@@ -4154,7 +4154,7 @@ ves_icall_System_Threading_Thread_GetStackTraces (MonoArrayHandleOut out_threads
 	MONO_HANDLE_ASSIGN_RAW (out_threads_handle, NULL);
 	MONO_HANDLE_ASSIGN_RAW (out_stack_frames_handle, NULL);
 
-	guint32 handle = 0;
+	MonoGCHandle handle = 0;
 
 	MonoStackFrameHandle stack_frame_handle = MONO_HANDLE_NEW (MonoStackFrame, NULL);
 	MonoReflectionMethodHandle reflection_method_handle = MONO_HANDLE_NEW (MonoReflectionMethod, NULL);
@@ -4162,7 +4162,7 @@ ves_icall_System_Threading_Thread_GetStackTraces (MonoArrayHandleOut out_threads
 	MonoArrayHandle thread_frames_handle = MONO_HANDLE_NEW (MonoArray, NULL);
 
 	ThreadDumpUserData ud;
-	guint32 thread_array [128];
+	MonoGCHandle thread_array [128];
 	MonoDomain *domain = mono_domain_get ();
 	MonoDebugSourceLocation *location;
 	int tindex, nthreads;
@@ -4738,7 +4738,7 @@ alloc_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
 static void
 alloc_context_static_data_helper (gpointer key, gpointer value, gpointer user)
 {
-	MonoAppContext *ctx = (MonoAppContext *) mono_gchandle_get_target_internal (GPOINTER_TO_INT (key));
+	MonoAppContext *ctx = (MonoAppContext *) mono_gchandle_get_target_internal ((MonoGCHandle)key);
 
 	if (!ctx)
 		return;
@@ -4894,7 +4894,7 @@ free_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
 static void
 free_context_static_data_helper (gpointer key, gpointer value, gpointer user)
 {
-	MonoAppContext *ctx = (MonoAppContext *) mono_gchandle_get_target_internal (GPOINTER_TO_INT (key));
+	MonoAppContext *ctx = (MonoAppContext *) mono_gchandle_get_target_internal ((MonoGCHandle)key);
 
 	if (!ctx)
 		return;

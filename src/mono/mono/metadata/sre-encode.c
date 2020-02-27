@@ -1007,7 +1007,7 @@ reflection_sighelper_get_signature_local (MonoReflectionSigHelperHandle sig, Mon
 	MonoArrayHandle result;
 	result = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, buflen, error);
 	goto_if_nok (error, fail);
-	uint32_t gchandle;
+	MonoGCHandle gchandle;
 	void *base;
 	base = MONO_ARRAY_HANDLE_PIN (result, char, 0, &gchandle);
 	memcpy (base, buf.buf, buflen);
@@ -1043,7 +1043,7 @@ reflection_sighelper_get_signature_field (MonoReflectionSigHelperHandle sig, Mon
 	MonoArrayHandle result;
 	result = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, buflen, error);
 	goto_if_nok (error, fail);
-	uint32_t gchandle;
+	MonoGCHandle gchandle;
 	void *base;
 	base = MONO_ARRAY_HANDLE_PIN (result, char, 0, &gchandle);
 	memcpy (base, buf.buf, buflen);

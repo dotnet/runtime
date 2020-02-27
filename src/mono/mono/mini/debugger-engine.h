@@ -203,7 +203,7 @@ typedef struct {
 	 * A weakref gc handle pointing to the object. The gc handle is used to 
 	 * detect if the object was garbage collected.
 	 */
-	guint32 handle;
+	MonoGCHandle handle;
 } ObjRef;
 
 
