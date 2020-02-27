@@ -4776,7 +4776,7 @@ void CodeGen::genCheckUseBlockInit()
     // and clears in order which is better for auto-prefetching
     genUseBlockInit = genInitStkLclCnt > (largeGcStructs + 4);
 
-#else // !(TARGET_64BIT && defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES)
+#else // !defined(TARGET_AMD64)
 
     genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 8));
 #endif
@@ -6354,8 +6354,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
         assert(blkSize >= 0);
         noway_assert((blkSize % sizeof(int)) == 0);
-        assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // initReg is not a live
-// incoming argument reg
+        // initReg is not a live incoming argument reg
+        assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
 #if defined(TARGET_AMD64)
         // We will align on x64 so can use the aligned mov
         instruction simdMov = INS_movaps;
@@ -6379,7 +6379,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
             int i = 0;
-            for (; i + REGSIZE_BYTES <= blkSize; i += REGSIZE_BYTES)
+            for (; i < blkSize; i += REGSIZE_BYTES)
             {
                 emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
             }
@@ -6424,7 +6424,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
                 int i = 0;
-                for (; i + REGSIZE_BYTES <= alignmentLoBlkSize; i += REGSIZE_BYTES)
+                for (; i < alignmentLoBlkSize; i += REGSIZE_BYTES)
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
                 }
@@ -6462,7 +6462,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 emit->emitIns_R_R(INS_xorps, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, zeroSIMDReg);
 
                 int i = 0;
-                for (int regSize = XMM_REGSIZE_BYTES; i + regSize <= blkSize; i += regSize)
+                for (; i < blkSize; i += XMM_REGSIZE_BYTES)
                 {
                     emit->emitIns_AR_R(simdMov, EA_ATTR(regSize), zeroSIMDReg, frameReg, alignedLclLo + i);
                 }
@@ -6490,12 +6490,12 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 if (extraSimd != 0)
                 {
                     blkSize -= XMM_REGSIZE_BYTES;
-                    // Not a multiple of 3 so add extra stores at end of block
+                    // Not a multiple of 3 so add stores at low end of block
                     emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, alignedLclLo);
                     if (extraSimd == 2)
                     {
                         blkSize -= XMM_REGSIZE_BYTES;
-                        // If removing 2 x simd makes it a multiple of 3, an extra 2 are needed
+                        // one more store needed
                         emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg,
                                            alignedLclLo + XMM_REGSIZE_BYTES);
                     }
@@ -6504,7 +6504,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 // Exact multiple of 3 simd lengths (or loop end condition will not be met)
                 noway_assert((blkSize % (3 * XMM_REGSIZE_BYTES)) == 0);
 
-                // At least 6 simd lengths remain (as loop is 3x unrolled and we want it to loop at least once)
+                // At least 3 simd lengths remain (as loop is 3x unrolled and we want it to loop at least once)
                 assert(blkSize >= (3 * XMM_REGSIZE_BYTES));
                 // In range at start of loop
                 assert((alignedLclHi - blkSize) >= untrLclLo);
@@ -6541,7 +6541,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
                 int i = 0;
-                for (; i + REGSIZE_BYTES <= alignmentHiBlkSize; i += REGSIZE_BYTES)
+                for (; i < alignmentHiBlkSize; i += REGSIZE_BYTES)
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, alignedLclHi + i);
                 }
