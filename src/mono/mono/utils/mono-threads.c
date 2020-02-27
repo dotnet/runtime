@@ -41,6 +41,10 @@
 #include <mono/utils/mach-support.h>
 #endif
 
+#if _MSC_VER
+#pragma warning(disable:4312) // FIXME pointer cast to different size
+#endif
+
 /*
 Mutex that makes sure only a single thread can be suspending others.
 Suspend is a very racy operation since it requires restarting until
@@ -1682,8 +1686,8 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 #endif
 		} while (1);
 	} else {
-		int ret;
 #if defined (HAVE_CLOCK_NANOSLEEP) && !defined(__PASE__)
+		int ret;
 		struct timespec start, target;
 
 		/* Use clock_nanosleep () to prevent time drifting problems when nanosleep () is interrupted by signals */
@@ -1704,6 +1708,7 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 #elif HOST_WIN32
 		Sleep (ms);
 #else
+		int ret;
 		struct timespec req, rem;
 
 		req.tv_sec = ms / 1000;

@@ -3,9 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Collections.Generic;
-using System.IO;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,8 +13,10 @@ namespace System.Net.Http
         private readonly IHttpTrace _owner;
         private readonly string _name;
         private int _current;
-        private Queue<Waiter> _waiters;
         private bool _disposed;
+        /// <summary>Circular singly-linked list of active waiters.</summary>
+        /// <remarks>If null, the list is empty.  If non-null, this is the tail.  If the list has one item, its Next is itself.</remarks>
+        private CreditWaiter _waitersTail;
 
         public CreditManager(IHttpTrace owner, string name, int initialCredit)
         {
@@ -32,12 +31,9 @@ namespace System.Net.Http
 
         private object SyncObject
         {
-            get
-            {
-                // Generally locking on "this" is considered poor form, but this type is internal,
-                // and it's unnecessary overhead to allocate another object just for this purpose.
-                return this;
-            }
+            // Generally locking on "this" is considered poor form, but this type is internal,
+            // and it's unnecessary overhead to allocate another object just for this purpose.
+            get => this;
         }
 
         public ValueTask<int> RequestCreditAsync(int amount, CancellationToken cancellationToken)
@@ -46,12 +42,13 @@ namespace System.Net.Http
             {
                 if (_disposed)
                 {
-                    throw CreateObjectDisposedException(forActiveWaiter: false);
+                    throw new ObjectDisposedException($"{nameof(CreditManager)}:{_owner.GetType().Name}:{_name}");
                 }
 
+                // If we can satisfy the request with credit already available, do so synchronously.
                 if (_current > 0)
                 {
-                    Debug.Assert(_waiters == null || _waiters.Count == 0, "Shouldn't have waiters when credit is available");
+                    Debug.Assert(_waitersTail is null, "Shouldn't have waiters when credit is available");
 
                     int granted = Math.Min(amount, _current);
                     if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, current={_current}, granted={granted}");
@@ -61,12 +58,26 @@ namespace System.Net.Http
 
                 if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, no credit available.");
 
-                var waiter = new Waiter { Amount = amount };
-                (_waiters ??= new Queue<Waiter>()).Enqueue(waiter);
+                // Otherwise, create a new waiter.
+                CreditWaiter waiter = cancellationToken.CanBeCanceled ?
+                    new CancelableCreditWaiter(SyncObject, cancellationToken) :
+                    new CreditWaiter();
+                waiter.Amount = amount;
 
-                return cancellationToken.CanBeCanceled ?
-                    waiter.WaitWithCancellationAsync(cancellationToken) :
-                    new ValueTask<int>(waiter.Task);
+                // Add the waiter at the tail of the queue.
+                if (_waitersTail is null)
+                {
+                    _waitersTail = waiter.Next = waiter;
+                }
+                else
+                {
+                    waiter.Next = _waitersTail.Next;
+                    _waitersTail.Next = waiter;
+                    _waitersTail = waiter;
+                }
+
+                // And return a ValueTask<int> for it.
+                return waiter.AsValueTask();
             }
         }
 
@@ -84,25 +95,35 @@ namespace System.Net.Http
                     return;
                 }
 
-                Debug.Assert(_current <= 0 || _waiters == null || _waiters.Count == 0, "Shouldn't have waiters when credit is available");
+                Debug.Assert(_current <= 0 || _waitersTail is null, "Shouldn't have waiters when credit is available");
 
-                checked
-                {
-                    _current += amount;
-                }
+                _current = checked(_current + amount);
 
-                if (_waiters != null)
+                while (_current > 0 && _waitersTail != null)
                 {
-                    while (_current > 0 && _waiters.TryDequeue(out Waiter waiter))
+                    // Get the waiter from the head of the queue.
+                    CreditWaiter waiter = _waitersTail.Next;
+                    int granted = Math.Min(waiter.Amount, _current);
+
+                    // Remove the waiter from the list.
+                    if (waiter.Next == waiter)
                     {
-                        int granted = Math.Min(waiter.Amount, _current);
-
-                        // Ensure that we grant credit only if the task has not been canceled.
-                        if (waiter.TrySetResult(granted))
-                        {
-                            _current -= granted;
-                        }
+                        Debug.Assert(_waitersTail == waiter);
+                        _waitersTail = null;
                     }
+                    else
+                    {
+                        _waitersTail.Next = waiter.Next;
+                    }
+                    waiter.Next = null;
+
+                    // Ensure that we grant credit only if the task has not been canceled.
+                    if (waiter.TrySetResult(granted))
+                    {
+                        _current -= granted;
+                    }
+
+                    waiter.Dispose();
                 }
             }
         }
@@ -118,23 +139,21 @@ namespace System.Net.Http
 
                 _disposed = true;
 
-                if (_waiters != null)
+                CreditWaiter waiter = _waitersTail;
+                if (waiter != null)
                 {
-                    while (_waiters.TryDequeue(out Waiter waiter))
+                    do
                     {
-                        waiter.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(CreateObjectDisposedException(forActiveWaiter: true)));
+                        CreditWaiter next = waiter.Next;
+                        waiter.Next = null;
+                        waiter.Dispose();
+                        waiter = next;
                     }
+                    while (waiter != _waitersTail);
+
+                    _waitersTail = null;
                 }
             }
-        }
-
-        private ObjectDisposedException CreateObjectDisposedException(bool forActiveWaiter) => forActiveWaiter ?
-            new ObjectDisposedException($"{nameof(CreditManager)}:{_owner.GetType().Name}:{_name}", SR.net_http_disposed_while_in_use) :
-            new ObjectDisposedException($"{nameof(CreditManager)}:{_owner.GetType().Name}:{_name}");
-
-        private sealed class Waiter : TaskCompletionSourceWithCancellation<int>
-        {
-            public int Amount;
         }
     }
 }

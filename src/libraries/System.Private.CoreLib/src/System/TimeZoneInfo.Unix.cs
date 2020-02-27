@@ -1180,7 +1180,7 @@ namespace System
             TimeSpan? timeOffset = TZif_ParseOffsetString(time);
             if (timeOffset.HasValue)
             {
-                // This logic isn't correct and can't be corrected until https://github.com/dotnet/corefx/issues/2618 is fixed.
+                // This logic isn't correct and can't be corrected until https://github.com/dotnet/runtime/issues/14966 is fixed.
                 // Some time zones use time values like, "26", "144", or "-2".
                 // This allows the week to sometimes be week 4 and sometimes week 5 in the month.
                 // For now, strip off any 'days' in the offset, and just get the time of day correct

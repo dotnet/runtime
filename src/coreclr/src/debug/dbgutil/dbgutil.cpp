@@ -17,6 +17,8 @@
 #include <assert.h>
 #include <stdio.h>
 
+#ifdef HOST_WINDOWS
+
 // Returns the RVA of the resource section for the module specified by the given data target and module base.
 // Returns failure if the module doesn't have a resource section.
 //
@@ -390,6 +392,8 @@ HRESULT GetNextLevelResourceEntryRVAByName(ICorDebugDataTarget* pDataTarget,
 
     return hr;
 }
+
+#endif // HOST_WINDOWS
 
 // A small wrapper that reads from the data target and throws on error
 HRESULT ReadFromDataTarget(ICorDebugDataTarget* pDataTarget,

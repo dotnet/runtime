@@ -107,16 +107,26 @@ namespace Internal.Cryptography
                 return 0xFF;
         }
 
-        public static bool ContentsEqual(this byte[] a1, byte[] a2)
+        public static bool ContentsEqual(this byte[]? a1, byte[]? a2)
         {
-            if (a1.Length != a2.Length)
+            if (a1 == null)
+            {
+                return a2 == null;
+            }
+
+            if (a2 == null || a1.Length != a2.Length)
+            {
                 return false;
+            }
 
             for (int i = 0; i < a1.Length; i++)
             {
                 if (a1[i] != a2[i])
+                {
                     return false;
+                }
             }
+
             return true;
         }
 

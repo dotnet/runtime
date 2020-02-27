@@ -77,7 +77,9 @@ namespace System.Text.Json
 
                 do
                 {
-                    state.FlushThreshold = (int)(bufferWriter.Capacity * .9); //todo: determine best value here
+                    // todo: determine best value here
+                    // https://github.com/dotnet/runtime/issues/32356
+                    state.FlushThreshold = (int)(bufferWriter.Capacity * .9);
                     isFinalBlock = WriteCore(
                         writer,
                         value,

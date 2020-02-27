@@ -3079,7 +3079,7 @@ namespace System.Text.Json.Tests
             }
         }
 
-        // https://github.com/dotnet/corefx/issues/40755
+        // https://github.com/dotnet/runtime/issues/30746
         [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -4661,7 +4661,7 @@ namespace System.Text.Json.Tests
             JsonTestHelper.AssertContents("{" + ValidUtf16Expected + ":" + ValidUtf16Expected + "}", output);
         }
 
-        // Test case from https://github.com/dotnet/corefx/issues/40702
+        // Test case from https://github.com/dotnet/runtime/issues/30727
         [Fact]
         public void OutputConsistentWithJsonEncodedText()
         {
@@ -5554,7 +5554,7 @@ namespace System.Text.Json.Tests
                 jsonUtf8.WriteEndObject();
                 jsonUtf8.Flush();
 
-                // TODO: The output doesn't match what JSON.NET does (different rounding/e-notation).
+                // TODO: https://github.com/dotnet/runtime/issues/32350
                 // JsonTestHelper.AssertContents(expectedStr, output);
             }
         }

@@ -194,7 +194,7 @@ namespace System.Text.Json
                 }
             }
             return -1;
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return (int)(byte*)index;
         Found1:
             return (int)(byte*)(index + 1);

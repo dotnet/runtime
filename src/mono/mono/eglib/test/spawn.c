@@ -54,7 +54,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 	char *argv [15];
 	int stdout_fd = -1;
 	char buffer [512];
-	pid_t child_pid = 0;
+	GPid child_pid = 0;
 
 	memset (argv, 0, 15 * sizeof (char *));
 	argv [0] = (char*)"ls";

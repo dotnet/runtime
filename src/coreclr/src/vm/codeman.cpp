@@ -2551,7 +2551,11 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
 
     unsigned alignment = CODE_SIZE_ALIGN;
 
-    if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+    if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+    {
+        alignment = max(alignment, 32);
+    }
+    else if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
     {
         alignment = max(alignment, 16);
     }
@@ -4372,32 +4376,6 @@ BOOL ExecutionManager::IsReadyToRunCode(PCODE currentPC)
 }
 
 #ifndef DACCESS_COMPILE
-
-//**************************************************************************
-// Clear the caches for all JITs loaded.
-//
-void ExecutionManager::ClearCaches( void )
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    GetEEJitManager()->ClearCache();
-}
-
-//**************************************************************************
-// Check if caches for any JITs loaded need to be cleaned
-//
-BOOL ExecutionManager::IsCacheCleanupRequired( void )
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    return GetEEJitManager()->IsCacheCleanupRequired();
-}
 
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
 /*********************************************************************/

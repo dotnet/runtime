@@ -541,7 +541,7 @@ namespace System.Xml.Serialization
                         }
                         if (numeric)
                         {
-                            long index = long.Parse(name.Substring(prefixLength), NumberStyles.Integer, CultureInfo.InvariantCulture);
+                            long index = long.Parse(name.AsSpan(prefixLength), NumberStyles.Integer, CultureInfo.InvariantCulture);
                             if (index <= int.MaxValue)
                             {
                                 int newIndex = (int)index;
@@ -1824,7 +1824,7 @@ namespace System.Xml.Serialization
                 sb.Append(obj);
                 sb.Append(".@");
                 sb.Append(methodName);
-                sb.Append("(");
+                sb.Append('(');
             }
             for (int i = 0; i < args.Length; i++)
             {
@@ -1835,7 +1835,7 @@ namespace System.Xml.Serialization
             if (useReflection)
                 sb.Append("})");
             else
-                sb.Append(")");
+                sb.Append(')');
             return sb.ToString();
         }
 
@@ -1948,9 +1948,9 @@ namespace System.Xml.Serialization
             StringBuilder createInstance = new StringBuilder();
             if (cast != null && cast.Length > 0)
             {
-                createInstance.Append("(");
+                createInstance.Append('(');
                 createInstance.Append(cast);
-                createInstance.Append(")");
+                createInstance.Append(')');
             }
             createInstance.Append(typeof(Activator).FullName);
             createInstance.Append(".CreateInstance(");

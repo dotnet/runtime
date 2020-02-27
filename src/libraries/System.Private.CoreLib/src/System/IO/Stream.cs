@@ -35,7 +35,6 @@ namespace System.IO
 
         // To implement Async IO operations on streams that don't support async IO
 
-        private ReadWriteTask? _activeReadWriteTask;
         private SemaphoreSlim? _asyncActiveSemaphore;
 
         internal SemaphoreSlim EnsureAsyncActiveSemaphoreInitialized()
@@ -390,7 +389,7 @@ namespace System.IO
                     // be an end method, and this task is responsible for cleaning up.
                     if (!thisTask._apm)
                     {
-                        thisTask._stream.FinishTrackingAsyncOperation();
+                        thisTask._stream.FinishTrackingAsyncOperation(thisTask);
                     }
 
                     thisTask.ClearBeginState(); // just to help alleviate some memory pressure
@@ -412,13 +411,13 @@ namespace System.IO
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            ReadWriteTask? readTask = _activeReadWriteTask;
+            ReadWriteTask? readTask = asyncResult as ReadWriteTask;
 
             if (readTask == null)
             {
                 throw new ArgumentException(SR.InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple);
             }
-            else if (readTask != asyncResult)
+            else if (readTask._endCalled)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple);
             }
@@ -433,7 +432,7 @@ namespace System.IO
             }
             finally
             {
-                FinishTrackingAsyncOperation();
+                FinishTrackingAsyncOperation(readTask);
             }
         }
 
@@ -554,7 +553,7 @@ namespace System.IO
                     // be an end method, and this task is responsible for cleaning up.
                     if (!thisTask._apm)
                     {
-                        thisTask._stream.FinishTrackingAsyncOperation();
+                        thisTask._stream.FinishTrackingAsyncOperation(thisTask);
                     }
 
                     thisTask.ClearBeginState(); // just to help alleviate some memory pressure
@@ -596,21 +595,19 @@ namespace System.IO
         private void RunReadWriteTask(ReadWriteTask readWriteTask)
         {
             Debug.Assert(readWriteTask != null);
-            Debug.Assert(_activeReadWriteTask == null, "Expected no other readers or writers");
 
             // Schedule the task.  ScheduleAndStart must happen after the write to _activeReadWriteTask to avoid a race.
             // Internally, we're able to directly call ScheduleAndStart rather than Start, avoiding
             // two interlocked operations.  However, if ReadWriteTask is ever changed to use
             // a cancellation token, this should be changed to use Start.
-            _activeReadWriteTask = readWriteTask; // store the task so that EndXx can validate it's given the right one
             readWriteTask.m_taskScheduler = TaskScheduler.Default;
             readWriteTask.ScheduleAndStart(needsProtection: false);
         }
 
-        private void FinishTrackingAsyncOperation()
+        private void FinishTrackingAsyncOperation(ReadWriteTask task)
         {
-            _activeReadWriteTask = null;
             Debug.Assert(_asyncActiveSemaphore != null, "Must have been initialized in order to get here.");
+            task._endCalled = true;
             _asyncActiveSemaphore.Release();
         }
 
@@ -619,12 +616,12 @@ namespace System.IO
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            ReadWriteTask? writeTask = _activeReadWriteTask;
+            ReadWriteTask? writeTask = asyncResult as ReadWriteTask;
             if (writeTask == null)
             {
                 throw new ArgumentException(SR.InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple);
             }
-            else if (writeTask != asyncResult)
+            else if (writeTask._endCalled)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple);
             }
@@ -640,7 +637,7 @@ namespace System.IO
             }
             finally
             {
-                FinishTrackingAsyncOperation();
+                FinishTrackingAsyncOperation(writeTask);
             }
         }
 
@@ -664,6 +661,7 @@ namespace System.IO
         {
             internal readonly bool _isRead;
             internal readonly bool _apm; // true if this is from Begin/EndXx; false if it's from XxAsync
+            internal bool _endCalled;
             internal Stream? _stream;
             internal byte[]? _buffer;
             internal readonly int _offset;

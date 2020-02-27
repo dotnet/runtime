@@ -1145,6 +1145,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
+
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
         GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
@@ -1153,6 +1155,8 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     pArgs->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
     pArgs->signature = pLookup->signature;
     pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
+
+    WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
 
     // It's available only via the run-time helper function
     if (pLookup->indirections == CORINFO_USEHELPER)
@@ -1172,59 +1176,79 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         for (WORD i = 0; i < pLookup->indirections; i++)
             indirectionsSize += (pLookup->offsets[i] >= 0x80 ? 7 : 4);
 
-        int codeSize = indirectionsSize + (pLookup->testForNull ? 30 : 4);
+        int codeSize = indirectionsSize + (pLookup->testForNull ? 21 : 1) + (pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK ? 13 : 0);
 
         BEGIN_DYNAMIC_HELPER_EMIT(codeSize);
 
-        if (pLookup->testForNull)
-        {
-            // rcx/rdi contains the generic context parameter. Save a copy of it in the rax register
-#ifdef UNIX_AMD64_ABI
-            *(UINT32*)p = 0x00f88948; p += 3;   // mov rax,rdi
-#else
-            *(UINT32*)p = 0x00c88948; p += 3;   // mov rax,rcx
-#endif
-        }
+        BYTE* pJLECall = NULL;
 
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+            {
+                _ASSERTE(pLookup->testForNull && i > 0);
+
+                // cmp qword ptr[rax + sizeOffset],slotOffset
+                *(UINT32*)p = 0x00b88148; p += 3;
+                *(UINT32*)p = (UINT32)pLookup->sizeOffset; p += 4;
+                *(UINT32*)p = (UINT32)slotOffset; p += 4;
+
+                // jle 'HELPER CALL'
+                *p++ = 0x7e;
+                pJLECall = p++;     // Offset filled later
+            }
+
+            if (i == 0)
+            {
+                // Move from rcx|rdi if it's the first indirection, otherwise from rax
 #ifdef UNIX_AMD64_ABI
-            // mov rdi,qword ptr [rdi+offset]
-            if (pLookup->offsets[i] >= 0x80)
-            {
-                *(UINT32*)p = 0x00bf8b48; p += 3;
-                *(UINT32*)p = (UINT32)pLookup->offsets[i]; p += 4;
-            }
-            else
-            {
-                *(UINT32*)p = 0x007f8b48; p += 3;
-                *p++ = (BYTE)pLookup->offsets[i];
-            }
+                // mov rax,qword ptr [rdi+offset]
+                if (pLookup->offsets[i] >= 0x80)
+                {
+                    *(UINT32*)p = 0x00878b48; p += 3;
+                    *(UINT32*)p = (UINT32)pLookup->offsets[i]; p += 4;
+                }
+                else
+                {
+                    *(UINT32*)p = 0x00478b48; p += 3;
+                    *p++ = (BYTE)pLookup->offsets[i];
+                }
 #else
-            // mov rcx,qword ptr [rcx+offset]
-            if (pLookup->offsets[i] >= 0x80)
-            {
-                *(UINT32*)p = 0x00898b48; p += 3;
-                *(UINT32*)p = (UINT32)pLookup->offsets[i]; p += 4;
+                // mov rax,qword ptr [rcx+offset]
+                if (pLookup->offsets[i] >= 0x80)
+                {
+                    *(UINT32*)p = 0x00818b48; p += 3;
+                    *(UINT32*)p = (UINT32)pLookup->offsets[i]; p += 4;
+                }
+                else
+                {
+                    *(UINT32*)p = 0x00418b48; p += 3;
+                    *p++ = (BYTE)pLookup->offsets[i];
+                }
+#endif
             }
             else
             {
-                *(UINT32*)p = 0x00498b48; p += 3;
-                *p++ = (BYTE)pLookup->offsets[i];
+                // mov rax,qword ptr [rax+offset]
+                if (pLookup->offsets[i] >= 0x80)
+                {
+                    *(UINT32*)p = 0x00808b48; p += 3;
+                    *(UINT32*)p = (UINT32)pLookup->offsets[i]; p += 4;
+                }
+                else
+                {
+                    *(UINT32*)p = 0x00408b48; p += 3;
+                    *p++ = (BYTE)pLookup->offsets[i];
+                }
             }
-#endif
         }
 
         // No null test required
         if (!pLookup->testForNull)
         {
-            // No fixups needed for R2R
+            _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
 
-#ifdef UNIX_AMD64_ABI
-            *(UINT32*)p = 0x00f88948; p += 3;       // mov rax,rdi
-#else
-            *(UINT32*)p = 0x00c88948; p += 3;       // mov rax,rcx
-#endif
+            // No fixups needed for R2R
             *p++ = 0xC3;    // ret
         }
         else
@@ -1233,32 +1257,21 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
             _ASSERTE(pLookup->indirections != 0);
 
-#ifdef UNIX_AMD64_ABI
-            *(UINT32*)p = 0x00ff8548; p += 3;       // test rdi,rdi
-#else
-            *(UINT32*)p = 0x00c98548; p += 3;       // test rcx,rcx
-#endif
+            *(UINT32*)p = 0x00c08548; p += 3;       // test rax,rax
 
-            // je 'HELPER_CALL' (a jump of 4 bytes)
-            *(UINT16*)p = 0x0474; p += 2;
+            // je 'HELPER_CALL' (a jump of 1 byte)
+            *(UINT16*)p = 0x0174; p += 2;
 
-#ifdef UNIX_AMD64_ABI
-            *(UINT32*)p = 0x00f88948; p += 3;       // mov rax,rdi
-#else
-            *(UINT32*)p = 0x00c88948; p += 3;       // mov rax,rcx
-#endif
             *p++ = 0xC3;    // ret
 
             // 'HELPER_CALL'
             {
-                // Put the generic context back into rcx (was previously saved in rax)
-#ifdef UNIX_AMD64_ABI
-                *(UINT32*)p = 0x00c78948; p += 3;   // mov rdi,rax
-#else
-                *(UINT32*)p = 0x00c18948; p += 3;   // mov rcx,rax
-#endif
+                if (pJLECall != NULL)
+                    *pJLECall = (BYTE)(p - pJLECall - 1);
 
-                // mov rdx,pArgs
+                // rcx|rdi already contains the generic context parameter
+
+                // mov rdx|rsi,pArgs
                 // jmp helperAddress
                 EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
             }

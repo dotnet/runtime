@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32.SafeHandles;
 
 using System.Diagnostics;
@@ -15,18 +16,18 @@ namespace System.Net.Security
 {
     internal sealed class SafeFreeSslCredentials : SafeFreeCredentials
     {
-        private SafeX509Handle _certHandle;
-        private SafeEvpPKeyHandle _certKeyHandle;
+        private SafeX509Handle? _certHandle;
+        private SafeEvpPKeyHandle? _certKeyHandle;
         private SslProtocols _protocols = SslProtocols.None;
         private EncryptionPolicy _policy;
         private bool _isInvalid = false;
 
-        internal SafeX509Handle CertHandle
+        internal SafeX509Handle? CertHandle
         {
             get { return _certHandle; }
         }
 
-        internal SafeEvpPKeyHandle CertKeyHandle
+        internal SafeEvpPKeyHandle? CertKeyHandle
         {
             get { return _certKeyHandle; }
         }
@@ -41,20 +42,20 @@ namespace System.Net.Security
             get { return _policy; }
         }
 
-        public SafeFreeSslCredentials(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy)
+        public SafeFreeSslCredentials(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy)
             : base(IntPtr.Zero, true)
         {
             Debug.Assert(
                 certificate == null || certificate is X509Certificate2,
                 "Only X509Certificate2 certificates are supported at this time");
 
-            X509Certificate2 cert = (X509Certificate2)certificate;
+            X509Certificate2? cert = (X509Certificate2?)certificate;
 
             if (cert != null)
             {
                 Debug.Assert(cert.HasPrivateKey, "cert.HasPrivateKey");
 
-                using (RSAOpenSsl rsa = (RSAOpenSsl)cert.GetRSAPrivateKey())
+                using (RSAOpenSsl? rsa = (RSAOpenSsl?)cert.GetRSAPrivateKey())
                 {
                     if (rsa != null)
                     {
@@ -65,7 +66,7 @@ namespace System.Net.Security
 
                 if (_certKeyHandle == null)
                 {
-                    using (ECDsaOpenSsl ecdsa = (ECDsaOpenSsl)cert.GetECDsaPrivateKey())
+                    using (ECDsaOpenSsl? ecdsa = (ECDsaOpenSsl?)cert.GetECDsaPrivateKey())
                     {
                         if (ecdsa != null)
                         {

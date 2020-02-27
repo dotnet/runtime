@@ -96,7 +96,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/17234")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/20675")]
         [OuterLoop]
         [Fact]
         [OuterLoop]

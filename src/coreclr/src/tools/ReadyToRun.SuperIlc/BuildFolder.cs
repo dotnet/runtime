@@ -12,6 +12,21 @@ namespace ReadyToRun.SuperIlc
 {
     public class BuildFolder
     {
+        private static string[] s_runtimeExecutables =
+        {
+            "corerun"
+        };
+
+        private static string[] s_runtimeLibraries =
+        {
+            "coreclr",
+            "clrjit",
+            "mscorrc",
+            "mscorrc.debug",
+            "mscordaccore",
+            "mscordbi",
+        };
+
         private List<string> _compilationInputFiles;
 
         private List<string> _mainExecutables;
@@ -132,6 +147,21 @@ namespace ReadyToRun.SuperIlc
             if (compilationInputFiles.Count == 0)
             {
                 return null;
+            }
+
+            if (options.Composite)
+            {
+                // In composite mode we copy the native runtime to the app folder and pretend that is CORE_ROOT,
+                // otherwise CoreRun picks up the original MSIL versions of framework assemblies from CORE_ROOT
+                // instead of the rewritten ones next to the app.
+                foreach (string exe in s_runtimeExecutables)
+                {
+                    passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, exe.AppendOSExeSuffix()));
+                }
+                foreach (string lib in s_runtimeLibraries)
+                {
+                    passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, lib.AppendOSDllSuffix()));
+                }
             }
 
             foreach (CompilerRunner runner in compilerRunners)

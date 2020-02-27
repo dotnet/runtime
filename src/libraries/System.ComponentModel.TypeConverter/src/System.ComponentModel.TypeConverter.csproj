@@ -252,6 +252,7 @@
     <Reference Include="System.Drawing.Primitives" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Linq" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
     <Reference Include="System.ObjectModel" />

@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Pkcs
     public sealed class Pkcs12SafeContents
     {
         private ReadOnlyMemory<byte> _encrypted;
-        private List<Pkcs12SafeBag> _bags;
+        private List<Pkcs12SafeBag>? _bags;
 
         public Pkcs12ConfidentialityMode ConfidentialityMode { get; private set; }
         public bool IsReadOnly { get; }
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Pkcs12ShroudedKeyBag AddShroudedKey(
             AsymmetricAlgorithm key,
-            byte[] passwordBytes,
+            byte[]? passwordBytes,
             PbeParameters pbeParameters)
         {
             return AddShroudedKey(
@@ -140,7 +140,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Pkcs12ShroudedKeyBag AddShroudedKey(
             AsymmetricAlgorithm key,
-            string password,
+            string? password,
             PbeParameters pbeParameters)
         {
             return AddShroudedKey(
@@ -181,7 +181,7 @@ namespace System.Security.Cryptography.Pkcs
             return bag;
         }
 
-        public void Decrypt(byte[] passwordBytes)
+        public void Decrypt(byte[]? passwordBytes)
         {
             // Null is permitted
             Decrypt(new ReadOnlySpan<byte>(passwordBytes));
@@ -192,7 +192,7 @@ namespace System.Security.Cryptography.Pkcs
             Decrypt(ReadOnlySpan<char>.Empty, passwordBytes);
         }
 
-        public void Decrypt(string password)
+        public void Decrypt(string? password)
         {
             // The string.AsSpan extension method allows null.
             Decrypt(password.AsSpan());
@@ -302,7 +302,7 @@ namespace System.Security.Cryptography.Pkcs
             for (int i = 0; i < serializedBags.Count; i++)
             {
                 ReadOnlyMemory<byte> bagValue = serializedBags[i].BagValue;
-                Pkcs12SafeBag bag = null;
+                Pkcs12SafeBag? bag = null;
 
                 try
                 {
@@ -352,7 +352,7 @@ namespace System.Security.Cryptography.Pkcs
             Debug.Assert(pbeParameters != null);
             Debug.Assert(pbeParameters.IterationCount >= 1);
 
-            AsnWriter writer = null;
+            AsnWriter? writer = null;
 
             using (AsnWriter contentsWriter = Encode())
             {

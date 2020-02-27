@@ -717,7 +717,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"
 //
 // Diagnostics Server
 //
-RETAIL_CONFIG_STRING_INFO(EXTERNAL_DiagnosticsServerTransportPath, W("DiagnosticsServerTransportPath"), "The full path including filename for the OS transport (NamedPipe on Windows; Unix Domain Socket on Linux) to be used by the Diagnostics Server");
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_DOTNET_DiagnosticsServerAddress, W("DOTNET_DiagnosticsServerAddress"), "The full path including filename for the OS transport (NamedPipe on Windows; Unix Domain Socket on Linux) to be used by the Diagnostics Server", CLRConfig::DontPrependCOMPlus_);
 
 //
 // LTTng

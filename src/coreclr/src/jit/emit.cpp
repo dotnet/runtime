@@ -65,12 +65,27 @@ UNATIVE_OFFSET emitLocation::GetFuncletPrologOffset(emitter* emit) const
     return emit->emitCurIGsize;
 }
 
+//------------------------------------------------------------------------
+// IsPreviousInsNum: Returns true if the emitter is on the next instruction
+//  of the same group as this emitLocation.
+//
+// Arguments:
+//  emit - an emitter* instance
+//
+bool emitLocation::IsPreviousInsNum(const emitter* emit) const
+{
+    assert(Valid());
+    bool isSameGroup  = (ig == emit->emitCurIG);
+    bool isSameInsNum = (emitGetInsNumFromCodePos(codePos) == emitGetInsNumFromCodePos(emit->emitCurOffset()) - 1);
+    return isSameGroup && isSameInsNum;
+}
+
 #ifdef DEBUG
-void emitLocation::Print() const
+void emitLocation::Print(LONG compMethodID) const
 {
     unsigned insNum = emitGetInsNumFromCodePos(codePos);
     unsigned insOfs = emitGetInsOfsFromCodePos(codePos);
-    printf("(G_M%03u_IG%02u,ins#%d,ofs#%d)", Compiler::s_compMethodsCount, ig->igNum, insNum, insOfs);
+    printf("(G_M%03u_IG%02u,ins#%d,ofs#%d)", compMethodID, ig->igNum, insNum, insOfs);
 }
 #endif // DEBUG
 
@@ -809,7 +824,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 #ifdef DEBUG
     if (emitComp->opts.dspCode)
     {
-        printf("\n      G_M%03u_IG%02u:", Compiler::s_compMethodsCount, ig->igNum);
+        printf("\n      G_M%03u_IG%02u:", emitComp->compMethodID, ig->igNum);
         if (emitComp->verbose)
         {
             printf("        ; offs=%06XH, funclet=%02u, bbWeight=%s", ig->igOffs, ig->igFuncIdx,
@@ -3228,7 +3243,7 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
     const int TEMP_BUFFER_LEN = 40;
     char      buff[TEMP_BUFFER_LEN];
 
-    sprintf_s(buff, TEMP_BUFFER_LEN, "G_M%03u_IG%02u:        ", Compiler::s_compMethodsCount, ig->igNum);
+    sprintf_s(buff, TEMP_BUFFER_LEN, "G_M%03u_IG%02u:        ", emitComp->compMethodID, ig->igNum);
     printf("%s; ", buff);
     if ((igPrev == nullptr) || (igPrev->igFuncIdx != ig->igFuncIdx))
     {
@@ -3858,7 +3873,7 @@ AGAIN:
             {
                 printf("Binding: ");
                 emitDispIns(jmp, false, false, false);
-                printf("Binding L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, jmp->idAddr()->iiaBBlabel->bbNum);
+                printf("Binding L_M%03u_" FMT_BB, emitComp->compMethodID, jmp->idAddr()->iiaBBlabel->bbNum);
             }
 #endif // DEBUG
 
@@ -3869,7 +3884,7 @@ AGAIN:
             {
                 if (tgtIG)
                 {
-                    printf("to G_M%03u_IG%02u\n", Compiler::s_compMethodsCount, tgtIG->igNum);
+                    printf("to G_M%03u_IG%02u\n", emitComp->compMethodID, tgtIG->igNum);
                 }
                 else
                 {
@@ -4615,6 +4630,16 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 #endif
 
+#ifdef TARGET_XARCH
+    // For x64/x86, align Tier1 methods to 32 byte boundaries if
+    // they are larger than 16 bytes and contain a loop.
+    //
+    if (emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1) && (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
+    {
+        allocMemFlag = CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN;
+    }
+#endif
+
     if (emitConsDsc.align16)
     {
         allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN);
@@ -4904,7 +4929,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             }
             else
             {
-                printf("\nG_M%03u_IG%02u:\n", Compiler::s_compMethodsCount, ig->igNum);
+                printf("\nG_M%03u_IG%02u:\n", emitComp->compMethodID, ig->igNum);
             }
         }
 #endif // DEBUG
@@ -5748,9 +5773,8 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                 const char* blockLabelFormat = "G_M%03u_IG%02u";
                 char        blockLabel[64];
                 char        firstLabel[64];
-                sprintf_s(blockLabel, _countof(blockLabel), blockLabelFormat, Compiler::s_compMethodsCount, ig->igNum);
-                sprintf_s(firstLabel, _countof(firstLabel), blockLabelFormat, Compiler::s_compMethodsCount,
-                          igFirst->igNum);
+                sprintf_s(blockLabel, _countof(blockLabel), blockLabelFormat, emitComp->compMethodID, ig->igNum);
+                sprintf_s(firstLabel, _countof(firstLabel), blockLabelFormat, emitComp->compMethodID, igFirst->igNum);
 
                 if (isRelative)
                 {
@@ -7566,7 +7590,7 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
         if (ig->igOffs == offs)
         {
             // Found it!
-            sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "G_M%03u_IG%02u", Compiler::s_compMethodsCount, ig->igNum);
+            sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "G_M%03u_IG%02u", emitComp->compMethodID, ig->igNum);
             retbuf = buf[curBuf];
             curBuf = (curBuf + 1) % 4;
             return retbuf;

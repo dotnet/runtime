@@ -19,7 +19,7 @@ namespace ReadyToRun.SuperIlc
 
         protected override string CompilerRelativePath => ".";
 
-        protected override string CompilerFileName => "crossgen".OSExeSuffix();
+        protected override string CompilerFileName => "crossgen".AppendOSExeSuffix();
 
         protected override string CompilerPath
         {

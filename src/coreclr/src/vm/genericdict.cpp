@@ -37,11 +37,9 @@
 //---------------------------------------------------------------------------------------
 //
 //static
-DictionaryLayout *
-DictionaryLayout::Allocate(
-    WORD              numSlots,
-    LoaderAllocator * pAllocator,
-    AllocMemTracker * pamTracker)
+DictionaryLayout* DictionaryLayout::Allocate(WORD              numSlots,
+                                             LoaderAllocator * pAllocator,
+                                             AllocMemTracker * pamTracker)
 {
     CONTRACT(DictionaryLayout*)
     {
@@ -63,34 +61,35 @@ DictionaryLayout::Allocate(
 
     DictionaryLayout * pD = (DictionaryLayout *)(void *)ptr;
 
-    // When bucket spills we'll allocate another layout structure
-    pD->m_pNext = NULL;
-
     // This is the number of slots excluding the type parameters
     pD->m_numSlots = numSlots;
+    pD->m_numInitialSlots = numSlots;
 
     RETURN pD;
-} // DictionaryLayout::Allocate
+}
 
 #endif //!DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
 //
-// Count the number of bytes that are required by the first bucket in a dictionary with the specified layout
-//
+// Count the number of bytes that are required in a dictionary with the specified layout
+// 
 //static
-DWORD
-DictionaryLayout::GetFirstDictionaryBucketSize(
-    DWORD                numGenericArgs,
+DWORD 
+DictionaryLayout::GetDictionarySizeFromLayout(
+    DWORD                numGenericArgs, 
     PTR_DictionaryLayout pDictLayout)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     PRECONDITION(numGenericArgs > 0);
     PRECONDITION(CheckPointer(pDictLayout, NULL_OK));
 
-    DWORD bytes = numGenericArgs * sizeof(TypeHandle);
+    DWORD bytes = numGenericArgs * sizeof(TypeHandle);          // Slots for instantiation arguments
     if (pDictLayout != NULL)
-        bytes += pDictLayout->m_numSlots * sizeof(void*);
+    {
+        bytes += sizeof(ULONG_PTR*);                            // Slot for dictionary size
+        bytes += pDictLayout->m_numSlots * sizeof(void*);       // Slots for dictionary slots based on a dictionary layout
+    }
 
     return bytes;
 }
@@ -109,192 +108,342 @@ DictionaryLayout::GetFirstDictionaryBucketSize(
 // Optimize the case of a token being !i (for class dictionaries) or !!i (for method dictionaries)
 //
 /* static */
-BOOL
-DictionaryLayout::FindTokenWorker(LoaderAllocator *                 pAllocator,
-                                  DWORD                             numGenericArgs,
-                                  DictionaryLayout *                pDictLayout,
-                                  CORINFO_RUNTIME_LOOKUP *          pResult,
-                                  SigBuilder *                      pSigBuilder,
-                                  BYTE *                            pSig,
-                                  DWORD                             cbSig,
-                                  int                               nFirstOffset,
-                                  DictionaryEntrySignatureSource    signatureSource,
-                                  WORD *                            pSlotOut)
+BOOL DictionaryLayout::FindTokenWorker(LoaderAllocator*                 pAllocator,
+                                       DWORD                            numGenericArgs,
+                                       DictionaryLayout*                pDictLayout,
+                                       SigBuilder*                      pSigBuilder,
+                                       BYTE*                            pSig,
+                                       DWORD                            cbSig,
+                                       int                              nFirstOffset,
+                                       DictionaryEntrySignatureSource   signatureSource,
+                                       CORINFO_RUNTIME_LOOKUP*          pResult,
+                                       WORD*                            pSlotOut,
+                                       DWORD                            scanFromSlot /* = 0 */,
+                                       BOOL                             useEmptySlotIfFound /* = FALSE */)
+
 {
     CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(numGenericArgs > 0);
+        PRECONDITION(scanFromSlot >= 0 && scanFromSlot <= pDictLayout->m_numSlots);
         PRECONDITION(CheckPointer(pDictLayout));
-        PRECONDITION(CheckPointer(pSlotOut));
+        PRECONDITION(CheckPointer(pResult) && CheckPointer(pSlotOut));
         PRECONDITION(CheckPointer(pSig));
         PRECONDITION((pSigBuilder == NULL && cbSig == -1) || (CheckPointer(pSigBuilder) && cbSig > 0));
     }
     CONTRACTL_END
 
-#ifndef FEATURE_NATIVE_IMAGE_GENERATION
-    // If the tiered compilation is on, save the fast dictionary slots for the hot Tier1 code
-    if (g_pConfig->TieredCompilation() && signatureSource == FromReadyToRunImage)
+    // First slots contain the type parameters
+    _ASSERTE(FitsIn<WORD>(numGenericArgs + 1 + scanFromSlot));
+    WORD slot = static_cast<WORD>(numGenericArgs + 1 + scanFromSlot);
+
+#if _DEBUG
+    if (scanFromSlot > 0)
     {
-        pResult->signature = pSig;
-        return FALSE;
+        _ASSERT(useEmptySlotIfFound);
+
+        for (DWORD iSlot = 0; iSlot < scanFromSlot; iSlot++)
+        {
+            // Verify that no entry before scanFromSlot matches the entry we're searching for
+            BYTE* pCandidate = (BYTE*)pDictLayout->m_slots[iSlot].m_signature;
+            if (pSigBuilder != NULL)
+            {
+                if (pDictLayout->m_slots[iSlot].m_signatureSource != FromReadyToRunImage)
+                {
+                    DWORD j;
+                    for (j = 0; j < cbSig; j++)
+                    {
+                        if (pCandidate[j] != pSig[j])
+                            break;
+                    }
+                    _ASSERT(j != cbSig);
+                }
+            }
+            else
+            {
+                _ASSERT(pCandidate != pSig);
+            }
+        }
     }
 #endif
 
-    BOOL isFirstBucket = TRUE;
-
-    // First bucket also contains type parameters
-    _ASSERTE(FitsIn<WORD>(numGenericArgs));
-    WORD slot = static_cast<WORD>(numGenericArgs);
-    for (;;)
+    for (DWORD iSlot = scanFromSlot; iSlot < pDictLayout->m_numSlots; iSlot++)
     {
-        for (DWORD iSlot = 0; iSlot < pDictLayout->m_numSlots; iSlot++)
+        BYTE* pCandidate = (BYTE*)pDictLayout->m_slots[iSlot].m_signature;
+        if (pCandidate != NULL)
         {
-        RetryMatch:
-            BYTE * pCandidate = (BYTE *)pDictLayout->m_slots[iSlot].m_signature;
-            if (pCandidate != NULL)
+            bool signaturesMatch = false;
+
+            if (pSigBuilder != NULL)
             {
-                bool signaturesMatch = false;
+                // JIT case: compare signatures by comparing the bytes in them. We exclude
+                // any ReadyToRun signatures from the JIT case.
 
-                if (pSigBuilder != NULL)
+                if (pDictLayout->m_slots[iSlot].m_signatureSource != FromReadyToRunImage)
                 {
-                    // JIT case: compare signatures by comparing the bytes in them. We exclude
-                    // any ReadyToRun signatures from the JIT case.
-
-                    if (pDictLayout->m_slots[iSlot].m_signatureSource != FromReadyToRunImage)
+                    // Compare the signatures. We do not need to worry about the size of pCandidate. 
+                    // As long as we are comparing one byte at a time we are guaranteed to not overrun.
+                    DWORD j;
+                    for (j = 0; j < cbSig; j++)
                     {
-                        // Compare the signatures. We do not need to worry about the size of pCandidate.
-                        // As long as we are comparing one byte at a time we are guaranteed to not overrun.
-                        DWORD j;
-                        for (j = 0; j < cbSig; j++)
-                        {
-                            if (pCandidate[j] != pSig[j])
-                                break;
-                        }
-                        signaturesMatch = (j == cbSig);
+                        if (pCandidate[j] != pSig[j])
+                            break;
                     }
-                }
-                else
-                {
-                    // ReadyToRun case: compare signatures by comparing their pointer values
-                    signaturesMatch = (pCandidate == pSig);
-                }
-
-                // We've found it
-                if (signaturesMatch)
-                {
-                    pResult->signature = pDictLayout->m_slots[iSlot].m_signature;
-
-                    // We don't store entries outside the first bucket in the layout in the dictionary (they'll be cached in a hash
-                    // instead).
-                    if (!isFirstBucket)
-                    {
-                        return FALSE;
-                    }
-                    _ASSERTE(FitsIn<WORD>(nFirstOffset + 1));
-                    pResult->indirections = static_cast<WORD>(nFirstOffset + 1);
-                    pResult->offsets[nFirstOffset] = slot * sizeof(DictionaryEntry);
-                    *pSlotOut = slot;
-                    return TRUE;
+                    signaturesMatch = (j == cbSig);
                 }
             }
-            // If we hit an empty slot then there's no more so use it
             else
             {
-                {
-                    BaseDomain::LockHolder lh(pAllocator->GetDomain());
+                // ReadyToRun case: compare signatures by comparing their pointer values
+                signaturesMatch = (pCandidate == pSig);
+            }
 
-                    if (pDictLayout->m_slots[iSlot].m_signature != NULL)
-                        goto RetryMatch;
-
-                    PVOID pResultSignature = pSig;
-
-                    if (pSigBuilder != NULL)
-                    {
-                        pSigBuilder->AppendData(isFirstBucket ? slot : 0);
-
-                        DWORD cbNewSig;
-                        PVOID pNewSig = pSigBuilder->GetSignature(&cbNewSig);
-
-                        pResultSignature = pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbNewSig));
-                        memcpy(pResultSignature, pNewSig, cbNewSig);
-                    }
-
-                    pDictLayout->m_slots[iSlot].m_signature = pResultSignature;
-                    pDictLayout->m_slots[iSlot].m_signatureSource = signatureSource;
-                }
-
+            // We've found it
+            if (signaturesMatch)
+            {
                 pResult->signature = pDictLayout->m_slots[iSlot].m_signature;
 
-                // Again, we only store entries in the first layout bucket in the dictionary.
-                if (!isFirstBucket)
-                {
-                    return FALSE;
-                }
                 _ASSERTE(FitsIn<WORD>(nFirstOffset + 1));
                 pResult->indirections = static_cast<WORD>(nFirstOffset + 1);
                 pResult->offsets[nFirstOffset] = slot * sizeof(DictionaryEntry);
                 *pSlotOut = slot;
                 return TRUE;
             }
-            slot++;
+        }
+        // If we hit an empty slot then there's no more so use it
+        else
+        {
+            if (!useEmptySlotIfFound)
+            {
+                *pSlotOut = static_cast<WORD>(iSlot);
+                return FALSE;
+            }
+
+            // A lock should be taken by FindToken before being allowed to use an empty slot in the layout
+            _ASSERT(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
+
+            PVOID pResultSignature = pSigBuilder == NULL ? pSig : CreateSignatureWithSlotData(pSigBuilder, pAllocator, slot);
+            pDictLayout->m_slots[iSlot].m_signature = pResultSignature;
+            pDictLayout->m_slots[iSlot].m_signatureSource = signatureSource;
+
+            pResult->signature = pDictLayout->m_slots[iSlot].m_signature;
+
+            _ASSERTE(FitsIn<WORD>(nFirstOffset + 1));
+            pResult->indirections = static_cast<WORD>(nFirstOffset + 1);
+            pResult->offsets[nFirstOffset] = slot * sizeof(DictionaryEntry);
+            *pSlotOut = slot;
+            return TRUE;
         }
 
-        // If we've reached the end of the chain we need to allocate another bucket. Make the pointer update carefully to avoid
-        // orphaning a bucket in a race. We leak the loser in such a race (since the allocation comes from the loader heap) but both
-        // the race and the overflow should be very rare.
-        if (pDictLayout->m_pNext == NULL)
-            FastInterlockCompareExchangePointer(&pDictLayout->m_pNext, Allocate(4, pAllocator, NULL), 0);
-
-        pDictLayout = pDictLayout->m_pNext;
-        isFirstBucket = FALSE;
+        slot++;
     }
-} // DictionaryLayout::FindToken
+
+    *pSlotOut = pDictLayout->m_numSlots;
+    return FALSE;
+}
+
+#ifndef CROSSGEN_COMPILE
+/* static */
+DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*                 pAllocator, 
+                                                           DictionaryLayout*                pCurrentDictLayout, 
+                                                           DWORD                            numGenericArgs, 
+                                                           SigBuilder*                      pSigBuilder, 
+                                                           BYTE*                            pSig, 
+                                                           int                              nFirstOffset, 
+                                                           DictionaryEntrySignatureSource   signatureSource, 
+                                                           CORINFO_RUNTIME_LOOKUP*          pResult,
+                                                           WORD*                            pSlotOut)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        INJECT_FAULT(ThrowOutOfMemory(););
+        PRECONDITION(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
+        PRECONDITION(CheckPointer(pResult) && CheckPointer(pSlotOut));
+    }
+    CONTRACTL_END
+        
+    // There shouldn't be any empty slots remaining in the current dictionary.
+    _ASSERTE(pCurrentDictLayout->m_slots[pCurrentDictLayout->m_numSlots - 1].m_signature != NULL);
+
+#ifdef _DEBUG
+    // Stress debug mode by increasing size by only 1 slot for the first 10 slots.
+    DWORD newSize = pCurrentDictLayout->m_numSlots > 10 ? (DWORD)pCurrentDictLayout->m_numSlots * 2 : pCurrentDictLayout->m_numSlots + 1;
+    if (!FitsIn<WORD>(newSize))
+        return NULL;
+    DictionaryLayout* pNewDictionaryLayout = Allocate((WORD)newSize, pAllocator, NULL);
+#else
+    if (!FitsIn<WORD>((DWORD)pCurrentDictLayout->m_numSlots * 2))
+        return NULL;
+    DictionaryLayout* pNewDictionaryLayout = Allocate(pCurrentDictLayout->m_numSlots * 2, pAllocator, NULL);
+#endif
+
+    pNewDictionaryLayout->m_numInitialSlots = pCurrentDictLayout->m_numInitialSlots;
+
+    for (DWORD iSlot = 0; iSlot < pCurrentDictLayout->m_numSlots; iSlot++)
+        pNewDictionaryLayout->m_slots[iSlot] = pCurrentDictLayout->m_slots[iSlot];
+
+    WORD layoutSlotIndex = pCurrentDictLayout->m_numSlots;
+    WORD slot = static_cast<WORD>(numGenericArgs) + 1 + layoutSlotIndex;
+
+    PVOID pResultSignature = pSigBuilder == NULL ? pSig : CreateSignatureWithSlotData(pSigBuilder, pAllocator, slot);
+    pNewDictionaryLayout->m_slots[layoutSlotIndex].m_signature = pResultSignature;
+    pNewDictionaryLayout->m_slots[layoutSlotIndex].m_signatureSource = signatureSource;
+
+    pResult->signature = pNewDictionaryLayout->m_slots[layoutSlotIndex].m_signature;
+
+    _ASSERTE(FitsIn<WORD>(nFirstOffset + 1));
+    pResult->indirections = static_cast<WORD>(nFirstOffset + 1);
+    pResult->offsets[nFirstOffset] = slot * sizeof(DictionaryEntry);
+    *pSlotOut = slot;
+
+    return pNewDictionaryLayout;
+}
+#endif
 
 /* static */
-BOOL
-DictionaryLayout::FindToken(LoaderAllocator *               pAllocator,
-                            DWORD                           numGenericArgs,
-                            DictionaryLayout *              pDictLayout,
-                            CORINFO_RUNTIME_LOOKUP *        pResult,
-                            SigBuilder *                    pSigBuilder,
-                            int                             nFirstOffset,
-                            DictionaryEntrySignatureSource  signatureSource)
+BOOL DictionaryLayout::FindToken(MethodTable*                       pMT,
+                                 LoaderAllocator*                   pAllocator,
+                                 int                                nFirstOffset,
+                                 SigBuilder*                        pSigBuilder,
+                                 BYTE*                              pSig,
+                                 DictionaryEntrySignatureSource     signatureSource,
+                                 CORINFO_RUNTIME_LOOKUP*            pResult,
+                                 WORD*                              pSlotOut)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pMT));
+        PRECONDITION(CheckPointer(pAllocator));
+        PRECONDITION(CheckPointer(pResult));
+        PRECONDITION(pMT->HasInstantiation());
+    }
+    CONTRACTL_END;
 
-    DWORD cbSig;
-    BYTE * pSig = (BYTE *)pSigBuilder->GetSignature(&cbSig);
+    DWORD cbSig = -1;
+    pSig = pSigBuilder != NULL ? (BYTE*)pSigBuilder->GetSignature(&cbSig) : pSig;
+    if (FindTokenWorker(pAllocator, pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, 0, FALSE))
+        return TRUE;
 
-    WORD slotDummy;
-    return FindTokenWorker(pAllocator, numGenericArgs, pDictLayout, pResult, pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, &slotDummy);
+    CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+    {
+        // Try again under lock in case another thread already expanded the dictionaries or filled an empty slot
+        if (FindTokenWorker(pMT->GetLoaderAllocator(), pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
+            return TRUE;
+
+#ifndef CROSSGEN_COMPILE
+        DictionaryLayout* pOldLayout = pMT->GetClass()->GetDictionaryLayout();
+        DictionaryLayout* pNewLayout = ExpandDictionaryLayout(pAllocator, pOldLayout, pMT->GetNumGenericArgs(), pSigBuilder, pSig, nFirstOffset, signatureSource, pResult, pSlotOut);
+        if (pNewLayout == NULL)
+        {
+            pResult->signature = pSigBuilder == NULL ? pSig : CreateSignatureWithSlotData(pSigBuilder, pAllocator, 0);
+            return FALSE;
+        }
+
+        // Update the dictionary layout pointer. Note that the expansion of the dictionaries of all instantiated types using this layout
+        // is done lazily, whenever we attempt to access a slot that is beyond the size of the existing dictionary on that type.
+        pMT->GetClass()->SetDictionaryLayout(pNewLayout);
+
+        return TRUE;
+#else
+        pResult->signature = pSigBuilder == NULL ? pSig : CreateSignatureWithSlotData(pSigBuilder, pAllocator, 0);
+        return FALSE;
+#endif
+    }
 }
 
 /* static */
-BOOL
-DictionaryLayout::FindToken(LoaderAllocator *               pAllocator,
-                            DWORD                           numGenericArgs,
-                            DictionaryLayout *              pDictLayout,
-                            CORINFO_RUNTIME_LOOKUP *        pResult,
-                            BYTE *                          signature,
-                            int                             nFirstOffset,
-                            DictionaryEntrySignatureSource  signatureSource,
-                            WORD *                          pSlotOut)
+BOOL DictionaryLayout::FindToken(MethodDesc*                        pMD,
+                                 LoaderAllocator*                   pAllocator,
+                                 int                                nFirstOffset,
+                                 SigBuilder*                        pSigBuilder,
+                                 BYTE*                              pSig,
+                                 DictionaryEntrySignatureSource     signatureSource,
+                                 CORINFO_RUNTIME_LOOKUP*            pResult,
+                                 WORD*                              pSlotOut)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(CheckPointer(pAllocator));
+        PRECONDITION(CheckPointer(pResult));
+        PRECONDITION(pMD->HasMethodInstantiation());
+    }
+    CONTRACTL_END;
 
-    return FindTokenWorker(pAllocator, numGenericArgs, pDictLayout, pResult, NULL, signature, -1, nFirstOffset, signatureSource, pSlotOut);
+    DWORD cbSig = -1;
+    pSig = pSigBuilder != NULL ? (BYTE*)pSigBuilder->GetSignature(&cbSig) : pSig;
+    if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, 0, FALSE))
+        return TRUE;
+
+    CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+    {
+        // Try again under lock in case another thread already expanded the dictionaries or filled an empty slot
+        if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
+            return TRUE;
+
+#ifndef CROSSGEN_COMPILE
+        DictionaryLayout* pOldLayout = pMD->GetDictionaryLayout();
+        DictionaryLayout* pNewLayout = ExpandDictionaryLayout(pAllocator, pOldLayout, pMD->GetNumGenericMethodArgs(), pSigBuilder, pSig, nFirstOffset, signatureSource, pResult, pSlotOut);
+        if (pNewLayout == NULL)
+        {
+            pResult->signature = pSigBuilder == NULL ? pSig : CreateSignatureWithSlotData(pSigBuilder, pAllocator, 0);
+            return FALSE;
+        }
+
+        // Update the dictionary layout pointer. Note that the expansion of the dictionaries of all instantiated methods using this layout
+        // is done lazily, whenever we attempt to access a slot that is beyond the size of the existing dictionary on that method.
+        pMD->AsInstantiatedMethodDesc()->IMD_SetDictionaryLayout(pNewLayout);
+
+        return TRUE;
+#else
+        pResult->signature = pSigBuilder == NULL ? pSig : CreateSignatureWithSlotData(pSigBuilder, pAllocator, 0);
+        return FALSE;
+#endif
+    }
 }
+
+/* static */
+PVOID DictionaryLayout::CreateSignatureWithSlotData(SigBuilder* pSigBuilder, LoaderAllocator* pAllocator, WORD slot)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pSigBuilder) && CheckPointer(pAllocator));
+    }
+    CONTRACTL_END
+
+    pSigBuilder->AppendData(slot);
+
+    DWORD cbNewSig;
+    PVOID pNewSig = pSigBuilder->GetSignature(&cbNewSig);
+
+    PVOID pResultSignature = pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbNewSig));
+    _ASSERT(pResultSignature != NULL);
+
+    memcpy(pResultSignature, pNewSig, cbNewSig);
+
+    return pResultSignature;
+}
+
 
 #endif //!DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
 //
-DWORD
-DictionaryLayout::GetMaxSlots()
+DWORD DictionaryLayout::GetMaxSlots()
 {
     LIMITED_METHOD_CONTRACT;
     return m_numSlots;
+}
+
+DWORD DictionaryLayout::GetNumInitialSlots()
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_numInitialSlots;
 }
 
 //---------------------------------------------------------------------------------------
@@ -347,21 +496,13 @@ DictionaryLayout::GetObjectSize()
 //---------------------------------------------------------------------------------------
 //
 // Save the dictionary layout for prejitting
-//
-void
-DictionaryLayout::Save(
-    DataImage * image)
+// 
+void 
+DictionaryLayout::Save(DataImage * image)
 {
     STANDARD_VM_CONTRACT;
 
-    DictionaryLayout *pDictLayout = this;
-
-    while (pDictLayout)
-    {
-        image->StoreStructure(pDictLayout, pDictLayout->GetObjectSize(), DataImage::ITEM_DICTIONARY_LAYOUT);
-        pDictLayout = pDictLayout->m_pNext;
-    }
-
+    image->StoreStructure(this, GetObjectSize(), DataImage::ITEM_DICTIONARY_LAYOUT);
 }
 
 //---------------------------------------------------------------------------------------
@@ -378,15 +519,10 @@ DictionaryLayout::Trim()
     }
     CONTRACTL_END;
 
-    // Only the last bucket in the chain may have unused entries
-    DictionaryLayout *pDictLayout = this;
-    while (pDictLayout->m_pNext)
-        pDictLayout = pDictLayout->m_pNext;
-
     // Trim down the size to what's actually used
-    DWORD dwSlots = pDictLayout->GetNumUsedSlots();
+    DWORD dwSlots = GetNumUsedSlots();
     _ASSERTE(FitsIn<WORD>(dwSlots));
-    pDictLayout->m_numSlots = static_cast<WORD>(dwSlots);
+    m_numSlots = static_cast<WORD>(dwSlots);
 
 }
 
@@ -401,21 +537,14 @@ DictionaryLayout::Fixup(
 {
     STANDARD_VM_CONTRACT;
 
-    DictionaryLayout *pDictLayout = this;
-
-    while (pDictLayout)
+    for (DWORD i = 0; i < m_numSlots; i++)
     {
-        for (DWORD i = 0; i < pDictLayout->m_numSlots; i++)
+        PVOID signature = m_slots[i].m_signature;
+        if (signature != NULL)
         {
-            PVOID signature = pDictLayout->m_slots[i].m_signature;
-            if (signature != NULL)
-            {
-                image->FixupFieldToNode(pDictLayout, (BYTE *)&pDictLayout->m_slots[i].m_signature - (BYTE *)pDictLayout,
-                    image->GetGenericSignature(signature, fMethod));
-            }
+            image->FixupFieldToNode(this, (BYTE *)&m_slots[i].m_signature - (BYTE *)this,
+                image->GetGenericSignature(signature, fMethod));
         }
-        image->FixupPointerField(pDictLayout, offsetof(DictionaryLayout, m_pNext));
-        pDictLayout = pDictLayout->m_pNext;
     }
 }
 
@@ -640,6 +769,150 @@ Dictionary::Restore(
 }
 #endif // FEATURE_PREJIT
 
+DWORD Dictionary::GetDictionarySlotsSizeForType(MethodTable* pMT)
+{
+    CONTRACTL
+    {
+        PRECONDITION(pMT->HasPerInstInfo());
+        PRECONDITION(pMT->GetGenericsDictInfo()->m_wNumTyPars > 0);
+        PRECONDITION(pMT->GetClass()->GetDictionaryLayout() != NULL);
+        PRECONDITION(pMT->GetClass()->GetDictionaryLayout()->GetMaxSlots() > 0);
+    }
+    CONTRACTL_END;
+
+    TADDR* pDictionarySlots = (TADDR*)pMT->GetPerInstInfo()[pMT->GetGenericsDictInfo()->m_wNumDicts - 1].GetValue();
+    TADDR* pSizeSlot = pDictionarySlots + pMT->GetGenericsDictInfo()->m_wNumTyPars;
+    return *(DWORD*)pSizeSlot;
+}
+
+DWORD Dictionary::GetDictionarySlotsSizeForMethod(MethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        PRECONDITION(pMD->AsInstantiatedMethodDesc()->IMD_GetMethodDictionary() != NULL);
+    }
+    CONTRACTL_END;
+
+    InstantiatedMethodDesc* pIMD = pMD->AsInstantiatedMethodDesc();
+    TADDR* pDictionarySlots = (TADDR*)pIMD->IMD_GetMethodDictionary();
+    TADDR* pSizeSlot = pDictionarySlots + pIMD->GetNumGenericMethodArgs();
+    return *(DWORD*)pSizeSlot;
+}
+
+Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG slotIndex)
+{
+    CONTRACT(Dictionary*)
+    {
+        THROWS;
+        GC_TRIGGERS;
+        POSTCONDITION(CheckPointer(RETVAL));
+    }
+    CONTRACT_END;
+
+    Dictionary* pDictionary = pMD->GetMethodDictionary();
+
+#if !defined(CROSSGEN_COMPILE)
+    DWORD currentDictionarySize = GetDictionarySlotsSizeForMethod(pMD);
+
+    if (currentDictionarySize <= (slotIndex * sizeof(DictionaryEntry)))
+    {
+        // Only expand the dictionary if the current slot we're trying to use is beyond the size of the dictionary
+
+        // Take lock and check for size again, just in case another thread already resized the dictionary
+        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+
+        pDictionary = pMD->GetMethodDictionary();
+        currentDictionarySize = GetDictionarySlotsSizeForMethod(pMD);
+
+        if (currentDictionarySize <= (slotIndex * sizeof(DictionaryEntry)))
+        {
+            DictionaryLayout* pDictLayout = pMD->GetDictionaryLayout();
+            InstantiatedMethodDesc* pIMD = pMD->AsInstantiatedMethodDesc();
+            _ASSERTE(pDictLayout != NULL && pDictLayout->GetMaxSlots() > 0);
+
+            DWORD expectedDictionarySize = DictionaryLayout::GetDictionarySizeFromLayout(pMD->GetNumGenericMethodArgs(), pDictLayout);
+            _ASSERT(currentDictionarySize < expectedDictionarySize);
+
+            pDictionary = (Dictionary*)(void*)pIMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(expectedDictionarySize));
+
+            // Copy old dictionary entry contents
+            DictionaryEntry* pOldEntriesPtr = (DictionaryEntry*)pIMD->m_pPerInstInfo.GetValue();
+            DictionaryEntry* pNewEntriesPtr = (DictionaryEntry*)pDictionary;
+            for (DWORD i = 0; i < currentDictionarySize / sizeof(DictionaryEntry); i++, pOldEntriesPtr++, pNewEntriesPtr++)
+            {
+                *pNewEntriesPtr = VolatileLoadWithoutBarrier(pOldEntriesPtr);
+            }
+
+            DWORD* pSizeSlot = (DWORD*)(pDictionary + pIMD->GetNumGenericMethodArgs());
+            *pSizeSlot = expectedDictionarySize;
+
+            // Publish the new dictionary slots to the type.
+            FastInterlockExchangePointer((TypeHandle**)pIMD->m_pPerInstInfo.GetValuePtr(), (TypeHandle*)pDictionary);
+        }
+    }
+#endif
+
+    RETURN pDictionary;
+}
+
+Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG slotIndex)
+{
+    CONTRACT(Dictionary*)
+    {
+       THROWS;
+       GC_TRIGGERS;
+       POSTCONDITION(CheckPointer(RETVAL));
+    }
+    CONTRACT_END;
+
+    Dictionary* pDictionary = pMT->GetDictionary();
+
+#if !defined(CROSSGEN_COMPILE)
+    DWORD currentDictionarySize = GetDictionarySlotsSizeForType(pMT);
+
+    if (currentDictionarySize <= (slotIndex * sizeof(DictionaryEntry)))
+    {
+        // Only expand the dictionary if the current slot we're trying to use is beyond the size of the dictionary
+
+        // Take lock and check for size again, just in case another thread already resized the dictionary
+        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+
+        pDictionary = pMT->GetDictionary();
+        currentDictionarySize = GetDictionarySlotsSizeForType(pMT);
+
+        if (currentDictionarySize <= (slotIndex * sizeof(DictionaryEntry)))
+        {
+            DictionaryLayout* pDictLayout = pMT->GetClass()->GetDictionaryLayout();
+            _ASSERTE(pDictLayout != NULL && pDictLayout->GetMaxSlots() > 0);
+
+            DWORD expectedDictionarySize = DictionaryLayout::GetDictionarySizeFromLayout(pMT->GetNumGenericArgs(), pDictLayout);
+            _ASSERT(currentDictionarySize < expectedDictionarySize);
+
+            // Expand type dictionary
+            pDictionary = (Dictionary*)(void*)pMT->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(expectedDictionarySize));
+
+            // Copy old dictionary entry contents
+            DictionaryEntry* pOldEntriesPtr = (DictionaryEntry*)pMT->GetPerInstInfo()[pMT->GetNumDicts() - 1].GetValue();
+            DictionaryEntry* pNewEntriesPtr = (DictionaryEntry*)pDictionary;
+            for (DWORD i = 0; i < currentDictionarySize / sizeof(DictionaryEntry); i++, pOldEntriesPtr++, pNewEntriesPtr++)
+            {
+                *pNewEntriesPtr = VolatileLoadWithoutBarrier(pOldEntriesPtr);
+            }
+
+            DWORD* pSizeSlot = (DWORD*)(pDictionary + pMT->GetNumGenericArgs());
+            *pSizeSlot = expectedDictionarySize;
+
+            // Publish the new dictionary slots to the type.
+            ULONG dictionaryIndex = pMT->GetNumDicts() - 1;
+            TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo()->GetValuePtr();
+            FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDictionary);
+        }
+    }
+#endif
+
+    RETURN pDictionary;
+}
+
 //---------------------------------------------------------------------------------------
 //
 DictionaryEntry
@@ -658,7 +931,6 @@ Dictionary::PopulateEntry(
     } CONTRACTL_END;
 
     CORINFO_GENERIC_HANDLE result = NULL;
-    Dictionary * pDictionary = NULL;
     *ppSlot = NULL;
 
     bool isReadyToRunModule = (pModule != NULL && pModule->IsReadyToRun());
@@ -749,7 +1021,6 @@ Dictionary::PopulateEntry(
         // prepare for every possible derived type of the type containing the method). So instead we have to locate the exactly
         // instantiated (non-shared) super-type of the class passed in.
 
-        pDictionary = pMT->GetDictionary();
 
         ULONG dictionaryIndex = 0;
 
@@ -761,13 +1032,15 @@ Dictionary::PopulateEntry(
         {
             IfFailThrow(ptr.GetData(&dictionaryIndex));
         }
+        
+#if _DEBUG
+        // Lock is needed because dictionary pointers can get updated during dictionary size expansion
+        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
 
         // MethodTable is expected to be normalized
+        Dictionary* pDictionary = pMT->GetDictionary();
         _ASSERTE(pDictionary == pMT->GetPerInstInfo()[dictionaryIndex].GetValueMaybeNull());
-    }
-    else
-    {
-        pDictionary = pMD->GetMethodDictionary();
+#endif
     }
 
     {
@@ -1245,7 +1518,11 @@ Dictionary::PopulateEntry(
 
         if ((slotIndex != 0) && !IsCompilationProcess())
         {
-            *(pDictionary->GetSlotAddr(0, slotIndex)) = result;
+            Dictionary* pDictionary = (pMT != NULL) ?
+                GetTypeDictionaryWithSizeCheck(pMT, slotIndex) :
+                GetMethodDictionaryWithSizeCheck(pMD, slotIndex);
+
+            VolatileStoreWithoutBarrier(pDictionary->GetSlotAddr(0, slotIndex), (DictionaryEntry)result);
             *ppSlot = pDictionary->GetSlotAddr(0, slotIndex);
         }
     }

@@ -154,6 +154,7 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector64{Byte}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi8</remarks>
         /// <returns>A new <see cref="Vector64{Byte}" /> with all elements initialized to <paramref name="value" />.</returns>
         public static unsafe Vector64<byte> Create(byte value)
         {
@@ -182,6 +183,7 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi16</remarks>
         /// <returns>A new <see cref="Vector64{Int16}" /> with all elements initialized to <paramref name="value" />.</returns>
         public static unsafe Vector64<short> Create(short value)
         {
@@ -198,6 +200,7 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi32</remarks>
         /// <returns>A new <see cref="Vector64{Int32}" /> with all elements initialized to <paramref name="value" />.</returns>
         public static unsafe Vector64<int> Create(int value)
         {
@@ -220,6 +223,7 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi8</remarks>
         /// <returns>A new <see cref="Vector64{SByte}" /> with all elements initialized to <paramref name="value" />.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector64<sbyte> Create(sbyte value)
@@ -255,6 +259,7 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector64{UInt16}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi16</remarks>
         /// <returns>A new <see cref="Vector64{UInt16}" /> with all elements initialized to <paramref name="value" />.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector64<ushort> Create(ushort value)
@@ -272,6 +277,7 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi32</remarks>
         /// <returns>A new <see cref="Vector64{UInt32}" /> with all elements initialized to <paramref name="value" />.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector64<uint> Create(uint value)
@@ -303,6 +309,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e5">The value that element 5 will be initialized to.</param>
         /// <param name="e6">The value that element 6 will be initialized to.</param>
         /// <param name="e7">The value that element 7 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m64 _mm_setr_pi8</remarks>
         /// <returns>A new <see cref="Vector64{Byte}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7)
         {
@@ -326,6 +333,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
         /// <param name="e3">The value that element 3 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m64 _mm_setr_pi16</remarks>
         /// <returns>A new <see cref="Vector64{Int16}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<short> Create(short e0, short e1, short e2, short e3)
         {
@@ -343,6 +351,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m64 _mm_setr_pi32</remarks>
         /// <returns>A new <see cref="Vector64{Int32}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector64<int> Create(int e0, int e1)
         {
@@ -364,6 +373,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e5">The value that element 5 will be initialized to.</param>
         /// <param name="e6">The value that element 6 will be initialized to.</param>
         /// <param name="e7">The value that element 7 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m64 _mm_setr_pi8</remarks>
         /// <returns>A new <see cref="Vector64{SByte}" /> with each element initialized to corresponding specified value.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector64<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7)
@@ -403,6 +413,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
         /// <param name="e3">The value that element 3 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m64 _mm_setr_pi16</remarks>
         /// <returns>A new <see cref="Vector64{UInt16}" /> with each element initialized to corresponding specified value.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector64<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3)
@@ -421,6 +432,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m64 _mm_setr_pi32</remarks>
         /// <returns>A new <see cref="Vector64{UInt32}" /> with each element initialized to corresponding specified value.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector64<uint> Create(uint e0, uint e1)

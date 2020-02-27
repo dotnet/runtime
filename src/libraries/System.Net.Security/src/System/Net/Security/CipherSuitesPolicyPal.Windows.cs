@@ -13,6 +13,6 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException(SR.net_ssl_ciphersuites_policy_not_supported);
         }
 
-        internal IEnumerable<TlsCipherSuite> GetCipherSuites() => null;
+        internal IEnumerable<TlsCipherSuite> GetCipherSuites() => null!;
     }
 }

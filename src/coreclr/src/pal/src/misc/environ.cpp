@@ -893,6 +893,55 @@ done:
     return result;
 }
 
+
+/*++
+Function:
+  FindEnvVarValue
+
+Get the value of environment variable with the given name.
+Caller should take care of locking and releasing palEnvironment.
+
+Parameters
+
+    name
+            [in] The name of the environment variable to get.
+
+Return Value
+
+    A pointer to the value of the environment variable if it exists,
+    or nullptr otherwise.
+
+--*/
+char* FindEnvVarValue(const char* name)
+{
+    if (*name == '\0')
+        return nullptr;
+    
+    for (int i = 0; palEnvironment[i] != nullptr; ++i)
+    {
+        const char* pch = name;
+        char* p = palEnvironment[i];
+
+        do 
+        {
+            if (*pch == '\0') 
+            {
+                if (*p == '=')
+                    return p + 1;
+                    
+                if (*p == '\0') // no = sign -> empty value
+                    return p;
+                
+                break;
+            }
+        }
+        while (*pch++ == *p++);
+    }
+    
+    return nullptr;
+}
+
+
 /*++
 Function:
   EnvironGetenv
@@ -919,33 +968,11 @@ Return Value
 --*/
 char* EnvironGetenv(const char* name, BOOL copyValue)
 {
-    char *retValue = nullptr;
-
     CPalThread * pthrCurrent = InternalGetCurrentThread();
     InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
-
-    size_t nameLength = strlen(name);
-    for (int i = 0; palEnvironment[i] != nullptr; ++i)
-    {
-        if (strncmp(palEnvironment[i], name, nameLength) == 0)
-        {
-            char *equalsSignPosition = palEnvironment[i] + nameLength;
-
-            // If this is one of the variables which has no equals sign, we
-            // treat the whole thing as name, so the value is an empty string.
-            if (*equalsSignPosition == '\0')
-            {
-                retValue = (char *)"";
-                break;
-            }
-            else if (*equalsSignPosition == '=')
-            {
-                retValue = equalsSignPosition + 1;
-                break;
-            }
-        }
-    }
-
+    
+    char* retValue = FindEnvVarValue(name);
+    
     if ((retValue != nullptr) && copyValue)
     {
         retValue = strdup(retValue);
@@ -954,6 +981,7 @@ char* EnvironGetenv(const char* name, BOOL copyValue)
     InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
     return retValue;
 }
+
 
 /*++
 Function:

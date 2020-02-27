@@ -86,7 +86,7 @@ namespace System.IO.Tests
         [Fact]
         public void File_Move_From_Unwatched_To_Watched()
         {
-            // TODO remove OS version check after https://github.com/dotnet/corefx/issues/40034 fixed
+            // TODO remove OS version check after https://github.com/dotnet/runtime/issues/30491 fixed
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || Environment.OSVersion.Version.Major < 19)
             {
                 FileMove_FromUnwatchedToWatched(WatcherChangeTypes.Created);

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace Internal.Cryptography
@@ -19,31 +19,19 @@ namespace Internal.Cryptography
 
         protected abstract string? FormatNative(Oid? oid, byte[] rawData, bool multiLine);
 
-        protected static string EncodeHexString(byte[] sArray, bool spaceSeparated = false)
+        protected static string EncodeSpaceSeparatedHexString(byte[] sArray)
         {
-            return EncodeHexString(sArray, 0, (uint)sArray.Length, spaceSeparated);
-        }
+            Debug.Assert(sArray != null && sArray.Length != 0);
 
-        [return: NotNullIfNotNull("sArray")]
-        private static string? EncodeHexString(byte[]? sArray, uint start, uint end, bool spaceSeparated)
-        {
-            string? result = null;
+            int length = (sArray.Length * 3) - 1; // two chars per byte, plus 1 space between each
 
-            if (sArray != null)
+            return string.Create(length, sArray, (hexOrder, sArray) =>
             {
-                uint len = (end - start) * 2;
+                int j = 0;
 
-                if (spaceSeparated)
+                for (int i = 0; i < sArray.Length; i++)
                 {
-                    // There will be n-1 spaces between n bytes.
-                    len += (end - start - 1);
-                }
-
-                char[] hexOrder = new char[len];
-
-                for (uint i = start, j = 0; i < end; i++)
-                {
-                    if (spaceSeparated && i > start)
+                    if (i != 0)
                     {
                         hexOrder[j++] = ' ';
                     }
@@ -53,10 +41,8 @@ namespace Internal.Cryptography
                     hexOrder[j++] = HexConverter.ToCharUpper(digit);
                 }
 
-                result = new string(hexOrder);
-            }
-
-            return result;
+                Debug.Assert(j == hexOrder.Length);
+            });
         }
     }
 }

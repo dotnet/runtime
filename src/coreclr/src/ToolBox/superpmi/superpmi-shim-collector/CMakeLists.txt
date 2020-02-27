@@ -15,12 +15,9 @@ include_directories(.)
 include_directories(../superpmi-shared)
 
 set(SUPERPMI_SHIM_COLLECTOR_SOURCES
-    coreclrcallbacks.cpp
     jithost.cpp
     icorjitcompiler.cpp
     icorjitinfo.cpp
-    ieememorymanager.cpp
-    iexecutionengine.cpp
     superpmi-shim-collector.cpp
     ../superpmi-shared/callutils.cpp
     ../superpmi-shared/compileresult.cpp

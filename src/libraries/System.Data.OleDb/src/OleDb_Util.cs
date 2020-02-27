@@ -700,7 +700,7 @@ namespace System.Data.OleDb
             }
             builder.Append("(0x");
             builder.Append(((int)hr).ToString("X8", CultureInfo.InvariantCulture));
-            builder.Append(")");
+            builder.Append(')');
             return builder.ToString();
         }
 

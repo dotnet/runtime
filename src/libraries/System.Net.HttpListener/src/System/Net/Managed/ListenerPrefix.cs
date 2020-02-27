@@ -112,7 +112,7 @@ namespace System.Net
             {
                 _host = uri.Substring(start_host, colon - start_host);
                 root = uri.IndexOf('/', colon, length - colon);
-                _port = (ushort)int.Parse(uri.Substring(colon + 1, root - colon - 1));
+                _port = (ushort)int.Parse(uri.AsSpan(colon + 1, root - colon - 1));
                 _path = uri.Substring(root);
             }
             else

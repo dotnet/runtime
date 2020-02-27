@@ -201,11 +201,11 @@ namespace System.Diagnostics
         {
             StringBuilder failMessage = new StringBuilder();
             failMessage.Append(SR.TraceListenerFail);
-            failMessage.Append(" ");
+            failMessage.Append(' ');
             failMessage.Append(message);
             if (detailMessage != null)
             {
-                failMessage.Append(" ");
+                failMessage.Append(' ');
                 failMessage.Append(detailMessage);
             }
 

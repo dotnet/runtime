@@ -543,7 +543,6 @@ namespace System.Net.Mail
                     _message = message;
                     message.Send(writer, DeliveryMethod != SmtpDeliveryMethod.Network, allowUnicode);
                     writer.Close();
-                    _transport.ReleaseConnection();
 
                     //throw if we couldn't send to any of the recipients
                     if (DeliveryMethod == SmtpDeliveryMethod.Network && recipientException != null)
@@ -690,7 +689,6 @@ namespace System.Net.Mail
                                 if (_writer != null)
                                     _writer.Close();
 
-                                _transport.ReleaseConnection();
                                 AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(null, false, _asyncOp.UserSuppliedState);
                                 InCall = false;
                                 _asyncOp.PostOperationCompleted(_onSendCompletedDelegate, eventArgs);
@@ -937,7 +935,6 @@ namespace System.Net.Mail
                             exception = se;
                         }
                     }
-                    _transport.ReleaseConnection();
                 }
             }
             finally
@@ -1095,17 +1092,11 @@ namespace System.Net.Mail
                     _cancelled = true;
                     Abort();
                 }
-
-                if ((_transport != null))
+                else
                 {
-                    _transport.ReleaseConnection();
+                    _transport?.ReleaseConnection();
                 }
-
-                if (_timer != null)
-                {
-                    _timer.Dispose();
-                }
-
+                _timer?.Dispose();
                 _disposed = true;
             }
         }

@@ -220,7 +220,7 @@ static gsize aot_code_high_addr = 0;
 static gint32 async_jit_info_size;
 
 #ifdef MONOTOUCH
-#define USE_PAGE_TRAMPOLINES (mono_defaults.corlib->aot_module->use_page_trampolines)
+#define USE_PAGE_TRAMPOLINES (mscorlib_aot_module->use_page_trampolines)
 #else
 #define USE_PAGE_TRAMPOLINES 0
 #endif
@@ -2426,10 +2426,6 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 	init_amodule_got (amodule, TRUE);
 
-	if (info->flags & MONO_AOT_FILE_FLAG_WITH_LLVM)
-		/* Directly called methods might make calls through the PLT */
-		init_plt (amodule);
-
 	if (amodule->jit_code_start)
 		mono_jit_info_add_aot_module (assembly->image, amodule->jit_code_start, amodule->jit_code_end);
 	if (amodule->llvm_code_start)
@@ -2443,6 +2439,10 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		amodule->use_page_trampolines = code != NULL;
 		/*g_warning ("using page trampolines: %d", amodule->use_page_trampolines);*/
 	}
+
+	if (info->flags & MONO_AOT_FILE_FLAG_WITH_LLVM)
+		/* Directly called methods might make calls through the PLT */
+		init_plt (amodule);
 
 	/*
 	 * Register the plt region as a single trampoline so we can unwind from this code
@@ -5537,13 +5537,12 @@ read_page_trampoline_uwinfo (MonoTrampInfo *info, int tramp_type, gboolean is_ge
 	else
 		g_assert_not_reached ();
 
-	read_unwind_info (mono_defaults.corlib->aot_module, info, symbol_name);
+	read_unwind_info (mscorlib_aot_module, info, symbol_name);
 }
 
 static unsigned char*
 get_new_trampoline_from_page (int tramp_type)
 {
-	MonoAotModule *amodule;
 	MonoImage *image;
 	TrampolinePage *page;
 	int count;
@@ -5565,13 +5564,11 @@ get_new_trampoline_from_page (int tramp_type)
 		return code;
 	}
 	mono_aot_page_unlock ();
-	/* the trampoline template page is in the mscorlib module */
-	image = mono_defaults.corlib;
-	g_assert (image);
 
 	psize = MONO_AOT_TRAMP_PAGE_SIZE;
 
-	amodule = image->aot_module;
+	/* the trampoline template page is in the mscorlib module */
+	MonoAotModule *amodule = mscorlib_aot_module;
 	g_assert (amodule);
 
 	if (tramp_type == MONO_AOT_TRAMP_SPECIFIC)
@@ -5795,7 +5792,7 @@ no_specific_trampoline (void)
  * Return a specific trampoline from the AOT file.
  */
 gpointer
-mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+mono_aot_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
 {
 	MonoAotModule *amodule;
 	guint32 got_offset, tramp_size;
@@ -6024,7 +6021,7 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 {
 	char *symbol;
 	gpointer code;
-	MonoAotModule *amodule = mono_defaults.corlib->aot_module;
+	MonoAotModule *amodule = mscorlib_aot_module;
 	guint32 index = MONO_RGCTX_SLOT_INDEX (slot);
 	static int count = 0;
 
@@ -6046,7 +6043,7 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 	}
 
 	symbol = mono_get_rgctx_fetch_trampoline_name (slot);
-	code = load_function (mono_defaults.corlib->aot_module, symbol);
+	code = load_function (amodule, symbol);
 	g_free (symbol);
 	/* The caller expects an ftnptr */
 	return mono_create_ftnptr (mono_domain_get (), code);
@@ -6360,7 +6357,7 @@ mono_aot_get_plt_info_offset (host_mgreg_t *regs, guint8 *code)
 }
 
 gpointer
-mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+mono_aot_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
 {
 	g_assert_not_reached ();
 	return NULL;

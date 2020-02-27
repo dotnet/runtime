@@ -1825,13 +1825,13 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 //
 void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
 {
-    var_types targetType = tree->TypeGet();
-    emitter*  emit       = GetEmitter();
 
     unsigned varNum = tree->GetLclNum();
     assert(varNum < compiler->lvaCount);
-    LclVarDsc* varDsc         = &(compiler->lvaTable[varNum]);
-    bool       isRegCandidate = varDsc->lvIsRegCandidate();
+    LclVarDsc* varDsc     = compiler->lvaGetDesc(varNum);
+    var_types  targetType = varDsc->GetRegisterType(tree);
+
+    bool isRegCandidate = varDsc->lvIsRegCandidate();
 
     // lcl_vars are not defs
     assert((tree->gtFlags & GTF_VAR_DEF) == 0);
@@ -1847,6 +1847,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         instruction ins  = ins_Load(targetType);
         emitAttr    attr = emitActualTypeSize(targetType);
 
+        emitter* emit = GetEmitter();
         emit->emitIns_R_S(ins, attr, tree->GetRegNum(), varNum, 0);
         genProduceReg(tree);
     }
@@ -1922,17 +1923,6 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 //
 void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 {
-    var_types targetType = tree->TypeGet();
-    regNumber targetReg  = tree->GetRegNum();
-    emitter*  emit       = GetEmitter();
-
-    unsigned varNum = tree->GetLclNum();
-    assert(varNum < compiler->lvaCount);
-    LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
-
-    // Ensure that lclVar nodes are typed correctly.
-    assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
-
     GenTree* data = tree->gtOp1;
 
     // var = call, where call returns a multi-reg return value
@@ -1943,9 +1933,17 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     }
     else
     {
+        regNumber targetReg = tree->GetRegNum();
+        emitter*  emit      = GetEmitter();
+
+        unsigned varNum = tree->GetLclNum();
+        assert(varNum < compiler->lvaCount);
+        LclVarDsc* varDsc     = compiler->lvaGetDesc(varNum);
+        var_types  targetType = varDsc->GetRegisterType(tree);
+
 #ifdef FEATURE_SIMD
         // storing of TYP_SIMD12 (i.e. Vector3) field
-        if (tree->TypeGet() == TYP_SIMD12)
+        if (targetType == TYP_SIMD12)
         {
             genStoreLclTypeSIMD12(tree);
             return;
@@ -1962,8 +1960,9 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
             if (varTypeIsSIMD(targetType))
             {
+                assert(targetType == TYP_SIMD16);
                 assert(targetReg != REG_NA);
-                GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, targetReg, 0x00, INS_OPTS_16B);
+                emit->emitIns_R_I(INS_movi, EA_16BYTE, targetReg, 0x00, INS_OPTS_16B);
                 genProduceReg(tree);
                 return;
             }
@@ -2683,14 +2682,14 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 
     jmpTabOffs = 0;
 
-    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", Compiler::s_compMethodsCount, jmpTabBase);
+    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
 
     for (unsigned i = 0; i < jumpCount; i++)
     {
         BasicBlock* target = *jumpTable++;
         noway_assert(target->bbFlags & BBF_JMP_TARGET);
 
-        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", Compiler::s_compMethodsCount, target->bbNum);
+        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
 
         GetEmitter()->emitDataGenData(i, target);
     };
@@ -4516,13 +4515,13 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
         {
             if (opt == INS_OPTS_4S)
             {
-                GetEmitter()->emitIns_R_R_R(INS_faddp, attr, tmpReg, tmpReg, tmpReg, INS_OPTS_4S);
+                GetEmitter()->emitIns_R_R_R(INS_faddp, EA_16BYTE, tmpReg, tmpReg, tmpReg, INS_OPTS_4S);
             }
-            GetEmitter()->emitIns_R_R(INS_faddp, EA_4BYTE, targetReg, tmpReg, INS_OPTS_2S);
+            GetEmitter()->emitIns_R_R(INS_faddp, EA_8BYTE, targetReg, tmpReg, INS_OPTS_2S);
         }
         else
         {
-            GetEmitter()->emitIns_R_R(INS_faddp, EA_8BYTE, targetReg, tmpReg, INS_OPTS_2D);
+            GetEmitter()->emitIns_R_R(INS_faddp, EA_16BYTE, targetReg, tmpReg, INS_OPTS_2D);
         }
     }
     else
@@ -6893,32 +6892,32 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_fabs, EA_16BYTE, REG_V8, REG_V9, INS_OPTS_2D);
 
     // fmaxp scalar
-    theEmitter->emitIns_R_R(INS_fmaxp, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_2S);
-    theEmitter->emitIns_R_R(INS_fmaxp, EA_8BYTE, REG_V2, REG_V3, INS_OPTS_2D);
+    theEmitter->emitIns_R_R(INS_fmaxp, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_fmaxp, EA_16BYTE, REG_V2, REG_V3, INS_OPTS_2D);
 
     // fmaxnmp scalar
-    theEmitter->emitIns_R_R(INS_fmaxnmp, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_2S);
-    theEmitter->emitIns_R_R(INS_fmaxnmp, EA_8BYTE, REG_V2, REG_V3, INS_OPTS_2D);
+    theEmitter->emitIns_R_R(INS_fmaxnmp, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_fmaxnmp, EA_16BYTE, REG_V2, REG_V3, INS_OPTS_2D);
 
     // fmaxnmv vector
-    theEmitter->emitIns_R_R(INS_fmaxnmv, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_fmaxnmv, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S);
 
     // fmaxv vector
-    theEmitter->emitIns_R_R(INS_fmaxv, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_fmaxv, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S);
 
-    // fminp vector
-    theEmitter->emitIns_R_R(INS_fminp, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_2S);
-    theEmitter->emitIns_R_R(INS_fminp, EA_8BYTE, REG_V2, REG_V3, INS_OPTS_2D);
+    // fminp scalar
+    theEmitter->emitIns_R_R(INS_fminp, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_fminp, EA_16BYTE, REG_V2, REG_V3, INS_OPTS_2D);
 
     // fminnmp scalar
-    theEmitter->emitIns_R_R(INS_fminnmp, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_2S);
-    theEmitter->emitIns_R_R(INS_fminnmp, EA_8BYTE, REG_V2, REG_V3, INS_OPTS_2D);
+    theEmitter->emitIns_R_R(INS_fminnmp, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_fminnmp, EA_16BYTE, REG_V2, REG_V3, INS_OPTS_2D);
 
     // fminnmv vector
-    theEmitter->emitIns_R_R(INS_fminnmv, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_fminnmv, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S);
 
     // fminv vector
-    theEmitter->emitIns_R_R(INS_fminv, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_fminv, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S);
 
     // fneg scalar
     theEmitter->emitIns_R_R(INS_fneg, EA_4BYTE, REG_V0, REG_V1);
@@ -7023,7 +7022,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_addv, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_16B);
     theEmitter->emitIns_R_R(INS_addv, EA_8BYTE, REG_V8, REG_V9, INS_OPTS_4H);
     theEmitter->emitIns_R_R(INS_addv, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_8H);
-    theEmitter->emitIns_R_R(INS_addv, EA_8BYTE, REG_V12, REG_V13, INS_OPTS_2S);
     theEmitter->emitIns_R_R(INS_addv, EA_16BYTE, REG_V14, REG_V15, INS_OPTS_4S);
 
     // saddlv vector
@@ -7031,7 +7029,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_saddlv, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_16B);
     theEmitter->emitIns_R_R(INS_saddlv, EA_8BYTE, REG_V8, REG_V9, INS_OPTS_4H);
     theEmitter->emitIns_R_R(INS_saddlv, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_8H);
-    theEmitter->emitIns_R_R(INS_saddlv, EA_8BYTE, REG_V12, REG_V13, INS_OPTS_2S);
     theEmitter->emitIns_R_R(INS_saddlv, EA_16BYTE, REG_V14, REG_V15, INS_OPTS_4S);
 
     // smaxv vector
@@ -7053,7 +7050,6 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_uaddlv, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_16B);
     theEmitter->emitIns_R_R(INS_uaddlv, EA_8BYTE, REG_V8, REG_V9, INS_OPTS_4H);
     theEmitter->emitIns_R_R(INS_uaddlv, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_8H);
-    theEmitter->emitIns_R_R(INS_uaddlv, EA_8BYTE, REG_V12, REG_V13, INS_OPTS_2S);
     theEmitter->emitIns_R_R(INS_uaddlv, EA_16BYTE, REG_V14, REG_V15, INS_OPTS_4S);
 
     // umaxv vector
@@ -7071,8 +7067,8 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_uminv, EA_16BYTE, REG_V12, REG_V13, INS_OPTS_4S);
 
     // faddp scalar
-    theEmitter->emitIns_R_R(INS_faddp, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_2S);
-    theEmitter->emitIns_R_R(INS_faddp, EA_8BYTE, REG_V2, REG_V3, INS_OPTS_2D);
+    theEmitter->emitIns_R_R(INS_faddp, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S);
+    theEmitter->emitIns_R_R(INS_faddp, EA_16BYTE, REG_V2, REG_V3, INS_OPTS_2D);
 
     // INS_fcvtl
     theEmitter->emitIns_R_R(INS_fcvtl, EA_4BYTE, REG_V0, REG_V1);
@@ -7575,7 +7571,7 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R_R(INS_add, EA_16BYTE, REG_V21, REG_V22, REG_V23, INS_OPTS_2D);
 
     // addp
-    theEmitter->emitIns_R_R(INS_addp, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2D); // scalar 8BYTE
+    theEmitter->emitIns_R_R(INS_addp, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_2D); // scalar 16BYTE
     theEmitter->emitIns_R_R_R(INS_addp, EA_8BYTE, REG_V3, REG_V4, REG_V5, INS_OPTS_8B);
     theEmitter->emitIns_R_R_R(INS_addp, EA_8BYTE, REG_V6, REG_V7, REG_V8, INS_OPTS_4H);
     theEmitter->emitIns_R_R_R(INS_addp, EA_8BYTE, REG_V9, REG_V10, REG_V11, INS_OPTS_2S);

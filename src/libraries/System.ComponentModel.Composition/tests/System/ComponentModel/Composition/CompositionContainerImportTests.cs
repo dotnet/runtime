@@ -13,6 +13,7 @@ using Xunit;
 
 namespace System.ComponentModel.Composition
 {
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class CompositionContainerImportTests
     {
         // Exporting collectin values is not supported
@@ -184,7 +185,7 @@ namespace System.ComponentModel.Composition
 
         [ConditionalFact(Helpers.ComImportAvailable)]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void ImportValueComComponent()
         {
             CTaskScheduler scheduler = new CTaskScheduler();
@@ -210,7 +211,7 @@ namespace System.ComponentModel.Composition
 
         [ConditionalFact(Helpers.ComImportAvailable)]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void DelayImportValueComComponent()
         {
             CTaskScheduler scheduler = new CTaskScheduler();

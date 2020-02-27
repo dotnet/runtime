@@ -28,6 +28,11 @@
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
+    <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs">
+      <Link>Common\System\Collections\Generic\ReferenceEqualityComparer.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Text.Json" />
   </ItemGroup>

@@ -192,9 +192,16 @@ namespace System.Net.Http.Functional.Tests
                     Content = withResponseContent ? new ByteArrayContent(new byte[1]) : null
                 }))))
             {
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(CreateFakeUri()));
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetByteArrayAsync(CreateFakeUri()));
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync(CreateFakeUri()));
+                HttpRequestException ex;
+
+                ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(CreateFakeUri()));
+                Assert.Equal(HttpStatusCode.BadRequest, ex.StatusCode);
+
+                ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetByteArrayAsync(CreateFakeUri()));
+                Assert.Equal(HttpStatusCode.BadRequest, ex.StatusCode);
+
+                ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync(CreateFakeUri()));
+                Assert.Equal(HttpStatusCode.BadRequest, ex.StatusCode);
             }
         }
 
@@ -593,14 +600,54 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
-        public void Timeout_TooShort_AllPendingOperationsCanceled()
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public void Timeout_TooShort_AllPendingOperationsCanceled(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
             {
                 client.Timeout = TimeSpan.FromMilliseconds(1);
-                Task<HttpResponseMessage>[] tasks = Enumerable.Range(0, 3).Select(_ => client.GetAsync(CreateFakeUri())).ToArray();
-                Assert.All(tasks, task => Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult()));
+                Task<HttpResponseMessage>[] tasks = Enumerable.Range(0, 3).Select(_ => client.GetAsync(CreateFakeUri(), completionOption)).ToArray();
+                Assert.All(tasks, task => {
+                    OperationCanceledException e = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());
+                    TimeoutException timeoutException = (TimeoutException)e.InnerException;
+                    Assert.NotNull(timeoutException);
+                    Assert.NotNull(timeoutException.InnerException);
+                });
+            }
+        }
+
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public async Task Timeout_CallerCanceledTokenAfterTimeout_TimeoutIsNotDetected(HttpCompletionOption completionOption)
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
+            {
+                client.Timeout = TimeSpan.FromMilliseconds(0.01);
+                CancellationTokenSource cts = new CancellationTokenSource();
+                CancellationToken token = cts.Token;
+                cts.Cancel();
+                Task<HttpResponseMessage> task = client.GetAsync(CreateFakeUri(), completionOption, token);
+                OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task);
+                Assert.Null(e.InnerException);
+            }
+        }
+
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public void Timeout_CallerCanceledTokenBeforeTimeout_TimeoutIsNotDetected(HttpCompletionOption completionOption)
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
+            {
+                client.Timeout = TimeSpan.FromDays(1);
+                CancellationTokenSource cts = new CancellationTokenSource();
+                Task<HttpResponseMessage> task = client.GetAsync(CreateFakeUri(), completionOption, cts.Token);
+                cts.Cancel();
+                OperationCanceledException e = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());
+                Assert.Null(e.InnerException);
             }
         }
 

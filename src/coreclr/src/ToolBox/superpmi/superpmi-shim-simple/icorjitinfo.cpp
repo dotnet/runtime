@@ -6,7 +6,6 @@
 #include "standardpch.h"
 #include "icorjitinfo.h"
 #include "superpmi-shim-simple.h"
-#include "ieememorymanager.h"
 #include "icorjitcompiler.h"
 #include "spmiutil.h"
 
@@ -218,31 +217,6 @@ BOOL interceptor_ICJI::isCompatibleDelegate(
     return original_ICorJitInfo->isCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
 }
 
-// Indicates if the method is an instance of the generic
-// method that passes (or has passed) verification
-CorInfoInstantiationVerification interceptor_ICJI::isInstantiationOfVerifiedGeneric(CORINFO_METHOD_HANDLE method /* IN
-                                                                                                                  */
-                                                                                    )
-{
-    return original_ICorJitInfo->isInstantiationOfVerifiedGeneric(method);
-}
-
-// Loads the constraints on a typical method definition, detecting cycles;
-// for use in verification.
-void interceptor_ICJI::initConstraintsForVerification(CORINFO_METHOD_HANDLE method,                        /* IN */
-                                                      BOOL*                 pfHasCircularClassConstraints, /* OUT */
-                                                      BOOL*                 pfHasCircularMethodConstraint  /* OUT */
-                                                      )
-{
-    original_ICorJitInfo->initConstraintsForVerification(method, pfHasCircularClassConstraints,
-                                                         pfHasCircularMethodConstraint);
-}
-
-CorInfoCanSkipVerificationResult interceptor_ICJI::canSkipMethodVerification(CORINFO_METHOD_HANDLE ftnHandle)
-{
-    return original_ICorJitInfo->canSkipMethodVerification(ftnHandle);
-}
-
 // load and restore the method
 void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method)
 {
@@ -307,23 +281,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTokenTypeAsHandle(CORINFO_RESOLVED_TOK
     return original_ICorJitInfo->getTokenTypeAsHandle(pResolvedToken);
 }
 
-// Returns true if the module does not require verification
-//
-// If fQuickCheckOnlyWithoutCommit=TRUE, the function only checks that the
-// module does not currently require verification in the current AppDomain.
-// This decision could change in the future, and so should not be cached.
-// If it is cached, it should only be used as a hint.
-// This is only used by ngen for calculating certain hints.
-//
-
-// Returns enum whether the module does not require verification
-// Also see ICorMethodInfo::canSkipMethodVerification();
-CorInfoCanSkipVerificationResult interceptor_ICJI::canSkipVerification(CORINFO_MODULE_HANDLE module /* IN  */
-                                                                       )
-{
-    return original_ICorJitInfo->canSkipVerification(module);
-}
-
 // Checks if the given metadata token is valid
 BOOL interceptor_ICJI::isValidToken(CORINFO_MODULE_HANDLE module, /* IN  */
                                     unsigned              metaTOK /* IN  */
@@ -346,11 +303,6 @@ LPCWSTR interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,  /* IN 
                                            )
 {
     return original_ICorJitInfo->getStringLiteral(module, metaTOK, length);
-}
-
-BOOL interceptor_ICJI::shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope)
-{
-    return original_ICorJitInfo->shouldEnforceCallvirtRestriction(scope);
 }
 
 /**********************************************************************************/
@@ -411,13 +363,6 @@ CorInfoInlineTypeCheck interceptor_ICJI::canInlineTypeCheck(CORINFO_CLASS_HANDLE
                                                             CorInfoInlineTypeCheckSource source)
 {
     return original_ICorJitInfo->canInlineTypeCheck(cls, source);
-}
-
-// If this method returns true, JIT will do optimization to inline the check for
-//     GetTypeFromHandle(handle) == obj.GetType()
-BOOL interceptor_ICJI::canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls)
-{
-    return original_ICorJitInfo->canInlineTypeCheckWithObjectVTable(cls);
 }
 
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
@@ -554,11 +499,6 @@ CorInfoHelpFunc interceptor_ICJI::getCastingHelper(CORINFO_RESOLVED_TOKEN* pReso
 CorInfoHelpFunc interceptor_ICJI::getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd)
 {
     return original_ICorJitInfo->getSharedCCtorHelper(clsHnd);
-}
-
-CorInfoHelpFunc interceptor_ICJI::getSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn)
-{
-    return original_ICorJitInfo->getSecurityPrologHelper(ftn);
 }
 
 // This is not pretty.  Boxing nullable<T> actually returns
@@ -800,14 +740,6 @@ unsigned interceptor_ICJI::getFieldOffset(CORINFO_FIELD_HANDLE field)
     return original_ICorJitInfo->getFieldOffset(field);
 }
 
-// TODO: jit64 should be switched to the same plan as the i386 jits - use
-// getClassGClayout to figure out the need for writebarrier helper, and inline the copying.
-// The interpretted value class copy is slow. Once this happens, USE_WRITE_BARRIER_HELPERS
-bool interceptor_ICJI::isWriteBarrierHelperRequired(CORINFO_FIELD_HANDLE field)
-{
-    return original_ICorJitInfo->isWriteBarrierHelperRequired(field);
-}
-
 void interceptor_ICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     CORINFO_METHOD_HANDLE   callerHandle,
                                     CORINFO_ACCESS_FLAGS    flags,
@@ -903,7 +835,7 @@ void interceptor_ICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] meth
 // Used to allocate memory that needs to handed to the EE.
 // For eg, use this to allocated memory for reporting debug info,
 // which will be handed to the EE by setVars() and setBoundaries()
-void* interceptor_ICJI::allocateArray(ULONG cBytes)
+void* interceptor_ICJI::allocateArray(size_t cBytes)
 {
     return original_ICorJitInfo->allocateArray(cBytes);
 }
@@ -1186,21 +1118,9 @@ void interceptor_ICJI::embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken
 //      CORINFO_LOOKUP_THISOBJ     use vtable pointer of 'this' param
 //      CORINFO_LOOKUP_CLASSPARAM  use vtable hidden param
 //      CORINFO_LOOKUP_METHODPARAM use enclosing type of method-desc hidden param
-CORINFO_LOOKUP_KIND interceptor_ICJI::getLocationOfThisType(CORINFO_METHOD_HANDLE context)
+void interceptor_ICJI::getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind)
 {
-    return original_ICorJitInfo->getLocationOfThisType(context);
-}
-
-// return the unmanaged target *if method has already been prelinked.*
-void* interceptor_ICJI::getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void** ppIndirection)
-{
-    return original_ICorJitInfo->getPInvokeUnmanagedTarget(method, ppIndirection);
-}
-
-// return address of fixup area for late-bound PInvoke calls.
-void* interceptor_ICJI::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void** ppIndirection)
-{
-    return original_ICorJitInfo->getAddressOfPInvokeFixup(method, ppIndirection);
+    original_ICorJitInfo->getLocationOfThisType(context, pLookupKind);
 }
 
 // return address of fixup area for late-bound PInvoke calls.
@@ -1373,15 +1293,6 @@ bool interceptor_ICJI::runWithErrorTrap(void (*function)(void*), void* param)
     return original_ICorJitInfo->runWithErrorTrap(function, param);
 }
 
-// return memory manager that the JIT can use to allocate a regular memory
-IEEMemoryManager* interceptor_ICJI::getMemoryManager()
-{
-    if (current_IEEMM->original_IEEMM == nullptr)
-        current_IEEMM->original_IEEMM = original_ICorJitInfo->getMemoryManager();
-
-    return current_IEEMM;
-}
-
 // get a block of memory for the code, readonly data, and read-write data
 void interceptor_ICJI::allocMem(ULONG              hotCodeSize,   /* IN */
                                 ULONG              coldCodeSize,  /* IN */
@@ -1454,12 +1365,6 @@ void* interceptor_ICJI::allocGCInfo(size_t size /* IN */
                                     )
 {
     return original_ICorJitInfo->allocGCInfo(size);
-}
-
-// only used on x64
-void interceptor_ICJI::yieldExecution()
-{
-    original_ICorJitInfo->yieldExecution();
 }
 
 // Indicate how many exception handler blocks are to be returned.
@@ -1548,16 +1453,6 @@ void interceptor_ICJI::recordRelocation(void* location,   /* IN  */
 WORD interceptor_ICJI::getRelocTypeHint(void* target)
 {
     return original_ICorJitInfo->getRelocTypeHint(target);
-}
-
-// A callback to identify the range of address known to point to
-// compiler-generated native entry points that call back into
-// MSIL.
-void interceptor_ICJI::getModuleNativeEntryPointRange(void** pStart, /* OUT */
-                                                      void** pEnd    /* OUT */
-                                                      )
-{
-    original_ICorJitInfo->getModuleNativeEntryPointRange(pStart, pEnd);
 }
 
 // For what machine does the VM expect the JIT to generate code? The VM

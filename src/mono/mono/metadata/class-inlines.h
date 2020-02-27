@@ -188,4 +188,34 @@ m_class_is_ginst (MonoClass *klass)
 	return mono_class_is_ginst (klass);
 }
 
+static inline gboolean
+m_class_is_private (MonoClass *klass)
+{
+	return (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_VISIBILITY_MASK) == TYPE_ATTRIBUTE_NOT_PUBLIC;
+}
+
+static inline gboolean
+m_method_is_icall (MonoMethod *method)
+{
+	return (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) != 0;
+}
+
+static inline gboolean
+m_method_is_synchronized (MonoMethod *method)
+{
+	return (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) != 0;
+}
+
+static inline gboolean
+m_method_is_pinvoke (MonoMethod *method)
+{
+	return (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) != 0;
+}
+
+static inline gboolean
+m_method_is_wrapper (MonoMethod *method)
+{
+	return method->wrapper_type != 0;
+}
+
 #endif
