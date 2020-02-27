@@ -687,7 +687,11 @@ namespace System.Linq.Expressions
         {
             ReadOnlyCollection<ParameterExpression> parameterList = parameters.ToReadOnly();
             ValidateLambdaArgs(typeof(TDelegate), ref body, parameterList, nameof(TDelegate));
-            return (Expression<TDelegate>)CreateLambda(typeof(TDelegate), body, name, tailCall, parameterList);
+#if FEATURE_COMPILE
+            return Expression<TDelegate>.Create(body, name, tailCall, parameterList);
+#else
+            return ExpressionCreator<TDelegate>.CreateExpressionFunc(body, name, tailCall, parameterList);
+#endif
         }
 
         /// <summary>

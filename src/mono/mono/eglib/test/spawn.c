@@ -13,12 +13,6 @@
 #define close _close
 #endif
 
-#if _MSC_VER
-// Two warnings for this significant error.
-#pragma warning(disable:4022) // FIXME severe parameter mismatch with regard to g_spawn_async_with_pipes GPid
-#pragma warning(disable:4047) // FIXME severe parameter mismatch with regard to g_spawn_async_with_pipes GPid
-#endif
-
 static RESULT
 test_spawn_sync (void)
 {
@@ -60,7 +54,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 	char *argv [15];
 	int stdout_fd = -1;
 	char buffer [512];
-	pid_t child_pid = 0;
+	GPid child_pid = 0;
 
 	memset (argv, 0, 15 * sizeof (char *));
 	argv [0] = (char*)"ls";

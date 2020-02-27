@@ -34,7 +34,8 @@ namespace System.Net.Sockets
         public static bool operator ==(IPPacketInformation packetInformation1, IPPacketInformation packetInformation2)
         {
             return packetInformation1._networkInterface == packetInformation2._networkInterface &&
-                (packetInformation1._address == null && packetInformation2._address == null || packetInformation1._address.Equals(packetInformation2._address));
+                ((packetInformation1._address == null && packetInformation2._address == null) ||
+                (packetInformation1._address != null && packetInformation1._address.Equals(packetInformation2._address)));
         }
 
         public static bool operator !=(IPPacketInformation packetInformation1, IPPacketInformation packetInformation2)
@@ -42,7 +43,7 @@ namespace System.Net.Sockets
             return !(packetInformation1 == packetInformation2);
         }
 
-        public override bool Equals(object comparand) =>
+        public override bool Equals(object? comparand) =>
             comparand is IPPacketInformation other && this == other;
 
         public override int GetHashCode()

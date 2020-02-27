@@ -14,9 +14,9 @@ namespace System.Net.Sockets
     // AcceptOverlappedAsyncResult - used to take care of storage for async Socket BeginAccept call.
     internal sealed partial class AcceptOverlappedAsyncResult : BaseOverlappedAsyncResult
     {
-        private Socket _acceptedSocket;
+        private Socket? _acceptedSocket;
 
-        internal Socket AcceptSocket
+        internal Socket? AcceptSocket
         {
             set
             {
@@ -33,6 +33,8 @@ namespace System.Net.Sockets
 
             if (errorCode == SocketError.Success)
             {
+                Debug.Assert(_listenSocket._rightEndPoint != null);
+
                 Internals.SocketAddress remoteSocketAddress = IPEndPointExtensions.Serialize(_listenSocket._rightEndPoint);
                 System.Buffer.BlockCopy(socketAddress, 0, remoteSocketAddress.Buffer, 0, socketAddressLen);
 
@@ -44,7 +46,7 @@ namespace System.Net.Sockets
             base.CompletionCallback(0, errorCode);
         }
 
-        internal override object PostCompletion(int numBytes)
+        internal override object? PostCompletion(int numBytes)
         {
             _numBytes = numBytes;
             return (SocketError)ErrorCode == SocketError.Success ? _acceptedSocket : null;

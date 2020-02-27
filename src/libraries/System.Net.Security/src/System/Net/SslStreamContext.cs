@@ -16,10 +16,10 @@ namespace System.Net
                 NetEventSource.Fail(this, "Not expecting a null sslStream!");
             }
 
-            _sslStream = sslStream;
+            _sslStream = sslStream!;
         }
 
-        public override ChannelBinding GetChannelBinding(ChannelBindingKind kind)
+        public override ChannelBinding? GetChannelBinding(ChannelBindingKind kind)
         {
             return _sslStream.GetChannelBinding(kind);
         }

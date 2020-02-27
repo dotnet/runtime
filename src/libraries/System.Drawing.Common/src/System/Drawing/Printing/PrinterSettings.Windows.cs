@@ -25,7 +25,7 @@ namespace System.Drawing.Printing
         // Also, all properties have hidden tri-state logic -- yes/no/default
         private const int Padding64Bit = 4;
 
-        private string _printerName; // default printer.
+        private string? _printerName; // default printer.
         private string _driverName = "";
         private string _outputPort = "";
         private bool _printToFile;
@@ -34,7 +34,7 @@ namespace System.Drawing.Printing
         private bool _printDialogDisplayed;
 
         private short _extrabytes;
-        private byte[] _extrainfo;
+        private byte[]? _extrainfo;
 
         private short _copies = -1;
         private Duplex _duplex = System.Drawing.Printing.Duplex.Default;
@@ -47,7 +47,7 @@ namespace System.Drawing.Printing
         private PrintRange _printRange;
 
         private short _devmodebytes;
-        private byte[] _cachedDevmode;
+        private byte[]? _cachedDevmode;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='PrinterSettings'/> class.
@@ -208,7 +208,7 @@ namespace System.Drawing.Printing
                     // The printer name is at offset 0
                     //
                     IntPtr namePointer = (IntPtr)Marshal.ReadIntPtr((IntPtr)(checked((long)buffer + i * sizeofstruct)));
-                    array[i] = Marshal.PtrToStringAuto(namePointer);
+                    array[i] = Marshal.PtrToStringAuto(namePointer)!;
                 }
 
                 Marshal.FreeCoTaskMem(buffer);
@@ -556,7 +556,7 @@ namespace System.Drawing.Printing
         internal DeviceContext CreateDeviceContext(PageSettings pageSettings)
         {
             IntPtr modeHandle = GetHdevmodeInternal();
-            DeviceContext dc = null;
+            DeviceContext? dc = null;
 
             try
             {
@@ -574,7 +574,7 @@ namespace System.Drawing.Printing
         internal DeviceContext CreateDeviceContext(IntPtr hdevmode)
         {
             IntPtr modePointer = Interop.Kernel32.GlobalLock(hdevmode);
-            DeviceContext dc = DeviceContext.CreateDC(DriverName, PrinterNameInternal, (string)null, modePointer);
+            DeviceContext dc = DeviceContext.CreateDC(DriverName, PrinterNameInternal, fileName:null, modePointer); ;
             Interop.Kernel32.GlobalUnlock(hdevmode);
             return dc;
         }
@@ -603,7 +603,7 @@ namespace System.Drawing.Printing
         internal DeviceContext CreateInformationContext(IntPtr hdevmode)
         {
             IntPtr modePointer = Interop.Kernel32.GlobalLock(hdevmode);
-            DeviceContext dc = DeviceContext.CreateIC(DriverName, PrinterNameInternal, (string)null, modePointer);
+            DeviceContext dc = DeviceContext.CreateIC(DriverName, PrinterNameInternal, fileName:null, modePointer);
             Interop.Kernel32.GlobalUnlock(hdevmode);
             return dc;
         }
@@ -617,7 +617,7 @@ namespace System.Drawing.Printing
         public Graphics CreateMeasurementGraphics(bool honorOriginAtMargins)
         {
             Graphics g = CreateMeasurementGraphics();
-            if (g != null && honorOriginAtMargins)
+            if (honorOriginAtMargins)
             {
                 g.TranslateTransform(-_defaultPageSettings.HardMarginX, -_defaultPageSettings.HardMarginY);
                 g.TranslateTransform(_defaultPageSettings.Margins.Left, _defaultPageSettings.Margins.Top);
@@ -638,7 +638,7 @@ namespace System.Drawing.Printing
         public Graphics CreateMeasurementGraphics(PageSettings pageSettings, bool honorOriginAtMargins)
         {
             Graphics g = CreateMeasurementGraphics();
-            if (g != null && honorOriginAtMargins)
+            if (honorOriginAtMargins)
             {
                 g.TranslateTransform(-pageSettings.HardMarginX, -pageSettings.HardMarginY);
                 g.TranslateTransform(pageSettings.Margins.Left, pageSettings.Margins.Top);
@@ -883,7 +883,7 @@ namespace System.Drawing.Printing
                 }
             }
 
-            SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(pointer, typeof(SafeNativeMethods.DEVMODE));
+            SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(pointer, typeof(SafeNativeMethods.DEVMODE))!;
 
 
             if (_extrainfo != null)
@@ -1003,7 +1003,7 @@ namespace System.Drawing.Printing
                 }
 
                 IntPtr modePointer = Interop.Kernel32.GlobalLock(new HandleRef(this, modeHandle));
-                SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
+                SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE))!;
                 switch (field)
                 {
                     case ModeField.Orientation:
@@ -1083,7 +1083,7 @@ namespace System.Drawing.Printing
             PaperSize[] result = new PaperSize[count];
             for (int i = 0; i < count; i++)
             {
-                string name = Marshal.PtrToStringAuto((IntPtr)(checked((long)namesBuffer + stringSize * i)), 64);
+                string name = Marshal.PtrToStringAuto((IntPtr)(checked((long)namesBuffer + stringSize * i)), 64)!;
                 int index = name.IndexOf('\0');
                 if (index > -1)
                 {
@@ -1125,7 +1125,7 @@ namespace System.Drawing.Printing
             PaperSource[] result = new PaperSource[count];
             for (int i = 0; i < count; i++)
             {
-                string name = Marshal.PtrToStringAuto((IntPtr)(checked((long)namesBuffer + stringSize * i)), 24);
+                string name = Marshal.PtrToStringAuto((IntPtr)(checked((long)namesBuffer + stringSize * i)), 24)!;
                 int index = name.IndexOf('\0');
                 if (index > -1)
                 {
@@ -1183,7 +1183,7 @@ namespace System.Drawing.Printing
         private static string ReadOneDEVNAME(IntPtr pDevnames, int slot)
         {
             int offset = checked(Marshal.SystemDefaultCharSize * Marshal.ReadInt16((IntPtr)(checked((long)pDevnames + slot * 2))));
-            string result = Marshal.PtrToStringAuto((IntPtr)(checked((long)pDevnames + offset)));
+            string result = Marshal.PtrToStringAuto((IntPtr)(checked((long)pDevnames + offset)))!;
             return result;
         }
 
@@ -1196,7 +1196,7 @@ namespace System.Drawing.Printing
                 throw new ArgumentException(SR.Format(SR.InvalidPrinterHandle, hdevmode));
 
             IntPtr pointer = Interop.Kernel32.GlobalLock(hdevmode);
-            SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(pointer, typeof(SafeNativeMethods.DEVMODE));
+            SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(pointer, typeof(SafeNativeMethods.DEVMODE))!;
 
             //Copy entire public devmode as a byte array...
             _devmodebytes = mode.dmSize;
@@ -1657,7 +1657,7 @@ namespace System.Drawing.Printing
             private readonly object[] _array;
             private readonly int _endIndex;
             private int _index;
-            private object _item;
+            private object? _item;
 
             public ArrayEnumerator(object[] array, int count)
             {
@@ -1665,7 +1665,7 @@ namespace System.Drawing.Printing
                 _endIndex = count;
             }
 
-            public object Current => _item;
+            public object? Current => _item;
 
             public bool MoveNext()
             {

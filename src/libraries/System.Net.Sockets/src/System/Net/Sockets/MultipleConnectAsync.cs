@@ -13,11 +13,11 @@ namespace System.Net.Sockets
     // on behalf of a single user call to ConnectAsync with a DnsEndPoint
     internal abstract class MultipleConnectAsync
     {
-        protected SocketAsyncEventArgs _userArgs;
-        protected SocketAsyncEventArgs _internalArgs;
+        protected SocketAsyncEventArgs? _userArgs;
+        protected SocketAsyncEventArgs? _internalArgs;
 
-        protected DnsEndPoint _endPoint;
-        protected IPAddress[] _addressList;
+        protected DnsEndPoint? _endPoint;
+        protected IPAddress[]? _addressList;
         protected int _nextAddress;
 
         private enum State
@@ -90,7 +90,7 @@ namespace System.Net.Sockets
         // false if it has failed synchronously.
         private bool DoDnsCallback(IAsyncResult result, bool sync)
         {
-            Exception exception = null;
+            Exception? exception = null;
 
             lock (_lockObject)
             {
@@ -127,7 +127,7 @@ namespace System.Net.Sockets
 
                     _internalArgs = new SocketAsyncEventArgs();
                     _internalArgs.Completed += InternalConnectCallback;
-                    _internalArgs.CopyBufferFrom(_userArgs);
+                    _internalArgs.CopyBufferFrom(_userArgs!);
 
                     exception = AttemptConnection();
 
@@ -152,9 +152,9 @@ namespace System.Net.Sockets
 
         // Callback which fires when an internal connection attempt completes.
         // If it failed and there are more addresses to try, do it.
-        private void InternalConnectCallback(object sender, SocketAsyncEventArgs args)
+        private void InternalConnectCallback(object? sender, SocketAsyncEventArgs args)
         {
-            Exception exception = null;
+            Exception? exception = null;
 
             lock (_lockObject)
             {
@@ -187,7 +187,7 @@ namespace System.Net.Sockets
 
                         // Keep track of this because it will be overwritten by AttemptConnection
                         SocketError currentFailure = args.SocketError;
-                        Exception connectException = AttemptConnection();
+                        Exception? connectException = AttemptConnection();
 
                         if (connectException == null)
                         {
@@ -196,7 +196,7 @@ namespace System.Net.Sockets
                         }
                         else
                         {
-                            SocketException socketException = connectException as SocketException;
+                            SocketException? socketException = connectException as SocketException;
                             if (socketException != null && socketException.SocketErrorCode == SocketError.NoData)
                             {
                                 // If the error is NoData, that means there are no more IPAddresses to attempt
@@ -226,21 +226,21 @@ namespace System.Net.Sockets
 
         // Called to initiate a connection attempt to the next address in the list.  Returns an exception
         // if the attempt failed synchronously, or null if it was successfully initiated.
-        private Exception AttemptConnection()
+        private Exception? AttemptConnection()
         {
             try
             {
-                Socket attemptSocket;
-                IPAddress attemptAddress = GetNextAddress(out attemptSocket);
+                Socket? attemptSocket;
+                IPAddress? attemptAddress = GetNextAddress(out attemptSocket);
 
                 if (attemptAddress == null)
                 {
                     return new SocketException((int)SocketError.NoData);
                 }
 
-                _internalArgs.RemoteEndPoint = new IPEndPoint(attemptAddress, _endPoint.Port);
+                _internalArgs!.RemoteEndPoint = new IPEndPoint(attemptAddress, _endPoint!.Port);
 
-                return AttemptConnection(attemptSocket, _internalArgs);
+                return AttemptConnection(attemptSocket!, _internalArgs);
             }
             catch (Exception e)
             {
@@ -252,7 +252,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private Exception AttemptConnection(Socket attemptSocket, SocketAsyncEventArgs args)
+        private Exception? AttemptConnection(Socket attemptSocket, SocketAsyncEventArgs args)
         {
             try
             {
@@ -286,7 +286,7 @@ namespace System.Net.Sockets
         private void Succeed()
         {
             OnSucceed();
-            _userArgs.FinishWrapperConnectSuccess(_internalArgs.ConnectSocket, _internalArgs.BytesTransferred, _internalArgs.SocketFlags);
+            _userArgs!.FinishWrapperConnectSuccess(_internalArgs!.ConnectSocket, _internalArgs.BytesTransferred, _internalArgs.SocketFlags);
             _internalArgs.Dispose();
         }
 
@@ -315,10 +315,10 @@ namespace System.Net.Sockets
                 _internalArgs.Dispose();
             }
 
-            SocketException socketException = e as SocketException;
+            SocketException? socketException = e as SocketException;
             if (socketException != null)
             {
-                _userArgs.FinishConnectByNameSyncFailure(socketException, 0, SocketFlags.None);
+                _userArgs!.FinishConnectByNameSyncFailure(socketException, 0, SocketFlags.None);
             }
             else
             {
@@ -335,7 +335,7 @@ namespace System.Net.Sockets
                 _internalArgs.Dispose();
             }
 
-            _userArgs.FinishConnectByNameAsyncFailure(e, 0, SocketFlags.None);
+            _userArgs!.FinishConnectByNameAsyncFailure(e, 0, SocketFlags.None);
         }
 
         public void Cancel()
@@ -396,12 +396,12 @@ namespace System.Net.Sockets
         }
 
         // Call AsyncFail on a threadpool thread so it's asynchronous with respect to Cancel().
-        private void CallAsyncFail(object ignored)
+        private void CallAsyncFail(object? ignored)
         {
             AsyncFail(new SocketException((int)SocketError.OperationAborted));
         }
 
-        protected abstract IPAddress GetNextAddress(out Socket attemptSocket);
+        protected abstract IPAddress? GetNextAddress(out Socket? attemptSocket);
     }
 
     // Used when the instance ConnectAsync method is called, or when the DnsEndPoint specified
@@ -418,14 +418,14 @@ namespace System.Net.Sockets
             _userSocket = userSocket;
         }
 
-        protected override IPAddress GetNextAddress(out Socket attemptSocket)
+        protected override IPAddress? GetNextAddress(out Socket? attemptSocket)
         {
             _socket.ReplaceHandleIfNecessaryAfterFailedConnect();
 
-            IPAddress rval = null;
+            IPAddress? rval = null;
             do
             {
-                if (_nextAddress >= _addressList.Length)
+                if (_nextAddress >= _addressList!.Length)
                 {
                     attemptSocket = null;
                     return null;
@@ -458,8 +458,8 @@ namespace System.Net.Sockets
     // ahead of time, so we create both IPv4 and IPv6 sockets.
     internal sealed class DualSocketMultipleConnectAsync : MultipleConnectAsync
     {
-        private readonly Socket _socket4;
-        private readonly Socket _socket6;
+        private readonly Socket? _socket4;
+        private readonly Socket? _socket6;
 
         public DualSocketMultipleConnectAsync(SocketType socketType, ProtocolType protocolType)
         {
@@ -473,14 +473,14 @@ namespace System.Net.Sockets
             }
         }
 
-        protected override IPAddress GetNextAddress(out Socket attemptSocket)
+        protected override IPAddress? GetNextAddress(out Socket? attemptSocket)
         {
-            IPAddress rval = null;
+            IPAddress? rval = null;
             attemptSocket = null;
 
             while (attemptSocket == null)
             {
-                if (_nextAddress >= _addressList.Length)
+                if (_nextAddress >= _addressList!.Length)
                 {
                     return null;
                 }

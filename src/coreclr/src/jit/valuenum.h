@@ -134,8 +134,9 @@ private:
     {
         VNFOA_IllegalGenTreeOp = 0x1,  // corresponds to a genTreeOps value that is not a legal VN func.
         VNFOA_Commutative      = 0x2,  // 1 iff the function is commutative.
-        VNFOA_Arity            = 0x4,  // Bits 2..3 encode the arity.
-        VNFOA_AfterArity       = 0x20, // Makes it clear what value the next flag(s) after Arity should have.
+        VNFOA_Arity1           = 0x4,  // Bits 2,3,4 encode the arity.
+        VNFOA_Arity2           = 0x8,  // Bits 2,3,4 encode the arity.
+        VNFOA_Arity4           = 0x10, // Bits 2,3,4 encode the arity.
         VNFOA_KnownNonNull     = 0x20, // 1 iff the result is known to be non-null.
         VNFOA_SharedStatic     = 0x40, // 1 iff this VNF is represent one of the shared static jit helpers
     };
@@ -143,7 +144,7 @@ private:
     static const unsigned VNFOA_ArityShift = 2;
     static const unsigned VNFOA_ArityBits  = 3;
     static const unsigned VNFOA_MaxArity   = (1 << VNFOA_ArityBits) - 1; // Max arity we can represent.
-    static const unsigned VNFOA_ArityMask  = VNFOA_AfterArity - VNFOA_Arity;
+    static const unsigned VNFOA_ArityMask  = (VNFOA_Arity4 | VNFOA_Arity2 | VNFOA_Arity1);
 
     // These enum constants are used to encode the cast operation in the lowest bits by VNForCastOper
     enum VNFCastAttrib
@@ -877,6 +878,12 @@ public:
     // Requires "excSeq" to be a ExcSetCons sequence.
     // Prints a representation of the set of exceptions on standard out.
     void vnDumpExcSeq(Compiler* comp, VNFuncApp* excSeq, bool isHead);
+
+#ifdef FEATURE_SIMD
+    // Requires "simdType" to be a VNF_SimdType VNFuncApp.
+    // Prints a representation (comma-separated list of field names) on standard out.
+    void vnDumpSimdType(Compiler* comp, VNFuncApp* simdType);
+#endif // FEATURE_SIMD
 
     // Returns the string name of "vnf".
     static const char* VNFuncName(VNFunc vnf);

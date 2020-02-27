@@ -18,7 +18,7 @@ namespace System.Net
         private const int NotLoggedFileId = ConnectedAsyncDnsId + 1;
 
         [NonEvent]
-        public static void Accepted(Socket socket, object remoteEp, object localEp)
+        public static void Accepted(Socket socket, object? remoteEp, object? localEp)
         {
             if (IsEnabled)
             {
@@ -33,7 +33,7 @@ namespace System.Net
         }
 
         [NonEvent]
-        public static void Connected(Socket socket, object localEp, object remoteEp)
+        public static void Connected(Socket socket, object? localEp, object? remoteEp)
         {
             if (IsEnabled)
             {
@@ -82,7 +82,7 @@ namespace System.Net
         /// <param name="buffer">The buffer to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void DumpBuffer(object thisOrContextObject, Memory<byte> buffer, [CallerMemberName] string memberName = null)
+        public static void DumpBuffer(object thisOrContextObject, Memory<byte> buffer, [CallerMemberName] string? memberName = null)
         {
             DumpBuffer(thisOrContextObject, buffer, 0, buffer.Length, memberName);
         }
@@ -94,7 +94,7 @@ namespace System.Net
         /// <param name="count">The number of bytes to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void DumpBuffer(object thisOrContextObject, Memory<byte> buffer, int offset, int count, [CallerMemberName] string memberName = null)
+        public static void DumpBuffer(object thisOrContextObject, Memory<byte> buffer, int offset, int count, [CallerMemberName] string? memberName = null)
         {
             if (IsEnabled)
             {
@@ -106,7 +106,7 @@ namespace System.Net
 
                 buffer = buffer.Slice(offset, Math.Min(count, MaxDumpSize));
                 byte[] slice = MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> arraySegment) && arraySegment.Offset == 0 && arraySegment.Count == buffer.Length ?
-                    arraySegment.Array :
+                    arraySegment.Array! :
                     buffer.ToArray();
 
                 Log.DumpBuffer(IdOf(thisOrContextObject), memberName, slice);

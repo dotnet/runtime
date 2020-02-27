@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Net.Security;
@@ -57,7 +58,7 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGet0AlpnSelected")]
         internal static extern void SslGetAlpnSelected(SafeSslHandle ssl, out IntPtr protocol, out int len);
 
-        internal static byte[] SslGetAlpnSelected(SafeSslHandle ssl)
+        internal static byte[]? SslGetAlpnSelected(SafeSslHandle ssl)
         {
             IntPtr protocol;
             int len;
@@ -133,9 +134,9 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOpenSslCipherSuiteName")]
         private static extern IntPtr GetOpenSslCipherSuiteName(SafeSslHandle ssl, int cipherSuite, out int isTls12OrLower);
 
-        internal static string GetOpenSslCipherSuiteName(SafeSslHandle ssl, TlsCipherSuite cipherSuite, out bool isTls12OrLower)
+        internal static string? GetOpenSslCipherSuiteName(SafeSslHandle ssl, TlsCipherSuite cipherSuite, out bool isTls12OrLower)
         {
-            string ret = Marshal.PtrToStringAnsi(GetOpenSslCipherSuiteName(ssl, (int)cipherSuite, out int isTls12OrLowerInt));
+            string? ret = Marshal.PtrToStringAnsi(GetOpenSslCipherSuiteName(ssl, (int)cipherSuite, out int isTls12OrLowerInt));
             isTls12OrLower = isTls12OrLowerInt != 0;
             return ret;
         }
@@ -178,7 +179,7 @@ internal static partial class Interop
             // Don't include the first item (the cert whose private key we have)
             for (int i = 1; i < stop; i++)
             {
-                SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain.ChainElements[i].Certificate.Handle);
+                SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain.ChainElements[i].Certificate!.Handle);
                 Crypto.CheckValidOpenSslHandle(dupCertHandle);
                 if (!SslAddExtraChainCert(sslContext, dupCertHandle))
                 {
@@ -219,8 +220,8 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeSslHandle : SafeHandle
     {
-        private SafeBioHandle _readBio;
-        private SafeBioHandle _writeBio;
+        private SafeBioHandle? _readBio;
+        private SafeBioHandle? _writeBio;
         private bool _isServer;
         private bool _handshakeCompleted = false;
 
@@ -231,7 +232,7 @@ namespace Microsoft.Win32.SafeHandles
             get { return _isServer; }
         }
 
-        public SafeBioHandle InputBio
+        public SafeBioHandle? InputBio
         {
             get
             {
@@ -239,7 +240,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        public SafeBioHandle OutputBio
+        public SafeBioHandle? OutputBio
         {
             get
             {

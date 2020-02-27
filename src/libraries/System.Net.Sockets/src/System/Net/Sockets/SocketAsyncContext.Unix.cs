@@ -38,11 +38,11 @@ namespace System.Net.Sockets
         // refactoring, these could also potentially be moved to SocketAsyncEventArgs, which
         // would be more invasive but which would allow them to be reused across socket instances
         // and also eliminate the interlocked necessary to rent the instances.
-        private AcceptOperation _cachedAcceptOperation;
-        private BufferMemoryReceiveOperation _cachedBufferMemoryReceiveOperation;
-        private BufferListReceiveOperation _cachedBufferListReceiveOperation;
-        private BufferMemorySendOperation _cachedBufferMemorySendOperation;
-        private BufferListSendOperation _cachedBufferListSendOperation;
+        private AcceptOperation? _cachedAcceptOperation;
+        private BufferMemoryReceiveOperation? _cachedBufferMemoryReceiveOperation;
+        private BufferListReceiveOperation? _cachedBufferListReceiveOperation;
+        private BufferMemorySendOperation? _cachedBufferMemorySendOperation;
+        private BufferListSendOperation? _cachedBufferListSendOperation;
 
         private void ReturnOperation(AcceptOperation operation)
         {
@@ -125,14 +125,14 @@ namespace System.Net.Sockets
 #endif
 
             public readonly SocketAsyncContext AssociatedContext;
-            public AsyncOperation Next;
-            protected object CallbackOrEvent;
+            public AsyncOperation Next = null!; // initialized by helper called from ctor
+            protected object? CallbackOrEvent;
             public SocketError ErrorCode;
-            public byte[] SocketAddress;
+            public byte[]? SocketAddress;
             public int SocketAddressLen;
             public CancellationTokenRegistration CancellationRegistration;
 
-            public ManualResetEventSlim Event
+            public ManualResetEventSlim? Event
             {
                 get { return CallbackOrEvent as ManualResetEventSlim; }
                 set { CallbackOrEvent = value; }
@@ -254,7 +254,7 @@ namespace System.Net.Sockets
                     // we can't pool the object, as ProcessQueue may still have a reference to it, due to
                     // using a pattern whereby it takes the lock to grab an item, but then releases the lock
                     // to do further processing on the item that's still in the list.
-                    ThreadPool.UnsafeQueueUserWorkItem(o => ((AsyncOperation)o).InvokeCallback(allowPooling: false), this);
+                    ThreadPool.UnsafeQueueUserWorkItem(o => ((AsyncOperation)o!).InvokeCallback(allowPooling: false), this);
                 }
 
                 Trace("Exit");
@@ -266,7 +266,7 @@ namespace System.Net.Sockets
 
             public void Dispatch()
             {
-                ManualResetEventSlim e = Event;
+                ManualResetEventSlim? e = Event;
                 if (e != null)
                 {
                     // Sync operation.  Signal waiting thread to continue processing.
@@ -311,13 +311,13 @@ namespace System.Net.Sockets
             public abstract void InvokeCallback(bool allowPooling);
 
             [Conditional("SOCKETASYNCCONTEXT_TRACE")]
-            public void Trace(string message, [CallerMemberName] string memberName = null)
+            public void Trace(string message, [CallerMemberName] string? memberName = null)
             {
                 OutputTrace($"{IdOf(this)}.{memberName}: {message}");
             }
 
             [Conditional("SOCKETASYNCCONTEXT_TRACE")]
-            public void TraceWithContext(SocketAsyncContext context, string message, [CallerMemberName] string memberName = null)
+            public void TraceWithContext(SocketAsyncContext context, string message, [CallerMemberName] string? memberName = null)
             {
                 OutputTrace($"{IdOf(context)}, {IdOf(this)}.{memberName}: {message}");
             }
@@ -350,13 +350,13 @@ namespace System.Net.Sockets
 
             protected sealed override void Abort() { }
 
-            public Action<int, byte[], int, SocketFlags, SocketError> Callback
+            public Action<int, byte[]?, int, SocketFlags, SocketError>? Callback
             {
                 set => CallbackOrEvent = value;
             }
 
             public override void InvokeCallback(bool allowPooling) =>
-                ((Action<int, byte[], int, SocketFlags, SocketError>)CallbackOrEvent)(BytesTransferred, SocketAddress, SocketAddressLen, SocketFlags.None, ErrorCode);
+                ((Action<int, byte[]?, int, SocketFlags, SocketError>)CallbackOrEvent!)(BytesTransferred, SocketAddress, SocketAddressLen, SocketFlags.None, ErrorCode);
         }
 
         private sealed class BufferMemorySendOperation : SendOperation
@@ -373,9 +373,9 @@ namespace System.Net.Sockets
 
             public override void InvokeCallback(bool allowPooling)
             {
-                var cb = (Action<int, byte[], int, SocketFlags, SocketError>)CallbackOrEvent;
+                var cb = (Action<int, byte[]?, int, SocketFlags, SocketError>)CallbackOrEvent!;
                 int bt = BytesTransferred;
-                byte[] sa = SocketAddress;
+                byte[]? sa = SocketAddress;
                 int sal = SocketAddressLen;
                 SocketError ec = ErrorCode;
 
@@ -390,7 +390,7 @@ namespace System.Net.Sockets
 
         private sealed class BufferListSendOperation : SendOperation
         {
-            public IList<ArraySegment<byte>> Buffers;
+            public IList<ArraySegment<byte>>? Buffers;
             public int BufferIndex;
 
             public BufferListSendOperation(SocketAsyncContext context) : base(context) { }
@@ -402,9 +402,9 @@ namespace System.Net.Sockets
 
             public override void InvokeCallback(bool allowPooling)
             {
-                var cb = (Action<int, byte[], int, SocketFlags, SocketError>)CallbackOrEvent;
+                var cb = (Action<int, byte[]?, int, SocketFlags, SocketError>)CallbackOrEvent!;
                 int bt = BytesTransferred;
-                byte[] sa = SocketAddress;
+                byte[]? sa = SocketAddress;
                 int sal = SocketAddressLen;
                 SocketError ec = ErrorCode;
 
@@ -440,13 +440,13 @@ namespace System.Net.Sockets
 
             protected sealed override void Abort() { }
 
-            public Action<int, byte[], int, SocketFlags, SocketError> Callback
+            public Action<int, byte[]?, int, SocketFlags, SocketError>? Callback
             {
                 set => CallbackOrEvent = value;
             }
 
             public override void InvokeCallback(bool allowPooling) =>
-                ((Action<int, byte[], int, SocketFlags, SocketError>)CallbackOrEvent)(
+                ((Action<int, byte[]?, int, SocketFlags, SocketError>)CallbackOrEvent!)(
                     BytesTransferred, SocketAddress, SocketAddressLen, ReceivedFlags, ErrorCode);
         }
 
@@ -475,9 +475,9 @@ namespace System.Net.Sockets
 
             public override void InvokeCallback(bool allowPooling)
             {
-                var cb = (Action<int, byte[], int, SocketFlags, SocketError>)CallbackOrEvent;
+                var cb = (Action<int, byte[]?, int, SocketFlags, SocketError>)CallbackOrEvent!;
                 int bt = BytesTransferred;
-                byte[] sa = SocketAddress;
+                byte[]? sa = SocketAddress;
                 int sal = SocketAddressLen;
                 SocketFlags rf = ReceivedFlags;
                 SocketError ec = ErrorCode;
@@ -493,7 +493,7 @@ namespace System.Net.Sockets
 
         private sealed class BufferListReceiveOperation : ReceiveOperation
         {
-            public IList<ArraySegment<byte>> Buffers;
+            public IList<ArraySegment<byte>>? Buffers;
 
             public BufferListReceiveOperation(SocketAsyncContext context) : base(context) { }
 
@@ -502,9 +502,9 @@ namespace System.Net.Sockets
 
             public override void InvokeCallback(bool allowPooling)
             {
-                var cb = (Action<int, byte[], int, SocketFlags, SocketError>)CallbackOrEvent;
+                var cb = (Action<int, byte[]?, int, SocketFlags, SocketError>)CallbackOrEvent!;
                 int bt = BytesTransferred;
-                byte[] sa = SocketAddress;
+                byte[]? sa = SocketAddress;
                 int sal = SocketAddressLen;
                 SocketFlags rf = ReceivedFlags;
                 SocketError ec = ErrorCode;
@@ -535,7 +535,7 @@ namespace System.Net.Sockets
             public SocketFlags Flags;
             public int BytesTransferred;
             public SocketFlags ReceivedFlags;
-            public IList<ArraySegment<byte>> Buffers;
+            public IList<ArraySegment<byte>>? Buffers;
 
             public bool IsIPv4;
             public bool IsIPv6;
@@ -551,11 +551,11 @@ namespace System.Net.Sockets
             }
 
             protected override bool DoTryComplete(SocketAsyncContext context) =>
-                SocketPal.TryCompleteReceiveMessageFrom(context._socket, Buffer.Span, Buffers, Flags, SocketAddress, ref SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
+                SocketPal.TryCompleteReceiveMessageFrom(context._socket, Buffer.Span, Buffers, Flags, SocketAddress!, ref SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
 
             public override void InvokeCallback(bool allowPooling) =>
-                ((Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError>)CallbackOrEvent)(
-                    BytesTransferred, SocketAddress, SocketAddressLen, ReceivedFlags, IPPacketInformation, ErrorCode);
+                ((Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError>)CallbackOrEvent!)(
+                    BytesTransferred, SocketAddress!, SocketAddressLen, ReceivedFlags, IPPacketInformation, ErrorCode);
         }
 
         private sealed class AcceptOperation : ReadOperation
@@ -564,7 +564,7 @@ namespace System.Net.Sockets
 
             public AcceptOperation(SocketAsyncContext context) : base(context) { }
 
-            public Action<IntPtr, byte[], int, SocketError> Callback
+            public Action<IntPtr, byte[], int, SocketError>? Callback
             {
                 set => CallbackOrEvent = value;
             }
@@ -574,16 +574,16 @@ namespace System.Net.Sockets
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                bool completed = SocketPal.TryCompleteAccept(context._socket, SocketAddress, ref SocketAddressLen, out AcceptedFileDescriptor, out ErrorCode);
+                bool completed = SocketPal.TryCompleteAccept(context._socket, SocketAddress!, ref SocketAddressLen, out AcceptedFileDescriptor, out ErrorCode);
                 Debug.Assert(ErrorCode == SocketError.Success || AcceptedFileDescriptor == (IntPtr)(-1), $"Unexpected values: ErrorCode={ErrorCode}, AcceptedFileDescriptor={AcceptedFileDescriptor}");
                 return completed;
             }
 
             public override void InvokeCallback(bool allowPooling)
             {
-                var cb = (Action<IntPtr, byte[], int, SocketError>)CallbackOrEvent;
+                var cb = (Action<IntPtr, byte[], int, SocketError>)CallbackOrEvent!;
                 IntPtr fd = AcceptedFileDescriptor;
-                byte[] sa = SocketAddress;
+                byte[] sa = SocketAddress!;
                 int sal = SocketAddressLen;
                 SocketError ec = ErrorCode;
 
@@ -615,12 +615,12 @@ namespace System.Net.Sockets
             }
 
             public override void InvokeCallback(bool allowPooling) =>
-                ((Action<SocketError>)CallbackOrEvent)(ErrorCode);
+                ((Action<SocketError>)CallbackOrEvent!)(ErrorCode);
         }
 
         private sealed class SendFileOperation : WriteOperation
         {
-            public SafeFileHandle FileHandle;
+            public SafeFileHandle FileHandle = null!; // always set when constructed
             public long Offset;
             public long Count;
             public long BytesTransferred;
@@ -635,7 +635,7 @@ namespace System.Net.Sockets
             }
 
             public override void InvokeCallback(bool allowPooling) =>
-                ((Action<long, SocketError>)CallbackOrEvent)(BytesTransferred, ErrorCode);
+                ((Action<long, SocketError>)CallbackOrEvent!)(BytesTransferred, ErrorCode);
 
             protected override bool DoTryComplete(SocketAsyncContext context) =>
                 SocketPal.TryCompleteSendFile(context._socket, FileHandle, ref Offset, ref Count, ref BytesTransferred, out ErrorCode);
@@ -711,7 +711,7 @@ namespace System.Net.Sockets
                                             // since the last time we checked the state of the queue.
                                             // If this happens, we MUST retry the operation, otherwise we risk
                                             // "losing" the notification and causing the operation to pend indefinitely.
-            private AsyncOperation _tail;   // Queue of pending IO operations to process when data becomes available.
+            private AsyncOperation? _tail;   // Queue of pending IO operations to process when data becomes available.
 
             // The _queueLock is used to ensure atomic access to the queue state above.
             // The lock is only ever held briefly, to read and/or update queue state, and
@@ -793,7 +793,7 @@ namespace System.Net.Sockets
                                 // call TryCancel, so we do this after the op is fully enqueued.
                                 if (cancellationToken.CanBeCanceled)
                                 {
-                                    operation.CancellationRegistration = cancellationToken.UnsafeRegister(s => ((TOperation)s).TryCancel(), operation);
+                                    operation.CancellationRegistration = cancellationToken.UnsafeRegister(s => ((TOperation)s!).TryCancel(), operation);
                                 }
 
                                 return true;
@@ -974,7 +974,7 @@ namespace System.Net.Sockets
 
                 // Remove the op from the queue and see if there's more to process.
 
-                AsyncOperation nextOp = null;
+                AsyncOperation? nextOp = null;
                 using (Lock())
                 {
                     if (_state == QueueState.Stopped)
@@ -1015,7 +1015,7 @@ namespace System.Net.Sockets
 
                 // Remove operation from queue.
                 // Note it must be there since it can only be processed and removed by the caller.
-                AsyncOperation nextOp = null;
+                AsyncOperation? nextOp = null;
                 using (Lock())
                 {
                     if (_state == QueueState.Stopped)
@@ -1120,7 +1120,7 @@ namespace System.Net.Sockets
             }
 
             [Conditional("SOCKETASYNCCONTEXT_TRACE")]
-            public void Trace(SocketAsyncContext context, string message, [CallerMemberName] string memberName = null)
+            public void Trace(SocketAsyncContext context, string message, [CallerMemberName] string? memberName = null)
             {
                 string queueType =
                     typeof(TOperation) == typeof(ReadOperation) ? "recv" :
@@ -1436,13 +1436,13 @@ namespace System.Net.Sockets
             return ReceiveFrom(buffer, ref flags, null, ref socketAddressLen, timeout, out bytesReceived);
         }
 
-        public SocketError ReceiveAsync(Memory<byte> buffer, SocketFlags flags, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[], int, SocketFlags, SocketError> callback, CancellationToken cancellationToken)
+        public SocketError ReceiveAsync(Memory<byte> buffer, SocketFlags flags, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken)
         {
             int socketAddressLen = 0;
             return ReceiveFromAsync(buffer, flags, null, ref socketAddressLen, out bytesReceived, out receivedFlags, callback, cancellationToken);
         }
 
-        public SocketError ReceiveFrom(Memory<byte> buffer, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, int timeout, out int bytesReceived)
+        public SocketError ReceiveFrom(Memory<byte> buffer, ref SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, int timeout, out int bytesReceived)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1472,7 +1472,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public unsafe SocketError ReceiveFrom(Span<byte> buffer, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, int timeout, out int bytesReceived)
+        public unsafe SocketError ReceiveFrom(Span<byte> buffer, ref SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, int timeout, out int bytesReceived)
         {
             SocketFlags receivedFlags;
             SocketError errorCode;
@@ -1504,7 +1504,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError ReceiveFromAsync(Memory<byte> buffer,  SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[], int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
+        public SocketError ReceiveFromAsync(Memory<byte> buffer,  SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetNonBlocking();
 
@@ -1543,13 +1543,13 @@ namespace System.Net.Sockets
             return ReceiveFrom(buffers, ref flags, null, 0, timeout, out bytesReceived);
         }
 
-        public SocketError ReceiveAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[], int, SocketFlags, SocketError> callback)
+        public SocketError ReceiveAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
         {
             int socketAddressLen = 0;
             return ReceiveFromAsync(buffers, flags, null, ref socketAddressLen, out bytesReceived, out receivedFlags, callback);
         }
 
-        public SocketError ReceiveFrom(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesReceived)
+        public SocketError ReceiveFrom(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, byte[]? socketAddress, int socketAddressLen, int timeout, out int bytesReceived)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1580,7 +1580,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError ReceiveFromAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[], int, SocketFlags, SocketError> callback)
+        public SocketError ReceiveFromAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
         {
             SetNonBlocking();
 
@@ -1617,7 +1617,7 @@ namespace System.Net.Sockets
         }
 
         public SocketError ReceiveMessageFrom(
-            Memory<byte> buffer, IList<ArraySegment<byte>> buffers, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
+            Memory<byte> buffer, IList<ArraySegment<byte>>? buffers, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1652,7 +1652,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError ReceiveMessageFromAsync(Memory<byte> buffer, IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError> callback)
+        public SocketError ReceiveMessageFromAsync(Memory<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError> callback)
         {
             SetNonBlocking();
 
@@ -1699,13 +1699,13 @@ namespace System.Net.Sockets
             return SendTo(buffer, offset, count, flags, null, 0, timeout, out bytesSent);
         }
 
-        public SocketError SendAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, out int bytesSent, Action<int, byte[], int, SocketFlags, SocketError> callback, CancellationToken cancellationToken)
+        public SocketError SendAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken)
         {
             int socketAddressLen = 0;
             return SendToAsync(buffer, offset, count, flags, null, ref socketAddressLen, out bytesSent, callback, cancellationToken);
         }
 
-        public SocketError SendTo(byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesSent)
+        public SocketError SendTo(byte[] buffer, int offset, int count, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, int timeout, out int bytesSent)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1736,7 +1736,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public unsafe SocketError SendTo(ReadOnlySpan<byte> buffer, SocketFlags flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesSent)
+        public unsafe SocketError SendTo(ReadOnlySpan<byte> buffer, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, int timeout, out int bytesSent)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1771,7 +1771,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[], int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
+        public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetNonBlocking();
 
@@ -1811,13 +1811,13 @@ namespace System.Net.Sockets
             return SendTo(buffers, flags, null, 0, timeout, out bytesSent);
         }
 
-        public SocketError SendAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, out int bytesSent, Action<int, byte[], int, SocketFlags, SocketError> callback)
+        public SocketError SendAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
         {
             int socketAddressLen = 0;
             return SendToAsync(buffers, flags, null, ref socketAddressLen, out bytesSent, callback);
         }
 
-        public SocketError SendTo(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesSent)
+        public SocketError SendTo(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, int timeout, out int bytesSent)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1850,7 +1850,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError SendToAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[], int, SocketFlags, SocketError> callback)
+        public SocketError SendToAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
         {
             SetNonBlocking();
 
@@ -1975,7 +1975,7 @@ namespace System.Net.Sockets
         // (2) #define SOCKETASYNCCONTEXT_TRACE
 
         [Conditional("SOCKETASYNCCONTEXT_TRACE")]
-        public void Trace(string message, [CallerMemberName] string memberName = null)
+        public void Trace(string message, [CallerMemberName] string? memberName = null)
         {
             OutputTrace($"{IdOf(this)}.{memberName}: {message}");
         }

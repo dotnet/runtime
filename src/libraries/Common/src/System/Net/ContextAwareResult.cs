@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Threading;
 
 namespace System.Net
@@ -20,8 +21,8 @@ namespace System.Net
     // to have several pending IOs differentiated by their state object.  We don't want that pattern to break the cache.
     internal class CallbackClosure
     {
-        private readonly AsyncCallback _savedCallback;
-        private readonly ExecutionContext _savedContext;
+        private readonly AsyncCallback? _savedCallback;
+        private readonly ExecutionContext? _savedContext;
 
         internal CallbackClosure(ExecutionContext context, AsyncCallback callback)
         {
@@ -32,7 +33,7 @@ namespace System.Net
             }
         }
 
-        internal bool IsCompatible(AsyncCallback callback)
+        internal bool IsCompatible(AsyncCallback? callback)
         {
             if (callback == null || _savedCallback == null)
             {
@@ -49,7 +50,7 @@ namespace System.Net
             return true;
         }
 
-        internal AsyncCallback AsyncCallback
+        internal AsyncCallback? AsyncCallback
         {
             get
             {
@@ -57,7 +58,7 @@ namespace System.Net
             }
         }
 
-        internal ExecutionContext Context
+        internal ExecutionContext? Context
         {
             get
             {
@@ -82,12 +83,12 @@ namespace System.Net
         }
 
         // This needs to be volatile so it's sure to make it over to the completion thread in time.
-        private volatile ExecutionContext _context;
-        private object _lock;
+        private volatile ExecutionContext? _context;
+        private object? _lock;
         private StateFlags _flags;
 
 
-        internal ContextAwareResult(object myObject, object myState, AsyncCallback myCallBack) :
+        internal ContextAwareResult(object myObject, object? myState, AsyncCallback? myCallBack) :
             this(false, false, myObject, myState, myCallBack)
         { }
 
@@ -97,11 +98,11 @@ namespace System.Net
         //
         // Setting forceCaptureContext enables the ContextCopy property even when a null callback is specified.  (The context is
         // always captured if a callback is given.)
-        internal ContextAwareResult(bool captureIdentity, bool forceCaptureContext, object myObject, object myState, AsyncCallback myCallBack) :
+        internal ContextAwareResult(bool captureIdentity, bool forceCaptureContext, object myObject, object? myState, AsyncCallback? myCallBack) :
             this(captureIdentity, forceCaptureContext, false, myObject, myState, myCallBack)
         { }
 
-        internal ContextAwareResult(bool captureIdentity, bool forceCaptureContext, bool threadSafeContextCopy, object myObject, object myState, AsyncCallback myCallBack) :
+        internal ContextAwareResult(bool captureIdentity, bool forceCaptureContext, bool threadSafeContextCopy, object myObject, object? myState, AsyncCallback? myCallBack) :
             base(myObject, myState, myCallBack)
         {
             if (forceCaptureContext)
@@ -124,7 +125,7 @@ namespace System.Net
         // May block briefly if the context is still being produced.
         //
         // Returns null if called from the posting thread.
-        internal ExecutionContext ContextCopy
+        internal ExecutionContext? ContextCopy
         {
             get
             {
@@ -138,7 +139,7 @@ namespace System.Net
                     throw new InvalidOperationException(SR.net_completed_result);
                 }
 
-                ExecutionContext context = _context;
+                ExecutionContext? context = _context;
                 if (context != null)
                 {
                     return context; // No need to copy on CoreCLR; ExecutionContext is immutable
@@ -189,13 +190,13 @@ namespace System.Net
 
         internal object StartPostingAsyncOp()
         {
-            return StartPostingAsyncOp(true);
+            return StartPostingAsyncOp(true)!;
         }
 
         // If ContextCopy or Identity will be used, the return value should be locked until FinishPostingAsyncOp() is called
         // or the operation has been aborted (e.g. by BeginXxx throwing).  Otherwise, this can be called with false to prevent the lock
         // object from being created.
-        internal object StartPostingAsyncOp(bool lockCapture)
+        internal object? StartPostingAsyncOp(bool lockCapture)
         {
             if (InternalPeekCompleted)
             {
@@ -220,13 +221,13 @@ namespace System.Net
 
             _flags |= StateFlags.PostBlockFinished;
 
-            ExecutionContext cachedContext = null;
+            ExecutionContext? cachedContext = null;
             return CaptureOrComplete(ref cachedContext, false);
         }
 
         // Call this when returning control to the user.  Allows a cached Callback Closure to be supplied and used
         // as appropriate, and replaced with a new one.
-        internal bool FinishPostingAsyncOp(ref CallbackClosure closure)
+        internal bool FinishPostingAsyncOp(ref CallbackClosure? closure)
         {
             // Ignore this call if StartPostingAsyncOp() failed or wasn't called, or this has already been called.
             if ((_flags & (StateFlags.PostBlockStarted | StateFlags.PostBlockFinished)) != StateFlags.PostBlockStarted)
@@ -237,8 +238,8 @@ namespace System.Net
             _flags |= StateFlags.PostBlockFinished;
 
             // Need a copy of this ref argument since it can be used in many of these calls simultaneously.
-            CallbackClosure closureCopy = closure;
-            ExecutionContext cachedContext;
+            CallbackClosure? closureCopy = closure;
+            ExecutionContext? cachedContext;
             if (closureCopy == null)
             {
                 cachedContext = null;
@@ -283,7 +284,7 @@ namespace System.Net
         // called.
         //
         // Returns whether the operation completed sync or not.
-        private bool CaptureOrComplete(ref ExecutionContext cachedContext, bool returnContext)
+        private bool CaptureOrComplete(ref ExecutionContext? cachedContext, bool returnContext)
         {
             if ((_flags & StateFlags.PostBlockStarted) == 0)
             {
@@ -374,7 +375,7 @@ namespace System.Net
                 return;
             }
 
-            ExecutionContext context = _context;
+            ExecutionContext? context = _context;
 
             // If the context is being abandoned or wasn't captured (SuppressFlow, null AsyncCallback), just
             // complete regularly, as long as CaptureOrComplete() has finished.
@@ -385,7 +386,7 @@ namespace System.Net
                 return;
             }
 
-            ExecutionContext.Run(context, s => ((ContextAwareResult)s).CompleteCallback(), this);
+            ExecutionContext.Run(context, s => ((ContextAwareResult)s!).CompleteCallback(), this);
         }
 
         private void CompleteCallback()
@@ -394,6 +395,6 @@ namespace System.Net
             base.Complete(IntPtr.Zero);
         }
 
-        internal virtual EndPoint RemoteEndPoint => null;
+        internal virtual EndPoint? RemoteEndPoint => null;
     }
 }
