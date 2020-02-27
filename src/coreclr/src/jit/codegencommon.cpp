@@ -11304,11 +11304,11 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveRange::dumpVariableLiveRa
 {
     codeGen->dumpSiVarLoc(&m_VarLocation);
     printf(" [ ");
-    m_StartEmitLocation.Print(compiler->compMethodID);
+    m_StartEmitLocation.Print(codeGen->GetCompiler()->compMethodID);
     printf(", ");
     if (m_EndEmitLocation.Valid())
     {
-        m_EndEmitLocation.Print(compiler->compMethodID);
+        m_EndEmitLocation.Print(codeGen->GetCompiler()->compMethodID);
     }
     else
     {
