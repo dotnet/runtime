@@ -58,7 +58,6 @@ stages:
       - Windows_NT_arm
       - Windows_NT_arm64
       jobParameters:
-        useVsPreviewPool: false
         isOfficialBuild: ${{ variables.isOfficialBuild }}
 
   #
@@ -80,7 +79,6 @@ stages:
       - Windows_NT_arm
       - Windows_NT_arm64
       jobParameters:
-        useVsPreviewPool: true
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         liveRuntimeBuildConfig: release
 
@@ -94,7 +92,6 @@ stages:
       platforms:
       - Windows_NT_x64
       jobParameters:
-        useVsPreviewPool: true
         framework: allConfigurations
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         isOfficialAllConfigurations: true
@@ -106,7 +103,6 @@ stages:
   - template: /eng/pipelines/installer/installer-matrix.yml
     parameters:
       jobParameters:
-        useVsPreviewPool: false
         liveRuntimeBuildConfig: release
         liveLibrariesBuildConfig: Release
         isOfficialBuild: ${{ variables.isOfficialBuild }}
