@@ -192,8 +192,12 @@ namespace System.Diagnostics
         {
             lock (_list)
             {
-                _version++;
-                return _list.Remove(item);
+                if (_list.Remove(item))
+                {
+                    _version++;
+                    return true;
+                }
+                return false;
             }
         }
 
