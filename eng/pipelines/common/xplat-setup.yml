@@ -89,23 +89,13 @@ jobs:
 
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
-          ${{ if eq(parameters.jobParameters.useVsPreviewPool, true) }}:
-            name: NetCoreInternal-Pool
-            queue: BuildPool.Windows.10.Amd64.VS2019.Pre
-
-          ${{ if ne(parameters.jobParameters.useVsPreviewPool, true) }}:
-            name: NetCoreInternal-Pool
-            queue: BuildPool.Windows.10.Amd64.VS2019
+          name: NetCoreInternal-Pool
+          queue: BuildPool.Windows.10.Amd64.VS2019
 
         # Public Windows Build Pool
         ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
-          ${{ if eq(parameters.jobParameters.useVsPreviewPool, true) }}:
-            name: NetCorePublic-Pool
-            queue: BuildPool.Windows.10.Amd64.VS2019.Pre.Open
-
-          ${{ if ne(parameters.jobParameters.useVsPreviewPool, true) }}:
-            name: NetCorePublic-Pool
-            queue: BuildPool.Windows.10.Amd64.VS2019.Open
+          name: NetCorePublic-Pool
+          queue: BuildPool.Windows.10.Amd64.VS2019.Open
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:
