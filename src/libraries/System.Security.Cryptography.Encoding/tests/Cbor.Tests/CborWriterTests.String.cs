@@ -17,12 +17,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("", "40")]
         [InlineData("01020304", "4401020304")]
         [InlineData("ffffffffffffffffffffffffffff", "4effffffffffffffffffffffffffff")]
-        public static void ByteStringWriterTests(string hexInput, string hexExpectedEncoding)
+        public static void SingleValue_WriteByteString_HappyPath(string hexInput, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             byte[] input = hexInput.HexToByteArray();
             using var writer = new CborWriter();
-            writer.Write(input);
+            writer.WriteByteString(input);
             Assert.Equal(expectedEncoding, writer.ToArray());
         }
 
@@ -34,11 +34,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("\u00fc", "62c3bc")]
         [InlineData("\u6c34", "63e6b0b4")]
         [InlineData("\ud800\udd51", "64f0908591")]
-        public static void Utf8StringWriterTests(string input, string hexExpectedEncoding)
+        public static void SingleValue_WriteTextString_HappyPath(string input, string hexExpectedEncoding)
         {
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            writer.Write(input);
+            writer.WriteTextString(input);
             Assert.Equal(expectedEncoding, writer.ToArray());
         }
     }

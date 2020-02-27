@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     public partial class CborReaderTests
     {
         // Data points taken from https://tools.ietf.org/html/rfc7049#appendix-A
+        // Additional pairs generated using http://cbor.me/
 
         [Theory]
         [InlineData(0, "00")]
@@ -28,7 +29,21 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(-10, "29")]
         [InlineData(-100, "3863")]
         [InlineData(-1000, "3903e7")]
-        public static void Int64ReaderTests(long expectedResult, string hexEncoding)
+        [InlineData(byte.MaxValue, "18ff")]
+        [InlineData(byte.MaxValue + 1, "190100")]
+        [InlineData(-1 - byte.MaxValue, "38ff")]
+        [InlineData(-2 - byte.MaxValue, "390100")]
+        [InlineData(ushort.MaxValue, "19ffff")]
+        [InlineData(ushort.MaxValue + 1, "1a00010000")]
+        [InlineData(-1 - ushort.MaxValue, "39ffff")]
+        [InlineData(-2 - ushort.MaxValue, "3a00010000")]
+        [InlineData(uint.MaxValue, "1affffffff")]
+        [InlineData((long)uint.MaxValue + 1, "1b0000000100000000")]
+        [InlineData(-1 - uint.MaxValue, "3affffffff")]
+        [InlineData(-2 - uint.MaxValue, "3b0000000100000000")]
+        [InlineData(long.MinValue, "3b7fffffffffffffff")]
+        [InlineData(long.MaxValue, "1b7fffffffffffffff")]
+        public static void SingleValue_Int64Reader_HappyPath(long expectedResult, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborValueReader(data);
@@ -47,8 +62,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(1000, "1903e8")]
         [InlineData(1000000, "1a000f4240")]
         [InlineData(1000000000000, "1b000000e8d4a51000")]
-        [InlineData(18446744073709551615, "1bffffffffffffffff")]
-        public static void UInt64ReaderTests(ulong expectedResult, string hexEncoding)
+        [InlineData(byte.MaxValue, "18ff")]
+        [InlineData(byte.MaxValue + 1, "190100")]
+        [InlineData(ushort.MaxValue, "19ffff")]
+        [InlineData(ushort.MaxValue + 1, "1a00010000")]
+        [InlineData(uint.MaxValue, "1affffffff")]
+        [InlineData((ulong)uint.MaxValue + 1, "1b0000000100000000")]
+        [InlineData(long.MaxValue, "1b7fffffffffffffff")]
+        [InlineData(ulong.MaxValue, "1bffffffffffffffff")]
+        public static void SingleValue_UInt64Reader_HappyPath(ulong expectedResult, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborValueReader(data);

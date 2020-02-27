@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private static readonly System.Text.Encoding s_utf8Encoding = System.Text.Encoding.UTF8;
 
         // Implements major type 2 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
-        public void Write(ReadOnlySpan<byte> value)
+        public void WriteByteString(ReadOnlySpan<byte> value)
         {
             WriteUnsignedInteger(CborMajorType.ByteString, (ulong)value.Length);
             EnsureWriteCapacity(value.Length);
@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         // Implements major type 3 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
-        public void Write(ReadOnlySpan<char> value)
+        public void WriteTextString(ReadOnlySpan<char> value)
         {
             int length = s_utf8Encoding.GetByteCount(value);
             WriteUnsignedInteger(CborMajorType.Utf8String, (ulong)length);

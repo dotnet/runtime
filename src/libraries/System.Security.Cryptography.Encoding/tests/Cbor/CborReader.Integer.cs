@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     throw new FormatException("End of buffer");
 
                 case CborAdditionalInfo.UnsignedInteger64BitEncoding:
-                    if (_buffer.Length > 2)
+                    if (_buffer.Length > 8)
                     {
                         additionalBytes = 8;
                         return BinaryPrimitives.ReadUInt64BigEndian(_buffer.Slice(1));
