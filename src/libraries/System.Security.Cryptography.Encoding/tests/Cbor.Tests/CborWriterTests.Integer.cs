@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteInt64(input);
-            Assert.Equal(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
         }
 
         [Theory]
@@ -75,7 +75,16 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteUInt64(input);
-            Assert.Equal(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
         }
+    }
+    internal static class AssertHelper
+    {
+        /// <summary>
+        /// Assert equality by comparing hex string representations
+        /// </summary>
+        /// <param name="expected"></param>
+        /// <param name="actual"></param>
+        public static void HexEqual(byte[] expected, byte[] actual) => Assert.Equal(expected.ByteArrayToHex(), actual.ByteArrayToHex());
     }
 }

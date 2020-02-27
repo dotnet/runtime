@@ -119,7 +119,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             var reader = new CborValueReader(encoding);
             byte[] result = reader.ReadByteString();
-            Assert.Equal(input ?? Array.Empty<byte>(), result);
+            AssertHelper.HexEqual(input ?? Array.Empty<byte>(), result);
         }
 
 #if CBOR_PROPERTY_TESTS
@@ -168,7 +168,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             int lengthEncodingLength = GetLengthEncodingLength(length);
 
             Assert.Equal(lengthEncodingLength + length, encoding.Length);
-            Assert.Equal(input ?? Array.Empty<byte>(), encoding.Skip(lengthEncodingLength));
+            AssertHelper.HexEqual(input ?? Array.Empty<byte>(), encoding.Skip(lengthEncodingLength).ToArray());
 
             static int GetLengthEncodingLength(int length)
             {

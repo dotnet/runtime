@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] input = hexInput.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteByteString(input);
-            Assert.Equal(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
         }
 
         [Theory]
@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
             using var writer = new CborWriter();
             writer.WriteTextString(input);
-            Assert.Equal(expectedEncoding, writer.ToArray());
+            AssertHelper.HexEqual(expectedEncoding, writer.ToArray());
         }
     }
 }
