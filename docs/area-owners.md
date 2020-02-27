@@ -78,8 +78,8 @@ Below table shows the combined area owners on this repository:
 | area-System.Net.Http | @dotnet/ncl | |
 | area-System.Net.Security | @dotnet/ncl | |
 | area-System.Net.Sockets | @dotnet/ncl | |
-| area-System.Numerics | @tannergooding @prgovind | |
-| area-System.Numerics.Tensors | @prgovind @eiriktsarpalis | |
+| area-System.Numerics | @tannergooding @pgovind | |
+| area-System.Numerics.Tensors | @pgovind @eiriktsarpalis | |
 | area-System.Reflection | @steveharter @GrabYourPitchforks | |
 | area-System.Reflection.Emit | @steveharter @GrabYourPitchforks | |
 | area-System.Reflection.Metadata | @tmat @nguerrera | |
@@ -96,7 +96,7 @@ Below table shows the combined area owners on this repository:
 | area-System.Text.Encoding | @layomia @krwq @tarekgh | |
 | area-System.Text.Encodings.Web | @GrabYourPitchforks @layomia @tarekgh | |
 | area-System.Text.Json | @layomia @steveharter @jozkee | |
-| area-System.Text.RegularExpressions | @prgovi @eerhardt | |
+| area-System.Text.RegularExpressions | @pgovind @eerhardt | |
 | area-System.Threading | @kouvel | |
 | area-System.Threading.Channels | @tarekgh @stephentoub | |
 | area-System.Threading.Tasks | @tarekgh @stephentoub | |
