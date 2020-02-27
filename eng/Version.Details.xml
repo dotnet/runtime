@@ -10,9 +10,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>03bd0e0cefb81d33d08c4853fa5d6a8057c34d94</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="5.0.0-beta.20124.3">
+    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="5.0.0-beta.20126.7">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>03bd0e0cefb81d33d08c4853fa5d6a8057c34d94</Sha>
+      <Sha>cd4164e1f3f7daf2a6f8dbd012210c93521bd82f</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat" Version="5.0.0-beta.20124.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
