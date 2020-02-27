@@ -8,9 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
-#if FEATURE_COMPILED
 using System.Runtime.CompilerServices;
-#endif
 using System.Runtime.Serialization;
 using System.Threading;
 
@@ -75,15 +73,12 @@ namespace System.Text.RegularExpressions
         {
             Init(pattern, options, matchTimeout, culture);
 
-#if FEATURE_COMPILED
             // if the compile option is set, then compile the code
-            if (UseOptionC())
+            if (RuntimeFeature.IsDynamicCodeCompiled && UseOptionC())
             {
-                // Storing into this Regex's factory will also implicitly update the cache
                 factory = Compile(pattern, _code!, options, matchTimeout != InfiniteMatchTimeout);
                 _code = null;
             }
-#endif
         }
 
         /// <summary>Initializes the instance.</summary>
@@ -196,7 +191,6 @@ namespace System.Text.RegularExpressions
             }
         }
 
-#if FEATURE_COMPILED
         /// <summary>
         /// This method is here for perf reasons: if the call to RegexCompiler is NOT in the
         /// Regex constructor, we don't load RegexCompiler and its reflection classes when
@@ -205,7 +199,6 @@ namespace System.Text.RegularExpressions
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static RegexRunnerFactory Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
             RegexCompiler.Compile(pattern, code, options, hasTimeout);
-#endif
 
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname) =>
             CompileToAssembly(regexinfos, assemblyname, null, null);
