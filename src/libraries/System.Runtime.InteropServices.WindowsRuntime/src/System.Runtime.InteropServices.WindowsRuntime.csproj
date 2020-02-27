@@ -4,15 +4,16 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <GenFacadesIgnoreMissingTypes Condition="'$(RuntimeFlavor)' == 'Mono'">true</GenFacadesIgnoreMissingTypes>
-    <GenFacadesIgnoreMissingType Condition="'$(RuntimeFlavor)' == 'Mono'">true</GenFacadesIgnoreMissingType>
     <RunApiCompat Condition="'$(RuntimeFlavor)' == 'Mono'">false</RunApiCompat>
   </PropertyGroup>
+
+  <!-- https://github.com/dotnet/runtime/issues/32898 -->
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
     <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.DefaultInterfaceAttribute" />
     <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.IActivationFactory" />
     <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.InterfaceImplementedInVersionAttribute" />
     <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.ReadOnlyArrayAttribute" />
+    <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.ReturnValueNameAttribute" />
     <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.WriteOnlyArrayAttribute" />
   </ItemGroup>
   <ItemGroup>

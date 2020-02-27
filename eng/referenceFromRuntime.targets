@@ -33,7 +33,7 @@
 
   <Target Name="GetFilesFromRuntime" Returns="@(RuntimeFiles)" DependsOnTargets="GetFilesFromCoreClr;GetFilesFromMono">
     <ItemGroup>
-      <RuntimeFiles Include="@(CoreCLRFiles)" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
+      <RuntimeFiles Include="@(CoreCLRFiles)" Condition="'$(RuntimeFlavor)' != 'Mono'" />
       <RuntimeFiles Include="@(MonoFiles)" Condition="'$(RuntimeFlavor)' == 'Mono'" />
     </ItemGroup>
   </Target>
