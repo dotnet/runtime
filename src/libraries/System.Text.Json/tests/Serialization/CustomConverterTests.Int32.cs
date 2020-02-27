@@ -37,12 +37,6 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        private class Int32Class
-        {
-            [JsonConverter(typeof(Int32Converter))]
-            public int? MyInt { get; set; }
-        }
-
         [Fact]
         public static void OverrideDefaultConverter()
         {
@@ -67,23 +61,6 @@ namespace System.Text.Json.Serialization.Tests
             {
                 int? myInt = JsonSerializer.Deserialize<int?>("1", options);
                 Assert.Equal(1, myInt.Value);
-            }
-
-            {
-                Int32Class myIntClass = JsonSerializer.Deserialize<Int32Class>(@"{""MyInt"":null}");
-                Assert.False(myIntClass.MyInt.HasValue);
-            }
-
-            {
-                Int32Class myIntClass = JsonSerializer.Deserialize<Int32Class>(@"{""MyInt"":1}");
-                Assert.True(myIntClass.MyInt.HasValue);
-                Assert.Equal(1, myIntClass.MyInt.Value);
-            }
-
-            {
-                Int32Class myIntClass = JsonSerializer.Deserialize<Int32Class>(@"{""MyInt"":""1""}");
-                Assert.True(myIntClass.MyInt.HasValue);
-                Assert.Equal(1, myIntClass.MyInt.Value);
             }
         }
     }
