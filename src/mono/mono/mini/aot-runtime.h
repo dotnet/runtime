@@ -247,7 +247,7 @@ MonoJitInfo* mono_aot_find_jit_info         (MonoDomain *domain, MonoImage *imag
 gpointer mono_aot_plt_resolve               (gpointer aot_module, guint32 plt_info_offset, guint8 *code, MonoError *error);
 void     mono_aot_patch_plt_entry           (guint8 *code, guint8 *plt_entry, gpointer *got, host_mgreg_t *regs, guint8 *addr);
 gpointer mono_aot_get_method_from_vt_slot   (MonoDomain *domain, MonoVTable *vtable, int slot, MonoError *error);
-gpointer mono_aot_create_specific_trampoline   (MonoImage *image, gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len);
+gpointer mono_aot_create_specific_trampoline   (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len);
 gpointer mono_aot_get_trampoline            (const char *name);
 gpointer mono_aot_get_trampoline_full       (const char *name, MonoTrampInfo **out_tinfo);
 gpointer mono_aot_get_unbox_trampoline      (MonoMethod *method, gpointer addr);
