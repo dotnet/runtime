@@ -35,6 +35,8 @@
       release, increase this number by one.
     -->
     <NETStandardPatchVersion>0</NETStandardPatchVersion>
+    <!-- Restore the .NETFramework reference assemblies from NuGet packages -->
+    <UsingToolNetFrameworkReferenceAssemblies>true</UsingToolNetFrameworkReferenceAssemblies>
   </PropertyGroup>
   <!--
     Servicing build settings for Setup/Installer packages. Instructions:
