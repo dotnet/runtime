@@ -8,11 +8,11 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <PropertyGroup>
-    <PointerSize Condition="'$(Platform)'=='x64'">64</PointerSize>
-    <PointerSize Condition="'$(Platform)'=='arm64'">64</PointerSize>
-    <PointerSize Condition="'$(Platform)'=='x86'">32</PointerSize>
-    <PointerSize Condition="'$(Platform)'=='arm'">32</PointerSize>
-    <PointerSize Condition="'$(Platform)'=='armel'">32</PointerSize>
+    <PointerSize Condition="'$(BuildArch)'=='x64'">64</PointerSize>
+    <PointerSize Condition="'$(BuildArch)'=='arm64'">64</PointerSize>
+    <PointerSize Condition="'$(BuildArch)'=='x86'">32</PointerSize>
+    <PointerSize Condition="'$(BuildArch)'=='arm'">32</PointerSize>
+    <PointerSize Condition="'$(BuildArch)'=='armel'">32</PointerSize>
   </PropertyGroup>
   <ItemGroup Condition=" '$(PointerSize)' == '64' ">
     <Compile Include="DevDiv_278523_64.il" />
