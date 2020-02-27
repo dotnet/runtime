@@ -107,7 +107,6 @@ namespace System
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		internal static extern TypeAttributes GetAttributes (RuntimeType type);
 
-		[CLSCompliant (false)]
 		public ModuleHandle GetModuleHandle ()
 		{
 			// Although MS' runtime is crashing here, we prefer throwing an exception.

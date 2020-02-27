@@ -184,6 +184,13 @@ dotnet build System.Net.NetworkInformation.csproj /p:OSGroup=Linux
 dotnet build -c Release System.Net.NetworkInformation.csproj
 ```
 
+### Building for Mono
+By default the libraries will attempt to build using the CoreCLR version of `System.Private.CoreLib.dll`. In order to build against the Mono version you need to use the `/p:RuntimeFlavor=Mono` argument.
+
+```
+.\build.cmd -subsetCategory libraries /p:RuntimeFlavor=Mono
+```
+
 ### Building all for other OSes
 
 By default, building from the root will only build the libraries for the OS you are running on. One can

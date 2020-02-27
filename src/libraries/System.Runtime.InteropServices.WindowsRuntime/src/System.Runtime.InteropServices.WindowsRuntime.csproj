@@ -4,7 +4,18 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <RunApiCompat Condition="'$(RuntimeFlavor)' == 'Mono'">false</RunApiCompat>
   </PropertyGroup>
+
+  <!-- https://github.com/dotnet/runtime/issues/32898 -->
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+    <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.DefaultInterfaceAttribute" />
+    <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.IActivationFactory" />
+    <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.InterfaceImplementedInVersionAttribute" />
+    <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.ReadOnlyArrayAttribute" />
+    <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.ReturnValueNameAttribute" />
+    <GenFacadesIgnoreMissingType Include="System.Runtime.InteropServices.WindowsRuntime.WriteOnlyArrayAttribute" />
+  </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" Condition="'$(TargetsWindows)'=='true'" />
     <Reference Include="System.Runtime" Condition="'$(TargetsWindows)'!='true'" />
