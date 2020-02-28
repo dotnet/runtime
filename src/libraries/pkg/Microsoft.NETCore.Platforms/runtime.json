@@ -94,6 +94,18 @@
         "linux-arm64"
       ]
     },
+    "android-x64": {
+      "#import": [
+        "android",
+        "linux-x64"
+      ]
+    },
+    "android-x86": {
+      "#import": [
+        "android",
+        "linux-x86"
+      ]
+    },
     "android.21": {
       "#import": [
         "android"
@@ -109,6 +121,250 @@
       "#import": [
         "android.21",
         "android-arm64"
+      ]
+    },
+    "android.21-x64": {
+      "#import": [
+        "android.21",
+        "android-x64"
+      ]
+    },
+    "android.21-x86": {
+      "#import": [
+        "android.21",
+        "android-x86"
+      ]
+    },
+    "android.22": {
+      "#import": [
+        "android.21"
+      ]
+    },
+    "android.22-arm": {
+      "#import": [
+        "android.22",
+        "android.21-arm"
+      ]
+    },
+    "android.22-arm64": {
+      "#import": [
+        "android.22",
+        "android.21-arm64"
+      ]
+    },
+    "android.22-x64": {
+      "#import": [
+        "android.22",
+        "android.21-x64"
+      ]
+    },
+    "android.22-x86": {
+      "#import": [
+        "android.22",
+        "android.21-x86"
+      ]
+    },
+    "android.23": {
+      "#import": [
+        "android.22"
+      ]
+    },
+    "android.23-arm": {
+      "#import": [
+        "android.23",
+        "android.22-arm"
+      ]
+    },
+    "android.23-arm64": {
+      "#import": [
+        "android.23",
+        "android.22-arm64"
+      ]
+    },
+    "android.23-x64": {
+      "#import": [
+        "android.23",
+        "android.22-x64"
+      ]
+    },
+    "android.23-x86": {
+      "#import": [
+        "android.23",
+        "android.22-x86"
+      ]
+    },
+    "android.24": {
+      "#import": [
+        "android.23"
+      ]
+    },
+    "android.24-arm": {
+      "#import": [
+        "android.24",
+        "android.23-arm"
+      ]
+    },
+    "android.24-arm64": {
+      "#import": [
+        "android.24",
+        "android.23-arm64"
+      ]
+    },
+    "android.24-x64": {
+      "#import": [
+        "android.24",
+        "android.23-x64"
+      ]
+    },
+    "android.24-x86": {
+      "#import": [
+        "android.24",
+        "android.23-x86"
+      ]
+    },
+    "android.25": {
+      "#import": [
+        "android.24"
+      ]
+    },
+    "android.25-arm": {
+      "#import": [
+        "android.25",
+        "android.24-arm"
+      ]
+    },
+    "android.25-arm64": {
+      "#import": [
+        "android.25",
+        "android.24-arm64"
+      ]
+    },
+    "android.25-x64": {
+      "#import": [
+        "android.25",
+        "android.24-x64"
+      ]
+    },
+    "android.25-x86": {
+      "#import": [
+        "android.25",
+        "android.24-x86"
+      ]
+    },
+    "android.26": {
+      "#import": [
+        "android.25"
+      ]
+    },
+    "android.26-arm": {
+      "#import": [
+        "android.26",
+        "android.25-arm"
+      ]
+    },
+    "android.26-arm64": {
+      "#import": [
+        "android.26",
+        "android.25-arm64"
+      ]
+    },
+    "android.26-x64": {
+      "#import": [
+        "android.26",
+        "android.25-x64"
+      ]
+    },
+    "android.26-x86": {
+      "#import": [
+        "android.26",
+        "android.25-x86"
+      ]
+    },
+    "android.27": {
+      "#import": [
+        "android.26"
+      ]
+    },
+    "android.27-arm": {
+      "#import": [
+        "android.27",
+        "android.26-arm"
+      ]
+    },
+    "android.27-arm64": {
+      "#import": [
+        "android.27",
+        "android.26-arm64"
+      ]
+    },
+    "android.27-x64": {
+      "#import": [
+        "android.27",
+        "android.26-x64"
+      ]
+    },
+    "android.27-x86": {
+      "#import": [
+        "android.27",
+        "android.26-x86"
+      ]
+    },
+    "android.28": {
+      "#import": [
+        "android.27"
+      ]
+    },
+    "android.28-arm": {
+      "#import": [
+        "android.28",
+        "android.27-arm"
+      ]
+    },
+    "android.28-arm64": {
+      "#import": [
+        "android.28",
+        "android.27-arm64"
+      ]
+    },
+    "android.28-x64": {
+      "#import": [
+        "android.28",
+        "android.27-x64"
+      ]
+    },
+    "android.28-x86": {
+      "#import": [
+        "android.28",
+        "android.27-x86"
+      ]
+    },
+    "android.29": {
+      "#import": [
+        "android.28"
+      ]
+    },
+    "android.29-arm": {
+      "#import": [
+        "android.29",
+        "android.28-arm"
+      ]
+    },
+    "android.29-arm64": {
+      "#import": [
+        "android.29",
+        "android.28-arm64"
+      ]
+    },
+    "android.29-x64": {
+      "#import": [
+        "android.29",
+        "android.28-x64"
+      ]
+    },
+    "android.29-x86": {
+      "#import": [
+        "android.29",
+        "android.28-x86"
       ]
     },
     "any": {

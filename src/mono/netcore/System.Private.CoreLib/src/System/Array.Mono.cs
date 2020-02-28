@@ -444,7 +444,7 @@ namespace System
 		internal int GetElementSize () => GetElementSize ();
 
 		[Intrinsic]
-		public bool IsPrimitive () => IsPrimitive ();
+		internal bool IsPrimitive () => IsPrimitive ();
 
 		[MethodImpl (MethodImplOptions.InternalCall)]
 		internal extern CorElementType GetCorElementTypeOfElementType();

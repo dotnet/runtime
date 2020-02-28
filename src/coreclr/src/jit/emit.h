@@ -194,7 +194,7 @@ public:
     bool emitLocation::IsPreviousInsNum(const emitter* emit) const;
 
 #ifdef DEBUG
-    void Print() const;
+    void Print(LONG compMethodID) const;
 #endif // DEBUG
 
 private:
