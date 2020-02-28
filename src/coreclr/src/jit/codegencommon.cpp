@@ -6379,7 +6379,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
             int i = 0;
-            for (; i < blkSize; i += REGSIZE_BYTES)
+            for (; i + REGSIZE_BYTES <= blkSize; i += REGSIZE_BYTES)
             {
                 emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
             }
@@ -6424,7 +6424,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
                 int i = 0;
-                for (; i < alignmentLoBlkSize; i += REGSIZE_BYTES)
+                for (; i + REGSIZE_BYTES <= alignmentLoBlkSize; i += REGSIZE_BYTES)
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
                 }
@@ -6541,7 +6541,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
                 int i = 0;
-                for (; i < alignmentHiBlkSize; i += REGSIZE_BYTES)
+                for (; i + REGSIZE_BYTES <= alignmentHiBlkSize; i += REGSIZE_BYTES)
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, alignedLclHi + i);
                 }
