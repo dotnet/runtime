@@ -4797,39 +4797,6 @@ void CodeGen::genCheckUseBlockInit()
             maskCalleeRegArgMask &= ~RBM_SECRET_STUB_PARAM;
         }
 
-#ifdef TARGET_XARCH
-        // If we're going to use "REP STOS", remember that we will trash EDI
-        // For fastcall we will have to save ECX, EAX
-        // so reserve two extra callee saved
-        // This is better than pushing eax, ecx, because we in the later
-        // we will mess up already computed offsets on the stack (for ESP frames)
-        regSet.rsSetRegsModified(RBM_EDI);
-
-#ifdef UNIX_AMD64_ABI
-        // For register arguments we may have to save ECX (and RDI on Amd64 System V OSes.)
-        // In such case use R12 and R13 registers.
-        if (maskCalleeRegArgMask & RBM_RCX)
-        {
-            regSet.rsSetRegsModified(RBM_R12);
-        }
-
-        if (maskCalleeRegArgMask & RBM_RDI)
-        {
-            regSet.rsSetRegsModified(RBM_R13);
-        }
-#else  // !UNIX_AMD64_ABI
-        if (maskCalleeRegArgMask & RBM_ECX)
-        {
-            regSet.rsSetRegsModified(RBM_ESI);
-        }
-#endif // !UNIX_AMD64_ABI
-
-        if (maskCalleeRegArgMask & RBM_EAX)
-        {
-            regSet.rsSetRegsModified(RBM_EBX);
-        }
-
-#endif // TARGET_XARCH
 #ifdef TARGET_ARM
         //
         // On the Arm if we are using a block init to initialize, then we
