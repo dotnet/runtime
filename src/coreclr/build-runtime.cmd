@@ -329,10 +329,12 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
+echo %__MsgPrefix%Generating native version headers
+set "__BinLog=%__LogsDir%\GenerateVersionHeaders_%__BuildOS%__%__BuildArch%__%__BuildType%.binlog"
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
     %__RepoRootDir%\eng\empty.csproj /p:NativeVersionFile="%__RootBinDir%\obj\coreclr\_version.h"^
     /t:GenerateNativeVersionFile /restore^
-    %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
+    %__CommonMSBuildArgs% %__UnprocessedBuildArgs% /bl:!__BinLog!
 if not !errorlevel! == 0 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to generate version headers.
     set __exitCode=!errorlevel!
@@ -348,10 +350,11 @@ REM ============================================================================
 set OptDataProjectFilePath=%__ProjectDir%\src\.nuget\optdata\optdata.csproj
 if %__RestoreOptData% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
+    set "__BinLog=%__LogsDir%\OptRestore_%__BuildOS%__%__BuildArch%__%__BuildType%.binlog"
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
         %OptDataProjectFilePath% /t:Restore^
         %__CommonMSBuildArgs% %__UnprocessedBuildArgs%^
-        /nodereuse:false
+        /nodereuse:false /bl:!__BinLog!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to restore the optimization data package.
         set __exitCode=!errorlevel!
@@ -361,10 +364,12 @@ if %__RestoreOptData% EQU 1 (
 set __PgoOptDataPath=
 if %__PgoOptimize% EQU 1 (
     set PgoDataPackagePathOutputFile="%__IntermediatesDir%\optdatapath.txt"
+    set "__BinLog=%__LogsDir%\PgoVersionRead_%__BuildOS%__%__BuildArch%__%__BuildType%.binlog"
 
     REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath %__CommonMSBuildArgs% /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"
+        "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath %__CommonMSBuildArgs% /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"^
+        /bl:!__BinLog!
 
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%Failed to get PGO data package path.
@@ -442,13 +447,15 @@ if %__BuildCrossArchNative% EQU 1 (
     if defined __ConfigureOnly goto SkipCrossCompBuild
 
     set __BuildLogRootName=Cross
-    set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-    set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-    set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
-    set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
-    set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
-    set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-    set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
+    set "__BuildLog=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+    set "__BuildWrn=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
+    set "__BuildErr=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+    set "__BinLog=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.binlog"
+    set "__MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!"
+    set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
+    set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
+    set "__MsbuildBinLog=/bl:!__BinLog!"
+    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
 
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
     "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
@@ -520,13 +527,15 @@ if %__BuildNative% EQU 1 (
     if defined __ConfigureOnly goto SkipNativeBuild
 
     set __BuildLogRootName=CoreCLR
-    set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-    set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-    set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
-    set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
-    set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
-    set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-    set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
+    set "__BuildLog=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+    set "__BuildWrn=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
+    set "__BuildErr=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+    set "__BinLog=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.binlog"
+    set "__MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!"
+    set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
+    set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
+    set "__MsbuildBinLog=/bl:!__BinLog!"
+    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
 
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
     "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
