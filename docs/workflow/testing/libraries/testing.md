@@ -49,7 +49,7 @@ dotnet build /t:BuildAndTest /p:XunitMethodName={FullyQualifiedNamespace}.{Class
 
 #### Running outer loop tests
 
-To run all tests, incl. outer loop tests (which are typically slower or less reliable)
+To run all tests, including "outer loop" tests (which are typically slower and in some test suites less reliable but which are more comprehensive):
 ```cmd
 dotnet build /t:BuildAndTest /p:Outerloop=true
 ```
