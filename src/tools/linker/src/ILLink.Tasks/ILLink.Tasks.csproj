@@ -38,9 +38,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="ILLink.Tasks.targets">
-      <PackagePath>build</PackagePath>
-    </Content>
     <Content Include="Sdk/Sdk.props">
       <PackagePath>Sdk</PackagePath>
     </Content>

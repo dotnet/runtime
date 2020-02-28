@@ -59,13 +59,6 @@ namespace ILLink.Tests
 			CheckOutput(executablePath, selfContained: true);
 		}
 
-		[Fact]
-		public void RunHelloWorldPortable()
-		{
-			string target = BuildAndLink(fixture.csproj, selfContained: false);
-			CheckOutput(target, selfContained: false);
-		}
-
 		void CheckOutput(string target, bool selfContained = false)
 		{
 			int ret = RunApp(target, out string commandOutput, selfContained: selfContained);

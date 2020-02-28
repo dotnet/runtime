@@ -8,22 +8,9 @@ namespace ILLink.Tests
 	public static class TestContext
 	{
 		/// <summary>
-		///   The name of the tasks package to add to the integration
-		///   projects.
+		///   The path to the ILLink.Tasks.dll assembly
 		/// </summary>
-		public static string TasksPackageName { get; private set; }
-
-		/// <summary>
-		///   The version of the tasks package to add to the
-		///   integration projects.
-		/// </summary>
-		public static string TasksPackageVersion { get; private set; }
-
-		/// <summary>
-		///   The path of the directory from which to get the linker
-		///   package.
-		/// </summary>
-		public static string PackageSource { get; private set; }
+		public static string TasksAssemblyPath { get; private set; }
 
 		/// <summary>
 		///   The path to the dotnet tool to use to run the
@@ -80,21 +67,12 @@ namespace ILLink.Tests
 			var illinkConfiguration = "Release";
 #endif
 
-			// Locate task package
-			var packageName = "ILLink.Tasks";
-			var packageSource = Path.Combine(repoRoot, "artifacts", "packages", illinkConfiguration, "Shipping");
-			var tasksPackages = Directory.GetFiles(packageSource)
-				.Where(p => Path.GetExtension(p) == ".nupkg")
-				.Select(p => Path.GetFileNameWithoutExtension(p))
-				.Where(p => p.StartsWith(packageName));
-			var nPackages = tasksPackages.Count();
-			if (nPackages > 1) {
-				throw new Exception($"duplicate {packageName} packages in {packageSource}");
-			} else if (nPackages == 0) {
-				throw new Exception($"{packageName} package not found in {packageSource}");
+			// Locate tasks assembly
+			var tasksAssembly = Path.Combine(repoRoot, "artifacts", "bin", "ILLink.Tasks", illinkConfiguration, "netcoreapp3.0", "ILLink.Tasks.dll");
+			if (!File.Exists(tasksAssembly)) {
+				throw new Exception("ILLink.Tasks not found at " + tasksAssembly);
 			}
-			var tasksPackage = tasksPackages.Single();
-			var version = tasksPackage.Remove(0, packageName.Length + 1);
+
 
 			// Locate dotnet host
 			var dotnetDir = Path.Combine(repoRoot, ".dotnet");
@@ -109,9 +87,7 @@ namespace ILLink.Tests
 			var dotnetToolPath = Path.Combine(dotnetDir, dotnetToolName);
 
 			// Initialize static members
-			PackageSource = packageSource;
-			TasksPackageName = packageName;
-			TasksPackageVersion = version;
+			TasksAssemblyPath = tasksAssembly;
 			DotnetToolPath = dotnetToolPath;
 			// This sets the RID to the RID of the currently-executing system.
 			RuntimeIdentifier = RuntimeEnvironment.GetRuntimeIdentifier();

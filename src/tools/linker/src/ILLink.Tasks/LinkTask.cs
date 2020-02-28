@@ -110,7 +110,7 @@ namespace ILLink.Tasks
 					return _illinkPath;
 
 				var taskDirectory = Path.GetDirectoryName (Assembly.GetExecutingAssembly ().Location);
-                                // The linker always runs on .NET Core, even when using desktop MSBuild to host ILLink.Tasks.
+				// The linker always runs on .NET Core, even when using desktop MSBuild to host ILLink.Tasks.
 				_illinkPath = Path.Combine (Path.GetDirectoryName (taskDirectory), "netcoreapp3.0", "illink.dll");
 				return _illinkPath;
 			}
