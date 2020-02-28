@@ -121,7 +121,7 @@ jobs:
 
     # NuGet restore work around https://github.com/dotnet/runtime/issues/32764
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: /eng/nuget-workaround.sh
+      - script: $(Build.SourcesDirectory)/eng/nuget-workaround.sh
         displayName: NuGet Restore Work Around
 
     # Build
