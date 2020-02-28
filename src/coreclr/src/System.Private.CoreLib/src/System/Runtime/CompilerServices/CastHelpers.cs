@@ -21,6 +21,7 @@ namespace System.Runtime.CompilerServices
     internal static unsafe class CastHelpers
     {
         private static int[]? s_table;
+        private static readonly MethodTable* pObjMt = RuntimeHelpers.GetMethodTable(new object());
 
         [DebuggerDisplay("Source = {_source}; Target = {_targetAndResult & ~1}; Result = {_targetAndResult & 1}; VersionNum = {_version & ((1 << 29) - 1)}; Distance = {_version >> 29};")]
         [StructLayout(LayoutKind.Sequential)]
@@ -167,6 +168,9 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern ref byte Unbox_Helper(void* toTypeHnd, object obj);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void WriteBarrier(ref object? dst, object obj);
 
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
@@ -490,6 +494,88 @@ namespace System.Runtime.CompilerServices
                 return ref obj.GetRawData();
 
             return ref Unbox_Helper(toTypeHnd, obj);
+        }
+
+        internal struct ArrayElement
+        {
+            public object? Value;
+        }
+
+        private static ref object? ThrowArrayMismatchException()
+        {
+            throw new ArrayTypeMismatchException();
+        }
+
+        private static ref object? LdelemaRef(Array array, int index, void* type)
+        {
+            ArrayElement[] arr = Unsafe.As<ArrayElement[]>(array);
+
+            // this will throw appropriate exceptions if array is null or access is out of range.
+            nuint elementType = RuntimeHelpers.GetMethodTable(arr)->ElementType;
+            ref object? element = ref arr[index].Value;
+
+            if (elementType != (nuint)type)
+                goto throwArrayMismatch;
+
+            return ref element;
+
+            throwArrayMismatch:
+                return ref ThrowArrayMismatchException();
+        }
+
+        private static void StelemRef(Array array, int index, object? obj)
+        {
+            ArrayElement[] arr = Unsafe.As<ArrayElement[]>(array);
+
+            // this will throw appropriate exceptions if array is null or access is out of range.
+            nuint elementType = RuntimeHelpers.GetMethodTable(arr)->ElementType;
+            ref object? element = ref arr[index].Value;
+
+            if (obj == null)
+                goto assigningNull;
+
+            if (elementType != (nuint)RuntimeHelpers.GetMethodTable(obj))
+                goto notExactMatch;
+
+            doWrite:
+                WriteBarrier(ref element, obj);
+                return;
+
+            assigningNull:
+                element = null;
+                return;
+
+            notExactMatch:
+                if (elementType == (nuint)pObjMt)
+                    goto doWrite;
+
+            StelemRef_Helper(ref element, elementType, obj);
+        }
+
+        private static void StelemRef_Helper(ref object? element, nuint elementType, object obj)
+        {
+            CastResult result = TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);
+            if (result == CastResult.CanCast)
+            {
+                WriteBarrier(ref element, obj);
+                return;
+            }
+
+            StelemRef_Helper_Slow(ref element, elementType, obj);
+        }
+
+        private static void StelemRef_Helper_Slow(ref object? element, nuint elementType, object obj)
+        {
+            Debug.Assert(obj != null);
+
+            obj = IsInstanceOfAny_NoCacheLookup((void*)elementType, obj);
+            if (obj != null)
+            {
+                WriteBarrier(ref element, obj);
+                return;
+            }
+
+            throw new ArrayTypeMismatchException();
         }
     }
 }
