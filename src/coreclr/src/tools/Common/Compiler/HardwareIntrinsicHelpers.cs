@@ -8,6 +8,7 @@ using Internal.TypeSystem;
 using Internal.IL;
 using Internal.IL.Stubs;
 using System.Diagnostics;
+using System.Threading;
 
 namespace ILCompiler
 {

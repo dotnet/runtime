@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
-
+using ILCompiler;
 using NumberStyles = System.Globalization.NumberStyles;
 
 namespace Internal.JitInterface
@@ -28,10 +28,11 @@ namespace Internal.JitInterface
         private CorJitFlag[] _jitFlags;
         private Dictionary<string, string> _config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private object _keepAlive; // Keeps callback delegates alive
+        private InstructionSetSupport _instructionSetSupport;
 
-        public static void Initialize(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, string jitPath = null)
+        public static void Initialize(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, InstructionSetSupport instructionSetSupport, string jitPath = null)
         {
-            var config = new JitConfigProvider(jitFlags, parameters);
+            var config = new JitConfigProvider(jitFlags, parameters, instructionSetSupport);
 
             // Make sure we didn't try to initialize two instances of JIT configuration.
             // RyuJIT doesn't support multiple hosts in a single process.
@@ -70,14 +71,66 @@ namespace Internal.JitInterface
         /// </summary>
         /// <param name="jitFlags">A collection of JIT compiler flags.</param>
         /// <param name="parameters">A collection of parameter name/value pairs.</param>
-        public JitConfigProvider(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters)
+        public JitConfigProvider(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, InstructionSetSupport instructionSetSupport)
         {
             ArrayBuilder<CorJitFlag> jitFlagBuilder = new ArrayBuilder<CorJitFlag>();
             foreach (CorJitFlag jitFlag in jitFlags)
             {
                 jitFlagBuilder.Add(jitFlag);
             }
+
+            if (instructionSetSupport.IsInstructionSetSupported("Sse2") || instructionSetSupport.IsInstructionSetSupported("AdvSimd"))
+            {
+                jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
+            }
+
+            if (instructionSetSupport.Architecture == TypeSystem.TargetArchitecture.X64 || instructionSetSupport.Architecture == TypeSystem.TargetArchitecture.X86)
+            {
+                if (instructionSetSupport.IsInstructionSetSupported("Sse3"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_SSE3);
+                if (instructionSetSupport.IsInstructionSetSupported("Ssse3"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_SSSE3);
+                if (instructionSetSupport.IsInstructionSetSupported("Sse41"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_SSE41);
+                if (instructionSetSupport.IsInstructionSetSupported("Sse42"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_SSE42);
+                if (instructionSetSupport.IsInstructionSetSupported("Aes"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_AES);
+                if (instructionSetSupport.IsInstructionSetSupported("Bmi1"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_BMI1);
+                if (instructionSetSupport.IsInstructionSetSupported("Bmi2"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_BMI2);
+                if (instructionSetSupport.IsInstructionSetSupported("Fma"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_FMA);
+                if (instructionSetSupport.IsInstructionSetSupported("Lzcnt"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_LZCNT);
+                if (instructionSetSupport.IsInstructionSetSupported("Pclmulqdq"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_PCLMULQDQ);
+                if (instructionSetSupport.IsInstructionSetSupported("Popcnt"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_POPCNT);
+            }
+
+            if (instructionSetSupport.Architecture == TypeSystem.TargetArchitecture.ARM64)
+            {
+                if (instructionSetSupport.IsInstructionSetSupported("ArmBase"))
+                {
+                    // No flag to enable this
+                }
+
+                if (instructionSetSupport.IsInstructionSetSupported("AdvSimd"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_HAS_ARM64_SIMD);
+                if (instructionSetSupport.IsInstructionSetSupported("Aes"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_HAS_ARM64_AES);
+                if (instructionSetSupport.IsInstructionSetSupported("Crc32"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_HAS_ARM64_CRC32);
+                if (instructionSetSupport.IsInstructionSetSupported("Sha1"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_HAS_ARM64_SHA1);
+                if (instructionSetSupport.IsInstructionSetSupported("Sha256"))
+                    jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_HAS_ARM64_SHA256);
+            }
+
             _jitFlags = jitFlagBuilder.ToArray();
+            _instructionSetSupport = instructionSetSupport;
 
             foreach (var param in parameters)
             {
@@ -86,6 +139,8 @@ namespace Internal.JitInterface
 
             UnmanagedInstance = CreateUnmanagedInstance();
         }
+
+        public InstructionSetSupport InstructionSetSupport => _instructionSetSupport;
 
         public bool HasFlag(CorJitFlag flag)
         {

@@ -691,10 +691,13 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             // Check for SIMD intrinsics
-            DefType owningDefType = method.OwningType as DefType;
-            if (owningDefType != null && VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
+            if (method.Context.Target.MaximumSimdVectorLength == SimdVectorLength.None)
             {
-                throw new RequiresRuntimeJitException("This function is using SIMD intrinsics, their size is machine specific");
+                DefType owningDefType = method.OwningType as DefType;
+                if (owningDefType != null && VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
+                {
+                    throw new RequiresRuntimeJitException("This function is using SIMD intrinsics, their size is machine specific");
+                }
             }
 #endif
 
@@ -702,7 +705,8 @@ namespace Internal.JitInterface
             if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
             {
 #if READYTORUN
-                if (!isMethodDefinedInCoreLib())
+                if (!isMethodDefinedInCoreLib() &&
+                    JitConfigProvider.Instance.InstructionSetSupport.IsSupportedInstructionSetIntrinsic(method))
                 {
                     throw new RequiresRuntimeJitException("This function is not defined in CoreLib and it is using hardware intrinsics.");
                 }
@@ -711,7 +715,8 @@ namespace Internal.JitInterface
                 // Do not report the get_IsSupported method as an intrinsic - RyuJIT would expand it to
                 // a constant depending on the code generation flags passed to it, but we would like to
                 // do a dynamic check instead.
-                if (!HardwareIntrinsicHelpers.IsIsSupportedMethod(method)
+                if (
+                    !HardwareIntrinsicHelpers.IsIsSupportedMethod(method)
                     || HardwareIntrinsicHelpers.IsKnownSupportedIntrinsicAtCompileTime(method))
 #endif
                 {

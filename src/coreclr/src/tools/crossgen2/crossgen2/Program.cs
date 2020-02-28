@@ -149,6 +149,8 @@ namespace ILCompiler
                     throw new CommandLineException(SR.TargetOSUnsupported);
             }
 
+            InstructionSetSupportBuilder instructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
+
             if (_commandLineOptions.InstructionSet.Length > 0)
             {
                 // At this time, instruction sets may only be specified with --input-bubble, as
@@ -161,7 +163,7 @@ namespace ILCompiler
                 {
                     string instructionSet = _commandLineOptions.InstructionSet[i];
 
-                    if (String.IsNullOrEmpty(instructionSet.Length))
+                    if (String.IsNullOrEmpty(instructionSet))
                         throw new CommandLineException(String.Format(SR.InstructionSetMustNotBe, ""));
 
                     char lastChar = instructionSet[instructionSet.Length - 1];
@@ -176,13 +178,23 @@ namespace ILCompiler
                 foreach (string instructionSetSpecifier in _commandLineOptions.InstructionSet)
                 {
                     string instructionSet = instructionSetSpecifier.Substring(0, instructionSetSpecifier.Length - 1);
-                    bool enabled = 
-                    if ((_targetArchitecture == TargetArchitecture.X64) || (_targetArchitecture == TargetArchitecture.X86);
+
+                    bool enabled = instructionSetSpecifier[instructionSetSpecifier.Length - 1] == '+' ? true : false;
+                    if (enabled)
                     {
-                        
+                        if (!instructionSetSupportBuilder.AddSupportedInstructionSet(instructionSet))
+                            throw new CommandLineException(String.Format(SR.InstructionSetMustNotBe, instructionSet));
+                    }
+                    else
+                    {
+                        if (!instructionSetSupportBuilder.RemoveInstructionSetSupport(instructionSet))
+                            throw new CommandLineException(String.Format(SR.InstructionSetMustNotBe, instructionSet));
                     }
                 }
             }
+            InstructionSetSupport instructionSetSupport = instructionSetSupportBuilder.CreateInstructionSetSupport(
+                (string specifiedInstructionSet, string impliedInstructionSet) =>
+                    throw new CommandLineException(String.Format(SR.InstructionSetInvalidImplication, specifiedInstructionSet, impliedInstructionSet)));
 
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
@@ -397,6 +409,7 @@ namespace ILCompiler
                         .UseMapFile(_commandLineOptions.Map)
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseJitPath(_commandLineOptions.JitPath)
+                        .UseInstructionSetSupport(instructionSetSupport)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)
