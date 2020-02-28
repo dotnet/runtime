@@ -277,6 +277,7 @@ namespace System.Net.Http
         public Utf8StringContent(System.Utf8String content, string? mediaType) { }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context) { throw null; }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override bool TryComputeLength(out long length) { throw null; }
     }
 }
