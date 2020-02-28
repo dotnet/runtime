@@ -42,7 +42,7 @@ namespace System.Net.NetworkInformation
         /// </summary>
         public abstract SuffixOrigin SuffixOrigin { get; }
 
-        public abstract IPAddress IPv4Mask { get; }
+        public abstract IPAddress? IPv4Mask { get; }
 
         /// <summary>
         /// The CIDR representation of the subnet mask.

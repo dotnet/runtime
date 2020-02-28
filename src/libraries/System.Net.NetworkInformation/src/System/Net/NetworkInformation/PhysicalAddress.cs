@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.Net.NetworkInformation
 {
     public class PhysicalAddress
     {
-        private readonly byte[] _address = null;
+        private readonly byte[] _address;
         private int _hash = 0;
 
         public static readonly PhysicalAddress None = new PhysicalAddress(Array.Empty<byte>());
@@ -60,9 +61,9 @@ namespace System.Net.NetworkInformation
             return _hash;
         }
 
-        public override bool Equals(object comparand)
+        public override bool Equals(object? comparand)
         {
-            PhysicalAddress address = comparand as PhysicalAddress;
+            PhysicalAddress? address = comparand as PhysicalAddress;
             if (address == null)
             {
                 return false;
@@ -99,17 +100,17 @@ namespace System.Net.NetworkInformation
             return (byte[])_address.Clone();
         }
 
-        public static PhysicalAddress Parse(string address) => address != null ? Parse(address.AsSpan()) : None;
+        public static PhysicalAddress Parse(string? address) => address != null ? Parse(address.AsSpan()) : None;
 
         public static PhysicalAddress Parse(ReadOnlySpan<char> address)
         {
-            if (!TryParse(address, out PhysicalAddress value))
+            if (!TryParse(address, out PhysicalAddress? value))
                 throw new FormatException(SR.Format(SR.net_bad_mac_address, new string(address)));
 
             return value;
         }
 
-        public static bool TryParse(string address, out PhysicalAddress value)
+        public static bool TryParse(string? address, [NotNullWhen(true)] out PhysicalAddress? value)
         {
             if (address == null)
             {
@@ -120,7 +121,7 @@ namespace System.Net.NetworkInformation
             return TryParse(address.AsSpan(), out value);
         }
 
-        public static bool TryParse(ReadOnlySpan<char> address, out PhysicalAddress value)
+        public static bool TryParse(ReadOnlySpan<char> address, [NotNullWhen(true)] out PhysicalAddress? value)
         {
             int validSegmentLength;
             char? delimiter = null;

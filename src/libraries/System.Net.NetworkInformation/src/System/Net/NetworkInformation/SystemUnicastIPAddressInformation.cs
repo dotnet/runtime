@@ -13,7 +13,7 @@ namespace System.Net.NetworkInformation
     {
         private readonly long _dhcpLeaseLifetime;
         private readonly SystemIPAddressInformation _innerInfo;
-        private readonly IPAddress _ipv4Mask;
+        private readonly IPAddress? _ipv4Mask;
         private readonly PrefixOrigin _prefixOrigin;
         private readonly SuffixOrigin _suffixOrigin;
         private readonly DuplicateAddressDetectionState _dadState;
@@ -43,7 +43,7 @@ namespace System.Net.NetworkInformation
 
         public override IPAddress Address { get { return _innerInfo.Address; } }
 
-        public override IPAddress IPv4Mask
+        public override IPAddress? IPv4Mask
         {
             get
             {
