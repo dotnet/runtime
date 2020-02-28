@@ -5,6 +5,7 @@
 using System;
 using System.Dynamic;
 using System.Linq.Expressions;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
@@ -76,7 +77,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             Requires.NotNull(handler, nameof(handler));
             VerifyHandler(handler);
 
-            ComEventSink comEventSink = ComEventSink.FromRuntimeCallableWrapper(_rcw, _sourceIid, true);
+            ComEventsSink comEventSink = ComEventsSink.FromRuntimeCallableWrapper(_rcw, _sourceIid, true);
             comEventSink.AddHandler(_dispid, handler);
             return this;
         }
@@ -91,7 +92,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             Requires.NotNull(handler, nameof(handler));
             VerifyHandler(handler);
 
-            ComEventSink comEventSink = ComEventSink.FromRuntimeCallableWrapper(_rcw, _sourceIid, false);
+            ComEventsSink comEventSink = ComEventsSink.FromRuntimeCallableWrapper(_rcw, _sourceIid, false);
             comEventSink?.RemoveHandler(_dispid, handler);
 
             return this;

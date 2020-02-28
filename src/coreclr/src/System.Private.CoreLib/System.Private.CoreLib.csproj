@@ -339,8 +339,12 @@
     <Compile Include="$(BclSourcesRoot)\System\__ComObject.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsHelper.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsInfo.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsMethod.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsSink.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsMethod.cs" Condition="'$(FeatureClassicCominterop)' == 'true'">
+      <Link>Common\System\Runtime\InteropServices\ComEventsMethod.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsSink.cs" Condition="'$(FeatureClassicCominterop)' == 'true'">
+      <Link>Common\System\Runtime\InteropServices\ComEventsSink.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\Variant.cs" Condition="'$(FeatureClassicCominterop)' == 'true'">
       <Link>Common\System\Runtime\InteropServices\Variant.cs</Link>
     </Compile>

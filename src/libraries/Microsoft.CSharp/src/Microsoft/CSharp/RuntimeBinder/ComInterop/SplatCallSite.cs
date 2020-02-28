@@ -10,7 +10,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     internal sealed class SplatCallSite
     {
-        // Stored callable Delegate or IDynamicMetaObjectProvider.
+        // Stored callable IDynamicMetaObjectProvider.
         internal readonly object _callable;
 
         // Can the number of arguments to a given event change each call?
@@ -24,17 +24,12 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             _callable = callable;
         }
 
+        public delegate object InvokeDelegate(object[] args);
         internal object Invoke(object[] args)
         {
             Debug.Assert(args != null);
 
-            // If it is a delegate, just let DynamicInvoke do the binding.
-            if (_callable is Delegate d)
-            {
-                return d.DynamicInvoke(args);
-            }
-
-            // Otherwise, create a CallSite and invoke it.
+            // Create a CallSite and invoke it.
             if (_site == null)
             {
                 _site = CallSite<Func<CallSite, object, object[], object>>.Create(SplatInvokeBinder.s_instance);

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -29,12 +31,15 @@ namespace System.Runtime.InteropServices
             private int _expectedParamsCount;
             private Type?[]? _cachedTargetTypes;
 
-            public DelegateWrapper(Delegate d)
+            public DelegateWrapper(Delegate d, bool wrapArgs)
             {
                 Delegate = d;
+                WrapArgs = wrapArgs;
             }
 
             public Delegate Delegate { get; set; }
+
+            public bool WrapArgs { get; private set; }
 
             public object? Invoke(object[] args)
             {
@@ -60,7 +65,7 @@ namespace System.Runtime.InteropServices
                     }
                 }
 
-                return Delegate.DynamicInvoke(args);
+                return Delegate.DynamicInvoke(WrapArgs ? new object[] { args } : args);
             }
 
             private void PreProcessSignature()
@@ -164,26 +169,26 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public void AddDelegate(Delegate d)
+        public void AddDelegate(Delegate d, bool wrapArgs = false)
         {
             lock (_delegateWrappers)
             {
                 // Update an existing delegate wrapper
                 foreach (DelegateWrapper wrapper in _delegateWrappers)
                 {
-                    if (wrapper.Delegate.GetType() == d.GetType())
+                    if (wrapper.Delegate.GetType() == d.GetType() && wrapper.WrapArgs == wrapArgs)
                     {
                         wrapper.Delegate = Delegate.Combine(wrapper.Delegate, d);
                         return;
                     }
                 }
 
-                var newWrapper = new DelegateWrapper(d);
+                var newWrapper = new DelegateWrapper(d, wrapArgs);
                 _delegateWrappers.Add(newWrapper);
             }
         }
 
-        public void RemoveDelegate(Delegate d)
+        public void RemoveDelegate(Delegate d, bool wrapArgs = false)
         {
             lock (_delegateWrappers)
             {
@@ -193,7 +198,7 @@ namespace System.Runtime.InteropServices
                 for (int i = 0; i < _delegateWrappers.Count; i++)
                 {
                     DelegateWrapper wrapperMaybe = _delegateWrappers[i];
-                    if (wrapperMaybe.Delegate.GetType() == d.GetType())
+                    if (wrapperMaybe.Delegate.GetType() == d.GetType() && wrapperMaybe.WrapArgs == wrapArgs)
                     {
                         removeIdx = i;
                         wrapper = wrapperMaybe;
@@ -216,6 +221,40 @@ namespace System.Runtime.InteropServices
                 else
                 {
                     _delegateWrappers.RemoveAt(removeIdx);
+                }
+            }
+        }
+
+        public void RemoveDelegates(Func<Delegate, bool> condition)
+        {
+            lock (_delegateWrappers)
+            {
+                // Find delegate wrapper indexes
+                List<int> toRemove = new List<int>();
+                for (int i = 0; i < _delegateWrappers.Count; i++)
+                {
+                    DelegateWrapper wrapper = _delegateWrappers[i];
+                    Delegate[] invocationList = wrapper.Delegate.GetInvocationList();
+                    foreach (Delegate delegateMaybe in invocationList)
+                    {
+                        if (condition(delegateMaybe))
+                        {
+                            Delegate? newDelegate = Delegate.Remove(wrapper!.Delegate, delegateMaybe);
+                            if (newDelegate != null)
+                            {
+                                wrapper.Delegate = newDelegate;
+                            }
+                            else
+                            {
+                                toRemove.Add(i);
+                            }
+                        }
+                    }
+                }
+
+                foreach (int idx in toRemove)
+                {
+                    _delegateWrappers.RemoveAt(idx);
                 }
             }
         }
