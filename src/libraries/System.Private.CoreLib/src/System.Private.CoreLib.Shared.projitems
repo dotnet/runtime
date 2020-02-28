@@ -1827,4 +1827,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8Span.Searching.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8StringComparer.cs" />
   </ItemGroup>
+<<<<<<< HEAD
 </Project>
+=======
+</Project>
+>>>>>>> Move Utf8String code from coreclr to libraries
