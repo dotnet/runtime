@@ -128,7 +128,7 @@ The libraries build contains some native code. This includes shims over libc, op
 ./src/libraries/Native/build-native.sh debug x64
 ```
 
-- The following example shows how you would do an arm cross-compile build.
+- The following example shows how you would do an arm cross-compile build
 ```bash
 ./src/libraries/Native/build-native.sh debug arm cross verbose
 ```
