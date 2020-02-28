@@ -781,7 +781,7 @@ clear_domain_process_object (GCObject *obj, MonoDomain *domain)
 	remove = need_remove_object_for_domain (obj, domain);
 
 	if (remove && obj->synchronisation) {
-		guint32 dislink = mono_monitor_get_object_monitor_gchandle (obj);
+		MonoGCHandle dislink = mono_monitor_get_object_monitor_gchandle (obj);
 		if (dislink)
 			mono_gchandle_free_internal (dislink);
 	}
@@ -2679,10 +2679,10 @@ sgen_client_metadata_for_object (GCObject *obj)
  *
  * \returns a handle that can be used to access the object from unmanaged code.
  */
-guint32
+MonoGCHandle
 mono_gchandle_new_internal (MonoObject *obj, gboolean pinned)
 {
-	return sgen_gchandle_new (obj, pinned);
+	return MONO_GC_HANDLE_FROM_UINT (sgen_gchandle_new (obj, pinned));
 }
 
 /**
@@ -2706,10 +2706,10 @@ mono_gchandle_new_internal (MonoObject *obj, gboolean pinned)
  * \returns a handle that can be used to access the object from
  * unmanaged code.
  */
-guint32
+MonoGCHandle
 mono_gchandle_new_weakref_internal (GCObject *obj, gboolean track_resurrection)
 {
-	return sgen_gchandle_new_weakref (obj, track_resurrection);
+	return MONO_GC_HANDLE_FROM_UINT (sgen_gchandle_new_weakref (obj, track_resurrection));
 }
 
 /**
@@ -2719,9 +2719,9 @@ mono_gchandle_new_weakref_internal (GCObject *obj, gboolean track_resurrection)
  * \returns TRUE if the object wrapped by the \p gchandle belongs to the specific \p domain.
  */
 gboolean
-mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
+mono_gchandle_is_in_domain (MonoGCHandle gchandle, MonoDomain *domain)
 {
-	MonoDomain *gchandle_domain = (MonoDomain *)sgen_gchandle_get_metadata (gchandle);
+	MonoDomain *gchandle_domain = (MonoDomain *)sgen_gchandle_get_metadata (MONO_GC_HANDLE_TO_UINT (gchandle));
 	return domain->domain_id == gchandle_domain->domain_id;
 }
 
@@ -2734,9 +2734,9 @@ mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
  * object wrapped.
  */
 void
-mono_gchandle_free_internal (guint32 gchandle)
+mono_gchandle_free_internal (MonoGCHandle gchandle)
 {
-	sgen_gchandle_free (gchandle);
+	sgen_gchandle_free (MONO_GC_HANDLE_TO_UINT (gchandle));
 }
 
 /**
@@ -2762,9 +2762,9 @@ mono_gchandle_free_domain (MonoDomain *unloading)
  * NULL for a collected object if using a weakref handle.
  */
 MonoObject*
-mono_gchandle_get_target_internal (guint32 gchandle)
+mono_gchandle_get_target_internal (MonoGCHandle gchandle)
 {
-	return sgen_gchandle_get_target (gchandle);
+	return sgen_gchandle_get_target (MONO_GC_HANDLE_TO_UINT (gchandle));
 }
 
 static gpointer
@@ -2793,9 +2793,9 @@ sgen_null_links_for_domain (MonoDomain *domain)
 }
 
 void
-mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
+mono_gchandle_set_target (MonoGCHandle gchandle, MonoObject *obj)
 {
-	sgen_gchandle_set_target (gchandle, obj);
+	sgen_gchandle_set_target (MONO_GC_HANDLE_TO_UINT (gchandle), obj);
 }
 
 void

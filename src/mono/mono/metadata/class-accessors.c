@@ -259,27 +259,32 @@ typedef struct {
 	guint32 value;
 } Uint32Property;
 
-guint32
+typedef struct {
+	MonoPropertyBagItem head;
+	MonoGCHandle value;
+} GCHandleProperty;
+
+MonoGCHandle
 mono_class_get_ref_info_handle (MonoClass *klass)
 {
-	Uint32Property *prop = (Uint32Property*)mono_property_bag_get (m_class_get_infrequent_data (klass), PROP_REF_INFO_HANDLE);
-	return prop ? prop->value : 0;
+	GCHandleProperty *prop = (GCHandleProperty*)mono_property_bag_get (m_class_get_infrequent_data (klass), PROP_REF_INFO_HANDLE);
+	return prop ? prop->value : NULL;
 }
 
-guint32
-mono_class_set_ref_info_handle (MonoClass *klass, guint32 value)
+MonoGCHandle
+mono_class_set_ref_info_handle (MonoClass *klass, gpointer value)
 {
 	if (!value) {
-		Uint32Property *prop = (Uint32Property*)mono_property_bag_get (m_class_get_infrequent_data (klass), PROP_REF_INFO_HANDLE);
+		GCHandleProperty *prop = (GCHandleProperty*)mono_property_bag_get (m_class_get_infrequent_data (klass), PROP_REF_INFO_HANDLE);
 		if (prop)
-			prop->value = 0;
-		return 0;
+			prop->value = NULL;
+		return NULL;
 	}
 
-	Uint32Property *prop = (Uint32Property*)mono_class_alloc (klass, sizeof (Uint32Property));
+	GCHandleProperty *prop = (GCHandleProperty*)mono_class_alloc (klass, sizeof (GCHandleProperty));
 	prop->head.tag = PROP_REF_INFO_HANDLE;
 	prop->value = value;
-	prop = (Uint32Property*)mono_property_bag_add (m_class_get_infrequent_data (klass), prop);
+	prop = (GCHandleProperty*)mono_property_bag_add (m_class_get_infrequent_data (klass), prop);
 	return prop->value;
 }
 

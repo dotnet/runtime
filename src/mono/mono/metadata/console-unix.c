@@ -484,7 +484,7 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoStringHandle keypad, MonoStringHand
 	if (ret == -1)
 		return FALSE;
 
-	uint32_t h;
+	MonoGCHandle h;
 	set_control_chars (MONO_ARRAY_HANDLE_PIN (control_chars_arr, gchar, 0, &h), mono_attr.c_cc);
 	mono_gchandle_free_internal (h);
 	/* If initialized from another appdomain... */

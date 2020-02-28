@@ -10,4 +10,6 @@
 typedef struct _MonoDomain MonoDomain;
 typedef struct _MonoJitInfo MonoJitInfo;
 
+typedef void * MonoGCHandle;
+
 #endif

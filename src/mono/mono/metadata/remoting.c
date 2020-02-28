@@ -2092,7 +2092,7 @@ mono_marshal_xdomain_copy_value_handle (MonoObjectHandle val, MonoError *error)
 	case MONO_TYPE_U8:
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8: {
-		uint32_t gchandle = mono_gchandle_from_handle (val, TRUE);
+		MonoGCHandle gchandle = mono_gchandle_from_handle (val, TRUE);
 		MonoObjectHandle res = MONO_HANDLE_NEW (MonoObject, mono_value_box_checked (domain, klass, ((char*)MONO_HANDLE_RAW (val)) + sizeof(MonoObject), error)); /* FIXME use handles in mono_value_box_checked */
 		mono_gchandle_free_internal (gchandle);
 		goto_if_nok (error, leave);
@@ -2101,7 +2101,7 @@ mono_marshal_xdomain_copy_value_handle (MonoObjectHandle val, MonoError *error)
 	}
 	case MONO_TYPE_STRING: {
 		MonoStringHandle str = MONO_HANDLE_CAST (MonoString, val);
-		uint32_t gchandle = mono_gchandle_from_handle (val, TRUE);
+		MonoGCHandle gchandle = mono_gchandle_from_handle (val, TRUE);
 		MonoStringHandle res = mono_string_new_utf16_handle (domain, mono_string_chars_internal (MONO_HANDLE_RAW (str)), mono_string_handle_length (str), error);
 		mono_gchandle_free_internal (gchandle);
 		goto_if_nok (error, leave);
