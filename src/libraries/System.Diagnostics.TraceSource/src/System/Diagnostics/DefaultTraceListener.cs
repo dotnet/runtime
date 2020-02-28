@@ -46,12 +46,12 @@ namespace System.Diagnostics
             }
         }
 
-        public string LogFileName
+        public string? LogFileName
         {
             get
             {
                 if (!_settingsInitialized) InitializeSettings();
-                return _logFileName!;
+                return _logFileName;
             }
             set
             {
@@ -168,7 +168,7 @@ namespace System.Diagnostics
         {
             try
             {
-                File.AppendAllText(LogFileName, message);
+                File.AppendAllText(LogFileName!, message);
             }
             catch (Exception e)
             {
