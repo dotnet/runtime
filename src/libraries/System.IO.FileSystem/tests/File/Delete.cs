@@ -186,10 +186,10 @@ namespace System.IO.Tests
             Assert.False(testFile.Exists);
         }
 
-        [Theory,
-            InlineData(":bar"),
-            InlineData(":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData(":bar")]
+        [InlineData(":bar:$DATA")]
         public void WindowsDeleteAlternateDataStream(string streamName)
         {
             FileInfo testFile = Create(GetTestFilePath());
