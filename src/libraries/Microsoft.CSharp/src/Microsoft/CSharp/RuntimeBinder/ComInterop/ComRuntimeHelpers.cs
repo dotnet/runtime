@@ -106,13 +106,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// <summary>
         /// Look for typeinfo using IDispatch.GetTypeInfo
         /// </summary>
-        /// <param name="dispatch"></param>
-        /// <param name="throwIfMissingExpectedTypeInfo">
+        /// <param name="dispatch">IDispatch object</param>
+        /// <remarks>
         /// Some COM objects just dont expose typeinfo. In these cases, this method will return null.
         /// Some COM objects do intend to expose typeinfo, but may not be able to do so if the type-library is not properly
-        /// registered. This will be considered as acceptable or as an error condition depending on throwIfMissingExpectedTypeInfo</param>
-        /// <returns></returns>
-        internal static ComTypes.ITypeInfo GetITypeInfoFromIDispatch(IDispatch dispatch, bool throwIfMissingExpectedTypeInfo)
+        /// registered. This will be considered as acceptable or as an error condition depending on throwIfMissingExpectedTypeInfo
+        /// </remarks>
+        /// <returns>Type info</returns>
+        internal static ComTypes.ITypeInfo GetITypeInfoFromIDispatch(IDispatch dispatch)
         {
             int hresult = dispatch.TryGetTypeInfoCount(out uint typeCount);
             Marshal.ThrowExceptionForHR(hresult);
@@ -126,16 +127,24 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             hresult = dispatch.TryGetTypeInfo(0, 0, out typeInfoPtr);
             if (!ComHresults.IsSuccess(hresult))
             {
-                CheckIfMissingTypeInfoIsExpected(hresult, throwIfMissingExpectedTypeInfo);
-                return null;
-            }
-            if (typeInfoPtr == IntPtr.Zero)
-            { // be defensive against components that return IntPtr.Zero
-                if (throwIfMissingExpectedTypeInfo)
+                // Word.Basic always returns this because of an incorrect implementation of IDispatch.GetTypeInfo
+                // Any implementation that returns E_NOINTERFACE is likely to do so in all environments
+                if (hresult == ComHresults.E_NOINTERFACE)
                 {
-                    Marshal.ThrowExceptionForHR(ComHresults.E_FAIL);
+                    return null;
                 }
-                return null;
+
+                // This assert is potentially over-restrictive since COM components can behave in quite unexpected ways.
+                // However, asserting the common expected cases ensures that we find out about the unexpected scenarios, and
+                // can investigate the scenarios to ensure that there is no bug in our own code.
+                Debug.Assert(hresult == ComHresults.TYPE_E_LIBNOTREGISTERED);
+
+                Marshal.ThrowExceptionForHR(hresult);
+            }
+
+            if (typeInfoPtr == IntPtr.Zero)
+            {
+                Marshal.ThrowExceptionForHR(ComHresults.E_FAIL);
             }
 
             ComTypes.ITypeInfo typeInfo = null;
@@ -149,37 +158,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
 
             return typeInfo;
-        }
-
-        /// <summary>
-        /// This method should be called when typeinfo is not available for an object. The function
-        /// will check if the typeinfo is expected to be missing. This can include error cases where
-        /// the same error is guaranteed to happen all the time, on all machines, under all circumstances.
-        /// In such cases, we just have to operate without the typeinfo.
-        ///
-        /// However, if accessing the typeinfo is failing in a transient way, we might want to throw
-        /// an exception so that we will eagerly predictably indicate the problem.
-        /// </summary>
-        private static void CheckIfMissingTypeInfoIsExpected(int hresult, bool throwIfMissingExpectedTypeInfo)
-        {
-            Debug.Assert(!ComHresults.IsSuccess(hresult));
-
-            // Word.Basic always returns this because of an incorrect implementation of IDispatch.GetTypeInfo
-            // Any implementation that returns E_NOINTERFACE is likely to do so in all environments
-            if (hresult == ComHresults.E_NOINTERFACE)
-            {
-                return;
-            }
-
-            // This assert is potentially over-restrictive since COM components can behave in quite unexpected ways.
-            // However, asserting the common expected cases ensures that we find out about the unexpected scenarios, and
-            // can investigate the scenarios to ensure that there is no bug in our own code.
-            Debug.Assert(hresult == ComHresults.TYPE_E_LIBNOTREGISTERED);
-
-            if (throwIfMissingExpectedTypeInfo)
-            {
-                Marshal.ThrowExceptionForHR(hresult);
-            }
         }
 
         internal static ComTypes.TYPEATTR GetTypeAttrForTypeInfo(ComTypes.ITypeInfo typeInfo)
@@ -233,10 +211,11 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         {
             return new DispCallable(dispatch, method.Name, method.DispId);
         }
+
         internal static MethodInfo GetGetIDispatchForObjectMethod()
         {
             // GetIDispatchForObject always throws a PNSE in .NET Core, so we work around it by using GetComInterfaceForObject with our IDispatch type.
-            return typeof(Marshal).GetMethods().Single(m => m.Name == "GetComInterfaceForObject" && m.GetParameters().Length == 1 && m.ContainsGenericParameters).MakeGenericMethod(typeof(object), typeof(IDispatch));
+            return typeof(Marshal).GetMethods().Single(m => m.Name == nameof(Marshal.GetComInterfaceForObject) && m.GetParameters().Length == 1 && m.ContainsGenericParameters).MakeGenericMethod(typeof(object), typeof(IDispatch));
         }
     }
 
@@ -248,12 +227,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     ///
     internal static class UnsafeMethods
     {
-        [System.Runtime.Versioning.ResourceExposure(System.Runtime.Versioning.ResourceScope.Machine)]
-        [System.Runtime.Versioning.ResourceConsumption(System.Runtime.Versioning.ResourceScope.Machine, System.Runtime.Versioning.ResourceScope.Machine)]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")] // TODO: fix
-        [DllImport("oleaut32.dll", PreserveSig = false)]
-        internal static extern ComTypes.ITypeLib LoadRegTypeLib(ref Guid clsid, short majorVersion, short minorVersion, int lcid);
-
         #region public members
 
         public static unsafe IntPtr ConvertInt32ByrefToPtr(ref int value) { return (IntPtr)System.Runtime.CompilerServices.Unsafe.AsPointer(ref value); }
@@ -283,14 +256,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 return;
             }
 
-            System.Runtime.InteropServices.Marshal.GetNativeVariantForObject(obj, ConvertVariantByrefToPtr(ref variant));
+            Marshal.GetNativeVariantForObject(obj, ConvertVariantByrefToPtr(ref variant));
         }
 
         [Obsolete("do not use this method", true)]
         public static object GetObjectForVariant(Variant variant)
         {
             IntPtr ptr = UnsafeMethods.ConvertVariantByrefToPtr(ref variant);
-            return System.Runtime.InteropServices.Marshal.GetObjectForNativeVariant(ptr);
+            return Marshal.GetObjectForNativeVariant(ptr);
         }
 
         [Obsolete("do not use this method", true)]
@@ -316,10 +289,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             ref ComTypes.DISPPARAMS dispParams,
             out Variant result,
             out ExcepInfo excepInfo,
-            out uint argErr
-        )
+            out uint argErr)
         {
-
             int hresult = s_iDispatchInvoke(
                 dispatchPointer,
                 memberDispId,
@@ -334,7 +305,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 && (flags & ComTypes.INVOKEKIND.INVOKE_FUNC) != 0
                 && (flags & (ComTypes.INVOKEKIND.INVOKE_PROPERTYPUT | ComTypes.INVOKEKIND.INVOKE_PROPERTYPUTREF)) == 0)
             {
-
                 // Re-invoke with no result argument to accomodate Word
                 hresult = _IDispatchInvokeNoResult(
                     dispatchPointer,
@@ -406,25 +376,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
-        /// <summary>
-        /// Ensure that "value" is a local variable in some caller's frame. So converting
-        /// the byref to an IntPtr is a safe operation. Alternatively, we could also allow
-        /// allowed "value"  to be a pinned object.
-        /// </summary>
-        [Conditional("DEBUG")]
-        public static void AssertByrefPointsToStack(IntPtr ptr)
-        {
-            if (Marshal.ReadInt32(ptr) == DummyMarker)
-            {
-                // Prevent recursion
-                return;
-            }
-            int dummy = DummyMarker;
-            IntPtr ptrToLocal = ConvertInt32ByrefToPtr(ref dummy);
-            Debug.Assert(ptrToLocal.ToInt64() < ptr.ToInt64());
-            Debug.Assert((ptr.ToInt64() - ptrToLocal.ToInt64()) < (16 * 1024));
-        }
-
         private static readonly object s_lock = new object();
         private static ModuleBuilder s_dynamicModule;
 
@@ -452,8 +403,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 }
             }
         }
-
-        private const int DummyMarker = 0x10101010;
 
         /// <summary>
         /// We will emit an indirect call to an unmanaged function pointer from the vtable of the given interface pointer.

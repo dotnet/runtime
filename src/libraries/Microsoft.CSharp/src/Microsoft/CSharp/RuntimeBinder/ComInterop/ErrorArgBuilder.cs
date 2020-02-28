@@ -4,12 +4,10 @@
 
 #pragma warning disable 618 // ErrorWrapper is obsolete
 
-using System.Linq.Expressions;
-
 using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Linq.Expressions;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
@@ -26,7 +24,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             // parameter.ErrorCode
             return Expression.Property(
                 Helpers.Convert(base.Marshal(parameter), typeof(ErrorWrapper)),
-                "ErrorCode"
+                nameof(ErrorWrapper.ErrorCode)
             );
         }
 

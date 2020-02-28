@@ -10,7 +10,6 @@ using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-
     internal class ComTypeClassDesc : ComTypeDesc, IDynamicMetaObjectProvider
     {
         private LinkedList<string> _itfs; // implemented interfaces
@@ -27,7 +26,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         internal ComTypeClassDesc(ComTypes.ITypeInfo typeInfo, ComTypeLibDesc typeLibDesc) :
-            base(typeInfo, ComType.Class, typeLibDesc)
+            base(typeInfo, typeLibDesc)
         {
             ComTypes.TYPEATTR typeAttr = ComRuntimeHelpers.GetTypeAttrForTypeInfo(typeInfo);
             Guid = typeAttr.guid;
@@ -61,6 +60,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 {
                     _itfs = new LinkedList<string>();
                 }
+
                 _itfs.AddLast(itfName);
             }
         }

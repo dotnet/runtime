@@ -16,7 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         // Can the number of arguments to a given event change each call?
         // If not, we don't need this level of indirection--we could cache a
         // delegate that does the splatting.
-        internal CallSite<Func<CallSite, object, object[], object>> _site;
+        private CallSite<Func<CallSite, object, object[], object>> _site;
 
         internal SplatCallSite(object callable)
         {

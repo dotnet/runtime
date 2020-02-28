@@ -9,8 +9,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     internal static class TypeUtils
     {
-        internal const MethodAttributes PublicStatic = MethodAttributes.Public | MethodAttributes.Static;
-
         //CONFORMING
         internal static Type GetNonNullableType(Type type)
         {
@@ -133,7 +131,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
             return null;
         }
-
 
         //CONFORMING
         private static bool IsIdentityConversion(Type source, Type destination)

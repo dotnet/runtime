@@ -15,27 +15,22 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     /// </summary>
     internal class SimpleArgBuilder : ArgBuilder
     {
-        private readonly Type _parameterType;
-
         internal SimpleArgBuilder(Type parameterType)
         {
-            _parameterType = parameterType;
+            ParameterType = parameterType;
         }
 
-        internal Type ParameterType
-        {
-            get { return _parameterType; }
-        }
+        protected Type ParameterType { get; }
 
         internal override Expression Marshal(Expression parameter)
         {
             Debug.Assert(parameter != null);
-            return Helpers.Convert(parameter, _parameterType);
+            return Helpers.Convert(parameter, ParameterType);
         }
 
         internal override Expression UnmarshalFromRef(Expression newValue)
         {
-            Debug.Assert(newValue != null && newValue.Type.IsAssignableFrom(_parameterType));
+            Debug.Assert(newValue != null && newValue.Type.IsAssignableFrom(ParameterType));
 
             return base.UnmarshalFromRef(newValue);
         }

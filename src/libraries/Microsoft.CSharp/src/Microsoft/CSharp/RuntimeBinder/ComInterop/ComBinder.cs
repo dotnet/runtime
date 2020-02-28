@@ -56,18 +56,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         /// <summary>
-        /// Tries to perform binding of the dynamic get member operation.
-        /// </summary>
-        /// <param name="binder">An instance of the <see cref="GetMemberBinder"/> that represents the details of the dynamic operation.</param>
-        /// <param name="instance">The target of the dynamic operation. </param>
-        /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
-        /// <returns>true if operation was bound successfully; otherwise, false.</returns>
-        internal static bool TryBindGetMember(GetMemberBinder binder, DynamicMetaObject instance, out DynamicMetaObject result)
-        {
-            return TryBindGetMember(binder, instance, out result, false);
-        }
-
-        /// <summary>
         /// Tries to perform binding of the dynamic set member operation.
         /// </summary>
         /// <param name="binder">An instance of the <see cref="SetMemberBinder"/> that represents the details of the dynamic operation.</param>
@@ -203,7 +191,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             if (IsComObject(instance.Value))
             {
-
                 // Converting a COM object to any interface is always considered possible - it will result in
                 // a QueryInterface at runtime
                 if (binder.Type.IsInterface)
@@ -226,20 +213,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             result = null;
             return false;
-        }
-
-        /// <summary>
-        /// Gets the member names associated with the object.
-        /// This function can operate only with objects for which <see cref="IsComObject"/> returns true.
-        /// </summary>
-        /// <param name="value">The object for which member names are requested.</param>
-        /// <returns>The collection of member names.</returns>
-        public static IEnumerable<string> GetDynamicMemberNames(object value)
-        {
-            Requires.NotNull(value, nameof(value));
-            Requires.Condition(IsComObject(value), nameof(value));
-
-            return ComObject.ObjectToComObject(value).GetMemberNames(false);
         }
 
         /// <summary>
@@ -334,9 +307,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             public override bool Equals(object obj)
             {
-                return obj is ComGetMemberBinder other &&
-                    _canReturnCallables == other._canReturnCallables &&
-                    _originalBinder.Equals(other._originalBinder);
+                return obj is ComGetMemberBinder other
+                    && _canReturnCallables == other._canReturnCallables
+                    && _originalBinder.Equals(other._originalBinder);
             }
         }
     }

@@ -10,21 +10,14 @@ using System.Threading;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-    internal class ComTypeDesc : ComTypeLibMemberDesc
+    internal class ComTypeDesc
     {
         private readonly string _typeName;
         private readonly string _documentation;
-        //Hashtable is threadsafe for multiple readers single writer.
-        //Enumerating and writing is mutually exclusive so require locking.
-        private Hashtable _funcs;
-        private Hashtable _puts;
-        private Hashtable _putRefs;
         private ComMethodDesc _getItem;
         private ComMethodDesc _setItem;
-        private Dictionary<string, ComEventDesc> _events;
-        private static readonly Dictionary<string, ComEventDesc> s_emptyEventsDict = new Dictionary<string, ComEventDesc>();
 
-        internal ComTypeDesc(ITypeInfo typeInfo, ComType memberType, ComTypeLibDesc typeLibDesc) : base(memberType)
+        internal ComTypeDesc(ITypeInfo typeInfo, ComTypeLibDesc typeLibDesc)
         {
             if (typeInfo != null)
             {
@@ -44,7 +37,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     return new ComTypeEnumDesc(typeInfo, null);
                 case TYPEKIND.TKIND_DISPATCH:
                 case TYPEKIND.TKIND_INTERFACE:
-                    ComTypeDesc typeDesc = new ComTypeDesc(typeInfo, ComType.Interface, null);
+                    ComTypeDesc typeDesc = new ComTypeDesc(typeInfo, null);
                     return typeDesc;
                 default:
                     throw new InvalidOperationException("Attempting to wrap an unsupported enum type.");
@@ -53,51 +46,33 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         internal static ComTypeDesc CreateEmptyTypeDesc()
         {
-            ComTypeDesc typeDesc = new ComTypeDesc(null, ComType.Interface, null)
+            ComTypeDesc typeDesc = new ComTypeDesc(null, null)
             {
-                _funcs = new Hashtable(),
-                _puts = new Hashtable(),
-                _putRefs = new Hashtable(),
-                _events = s_emptyEventsDict
+                Funcs = new Hashtable(),
+                Puts = new Hashtable(),
+                PutRefs = new Hashtable(),
+                Events = EmptyEvents
             };
 
             return typeDesc;
         }
 
-        internal static Dictionary<string, ComEventDesc> EmptyEvents
-        {
-            get { return s_emptyEventsDict; }
-        }
+        internal static Dictionary<string, ComEventDesc> EmptyEvents { get; } = new Dictionary<string, ComEventDesc>();
 
-        internal Hashtable Funcs
-        {
-            get { return _funcs; }
-            set { _funcs = value; }
-        }
+        internal Hashtable Funcs { get; set; }
 
-        internal Hashtable Puts
-        {
-            get { return _puts; }
-            set { _puts = value; }
-        }
+        internal Hashtable Puts { get; set; }
 
-        internal Hashtable PutRefs
-        {
-            set { _putRefs = value; }
-        }
+        internal Hashtable PutRefs { get; set; }
 
-        internal Dictionary<string, ComEventDesc> Events
-        {
-            get { return _events; }
-            set { _events = value; }
-        }
+        internal Dictionary<string, ComEventDesc> Events { get; set; }
 
         internal bool TryGetFunc(string name, out ComMethodDesc method)
         {
             name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
-            if (_funcs.ContainsKey(name))
+            if (Funcs.ContainsKey(name))
             {
-                method = _funcs[name] as ComMethodDesc;
+                method = Funcs[name] as ComMethodDesc;
                 return true;
             }
             method = null;
@@ -107,18 +82,18 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         internal void AddFunc(string name, ComMethodDesc method)
         {
             name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
-            lock (_funcs)
+            lock (Funcs)
             {
-                _funcs[name] = method;
+                Funcs[name] = method;
             }
         }
 
         internal bool TryGetPut(string name, out ComMethodDesc method)
         {
             name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
-            if (_puts.ContainsKey(name))
+            if (Puts.ContainsKey(name))
             {
-                method = _puts[name] as ComMethodDesc;
+                method = Puts[name] as ComMethodDesc;
                 return true;
             }
             method = null;
@@ -128,18 +103,18 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         internal void AddPut(string name, ComMethodDesc method)
         {
             name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
-            lock (_puts)
+            lock (Puts)
             {
-                _puts[name] = method;
+                Puts[name] = method;
             }
         }
 
         internal bool TryGetPutRef(string name, out ComMethodDesc method)
         {
             name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
-            if (_putRefs.ContainsKey(name))
+            if (PutRefs.ContainsKey(name))
             {
-                method = _putRefs[name] as ComMethodDesc;
+                method = PutRefs[name] as ComMethodDesc;
                 return true;
             }
             method = null;
@@ -148,25 +123,25 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         internal void AddPutRef(string name, ComMethodDesc method)
         {
             name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
-            lock (_putRefs)
+            lock (PutRefs)
             {
-                _putRefs[name] = method;
+                PutRefs[name] = method;
             }
         }
 
         internal bool TryGetEvent(string name, out ComEventDesc @event)
         {
             name = name.ToUpper(System.Globalization.CultureInfo.InvariantCulture);
-            return _events.TryGetValue(name, out @event);
+            return Events.TryGetValue(name, out @event);
         }
 
         internal string[] GetMemberNames(bool dataOnly)
         {
             var names = new Dictionary<string, object>();
 
-            lock (_funcs)
+            lock (Funcs)
             {
-                foreach (ComMethodDesc func in _funcs.Values)
+                foreach (ComMethodDesc func in Funcs.Values)
                 {
                     if (!dataOnly || func.IsDataMember)
                     {
@@ -177,9 +152,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             if (!dataOnly)
             {
-                lock (_puts)
+                lock (Puts)
                 {
-                    foreach (ComMethodDesc func in _puts.Values)
+                    foreach (ComMethodDesc func in Puts.Values)
                     {
                         if (!names.ContainsKey(func.Name))
                         {
@@ -188,9 +163,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     }
                 }
 
-                lock (_putRefs)
+                lock (PutRefs)
                 {
-                    foreach (ComMethodDesc func in _putRefs.Values)
+                    foreach (ComMethodDesc func in PutRefs.Values)
                     {
                         if (!names.ContainsKey(func.Name))
                         {
@@ -199,9 +174,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     }
                 }
 
-                if (_events != null && _events.Count > 0)
+                if (Events != null && Events.Count > 0)
                 {
-                    foreach (string name in _events.Keys)
+                    foreach (string name in Events.Keys)
                     {
                         if (!names.ContainsKey(name))
                         {
@@ -216,36 +191,22 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return result;
         }
 
-        // this property is public - accessed by an AST
-        public string TypeName
-        {
-            get { return _typeName; }
-        }
+        public string TypeName => _typeName;
 
-        internal string Documentation
-        {
-            get { return _documentation; }
-        }
+        internal string Documentation => _documentation;
 
-        // this property is public - accessed by an AST
         public ComTypeLibDesc TypeLib { get; }
 
         internal Guid Guid { get; set; }
 
-        internal ComMethodDesc GetItem
-        {
-            get { return _getItem; }
-        }
+        internal ComMethodDesc GetItem => _getItem;
 
         internal void EnsureGetItem(ComMethodDesc candidate)
         {
             Interlocked.CompareExchange(ref _getItem, candidate, null);
         }
 
-        internal ComMethodDesc SetItem
-        {
-            get { return _setItem; }
-        }
+        internal ComMethodDesc SetItem => _setItem;
 
         internal void EnsureSetItem(ComMethodDesc candidate)
         {

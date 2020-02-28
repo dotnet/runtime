@@ -18,9 +18,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         internal StringArgBuilder(Type parameterType)
             : base(parameterType)
         {
-            Debug.Assert(parameterType == typeof(string) ||
-                        parameterType == typeof(BStrWrapper));
-
+            Debug.Assert(parameterType == typeof(string) || parameterType == typeof(BStrWrapper));
             _isWrapper = parameterType == typeof(BStrWrapper);
         }
 

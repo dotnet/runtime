@@ -9,21 +9,18 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     internal class ComMethodDesc
     {
-        private readonly int _memid;  // this is the member id extracted from FUNCDESC.memid
-        private readonly string _name;
         private readonly INVOKEKIND _invokeKind;
-        private readonly int _paramCnt;
 
         private ComMethodDesc(int dispId)
         {
-            _memid = dispId;
+            DispId = dispId;
         }
 
         internal ComMethodDesc(string name, int dispId)
             : this(dispId)
         {
             // no ITypeInfo constructor
-            _name = name;
+            Name = name;
         }
 
         internal ComMethodDesc(string name, int dispId, INVOKEKIND invkind)
@@ -39,31 +36,21 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             _invokeKind = funcDesc.invkind;
 
             string[] rgNames = new string[1 + funcDesc.cParams];
-            typeInfo.GetNames(_memid, rgNames, rgNames.Length, out int cNames);
+            typeInfo.GetNames(DispId, rgNames, rgNames.Length, out int cNames);
             if (IsPropertyPut && rgNames[rgNames.Length - 1] == null)
             {
                 rgNames[rgNames.Length - 1] = "value";
                 cNames++;
             }
             Debug.Assert(cNames == rgNames.Length);
-            _name = rgNames[0];
+            Name = rgNames[0];
 
-            _paramCnt = funcDesc.cParams;
+            ParamCount = funcDesc.cParams;
         }
 
-        public string Name
-        {
-            get
-            {
-                Debug.Assert(_name != null);
-                return _name;
-            }
-        }
+        public string Name { get; }
 
-        public int DispId
-        {
-            get { return _memid; }
-        }
+        public int DispId { get; }
 
         public bool IsPropertyGet
         {
@@ -84,7 +71,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 }
 
                 //must have no parameters
-                return _paramCnt == 0;
+                return ParamCount == 0;
             }
         }
 
@@ -104,12 +91,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
-        internal int ParamCount
-        {
-            get
-            {
-                return _paramCnt;
-            }
-        }
+        internal int ParamCount { get; }
     }
 }

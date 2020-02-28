@@ -22,7 +22,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         internal ComTypeEnumDesc(ComTypes.ITypeInfo typeInfo, ComTypeLibDesc typeLibDesc) :
-            base(typeInfo, ComType.Enum, typeLibDesc)
+            base(typeInfo, typeLibDesc)
         {
             ComTypes.TYPEATTR typeAttr = ComRuntimeHelpers.GetTypeAttrForTypeInfo(typeInfo);
             string[] memberNames = new string[typeAttr.cVars];

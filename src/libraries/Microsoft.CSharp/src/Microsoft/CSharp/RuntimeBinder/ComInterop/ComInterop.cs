@@ -2,21 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#pragma warning disable 618
-
 using System;
 using System.Runtime.InteropServices;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-    [ComImport]
-    [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
-    [Guid("00020400-0000-0000-C000-000000000046")]
-    internal interface IDispatchForReflection
-    {
-    }
-
     [ComImport]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [Guid("00020400-0000-0000-C000-000000000046")]
@@ -72,5 +63,12 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     internal interface IProvideClassInfo
     {
         void GetClassInfo(out IntPtr info);
+    }
+
+    internal static class ComDispIds
+    {
+        internal const int DISPID_VALUE = 0;
+        internal const int DISPID_PROPERTYPUT = -3;
+        internal const int DISPID_NEWENUM = -4;
     }
 }

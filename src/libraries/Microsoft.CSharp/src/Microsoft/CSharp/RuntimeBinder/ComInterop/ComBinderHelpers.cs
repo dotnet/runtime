@@ -19,15 +19,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         {
             Debug.Assert(type != null);
 
-            if (type.IsValueType || type.IsArray) return true;
-
-            if (type == typeof(string) ||
-                type == typeof(DBNull) ||
-                holdsNull ||
-                type == typeof(System.Reflection.Missing) ||
-                type == typeof(CurrencyWrapper))
+            if (type.IsValueType
+                || type.IsArray
+                || type == typeof(string)
+                || type == typeof(DBNull)
+                || holdsNull
+                || type == typeof(System.Reflection.Missing)
+                || type == typeof(CurrencyWrapper))
             {
-
                 return true;
             }
 

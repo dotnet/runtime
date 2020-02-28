@@ -23,7 +23,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         // on small number of entities
         private readonly LinkedList<ComTypeClassDesc> _classes;
         private readonly Dictionary<string, ComTypeEnumDesc> _enums;
-        private string _typeLibName;
         private ComTypes.TYPELIBATTR _typeLibAttributes;
 
         private static readonly Dictionary<Guid, ComTypeLibDesc> s_cachedTypeLibDesc = new Dictionary<Guid, ComTypeLibDesc>();
@@ -36,7 +35,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, "<type library {0}>", _typeLibName);
+            return string.Format(CultureInfo.CurrentCulture, "<type library {0}>", Name);
         }
 
         public string Documentation
@@ -53,46 +52,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         #endregion
 
-        /// <summary>
-        /// Reads the latest registered type library for the corresponding GUID,
-        /// reads definitions of CoClass'es and Enum's from this library
-        /// and creates a IDynamicMetaObjectProvider that allows to instantiate coclasses
-        /// and get actual values for the enums.
-        /// </summary>
-        /// <param name="typeLibGuid">Type Library Guid</param>
-        /// <returns>ComTypeLibDesc object</returns>
-        [System.Runtime.Versioning.ResourceExposure(System.Runtime.Versioning.ResourceScope.Machine)]
-        [System.Runtime.Versioning.ResourceConsumption(System.Runtime.Versioning.ResourceScope.Machine, System.Runtime.Versioning.ResourceScope.Machine)]
-        public static ComTypeLibInfo CreateFromGuid(Guid typeLibGuid)
-        {
-            // passing majorVersion = -1, minorVersion = -1 will always
-            // load the latest typelib
-            ComTypes.ITypeLib typeLib = UnsafeMethods.LoadRegTypeLib(ref typeLibGuid, -1, -1, 0);
-
-            return new ComTypeLibInfo(GetFromTypeLib(typeLib));
-        }
-
-        /// <summary>
-        /// Gets an ITypeLib object from OLE Automation compatible RCW ,
-        /// reads definitions of CoClass'es and Enum's from this library
-        /// and creates a IDynamicMetaObjectProvider that allows to instantiate coclasses
-        /// and get actual values for the enums.
-        /// </summary>
-        /// <param name="rcw">OLE automation compatible RCW</param>
-        /// <returns>ComTypeLibDesc object</returns>
-        public static ComTypeLibInfo CreateFromObject(object rcw)
-        {
-            if (Marshal.IsComObject(rcw) == false)
-            {
-                throw new ArgumentException("COM object is expected.");
-            }
-
-            ComTypes.ITypeInfo typeInfo = ComRuntimeHelpers.GetITypeInfoFromIDispatch(rcw as IDispatch, true);
-            typeInfo.GetContainingTypeLib(out ComTypes.ITypeLib typeLib, out _);
-
-            return new ComTypeLibInfo(GetFromTypeLib(typeLib));
-        }
-
         internal static ComTypeLibDesc GetFromTypeLib(ComTypes.ITypeLib typeLib)
         {
             // check whether we have already loaded this type library
@@ -108,7 +67,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             typeLibDesc = new ComTypeLibDesc
             {
-                _typeLibName = ComRuntimeHelpers.GetNameOfLib(typeLib),
+                Name = ComRuntimeHelpers.GetNameOfLib(typeLib),
                 _typeLibAttributes = typeLibAttr
             };
 
@@ -174,7 +133,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return null;
         }
 
-        // TODO: internal
         public string[] GetMemberNames()
         {
             string[] retval = new string[_enums.Count + _classes.Count];
@@ -208,25 +166,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return false;
         }
 
-        public Guid Guid
-        {
-            get { return _typeLibAttributes.guid; }
-        }
+        public Guid Guid => _typeLibAttributes.guid;
 
-        public short VersionMajor
-        {
-            get { return _typeLibAttributes.wMajorVerNum; }
-        }
-
-        public short VersionMinor
-        {
-            get { return _typeLibAttributes.wMinorVerNum; }
-        }
-
-        public string Name
-        {
-            get { return _typeLibName; }
-        }
+        public string Name { get; private set; }
 
         internal ComTypeClassDesc GetCoClassForInterface(string itfName)
         {

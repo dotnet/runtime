@@ -16,23 +16,16 @@ using ComTypes = System.Runtime.InteropServices.ComTypes;
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     /// <summary>
-    /// An object that implements IDispatch
+    /// A wrapper around a COM object that implements IDispatch
     ///
     /// This currently has the following issues:
-    /// 1. If we prefer ComObjectWithTypeInfo over IDispatchComObject, then we will often not
-    ///    IDispatchComObject since implementations of IDispatch often rely on a registered type library.
-    ///    If we prefer IDispatchComObject over ComObjectWithTypeInfo, users get a non-ideal experience.
-    /// 2. IDispatch cannot distinguish between properties and methods with 0 arguments (and non-0
+    /// 1. IDispatch cannot distinguish between properties and methods with 0 arguments (and non-0
     ///    default arguments?). So obj.foo() is ambiguous as it could mean invoking method foo,
     ///    or it could mean invoking the function pointer returned by property foo.
     ///    We are attempting to find whether we need to call a method or a property by examining
     ///    the ITypeInfo associated with the IDispatch. ITypeInfo tell's use what parameters the method
     ///    expects, is it a method or a property, what is the default property of the object, how to
     ///    create an enumerator for collections etc.
-    /// 3. IronPython processes the signature and converts ref arguments into return values.
-    ///    However, since the signature of a DispMethod is not available beforehand, this conversion
-    ///    is not possible. There could be other signature conversions that may be affected. How does
-    ///    VB6 deal with ref arguments and IDispatch?
     ///
     /// We also support events for IDispatch objects:
     /// Background:
@@ -84,14 +77,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
     internal sealed class IDispatchComObject : ComObject, IDynamicMetaObjectProvider
     {
-        private readonly IDispatch _dispatchObject;
         private ComTypeDesc _comTypeDesc;
         private static readonly Dictionary<Guid, ComTypeDesc> s_cacheComTypeDesc = new Dictionary<Guid, ComTypeDesc>();
 
         internal IDispatchComObject(IDispatch rcw)
             : base(rcw)
         {
-            _dispatchObject = rcw;
+            DispatchObject = rcw;
         }
 
         public override string ToString()
@@ -121,13 +113,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
-        public IDispatch DispatchObject
-        {
-            get
-            {
-                return _dispatchObject;
-            }
-        }
+        public IDispatch DispatchObject { get; }
 
         private static int GetIDsOfNames(IDispatch dispatch, string name, out int dispId)
         {
@@ -141,26 +127,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 dispIds);
 
             dispId = dispIds[0];
-            return hresult;
-        }
-
-        private static unsafe int Invoke(IDispatch dispatch, int memberDispId, out object result)
-        {
-            Guid emtpyRiid = Guid.Empty;
-            ComTypes.DISPPARAMS dispParams = default;
-            Variant res = default;
-            int hresult = dispatch.TryInvoke(
-                memberDispId,
-                ref emtpyRiid,
-                0,
-                ComTypes.INVOKEKIND.INVOKE_PROPERTYGET,
-                ref dispParams,
-                (IntPtr)(&res),
-                IntPtr.Zero,
-                IntPtr.Zero);
-
-            result = res.ToObject();
-
             return hresult;
         }
 
@@ -242,7 +208,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         {
             EnsureScanDefinedMethods();
 
-            int hresult = GetIDsOfNames(_dispatchObject, name, out int dispId);
+            int hresult = GetIDsOfNames(DispatchObject, name, out int dispId);
 
             if (hresult == ComHresults.S_OK)
             {
@@ -265,7 +231,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         {
             EnsureScanDefinedMethods();
 
-            int hresult = GetIDsOfNames(_dispatchObject, name, out int dispId);
+            int hresult = GetIDsOfNames(DispatchObject, name, out int dispId);
 
             if (hresult == ComHresults.S_OK)
             {
@@ -381,7 +347,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
 
             // check type info in the type descriptions cache
-            ComTypes.ITypeInfo typeInfo = ComRuntimeHelpers.GetITypeInfoFromIDispatch(_dispatchObject, true);
+            ComTypes.ITypeInfo typeInfo = ComRuntimeHelpers.GetITypeInfoFromIDispatch(DispatchObject);
             if (typeInfo == null)
             {
                 _comTypeDesc = ComTypeDesc.CreateEmptyTypeDesc();
@@ -556,7 +522,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 return;
             }
 
-            ComTypes.ITypeInfo typeInfo = ComRuntimeHelpers.GetITypeInfoFromIDispatch(_dispatchObject, true);
+            ComTypes.ITypeInfo typeInfo = ComRuntimeHelpers.GetITypeInfoFromIDispatch(DispatchObject);
             if (typeInfo == null)
             {
                 _comTypeDesc = ComTypeDesc.CreateEmptyTypeDesc();

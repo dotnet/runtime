@@ -8,8 +8,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     {
         internal const int S_OK = 0;
 
-        internal const int CONNECT_E_NOCONNECTION = unchecked((int)0x80040200);
-
         internal const int DISP_E_UNKNOWNINTERFACE = unchecked((int)0x80020001);
         internal const int DISP_E_MEMBERNOTFOUND = unchecked((int)0x80020003);
         internal const int DISP_E_PARAMNOTFOUND = unchecked((int)0x80020004);

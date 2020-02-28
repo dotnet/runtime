@@ -48,15 +48,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             Expression dispatch,
             ComMethodDesc methodDesc)
         {
+            Debug.Assert(callInfo != null);
+            Debug.Assert(args != null);
+            Debug.Assert(isByRef != null);
+            Debug.Assert(method != null);
+            Debug.Assert(dispatch != null);
 
-            Debug.Assert(callInfo != null, "arguments");
-            Debug.Assert(args != null, "args");
-            Debug.Assert(isByRef != null, "isByRef");
-            Debug.Assert(method != null, "method");
-            Debug.Assert(dispatch != null, "dispatch");
-
-            Debug.Assert(TypeUtils.AreReferenceAssignable(typeof(ComMethodDesc), method.Type), "method");
-            Debug.Assert(TypeUtils.AreReferenceAssignable(typeof(IDispatch), dispatch.Type), "dispatch");
+            Debug.Assert(TypeUtils.AreReferenceAssignable(typeof(ComMethodDesc), method.Type));
+            Debug.Assert(TypeUtils.AreReferenceAssignable(typeof(IDispatch), dispatch.Type));
 
             _method = method;
             _dispatch = dispatch;
@@ -264,7 +263,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     tryStatements.Add(marshal);
                 }
             }
-
 
             //
             // Call Invoke

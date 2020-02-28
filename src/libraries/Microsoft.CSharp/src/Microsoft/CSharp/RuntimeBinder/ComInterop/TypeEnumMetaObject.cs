@@ -9,7 +9,6 @@ using System.Linq.Expressions;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-
     internal class TypeEnumMetaObject : DynamicMetaObject {
         private readonly ComTypeEnumDesc _desc;
 
