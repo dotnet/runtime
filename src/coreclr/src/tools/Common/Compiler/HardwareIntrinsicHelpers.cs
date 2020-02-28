@@ -8,6 +8,7 @@ using Internal.TypeSystem;
 using Internal.IL;
 using Internal.IL.Stubs;
 using System.Diagnostics;
+using System.Threading;
 
 namespace ILCompiler
 {
@@ -32,7 +33,7 @@ namespace ILCompiler
                 }
                 else if (targetArch == TargetArchitecture.ARM64)
                 {
-                    if (mdType.Namespace == "System.Runtime.Intrinsics.Arm.Arm64")
+                    if (mdType.Namespace == "System.Runtime.Intrinsics.Arm")
                         return true;
                 }
             }
