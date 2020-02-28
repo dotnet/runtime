@@ -13320,6 +13320,33 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_1C;
             break;
 
+        case IF_DV_2T: // addv, saddlv, smaxv, sminv, uaddlv, umaxv, uminv
+            switch (ins)
+            {
+                case INS_addv:
+                case INS_saddlv:
+                case INS_uaddlv:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_smaxv:
+                case INS_sminv:
+                case INS_umaxv:
+                case INS_uminv:
+                case INS_sha256h2:
+                case INS_sha256su1:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
         default:
             // all other instructions
             perfScoreUnhandledInstruction(id, &result);
