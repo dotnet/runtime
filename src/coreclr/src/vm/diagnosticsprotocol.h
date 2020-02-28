@@ -79,6 +79,7 @@ namespace DiagnosticsIpc
     {
         OK    = 0x00,
         Error = 0xFF,
+        Advertise = 0x01,
     };
 
     struct MagicVersion
