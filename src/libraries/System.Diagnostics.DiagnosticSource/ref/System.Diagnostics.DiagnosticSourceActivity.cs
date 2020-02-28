@@ -165,10 +165,10 @@ namespace System.Diagnostics
         public Activity? StartActivity() { throw null; }
         public Activity? StartActivity(System.Diagnostics.ActivityContext context, System.Collections.Generic.IEnumerable<ActivityLink>? links = null, System.DateTimeOffset startTime = default) { throw null; }
         public void Dispose() { }
-        public static void AddListener(ActivityListener listener) {}
     }
     public abstract class ActivityListener : IDisposable
     {
+        public void Start() { throw null; }
         public virtual bool EnableListening(string activitySourceName) { throw null; }
         public virtual bool ShouldCreateActivity(string activitySourceName, ActivityContext context, IEnumerable<ActivityLink>? links) { throw null; }
         public virtual void OnActivityStarted(Activity a) { throw null; }

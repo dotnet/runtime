@@ -90,7 +90,7 @@ namespace System.Diagnostics
             _listeners = null;
         }
 
-        public static void AddListener(ActivityListener listener)
+        internal static void AddListener(ActivityListener listener)
         {
             if (listener == null)
             {

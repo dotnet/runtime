@@ -39,7 +39,7 @@ namespace System.Diagnostics.Tests
 
             using (listener = new Listener(enableListening: false, createActivities: false))
             {
-                ActivitySource.AddListener(listener);
+                listener.Start();
                 using (ActivitySource source = new ActivitySource("Source3"))
                 {
                     using (Activity activity = source.StartActivity())
@@ -54,7 +54,8 @@ namespace System.Diagnostics.Tests
 
             using (listener = new Listener(enableListening: true, createActivities: false))
             {
-                ActivitySource.AddListener(listener);
+                listener.Start();
+
                 using (ActivitySource source = new ActivitySource("Source4"))
                 {
                     using (Activity activity = source.StartActivity())
@@ -69,7 +70,7 @@ namespace System.Diagnostics.Tests
 
             using (listener = new Listener(enableListening: true, createActivities: true))
             {
-                ActivitySource.AddListener(listener);
+                listener.Start();
                 using (ActivitySource source = new ActivitySource("Source5"))
                 {
                     Assert.Equal(0, listener.Count);
@@ -105,7 +106,7 @@ namespace System.Diagnostics.Tests
         {
             using (Listener listener = new Listener(enableListening: true, createActivities: true))
             {
-                ActivitySource.AddListener(listener);
+                listener.Start();
 
                 using (ActivitySource source = new ActivitySource("Source6"))
                 {

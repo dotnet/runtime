@@ -13,6 +13,12 @@ namespace System.Diagnostics
     public abstract class ActivityListener : IDisposable
     {
         /// <summary>
+        /// Start will activate this listener to start listeneing to the <see cref="ActivitySource"/> creation events and
+        /// to get the notification when <see cref="Activity"/> objects get started and stopped.
+        /// </summary>
+        public void Start() => ActivitySource.AddListener(this);
+
+        /// <summary>
         /// EnableListening will be called with the <see cref="ActivitySource"/> object name to decide if interested to
         /// listen to this object events.
         /// </summary>
