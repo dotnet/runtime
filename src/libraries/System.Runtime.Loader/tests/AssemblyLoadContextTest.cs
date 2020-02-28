@@ -70,7 +70,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32436", TestRuntimes.Mono)]
         public static void LoadAssemblyByPath_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
@@ -84,7 +83,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32437", TestRuntimes.Mono)]
         public static void LoadAssemblyByStream_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
@@ -98,7 +96,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32435", TestRuntimes.Mono)]
         public static void LoadFromAssemblyName_AssemblyNotFound()
         {
             var asmName = new AssemblyName("Non.Existing.Assembly.dll");
@@ -109,7 +106,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32439", TestRuntimes.Mono)]
         public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
         {
             var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
@@ -126,7 +122,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32434", TestRuntimes.Mono)]
         public static void GetLoadContextTest_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
