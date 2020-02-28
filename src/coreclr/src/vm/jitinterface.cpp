@@ -10977,14 +10977,20 @@ void CEEJitInfo::CompressDebugInfo()
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    CORINFO_PATCHPOINT_INFO* ppInfo = m_pPatchpointInfo;
+#else
+    CORINFO_PATCHPOINT_INFO* ppInfo = NULL;
+#endif
+
     // Don't track JIT info for DynamicMethods.
     if (m_pMethodBeingCompiled->IsDynamicMethod() && !g_pConfig->GetTrackDynamicMethodDebugInfo())
     {
-        _ASSERTE(m_pPatchpointInfo == NULL);
+        _ASSERTE(ppInfo == NULL);
         return;
     }
 
-    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (m_pPatchpointInfo == NULL))
+    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (ppInfo == NULL))
         return;
 
     JIT_TO_EE_TRANSITION();
@@ -10994,7 +11000,7 @@ void CEEJitInfo::CompressDebugInfo()
         PTR_BYTE pDebugInfo = CompressDebugInfo::CompressBoundariesAndVars(
             m_pOffsetMapping, m_iOffsetMapping,
             m_pNativeVarInfo, m_iNativeVarInfo,
-            m_pPatchpointInfo,
+            ppInfo,
             NULL,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
