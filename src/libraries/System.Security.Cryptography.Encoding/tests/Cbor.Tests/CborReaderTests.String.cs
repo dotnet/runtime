@@ -165,7 +165,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData("61ff")]
         [InlineData("62f090")]
-        [InlineData("64f0908591")]
         public static void ReadTextString_InvalidUnicode_ShouldThrowDecoderFallbackException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
