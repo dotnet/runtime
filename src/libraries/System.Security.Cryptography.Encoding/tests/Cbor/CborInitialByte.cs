@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         UnsignedInteger = 0,
         NegativeInteger = 1,
         ByteString = 2,
-        Utf8String = 3,
+        TextString = 3,
         Array = 4,
         Map = 5,
         Tag = 6,

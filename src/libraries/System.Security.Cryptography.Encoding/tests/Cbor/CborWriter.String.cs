@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public void WriteTextString(ReadOnlySpan<char> value)
         {
             int length = s_utf8Encoding.GetByteCount(value);
-            WriteUnsignedInteger(CborMajorType.Utf8String, (ulong)length);
+            WriteUnsignedInteger(CborMajorType.TextString, (ulong)length);
             EnsureWriteCapacity(length);
             s_utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset));
             _offset += length;

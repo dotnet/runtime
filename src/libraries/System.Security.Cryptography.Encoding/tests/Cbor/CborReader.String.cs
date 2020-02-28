@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Implements major type 3 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public string ReadTextString()
         {
-            CborInitialByte header = Peek(expectedType: CborMajorType.Utf8String);
+            CborInitialByte header = Peek(expectedType: CborMajorType.TextString);
             int length = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
             EnsureBuffer(1 + additionalBytes + length);
             ReadOnlySpan<byte> encodedString = _buffer.Slice(1 + additionalBytes, length);

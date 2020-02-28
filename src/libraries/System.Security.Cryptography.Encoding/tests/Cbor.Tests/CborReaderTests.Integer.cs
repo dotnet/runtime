@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(-2 - uint.MaxValue, "3b0000000100000000")]
         [InlineData(long.MinValue, "3b7fffffffffffffff")]
         [InlineData(long.MaxValue, "1b7fffffffffffffff")]
-        public static void Int64Reader_SingleValue_HappyPath(long expectedResult, string hexEncoding)
+        public static void ReadInt64_SingleValue_HappyPath(long expectedResult, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborValueReader(data);
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData((ulong)uint.MaxValue + 1, "1b0000000100000000")]
         [InlineData(long.MaxValue, "1b7fffffffffffffff")]
         [InlineData(ulong.MaxValue, "1bffffffffffffffff")]
-        public static void UInt64Reader_SingleValue_HappyPath(ulong expectedResult, string hexEncoding)
+        public static void ReadUInt64_SingleValue_HappyPath(ulong expectedResult, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborValueReader(data);
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("190017")]
         [InlineData("1a00000017")]
         [InlineData("1b0000000000000017")]
-        public static void UInt64Reader_SingleValue_ShouldSupportNonCanonicalEncodings(string hexEncoding)
+        public static void ReadUInt64_SingleValue_ShouldSupportNonCanonicalEncodings(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborValueReader(data);
@@ -101,7 +101,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("390017")]
         [InlineData("3a00000017")]
         [InlineData("3b0000000000000017")]
-        public static void Int64Reader_SingleValue_ShouldSupportNonCanonicalEncodings(string hexEncoding)
+        public static void ReadInt64_SingleValue_ShouldSupportNonCanonicalEncodings(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborValueReader(data);
@@ -114,7 +114,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("1b8000000000000000")] // long.MaxValue + 1
         [InlineData("3b8000000000000000")] // long.MinValue - 1
         [InlineData("1bffffffffffffffff")] // ulong.MaxValue
-        public static void Int64Reader_OutOfRangeValues_ShouldThrowOverflowException(string hexEncoding)
+        public static void ReadInt64_OutOfRangeValues_ShouldThrowOverflowException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             Assert.Throws<OverflowException>(() =>
@@ -128,7 +128,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("20")] // -1
         [InlineData("3863")] // -100
         [InlineData("3b7fffffffffffffff")] // long.MinValue
-        public static void UInt64Reader_OutOfRangeValues_ShouldThrowOverflowException(string hexEncoding)
+        public static void ReadUInt64_OutOfRangeValues_ShouldThrowOverflowException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             Assert.Throws<OverflowException>(() =>
@@ -146,7 +146,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("a0")] // {}
         [InlineData("f97e00")] // NaN
         [InlineData("fb3ff199999999999a")] // 1.1
-        public static void Int64Reader_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
+        public static void ReadInt64_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() =>
@@ -159,14 +159,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
-        [InlineData("40")] // empty text string
-        [InlineData("60")] // empty byte string
+        [InlineData("40")] // empty byte string
+        [InlineData("60")] // empty text string
         [InlineData("f6")] // null
         [InlineData("80")] // []
         [InlineData("a0")] // {}
         [InlineData("f97e00")] // NaN
         [InlineData("fb3ff199999999999a")] // 1.1
-        public static void UInt64Reader_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
+        public static void ReadUInt64_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() =>
@@ -195,7 +195,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("3912")]
         [InlineData("3a000000")]
         [InlineData("3b00000000000000")]
-        public static void Int64Reader_InvalidData_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadInt64_InvalidData_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             Assert.Throws<FormatException>(() =>
@@ -208,7 +208,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Theory]
         [InlineData("1f")]
         [InlineData("3f")]
-        public static void Int64Reader_IndefiniteLengthIntegers_ShouldThrowNotImplementedException(string hexEncoding)
+        public static void ReadInt64_IndefiniteLengthIntegers_ShouldThrowNotImplementedException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             Assert.Throws<NotImplementedException>(() =>
