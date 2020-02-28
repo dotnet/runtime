@@ -44,7 +44,7 @@ namespace System.Net.Security
         }
 
         private readonly object _handshakeLock = new object();
-        private TaskCompletionSource<bool>? _handshakeWaiter;
+        private volatile TaskCompletionSource<bool>? _handshakeWaiter;
 
         private const int FrameOverhead = 32;
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
@@ -166,12 +166,11 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticated();
 
-            outSize = 0;
-
             lock (_handshakeLock)
             {
                 if (_handshakeWaiter != null)
                 {
+                    outSize = 0;
                     // avoid waiting under lock.
                     return new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
                 }
@@ -418,25 +417,24 @@ namespace System.Net.Security
 
             SecurityStatusPal status;
             int encryptedBytes;
-            ValueTask t;
             while (true)
             {
                 status = EncryptData(buffer, ref outBuffer, out encryptedBytes);
 
-                // This should be rate when renegotiation happens exactly when we want to write.
+                // This should be rare, when renegotiation happens exactly when we want to write.
                 if (status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
                 {
                     TaskCompletionSource<bool>? waiter = _handshakeWaiter;
                     if (waiter != null)
                     {
-                        t = writeAdapter.LockAsync(waiter);
+                        Task waiterTask  = writeAdapter.WaitAsync(waiter);
                         // We finished synchronously waiting for renegotiation. Try it again.
-                        if (t.IsCompletedSuccessfully)
+                        if (waiterTask.IsCompletedSuccessfully)
                         {
                             continue;
                         }
 
-                        return CompleteLockAndWriteAsync(t, rentedBuffer);
+                        return WaitAndWriteAsync(waiterTask, rentedBuffer);
                     }
 
                     continue;
@@ -452,7 +450,7 @@ namespace System.Net.Security
                 return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status)))));
             }
 
-            t = writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes);
+            ValueTask t = writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes);
             if (t.IsCompletedSuccessfully)
             {
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
@@ -463,23 +461,20 @@ namespace System.Net.Security
                 return CompleteWriteAsync(t, rentedBuffer);
             }
 
-            async ValueTask CompleteLockAndWriteAsync(ValueTask t, byte[] bufferToReturn)
+            async ValueTask WaitAndWriteAsync(Task t, byte[] bufferToReturn)
             {
-                SecurityStatusPal status;
-                int encryptedBytes;
-
                 try
                 {
-                    await t;
+                    await t.ConfigureAwait(false);
                     while (true)
                     {
-                        status = EncryptData(buffer, ref outBuffer, out encryptedBytes);
+                        SecurityStatusPal status = EncryptData(buffer, ref outBuffer, out int encryptedBytes);
                         if (status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
                         {
                             TaskCompletionSource<bool>? waiter = _handshakeWaiter;
                             if (waiter != null)
                             {
-                                await writeAdapter.LockAsync(waiter);
+                                await writeAdapter.WaitAsync(waiter).ConfigureAwait(false);
                             }
 
                             continue;
@@ -492,7 +487,7 @@ namespace System.Net.Security
                         break;
                     }
 
-                    await writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes);
+                    await writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -650,6 +645,9 @@ namespace System.Net.Security
                         {
                             if (!_sslAuthenticationOptions!.AllowRenegotiation)
                             {
+                                _handshakeWaiter?.SetResult(false);
+                                _handshakeWaiter = null;
+
                                 if (NetEventSource.IsEnabled) NetEventSource.Fail(this, "Renegotiation was requested but it is disallowed");
                                 throw new IOException(SR.net_ssl_io_renego);
                             }

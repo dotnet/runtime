@@ -13,7 +13,7 @@ namespace System.Net.Security
         {
             ValueTask<int> ReadAsync(Memory<byte> buffer);
             ValueTask WriteAsync(byte[] buffer, int offset, int count);
-            ValueTask LockAsync(TaskCompletionSource<bool> waiter);
+            Task WaitAsync (TaskCompletionSource<bool> waiter);
             CancellationToken CancellationToken { get; }
         }
 
@@ -32,10 +32,7 @@ namespace System.Net.Security
 
             public ValueTask WriteAsync(byte[] buffer, int offset, int count) => _sslStream.InnerStream.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), _cancellationToken);
 
-            public async ValueTask LockAsync(TaskCompletionSource<bool> waiter)
-            {
-                await waiter.Task.ConfigureAwait(false);
-            }
+            public Task WaitAsync(TaskCompletionSource<bool> waiter) => waiter.Task;
 
             public CancellationToken CancellationToken => _cancellationToken;
         }
@@ -54,10 +51,10 @@ namespace System.Net.Security
                 return default;
             }
 
-            public ValueTask LockAsync(TaskCompletionSource<bool> waiter)
+            public Task WaitAsync(TaskCompletionSource<bool> waiter)
             {
                 waiter.Task.Wait();
-                return default;
+                return Task.CompletedTask;;
             }
 
             public CancellationToken CancellationToken => default;
