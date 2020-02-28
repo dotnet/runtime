@@ -285,7 +285,6 @@ namespace System.Threading.Tests
                                }));
         }
 
-        [PlatformSpecific(~TestPlatforms.OSX)] // macOS in CI appears to have a lot more variation
         [OuterLoop("Takes several seconds")]
         [Theory] // selection based on 333ms threshold used by implementation
         [InlineData(new int[] { 15 })]
