@@ -98,6 +98,11 @@ jobs:
 
     steps:
 
+    # NuGet restore work around https://github.com/dotnet/runtime/issues/32764
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: $(Build.SourcesDirectory)/eng/nuget-workaround.sh
+        displayName: NuGet Restore Work Around
+
     # Install native dependencies
     # Linux builds use docker images with dependencies preinstalled,
     # and FreeBSD builds use a build agent with dependencies
@@ -118,11 +123,6 @@ jobs:
       - template: /eng/pipelines/common/restore-internal-tools.yml
         parameters:
           installDotnet: true
-
-    # NuGet restore work around https://github.com/dotnet/runtime/issues/32764
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(Build.SourcesDirectory)/eng/nuget-workaround.sh
-        displayName: NuGet Restore Work Around
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
