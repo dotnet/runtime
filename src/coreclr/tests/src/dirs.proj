@@ -19,7 +19,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <AllProjects Include="GC/API/GC/AddMemoryPressureTest.csproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="GC/API/GC/AddMemoryPressureTest.csproj" Exclude="@(DisabledProjects)" /> 
+      <AllProjects Include="GC/API/GC/Collect.csproj" Exclude="@(DisabledProjects)" />
     </ItemGroup>
 
     <!-- All the test projects are partitioned into the test groups as defined below.
@@ -87,6 +88,9 @@
       <_GroupStartsWith Include="Loader\classloader\generics\VSD\Class2_ImplicitOverrideVirtualNewslot.csproj">
         <GroupNumber>10</GroupNumber>
       </_GroupStartsWith>
+
+
+
     </ItemGroup>
 
     <Error Condition=" '$(CLRTestPriorityToBuild)' == '1' And ($(__TestGroupToBuild) &lt; 1 Or $(__TestGroupToBuild) &gt; 10)" Text="__TestGroupToBuild property must be between 1 and 10 for Pri1." />
@@ -117,6 +121,8 @@
       </Project>
     </ItemGroup>
 
+    <Message Importance="High" Text="!!! dirs.proj All projects: %(AllProjects.Identity)"/>
+    <Message Importance="High" Text="!!! dirs.proj All CMDs: %(AllCMDsPresent.Identity)"/>
   </Target>
 
   <Import Project="..\dir.traversal.targets" />

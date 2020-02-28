@@ -81,6 +81,9 @@
 
   <Target Name="CreateXunitWrapper" DependsOnTargets="CreateXunitFacts">
 
+    <Message Importance="High" Text="!!! All projects: %(AllProjects.Identity)"/>
+    <Message Importance="High" Text="!!! All CMDs: %(AllCMDsPresent.Identity)"/>
+
     <PropertyGroup>
       <_XunitWrapperGen >
         <![CDATA[

@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 
+export EXCLUDE_MONO_FAILURES="true"
+
+
+
 build_test_wrappers()
 {
     if [[ "$__BuildTestWrappers" -ne -0 ]]; then
         echo "${__MsgPrefix}Creating test wrappers..."
 
-	if [[ __Mono -eq 1 ]]; then
+	if [[ $__Mono -eq 1 ]]; then
 		echo "Excluding mono test failures"
 		export EXCLUDE_MONO_FAILURES="true"
 	fi
@@ -32,7 +36,7 @@ build_test_wrappers()
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild -verbosity:diag \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TargetsWindows=false $__Logging /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch"
+        nextCommand="\"${__DotNetCli}\" msbuild -bl:LogFile=wrapper.binlog -verbosity:diag \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TargetsWindows=false $__Logging /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch"
         eval $nextCommand
 
         local exitCode="$?"
@@ -252,6 +256,8 @@ function is_skip_crossgen_test {
 build_Tests()
 {
     echo "${__MsgPrefix}Building Tests..."
+
+    export EXCLUDE_MONO_FAILURES="true"
 
     __TestDir="$__ProjectDir"/tests
     __ProjectFilesDir="$__TestDir"
