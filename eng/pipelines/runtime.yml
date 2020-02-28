@@ -137,7 +137,6 @@ jobs:
     - Windows_NT_arm64
     jobParameters:
       testGroup: innerloop
-      useVsPreviewPool: false
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -155,7 +154,6 @@ jobs:
     - OSX_x64
     jobParameters:
       testGroup: innerloop
-      useVsPreviewPool: false
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -182,7 +180,6 @@ jobs:
     - Windows_NT_arm
     - Windows_NT_arm64
     jobParameters:
-      useVsPreviewPool: false
       testGroup: innerloop
 
 #
@@ -196,7 +193,6 @@ jobs:
     - Linux_x64
     - Windows_NT_x64
     jobParameters:
-      useVsPreviewPool: false
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -223,7 +219,6 @@ jobs:
     # - Windows_NT_arm
     # - Windows_NT_arm64
     jobParameters:
-      useVsPreviewPool: false
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -251,7 +246,6 @@ jobs:
     # - Windows_NT_arm
     # - Windows_NT_arm64
     jobParameters:
-      useVsPreviewPool: false
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -280,7 +274,6 @@ jobs:
     # - Windows_NT_arm64
     jobParameters:
       llvm: true
-      useVsPreviewPool: false
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -308,7 +301,6 @@ jobs:
     # - Windows_NT_arm
     # - Windows_NT_arm64
     jobParameters:
-      useVsPreviewPool: false
       llvm: true
       condition: >-
         or(
@@ -334,7 +326,6 @@ jobs:
     - Windows_NT_x86
     jobParameters:
       liveRuntimeBuildConfig: release
-      useVsPreviewPool: true
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -348,7 +339,6 @@ jobs:
     - Windows_NT_x64
     jobParameters:
       liveRuntimeBuildConfig: release
-      useVsPreviewPool: true
 #
 # Libraries Build that only run when libraries is changed
 #
@@ -362,7 +352,6 @@ jobs:
       - Windows_NT_x86
     jobParameters:
       liveRuntimeBuildConfig: release
-      useVsPreviewPool: true
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -378,7 +367,6 @@ jobs:
       - Windows_NT_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
-      useVsPreviewPool: true
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: net472
       runTests: true
@@ -396,7 +384,6 @@ jobs:
     - Windows_NT_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
-      useVsPreviewPool: true
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: allConfigurations
       runTests: true
@@ -421,7 +408,6 @@ jobs:
       - Windows_NT_arm
       - Windows_NT_arm64
     jobParameters:
-      useVsPreviewPool: false
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: Release
 
@@ -435,7 +421,6 @@ jobs:
       - Linux_musl_x64
       - Windows_NT_x64
     jobParameters:
-      useVsPreviewPool: false
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
 
@@ -452,7 +437,6 @@ jobs:
     - Linux_x64
     - Windows_NT_x64
     jobParameters:
-      useVsPreviewPool: false
       isOfficialBuild: false
       liveRuntimeBuildConfig: release
       testScope: innerloop
@@ -476,7 +460,6 @@ jobs:
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
-      useVsPreviewPool: false
       liveLibrariesBuildConfig: Release
       condition: >-
         or(
@@ -497,7 +480,6 @@ jobs:
     - Windows_NT_arm
     - Windows_NT_arm64
     jobParameters:
-      useVsPreviewPool: false
       testGroup: innerloop
       liveLibrariesBuildConfig: Release
       condition: >-
@@ -519,7 +501,6 @@ jobs:
     - Linux_arm64
     - Windows_NT_x64
     jobParameters:
-      useVsPreviewPool: false
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
       condition: >-
@@ -543,7 +524,6 @@ jobs:
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
-      useVsPreviewPool: false
       testGroup: innerloop
       liveLibrariesBuildConfig: Release
       condition: >-
@@ -563,7 +543,6 @@ jobs:
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
-      useVsPreviewPool: false
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
       condition: >-
@@ -587,7 +566,6 @@ jobs:
     - Linux_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
-      useVsPreviewPool: false
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
       testScope: innerloop
@@ -612,7 +590,6 @@ jobs:
     - Windows_NT_x86
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
-      useVsPreviewPool: false
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
       testScope: innerloop
@@ -645,7 +622,6 @@ jobs:
       - Windows_NT_x86
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
-      useVsPreviewPool: false
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
       testScope: innerloop
@@ -671,7 +647,6 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
-      useVsPreviewPool: false
       testScope: innerloop
       liveRuntimeBuildConfig: checked
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -692,7 +667,6 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
-      useVsPreviewPool: false
       testScope: innerloop
       liveRuntimeBuildConfig: checked
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -715,7 +689,6 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
-      useVsPreviewPool: false
       testScope: innerloop
       liveRuntimeBuildConfig: checked
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}

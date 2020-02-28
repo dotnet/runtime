@@ -779,6 +779,21 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @".+abc", "12345\n abc", RegexOptions.Singleline, new string[] { "12345\n abc" } };
             yield return new object[] { null, @"(.+)abc\1", "\n12345abc12345", RegexOptions.Singleline, new string[] { "12345abc12345", "12345" } };
 
+            // Unanchored .*
+            yield return new object[] { null, @"\A\s*(?<name>\w+)(\s*\((?<arguments>.*)\))?\s*\Z", "Match(Name)", RegexOptions.None, new string[] { "Match(Name)", "(Name)", "Match", "Name" } };
+            yield return new object[] { null, @"\A\s*(?<name>\w+)(\s*\((?<arguments>.*)\))?\s*\Z", "Match(Na\nme)", RegexOptions.Singleline, new string[] { "Match(Na\nme)", "(Na\nme)", "Match", "Na\nme" } };
+            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Singleline })
+            {
+                yield return new object[] { null, @"abcd.*", @"abcabcd", options, new string[] { "abcd" } };
+                yield return new object[] { null, @"abcd.*", @"abcabcde", options, new string[] { "abcde" } };
+                yield return new object[] { null, @"abcd.*", @"abcabcdefg", options, new string[] { "abcdefg" } };
+                yield return new object[] { null, @"abcd(.*)", @"ababcd", options, new string[] { "abcd", "" } };
+                yield return new object[] { null, @"abcd(.*)", @"aabcde", options, new string[] { "abcde", "e" } };
+                yield return new object[] { null, @"abcd(.*)", @"abcabcdefg", options, new string[] { "abcdefg", "efg" } };
+                yield return new object[] { null, @"abcd(.*)e", @"abcabcdefg", options, new string[] { "abcde", "" } };
+                yield return new object[] { null, @"abcd(.*)f", @"abcabcdefg", options, new string[] { "abcdef", "e" } };
+            }
+
             // Grouping Constructs Invalid Regular Expressions
             yield return new object[] { null, @"()", "cat", RegexOptions.None, new string[] { string.Empty, string.Empty } };
             yield return new object[] { null, @"(?<cat>)", "cat", RegexOptions.None, new string[] { string.Empty, string.Empty } };

@@ -655,18 +655,20 @@ static gboolean describe_value(MonoType * type, gpointer addr)
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_CLASS: {
 			MonoObject *obj = *(MonoObject**)addr;
 			MonoClass *klass = type->data.klass;
 
 			char *class_name = mono_type_full_name (type);
+			int obj_id = type->type == MONO_TYPE_VALUETYPE ? 0 : get_object_id (obj);
 
 			if (type->type == MONO_TYPE_SZARRAY || type->type == MONO_TYPE_ARRAY) {
-				mono_wasm_add_array_var (class_name, get_object_id (obj));
+				mono_wasm_add_array_var (class_name, obj_id);
 			} else if (m_class_is_delegate (klass)) {
-				mono_wasm_add_func_var (class_name, get_object_id (obj));
+				mono_wasm_add_func_var (class_name, obj_id);
 			} else {
-				mono_wasm_add_obj_var (class_name, get_object_id (obj));
+				mono_wasm_add_obj_var (class_name, obj_id);
 			}
 			g_free (class_name);
 			break;

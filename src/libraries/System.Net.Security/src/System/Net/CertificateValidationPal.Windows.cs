@@ -14,18 +14,18 @@ namespace System.Net
     internal static partial class CertificateValidationPal
     {
         internal static SslPolicyErrors VerifyCertificateProperties(
-            SafeDeleteContext securityContext,
+            SafeDeleteContext? securityContext,
             X509Chain chain,
             X509Certificate2 remoteCertificate,
             bool checkCertName,
             bool isServer,
-            string hostName)
+            string? hostName)
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
 
             bool chainBuildResult = chain.Build(remoteCertificate);
             if (!chainBuildResult       // Build failed on handle or on policy.
-                && chain.SafeHandle.DangerousGetHandle() == IntPtr.Zero)   // Build failed to generate a valid handle.
+                && chain.SafeHandle!.DangerousGetHandle() == IntPtr.Zero)   // Build failed to generate a valid handle.
             {
                 throw new CryptographicException(Marshal.GetLastWin32Error());
             }
@@ -59,7 +59,7 @@ namespace System.Net
                             (Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_ALL &
                              ~Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG);
 
-                        SafeX509ChainHandle chainContext = chain.SafeHandle;
+                        SafeX509ChainHandle chainContext = chain.SafeHandle!;
                         status = Verify(chainContext, ref cppStruct);
                         if (status == Interop.Crypt32.CertChainPolicyErrors.CERT_E_CN_NO_MATCH)
                         {
@@ -81,14 +81,14 @@ namespace System.Net
         // Extracts a remote certificate upon request.
         //
 
-        internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext) =>
+        internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext) =>
             GetRemoteCertificate(securityContext, retrieveCollection: false, out _);
 
-        internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, out X509Certificate2Collection remoteCertificateCollection) =>
+        internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext, out X509Certificate2Collection? remoteCertificateCollection) =>
             GetRemoteCertificate(securityContext, retrieveCollection: true, out remoteCertificateCollection);
 
-        private static X509Certificate2 GetRemoteCertificate(
-            SafeDeleteContext securityContext, bool retrieveCollection, out X509Certificate2Collection remoteCertificateCollection)
+        private static X509Certificate2? GetRemoteCertificate(
+            SafeDeleteContext? securityContext, bool retrieveCollection, out X509Certificate2Collection? remoteCertificateCollection)
         {
             remoteCertificateCollection = null;
 
@@ -99,8 +99,8 @@ namespace System.Net
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(securityContext);
 
-            X509Certificate2 result = null;
-            SafeFreeCertContext remoteContext = null;
+            X509Certificate2? result = null;
+            SafeFreeCertContext? remoteContext = null;
             try
             {
                 remoteContext = SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext);
@@ -136,7 +136,7 @@ namespace System.Net
         internal static string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
         {
             Interop.SspiCli.SecPkgContext_IssuerListInfoEx issuerList = default;
-            bool success = SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_ISSUER_LIST_EX(GlobalSSPI.SSPISecureChannel, securityContext, ref issuerList, out SafeHandle sspiHandle);
+            bool success = SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_ISSUER_LIST_EX(GlobalSSPI.SSPISecureChannel, securityContext, ref issuerList, out SafeHandle? sspiHandle);
 
             string[] issuers = Array.Empty<string>();
             try
@@ -146,7 +146,7 @@ namespace System.Net
                     unsafe
                     {
                         issuers = new string[issuerList.cIssuers];
-                        var elements = new Span<Interop.SspiCli.CERT_CHAIN_ELEMENT>((void*)sspiHandle.DangerousGetHandle(), issuers.Length);
+                        var elements = new Span<Interop.SspiCli.CERT_CHAIN_ELEMENT>((void*)sspiHandle!.DangerousGetHandle(), issuers.Length);
                         for (int i = 0; i < elements.Length; ++i)
                         {
                             if (elements[i].cbSize <= 0)
