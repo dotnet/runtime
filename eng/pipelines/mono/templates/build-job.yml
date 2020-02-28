@@ -60,6 +60,13 @@ jobs:
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
         value: '/p:officialBuildId=$(Build.BuildNumber)'
+    - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
+      # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
+      # lowercase for RID format. (Detection normally converts, but we're preventing it.)
+      - name: OutputRidArg
+        value: /p:OutputRid=linux-musl-${{ parameters.archType }}
+      - name: _PortableBuild
+        value: true
     - ${{ parameters.variables }}
 
     steps:
@@ -97,10 +104,10 @@ jobs:
 
     # Build packages
     - ${{ if and(ne(parameters.llvm, true), ne(parameters.osGroup, 'Windows_NT')) }}:
-      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack
+      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
         displayName: Build nupkg
     - ${{ if and(ne(parameters.llvm, true), eq(parameters.osGroup, 'Windows_NT')) }}:
-      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack
+      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
         displayName: Build nupkg
 
     # Save packages using the prepare-signed-artifacts format.
