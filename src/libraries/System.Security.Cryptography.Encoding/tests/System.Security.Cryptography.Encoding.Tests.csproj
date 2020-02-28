@@ -55,6 +55,7 @@
     <Compile Include="Cbor\CborWriter.String.cs" />
     <Compile Include="Cbor\CborWriter.cs" />
     <Compile Include="Cbor\CborWriter.Integer.cs" />
+    <Compile Include="Cbor.Tests\CborReaderTests.cs" />
     <Compile Include="Cbor.Tests\CborReaderTests.String.cs" />
     <Compile Include="Cbor.Tests\CborWriterTests.Integer.cs" />
     <Compile Include="Cbor.Tests\CborWriterTests.String.cs" />
