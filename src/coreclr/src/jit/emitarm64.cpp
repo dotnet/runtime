@@ -12850,7 +12850,19 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_3C;
                     break;
 
+                case INS_fcmeq:
+                case INS_fcmge:
+                case INS_fcmgt:
+                case INS_fcmle:
+                case INS_fcmlt:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
                 case INS_fcvtl:
+                case INS_fcvtl2:
+                case INS_fcvtn:
+                case INS_fcvtn2:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
@@ -12980,10 +12992,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             {
                 case INS_fadd:
                 case INS_fsub:
-                case INS_fmin:
-                case INS_fminnm:
+                case INS_fabd:
                 case INS_fmax:
                 case INS_fmaxnm:
+                case INS_fmin:
+                case INS_fminnm:
                 case INS_fmul:
                 case INS_fmulx:
                 case INS_fnmul:
