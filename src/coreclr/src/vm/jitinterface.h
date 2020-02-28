@@ -1385,13 +1385,13 @@ public:
 #endif
           m_GCinfo_len(0),
           m_EHinfo_len(0),
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-          m_pPatchpointInfo(NULL),
-#endif
           m_iOffsetMapping(0),
           m_pOffsetMapping(NULL),
           m_iNativeVarInfo(0),
           m_pNativeVarInfo(NULL),
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+          m_pPatchpointInfo(NULL),
+#endif
           m_gphCache()
     {
         CONTRACTL
