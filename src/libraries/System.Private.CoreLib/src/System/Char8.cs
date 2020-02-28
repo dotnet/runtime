@@ -5,7 +5,7 @@
 namespace System
 {
     /// <summary>
-    /// Represents a UTF-8 code unit, the elemental type of <see cref="Utf8String"/>.
+    /// Represents a UTF-8 code unit, the elemental type of TODO cref Utf8String.
     /// </summary>
     public readonly struct Char8 : IComparable<Char8>, IEquatable<Char8>
     {
