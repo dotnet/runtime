@@ -6329,12 +6329,11 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         // Aligning low we want to move up to next boundary
         int alignedLclLo = (untrLclLo + (XMM_REGSIZE_BYTES - 1)) & -XMM_REGSIZE_BYTES;
 
-        if (untrLclLo != alignedLclLo)
+        if (untrLclLo != alignedLclLo && blkSize < 2 * XMM_REGSIZE_BYTES)
         {
-            // If unaligned and smaller then 1.5 x SIMD size we won't bother trying to align
+            // If unaligned and smaller then 2 x SIMD size we won't bother trying to align
             assert((alignedLclLo - untrLclLo) < XMM_REGSIZE_BYTES);
-            minSimdSize = ((alignedLclLo - untrLclLo) > REGSIZE_BYTES) ? 2 * XMM_REGSIZE_BYTES
-                                                                       : XMM_REGSIZE_BYTES + REGSIZE_BYTES;
+            simdMov = INS_movups;
         }
 #else // !defined(TARGET_AMD64)
         // We aren't going to try and align on 32bit or if there are no guarantees on SIMD alignment
@@ -6372,18 +6371,34 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 #endif // UNIX_AMD64_ABI
 
 #if defined(TARGET_AMD64)
-            // Aligning high we want to move down to previous boundary
-            int alignedLclHi = untrLclHi & -XMM_REGSIZE_BYTES;
+            int       alignedLclHi;
+            int       alignmentHiBlkSize;
 
-            // Zero out the unaligned portions
-            int alignmentLoBlkSize = alignedLclLo - untrLclLo;
-            int alignmentHiBlkSize = untrLclHi - alignedLclHi;
-
-            blkSize = alignedLclHi - alignedLclLo;
-            assert((blkSize + alignmentLoBlkSize + alignmentHiBlkSize) == (untrLclHi - untrLclLo));
-
-            if (untrLclLo != alignedLclLo)
+            if (blkSize < 2 * XMM_REGSIZE_BYTES || untrLclLo == alignedLclLo)
             {
+                // Either aligned or smaller then 2 x SIMD size so we won't try to align
+                // However, we still want to zero anything that is not in a 16 byte chunk at end
+                int alignmentBlkSize = blkSize & -XMM_REGSIZE_BYTES;
+                alignmentHiBlkSize   = blkSize - alignmentBlkSize;
+                alignedLclHi         = untrLclLo + alignmentBlkSize;
+                alignedLclLo         = untrLclLo;
+                blkSize              = alignmentBlkSize;
+
+                assert((blkSize + alignmentHiBlkSize) == (untrLclHi - untrLclLo));
+            }
+            else
+            {
+                // We are going to align
+
+                // Aligning high we want to move down to previous boundary
+                alignedLclHi = untrLclHi & -XMM_REGSIZE_BYTES;
+                // Zero out the unaligned portions
+                alignmentHiBlkSize     = untrLclHi - alignedLclHi;
+                int alignmentLoBlkSize = alignedLclLo - untrLclLo;
+                blkSize                = alignedLclHi - alignedLclLo;
+
+                assert((blkSize + alignmentLoBlkSize + alignmentHiBlkSize) == (untrLclHi - untrLclLo));
+
                 assert(alignmentLoBlkSize > 0);
                 assert(alignmentLoBlkSize < XMM_REGSIZE_BYTES);
                 assert((alignedLclLo - alignmentLoBlkSize) == untrLclLo);
