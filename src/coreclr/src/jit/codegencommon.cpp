@@ -6325,11 +6325,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
 #if defined(TARGET_AMD64)
         // We will align on x64 so can use the aligned mov
-
-        // We use movaps at R2R because it is a smaller instruction; however at JIT time
-        // the VEX version vmovaps would be used which is the same size as vmovdqa;
-        // also vmovdqa has more available CPU ports on older processors so we switch to that
-        instruction simdMov = compiler->opts.IsReadyToRun() ? INS_movaps : INS_movdqa;
+        instruction simdMov = simdAlignedMovIns();
         // Aligning low we want to move up to next boundary
         int alignedLclLo = (untrLclLo + (XMM_REGSIZE_BYTES - 1)) & -XMM_REGSIZE_BYTES;
 
@@ -6337,11 +6333,11 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         {
             // If unaligned and smaller then 2 x SIMD size we won't bother trying to align
             assert((alignedLclLo - untrLclLo) < XMM_REGSIZE_BYTES);
-            simdMov = compiler->opts.IsReadyToRun() ? INS_movups : INS_movdqu;
+            simdMov = simdUnalignedMovIns();
         }
 #else // !defined(TARGET_AMD64)
         // We aren't going to try and align on 32bit or if there are no guarantees on SIMD alignment
-        instruction simdMov      = compiler->opts.IsReadyToRun() ? INS_movups : INS_movdqu;
+        instruction simdMov      = simdUnalignedMovIns();
         int         alignedLclLo = untrLclLo;
 #endif
         if (blkSize < minSimdSize)
