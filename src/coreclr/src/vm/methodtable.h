@@ -1715,7 +1715,7 @@ public:
 
     EEClassNativeLayoutInfo const* GetNativeLayoutInfo();
 
-    void EnsureNativeLayoutInfoInitialized();
+    EEClassNativeLayoutInfo const* EnsureNativeLayoutInfoInitialized();
 
     inline BOOL IsBlittable();
 

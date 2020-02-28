@@ -9900,21 +9900,24 @@ EEClassNativeLayoutInfo const* MethodTable::GetNativeLayoutInfo()
     {
         return pNativeLayoutInfo;
     }
-    EnsureNativeLayoutInfoInitialized();
-    return GetClass()->GetNativeLayoutInfo();
+    return EnsureNativeLayoutInfoInitialized();
 }
 
-void MethodTable::EnsureNativeLayoutInfoInitialized()
+EEClassNativeLayoutInfo const* MethodTable::EnsureNativeLayoutInfoInitialized()
 {
     CONTRACTL
     {
         THROWS;
         MODE_ANY;
+        PRECONDITION(HasLayout());
     }
     CONTRACTL_END;
 #ifndef DACCESS_COMPILE
-    PRECONDITION(HasLayout());
     EEClassNativeLayoutInfo::InitializeNativeLayoutFieldMetadataThrowing(this);
+    return this->GetClass()->GetNativeLayoutInfo();
+#else
+    DacNotImpl();
+    return nullptr;
 #endif
 }
 
