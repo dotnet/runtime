@@ -414,7 +414,8 @@ namespace System.Net.Http
                     // Get the value.
                     string value = GetNextValue(challenge, parsedIndex, MustValueBeQuoted(key), out parsedIndex);
                     // Ensure value is valid.
-                    if (string.IsNullOrEmpty(value))
+                    if (string.IsNullOrEmpty(value)
+                        && (value == null || !key.Equals(Opaque, StringComparison.OrdinalIgnoreCase)))
                         break;
 
                     // Add the key-value pair to Parameters.
