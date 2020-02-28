@@ -8,7 +8,7 @@ using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 namespace System.Drawing.Imaging
 {
     [StructLayout(LayoutKind.Sequential)]
-    public sealed class EncoderParameter : IDisposable
+    public sealed unsafe class EncoderParameter : IDisposable
     {
 #pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
         [MarshalAs(UnmanagedType.Struct)]
@@ -93,7 +93,7 @@ namespace System.Drawing.Imaging
             _numberOfValues = 1;
             _parameterValue = Marshal.AllocHGlobal(sizeof(byte));
 
-            Marshal.WriteByte(_parameterValue, value);
+            *(byte*)_parameterValue = value;
             GC.KeepAlive(this);
         }
 
@@ -108,7 +108,7 @@ namespace System.Drawing.Imaging
             _numberOfValues = 1;
             _parameterValue = Marshal.AllocHGlobal(sizeof(byte));
 
-            Marshal.WriteByte(_parameterValue, value);
+            *(byte*)_parameterValue = value;
             GC.KeepAlive(this);
         }
 
@@ -120,7 +120,7 @@ namespace System.Drawing.Imaging
             _numberOfValues = 1;
             _parameterValue = Marshal.AllocHGlobal(sizeof(short));
 
-            Marshal.WriteInt16(_parameterValue, value);
+            *(short*)_parameterValue = value;
             GC.KeepAlive(this);
         }
 
@@ -132,7 +132,7 @@ namespace System.Drawing.Imaging
             _numberOfValues = 1;
             _parameterValue = Marshal.AllocHGlobal(sizeof(int));
 
-            Marshal.WriteInt32(_parameterValue, unchecked((int)value));
+            *(int*)_parameterValue = unchecked((int)value);
             GC.KeepAlive(this);
         }
 
@@ -144,8 +144,8 @@ namespace System.Drawing.Imaging
             _numberOfValues = 1;
             _parameterValue = Marshal.AllocHGlobal(2 * sizeof(int));
 
-            Marshal.WriteInt32(_parameterValue, numerator);
-            Marshal.WriteInt32(Add(_parameterValue, sizeof(int)), denominator);
+            ((int*)_parameterValue)[0] = numerator;
+            ((int*)_parameterValue)[1] = denominator;
             GC.KeepAlive(this);
         }
 
@@ -157,8 +157,8 @@ namespace System.Drawing.Imaging
             _numberOfValues = 1;
             _parameterValue = Marshal.AllocHGlobal(2 * sizeof(int));
 
-            Marshal.WriteInt32(_parameterValue, unchecked((int)rangebegin));
-            Marshal.WriteInt32(Add(_parameterValue, sizeof(int)), unchecked((int)rangeend));
+            ((int*)_parameterValue)[0] = unchecked((int)rangebegin);
+            ((int*)_parameterValue)[1] = unchecked((int)rangeend);
             GC.KeepAlive(this);
         }
 
@@ -172,10 +172,10 @@ namespace System.Drawing.Imaging
             _numberOfValues = 1;
             _parameterValue = Marshal.AllocHGlobal(4 * sizeof(int));
 
-            Marshal.WriteInt32(_parameterValue, numerator1);
-            Marshal.WriteInt32(Add(_parameterValue, sizeof(int)), demoninator1);
-            Marshal.WriteInt32(Add(_parameterValue, 2 * sizeof(int)), numerator2);
-            Marshal.WriteInt32(Add(_parameterValue, 3 * sizeof(int)), demoninator2);
+            ((int*)_parameterValue)[0] = numerator1;
+            ((int*)_parameterValue)[1] = demoninator1;
+            ((int*)_parameterValue)[2] = numerator2;
+            ((int*)_parameterValue)[3] = demoninator2;
             GC.KeepAlive(this);
         }
 
@@ -230,7 +230,7 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        public unsafe EncoderParameter(Encoder encoder, long[] value)
+        public EncoderParameter(Encoder encoder, long[] value)
         {
             _parameterGuid = encoder.Guid;
 
@@ -262,8 +262,8 @@ namespace System.Drawing.Imaging
 
             for (int i = 0; i < _numberOfValues; i++)
             {
-                Marshal.WriteInt32(Add(i * 2 * sizeof(int), _parameterValue), (int)numerator[i]);
-                Marshal.WriteInt32(Add((i * 2 + 1) * sizeof(int), _parameterValue), (int)denominator[i]);
+                ((int*)_parameterValue)[i * 2 + 0] = numerator[i];
+                ((int*)_parameterValue)[i * 2 + 1] = denominator[i];
             }
             GC.KeepAlive(this);
         }
@@ -281,8 +281,8 @@ namespace System.Drawing.Imaging
 
             for (int i = 0; i < _numberOfValues; i++)
             {
-                Marshal.WriteInt32(Add(i * 2 * sizeof(int), _parameterValue), unchecked((int)rangebegin[i]));
-                Marshal.WriteInt32(Add((i * 2 + 1) * sizeof(int), _parameterValue), unchecked((int)rangeend[i]));
+                ((int*)_parameterValue)[i * 2 + 0] = unchecked((int)rangebegin[i]);
+                ((int*)_parameterValue)[i * 2 + 1] = unchecked((int)rangeend[i]);
             }
             GC.KeepAlive(this);
         }
@@ -304,10 +304,10 @@ namespace System.Drawing.Imaging
 
             for (int i = 0; i < _numberOfValues; i++)
             {
-                Marshal.WriteInt32(Add(_parameterValue, 4 * i * sizeof(int)), numerator1[i]);
-                Marshal.WriteInt32(Add(_parameterValue, (4 * i + 1) * sizeof(int)), denominator1[i]);
-                Marshal.WriteInt32(Add(_parameterValue, (4 * i + 2) * sizeof(int)), numerator2[i]);
-                Marshal.WriteInt32(Add(_parameterValue, (4 * i + 3) * sizeof(int)), denominator2[i]);
+                ((int*)_parameterValue)[i * 4 + 0] = numerator1[i];
+                ((int*)_parameterValue)[i * 4 + 1] = denominator1[i];
+                ((int*)_parameterValue)[i * 4 + 2] = numerator2[i];
+                ((int*)_parameterValue)[i * 4 + 3] = denominator2[i];
             }
             GC.KeepAlive(this);
         }
@@ -347,10 +347,7 @@ namespace System.Drawing.Imaging
 
             _parameterValue = Marshal.AllocHGlobal(bytes);
 
-            for (int i = 0; i < bytes; i++)
-            {
-                Marshal.WriteByte(Add(_parameterValue, i), Marshal.ReadByte((IntPtr)(Value + i)));
-            }
+            new ReadOnlySpan<byte>((void*)Value, bytes).CopyTo(new Span<byte>((void*)_parameterValue, bytes));
 
             _parameterValueType = (EncoderParameterValueType)Type;
             _numberOfValues = NumberOfValues;
@@ -392,25 +389,12 @@ namespace System.Drawing.Imaging
 
             _parameterValue = Marshal.AllocHGlobal(bytes);
 
-            for (int i = 0; i < bytes; i++)
-            {
-                Marshal.WriteByte(Add(_parameterValue, i), Marshal.ReadByte((IntPtr)(value + i)));
-            }
+            new ReadOnlySpan<byte>((void*)value, bytes).CopyTo(new Span<byte>((void*)_parameterValue, bytes));
 
             _parameterValueType = type;
             _numberOfValues = numberValues;
             _parameterGuid = encoder.Guid;
             GC.KeepAlive(this);
-        }
-
-        private static IntPtr Add(IntPtr a, int b)
-        {
-            return (IntPtr)((long)a + (long)b);
-        }
-
-        private static IntPtr Add(int a, IntPtr b)
-        {
-            return (IntPtr)((long)a + (long)b);
         }
     }
 }
