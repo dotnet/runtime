@@ -123,11 +123,7 @@ jobs:
         parameters:
           installDotnet: true
 
-    # Build System.Private.CoreLib
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg) -ci
-      displayName: Build System.Private.CoreLib
-
-    # Build CoreCLR
+    # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
         displayName: Build CoreCLR Runtime
@@ -135,13 +131,9 @@ jobs:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(officialBuildIdArg) $(enforcePgoArg)
         displayName: Build CoreCLR Runtime
 
-    # Crossgen System.Private.CoreLib
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset nativecorelib $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg) -ci
-      displayName: Crossgen System.Private.CoreLib
-
-    # Build managed tools
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset tools $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg) -ci
-      displayName: Build managed tools
+    # Build CoreCLR Managed Components
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib-nativecorelib-tools-packages $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg) -ci
+      displayName: Build managed product components and packages
 
     # Build native test components
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg) skipgeneratelayout
@@ -189,10 +181,6 @@ jobs:
           azureSubscription: 'DotNet-Engineering-Services_KeyVault'
           KeyVaultName: EngKeyVault
           SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
-
-    # Build packages
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset packages $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg) -ci
-      displayName: Build packages
 
     # Save packages using the prepare-signed-artifacts format.
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
