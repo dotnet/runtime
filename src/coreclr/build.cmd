@@ -7,6 +7,7 @@ set "__MsgPrefix=BUILD: "
 
 echo %__MsgPrefix%Starting Build at %TIME%
 echo %__MsgPrefix%WARNING: This build script is deprecated and will be deleted soon. Use the root build script to build CoreCLR. If you want to build the CoreCLR runtime without using MSBuild, use the build-native.cmd script.
+echo %__MsgPrefix%See https://github.com/dotnet/runtime/issues/32991 for more information.
 
 set __ThisScriptFull="%~f0"
 set __ThisScriptDir="%~dp0"
