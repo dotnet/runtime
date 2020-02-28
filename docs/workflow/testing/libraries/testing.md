@@ -22,7 +22,7 @@ libraries -test /p:WithoutCategories=IgnoreForCI
 
 ## Running tests on the command line
 
-To build tests you need to pass the `-buildtests` flag to `build.cmd/sh` or run `libraries -restore -build -buildtests` - note that you need to specify `-restore` and `-build` additionally as those are only implicit if no action is passed in.
+To build tests you need to pass the `-buildtests` flag to `build.cmd/sh` or run `libraries -restore -build -buildtests` (note that you need to specify `-restore` and `-build` additionally as those are only implicit if no action is passed in).
 
 If you are interested in building and running the tests only for a specific library, then there are two different ways to do it:
 
