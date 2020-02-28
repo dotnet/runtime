@@ -268,7 +268,7 @@ struct FloatArgumentRegisters {
 #define NUM_FLOAT_ARGUMENT_REGISTERS 4
 #endif
 
-extern int g_xmmYmmStateSupport;
+extern "C" int g_xmmYmmStateSupport;
 
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pRegs);
 

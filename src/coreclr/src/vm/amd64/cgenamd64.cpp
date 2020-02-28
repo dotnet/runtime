@@ -26,8 +26,12 @@
 #include "clrtocomcall.h"
 #endif // FEATURE_COMINTEROP
 
-// This is initialized to either 0 or 1 by the XmmYmmStateSupport function when it is called
-int g_xmmYmmStateSupport = 2;
+// This is initialized to either 0 or 1 by the xmmYmmStateSupport function when it is called
+extern "C" { int g_xmmYmmStateSupport = 2; };
+
+#if defined(TARGET_WINDOWS)
+
+#endif // TARGET_WINDOWS
 
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pRegs)
 {
