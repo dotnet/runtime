@@ -84,7 +84,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32433", TestRuntimes.Mono)]
         public void LoadInDefaultContext()
         {
             // This will attempt to load an assembly, by path, in the Default Load context via the Resolving event
@@ -177,7 +176,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32432", TestRuntimes.Mono)]
         public static void LoadNonExistentInDefaultContext()
         {
             // Now, try to load an assembly that does not exist

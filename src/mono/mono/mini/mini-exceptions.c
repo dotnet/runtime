@@ -2176,12 +2176,12 @@ setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trac
 			MonoMList *list = (MonoMList*)mono_ex->dynamic_methods;
 
 			for (l = *dynamic_methods; l; l = l->next) {
-				guint32 dis_link;
+				MonoGCHandle dis_link;
 				MonoDomain *domain = mono_domain_get ();
 
 				if (domain->method_to_dyn_method) {
 					mono_domain_lock (domain);
-					dis_link = (guint32)(size_t)g_hash_table_lookup (domain->method_to_dyn_method, l->data);
+					dis_link = (MonoGCHandle)g_hash_table_lookup (domain->method_to_dyn_method, l->data);
 					mono_domain_unlock (domain);
 					if (dis_link) {
 						MonoObject *o = mono_gchandle_get_target_internal (dis_link);
@@ -2815,7 +2815,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		}
 
 		if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && ftnptr_eh_callback) {
-			guint32 handle = mono_gchandle_new_internal (obj, FALSE);
+			MonoGCHandle handle = mono_gchandle_new_internal (obj, FALSE);
 			MONO_STACKDATA (stackptr);
 
 			mono_threads_enter_gc_safe_region_unbalanced_internal (&stackptr);

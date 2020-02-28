@@ -113,7 +113,7 @@ namespace System.Net
         /// <param name="arg0">The object to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Enter(object? thisOrContextObject, object arg0, [CallerMemberName] string? memberName = null)
+        public static void Enter(object? thisOrContextObject, object? arg0, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(arg0);
@@ -126,7 +126,7 @@ namespace System.Net
         /// <param name="arg1">The second object to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Enter(object? thisOrContextObject, object? arg0, object arg1, [CallerMemberName] string? memberName = null)
+        public static void Enter(object? thisOrContextObject, object? arg0, object? arg1, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(arg0);
@@ -141,7 +141,7 @@ namespace System.Net
         /// <param name="arg2">The third object to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Enter(object? thisOrContextObject, object arg0, object arg1, object arg2, [CallerMemberName] string? memberName = null)
+        public static void Enter(object? thisOrContextObject, object? arg0, object? arg1, object? arg2, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(arg0);
@@ -186,7 +186,7 @@ namespace System.Net
         /// <param name="arg1">A second return value from the member.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Exit(object? thisOrContextObject, object arg0, object arg1, [CallerMemberName] string? memberName = null)
+        public static void Exit(object? thisOrContextObject, object? arg0, object? arg1, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(arg0);
