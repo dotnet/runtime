@@ -21,16 +21,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         {
         }
 
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
-
-        public override bool Equals(object obj)
-        {
-            return base.Equals(obj as ComInvokeAction);
-        }
-
         public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion)
         {
             if (ComBinder.TryBindInvoke(this, target, args, out DynamicMetaObject res))

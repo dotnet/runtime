@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#pragma warning disable 612, 618
-using System.Linq.Expressions;
+#pragma warning disable 618 // CurrencyWrapper is obsolete
 
 using System;
 using System.Diagnostics;
+using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#pragma warning disable 612, 618
+#pragma warning disable 618 // DispatchWrapper is obsolete
 
 using System;
 using System.Linq.Expressions;
@@ -17,7 +17,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         internal DispatchArgBuilder(Type parameterType)
             : base(parameterType)
         {
-
             _isWrapper = parameterType == typeof(DispatchWrapper);
         }
 

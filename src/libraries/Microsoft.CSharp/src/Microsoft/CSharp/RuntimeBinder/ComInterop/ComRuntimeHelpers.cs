@@ -4,7 +4,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -16,8 +15,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     internal static class ComRuntimeHelpers
     {
-        [SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
-        [SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "1#")]
         public static void CheckThrowException(int hresult, ref ExcepInfo excepInfo, uint argErr, string message)
         {
             if (ComHresults.IsSuccess(hresult))
@@ -185,7 +182,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
-        [SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         internal static ComTypes.TYPEATTR GetTypeAttrForTypeInfo(ComTypes.ITypeInfo typeInfo)
         {
             IntPtr pAttrs;
@@ -207,7 +203,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
-        [SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         internal static ComTypes.TYPELIBATTR GetTypeAttrForTypeLib(ComTypes.ITypeLib typeLib)
         {
             IntPtr pAttrs;
@@ -313,7 +308,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")]
         [Obsolete("do not use this method", true)]
         public static int IDispatchInvoke(
             IntPtr dispatchPointer,

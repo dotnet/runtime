@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
@@ -212,7 +211,6 @@ namespace System.Runtime.InteropServices
             _typeUnion._unionTypes._byref = (IntPtr)Unsafe.AsPointer<T>(ref value);
         }
 
-        [SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         internal static System.Reflection.PropertyInfo GetAccessor(VarEnum varType)
         {
             switch (varType)
@@ -248,7 +246,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         internal static System.Reflection.MethodInfo GetByrefSetter(VarEnum varType)
         {
             switch (varType)

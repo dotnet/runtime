@@ -31,7 +31,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// Gets a <see cref="ComObject"/> that wraps the runtime-callable-wrapper, or creates one if none currently exists.
         /// </summary>
         /// <returns></returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         public static ComObject ObjectToComObject(object rcw)
         {
             Debug.Assert(ComBinder.IsComObject(rcw));

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#pragma warning disable 612, 618
+#pragma warning disable 618 // BStrWrapper is obsolete
 
 using System;
 using System.Diagnostics;
@@ -18,7 +18,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         internal StringArgBuilder(Type parameterType)
             : base(parameterType)
         {
-
             Debug.Assert(parameterType == typeof(string) ||
                         parameterType == typeof(BStrWrapper));
 
@@ -44,7 +43,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         internal override Expression MarshalToRef(Expression parameter)
         {
             parameter = Marshal(parameter);
-
 
             // Marshal.StringToBSTR(parameter)
             return Expression.Call(

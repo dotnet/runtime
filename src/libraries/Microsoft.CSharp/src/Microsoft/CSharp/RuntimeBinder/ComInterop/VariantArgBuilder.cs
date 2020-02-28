@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#pragma warning disable 612, 618
+#pragma warning disable 618 // VariantWrapper is obsolete
+
 using System;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -17,7 +18,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         internal VariantArgBuilder(Type parameterType)
             : base(parameterType)
         {
-
             _isWrapper = parameterType == typeof(VariantWrapper);
         }
 

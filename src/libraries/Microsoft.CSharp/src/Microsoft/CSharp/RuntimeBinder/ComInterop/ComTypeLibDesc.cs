@@ -39,7 +39,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return string.Format(CultureInfo.CurrentCulture, "<type library {0}>", _typeLibName);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public string Documentation
         {
             get { return string.Empty; }

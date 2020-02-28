@@ -21,8 +21,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         private static readonly object s_comObjectEventSinksKey = new object();
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1002:DoNotExposeGenericLists")]
         public static ComEventSinksContainer FromRuntimeCallableWrapper(object rcw, bool createIfNotFound)
         {
             // !!! Marshal.Get/SetComObjectData has a LinkDemand for UnmanagedCode which will turn into

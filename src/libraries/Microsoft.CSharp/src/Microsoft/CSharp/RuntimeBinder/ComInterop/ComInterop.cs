@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#pragma warning disable 612, 618
+#pragma warning disable 618
 
 using System;
 using System.Runtime.InteropServices;
@@ -13,7 +13,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     [ComImport]
     [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
     [Guid("00020400-0000-0000-C000-000000000046")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     internal interface IDispatchForReflection
     {
     }
@@ -23,7 +22,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     [Guid("00020400-0000-0000-C000-000000000046")]
     internal interface IDispatch
     {
-
         [PreserveSig]
         int TryGetTypeInfoCount(out uint pctinfo);
 

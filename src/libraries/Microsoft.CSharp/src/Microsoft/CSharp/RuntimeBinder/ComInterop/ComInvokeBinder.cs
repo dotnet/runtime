@@ -40,14 +40,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         private ParameterExpression _propertyPutDispId;
 
         internal ComInvokeBinder(
-                CallInfo callInfo,
-                DynamicMetaObject[] args,
-                bool[] isByRef,
-                BindingRestrictions restrictions,
-                Expression method,
-                Expression dispatch,
-                ComMethodDesc methodDesc
-                )
+            CallInfo callInfo,
+            DynamicMetaObject[] args,
+            bool[] isByRef,
+            BindingRestrictions restrictions,
+            Expression method,
+            Expression dispatch,
+            ComMethodDesc methodDesc)
         {
 
             Debug.Assert(callInfo != null, "arguments");

@@ -27,7 +27,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         private int scode;
 
 #if DEBUG
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2207:InitializeValueTypeStaticFieldsInline")]
         static ExcepInfo()
         {
             Debug.Assert(Marshal.SizeOf(typeof(ExcepInfo)) == Marshal.SizeOf(typeof(ComTypes.EXCEPINFO)));
@@ -47,7 +46,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return result;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         internal Exception GetException()
         {
             Debug.Assert(pfnDeferredFillIn == IntPtr.Zero);

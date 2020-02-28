@@ -142,7 +142,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         //CONFORMING
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static bool IsImplicitNumericConversion(Type source, Type destination)
         {
             TypeCode tcSource = Type.GetTypeCode(source);
