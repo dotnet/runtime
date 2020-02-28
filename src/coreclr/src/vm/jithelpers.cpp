@@ -5345,7 +5345,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         const int hitLimit = g_pConfig->OSR_HitLimit();
         const int hitCount = InterlockedIncrement(&ppInfo->m_patchpointCount);
         
-        if ((verbose > 1) || (verbose > 0) && (hitCount == 1))
+        if ((verbose > 1) || ((verbose > 0) && (hitCount == 1)))
         {
             printf("### Runtime: patchpoint [%d] 0x%p hit:%d (limit %d)\n", ppId, ip, hitCount, hitLimit);
         }
