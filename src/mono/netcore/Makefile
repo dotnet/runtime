@@ -20,6 +20,7 @@ ifeq ($(words $(wildcard ../../../artifacts/bin/testhost/*-*-*-*)), 1)
 endif
 
 MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:LibrariesTestConfig=$(LIBRARIES_TESTS_CONFIG) /p:Configuration=$(MONO_RUNTIME_CONFIG) ../mono.proj
+MONO_TEST_PROJ=/p:MonoRuntimeTestConfig=$(MONO_RUNTIME_CONFIG) /p:Configuration=$(MONO_RUNTIME_CONFIG) ../mono-test.proj
 
 # run sample using local .dotnet-mono
 # build it with .dotnet first in order to be able to use LLVM only for the actual sample
@@ -75,6 +76,9 @@ aot-tests-corefx:
 # precompile (AOT) all libraries inside testhost (it's used for libraries' tests)
 aot-testhost-corefx:
 	$(DOTNET) msbuild /t:PrecompileTesthostLibraries $(MONO_PROJ)
+
+compile-tests-mono-runtime:
+	$(DOTNET) msbuild /t:CompileMonoRuntimeTests $(MONO_TEST_PROJ)
 
 # run 'dotnet/performance' benchmarks
 # e.g. 'make run-benchmarks BenchmarksRepo=/prj/performance'

@@ -1,0 +1,41 @@
+<Project>
+  <Import Project="Directory.Build.props" />
+  <Import Project="Directory.Build.targets" />
+
+  <PropertyGroup>
+    <MonoObjDir>$(ArtifactsObjDir)mono/$(PlatformConfigPathPart)/</MonoObjDir>
+    <MonoObjTestsDir>$(MonoObjDir)mono/tests/</MonoObjTestsDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- one item per test file -->
+    <!-- FIXME: use globbing but exclude failing tests, tests comprised of multiple source files, etc -->
+    <MonoTests Include="mono\tests\array-12193.cs">
+      <MonoTestType>SingleFile</MonoTestType>
+      <MonoTestNeedsLibtest>false</MonoTestNeedsLibtest>
+    </MonoTests>
+    <MonoTests Include="mono\tests\debug-casts.cs">
+      <MonoTestType>TestDriver</MonoTestType>
+      <MonoTestNeedsLibtest>false</MonoTestNeedsLibtest>
+    </MonoTests>
+  </ItemGroup>
+
+  <Target Name="SelectViableMonoRuntimeTests">
+    <ItemGroup>
+      <MonoTestsSimple Include="@(MonoTests)" Condition="'%(MonoTestType)' == 'SingleFile'" />
+      <MonoTestsSimple Include="@(MonoTests)" Condition="'%(MonoTestType)' == 'TestDriver'" />
+      <MonoTestsSimpleBaseDir Include="@(MonoTestsSimple -> %(Filename))" />
+      <MonoTestsSimpleCsproj Include="@(MonoTestsSimple -> '%(Filename)\%(Filename).csproj')" />
+    </ItemGroup>
+  </Target>
+  
+  <Target Name="CompileMonoRuntimeTests" DependsOnTargets="SelectViableMonoRuntimeTests">
+    <Message Text="Compiling mono runtime tests" Importance="High" />
+    <Message Text="Mono obj dir is $(MonoObjDir)" Importance="High" />
+    <Message Text="Mono obj tests dir is $(MonoObjTestsDir)" Importance="High" />
+    <Message Text="There are @(MonoTests->Count()) tests, @(MonoTestsSimple->Count()) simple" Importance="High" />
+    <Message Text="  Csproj %(MonoTestsSimpleCsproj.Identity)" Importance="High" />
+    <!-- MakeDir Directories="$(MonoObjDir)" / -->
+    
+  </Target>
+</Project>
