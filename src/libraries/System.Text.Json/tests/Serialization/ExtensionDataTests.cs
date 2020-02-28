@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using Xunit;
@@ -220,6 +221,12 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, object> MyOverflow2 { get; set; }
         }
 
+        private class ClassWithNotSupportedExtensionPropertyImmutableDictionary
+        {
+            [JsonExtensionData]
+            public ImmutableDictionary<string, object> MyOverflow { get; set; }
+        }
+
         [Fact]
         public static void InvalidExtensionPropertyFail()
         {
@@ -229,6 +236,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithInvalidExtensionProperty>(@"{}"));
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithTwoExtensionProperties>(@"{}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithNotSupportedExtensionPropertyImmutableDictionary>(@"{}"));
         }
 
         private class ClassWithIgnoredData

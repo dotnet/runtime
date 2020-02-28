@@ -229,7 +229,7 @@ namespace System.Text.Json
                     typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType))
                 {
                     JsonConverter? converter = Options.GetConverter(declaredPropertyType);
-                    if (converter == null)
+                    if (converter == null || jsonPropertyInfo.RuntimeClassInfo.CreateObject == null)
                     {
                         ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(declaredPropertyType);
                     }
