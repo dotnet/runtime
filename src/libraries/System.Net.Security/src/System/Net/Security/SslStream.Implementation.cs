@@ -227,6 +227,7 @@ namespace System.Net.Security
             finally
             {
                 _handshakeWaiter?.SetResult(true);
+                _handshakeWaiter = null;
             }
         }
 
