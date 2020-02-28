@@ -43,8 +43,8 @@ namespace System.Net.Security
             AppData = 23
         }
 
-        private object _handshakeLock = new object();
-        private TaskCompletionSource<bool>? _handshakeWaiter = null;
+        private readonly object _handshakeLock = new object();
+        private TaskCompletionSource<bool>? _handshakeWaiter;
 
         private const int FrameOverhead = 32;
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
@@ -166,27 +166,17 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticated();
 
-            TaskCompletionSource<bool>? waiter = null;
-            while (true)
+            outSize = 0;
+
+            lock (_handshakeLock)
             {
-                if (waiter != null)
+                if (_handshakeWaiter != null)
                 {
-                    waiter.Task.Wait();
-                    _handshakeWaiter = null;
+                    // avoid waiting under lock.
+                    return new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
                 }
 
-                lock (_handshakeLock)
-                {
-                    waiter = _handshakeWaiter;
-                    if (_handshakeWaiter != null)
-                    {
-                        // avoid waiting under lock.
-                        continue;
-                    }
-
-                    var ret = _context!.Encrypt(buffer, ref outBuffer, out outSize);
-                    return ret;
-                }
+                return _context!.Encrypt(buffer, ref outBuffer, out outSize);
             }
         }
 
@@ -230,7 +220,14 @@ namespace System.Net.Security
         private async Task ReplyOnReAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, byte[]? buffer)
             where TIOAdapter : ISslIOAdapter
         {
-            await ForceAuthenticationAsync(adapter, receiveFirst: false, buffer).ConfigureAwait(false);
+            try
+            {
+                await ForceAuthenticationAsync(adapter, receiveFirst: false, buffer).ConfigureAwait(false);
+            }
+            finally
+            {
+                _handshakeWaiter?.SetResult(true);
+            }
         }
 
         // reAuthenticationData is only used on Windows in case of renegotiation.
@@ -418,16 +415,43 @@ namespace System.Net.Security
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length + FrameOverhead);
             byte[] outBuffer = rentedBuffer;
 
-            SecurityStatusPal status = EncryptData(buffer, ref outBuffer, out int encryptedBytes);
+            SecurityStatusPal status;
+            int encryptedBytes;
+            ValueTask t;
+            while (true)
+            {
+                status = EncryptData(buffer, ref outBuffer, out encryptedBytes);
+
+                // This should be rate when renegotiation happens exactly when we want to write.
+                if (status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
+                {
+                    TaskCompletionSource<bool>? waiter = _handshakeWaiter;
+                    if (waiter != null)
+                    {
+                        t = writeAdapter.LockAsync(waiter);
+                        // We finished synchronously waiting for renegotiation. Try it again.
+                        if (t.IsCompletedSuccessfully)
+                        {
+                            continue;
+                        }
+
+                        return CompleteLockAndWriteAsync(t, rentedBuffer);
+                    }
+
+                    continue;
+                    // We are on Async path now. We need to wait for the Lock as well as for the write when it is finished.
+                }
+
+                break;
+            }
 
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
-                // Re-handshake status is not supported.
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
                 return new ValueTask(Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status)))));
             }
 
-            ValueTask t = writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes);
+            t = writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes);
             if (t.IsCompletedSuccessfully)
             {
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
@@ -435,10 +459,47 @@ namespace System.Net.Security
             }
             else
             {
-                return CompleteAsync(t, rentedBuffer);
+                return CompleteWriteAsync(t, rentedBuffer);
             }
 
-            async ValueTask CompleteAsync(ValueTask writeTask, byte[] bufferToReturn)
+            async ValueTask CompleteLockAndWriteAsync(ValueTask t, byte[] bufferToReturn)
+            {
+                SecurityStatusPal status;
+                int encryptedBytes;
+
+                try
+                {
+                    await t;
+                    while (true)
+                    {
+                        status = EncryptData(buffer, ref outBuffer, out encryptedBytes);
+                        if (status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
+                        {
+                            TaskCompletionSource<bool>? waiter = _handshakeWaiter;
+                            if (waiter != null)
+                            {
+                                await writeAdapter.LockAsync(waiter);
+                            }
+
+                            continue;
+                        }
+                        else if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
+                        {
+                            throw new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status));
+                        }
+
+                        break;
+                    }
+
+                    await writeAdapter.WriteAsync(outBuffer, 0, encryptedBytes);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(bufferToReturn);
+                }
+            }
+
+            async ValueTask CompleteWriteAsync(ValueTask writeTask, byte[] bufferToReturn)
             {
                 try
                 {
@@ -555,7 +616,6 @@ namespace System.Net.Security
                     // DecryptData will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
                     _decryptedBytesOffset = _internalOffset;
                     _decryptedBytesCount = payloadBytes;
-
 
                     SecurityStatusPal status;
                     lock (_handshakeLock)
