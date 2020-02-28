@@ -42,9 +42,6 @@ namespace ILLink.Tests
 			packageSources.Add(new XElement("add",
 						new XAttribute("key", "dotnet-core"),
 						new XAttribute("value", "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json")));
-			packageSources.Add(new XElement("add",
-						new XAttribute("key", "local linker feed"),
-						new XAttribute("value", TestContext.PackageSource)));
 
 			configuration.Add(packageSources);
 			xdoc.Add(configuration);
@@ -58,22 +55,20 @@ namespace ILLink.Tests
 		{
 			var xdoc = XDocument.Load(csproj);
 			var ns = xdoc.Root.GetDefaultNamespace();
-			bool added = false;
-			foreach (var el in xdoc.Root.Elements(ns + "ItemGroup")) {
-				if (el.Elements(ns + "PackageReference").Any()) {
-					el.Add(new XElement(ns+"PackageReference",
-						new XAttribute("Include", TestContext.TasksPackageName),
-						new XAttribute("Version", TestContext.TasksPackageVersion)));
-					added = true;
-					break;
-				}
+
+			foreach (var el in xdoc.Root.Elements(ns + "PropertyGroup")) {
+				el.Add(new XElement(ns + "ILLinkTasksAssembly", TestContext.TasksAssemblyPath));
+				break;
 			}
-			if (!added) {
-				xdoc.Root.Add(new XElement(ns + "ItemGroup",
-					new XElement(ns + "PackageReference",
-						new XAttribute("Include", TestContext.TasksPackageName),
-						new XAttribute("Version", TestContext.TasksPackageVersion))));
-			}
+
+			// Workaround to avoid passing an argument that was removed (-l).
+			// This can be removed once we update to a recent SDK that does not pass this argument.
+			xdoc.Root.Add (new XElement(ns + "Target",
+				new XAttribute("Name", "_FixILLinkDefaults"),
+				new XAttribute("AfterTargets", "_SetILLinkDefaults"),
+				new XElement(ns + "PropertyGroup",
+					new XElement(ns + "_ExtraTrimmerArgs",
+					"--skip-unresolved true -c copyused -u copyused"))));
 
 			using (var fs = new FileStream(csproj, FileMode.Create)) {
 				xdoc.Save(fs);
@@ -132,7 +127,7 @@ namespace ILLink.Tests
 		{
 			string demoRoot = Path.GetDirectoryName(csproj);
 
-			string publishArgs = $"publish -c {TestContext.Configuration} /v:n /p:ShowLinkerSizeComparison=true";
+			string publishArgs = $"publish -c {TestContext.Configuration} /v:n /p:PublishTrimmed=true";
 			if (selfContained) {
 				publishArgs += $" -r {TestContext.RuntimeIdentifier}";
 			}

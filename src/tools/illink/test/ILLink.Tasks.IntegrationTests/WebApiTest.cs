@@ -80,13 +80,6 @@ namespace ILLink.Tests
 			CheckOutput(executablePath, selfContained: true);
 		}
 
-		[Fact]
-		public void RunWebApiPortable()
-		{
-			string target = BuildAndLink(fixture.csproj, selfContained: false);
-			CheckOutput(target, selfContained: false);
-		}
-
 		void CheckOutput(string target, bool selfContained = false)
 		{
 			string terminatingOutput = "Application started. Press Ctrl+C to shut down.";
