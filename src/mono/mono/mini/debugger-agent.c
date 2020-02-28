@@ -1075,27 +1075,32 @@ debugger_agent_init (void)
 static void
 finish_agent_init (gboolean on_startup)
 {
-	int res;
-
 	if (mono_atomic_cas_i32 (&inited, 1, 0) == 1)
 		return;
 
 	if (agent_config.launch) {
-		char *argv [16];
 
 		// FIXME: Generated address
 		// FIXME: Races with transport_connect ()
 
-		argv [0] = agent_config.launch;
-		argv [1] = agent_config.transport;
-		argv [2] = agent_config.address;
-		argv [3] = NULL;
-
-		res = g_spawn_async_with_pipes (NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+		char *argv [ ] = {
+			agent_config.launch,
+			agent_config.transport,
+			agent_config.address,
+			NULL
+		};
+#ifdef G_OS_WIN32
+		// Nothing. FIXME? g_spawn_async_with_pipes is easy enough to provide for Windows if needed.
+#elif !HAVE_G_SPAWN
+		g_printerr ("g_spawn_async_with_pipes not supported on this platform\n");
+		exit (1);
+#else
+		int res = g_spawn_async_with_pipes (NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 		if (!res) {
 			g_printerr ("Failed to execute '%s'.\n", agent_config.launch);
 			exit (1);
 		}
+#endif
 	}
 
 	transport_connect (agent_config.address);

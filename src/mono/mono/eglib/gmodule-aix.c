@@ -31,6 +31,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+// FIXME This does not work because it guards config.h include.
 /* In case by some miracle, IBM implements this */
 #if defined(_AIX) && !defined(HAVE_DLADDR)
 #include <config.h>

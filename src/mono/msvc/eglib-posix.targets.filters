@@ -16,6 +16,9 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmodule-unix.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\posix</Filter>
     </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gspawn.c" >
+      <Filter>Source Files$(EGLibFilterSubFolder)\posix</Filter>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gtimer-unix.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\posix</Filter>
     </ClCompile>

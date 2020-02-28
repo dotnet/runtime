@@ -68,6 +68,8 @@
 #define pipe(x) _pipe(x, 256, 0)
 #endif
 
+#if HAVE_G_SPAWN
+
 #define set_error(msg, ...) do { if (gerror != NULL) *gerror = g_error_new (G_LOG_DOMAIN, 1, msg, __VA_ARGS__); } while (0)
 #define set_error_cond(cond,msg, ...) do { if ((cond) && gerror != NULL) *gerror = g_error_new (G_LOG_DOMAIN, 1, msg, __VA_ARGS__); } while (0)
 #define set_error_status(status,msg, ...) do { if (gerror != NULL) *gerror = g_error_new (G_LOG_DOMAIN, status, msg, __VA_ARGS__); } while (0)
@@ -102,7 +104,6 @@ extern char **environ;
 G_END_DECLS
 #endif
 
-#if !defined (G_OS_WIN32) && defined (HAVE_FORK) && defined (HAVE_EXECV)
 static int
 safe_read (int fd, gchar *buffer, gint count, GError **gerror)
 {
@@ -221,7 +222,8 @@ write_all (int fd, const void *vbuf, size_t n)
 	
 	return nwritten;
 }
-#endif /* !defined (G_OS_WIN32) && defined (HAVE_FORK) && defined (HAVE_EXECV) */
+
+#endif // HAVE_G_SPAWN
 
 #if !defined(G_OS_WIN32) && defined(HAVE_GETDTABLESIZE)
 int
@@ -246,6 +248,8 @@ eg_getdtablesize (void)
 }
 #endif
 
+#if HAVE_G_SPAWN
+
 gboolean
 g_spawn_command_line_sync (const gchar *command_line,
 				gchar **standard_output,
@@ -253,12 +257,6 @@ g_spawn_command_line_sync (const gchar *command_line,
 				gint *exit_status,
 				GError **gerror)
 {
-#ifdef G_OS_WIN32
-	return TRUE;
-#elif !defined (HAVE_FORK) || !defined (HAVE_EXECV)
-	fprintf (stderr, "g_spawn_command_line_sync not supported on this platform\n");
-	return FALSE;
-#else
 	pid_t pid;
 	gchar **argv;
 	gint argc;
@@ -333,7 +331,6 @@ g_spawn_command_line_sync (const gchar *command_line,
 		*exit_status = WEXITSTATUS (status);
 	}
 	return TRUE;
-#endif
 }
 
 /*
@@ -353,12 +350,6 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			gint *standard_error,
 			GError **gerror)
 {
-#ifdef G_OS_WIN32
-	return TRUE;
-#elif !defined (HAVE_FORK) || !defined (HAVE_EXECVE)
-	fprintf (stderr, "g_spawn_async_with_pipes is not supported on this platform\n");
-	return FALSE;
-#else
 	pid_t pid;
 	int info_pipe [2];
 	int in_pipe [2] = { -1, -1 };
@@ -528,5 +519,11 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 	if (standard_error)
 		*standard_error = err_pipe [0];
 	return TRUE;
-#endif
 }
+
+#endif // HAVE_G_SPAWN
+
+#define MONO_EMPTY_SOURCE_FILE(x) extern const char mono_quash_linker_empty_file_warning_ ## x; \
+                                  const char mono_quash_linker_empty_file_warning_ ## x = 0;
+
+MONO_EMPTY_SOURCE_FILE (gspawn);

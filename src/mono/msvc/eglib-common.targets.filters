@@ -61,9 +61,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gshell.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gspawn.c">
-      <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
-    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gfile.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\common</Filter>
     </ClCompile>

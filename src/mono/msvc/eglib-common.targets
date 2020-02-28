@@ -21,7 +21,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gqueue.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gpath.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gshell.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gspawn.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gfile.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gfile-posix.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gpattern.c" />
