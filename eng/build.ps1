@@ -11,7 +11,7 @@ Param(
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
-  [string]$arch,
+  [string]$arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant(),
   [string]$subsetCategory,
   [string]$subset,
   [ValidateSet("Debug","Release","Checked")][string]$runtimeConfiguration,
@@ -133,8 +133,6 @@ if ($null -ne $possibleDirToBuild -and $subsetCategory -eq "libraries") {
     }
   }
 }
-
-$arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()
 
 foreach ($argument in $PSBoundParameters.Keys)
 {
