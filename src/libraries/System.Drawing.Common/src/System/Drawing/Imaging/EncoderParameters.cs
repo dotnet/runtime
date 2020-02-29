@@ -57,11 +57,11 @@ namespace System.Drawing.Imaging
             int size = Marshal.SizeOf(typeof(EncoderParameter));
 
             int length = _param.Length;
-            IntPtr memory = Marshal.AllocHGlobal(checked(length * size + Marshal.SizeOf(typeof(IntPtr))));
+            IntPtr memory = Marshal.AllocHGlobal(checked(length * size + IntPtr.Size));
 
             Marshal.WriteIntPtr(memory, (IntPtr)length);
 
-            long arrayOffset = checked((long)memory + Marshal.SizeOf(typeof(IntPtr)));
+            long arrayOffset = checked((long)memory + IntPtr.Size);
 
             for (int i = 0; i < length; i++)
             {
@@ -86,7 +86,7 @@ namespace System.Drawing.Imaging
 
             EncoderParameters p = new EncoderParameters(count);
             int size = Marshal.SizeOf(typeof(EncoderParameter));
-            long arrayOffset = (long)memory + Marshal.SizeOf(typeof(IntPtr));
+            long arrayOffset = (long)memory + IntPtr.Size;
 
             for (int i = 0; i < count; i++)
             {
