@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal abstract class JsonCollectionConverter<TCollection, TElement> : JsonResumableConverter<TCollection>
     {
-        internal override ClassType ClassType => ClassType.Enumerable;
+        internal sealed override ClassType ClassType => ClassType.Enumerable;
         internal override Type ElementType => typeof(TElement);
     }
 }
