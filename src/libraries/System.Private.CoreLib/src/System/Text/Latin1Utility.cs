@@ -1001,11 +1001,15 @@ namespace System.Text
                 {
                     latin1Vector = Sse2.LoadVector128(pLatin1Buffer + currentOffset); // unaligned load
 
-                    byte* pStore = (byte*)(pUtf16Buffer + currentOffset);
-                    Sse2.StoreAligned(pStore, Sse2.UnpackLow(latin1Vector, zeroVector));
+                    // Calculating the destination address in the below manner results in significant
+                    // performance wins vs. other patterns. See for more information:
+                    // https://github.com/dotnet/runtime/issues/33002
 
-                    pStore += SizeOfVector128;
-                    Sse2.StoreAligned(pStore, Sse2.UnpackHigh(latin1Vector, zeroVector));
+                    Vector128<byte> low = Sse2.UnpackLow(latin1Vector, zeroVector);
+                    Sse2.StoreAligned((byte*)(pUtf16Buffer + currentOffset), low);
+
+                    Vector128<byte> high = Sse2.UnpackHigh(latin1Vector, zeroVector);
+                    Sse2.StoreAligned((byte*)pUtf16Buffer + (currentOffset << 1) + SizeOfVector128, high);
 
                     currentOffset += SizeOfVector128;
                 }

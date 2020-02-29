@@ -1660,11 +1660,15 @@ namespace System.Text
                     goto NonAsciiDataSeenInInnerLoop;
                 }
 
-                byte* pStore = (byte*)(pUtf16Buffer + currentOffset);
-                Sse2.StoreAligned(pStore, Sse2.UnpackLow(asciiVector, zeroVector));
+                // Calculating the destination address in the below manner results in significant
+                // performance wins vs. other patterns. See for more information:
+                // https://github.com/dotnet/runtime/issues/33002
 
-                pStore += SizeOfVector128;
-                Sse2.StoreAligned(pStore, Sse2.UnpackHigh(asciiVector, zeroVector));
+                Vector128<byte> low = Sse2.UnpackLow(asciiVector, zeroVector);
+                Sse2.StoreAligned((byte*)(pUtf16Buffer + currentOffset), low);
+
+                Vector128<byte> high = Sse2.UnpackHigh(asciiVector, zeroVector);
+                Sse2.StoreAligned((byte*)pUtf16Buffer + (currentOffset << 1) + SizeOfVector128, high);
 
                 currentOffset += SizeOfVector128;
             } while (currentOffset <= finalOffsetWhereCanRunLoop);
