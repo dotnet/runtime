@@ -256,6 +256,8 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_PInvokeBegin              = 0x42,
     READYTORUN_HELPER_PInvokeEnd                = 0x43,
     READYTORUN_HELPER_GCPoll                    = 0x44,
+    READYTORUN_HELPER_ReversePInvokeEnter       = 0x45,
+    READYTORUN_HELPER_ReversePInvokeExit        = 0x46,
 
     // Get string handle lazily
     READYTORUN_HELPER_GetString                 = 0x50,
