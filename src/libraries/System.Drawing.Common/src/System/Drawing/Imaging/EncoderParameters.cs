@@ -59,11 +59,6 @@ namespace System.Drawing.Imaging
             int length = _param.Length;
             IntPtr memory = Marshal.AllocHGlobal(checked(length * size + Marshal.SizeOf(typeof(IntPtr))));
 
-            if (memory == IntPtr.Zero)
-            {
-                throw Gdip.StatusException(Gdip.OutOfMemory);
-            }
-
             Marshal.WriteIntPtr(memory, (IntPtr)length);
 
             long arrayOffset = checked((long)memory + Marshal.SizeOf(typeof(IntPtr)));

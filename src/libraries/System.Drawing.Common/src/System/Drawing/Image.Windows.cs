@@ -423,9 +423,6 @@ namespace System.Drawing
 
             IntPtr propdata = Marshal.AllocHGlobal(size);
 
-            if (propdata == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
-
             try
             {
                 Gdip.CheckStatus(Gdip.GdipGetPropertyItem(new HandleRef(this, nativeImage), propid, size, propdata));
