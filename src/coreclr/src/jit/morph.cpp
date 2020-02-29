@@ -6693,26 +6693,177 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         {
             if (arg->passedByRef)
             {
+                // Generally a byref arg will block tail calling, as we have to
+                // make a local copy of the struct for the callee.
+                hasByrefParameter = true;
+
                 // If we're optimizing, we may be able to pass our caller's byref to our callee,
                 // and so still be able to tail call.
-                GenTreeLclVarCommon* const lcl = arg->GetNode()->IsImplicitByrefParameterValue(this);
+                if (opts.OptimizationEnabled())
+                {
+                    // First, see if this arg is a byref param.
+                    GenTreeLclVarCommon* const lcl = arg->GetNode()->IsImplicitByrefParameterValue(this);
 
-                // For this to work we must not have promoted the parameter; if we've promoted
-                // then we'll make a local struct at the call.
-                //
-                // We could handle this if there was some way to copy back to the original struct.
-                if (opts.OptimizationEnabled() && (lcl != nullptr) && !lvaGetDesc(lcl)->lvPromoted)
-                {
-                    // We can still tail call in this case, provided we
-                    // suppress the copy in fgMakeOutgoingStructArgCopy
-                    JITDUMP("Arg [%06u] is unpromoted implicit byref V%02u\n", dspTreeID(arg->GetNode()),
-                            lcl->GetLclNum());
+                    // If so, it must not be promoted; if we've promoted, then the arg will be
+                    // a local struct assembled from the promoted fields.
+                    if (lcl != nullptr)
+                    {
+                        JITDUMP("Arg [%06u] is unpromoted implicit byref V%02u, seeing if we can still tail call\n",
+                                dspTreeID(arg->GetNode()), lcl->GetLclNum());
+
+                        LclVarDsc* const varDsc = lvaGetDesc(lcl);
+
+                        if (varDsc->lvPromoted)
+                        {
+                            JITDUMP(" ... no, V%02u was promoted\n", lcl->GetLclNum());
+                        }
+                        else
+                        {
+                            // We also have to worry about introducing aliases if we bypass copying
+                            // the struct at the call. We'll do some limited analysis to see if we
+                            // can rule this out.
+                            const unsigned argLimit = 4;
+
+                            // If this is the only appearance of the byref in the method, then
+                            // aliasing is not possible.
+                            //
+                            if (varDsc->lvRefCnt(RCS_EARLY) == 1)
+                            {
+                                JITDUMP("... yes, arg is the only appearance of V%02u\n", lcl->GetLclNum());
+                                hasByrefParameter = false;
+                            }
+                            // If no other call arg refers to this byref, and no other arg is
+                            // a pointer which could refer to this byref, we can optimize.
+                            //
+                            // We only check this for calls with small numbers of arguments,
+                            // as the analysis cost will be quadratic.
+                            else if (argInfo->ArgCount() <= argLimit)
+                            {
+                                GenTree* interferingArg = nullptr;
+                                for (unsigned index2 = 0; index2 < argInfo->ArgCount(); ++index2)
+                                {
+                                    if (index2 == index)
+                                    {
+                                        continue;
+                                    }
+
+                                    fgArgTabEntry* const arg2 = argInfo->GetArgEntry(index2, false);
+                                    JITDUMP("checking other arg [%06u]...\n", dspTreeID(arg2->GetNode()));
+                                    DISPTREE(arg2->GetNode());
+
+                                    // Do we pass 'lcl' more than once to the callee?
+                                    if (arg2->isStruct && arg2->passedByRef)
+                                    {
+                                        GenTreeLclVarCommon* const lcl2 =
+                                            arg2->GetNode()->IsImplicitByrefParameterValue(this);
+
+                                        if ((lcl2 != nullptr) && (lcl->GetLclNum() == lcl2->GetLclNum()))
+                                        {
+                                            // not copying would introduce aliased implicit byref structs
+                                            // in the callee ... we can't optimize.
+                                            interferingArg = arg2->GetNode();
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            JITDUMP("... ok, different implicit byref V%02u\n", lcl2->GetLclNum());
+                                            continue;
+                                        }
+                                    }
+
+                                    // Do we pass a byref pointer which might point within 'lcl'?
+                                    //
+                                    // We can assume the 'lcl' is unaliased on entry to the
+                                    // method, so the only way we can have an aliasing byref pointer at
+                                    // the call is if 'lcl' is address taken/exposed in the method.
+                                    //
+                                    // Note even though 'lcl' is not promoted, we are in the middle
+                                    // of the promote->rewrite->undo->(morph)->demote cycle, and so
+                                    // might see references to promoted fields of 'lcl' that haven't yet
+                                    // been demoted (see fgMarkDemotedImplicitByRefArgs).
+                                    //
+                                    // So, we also need to scan all 'lcl's fields, if any, to see if they
+                                    // are exposed.
+                                    //
+                                    // TODO: we should not need to check for TYP_I_IMPL here.
+                                    if ((arg2->argType == TYP_BYREF) || (arg2->argType == TYP_I_IMPL))
+                                    {
+                                        JITDUMP("... is byref arg...\n", dspTreeID(arg2->GetNode()));
+                                        bool hasExposure = false;
+                                        if (varDsc->lvHasLdAddrOp || varDsc->lvAddrExposed)
+                                        {
+                                            // Struct as a whole is exposed, can't optimize
+                                            JITDUMP(" ... V%02u exposed\n", lcl->GetLclNum());
+                                            hasExposure = true;
+                                        }
+                                        else if (varDsc->lvFieldLclStart != 0)
+                                        {
+                                            // This the promoted/undone struct case.
+                                            //
+                                            // The field start is actually the local number of the promoted local,
+                                            // use it to enumerate the fields.
+                                            const unsigned   promotedLcl    = varDsc->lvFieldLclStart;
+                                            LclVarDsc* const promotedVarDsc = lvaGetDesc(promotedLcl);
+                                            JITDUMP("promoted-unpromoted case, checking fields of V%02u\n",
+                                                    promotedLcl);
+
+                                            for (unsigned fieldIndex = 0; fieldIndex < promotedVarDsc->lvFieldCnt;
+                                                 fieldIndex++)
+                                            {
+                                                JITDUMP("checking field V%02u\n",
+                                                        promotedVarDsc->lvFieldLclStart + fieldIndex);
+                                                LclVarDsc* fieldDsc =
+                                                    lvaGetDesc(promotedVarDsc->lvFieldLclStart + fieldIndex);
+
+                                                if (fieldDsc->lvHasLdAddrOp || fieldDsc->lvAddrExposed)
+                                                {
+                                                    // Promoted and not yet demoted field is exposed, can't optimize
+                                                    hasExposure = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            JITDUMP("...never promoted case, we're cool\n");
+                                        }
+
+                                        if (hasExposure)
+                                        {
+                                            interferingArg = arg2->GetNode();
+                                            break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        JITDUMP("...not byref or implicit byref (%s), we're cool\n",
+                                                varTypeName(arg2->GetNode()->TypeGet()));
+                                    }
+                                }
+
+                                if (interferingArg != nullptr)
+                                {
+                                    JITDUMP("... no, arg [%06u] may alias with V%02u\n", dspTreeID(interferingArg),
+                                            lcl->GetLclNum());
+                                }
+                                else
+                                {
+                                    JITDUMP("... yes, no other arg in call can alias V%02u\n", lcl->GetLclNum());
+                                    hasByrefParameter = false;
+                                }
+                            }
+                            else
+                            {
+                                JITDUMP(" ... no, call has %u > %u args, alias analysis deemed too costly\n",
+                                        argInfo->ArgCount(), argLimit);
+                            }
+                        }
+                    }
                 }
-                else
+
+                if (hasByrefParameter)
                 {
-                    // We can't tail call in this case; note the reason why
-                    // and skip looking at the rest of the args.
-                    hasByrefParameter = true;
+                    // This arg blocks the tail call. No reason to keep scanning the remaining args.
                     break;
                 }
             }
@@ -16858,7 +17009,7 @@ void Compiler::fgRetypeImplicitByRefArgs()
                 //
                 // Otherwise, see how many appearances there are. We keep two early ref counts: total
                 // number of references to the struct or some field, and how many of these are
-                // arguments to calls. We undo promotion unless we see enougn non-call uses.
+                // arguments to calls. We undo promotion unless we see enough non-call uses.
                 //
                 const unsigned totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
                 const unsigned callAppearances  = varDsc->lvRefCntWtd(RCS_EARLY);

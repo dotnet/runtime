@@ -18,6 +18,7 @@ public struct S
 
 public class ImplicitByrefTailCalls
 {
+    // Helper method to make callees unattractive for inlining.
     public static void Z() {}
 
     // Will return different answers if x and y refer to the same struct.
@@ -35,10 +36,38 @@ public class ImplicitByrefTailCalls
     }
 
     // Will return different answers if y refers to some part of x.
-    public static unsafe long Alias2(S x, long* y)
+    public static long Alias2(S x, ref long y)
     {
         Z(); Z(); Z(); Z();
-        *y += 1;
+        y++;
+        long result = 0;
+        for (int i = 0; i < 100; i++)
+        {
+            x.x++;
+            result += x.x + x.y;
+        }
+        return result;
+    }
+
+    // Will return different answers if x and y refer to same struct
+    public static long Alias3(int a, int b, int c, int d, int e, int f, S x, S y)
+    {
+        Z(); Z(); Z(); Z();
+        y.x++;
+        long result = 0;
+        for (int i = 0; i < 100; i++)
+        {
+            x.x++;
+            result += x.x + x.y;
+        }
+        return result;
+    }
+
+    // Will return different answers if x and y refer to same struct
+    public static long Alias4(ref long y, int b, int c, int d, int e, int f, S x)
+    {
+        Z(); Z(); Z(); Z();
+        y++;
         long result = 0;
         for (int i = 0; i < 100; i++)
         {
@@ -54,15 +83,72 @@ public class ImplicitByrefTailCalls
     {
         Z(); Z(); Z(); Z();
         return Alias(x, x);
-    } 
+    }
 
     // B must copy params locally when calling Alias2
     // and so can't tail call
-    public static unsafe long B(S x)
+    public static long B(S x)
     {
         Z(); Z(); Z(); Z();
-        return Alias2(x, &x.y);
-    } 
+        return Alias2(x, ref x.y);
+    }
+
+    // C must copy params locally when calling Alias2
+    // and so can't tail call. Here the problematic
+    // tree is not part of the call.
+    public static long C(S x)
+    {
+        ref long z = ref x.y;
+        Z(); Z(); Z(); Z();
+        return Alias2(x, ref z);
+    }
+
+    // D should not be able to tail call, as doing so
+    // means we are not making local copies of x, and 
+    // so introducing aliasing.
+    public static long D(int a, int b, int c, int d, int e, int f, S x, S y)
+    {
+        Z(); Z(); Z(); Z();
+        Z(); Z(); Z(); Z();
+        Z(); Z(); Z(); Z();
+        return Alias3(1, 2, 3, 4, 5, 6, x, x);
+    }
+
+    // E should be able to tail call
+    public static long E(int a, int b, int c, int d, int e, int f, S x, S y)
+    {
+        Z(); Z(); Z(); Z();
+        Z(); Z(); Z(); Z();
+        Z(); Z(); Z(); Z();
+        return Alias3(1, 2, 3, 4, 5, 6, x, y);
+    }
+
+    // F should be able to tail call
+    public static long F(int a, int b, int c, int d, int e, int f, S x, S y)
+    {
+        Z(); Z(); Z(); Z();
+        Z(); Z(); Z(); Z();
+        Z(); Z(); Z(); Z();
+        return Alias3(1, 2, 3, 4, 5, 6, y, x);
+    }
+
+    // G should be able to tail call, but we
+    // might not want to pay the cost to prove it safe.
+    public static long G(int a, int b, int c, int d, int e, int f, S x, S y)
+    {
+        Z(); Z(); Z(); Z();
+        Z(); Z(); Z(); Z();
+        Z(); Z(); Z(); Z();
+
+        if (a != 0)
+        {
+            return Alias4(ref x.x, 2, 3, 4, 5, 6, y);
+        }
+        else
+        {
+            return Alias4(ref y.x, 2, 3, 4, 5, 6, x);
+        }
+    }
 
     public static int Main()
     {
@@ -71,9 +157,14 @@ public class ImplicitByrefTailCalls
         s.y = 2;
         long ra = A(s);
         long rb = B(s);
+        long rc = C(s);
+        long rd = D(0, 0, 0, 0, 0, 0, s, s);
+        long re = E(0, 0, 0, 0, 0, 0, s, s);
+        long rf = F(0, 0, 0, 0, 0, 0, s, s);
+        long rg = G(0, 0, 0, 0, 0, 0, s, s);
 
-        Console.WriteLine($"{ra},{rb}");
-        
-        return (ra == 5350) && (rb == 5350) ? 100 : -1;
+        Console.WriteLine($"{ra},{rb},{rc},{rd},{re},{rf},{rg}");
+
+        return (ra == 5350) && (rb == 5350) && (rc == 5350) && (rd == 5350) && (re == 5350) && (rf == 5350) && (rg == 5350) ? 100 : -1;
     }
 }
