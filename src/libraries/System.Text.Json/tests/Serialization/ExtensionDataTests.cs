@@ -221,12 +221,6 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, object> MyOverflow2 { get; set; }
         }
 
-        private class ClassWithNotSupportedExtensionPropertyImmutableDictionary
-        {
-            [JsonExtensionData]
-            public ImmutableDictionary<string, object> MyOverflow { get; set; }
-        }
-
         [Fact]
         public static void InvalidExtensionPropertyFail()
         {
@@ -236,7 +230,6 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithInvalidExtensionProperty>(@"{}"));
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithTwoExtensionProperties>(@"{}"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithNotSupportedExtensionPropertyImmutableDictionary>(@"{}"));
         }
 
         private class ClassWithIgnoredData
@@ -697,6 +690,45 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, object> MyOverflow { get; set; }
 
             public Dictionary<string, object> ActualDictionary { get; set; }
+        }
+
+        [Fact]
+        public static void DeserializeIntoImmutableDictionaryProperty()
+        {
+            // baseline
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutable>(@"{}");
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutableJsonElement>(@"{}");
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructor>(@"{}");
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructorJsonElement>(@"{}");
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutable>("{\"hello\":\"world\"}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutableJsonElement>("{\"hello\":\"world\"}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructor>("{\"hello\":\"world\"}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructorJsonElement>("{\"hello\":\"world\"}"));
+        }
+
+        private class ClassWithExtensionPropertyAsImmutable
+        {
+            [JsonExtensionData]
+            public ImmutableDictionary<string, object> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyAsImmutableJsonElement
+        {
+            [JsonExtensionData]
+            public ImmutableDictionary<string, JsonElement> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyPrivateConstructor
+        {
+            [JsonExtensionData]
+            public StringToGenericIDictionaryWrapperPrivateConstructor<object> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyPrivateConstructorJsonElement
+        {
+            [JsonExtensionData]
+            public StringToGenericIDictionaryWrapperPrivateConstructor<JsonElement> MyOverflow { get; set; }
         }
 
         [Fact]
