@@ -5041,21 +5041,31 @@ Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubS
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 
-EXTERN_C void JIT_ReversePInvokeEnter()
+// Forward declaration
+EXTERN_C void STDCALL ReversePInvokeBadTransition();
+
+EXTERN_C void JIT_ReversePInvokeEnter(FastReversePInvokeFrame* frame)
 {
+    _ASSERTE(frame != NULL);
+
     Thread* thread = GetThreadNULLOk();
     if (thread == NULL)
         thread = CreateThreadBlockThrow();
 
+    // Verify the current thread isn't in COOP mode.
+    if (thread->PreemptiveGCDisabled())
+        ReversePInvokeBadTransition();
+
     thread->DisablePreemptiveGC();
+    frame->currentThread = thread;
 }
 
-EXTERN_C void JIT_ReversePInvokeExit()
+EXTERN_C void JIT_ReversePInvokeExit(FastReversePInvokeFrame* frame)
 {
-    Thread* thread = GetThread();
-    _ASSERTE(thread != NULL);
+    _ASSERTE(frame != NULL);
+    _ASSERTE(frame->currentThread == GetThread());
 
-    thread->EnablePreemptiveGC();
+    frame->currentThread->EnablePreemptiveGC();
 }
 
 //========================================================================

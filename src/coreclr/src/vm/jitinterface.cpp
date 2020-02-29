@@ -10086,8 +10086,7 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     // Wrapper delegate offsets
     pEEInfoOut->offsetOfWrapperDelegateIndirectCell = OFFSETOF__DelegateObject__methodPtrAux;
 
-    // [TODO] The JIT asserts if the frame is 0.
-    pEEInfoOut->sizeOfReversePInvokeFrame = sizeof(void*);
+    pEEInfoOut->sizeOfReversePInvokeFrame = sizeof(FastReversePInvokeFrame);
 
     pEEInfoOut->osPageSize = GetOsPageSize();
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;

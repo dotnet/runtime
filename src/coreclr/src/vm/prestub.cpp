@@ -1810,103 +1810,6 @@ static PCODE PreStubWorker_Preemptive(_In_ TransitionBlock* pTransitionBlock, _I
 }
 
 //=============================================================================
-// This function generates the real code when from Cooperative mode.
-//=============================================================================
-static PCODE PreStubWorker_Cooperative(_In_ TransitionBlock* pTransitionBlock, _In_ MethodDesc* pMD)
-{
-    PCODE pbRetVal = NULL;
-
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    MAKE_CURRENT_THREAD_AVAILABLE();
-
-#ifdef _DEBUG
-    Thread::ObjectRefFlush(CURRENT_THREAD);
-#endif
-
-    FrameWithCookie<PrestubMethodFrame> frame(pTransitionBlock, pMD);
-    PrestubMethodFrame* pPFrame = &frame;
-
-    pPFrame->Push(CURRENT_THREAD);
-
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-    // Make sure the method table is restored, and method instantiation if present
-    pMD->CheckRestore();
-    CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
-
-    // Note this is redundant with the above check but we do it anyway for safety
-    //
-    // This has been disabled so we have a better chance of catching these.  Note that this check is
-    // NOT sufficient for domain neutral and ngen cases.
-    //
-    // pMD->EnsureActive();
-
-    MethodTable* pDispatchingMT = NULL;
-
-    if (pMD->IsVtableMethod())
-    {
-        OBJECTREF curobj = pPFrame->GetThis();
-
-        if (curobj != NULL) // Check for virtual function called non-virtually on a NULL object
-        {
-            pDispatchingMT = curobj->GetMethodTable();
-
-#ifdef FEATURE_ICASTABLE
-            if (pDispatchingMT->IsICastable())
-            {
-                MethodTable* pMDMT = pMD->GetMethodTable();
-                TypeHandle objectType(pDispatchingMT);
-                TypeHandle methodType(pMDMT);
-
-                GCStress<cfg_any>::MaybeTrigger();
-                INDEBUG(curobj = NULL); // curobj is unprotected and CanCastTo() can trigger GC
-                if (!objectType.CanCastTo(methodType))
-                {
-                    // Apparently ICastable magic was involved when we chose this method to be called
-                    // that's why we better stick to the MethodTable it belongs to, otherwise
-                    // DoPrestub() will fail not being able to find implementation for pMD in pDispatchingMT.
-
-                    pDispatchingMT = pMDMT;
-                }
-            }
-#endif // FEATURE_ICASTABLE
-
-            // For value types, the only virtual methods are interface implementations.
-            // Thus pDispatching == pMT because there
-            // is no inheritance in value types.  Note the BoxedEntryPointStubs are shared
-            // between all sharable generic instantiations, so the == test is on
-            // canonical method tables.
-#ifdef _DEBUG
-            MethodTable* pMDMT = pMD->GetMethodTable(); // put this here to see what the MT is in debug mode
-            _ASSERTE(!pMD->GetMethodTable()->IsValueType() ||
-            (pMD->IsUnboxingStub() && (pDispatchingMT->GetCanonicalMethodTable() == pMDMT->GetCanonicalMethodTable())));
-#endif // _DEBUG
-        }
-    }
-
-    GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
-    pbRetVal = pMD->DoPrestub(pDispatchingMT);
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-
-    {
-        HardwareExceptionHolder;
-
-        // Give debugger opportunity to stop here
-        ThePreStubPatch();
-    }
-
-    pPFrame->Pop(CURRENT_THREAD);
-
-    return pbRetVal;
-}
-
-//=============================================================================
 // This function generates the real code for a method and installs it into
 // the methoddesc. Usually ***BUT NOT ALWAYS***, this function runs only once
 // per methoddesc. In addition to installing the new code, this function
@@ -1930,13 +1833,86 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
     MAKE_CURRENT_THREAD_AVAILABLE();
 
     // Check what GC mode we are running under.
-    if (CURRENT_THREAD->PreemptiveGCDisabled())
+    if (!CURRENT_THREAD->PreemptiveGCDisabled())
     {
-        pbRetVal = PreStubWorker_Cooperative(pTransitionBlock, pMD);
+        pbRetVal = PreStubWorker_Preemptive(pTransitionBlock, pMD);
     }
     else
     {
-        pbRetVal = PreStubWorker_Preemptive(pTransitionBlock, pMD);
+        // This is the typical case (i.e. COOP mode).
+
+#ifdef _DEBUG
+        Thread::ObjectRefFlush(CURRENT_THREAD);
+#endif
+
+        FrameWithCookie<PrestubMethodFrame> frame(pTransitionBlock, pMD);
+        PrestubMethodFrame* pPFrame = &frame;
+
+        pPFrame->Push(CURRENT_THREAD);
+
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+        // Make sure the method table is restored, and method instantiation if present
+        pMD->CheckRestore();
+        CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
+
+        MethodTable* pDispatchingMT = NULL;
+        if (pMD->IsVtableMethod())
+        {
+            OBJECTREF curobj = pPFrame->GetThis();
+
+            if (curobj != NULL) // Check for virtual function called non-virtually on a NULL object
+            {
+                pDispatchingMT = curobj->GetMethodTable();
+
+#ifdef FEATURE_ICASTABLE
+                if (pDispatchingMT->IsICastable())
+                {
+                    MethodTable* pMDMT = pMD->GetMethodTable();
+                    TypeHandle objectType(pDispatchingMT);
+                    TypeHandle methodType(pMDMT);
+
+                    GCStress<cfg_any>::MaybeTrigger();
+                    INDEBUG(curobj = NULL); // curobj is unprotected and CanCastTo() can trigger GC
+                    if (!objectType.CanCastTo(methodType))
+                    {
+                        // Apparently ICastable magic was involved when we chose this method to be called
+                        // that's why we better stick to the MethodTable it belongs to, otherwise
+                        // DoPrestub() will fail not being able to find implementation for pMD in pDispatchingMT.
+
+                        pDispatchingMT = pMDMT;
+                    }
+                }
+#endif // FEATURE_ICASTABLE
+
+                // For value types, the only virtual methods are interface implementations.
+                // Thus pDispatching == pMT because there
+                // is no inheritance in value types.  Note the BoxedEntryPointStubs are shared
+                // between all sharable generic instantiations, so the == test is on
+                // canonical method tables.
+#ifdef _DEBUG
+                MethodTable* pMDMT = pMD->GetMethodTable(); // put this here to see what the MT is in debug mode
+                _ASSERTE(!pMD->GetMethodTable()->IsValueType() ||
+                (pMD->IsUnboxingStub() && (pDispatchingMT->GetCanonicalMethodTable() == pMDMT->GetCanonicalMethodTable())));
+#endif // _DEBUG
+            }
+        }
+
+        GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
+        pbRetVal = pMD->DoPrestub(pDispatchingMT);
+
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+        {
+            HardwareExceptionHolder;
+
+            // Give debugger opportunity to stop here
+            ThePreStubPatch();
+        }
+
+        pPFrame->Pop(CURRENT_THREAD);
     }
 
     POSTCONDITION(pbRetVal != NULL);
