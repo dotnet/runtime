@@ -44,7 +44,7 @@ namespace Microsoft.NET.HostModel.Bundle
     /// </summary>
     public class Manifest
     {
-        public const uint MajorVersion = 1;
+        public const uint MajorVersion = 2;
         public const uint MinorVersion = 0;
 
         // Bundle ID is a string that is used to uniquely 
@@ -93,37 +93,9 @@ namespace Microsoft.NET.HostModel.Bundle
             return startOffset;
         }
 
-        public static Manifest Read(BinaryReader reader, long headerOffset)
+        public bool Contains(string relativePath)
         {
-            // Read the bundle header
-            reader.BaseStream.Position = headerOffset;
-            uint majorVersion = reader.ReadUInt32();
-            uint minorVersion = reader.ReadUInt32();
-            int fileCount = reader.ReadInt32();
-            string bundleID = reader.ReadString();
-
-            bool isCompatible = 
-                (majorVersion < MajorVersion) ||
-                (majorVersion == MajorVersion && minorVersion <= MinorVersion);
-
-            if (!isCompatible)
-            {
-                throw new BundleException("Extraction failed: Invalid Version");
-            }
-
-            // Read the manifest entries
-            Manifest manifest = new Manifest(bundleID);
-            for (long i = 0; i < fileCount; i++)
-            {
-                manifest.Files.Add(FileEntry.Read(reader));
-            }
-
-            if (manifest.Files.GroupBy(file => file.RelativePath).Where(g => g.Count() > 1).Any())
-            {
-                throw new BundleException("Extraction failed: Found multiple entries with the same bundle-relative-path");
-            }
-
-            return manifest;
+            return Files.Where(entry => relativePath.Equals(entry.RelativePath)).Any();
         }
     }
 }
