@@ -707,6 +707,31 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructorJsonElement>("{\"hello\":\"world\"}"));
         }
 
+        [Fact]
+        public static void SerializeIntoImmutableDictionaryProperty()
+        {
+            // attempt to serialize a null immutable dictionary
+            string expectedJson = "{}";
+            var obj = new ClassWithExtensionPropertyAsImmutable();
+            var json = JsonSerializer.Serialize(obj);
+            Assert.Equal(expectedJson, json);
+
+            // attempt to serialize an empty immutable dictionary
+            expectedJson = "{}";
+            obj = new ClassWithExtensionPropertyAsImmutable();
+            obj.MyOverflow = ImmutableDictionary<string, object>.Empty;
+            json = JsonSerializer.Serialize(obj);
+            Assert.Equal(expectedJson, json);
+
+            // attempt to serialize a populated immutable dictionary
+            expectedJson = "{\"hello\":\"world\"}";
+            obj = new ClassWithExtensionPropertyAsImmutable();
+            var dictionaryStringObject = new Dictionary<string, object> { { "hello", "world" } };
+            obj.MyOverflow = ImmutableDictionary.CreateRange(dictionaryStringObject);
+            json = JsonSerializer.Serialize(obj);
+            Assert.Equal(expectedJson, json);
+        }
+
         private class ClassWithExtensionPropertyAsImmutable
         {
             [JsonExtensionData]
