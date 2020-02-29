@@ -6336,7 +6336,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             simdMov = simdUnalignedMovIns();
         }
 #else // !defined(TARGET_AMD64)
-        // We aren't going to try and align on 32bit or if there are no guarantees on SIMD alignment
+        // We aren't going to try and align on x86
         instruction simdMov      = simdUnalignedMovIns();
         int         alignedLclLo = untrLclLo;
 #endif
@@ -6361,7 +6361,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         }
         else
         {
-// Grab a non-argument, non-callee saved XMM reg
+        // Grab a non-argument, non-callee saved XMM reg
+        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef UNIX_AMD64_ABI
             // System V x64 first temp reg is xmm8
             regNumber zeroSIMDReg = genRegNumFromMask(RBM_XMM8);
