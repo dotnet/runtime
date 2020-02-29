@@ -71,14 +71,14 @@ private:
     // Generates SSE41 code for the given tree as a round operation
     void genSSE41RoundOp(GenTreeOp* treeNode);
 
-    inline instruction simdAlignedMovIns()
+    instruction simdAlignedMovIns()
     {
-        // We use movaps at R2R because it is a smaller instruction; however at JIT time
+        // We use movaps when non-VEX because it is a smaller instruction;
         // however the VEX version vmovaps would be used which is the same size as vmovdqa;
         // also vmovdqa has more available CPU ports on older processors so we switch to that
         return compiler->canUseVexEncoding() ? INS_movdqa : INS_movaps;
     }
-    inline instruction simdUnalignedMovIns()
+    instruction simdUnalignedMovIns()
     {
         // We use movups when non-VEX because it is a smaller instruction;
         // however the VEX version vmovups would be used which is the same size as vmovdqu;
