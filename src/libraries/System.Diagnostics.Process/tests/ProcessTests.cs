@@ -1517,10 +1517,10 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
         {
-            const string exePath = "notepad.exe";
-            Assert.True(IsProgramInstalled(exePath));
+            const string ExePath = "notepad.exe";
+            Assert.True(IsProgramInstalled(ExePath));
 
-            using (Process process = Process.Start(exePath))
+            using (Process process = Process.Start(ExePath))
             {
                 try
                 {
