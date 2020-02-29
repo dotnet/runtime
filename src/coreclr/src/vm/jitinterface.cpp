@@ -9190,20 +9190,25 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
 
     MethodDesc * pMD = GetMethod(ftn);
 
-    pResult->accessType = IAT_VALUE;
-
-
-#ifndef CROSSGEN_COMPILE
-    // If LDFTN target has [NativeCallable] attribute , then create a UMEntryThunk.
+    // If this method has the NativeCallableAttribute, then validate it
+    // adheres to the limitations.
     if (pMD->HasNativeCallableAttribute())
     {
-        pResult->addr = (void*)COMDelegate::ConvertToCallback(pMD);
+        if (!pMD->IsStatic())
+            COMPlusThrow(kNotSupportedException, W("NotSupported_NonStaticMethod"));
+
+        // No generic methods
+        if (pMD->IsGenericMethodDefinition())
+            COMPlusThrow(kNotSupportedException, W("NotSupported_GenericMethod"));
+
+        // Arguments
+        if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
+            COMPlusThrow(kNotSupportedException, W("NotSupported_NonBlittableTypes"));
     }
-    else
-#endif //CROSSGEN_COMPILE
-    {
-        pResult->addr = (void *)pMD->GetMultiCallableAddrOfCode();
-    }
+
+    pResult->accessType = IAT_VALUE;
+    pResult->addr = (void *)pMD->GetMultiCallableAddrOfCode();
+
     EE_TO_JIT_TRANSITION();
 }
 
@@ -10081,7 +10086,8 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     // Wrapper delegate offsets
     pEEInfoOut->offsetOfWrapperDelegateIndirectCell = OFFSETOF__DelegateObject__methodPtrAux;
 
-    pEEInfoOut->sizeOfReversePInvokeFrame  = (DWORD)-1;
+    // [TODO] The JIT asserts if the frame is 0.
+    pEEInfoOut->sizeOfReversePInvokeFrame = sizeof(void*);
 
     pEEInfoOut->osPageSize = GetOsPageSize();
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
@@ -12361,6 +12367,9 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
              flags.Set(CORJIT_FLAGS::CORJIT_FLAG_FRAMED);
          }
     }
+
+    if (ftn->HasNativeCallableAttribute())
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
 
     return flags;
 }

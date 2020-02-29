@@ -5041,6 +5041,23 @@ Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubS
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 
+EXTERN_C void JIT_ReversePInvokeEnter()
+{
+    Thread* thread = GetThreadNULLOk();
+    if (thread == NULL)
+        thread = CreateThreadBlockThrow();
+
+    thread->DisablePreemptiveGC();
+}
+
+EXTERN_C void JIT_ReversePInvokeExit()
+{
+    Thread* thread = GetThread();
+    _ASSERTE(thread != NULL);
+
+    thread->EnablePreemptiveGC();
+}
+
 //========================================================================
 //
 //      JIT HELPERS INITIALIZATION

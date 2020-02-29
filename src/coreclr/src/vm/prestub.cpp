@@ -1766,21 +1766,59 @@ extern "C" MethodDesc * STDCALL PreStubGetMethodDescForCompactEntryPoint (PCODE 
 #endif // defined (HAS_COMPACT_ENTRYPOINTS) && defined (TARGET_ARM)
 
 //=============================================================================
-// This function generates the real code for a method and installs it into
-// the methoddesc. Usually ***BUT NOT ALWAYS***, this function runs only once
-// per methoddesc. In addition to installing the new code, this function
-// returns a pointer to the new code for the prestub's convenience.
+// This function generates the real code when from Preemptive mode.
+// It is specifically designed to work with the NativeCallableAttribute.
 //=============================================================================
-extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
+static PCODE PreStubWorker_Preemptive(_In_ TransitionBlock* pTransitionBlock, _In_ MethodDesc* pMD)
 {
+    _ASSERTE(pMD->HasNativeCallableAttribute());
+    _ASSERTE(pMD->IsStatic() // Must be static
+             && !pMD->IsGenericMethodDefinition() // No generics
+             && !NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule())); // Blittable arguments
+
     PCODE pbRetVal = NULL;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_PREEMPTIVE;
+
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+    // No GC frame is needed here since there should be no OBJECTREFs involved
+    // in this call due to NativeCallableAttribute semantics.
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+    // Make sure the method table is restored, and method instantiation if present
+    pMD->CheckRestore();
+    CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
+
+    pbRetVal = pMD->DoPrestub(NULL);
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    {
+        HardwareExceptionHolder;
+
+        // Give debugger opportunity to stop here
+        ThePreStubPatch();
+    }
+
+    return pbRetVal;
+}
+
+//=============================================================================
+// This function generates the real code when from Cooperative mode.
+//=============================================================================
+static PCODE PreStubWorker_Cooperative(_In_ TransitionBlock* pTransitionBlock, _In_ MethodDesc* pMD)
+{
+    PCODE pbRetVal = NULL;
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_ENTRY_POINT;
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
@@ -1789,23 +1827,15 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, Metho
 #endif
 
     FrameWithCookie<PrestubMethodFrame> frame(pTransitionBlock, pMD);
-    PrestubMethodFrame * pPFrame = &frame;
+    PrestubMethodFrame* pPFrame = &frame;
 
     pPFrame->Push(CURRENT_THREAD);
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
-    ETWOnStartup (PrestubWorker_V1,PrestubWorkerEnd_V1);
-
-    _ASSERTE(!NingenEnabled() && "You cannot invoke managed code inside the ngen compilation process.");
-
-    // Running the PreStubWorker on a method causes us to access its MethodTable
-    g_IBCLogger.LogMethodDescAccess(pMD);
-
     // Make sure the method table is restored, and method instantiation if present
     pMD->CheckRestore();
-
     CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
 
     // Note this is redundant with the above check but we do it anyway for safety
@@ -1815,7 +1845,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, Metho
     //
     // pMD->EnsureActive();
 
-    MethodTable *pDispatchingMT = NULL;
+    MethodTable* pDispatchingMT = NULL;
 
     if (pMD->IsVtableMethod())
     {
@@ -1828,7 +1858,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, Metho
 #ifdef FEATURE_ICASTABLE
             if (pDispatchingMT->IsICastable())
             {
-                MethodTable *pMDMT = pMD->GetMethodTable();
+                MethodTable* pMDMT = pMD->GetMethodTable();
                 TypeHandle objectType(pDispatchingMT);
                 TypeHandle methodType(pMDMT);
 
@@ -1851,9 +1881,9 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, Metho
             // between all sharable generic instantiations, so the == test is on
             // canonical method tables.
 #ifdef _DEBUG
-            MethodTable *pMDMT = pMD->GetMethodTable(); // put this here to see what the MT is in debug mode
+            MethodTable* pMDMT = pMD->GetMethodTable(); // put this here to see what the MT is in debug mode
             _ASSERTE(!pMD->GetMethodTable()->IsValueType() ||
-                     (pMD->IsUnboxingStub() && (pDispatchingMT->GetCanonicalMethodTable() == pMDMT->GetCanonicalMethodTable())));
+            (pMD->IsUnboxingStub() && (pDispatchingMT->GetCanonicalMethodTable() == pMDMT->GetCanonicalMethodTable())));
 #endif // _DEBUG
         }
     }
@@ -1865,13 +1895,49 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, Metho
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
     {
-        HardwareExceptionHolder
+        HardwareExceptionHolder;
 
         // Give debugger opportunity to stop here
         ThePreStubPatch();
     }
 
     pPFrame->Pop(CURRENT_THREAD);
+
+    return pbRetVal;
+}
+
+//=============================================================================
+// This function generates the real code for a method and installs it into
+// the methoddesc. Usually ***BUT NOT ALWAYS***, this function runs only once
+// per methoddesc. In addition to installing the new code, this function
+// returns a pointer to the new code for the prestub's convenience.
+//=============================================================================
+extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, MethodDesc* pMD)
+{
+    PCODE pbRetVal = NULL;
+
+    BEGIN_PRESERVE_LAST_ERROR;
+
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+    STATIC_CONTRACT_ENTRY_POINT;
+
+    _ASSERTE(!NingenEnabled() && "You cannot invoke managed code inside the ngen compilation process.");
+
+    ETWOnStartup(PrestubWorker_V1, PrestubWorkerEnd_V1);
+
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+    // Check what GC mode we are running under.
+    if (CURRENT_THREAD->PreemptiveGCDisabled())
+    {
+        pbRetVal = PreStubWorker_Cooperative(pTransitionBlock, pMD);
+    }
+    else
+    {
+        pbRetVal = PreStubWorker_Preemptive(pTransitionBlock, pMD);
+    }
 
     POSTCONDITION(pbRetVal != NULL);
 
