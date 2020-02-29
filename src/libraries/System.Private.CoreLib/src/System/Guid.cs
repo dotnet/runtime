@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 using Internal.Runtime.CompilerServices;
 
@@ -16,7 +18,7 @@ namespace System
     [Serializable]
     [NonVersionable] // This only applies to field layout
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>, ISpanFormattable
+    public unsafe partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>, ISpanFormattable
     {
         public static readonly Guid Empty = default;
 
@@ -31,6 +33,19 @@ namespace System
         private byte _i;  // Do not rename (binary serialization)
         private byte _j;  // Do not rename (binary serialization)
         private byte _k;  // Do not rename (binary serialization)
+
+        private static uint* GetTableToHex()
+        {
+            uint* tableToHexPtr = (uint*)Marshal.AllocHGlobal(sizeof(uint) * 256).ToPointer();
+            for (var i = 0; i < 256; i++)
+            {
+                var chars = Convert.ToString(i, 16).PadLeft(2, '0');
+                tableToHexPtr[i] = ((uint)chars[1] << 16) | chars[0];
+            }
+            return tableToHexPtr;
+        }
+
+        private static uint* TableToHex = GetTableToHex();
 
         // Creates a new guid from an array of bytes.
         public Guid(byte[] b) :
@@ -988,7 +1003,7 @@ namespace System
 
         // IFormattable interface
         // We currently ignore provider
-        public string ToString(string? format, IFormatProvider? provider)
+        public unsafe string ToString(string? format, IFormatProvider? provider)
         {
             if (string.IsNullOrEmpty(format))
             {
@@ -1001,42 +1016,134 @@ namespace System
                 throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
             }
 
-            int guidSize;
-            switch (format[0])
+            if (Avx2.IsSupported)
             {
-                case 'D':
-                case 'd':
-                    guidSize = 36;
-                    break;
-                case 'N':
-                case 'n':
-                    guidSize = 32;
-                    break;
-                case 'B':
-                case 'b':
-                case 'P':
-                case 'p':
-                    guidSize = 38;
-                    break;
-                case 'X':
-                case 'x':
-                    guidSize = 68;
-                    break;
-                default:
-                    throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
+                switch (format[0])
+                {
+                    case 'D':
+                    case 'd':
+                        {
+                            string output = string.FastAllocateString(36);
+                            fixed (char* pinnedOutput = output)
+                            {
+                                FormatDAvx((short*)pinnedOutput);
+                            }
+                            return output;
+                        }
+                    case 'N':
+                    case 'n':
+                        {
+                            string output = string.FastAllocateString(32);
+                            fixed (char* pinnedOutput = output)
+                            {
+                                FormatNAvx((short*)pinnedOutput);
+                            }
+                            return output;
+                        }
+                    case 'B':
+                    case 'b':
+                        {
+                            string output = string.FastAllocateString(38);
+                            fixed (char* pinnedOutput = output)
+                            {
+                                pinnedOutput[0] = '{';
+                                FormatDAvx((short*)pinnedOutput + 1);
+                                pinnedOutput[37] = '}';
+                            }
+                            return output;
+                        }
+                    case 'P':
+                    case 'p':
+                        {
+                            string output = string.FastAllocateString(38);
+                            fixed (char* pinnedOutput = output)
+                            {
+                                pinnedOutput[0] = '(';
+                                FormatDAvx((short*)pinnedOutput + 1);
+                                pinnedOutput[37] = ')';
+                            }
+                            return output;
+                        }
+                    case 'X':
+                    case 'x':
+                        {
+                            string output = string.FastAllocateString(68);
+                            fixed (char* pinnedOutput = output)
+                            {
+                                FormatX(pinnedOutput);
+                            }
+                            return output;
+                        }
+                    default:
+                        throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
+                }
             }
-
-            string guidString = string.FastAllocateString(guidSize);
-
-            int bytesWritten;
-            bool result = TryFormat(new Span<char>(ref guidString.GetRawStringData(), guidString.Length), out bytesWritten, format);
-            Debug.Assert(result && bytesWritten == guidString.Length, "Formatting guid should have succeeded.");
-
-            return guidString;
+            else
+            {
+                switch (format[0])
+                {
+                    case 'D':
+                    case 'd':
+                        {
+                            string output = string.FastAllocateString(36);
+                            fixed (char* pinnedOutput = output)
+                            {
+                                FormatD(pinnedOutput);
+                            }
+                            return output;
+                        }
+                    case 'N':
+                    case 'n':
+                        {
+                            string output = string.FastAllocateString(32);
+                            fixed (char* pinnedOutput = output)
+                            {
+                                FormatN(pinnedOutput);
+                            }
+                            return output;
+                        }
+                    case 'B':
+                    case 'b':
+                        {
+                            string output = string.FastAllocateString(38);
+                            fixed (char* pinnedOutput = output)
+                            {
+                                pinnedOutput[0] = '{';
+                                FormatD(pinnedOutput + 1);
+                                pinnedOutput[37] = '}';
+                            }
+                            return output;
+                        }
+                    case 'P':
+                    case 'p':
+                        {
+                            string output = string.FastAllocateString(38);
+                            fixed (char* pinnedOutput = output)
+                            {
+                                pinnedOutput[0] = '(';
+                                FormatD(pinnedOutput + 1);
+                                pinnedOutput[37] = ')';
+                            }
+                            return output;
+                        }
+                    case 'X':
+                    case 'x':
+                        {
+                            string output = string.FastAllocateString(68);
+                            fixed (char* pinnedOutput = output)
+                            {
+                                FormatX(pinnedOutput);
+                            }
+                            return output;
+                        }
+                    default:
+                        throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
+                }
+            }
         }
 
         // Returns whether the guid is successfully formatted as a span.
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default)
+        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default)
         {
             if (format.Length == 0)
             {
@@ -1048,121 +1155,421 @@ namespace System
                 throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
             }
 
-            bool dash = true;
-            bool hex = false;
-            int braces = 0;
-
-            int guidSize;
-
-            switch (format[0])
+            if (Avx2.IsSupported)
             {
-                case 'D':
-                case 'd':
-                    guidSize = 36;
-                    break;
-                case 'N':
-                case 'n':
-                    dash = false;
-                    guidSize = 32;
-                    break;
-                case 'B':
-                case 'b':
-                    braces = '{' + ('}' << 16);
-                    guidSize = 38;
-                    break;
-                case 'P':
-                case 'p':
-                    braces = '(' + (')' << 16);
-                    guidSize = 38;
-                    break;
-                case 'X':
-                case 'x':
-                    braces = '{' + ('}' << 16);
-                    dash = false;
-                    hex = true;
-                    guidSize = 68;
-                    break;
-                default:
-                    throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
-            }
-
-            if (destination.Length < guidSize)
-            {
-                charsWritten = 0;
-                return false;
-            }
-
-            unsafe
-            {
-                fixed (char* guidChars = &MemoryMarshal.GetReference(destination))
+                switch (format[0])
                 {
-                    char* p = guidChars;
+                    case 'D':
+                    case 'd':
+                        {
+                            if (destination.Length < 36)
+                            {
+                                charsWritten = 0;
+                                return false;
+                            }
 
-                    if (braces != 0)
-                        *p++ = (char)braces;
+                            fixed (char* pinnedOutput = &destination.GetPinnableReference())
+                            {
+                                FormatDAvx((short*)pinnedOutput);
+                            }
+                            charsWritten = 36;
+                            return true;
+                        }
+                    case 'N':
+                    case 'n':
+                        {
+                            if (destination.Length < 32)
+                            {
+                                charsWritten = 0;
+                                return false;
+                            }
 
-                    if (hex)
-                    {
-                        // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
-                        *p++ = '0';
-                        *p++ = 'x';
-                        p += HexsToChars(p, _a >> 24, _a >> 16);
-                        p += HexsToChars(p, _a >> 8, _a);
-                        *p++ = ',';
-                        *p++ = '0';
-                        *p++ = 'x';
-                        p += HexsToChars(p, _b >> 8, _b);
-                        *p++ = ',';
-                        *p++ = '0';
-                        *p++ = 'x';
-                        p += HexsToChars(p, _c >> 8, _c);
-                        *p++ = ',';
-                        *p++ = '{';
-                        p += HexsToCharsHexOutput(p, _d, _e);
-                        *p++ = ',';
-                        p += HexsToCharsHexOutput(p, _f, _g);
-                        *p++ = ',';
-                        p += HexsToCharsHexOutput(p, _h, _i);
-                        *p++ = ',';
-                        p += HexsToCharsHexOutput(p, _j, _k);
-                        *p++ = '}';
-                    }
-                    else
-                    {
-                        // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-                        p += HexsToChars(p, _a >> 24, _a >> 16);
-                        p += HexsToChars(p, _a >> 8, _a);
-                        if (dash)
-                            *p++ = '-';
-                        p += HexsToChars(p, _b >> 8, _b);
-                        if (dash)
-                            *p++ = '-';
-                        p += HexsToChars(p, _c >> 8, _c);
-                        if (dash)
-                            *p++ = '-';
-                        p += HexsToChars(p, _d, _e);
-                        if (dash)
-                            *p++ = '-';
-                        p += HexsToChars(p, _f, _g);
-                        p += HexsToChars(p, _h, _i);
-                        p += HexsToChars(p, _j, _k);
-                    }
+                            fixed (char* pinnedOutput = &destination.GetPinnableReference())
+                            {
+                                FormatNAvx((short*)pinnedOutput);
+                            }
+                            charsWritten = 32;
+                            return true;
+                        }
+                    case 'B':
+                    case 'b':
+                        {
+                            if (destination.Length < 38)
+                            {
+                                charsWritten = 0;
+                                return false;
+                            }
 
-                    if (braces != 0)
-                        *p++ = (char)(braces >> 16);
+                            fixed (char* pinnedOutput = &destination.GetPinnableReference())
+                            {
+                                pinnedOutput[0] = '{';
+                                FormatDAvx((short*)pinnedOutput + 1);
+                                pinnedOutput[37] = '}';
+                            }
+                            charsWritten = 38;
+                            return true;
+                        }
+                    case 'P':
+                    case 'p':
+                        {
+                            if (destination.Length < 38)
+                            {
+                                charsWritten = 0;
+                                return false;
+                            }
 
-                    Debug.Assert(p - guidChars == guidSize);
+                            fixed (char* pinnedOutput = &destination.GetPinnableReference())
+                            {
+                                pinnedOutput[0] = '(';
+                                FormatDAvx((short*)pinnedOutput + 1);
+                                pinnedOutput[37] = ')';
+                            }
+                            charsWritten = 38;
+                            return true;
+                        }
+                    case 'X':
+                    case 'x':
+                        {
+                            if (destination.Length < 68)
+                            {
+                                charsWritten = 0;
+                                return false;
+                            }
+
+                            fixed (char* pinnedOutput = &destination.GetPinnableReference())
+                            {
+                                FormatX(pinnedOutput);
+                            }
+                            charsWritten = 68;
+                            return true;
+                        }
+                    default:
+                        throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
                 }
             }
+            else
+            {
+                switch (format[0])
+                {
+                    case 'D':
+                    case 'd':
+                        {
+                            if (destination.Length < 36)
+                            {
+                                charsWritten = 0;
+                                return false;
+                            }
 
-            charsWritten = guidSize;
-            return true;
+                            fixed (char* pinnedOutput = &destination.GetPinnableReference())
+                            {
+                                FormatD(pinnedOutput);
+                            }
+                            charsWritten = 36;
+                            return true;
+                        }
+                    case 'N':
+                    case 'n':
+                        {
+                            if (destination.Length < 32)
+                            {
+                                charsWritten = 0;
+                                return false;
+                            }
+
+                            fixed (char* pinnedOutput = &destination.GetPinnableReference())
+                            {
+                                FormatN(pinnedOutput);
+                            }
+                            charsWritten = 32;
+                            return true;
+                        }
+                    case 'B':
+                    case 'b':
+                        {
+                            if (destination.Length < 38)
+                            {
+                                charsWritten = 0;
+                                return false;
+                            }
+
+                            fixed (char* pinnedOutput = &destination.GetPinnableReference())
+                            {
+                                pinnedOutput[0] = '{';
+                                FormatD(pinnedOutput + 1);
+                                pinnedOutput[37] = '}';
+                            }
+                            charsWritten = 38;
+                            return true;
+                        }
+                    case 'P':
+                    case 'p':
+                        {
+                            if (destination.Length < 38)
+                            {
+                                charsWritten = 0;
+                                return false;
+                            }
+
+                            fixed (char* pinnedOutput = &destination.GetPinnableReference())
+                            {
+                                pinnedOutput[0] = '(';
+                                FormatD(pinnedOutput + 1);
+                                pinnedOutput[37] = ')';
+                            }
+                            charsWritten = 38;
+                            return true;
+                        }
+                    case 'X':
+                    case 'x':
+                        {
+                            if (destination.Length < 68)
+                            {
+                                charsWritten = 0;
+                                return false;
+                            }
+
+                            fixed (char* pinnedOutput = &destination.GetPinnableReference())
+                            {
+                                FormatX(pinnedOutput);
+                            }
+                            charsWritten = 68;
+                            return true;
+                        }
+                    default:
+                        throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
+                }
+            }
         }
 
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
         {
             // Like with the IFormattable implementation, provider is ignored.
             return TryFormat(destination, out charsWritten, format);
+        }
+
+        private static readonly Vector128<byte> s_layoutShiftMask = Vector128.Create(
+            0x06_07_04_05_00_01_02_03UL, 0x0F_0E_0D_0C_0B_0A_09_08UL).AsByte();
+        // 0x03, 0x02, 0x01, 0x00, 0x05, 0x04, 0x07, 0x06, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
+
+        private static readonly Vector256<byte> s_asciiTable = Vector256.Create(
+            0x37_36_35_34_33_32_31_30UL, 0x66_65_64_63_62_61_39_38UL,
+            0x37_36_35_34_33_32_31_30UL, 0x66_65_64_63_62_61_39_38UL).AsByte();
+        // 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102,
+        // 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102
+
+        private static readonly Vector256<byte> s_formatDFirst16DashesShuffleMask = Vector256.Create(
+            0x07_06_05_04_03_02_01_00UL, 0x0F_0E_0D_0C_0B_0A_09_08UL,
+            0x05_04_03_02_01_00_FF_FFUL, 0x0B_0A_09_08_FF_FF_07_06UL).AsByte();
+        // 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+        // 0xFF, 0xFF, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0xFF, 0xFF, 0x08, 0x09, 0x0A, 0x0B
+
+        private static readonly Vector256<byte> s_formatDFirst16DashesSet = Vector256.Create(
+            0x00_00_00_00_00_00_00_00UL, 0x00_00_00_00_00_00_00_00UL,
+            0x00_00_00_00_00_00_00_2DUL, 0x00_00_00_00_00_2D_00_00UL).AsByte();
+        // 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        // 0x2D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2D, 0x00, 0x00, 0x00, 0x00, 0x00
+
+        private static readonly Vector256<byte> s_formatDFirst16RemainDashesShuffleMask = Vector256.Create(
+            0x0B_0A_09_08_07_06_05_04UL, 0x11_10_FF_FF_0F_0E_0D_0CUL,
+            0xFF_FF_07_06_05_04_03_02UL, 0x0F_0E_0D_0C_0B_0A_09_08UL).AsByte();
+        // 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0xFF, 0xFF, 0x10, 0x11,
+        // 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0xFF, 0xFF, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
+
+        private static readonly Vector256<byte> s_formatDFirst16RemainDashesSet = Vector256.Create(
+            0x00_00_00_00_00_00_00_00UL, 0x00_00_00_2D_00_00_00_00UL,
+            0x00_2D_00_00_00_00_00_00UL, 0x00_00_00_00_00_00_00_00UL).AsByte();
+        // 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2D, 0x00, 0x00, 0x00,
+        // 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+        private static readonly Vector256<byte> s_formatDLast16DashesShuffleMask = Vector256.Create(
+            0x05_04_03_02_01_00_FF_FFUL, 0x0B_0A_09_08_FF_FF_07_06UL,
+            0xFF_FF_FF_FF_FF_FF_FF_FFUL, 0xFF_FF_FF_FF_FF_FF_FF_FFUL).AsByte();
+        // 0xFF, 0xFF, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0xFF, 0xFF, 0x08, 0x09, 0x0A, 0x0B,
+        // 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
+
+        private static readonly Vector256<byte> s_formatDLast16DashesSet = Vector256.Create(
+            0x00_00_00_00_00_00_00_2DUL, 0x00_00_00_00_00_2D_00_00UL,
+            0x00_00_00_00_00_00_00_00UL, 0x00_00_00_00_00_00_00_00UL).AsByte();
+        // 0x2D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2D, 0x00, 0x00, 0x00, 0x00, 0x00,
+        // 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+
+        private static readonly Vector256<byte> s_formatDLast16RemainDashesShuffleMask = Vector256.Create(
+            0xFF_FF_07_06_05_04_03_02UL, 0x0F_0E_0D_0C_0B_0A_09_08UL,
+            0x07_06_05_04_03_02_01_00UL, 0x0F_0E_0D_0C_0B_0A_09_08UL).AsByte();
+        // 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0xFF, 0xFF, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+        // 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F);
+
+        private static Vector256<byte> s_formatDLast16RemainDashesSet = Vector256.Create(
+            0x00_2D_00_00_00_00_00_00UL, 0x00_00_00_00_00_00_00_00UL,
+            0x00_00_00_00_00_00_00_00UL, 0x00_00_00_00_00_00_00_00UL).AsByte();
+        // 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        // 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+
+        private unsafe void FormatDAvx(short* dest)
+        {
+            // dddddddd-dddd-dddd-dddd-dddddddddddd
+            fixed (Guid* thisPtr = &this)
+            {
+                Vector128<byte> layoutMask = s_layoutShiftMask;
+                Vector256<byte> asciiTable = s_asciiTable;
+
+                Vector128<byte> guidStringLayoutBytes = Ssse3.Shuffle(Sse2.LoadVector128((byte*)thisPtr), layoutMask);
+                Vector256<short> guidStringLayoutUtf16 = Avx2.ConvertToVector256Int16(guidStringLayoutBytes);
+                Vector256<byte> hi = Avx2.ShiftRightLogical(guidStringLayoutUtf16, 4).AsByte();
+                Vector256<byte> lo = Avx2.ShiftLeftLogical(guidStringLayoutUtf16, 8).AsByte();
+                Vector256<byte> asciiTableIndices = Avx2.And(Avx2.Or(hi, lo), Vector256.Create((byte)0x0F));
+                Vector256<byte> asciiBytes = Avx2.Shuffle(asciiTable, asciiTableIndices);
+
+                // Fill dest
+                // asciiBytes = 00112233445566778899AABBCCDDEEFF
+
+                // Writing first 16 ASCII result chars with dashes
+                Vector256<byte> formatDFirst16RemainDashesShuffleMask = s_formatDFirst16RemainDashesShuffleMask;
+                Vector256<byte> formatDFirst16RemainDashesSet = s_formatDFirst16RemainDashesSet;
+                Vector256<byte> formatDFirst16DashesShuffleMask = s_formatDFirst16DashesShuffleMask;
+                Vector256<byte> formatDFirst16DashesSet = s_formatDFirst16DashesSet;
+
+                Vector256<byte> rawFirst16BytesChars = Avx2.ConvertToVector256Int16(asciiBytes.GetLower()).AsByte();
+                Vector256<byte> first16CharsRemainWithDashes = Avx2.Or(
+                    Avx2.Shuffle(rawFirst16BytesChars, formatDFirst16RemainDashesShuffleMask),
+                    formatDFirst16RemainDashesSet);
+                // Will store: xx112233-4455-6677xxxxxxxxxxxxxxxxxx
+                Avx.Store((byte*)dest + 4, first16CharsRemainWithDashes);
+                // Destination value after store: xx112233-4455-6677xxxxxxxxxxxxxxxxxx
+
+                Vector256<byte> first16CharsWithDashes = Avx2.Or(
+                    Avx2.Shuffle(rawFirst16BytesChars, formatDFirst16DashesShuffleMask),
+                    formatDFirst16DashesSet);
+                // Will store: 00112233-4455-66xxxxxxxxxxxxxxxxxxxx
+                Avx.Store((byte*)dest, first16CharsWithDashes);
+                // Destination value after store: 00112233-4455-6677xxxxxxxxxxxxxxxxxx
+
+                // Writing last 16 ASCII result chars with dashes
+                Vector256<byte> formatDLast16DashesShuffleMask = s_formatDLast16DashesShuffleMask;
+                Vector256<byte> formatDLast16DashesSet = s_formatDLast16DashesSet;
+                Vector256<byte> formatDLast16RemainDashesShuffleMask = s_formatDLast16RemainDashesShuffleMask;
+                Vector256<byte> formatDLast16RemainDashesSet = s_formatDLast16RemainDashesSet;
+
+                Vector256<byte> rawLast16BytesChars = Avx2.ConvertToVector256Int16(asciiBytes.GetUpper()).AsByte();
+                Vector256<byte> last16CharsWithDashes = Avx2.Or(
+                    Avx2.Shuffle(rawLast16BytesChars, formatDLast16DashesShuffleMask),
+                    formatDLast16DashesSet);
+                // Will store: xxxxxxxxxxxxxxxxxx-8899-AABB______xx
+                Avx.Store((byte*)dest + 36, last16CharsWithDashes);
+                // Destination value after store: 00112233-4455-6677-8899-AABBxxxxxxxx
+
+                Vector256<byte> last16CharsRemainWithDashes = Avx2.Or(
+                    Avx2.Shuffle(rawLast16BytesChars, formatDLast16RemainDashesShuffleMask),
+                    formatDLast16RemainDashesSet);
+                // Will store: xxxxxxxxxxxxxxxxxxxx899-AABBCCDDEEFF
+                Avx.Store((byte*)dest + 40, last16CharsRemainWithDashes);
+                // Destination value after store: 00112233-4455-6677-8899-AABBCCDDEEFF
+            }
+        }
+
+        private unsafe void FormatNAvx(short* dest)
+        {
+            // dddddddddddddddddddddddddddddddd
+            fixed (Guid* thisPtr = &this)
+            {
+                Vector128<byte> layoutMask = s_layoutShiftMask;
+                Vector256<byte> asciiTable = s_asciiTable;
+                Vector128<byte> guidStringLayoutBytes = Ssse3.Shuffle(Sse2.LoadVector128((byte*)thisPtr), layoutMask);
+                Vector256<short> guidStringLayoutUtf16 = Avx2.ConvertToVector256Int16(guidStringLayoutBytes);
+                Vector256<byte> hi = Avx2.ShiftRightLogical(guidStringLayoutUtf16, 4).AsByte();
+                Vector256<byte> lo = Avx2.ShiftLeftLogical(guidStringLayoutUtf16, 8).AsByte();
+                Vector256<byte> asciiTableIndices = Avx2.And(Avx2.Or(hi, lo), Vector256.Create((byte)0x0F));
+                Vector256<byte> asciiBytes = Avx2.Shuffle(asciiTable, asciiTableIndices);
+                Avx.Store(dest, Avx2.ConvertToVector256Int16(asciiBytes.GetLower()));
+                Avx.Store(dest + 16, Avx2.ConvertToVector256Int16(asciiBytes.GetUpper()));
+            }
+        }
+
+        private unsafe void FormatD(char* dest)
+        {
+            // dddddddd-dddd-dddd-dddd-dddddddddddd
+            uint* destUints = (uint*)dest;
+            char** destUintsAsChars = (char**)&destUints;
+            uint* tableToHex = TableToHex;
+
+            dest[8] = dest[13] = dest[18] = dest[23] = '-';
+            destUints[0] = tableToHex[(byte)(_a >> 24)];
+            destUints[1] = tableToHex[(byte)(_a >> 16)];
+            destUints[2] = tableToHex[(byte)(_a >> 8)];
+            destUints[3] = tableToHex[(byte)_a];
+            destUints[7] = tableToHex[(byte)(_c >> 8)];
+            destUints[8] = tableToHex[(byte)_c];
+            destUints[12] = tableToHex[_f];
+            destUints[13] = tableToHex[_g];
+            destUints[14] = tableToHex[_h];
+            destUints[15] = tableToHex[_i];
+            destUints[16] = tableToHex[_j];
+            destUints[17] = tableToHex[_k];
+            *destUintsAsChars += 1;
+            destUints[4] = tableToHex[(byte)(_b >> 8)];
+            destUints[5] = tableToHex[(byte)_b];
+            destUints[9] = tableToHex[_d];
+            destUints[10] = tableToHex[_e];
+        }
+
+        private unsafe void FormatN(char* dest)
+        {
+            // dddddddddddddddddddddddddddddddd
+            uint* destUints = (uint*)dest;
+            uint* tableToHex = TableToHex;
+
+            destUints[0] = tableToHex[(byte)(_a >> 24)];
+            destUints[1] = tableToHex[(byte)(_a >> 16)];
+            destUints[2] = tableToHex[(byte)(_a >> 8)];
+            destUints[3] = tableToHex[(byte)_a];
+            destUints[4] = tableToHex[(byte)(_b >> 8)];
+            destUints[5] = tableToHex[(byte)_b];
+            destUints[6] = tableToHex[(byte)(_c >> 8)];
+            destUints[7] = tableToHex[(byte)_c];
+            destUints[8] = tableToHex[_d];
+            destUints[9] = tableToHex[_e];
+            destUints[10] = tableToHex[_f];
+            destUints[11] = tableToHex[_g];
+            destUints[12] = tableToHex[_h];
+            destUints[13] = tableToHex[_i];
+            destUints[14] = tableToHex[_j];
+            destUints[15] = tableToHex[_k];
+        }
+
+        private const uint ZeroX = 7864368U; // 0x
+        private const uint CommaBrace = 8060972U; // ,{
+        private const uint CloseBraces = 8192125U; // }}
+
+        private unsafe void FormatX(char* dest)
+        {
+            // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
+            uint* destUints = (uint*)dest;
+            char** destUintsAsChars = (char**)&destUints;
+            uint* tableToHex = TableToHex;
+
+            dest[0] = '{';
+            dest[11] = dest[18] = dest[31] = dest[36] = dest[41] = dest[46] = dest[51] = dest[56] = dest[61] = ',';
+            destUints[6] = destUints[16] = destUints[21] = destUints[26] = destUints[31] = ZeroX; // 0x
+            destUints[7] = tableToHex[(byte)(_b >> 8)];
+            destUints[8] = tableToHex[(byte)_b];
+            destUints[17] = tableToHex[_e];
+            destUints[22] = tableToHex[_g];
+            destUints[27] = tableToHex[_i];
+            destUints[32] = tableToHex[_k];
+            destUints[33] = CloseBraces; // }}
+            *destUintsAsChars += 1;
+            destUints[0] = destUints[9] = destUints[13] = destUints[18] = destUints[23] = destUints[28] = ZeroX; // 0x
+            destUints[1] = tableToHex[(byte)(_a >> 24)];
+            destUints[2] = tableToHex[(byte)(_a >> 16)];
+            destUints[3] = tableToHex[(byte)(_a >> 8)];
+            destUints[4] = tableToHex[(byte)_a];
+            destUints[10] = tableToHex[(byte)(_c >> 8)];
+            destUints[11] = tableToHex[(byte)_c];
+            destUints[12] = CommaBrace; // ,{
+            destUints[14] = tableToHex[_d];
+            destUints[19] = tableToHex[_f];
+            destUints[24] = tableToHex[_h];
+            destUints[29] = tableToHex[_j];
         }
     }
 }
