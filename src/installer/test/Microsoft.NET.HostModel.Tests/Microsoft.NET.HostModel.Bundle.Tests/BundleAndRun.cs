@@ -12,11 +12,11 @@ using BundleTests.Helpers;
 
 namespace Microsoft.NET.HostModel.Tests
 {
-    public class BundleExtractRun : IClassFixture<BundleExtractRun.SharedTestState>
+    public class BundleAndRun : IClassFixture<BundleAndRun.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
-        public BundleExtractRun(BundleExtractRun.SharedTestState fixture)
+        public BundleAndRun(BundleAndRun.SharedTestState fixture)
         {
             sharedTestState = fixture;
         }
@@ -33,7 +33,7 @@ namespace Microsoft.NET.HostModel.Tests
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
-        private void BundleExtractAndRun(TestProjectFixture fixture, string publishDir, string singleFileDir)
+        private void BundleRun(TestProjectFixture fixture, string publishDir, string singleFileDir)
         {
             var hostName = BundleHelper.GetHostName(fixture);
 
@@ -43,10 +43,6 @@ namespace Microsoft.NET.HostModel.Tests
             // Bundle to a single-file
             Bundler bundler = new Bundler(hostName, singleFileDir);
             string singleFile = bundler.GenerateBundle(publishDir);
-
-            // Extract the file
-            Extractor extractor = new Extractor(singleFile, singleFileDir);
-            extractor.ExtractFiles();
 
             // Run the extracted app
             RunTheApp(singleFile);
@@ -66,7 +62,7 @@ namespace Microsoft.NET.HostModel.Tests
             string publishDir = BundleHelper.GetPublishPath(fixture);
             string outputDir = BundleHelper.GetBundleDir(fixture).FullName;
 
-            BundleExtractAndRun(fixture, publishDir, outputDir);
+            BundleRun(fixture, publishDir, outputDir);
         }
 
         [Fact]
@@ -77,7 +73,7 @@ namespace Microsoft.NET.HostModel.Tests
             string publishDir = RelativePath(BundleHelper.GetPublishPath(fixture));
             string outputDir = RelativePath(BundleHelper.GetBundleDir(fixture).FullName);
 
-            BundleExtractAndRun(fixture, publishDir, outputDir);
+            BundleRun(fixture, publishDir, outputDir);
         }
 
         [Fact]
@@ -88,7 +84,7 @@ namespace Microsoft.NET.HostModel.Tests
             string publishDir = RelativePath(BundleHelper.GetPublishPath(fixture)) + Path.DirectorySeparatorChar;
             string outputDir = RelativePath(BundleHelper.GetBundleDir(fixture).FullName) + Path.DirectorySeparatorChar;
 
-            BundleExtractAndRun(fixture, publishDir, outputDir);
+            BundleRun(fixture, publishDir, outputDir);
         }
 
         public class SharedTestState : IDisposable
