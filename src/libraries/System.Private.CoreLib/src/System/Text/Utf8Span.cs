@@ -8,11 +8,12 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
-using Internal.Runtime.CompilerServices;
+//using Internal.Runtime.CompilerServices;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Utf8Span.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
+#if CORECLR
 #if TARGET_64BIT
 using nint = System.Int64;
 using nuint = System.UInt64;
@@ -20,20 +21,25 @@ using nuint = System.UInt64;
 using nint = System.Int32;
 using nuint = System.UInt32;
 #endif
+#else
+using nint = System.Int64;
+using nuint = System.UInt64;
+#endif
 
 namespace System.Text
 {
     [StructLayout(LayoutKind.Auto)]
     public readonly ref partial struct Utf8Span
     {
-        /// <summary>
-        /// Creates a <see cref="Utf8Span"/> from an existing <see cref="Utf8String"/> instance.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Utf8Span(Utf8String? value)
-        {
-            Bytes = Utf8Extensions.AsBytes(value);
-        }
+        //TODO: eerhardt
+        ///// <summary>
+        ///// Creates a <see cref="Utf8Span"/> from an existing <see cref="Utf8String"/> instance.
+        ///// </summary>
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public Utf8Span(Utf8String? value)
+        //{
+        //    Bytes = Utf8Extensions.AsBytes(value);
+        //}
 
         /// <summary>
         /// Ctor for internal use only. Caller _must_ validate both invariants hold:
@@ -62,31 +68,6 @@ namespace System.Text
         /// Returns the length (in UTF-8 code units, or <see cref="byte"/>s) of this instance.
         /// </summary>
         public int Length => Bytes.Length;
-
-        public Utf8Span this[Range range]
-        {
-            get
-            {
-                (int offset, int length) = range.GetOffsetAndLength(Length);
-
-                // Check for a split across a multi-byte subsequence on the way out.
-                // Reminder: Unlike Utf8String, we can't safely dereference past the end of the span.
-
-                ref byte newRef = ref DangerousGetMutableReference(offset);
-                if (length > 0 && Utf8Utility.IsUtf8ContinuationByte(newRef))
-                {
-                    Utf8String.ThrowImproperStringSplit();
-                }
-
-                int endIdx = offset + length;
-                if (endIdx < Length && Utf8Utility.IsUtf8ContinuationByte(DangerousGetMutableReference(endIdx)))
-                {
-                    Utf8String.ThrowImproperStringSplit();
-                }
-
-                return UnsafeCreateWithoutValidation(new ReadOnlySpan<byte>(ref newRef, length));
-            }
-        }
 
         /// <summary>
         /// Returns a <em>mutable</em> reference to the first byte of this <see cref="Utf8Span"/>
@@ -117,7 +98,7 @@ namespace System.Text
             // Allow retrieving references to just past the end of the span (but shouldn't dereference this).
 
             Debug.Assert(index <= (uint)Length, "Caller should've performed bounds checking.");
-            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), index);
+            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), (IntPtr)index); //TODO: nuint - remove cast
         }
 
         public bool IsEmptyOrWhiteSpace() => (Utf8Utility.GetIndexOfFirstNonWhiteSpaceChar(Bytes) == Length);
@@ -156,7 +137,11 @@ namespace System.Text
             // UTF-8 textual data, not over arbitrary binary sequences.
 
             ulong seed = Marvin.DefaultSeed;
+#if CORECLR
             return Marvin.ComputeHash32(ref MemoryMarshal.GetReference(Bytes), (uint)Length /* in bytes */, (uint)seed, (uint)(seed >> 32));
+#else
+            return Marvin.ComputeHash32(Bytes, seed);
+#endif
         }
 
         public int GetHashCode(StringComparison comparison)
@@ -204,7 +189,7 @@ namespace System.Text
 
         /// <summary>
         /// Gets an immutable reference that can be used in a <see langword="fixed"/> statement. Unlike
-        /// <see cref="Utf8String"/>, the resulting reference is not guaranteed to be null-terminated.
+        /// TODO cref="Utf8String"/>, the resulting reference is not guaranteed to be null-terminated.
         /// </summary>
         /// <remarks>
         /// If this <see cref="Utf8Span"/> instance is empty, returns <see langword="null"/>. Dereferencing
@@ -225,7 +210,20 @@ namespace System.Text
             // TODO_UTF8STRING: Since we know the underlying data is immutable, well-formed UTF-8,
             // we can perform transcoding using an optimized code path that skips all safety checks.
 
+#if CORECLR || NETCOREAPP
             return Encoding.UTF8.GetString(Bytes);
+#else
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(Length);
+            try
+            {
+                Bytes.CopyTo(buffer);
+                return Encoding.UTF8.GetString(buffer, 0, Length);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+#endif
         }
 
         /// <summary>
@@ -253,23 +251,39 @@ namespace System.Text
                 int utf16CharCount = Length + utf16CodeUnitCountAdjustment;
                 Debug.Assert(utf16CharCount <= Length && utf16CharCount >= 0);
 
+#if CORECLR || NETCOREAPP
                 // TODO_UTF8STRING: Can we call string.FastAllocate directly?
-
                 return string.Create(utf16CharCount, (pbData: (IntPtr)pData, cbData: Length), (chars, state) =>
                 {
                     OperationStatus status = Utf8.ToUtf16(new ReadOnlySpan<byte>((byte*)state.pbData, state.cbData), chars, out _, out _, replaceInvalidSequences: false);
                     Debug.Assert(status == OperationStatus.Done, "Did somebody mutate this Utf8String instance unexpectedly?");
                 });
+#else
+                char[] buffer = ArrayPool<char>.Shared.Rent(utf16CharCount);
+                try
+                {
+                    fixed (char* pBuffer = buffer)
+                    {
+                        Encoding.UTF8.GetChars(pData, Length, pBuffer, utf16CharCount);
+                        return new string(pBuffer, 0, utf16CharCount);
+                    }
+                }
+                finally
+                {
+                    ArrayPool<char>.Shared.Return(buffer);
+                }
+#endif
             }
         }
 
-        public Utf8String ToUtf8String()
-        {
-            // TODO_UTF8STRING: Since we know the underlying data is immutable, well-formed UTF-8,
-            // we can perform transcoding using an optimized code path that skips all safety checks.
+        //TODO eerhardt
+        //public Utf8String ToUtf8String()
+        //{
+        //    // TODO_UTF8STRING: Since we know the underlying data is immutable, well-formed UTF-8,
+        //    // we can perform transcoding using an optimized code path that skips all safety checks.
 
-            return Utf8String.UnsafeCreateWithoutValidation(Bytes);
-        }
+        //    return Utf8String.UnsafeCreateWithoutValidation(Bytes);
+        //}
 
         /// <summary>
         /// Wraps a <see cref="Utf8Span"/> instance around the provided <paramref name="buffer"/>,

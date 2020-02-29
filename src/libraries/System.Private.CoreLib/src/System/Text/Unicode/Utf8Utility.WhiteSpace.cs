@@ -3,9 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
+#if CORECLR
 #if TARGET_64BIT
 using nint = System.Int64;
 using nuint = System.UInt64;
@@ -13,11 +14,16 @@ using nuint = System.UInt64;
 using nint = System.Int32;
 using nuint = System.UInt32;
 #endif
+#else
+using nint = System.Int64;
+using nuint = System.UInt64;
+#endif
 
 namespace System.Text.Unicode
 {
     internal static partial class Utf8Utility
     {
+#if CORECLR
         /// <summary>
         /// Returns the index in <paramref name="utf8Data"/> where the first non-whitespace character
         /// appears, or the input length if the data contains only whitespace characters.
@@ -40,12 +46,12 @@ namespace System.Text.Unicode
                 // Very quick check: see if the byte is in the range [ 21 .. 7F ].
                 // If so, we can skip the more expensive logic later in this method.
 
-                if ((sbyte)Unsafe.AddByteOffset(ref utf8Data, i) > (sbyte)0x20)
+                if ((sbyte)Unsafe.AddByteOffset(ref utf8Data, (IntPtr)i) > (sbyte)0x20) //TODO: remove IntPtr cast
                 {
                     break;
                 }
 
-                uint possibleAsciiByte = Unsafe.AddByteOffset(ref utf8Data, i);
+                uint possibleAsciiByte = Unsafe.AddByteOffset(ref utf8Data, (IntPtr)i); //TODO: remove IntPtr cast
                 if (UnicodeUtility.IsAsciiCodePoint(possibleAsciiByte))
                 {
                     // The simple comparison failed. Let's read the actual byte value,
@@ -76,34 +82,31 @@ namespace System.Text.Unicode
 
             return i;
         }
-
+#else
         /// <summary>
-        /// Returns the index in <paramref name="utf8Data"/> where the trailing whitespace sequence
-        /// begins, or 0 if the data contains only whitespace characters, or the span length if the
-        /// data does not end with any whitespace characters.
+        /// Returns the index in <paramref name="utf8Data"/> where the first non-whitespace character
+        /// appears, or the input length if the data contains only whitespace characters.
         /// </summary>
-        public static int GetIndexOfTrailingWhiteSpaceSequence(ReadOnlySpan<byte> utf8Data)
-        {
-            return (int)GetIndexOfTrailingWhiteSpaceSequence(ref MemoryMarshal.GetReference(utf8Data), (uint)utf8Data.Length);
-        }
-
-        private static nuint GetIndexOfTrailingWhiteSpaceSequence(ref byte utf8Data, nuint length)
+        public static int GetIndexOfFirstNonWhiteSpaceChar(ReadOnlySpan<byte> utf8Data)
         {
             // This method is optimized for the case where the input data is ASCII, and if the
             // data does need to be trimmed it's likely that only a relatively small number of
             // bytes will be trimmed.
 
-            while (length > 0)
+            int i = 0;
+            int length = utf8Data.Length;
+
+            while (i < length)
             {
                 // Very quick check: see if the byte is in the range [ 21 .. 7F ].
                 // If so, we can skip the more expensive logic later in this method.
 
-                if ((sbyte)Unsafe.Add(ref Unsafe.AddByteOffset(ref utf8Data, length), -1) > (sbyte)0x20)
+                if (utf8Data[i] > (sbyte)0x20)
                 {
                     break;
                 }
 
-                uint possibleAsciiByte = Unsafe.Add(ref Unsafe.AddByteOffset(ref utf8Data, length), -1);
+                uint possibleAsciiByte = utf8Data[i];
                 if (UnicodeUtility.IsAsciiCodePoint(possibleAsciiByte))
                 {
                     // The simple comparison failed. Let's read the actual byte value,
@@ -112,7 +115,7 @@ namespace System.Text.Unicode
 
                     if (Rune.IsWhiteSpace(Rune.UnsafeCreate(possibleAsciiByte)))
                     {
-                        length--;
+                        i++;
                         continue;
                     }
                 }
@@ -121,10 +124,10 @@ namespace System.Text.Unicode
                     // Not ASCII data. Go back to the slower "decode the entire scalar"
                     // code path, then compare it against our Unicode tables.
 
-                    Rune.DecodeLastFromUtf8(new ReadOnlySpan<byte>(ref utf8Data, (int)length), out Rune decodedRune, out int bytesConsumed);
+                    Rune.DecodeFromUtf8(utf8Data.Slice(i), out Rune decodedRune, out int bytesConsumed);
                     if (Rune.IsWhiteSpace(decodedRune))
                     {
-                        length -= (uint)bytesConsumed;
+                        i += bytesConsumed;
                         continue;
                     }
                 }
@@ -132,7 +135,67 @@ namespace System.Text.Unicode
                 break; // If we got here, we saw a non-whitespace subsequence.
             }
 
-            return length;
+            return i;
         }
+#endif
+
+        //TODO: eerhardt
+        ///// <summary>
+        ///// Returns the index in <paramref name="utf8Data"/> where the trailing whitespace sequence
+        ///// begins, or 0 if the data contains only whitespace characters, or the span length if the
+        ///// data does not end with any whitespace characters.
+        ///// </summary>
+        //public static int GetIndexOfTrailingWhiteSpaceSequence(ReadOnlySpan<byte> utf8Data)
+        //{
+        //    return (int)GetIndexOfTrailingWhiteSpaceSequence(ref MemoryMarshal.GetReference(utf8Data), (uint)utf8Data.Length);
+        //}
+
+        //private static nuint GetIndexOfTrailingWhiteSpaceSequence(ref byte utf8Data, nuint length)
+        //{
+        //    // This method is optimized for the case where the input data is ASCII, and if the
+        //    // data does need to be trimmed it's likely that only a relatively small number of
+        //    // bytes will be trimmed.
+
+        //    while (length > 0)
+        //    {
+        //        // Very quick check: see if the byte is in the range [ 21 .. 7F ].
+        //        // If so, we can skip the more expensive logic later in this method.
+
+        //        if ((sbyte)Unsafe.Add(ref Unsafe.AddByteOffset(ref utf8Data, (IntPtr)length), -1) > (sbyte)0x20) //TODO: remove IntPtr cast
+        //        {
+        //            break;
+        //        }
+
+        //        uint possibleAsciiByte = Unsafe.Add(ref Unsafe.AddByteOffset(ref utf8Data, (IntPtr)length), -1); //TODO: remove IntPtr cast
+        //        if (UnicodeUtility.IsAsciiCodePoint(possibleAsciiByte))
+        //        {
+        //            // The simple comparison failed. Let's read the actual byte value,
+        //            // and if it's ASCII we can delegate to Rune's inlined method
+        //            // implementation.
+
+        //            if (Rune.IsWhiteSpace(Rune.UnsafeCreate(possibleAsciiByte)))
+        //            {
+        //                length--;
+        //                continue;
+        //            }
+        //        }
+        //        else
+        //        {
+        //            // Not ASCII data. Go back to the slower "decode the entire scalar"
+        //            // code path, then compare it against our Unicode tables.
+
+        //            Rune.DecodeLastFromUtf8(new ReadOnlySpan<byte>(ref utf8Data, (int)length), out Rune decodedRune, out int bytesConsumed);
+        //            if (Rune.IsWhiteSpace(decodedRune))
+        //            {
+        //                length -= (uint)bytesConsumed;
+        //                continue;
+        //            }
+        //        }
+
+        //        break; // If we got here, we saw a non-whitespace subsequence.
+        //    }
+
+        //    return length;
+        //}
     }
 }

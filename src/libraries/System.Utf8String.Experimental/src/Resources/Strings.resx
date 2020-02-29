@@ -126,4 +126,10 @@
   <data name="Argument_DestinationTooShort" xml:space="preserve">
     <value>Destination is too short.</value>
   </data>
+  <data name="NotSupported_StringComparison" xml:space="preserve">
+    <value>The string comparison type passed in is currently not supported.</value>
+  </data>
+  <data name="Utf8Span_CannotCallEqualsObject" xml:space="preserve">
+    <value>Cannot call Utf8Span.Equals(object). Use Equals(Utf8Span) or operator == instead.</value>
+  </data>
 </root>

@@ -18,6 +18,11 @@ namespace System
         private static Exception CreateArgumentOutOfRangeException(ExceptionArgument argument) { return new ArgumentOutOfRangeException(argument.ToString()); }
 
         [DoesNotReturn]
+        internal static void ThrowInvalidOperationException() { throw CreateInvalidOperationException(); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception CreateInvalidOperationException() { return new InvalidOperationException(); }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_DestinationTooShort()
         {
             throw new ArgumentException(SR.Argument_DestinationTooShort, "destination");

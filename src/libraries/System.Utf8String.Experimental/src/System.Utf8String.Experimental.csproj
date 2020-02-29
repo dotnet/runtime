@@ -22,7 +22,11 @@
   </ItemGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="System\Globalization\GlobalizationMode.cs" />
+    <Compile Include="System\Runtime\Intrinsics\Intrinsics.Shims.cs" />
     <Compile Include="System\Text\ThrowHelper.cs" />
+    <Compile Include="$(CommonPath)System\Marvin.cs">
+      <Link>Common\System\Marvin.cs</Link>
+    </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Char8.cs">
       <Link>System\Char8.cs</Link>
     </Compile>
@@ -37,6 +41,34 @@
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\Rune.cs">
       <Link>System\Text\Rune.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8StringComparer.cs">
+      <Link>System\Text\Utf8StringComparer.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Numerics\BitOperations.cs">
+      <Link>System\Numerics\BitOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\ASCIIUtility.cs">
+      <Link>System\Text\ASCIIUtility.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\ASCIIUtility.Helpers.cs">
+      <Link>System\Text\ASCIIUtility.Helpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.cs">
+      <Link>System\Text\Unicode\Utf8Utility.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.Helpers.cs">
+      <Link>System\Text\Unicode\Utf8Utility.Helpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.Validation.cs">
+      <Link>System\Text\Unicode\Utf8Utility.Validation.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.WhiteSpace.cs">
+      <Link>System\Text\Unicode\Utf8Utility.WhiteSpace.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.cs">
+      <Link>System\Text\Utf8Span.cs</Link>
     </Compile>
 
     <!--<Compile Include="$(CoreLibSharedDir)\System\Utf8Extensions.cs">
@@ -67,9 +99,6 @@
       <Link>System\Utf8StringSplitOptions.cs</Link>
     </Compile>-->
     
-    <!--<Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.cs">
-      <Link>System\Text\Utf8Span.cs</Link>
-    </Compile>-->
     
     <!--<Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Comparison.cs">
       <Link>System\Text\Utf8Span.Comparison.cs</Link>
@@ -85,27 +114,16 @@
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Searching.cs">
       <Link>System\Text\Utf8Span.Searching.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8StringComparer.cs">
-      <Link>System\Text\Utf8StringComparer.cs</Link>
     </Compile>-->
 
-    <!--<Compile Include="$(CoreLibSharedDir)\System\Text\ASCIIUtility.cs">
-      <Link>System\Text\ASCIIUtility.cs</Link>
-    </Compile>-->
 
-    <!--<Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.cs">
-      <Link>System\Text\Unicode\Utf8Utility.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.Validation.cs">
-      <Link>System\Text\Unicode\Utf8Utility.Validation.cs</Link>
-    </Compile>-->
 
 
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Memory" />
+    <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">

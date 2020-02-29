@@ -8,7 +8,7 @@ using System.Globalization;
 
 namespace System.Text
 {
-    internal abstract class Utf8StringComparer : IComparer<Utf8String?>, IEqualityComparer<Utf8String?>
+    internal abstract class Utf8StringComparer //TODO eerhardt : IComparer<Utf8String?>, IEqualityComparer<Utf8String?>
     {
         // Nobody except for nested classes can create instances of this type.
         private Utf8StringComparer() { }
@@ -46,19 +46,19 @@ namespace System.Text
             };
         }
 
-        public abstract int Compare(Utf8String? x, Utf8String? y);
+        //public abstract int Compare(Utf8String? x, Utf8String? y);
         public abstract int Compare(Utf8Span x, Utf8Span y);
-        public abstract bool Equals(Utf8String? x, Utf8String? y);
+        //public abstract bool Equals(Utf8String? x, Utf8String? y);
         public abstract bool Equals(Utf8Span x, Utf8Span y);
 #pragma warning disable CS8614 // Remove warning disable when nullable attributes are respected
-        public abstract int GetHashCode(Utf8String obj);
+        //public abstract int GetHashCode(Utf8String obj);
 #pragma warning restore CS8614
         public abstract int GetHashCode(Utf8Span obj);
 
         private sealed class CultureAwareComparer : Utf8StringComparer
         {
-            internal static readonly CultureAwareComparer Invariant = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.None);
-            internal static readonly CultureAwareComparer InvariantIgnoreCase = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.IgnoreCase);
+            internal static readonly CultureAwareComparer Invariant = new CultureAwareComparer(CultureInfo.InvariantCulture.CompareInfo, CompareOptions.None);
+            internal static readonly CultureAwareComparer InvariantIgnoreCase = new CultureAwareComparer(CultureInfo.InvariantCulture.CompareInfo, CompareOptions.IgnoreCase);
 
             private readonly CompareInfo _compareInfo;
             private readonly CompareOptions _options;
@@ -71,12 +71,12 @@ namespace System.Text
                 _options = options;
             }
 
-            public override int Compare(Utf8String? x, Utf8String? y)
-            {
-                // TODO_UTF8STRING: Avoid the allocations below.
+            //public override int Compare(Utf8String? x, Utf8String? y)
+            //{
+            //    // TODO_UTF8STRING: Avoid the allocations below.
 
-                return _compareInfo.Compare(x?.ToString(), y?.ToString(), _options);
-            }
+            //    return _compareInfo.Compare(x?.ToString(), y?.ToString(), _options);
+            //}
 
             public override int Compare(Utf8Span x, Utf8Span y)
             {
@@ -85,15 +85,15 @@ namespace System.Text
                 return _compareInfo.Compare(x.ToString(), y.ToString(), _options);
             }
 
-            public override bool Equals(Utf8String? x, Utf8String? y) => Compare(x, y) == 0;
+            //public override bool Equals(Utf8String? x, Utf8String? y) => Compare(x, y) == 0;
             public override bool Equals(Utf8Span x, Utf8Span y) => Compare(x, y) == 0;
 
-            public override int GetHashCode(Utf8String? obj)
-            {
-                // TODO_UTF8STRING: Avoid the allocations below.
+            //public override int GetHashCode(Utf8String? obj)
+            //{
+            //    // TODO_UTF8STRING: Avoid the allocations below.
 
-                return (obj is null) ? 0 : _compareInfo.GetHashCode(obj.ToString(), _options);
-            }
+            //    return (obj is null) ? 0 : _compareInfo.GetHashCode(obj.ToString(), _options);
+            //}
 
             public override int GetHashCode(Utf8Span obj)
             {
@@ -110,12 +110,12 @@ namespace System.Text
             // All accesses must be through the static factory.
             private OrdinalComparer() { }
 
-            public override int Compare(Utf8String? x, Utf8String? y)
-            {
-                // TODO_UTF8STRING: Avoid the allocations below.
+            //public override int Compare(Utf8String? x, Utf8String? y)
+            //{
+            //    // TODO_UTF8STRING: Avoid the allocations below.
 
-                return string.CompareOrdinal(x?.ToString(), y?.ToString());
-            }
+            //    return string.CompareOrdinal(x?.ToString(), y?.ToString());
+            //}
 
             public override int Compare(Utf8Span x, Utf8Span y)
             {
@@ -124,9 +124,9 @@ namespace System.Text
                 return string.CompareOrdinal(x.ToString(), y.ToString());
             }
 
-            public override bool Equals(Utf8String? x, Utf8String? y) => Utf8String.Equals(x, y);
+            //public override bool Equals(Utf8String? x, Utf8String? y) => Utf8String.Equals(x, y);
             public override bool Equals(Utf8Span x, Utf8Span y) => Utf8Span.Equals(x, y);
-            public override int GetHashCode(Utf8String obj) => obj.GetHashCode();
+            //public override int GetHashCode(Utf8String obj) => obj.GetHashCode();
             public override int GetHashCode(Utf8Span obj) => obj.GetHashCode();
         }
 
@@ -137,12 +137,12 @@ namespace System.Text
             // All accesses must be through the static factory.
             private OrdinalIgnoreCaseComparer() { }
 
-            public override int Compare(Utf8String? x, Utf8String? y)
-            {
-                // TODO_UTF8STRING: Avoid the allocations below.
+            //public override int Compare(Utf8String? x, Utf8String? y)
+            //{
+            //    // TODO_UTF8STRING: Avoid the allocations below.
 
-                return StringComparer.OrdinalIgnoreCase.Compare(x?.ToString(), y?.ToString());
-            }
+            //    return StringComparer.OrdinalIgnoreCase.Compare(x?.ToString(), y?.ToString());
+            //}
 
             public override int Compare(Utf8Span x, Utf8Span y)
             {
@@ -151,12 +151,12 @@ namespace System.Text
                 return StringComparer.OrdinalIgnoreCase.Compare(x.ToString(), y.ToString());
             }
 
-            public override bool Equals(Utf8String? x, Utf8String? y)
-            {
-                // TODO_UTF8STRING: Avoid the allocations below.
+            //public override bool Equals(Utf8String? x, Utf8String? y)
+            //{
+            //    // TODO_UTF8STRING: Avoid the allocations below.
 
-                return StringComparer.OrdinalIgnoreCase.Equals(x?.ToString(), y?.ToString());
-            }
+            //    return StringComparer.OrdinalIgnoreCase.Equals(x?.ToString(), y?.ToString());
+            //}
 
             public override bool Equals(Utf8Span x, Utf8Span y)
             {
@@ -165,12 +165,12 @@ namespace System.Text
                 return StringComparer.OrdinalIgnoreCase.Equals(x.ToString(), y.ToString());
             }
 
-            public override int GetHashCode(Utf8String obj)
-            {
-                // TODO_UTF8STRING: Avoid the allocations below.
+            //public override int GetHashCode(Utf8String obj)
+            //{
+            //    // TODO_UTF8STRING: Avoid the allocations below.
 
-                return StringComparer.OrdinalIgnoreCase.GetHashCode(obj.ToString());
-            }
+            //    return StringComparer.OrdinalIgnoreCase.GetHashCode(obj.ToString());
+            //}
 
             public override int GetHashCode(Utf8Span obj)
             {
