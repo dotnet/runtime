@@ -910,6 +910,16 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("$[1].$ref", ex.Path);
             Assert.Contains($"'{typeof(EmployeeStruct)}'", ex.Message);
         }
+
+        [Theory]
+        [InlineData(@"{""$iz"": ""1""}")]
+        [InlineData(@"{""$rez"": ""1""}")]
+        [InlineData(@"{""$valuez"": []}")]
+        public static void InvalidMetadataPropertyNameWithSameLengthIsNotRecognized(string json)
+        {
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
+        }
+
         #endregion
 
         #region Throw on immutables
