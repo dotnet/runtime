@@ -297,10 +297,6 @@ namespace Internal.ReadyToRunConstants
         CheckCastInterface,
         CheckInstanceInterface,
 
-        // P/Invoke support
-        ReversePInvokeEnter,
-        ReversePInvokeExit,
-
         MonitorEnterStatic,
         MonitorExitStatic,
 
