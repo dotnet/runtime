@@ -864,11 +864,6 @@ namespace System.Text.Json.Serialization.Tests
     public class GenericIDictionaryWrapperPrivateConstructor<TKey, TValue> : GenericIDictionaryWrapper<TKey, TValue>
     {
         private GenericIDictionaryWrapperPrivateConstructor() { }
-
-        public static GenericIDictionaryWrapperPrivateConstructor<TKey, TValue> Create()
-        {
-            return new GenericIDictionaryWrapperPrivateConstructor<TKey, TValue>();
-        }
     }
 
     public class ReadOnlyStringToStringIDictionaryWrapper : StringToStringIDictionaryWrapper
