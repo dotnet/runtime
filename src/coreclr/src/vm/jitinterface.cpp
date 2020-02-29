@@ -9190,6 +9190,21 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
 
     MethodDesc * pMD = GetMethod(ftn);
 
+    pResult->accessType = IAT_VALUE;
+
+#if defined(TARGET_X86) && !defined(CROSSGEN_COMPILE)
+    // Deferring X86 support until a need is observed or
+    // time permits investigation into all the potential issues.
+    if (pMD->HasNativeCallableAttribute())
+    {
+        pResult->addr = (void*)COMDelegate::ConvertToCallback(pMD);
+    }
+    else
+    {
+        pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();
+    }
+
+#else
     // If this method has the NativeCallableAttribute, then validate it
     // adheres to the limitations.
     if (pMD->HasNativeCallableAttribute())
@@ -9206,8 +9221,9 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
             COMPlusThrow(kNotSupportedException, W("NotSupported_NonBlittableTypes"));
     }
 
-    pResult->accessType = IAT_VALUE;
-    pResult->addr = (void *)pMD->GetMultiCallableAddrOfCode();
+    pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();
+
+#endif // !TARGET_X86 || CROSSGEN_COMPILE
 
     EE_TO_JIT_TRANSITION();
 }
@@ -12367,8 +12383,10 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
          }
     }
 
+#if !defined(TARGET_X86)
     if (ftn->HasNativeCallableAttribute())
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+#endif // !TARGET_X86
 
     return flags;
 }
