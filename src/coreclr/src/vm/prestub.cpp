@@ -1769,7 +1769,10 @@ extern "C" MethodDesc * STDCALL PreStubGetMethodDescForCompactEntryPoint (PCODE 
 // This function generates the real code when from Preemptive mode.
 // It is specifically designed to work with the NativeCallableAttribute.
 //=============================================================================
-static PCODE PreStubWorker_Preemptive(_In_ TransitionBlock* pTransitionBlock, _In_ MethodDesc* pMD)
+static PCODE PreStubWorker_Preemptive(
+    _In_ TransitionBlock* pTransitionBlock,
+    _In_ MethodDesc* pMD,
+    _In_opt_ Thread* currentThread)
 {
     _ASSERTE(pMD->HasNativeCallableAttribute());
     _ASSERTE(pMD->IsStatic() // Must be static
@@ -1782,7 +1785,13 @@ static PCODE PreStubWorker_Preemptive(_In_ TransitionBlock* pTransitionBlock, _I
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 
-    MAKE_CURRENT_THREAD_AVAILABLE();
+    // Starting from preemptive mode means the possibility exists
+    // that the thread is new to the runtime so we might have to
+    // create one.
+    if (currentThread == NULL)
+        currentThread = CreateThreadBlockThrow();
+
+    MAKE_CURRENT_THREAD_AVAILABLE_EX(currentThread);
 
     // No GC frame is needed here since there should be no OBJECTREFs involved
     // in this call due to NativeCallableAttribute semantics.
@@ -1832,10 +1841,11 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
-    // Check what GC mode we are running under.
-    if (!CURRENT_THREAD->PreemptiveGCDisabled())
+    // Attempt to check what GC mode we are running under.
+    if (CURRENT_THREAD == NULL
+        || !CURRENT_THREAD->PreemptiveGCDisabled())
     {
-        pbRetVal = PreStubWorker_Preemptive(pTransitionBlock, pMD);
+        pbRetVal = PreStubWorker_Preemptive(pTransitionBlock, pMD, CURRENT_THREAD);
     }
     else
     {
