@@ -861,6 +861,11 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class GenericIDictionaryWrapperPrivateConstructor<TKey, TValue> : GenericIDictionaryWrapper<TKey, TValue>
+    {
+        private GenericIDictionaryWrapperPrivateConstructor() { }
+    }
+
     public class ReadOnlyStringToStringIDictionaryWrapper : StringToStringIDictionaryWrapper
     {
         public override bool IsReadOnly => true;

@@ -117,7 +117,11 @@ namespace System.Text.Json
                     jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[1].UnderlyingSystemType == typeof(object) ||
                     jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[1].UnderlyingSystemType == typeof(JsonElement));
 
-                Debug.Assert(jsonPropertyInfo.RuntimeClassInfo.CreateObject != null);
+                if (jsonPropertyInfo.RuntimeClassInfo.CreateObject == null)
+                {
+                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.DeclaredPropertyType);
+                }
+
                 extensionData = (IDictionary?)jsonPropertyInfo.RuntimeClassInfo.CreateObject();
                 jsonPropertyInfo.SetValueAsObject(obj, extensionData);
             }
