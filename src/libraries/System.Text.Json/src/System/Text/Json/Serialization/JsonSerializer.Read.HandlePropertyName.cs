@@ -109,6 +109,7 @@ namespace System.Text.Json
             IDictionary? extensionData = (IDictionary?)jsonPropertyInfo.GetValueAsObject(obj);
             if (extensionData == null)
             {
+#if DEBUG
                 // Create the appropriate dictionary type. We already verified the types.
                 Debug.Assert(jsonPropertyInfo.DeclaredPropertyType.IsGenericType);
                 Debug.Assert(jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments().Length == 2);
@@ -116,7 +117,7 @@ namespace System.Text.Json
                 Debug.Assert(
                     jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[1].UnderlyingSystemType == typeof(object) ||
                     jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[1].UnderlyingSystemType == typeof(JsonElement));
-
+#endif
                 if (jsonPropertyInfo.RuntimeClassInfo.CreateObject == null)
                 {
                     ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.DeclaredPropertyType);
