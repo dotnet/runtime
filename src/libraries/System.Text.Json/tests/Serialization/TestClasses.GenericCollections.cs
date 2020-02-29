@@ -861,80 +861,13 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    public class GenericIDictionaryWrapperPrivateConstructor<TKey, TValue> : IDictionary<TKey, TValue>
+    public class GenericIDictionaryWrapperPrivateConstructor<TKey, TValue> : GenericIDictionaryWrapper<TKey, TValue>
     {
-        private Dictionary<TKey, TValue> _dict = new Dictionary<TKey, TValue>();
-
         private GenericIDictionaryWrapperPrivateConstructor() { }
 
         public static GenericIDictionaryWrapperPrivateConstructor<TKey, TValue> Create()
         {
             return new GenericIDictionaryWrapperPrivateConstructor<TKey, TValue>();
-        }
-
-        public TValue this[TKey key] { get => ((IDictionary<TKey, TValue>)_dict)[key]; set => ((IDictionary<TKey, TValue>)_dict)[key] = value; }
-
-        public ICollection<TKey> Keys => ((IDictionary<TKey, TValue>)_dict).Keys;
-
-        public ICollection<TValue> Values => ((IDictionary<TKey, TValue>)_dict).Values;
-
-        public int Count => ((IDictionary<TKey, TValue>)_dict).Count;
-
-        public bool IsReadOnly => ((IDictionary<TKey, TValue>)_dict).IsReadOnly;
-
-        public void Add(TKey key, TValue value)
-        {
-            ((IDictionary<TKey, TValue>)_dict).Add(key, value);
-        }
-
-        public void Add(KeyValuePair<TKey, TValue> item)
-        {
-            ((IDictionary<TKey, TValue>)_dict).Add(item);
-        }
-
-        public void Clear()
-        {
-            ((IDictionary<TKey, TValue>)_dict).Clear();
-        }
-
-        public bool Contains(KeyValuePair<TKey, TValue> item)
-        {
-            return ((IDictionary<TKey, TValue>)_dict).Contains(item);
-        }
-
-        public bool ContainsKey(TKey key)
-        {
-            return ((IDictionary<TKey, TValue>)_dict).ContainsKey(key);
-        }
-
-        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
-        {
-            ((IDictionary<TKey, TValue>)_dict).CopyTo(array, arrayIndex);
-        }
-
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
-        {
-            return ((IDictionary<TKey, TValue>)_dict).GetEnumerator();
-        }
-
-        public bool Remove(TKey key)
-        {
-            return ((IDictionary<TKey, TValue>)_dict).Remove(key);
-        }
-
-        public bool Remove(KeyValuePair<TKey, TValue> item)
-        {
-            return ((IDictionary<TKey, TValue>)_dict).Remove(item);
-        }
-
-        public bool TryGetValue(TKey key, out TValue value)
-        {
-            return ((IDictionary<TKey, TValue>)_dict).TryGetValue(key, out value);
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return ((IDictionary<TKey, TValue>)_dict).GetEnumerator();
         }
     }
 
