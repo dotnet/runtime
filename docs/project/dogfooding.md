@@ -94,7 +94,7 @@ runtime.
 
 1. You still need to install the prerequisite .NET Core SDK from above.
 2. Optionally, install the specific .NET Core runtime you require:
-    - https://github.com/dotnet/core-setup#daily-builds
+    - https://github.com/dotnet/core-sdk#installers-and-binaries
 3. Modify your .csproj to reference the nightly build of Microsoft.NETCore.App
 
 ```XML
