@@ -722,13 +722,13 @@ namespace System.Text.Json.Serialization.Tests
         private class ClassWithExtensionPropertyPrivateConstructor
         {
             [JsonExtensionData]
-            public StringToGenericIDictionaryWrapperPrivateConstructor<object> MyOverflow { get; set; }
+            public GenericIDictionaryWrapperPrivateConstructor<string, object> MyOverflow { get; set; }
         }
 
         private class ClassWithExtensionPropertyPrivateConstructorJsonElement
         {
             [JsonExtensionData]
-            public StringToGenericIDictionaryWrapperPrivateConstructor<JsonElement> MyOverflow { get; set; }
+            public GenericIDictionaryWrapperPrivateConstructor<string, JsonElement> MyOverflow { get; set; }
         }
 
         [Fact]
