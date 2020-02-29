@@ -230,7 +230,6 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    intrinsic  -- id of the intrinsic function.
 //    method     -- method handle of the intrinsic function.
 //    sig        -- signature of the intrinsic call
-//    mustExpand -- true if the compiler is compiling the fallback(GT_CALL) of this intrinsics
 //
 // Return Value:
 //    The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic
@@ -238,8 +237,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_CLASS_HANDLE  clsHnd,
                                        CORINFO_METHOD_HANDLE method,
-                                       CORINFO_SIG_INFO*     sig,
-                                       bool                  mustExpand)
+                                       CORINFO_SIG_INFO*     sig)
 {
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
     int                 numArgs  = sig->numArgs;
@@ -405,6 +403,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     }
 
     return retNode;
+}
+
+GenTree* Compiler::impScalarIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig)
+{
+    return nullptr;
 }
 
 #endif // FEATURE_HW_INTRINSICS

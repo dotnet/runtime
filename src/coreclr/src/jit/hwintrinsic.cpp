@@ -560,6 +560,20 @@ static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 }
 
 //------------------------------------------------------------------------
+// impIsTableDrivenScalarIntrinsic:
+//
+// Arguments:
+//    category - category of a HW intrinsic
+//
+// Return Value:
+//    returns true if this category is of scalar intrinsic and can be table-driven in the importer
+//
+static bool impIsTableDrivenScalarIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicCategory category)
+{
+    return (category == HW_Category_Scalar) && !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
+}
+
+//------------------------------------------------------------------------
 // impHWIntrinsic: Import a hardware intrinsic as a GT_HWINTRINSIC node if possible
 //
 // Arguments:
@@ -631,9 +645,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         compFloatingPointUsed = true;
     }
 
+    if (impIsTableDrivenScalarIntrinsic(intrinsic, category))
+    {
+        return impScalarIntrinsic(intrinsic, sig);
+    }
+
     // table-driven importer of simple intrinsics
     if (impIsTableDrivenHWIntrinsic(intrinsic, category))
     {
+        printf("Table driven %s\n", HWIntrinsicInfo::lookup(intrinsic).name);
         if ((category == HW_Category_MemoryStore) || HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic) ||
             HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
         {
@@ -772,7 +792,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         return retNode;
     }
 
-    return impSpecialIntrinsic(intrinsic, clsHnd, method, sig, mustExpand);
+    return impSpecialIntrinsic(intrinsic, clsHnd, method, sig);
 }
 
 #endif // FEATURE_HW_INTRINSICS

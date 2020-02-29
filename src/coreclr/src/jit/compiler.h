@@ -3668,8 +3668,9 @@ protected:
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
                                  CORINFO_METHOD_HANDLE method,
-                                 CORINFO_SIG_INFO*     sig,
-                                 bool                  mustExpand);
+                                 CORINFO_SIG_INFO*     sig);
+
+    GenTree* impScalarIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig);
 
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
@@ -3679,48 +3680,16 @@ protected:
     GenTree* impBaseIntrinsic(NamedIntrinsic        intrinsic,
                               CORINFO_CLASS_HANDLE  clsHnd,
                               CORINFO_METHOD_HANDLE method,
-                              CORINFO_SIG_INFO*     sig,
-                              bool                  mustExpand);
-    GenTree* impSSEIntrinsic(NamedIntrinsic        intrinsic,
-                             CORINFO_METHOD_HANDLE method,
-                             CORINFO_SIG_INFO*     sig,
-                             bool                  mustExpand);
-    GenTree* impSSE2Intrinsic(NamedIntrinsic        intrinsic,
-                              CORINFO_METHOD_HANDLE method,
-                              CORINFO_SIG_INFO*     sig,
-                              bool                  mustExpand);
-    GenTree* impSSE42Intrinsic(NamedIntrinsic        intrinsic,
-                               CORINFO_METHOD_HANDLE method,
-                               CORINFO_SIG_INFO*     sig,
-                               bool                  mustExpand);
-    GenTree* impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
-                                   CORINFO_METHOD_HANDLE method,
-                                   CORINFO_SIG_INFO*     sig,
-                                   bool                  mustExpand);
-    GenTree* impAESIntrinsic(NamedIntrinsic        intrinsic,
-                             CORINFO_METHOD_HANDLE method,
-                             CORINFO_SIG_INFO*     sig,
-                             bool                  mustExpand);
-    GenTree* impBMI1OrBMI2Intrinsic(NamedIntrinsic        intrinsic,
-                                    CORINFO_METHOD_HANDLE method,
-                                    CORINFO_SIG_INFO*     sig,
-                                    bool                  mustExpand);
-    GenTree* impFMAIntrinsic(NamedIntrinsic        intrinsic,
-                             CORINFO_METHOD_HANDLE method,
-                             CORINFO_SIG_INFO*     sig,
-                             bool                  mustExpand);
-    GenTree* impLZCNTIntrinsic(NamedIntrinsic        intrinsic,
-                               CORINFO_METHOD_HANDLE method,
-                               CORINFO_SIG_INFO*     sig,
-                               bool                  mustExpand);
-    GenTree* impPCLMULQDQIntrinsic(NamedIntrinsic        intrinsic,
-                                   CORINFO_METHOD_HANDLE method,
-                                   CORINFO_SIG_INFO*     sig,
-                                   bool                  mustExpand);
-    GenTree* impPOPCNTIntrinsic(NamedIntrinsic        intrinsic,
-                                CORINFO_METHOD_HANDLE method,
-                                CORINFO_SIG_INFO*     sig,
-                                bool                  mustExpand);
+                              CORINFO_SIG_INFO*     sig);
+    GenTree* impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impSSE42Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impAESIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impFMAIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+    GenTree* impPCLMULQDQIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
+
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
