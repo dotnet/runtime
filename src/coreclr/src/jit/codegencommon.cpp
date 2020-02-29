@@ -6361,8 +6361,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         }
         else
         {
-        // Grab a non-argument, non-callee saved XMM reg
-        CLANG_FORMAT_COMMENT_ANCHOR;
+            // Grab a non-argument, non-callee saved XMM reg
+            CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef UNIX_AMD64_ABI
             // System V x64 first temp reg is xmm8
             regNumber zeroSIMDReg = genRegNumFromMask(RBM_XMM8);
