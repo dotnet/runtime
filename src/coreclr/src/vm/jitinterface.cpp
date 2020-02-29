@@ -9192,7 +9192,8 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
 
     pResult->accessType = IAT_VALUE;
 
-#if defined(TARGET_X86) && !defined(CROSSGEN_COMPILE)
+// Also see GetBaseCompileFlags() below for an additional check.
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS) && !defined(CROSSGEN_COMPILE)
     // Deferring X86 support until a need is observed or
     // time permits investigation into all the potential issues.
     if (pMD->HasNativeCallableAttribute())
@@ -9223,7 +9224,7 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
 
     pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();
 
-#endif // !TARGET_X86 || CROSSGEN_COMPILE
+#endif // !(TARGET_X86 && TARGET_WINDOWS) || CROSSGEN_COMPILE
 
     EE_TO_JIT_TRANSITION();
 }
@@ -12383,10 +12384,10 @@ CorJitResult CallCompileMethodWithSEHWrapper(EEJitManager *jitMgr,
          }
     }
 
-#if !defined(TARGET_X86)
+#if !defined(TARGET_X86) || !defined(TARGET_WINDOWS)
     if (ftn->HasNativeCallableAttribute())
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
-#endif // !TARGET_X86
+#endif // !TARGET_X86 || !TARGET_WINDOWS
 
     return flags;
 }
