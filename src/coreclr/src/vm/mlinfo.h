@@ -468,8 +468,7 @@ public:
                 BOOL fEmitsIL,
                 BOOL onInstanceMethod,
                 MethodDesc* pMD = NULL,
-                BOOL fUseCustomMarshal = TRUE,
-                BOOL fCalculatingFieldMetadata = FALSE // Calculating metadata for fields on type load.
+                BOOL fUseCustomMarshal = TRUE
 #ifdef _DEBUG
                 ,
                 LPCUTF8 pDebugName = NULL,

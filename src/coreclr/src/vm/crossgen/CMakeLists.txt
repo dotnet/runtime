@@ -11,6 +11,7 @@ set(VM_CROSSGEN_SOURCES
   ../ceemain.cpp
   ../class.cpp
   ../classhash.cpp
+  ../classlayoutinfo.cpp
   ../clrex.cpp
   ../clrprivbinderutil.cpp
   ../clsload.cpp
