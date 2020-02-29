@@ -107,7 +107,7 @@ namespace System.Text.Json
         {
             Debug.Assert(jsonPropertyInfo != null);
 
-            IDictionary? extensionData = (IDictionary?)jsonPropertyInfo.GetValueAsObject(obj);
+            var extensionData = jsonPropertyInfo.GetValueAsObject(obj);
             if (extensionData == null)
             {
                 // Create the appropriate dictionary type. We already verified the types.
@@ -127,7 +127,7 @@ namespace System.Text.Json
                     ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.DeclaredPropertyType);
                 }
 
-                extensionData = (IDictionary?)jsonPropertyInfo.RuntimeClassInfo.CreateObject();
+                extensionData = jsonPropertyInfo.RuntimeClassInfo.CreateObject();
                 jsonPropertyInfo.SetValueAsObject(obj, extensionData);
             }
 
