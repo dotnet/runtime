@@ -57,7 +57,7 @@ namespace Microsoft.NET.HostModel.AppHost
                     {
                         BinaryUtils.SearchAndReplace(accessor, AppBinaryPathPlaceholderSearchValue, bytesToWrite);
 
-                        appHostIsPEImage = BinaryUtils.IsPEImage(accessor);
+                        appHostIsPEImage = PEUtils.IsPEImage(accessor);
 
                         if (windowsGraphicalUserInterface)
                         {
@@ -66,7 +66,7 @@ namespace Microsoft.NET.HostModel.AppHost
                                 throw new AppHostNotPEFileException();
                             }
 
-                            BinaryUtils.SetWindowsGraphicalUserInterfaceBit(accessor);
+                            PEUtils.SetWindowsGraphicalUserInterfaceBit(accessor);
                         }
                     }
                 }

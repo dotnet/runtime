@@ -123,7 +123,7 @@ namespace Microsoft.NET.HostModel.AppHost
                         {
                             return Encoding.UTF8.GetString(p, len);
                         }
-                        catch(ArgumentException)
+                        catch (ArgumentException)
                         {
                             throw new AppHostMachOFormatException(MachOFormatError.InvalidUTF8);
                         }
@@ -139,6 +139,32 @@ namespace Microsoft.NET.HostModel.AppHost
             if (!condition)
             {
                 throw new AppHostMachOFormatException(error);
+            }
+        }
+
+        unsafe public static bool IsMachOImage(string filePath)
+        {
+            using (var mappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, mapName: null, capacity: 0, MemoryMappedFileAccess.Read))
+            {
+                using (var accessor = mappedFile.CreateViewAccessor())
+                {
+                    byte* file = null;
+                    RuntimeHelpers.PrepareConstrainedRegions();
+                    try
+                    {
+                        accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref file);
+                        MachHeader* header = (MachHeader*)file;
+
+                        return header->IsValid();
+                    }
+                    finally
+                    {
+                        if (file != null)
+                        {
+                            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+                        }
+                    }
+                }
             }
         }
 
@@ -287,7 +313,7 @@ namespace Microsoft.NET.HostModel.AppHost
                         }
                         finally
                         {
-                            if(file != null)
+                            if (file != null)
                             {
                                 accessor.SafeMemoryMappedViewHandle.ReleasePointer();
                             }

@@ -11,6 +11,7 @@ using Xunit;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using BundleTests.Helpers;
+using Microsoft.NET.HostModel.Bundle;
 
 namespace AppHost.Bundle.Tests
 {
@@ -33,7 +34,7 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             var bundleDir = BundleHelper.GetBundleDir(fixture);
-            var bundler = new Microsoft.NET.HostModel.Bundle.Bundler(hostName, bundleDir.FullName);
+            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
             string singleFile = bundler.GenerateBundle(publishPath);
 
             // Compute bundled files
@@ -75,7 +76,7 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             var bundleDir = BundleHelper.GetBundleDir(fixture);
-            var bundler = new Microsoft.NET.HostModel.Bundle.Bundler(hostName, bundleDir.FullName);
+            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
             string singleFile = bundler.GenerateBundle(publishPath);
 
             // Create a directory for extraction.
@@ -128,7 +129,7 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             var bundleDir = BundleHelper.GetBundleDir(fixture);
-            var bundler = new Microsoft.NET.HostModel.Bundle.Bundler(hostName, bundleDir.FullName);
+            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
             string singleFile = bundler.GenerateBundle(publishPath);
 
             // Compute bundled files
