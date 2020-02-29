@@ -705,6 +705,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsImmutableJsonElement>("{\"hello\":\"world\"}"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructor>("{\"hello\":\"world\"}"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyPrivateConstructorJsonElement>("{\"hello\":\"world\"}"));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyCustomIImmutable>("{\"hello\":\"world\"}"));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyCustomIImmutableJsonElement>("{\"hello\":\"world\"}"));
         }
 
         [Fact]
@@ -755,6 +757,19 @@ namespace System.Text.Json.Serialization.Tests
             [JsonExtensionData]
             public GenericIDictionaryWrapperPrivateConstructor<string, JsonElement> MyOverflow { get; set; }
         }
+
+        private class ClassWithExtensionPropertyCustomIImmutable
+        {
+            [JsonExtensionData]
+            public GenericIImmutableDictionaryWrapper<string, object> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyCustomIImmutableJsonElement
+        {
+            [JsonExtensionData]
+            public GenericIImmutableDictionaryWrapper<string, JsonElement> MyOverflow { get; set; }
+        }
+
 
         [Fact]
         public static void CustomObjectConverterInExtensionProperty()
