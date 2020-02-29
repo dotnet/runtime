@@ -773,7 +773,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void DeserializeIntoGenericDictionaryParameterCount()
         {
-            // baseline
             JsonSerializer.Deserialize<ClassWithExtensionPropertyNoGenericParameters>("{\"hello\":\"world\"}");
             JsonSerializer.Deserialize<ClassWithExtensionPropertyOneGenericParameter>("{\"hello\":\"world\"}");
             JsonSerializer.Deserialize<ClassWithExtensionPropertyThreeGenericParameters>("{\"hello\":\"world\"}");
