@@ -1607,7 +1607,7 @@ DoWrite
 ; __declspec(naked) void F_CALL_CONV JIT_Stelem_DoWrite(PtrArray* array, unsigned idx, Object* val)
     LEAF_ENTRY  JIT_Stelem_DoWrite
 
-    ; Setup args for JIT_WriteBarrier. x14 = &array->m_array[idx] x15 = val
+    ; Setup args for JIT_WriteBarrier. x14 = &array->m_array[idx] ; x15 = val
     add     x14, x0, #PtrArray__m_Array ; x14 = &array->m_array
     add     x14, x14, x1, LSL #3
     mov     x15, x2                     ; x15 = val
@@ -1615,6 +1615,20 @@ DoWrite
     ; Branch to the write barrier (which is already correctly overwritten with
     ; single or multi-proc code based on the current CPU
     b       JIT_WriteBarrier
+    LEAF_END
+
+; ------------------------------------------------------------------
+; __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
+    LEAF_ENTRY  JIT_WriteBarrier_Callable
+
+    ; Setup args for JIT_WriteBarrier. x14 = dst ; x15 = val
+    mov     x14, x0                     ; x14 = dst
+    mov     x15, x1                     ; x15 = val
+
+    ; Branch to the write barrier (which is already correctly overwritten with
+    ; single or multi-proc code based on the current CPU
+    b       JIT_WriteBarrier
+
     LEAF_END
 
 #ifdef PROFILING_SUPPORTED

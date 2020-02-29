@@ -399,6 +399,15 @@ LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
         // helpers use this global variable to jump to it. This variable is set in InitThreadManager.
         .global _JIT_WriteBarrier_Loc
         .zerofill __DATA,__common,_JIT_WriteBarrier_Loc,8,3
+
+// ------------------------------------------------------------------
+// __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
+.balign 16
+LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
+    // JIT_WriteBarrier(Object** dst, Object* src)
+    jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
+LEAF_END JIT_Stelem_DoWrite, _TEXT
+
 #endif // FEATURE_WRITEBARRIER_COPY
 
 // TODO: put definition for this in asmconstants.h

@@ -248,6 +248,16 @@ extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type,
 extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 extern "C" FCDECL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj);
 
+#if defined(TARGET_ARM64) || defined(FEATURE_WRITEBARRIER_COPY)
+// ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
+// Copied write barriers must be called at a different location
+extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
+#define WriteBarrier_Helper JIT_WriteBarrier_Callable
+#else
+// in other cases the regular JIT helper is callable.
+#define WriteBarrier_Helper JIT_WriteBarrier
+#endif
+
 extern "C" FCDECL1(void, JIT_InternalThrow, unsigned exceptNum);
 extern "C" FCDECL1(void*, JIT_InternalThrowFromHelper, unsigned exceptNum);
 
