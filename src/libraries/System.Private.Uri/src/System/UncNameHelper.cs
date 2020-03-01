@@ -62,22 +62,21 @@ namespace System
             int i = start;
             for (; i < end; ++i)
             {
-                char c = name[i];
-                if (c == '/' || c == '\\' || (notImplicitFile && (c == ':' || c == '?' || c == '#')))
+                if (name[i] == '/' || name[i] == '\\' || (notImplicitFile && (name[i] == ':' || name[i] == '?' || name[i] == '#')))
                 {
                     end = i;
                     break;
                 }
-                else if (c == '.')
+                else if (name[i] == '.')
                 {
                     ++i;
                     break;
                 }
-                if (char.IsLetter(c) || c == '-' || c == '_')
+                if (char.IsLetter(name[i]) || name[i] == '-' || name[i] == '_')
                 {
                     validShortName = true;
                 }
-                else if (c < '0' || c > '9')
+                else if (name[i] < '0' || name[i] > '9')
                     return false;
             }
 
@@ -90,25 +89,24 @@ namespace System
 
             for (; i < end; ++i)
             {
-                char c = name[i];
-                if (c == '/' || c == '\\' || (notImplicitFile && (c == ':' || c == '?' || c == '#')))
+                if (name[i] == '/' || name[i] == '\\' || (notImplicitFile && (name[i] == ':' || name[i] == '?' || name[i] == '#')))
                 {
                     end = i;
                     break;
                 }
-                else if (c == '.')
+                else if (name[i] == '.')
                 {
                     if (!validShortName || ((i - 1) >= start && name[i - 1] == '.'))
                         return false;
 
                     validShortName = false;
                 }
-                else if (c == '-' || c == '_')
+                else if (name[i] == '-' || name[i] == '_')
                 {
                     if (!validShortName)
                         return false;
                 }
-                else if (char.IsLetter(c) || (c >= '0' && c <= '9'))
+                else if (char.IsLetter(name[i]) || (name[i] >= '0' && name[i] <= '9'))
                 {
                     if (!validShortName)
                         validShortName = true;
