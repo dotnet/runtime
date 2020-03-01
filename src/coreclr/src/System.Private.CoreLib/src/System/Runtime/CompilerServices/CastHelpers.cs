@@ -501,11 +501,17 @@ namespace System.Runtime.CompilerServices
             public object? Value;
         }
 
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
         private static ref object? ThrowArrayMismatchException()
         {
             throw new ArrayTypeMismatchException();
         }
 
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
         private static ref object? LdelemaRef(Array array, int index, void* type)
         {
             ArrayElement[] arr = Unsafe.As<ArrayElement[]>(array);
@@ -523,6 +529,9 @@ namespace System.Runtime.CompilerServices
                 return ref ThrowArrayMismatchException();
         }
 
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
         private static void StelemRef(Array array, int index, object? obj)
         {
             ArrayElement[] arr = Unsafe.As<ArrayElement[]>(array);
@@ -552,6 +561,9 @@ namespace System.Runtime.CompilerServices
             StelemRef_Helper(ref element, elementType, obj);
         }
 
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
         private static void StelemRef_Helper(ref object? element, nuint elementType, object obj)
         {
             CastResult result = TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);
@@ -564,6 +576,9 @@ namespace System.Runtime.CompilerServices
             StelemRef_Helper_Slow(ref element, elementType, obj);
         }
 
+        [DebuggerHidden]
+        [StackTraceHidden]
+        [DebuggerStepThrough]
         private static void StelemRef_Helper_Slow(ref object? element, nuint elementType, object obj)
         {
             Debug.Assert(obj != null);
