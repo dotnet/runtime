@@ -157,6 +157,21 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_MUL:
+            if (varTypeIsFloating(node->TypeGet()) && node->gtGetOp2()->IsCnsFltOrDbl())
+            {
+                // "x * 2.0" -> "x + x"
+                if (node->gtGetOp2()->AsDblCon()->gtDconVal == 2.0)
+                {
+                    LIR::Use op1Use(BlockRange(), &node->AsOp()->gtOp1, node);
+                    GenTree* op1Lcl = comp->gtNewLclvNode(ReplaceWithLclVar(op1Use)->GetLclNum(), node->TypeGet());
+                    BlockRange().InsertBefore(node->AsOp()->gtOp2, op1Lcl);
+                    BlockRange().Remove(node->AsOp()->gtOp2); // drop cns (2.0) node
+                    node->AsOp()->gtOp2 = op1Lcl;
+                    node->SetOperRaw(GT_ADD);
+                    ContainCheckBinary(node->AsOp());
+                    break;
+                }
+            }
         case GT_MULHI:
 #if defined(TARGET_X86)
         case GT_MUL_LONG:
