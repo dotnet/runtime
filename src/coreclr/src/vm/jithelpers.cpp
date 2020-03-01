@@ -2806,32 +2806,6 @@ HCIMPL3(Object*, JIT_NewMDArrNonVarArg, CORINFO_CLASS_HANDLE classHnd, unsigned 
 }
 HCIMPLEND
 
-/*************************************************************/
-/* returns '&array[idx], after doing all the proper checks */
-
-#include <optsmallperfcritical.h>
-HCIMPL3(void*, JIT_Ldelema_Ref, PtrArray* array, unsigned idx, CORINFO_CLASS_HANDLE type)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind except;
-       // This has been carefully arranged to ensure that in the common
-        // case the branches are predicted properly (fall through).
-        // and that we dont spill registers unnecessarily etc.
-    if (array != 0)
-        if (idx < array->GetNumComponents())
-            if (array->GetArrayElementTypeHandle() == TypeHandle(type))
-                return(&array->m_Array[idx]);
-            else
-                except = kArrayTypeMismatchException;
-        else
-            except = kIndexOutOfRangeException;
-    else
-        except = kNullReferenceException;
-
-    FCThrow(except);
-}
-HCIMPLEND
 #include <optdefault.h>
 
 //===========================================================================
