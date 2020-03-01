@@ -107,7 +107,7 @@ namespace System.Text.Json
         {
             Debug.Assert(jsonPropertyInfo != null);
 
-            var extensionData = jsonPropertyInfo.GetValueAsObject(obj);
+            object? extensionData = jsonPropertyInfo.GetValueAsObject(obj);
             if (extensionData == null)
             {
                 // Create the appropriate dictionary type. We already verified the types.
