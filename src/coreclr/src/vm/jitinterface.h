@@ -209,12 +209,6 @@ extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arra
 extern FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 extern FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 
-#ifndef JIT_Stelem_Ref
-#define JIT_Stelem_Ref JIT_Stelem_Ref_Portable
-#endif
-EXTERN_C FCDECL3(void, JIT_Stelem_Ref, PtrArray* array, unsigned idx, Object* val);
-EXTERN_C FCDECL3(void, JIT_Stelem_Ref_Portable, PtrArray* array, unsigned idx, Object* val);
-
 EXTERN_C FCDECL_MONHELPER(JITutil_MonEnterWorker, Object* obj);
 EXTERN_C FCDECL2(void, JITutil_MonReliableEnter, Object* obj, BYTE* pbLockTaken);
 EXTERN_C FCDECL3(void, JITutil_MonTryEnter, Object* obj, INT32 timeOut, BYTE* pbLockTaken);
