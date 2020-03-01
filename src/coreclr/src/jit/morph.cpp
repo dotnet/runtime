@@ -4818,13 +4818,15 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
             //   if the tail call is a slow tail call.
             //
             // * (may not copy) if the call is noreturn, the use is a last use.
+            //   We also check for just one reference here as we are not doing
+            //   alias analysis of the call's parameters.
             //
             // * (may not copy) if there is exactly one use of the local in the method,
             //   and the call is not in loop, this is a last use.
             //
             const bool isTailCallLastUse = call->IsTailCall();
             const bool isCallLastUse     = (totalAppearances == 1) && !fgMightHaveLoop();
-            const bool isNoReturnLastUse = call->IsNoReturn();
+            const bool isNoReturnLastUse = (totalAppearances == 1) && call->IsNoReturn();
             if (!call->IsTailCallViaHelper() && (isTailCallLastUse || isCallLastUse || isNoReturnLastUse))
             {
                 varDsc->setLvRefCnt(0, RCS_EARLY);
@@ -6722,7 +6724,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                             // We also have to worry about introducing aliases if we bypass copying
                             // the struct at the call. We'll do some limited analysis to see if we
                             // can rule this out.
-                            const unsigned argLimit = 4;
+                            const unsigned argLimit = 6;
 
                             // If this is the only appearance of the byref in the method, then
                             // aliasing is not possible.
@@ -6785,47 +6787,81 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                                     // So, we also need to scan all 'lcl's fields, if any, to see if they
                                     // are exposed.
                                     //
-                                    // TODO: we should not need to check for TYP_I_IMPL here.
+                                    // TODO: we should not need to check for TYP_I_IMPL here, any
+                                    // aliasing value should be TYP_BYREF.
+                                    //
+                                    // Note we don't need to check for native pointers (abstractly)
+                                    // because aliasing native pointers require pinning, and we
+                                    // reject all tail calls in methods with pinned locals.
+                                    //
                                     if ((arg2->argType == TYP_BYREF) || (arg2->argType == TYP_I_IMPL))
                                     {
                                         JITDUMP("... is byref arg...\n", dspTreeID(arg2->GetNode()));
-                                        bool hasExposure = false;
-                                        if (varDsc->lvHasLdAddrOp || varDsc->lvAddrExposed)
-                                        {
-                                            // Struct as a whole is exposed, can't optimize
-                                            JITDUMP(" ... V%02u exposed\n", lcl->GetLclNum());
-                                            hasExposure = true;
-                                        }
-                                        else if (varDsc->lvFieldLclStart != 0)
-                                        {
-                                            // This the promoted/undone struct case.
-                                            //
-                                            // The field start is actually the local number of the promoted local,
-                                            // use it to enumerate the fields.
-                                            const unsigned   promotedLcl    = varDsc->lvFieldLclStart;
-                                            LclVarDsc* const promotedVarDsc = lvaGetDesc(promotedLcl);
-                                            JITDUMP("promoted-unpromoted case, checking fields of V%02u\n",
-                                                    promotedLcl);
+                                        bool checkExposure = true;
+                                        bool hasExposure   = false;
 
-                                            for (unsigned fieldIndex = 0; fieldIndex < promotedVarDsc->lvFieldCnt;
-                                                 fieldIndex++)
+                                        // See if there is any way arg could refer to a parameter struct.
+                                        GenTree* arg2Node = arg2->GetNode();
+                                        if (arg2Node->OperIs(GT_LCL_VAR))
+                                        {
+                                            GenTreeLclVarCommon* arg2LclNode = arg2Node->AsLclVarCommon();
+                                            assert(arg2LclNode->GetLclNum() != lcl->GetLclNum());
+                                            LclVarDsc* arg2Dsc = lvaGetDesc(arg2LclNode);
+
+                                            // Other params can't alias implicit byref params
+                                            if (arg2Dsc->lvIsParam)
                                             {
-                                                JITDUMP("checking field V%02u\n",
-                                                        promotedVarDsc->lvFieldLclStart + fieldIndex);
-                                                LclVarDsc* fieldDsc =
-                                                    lvaGetDesc(promotedVarDsc->lvFieldLclStart + fieldIndex);
-
-                                                if (fieldDsc->lvHasLdAddrOp || fieldDsc->lvAddrExposed)
-                                                {
-                                                    // Promoted and not yet demoted field is exposed, can't optimize
-                                                    hasExposure = true;
-                                                    break;
-                                                }
+                                                checkExposure = false;
                                             }
                                         }
-                                        else
+                                        // Because we're checking TYP_I_IMPL above, at least
+                                        // screen out obvious things that can't cause aliases.
+                                        else if (arg2Node->IsIntegralConst())
                                         {
-                                            JITDUMP("...never promoted case, we're cool\n");
+                                            checkExposure = false;
+                                        }
+
+                                        if (checkExposure)
+                                        {
+                                            // arg2 might alias arg, see if we've exposed
+                                            // arg somewhere in the method.
+                                            if (varDsc->lvHasLdAddrOp || varDsc->lvAddrExposed)
+                                            {
+                                                // Struct as a whole is exposed, can't optimize
+                                                JITDUMP(" ... V%02u exposed\n", lcl->GetLclNum());
+                                                hasExposure = true;
+                                            }
+                                            else if (varDsc->lvFieldLclStart != 0)
+                                            {
+                                                // This the promoted/undone struct case.
+                                                //
+                                                // The field start is actually the local number of the promoted local,
+                                                // use it to enumerate the fields.
+                                                const unsigned   promotedLcl    = varDsc->lvFieldLclStart;
+                                                LclVarDsc* const promotedVarDsc = lvaGetDesc(promotedLcl);
+                                                JITDUMP("promoted-unpromoted case, checking fields of V%02u\n",
+                                                        promotedLcl);
+
+                                                for (unsigned fieldIndex = 0; fieldIndex < promotedVarDsc->lvFieldCnt;
+                                                     fieldIndex++)
+                                                {
+                                                    JITDUMP("checking field V%02u\n",
+                                                            promotedVarDsc->lvFieldLclStart + fieldIndex);
+                                                    LclVarDsc* fieldDsc =
+                                                        lvaGetDesc(promotedVarDsc->lvFieldLclStart + fieldIndex);
+
+                                                    if (fieldDsc->lvHasLdAddrOp || fieldDsc->lvAddrExposed)
+                                                    {
+                                                        // Promoted and not yet demoted field is exposed, can't optimize
+                                                        hasExposure = true;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                JITDUMP("...never promoted case, we're cool\n");
+                                            }
                                         }
 
                                         if (hasExposure)

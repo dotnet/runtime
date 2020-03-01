@@ -11,6 +11,12 @@ public struct S
     public long y;
 }
 
+public struct R
+{
+    public S s;
+    public S t;
+}
+
 // Tail calls with implicit byref parameters as arguments.
 //
 // We need to ensure that we don't introduce aliased
@@ -19,7 +25,7 @@ public struct S
 public class ImplicitByrefTailCalls
 {
     // Helper method to make callees unattractive for inlining.
-    public static void Z() {}
+    public static void Z() { }
 
     // Will return different answers if x and y refer to the same struct.
     public static long Alias(S x, S y)
@@ -68,6 +74,34 @@ public class ImplicitByrefTailCalls
     {
         Z(); Z(); Z(); Z();
         y++;
+        long result = 0;
+        for (int i = 0; i < 100; i++)
+        {
+            x.x++;
+            result += x.x + x.y;
+        }
+        return result;
+    }
+
+    // Will return different answers if x and r refer to the same struct.
+    public static long Alias5(S x, R r)
+    {
+        Z(); Z(); Z(); Z();
+        r.s.x++;
+        long result = 0;
+        for (int i = 0; i < 100; i++)
+        {
+            x.x++;
+            result += x.x + x.y;
+        }
+        return result;
+    }
+
+    // Will return different answers if ss and x refer to the same struct
+    public static long Alias6(Span<S> ss, S x)
+    {
+        Z(); Z(); Z(); Z();
+        ss[0].x++;
         long result = 0;
         for (int i = 0; i < 100; i++)
         {
@@ -150,11 +184,45 @@ public class ImplicitByrefTailCalls
         }
     }
 
+    // H must copy params locally when calling Alias
+    // and so can't tail call
+    public static long H(R r)
+    {
+        Z(); Z(); Z(); Z();
+        return Alias(r.s, r.s);
+    }
+
+    // I must copy params locally when calling Alias
+    // and so can't tail call
+    public static long I(R r)
+    {
+        Z(); Z(); Z(); Z();
+        return Alias5(r.s, r);
+    }
+
+    // J can tail call, but we might not recognize this
+    public static long J(R r)
+    {
+        Z(); Z(); Z(); Z();
+        return Alias(r.s, r.t);
+    }
+
+    // K cannot tail call
+    public static unsafe long K(S s)
+    {
+        Z(); Z(); Z(); Z();
+        Span<S> ss = new Span<S>((void*)&s, 1);
+        return Alias6(ss, s);
+    }
+
     public static int Main()
     {
         S s = new S();
         s.x = 1;
         s.y = 2;
+        R r = new R();
+        r.s = s;
+        r.t = s;
         long ra = A(s);
         long rb = B(s);
         long rc = C(s);
@@ -162,9 +230,16 @@ public class ImplicitByrefTailCalls
         long re = E(0, 0, 0, 0, 0, 0, s, s);
         long rf = F(0, 0, 0, 0, 0, 0, s, s);
         long rg = G(0, 0, 0, 0, 0, 0, s, s);
+        long rh = H(r);
+        long ri = I(r);
+        long rj = J(r);
+        long rk = K(s);
 
-        Console.WriteLine($"{ra},{rb},{rc},{rd},{re},{rf},{rg}");
+        Console.WriteLine($"{ra},{rb},{rc},{rd},{re},{rf},{rg},{rh},{ri},{rj},{rk}");
 
-        return (ra == 5350) && (rb == 5350) && (rc == 5350) && (rd == 5350) && (re == 5350) && (rf == 5350) && (rg == 5350) ? 100 : -1;
+        return
+        (ra == 5350) && (rb == 5350) && (rc == 5350) && (rd == 5350) &&
+        (re == 5350) && (rf == 5350) && (rg == 5350) && (rh == 5350) && 
+        (ri == 5350) && (rj == 5350) && (rk == 5350) ? 100 : -1;
     }
 }
