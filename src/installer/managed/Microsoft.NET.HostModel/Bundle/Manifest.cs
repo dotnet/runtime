@@ -89,8 +89,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public bool Contains(string relativePath)
         {
-            return Files.Where(entry => relativePath.Equals(entry.RelativePath)).Any();
+            return Files.Any(entry => relativePath.Equals(entry.RelativePath));
         }
     }
 }
-
