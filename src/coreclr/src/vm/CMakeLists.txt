@@ -46,6 +46,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     ceeload.cpp
     class.cpp
     classhash.cpp
+    classlayoutinfo.cpp
     clsload.cpp
     codeman.cpp
     codeversion.cpp

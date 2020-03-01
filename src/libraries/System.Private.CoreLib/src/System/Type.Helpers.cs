@@ -406,7 +406,7 @@ namespace System
                 case MemberTypes.Constructor:
                 case MemberTypes.Method:
                     {
-                        MethodAttributes criteria = 0;
+                        MethodAttributes criteria;
                         try
                         {
                             int i = (int)filterCriteria;
@@ -440,7 +440,7 @@ namespace System
                     }
                 case MemberTypes.Field:
                     {
-                        FieldAttributes criteria = 0;
+                        FieldAttributes criteria;
                         try
                         {
                             int i = (int)filterCriteria;
