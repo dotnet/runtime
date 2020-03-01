@@ -90,11 +90,11 @@
     <!-- Standard dependencies -->
     <NETStandardLibraryVersion>2.2.0-prerelease.19564.1</NETStandardLibraryVersion>
     <!-- dotnet-optimization dependencies -->
-    <optimizationwindows_ntx64IBCCoreFxVersion>99.99.99-master-20190716.1</optimizationwindows_ntx64IBCCoreFxVersion>
-    <optimizationlinuxx64IBCCoreFxVersion>99.99.99-master-20190716.1</optimizationlinuxx64IBCCoreFxVersion>
-    <optimizationwindows_ntx64IBCCoreCLRVersion>99.99.99-master-20190716.1</optimizationwindows_ntx64IBCCoreCLRVersion>
-    <optimizationlinuxx64IBCCoreCLRVersion>99.99.99-master-20190716.1</optimizationlinuxx64IBCCoreCLRVersion>
-    <optimizationPGOCoreCLRVersion>99.99.99-master-20190716.1</optimizationPGOCoreCLRVersion>
+    <optimizationwindows_ntx64IBCCoreFxVersion>99.99.99-master-20200228.3</optimizationwindows_ntx64IBCCoreFxVersion>
+    <optimizationlinuxx64IBCCoreFxVersion>99.99.99-master-20200228.3</optimizationlinuxx64IBCCoreFxVersion>
+    <optimizationwindows_ntx64IBCCoreCLRVersion>99.99.99-master-20200228.3</optimizationwindows_ntx64IBCCoreCLRVersion>
+    <optimizationlinuxx64IBCCoreCLRVersion>99.99.99-master-20200228.3</optimizationlinuxx64IBCCoreCLRVersion>
+    <optimizationPGOCoreCLRVersion>99.99.99-master-20200228.3</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
     <MicrosoftTargetingPackPrivateWinRTVersion>1.0.5</MicrosoftTargetingPackPrivateWinRTVersion>
     <MicrosoftDiaSymReaderNativeVersion>1.7.0</MicrosoftDiaSymReaderNativeVersion>
