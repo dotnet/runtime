@@ -28,7 +28,7 @@ public class Program
 
         testValues = testValues.Concat(testValues.Select(v => -v)).ToArray();
 
-        foreach (float testValue in )
+        foreach (float testValue in testValues)
         {
             var tf = new TestFloats();
 
