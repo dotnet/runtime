@@ -4,6 +4,17 @@
   </PropertyGroup>
   <Import Project="..\..\Directory.Build.props" />
 
+  <ItemGroup>
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\ref\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\src\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\Microsoft.Extensions.*.Tests.csproj" Exclude="@(PortedExtensionsProject)" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.')) and !$(MSBuildProjectName.EndsWith('.Tests'))">
+    <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
+  </PropertyGroup>
+
   <PropertyGroup>
     <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
@@ -311,6 +322,9 @@
     <!-- Paths to binplace package content -->
     <NETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\ref</NETCoreAppPackageRefPath>
     <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\lib</NETCoreAppPackageRuntimePath>
+    
+    <ASPNETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\aspnetcoreapp\ref</ASPNETCoreAppPackageRefPath>
+    <ASPNETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\aspnetcoreapp\lib</ASPNETCoreAppPackageRuntimePath>
 
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildSettings)'))</TestHostRootPath>
 
