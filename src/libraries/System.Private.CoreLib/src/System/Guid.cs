@@ -18,7 +18,7 @@ namespace System
     [Serializable]
     [NonVersionable] // This only applies to field layout
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public unsafe partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>, ISpanFormattable
+    public partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>, ISpanFormattable
     {
         public static readonly Guid Empty = default;
 
@@ -33,19 +33,6 @@ namespace System
         private byte _i;  // Do not rename (binary serialization)
         private byte _j;  // Do not rename (binary serialization)
         private byte _k;  // Do not rename (binary serialization)
-
-        private static uint* GetTableToHex()
-        {
-            uint* tableToHexPtr = (uint*)Marshal.AllocHGlobal(sizeof(uint) * 256).ToPointer();
-            for (var i = 0; i < 256; i++)
-            {
-                var chars = Convert.ToString(i, 16).PadLeft(2, '0');
-                tableToHexPtr[i] = ((uint)chars[1] << 16) | chars[0];
-            }
-            return tableToHexPtr;
-        }
-
-        private static uint* TableToHex = GetTableToHex();
 
         // Creates a new guid from an array of bytes.
         public Guid(byte[] b) :
@@ -972,35 +959,6 @@ namespace System
             return ToString(format, null);
         }
 
-        private static unsafe int HexsToChars(char* guidChars, int a, int b)
-        {
-            guidChars[0] = HexConverter.ToCharLower(a >> 4);
-            guidChars[1] = HexConverter.ToCharLower(a);
-
-            guidChars[2] = HexConverter.ToCharLower(b >> 4);
-            guidChars[3] = HexConverter.ToCharLower(b);
-
-            return 4;
-        }
-
-        private static unsafe int HexsToCharsHexOutput(char* guidChars, int a, int b)
-        {
-            guidChars[0] = '0';
-            guidChars[1] = 'x';
-
-            guidChars[2] = HexConverter.ToCharLower(a >> 4);
-            guidChars[3] = HexConverter.ToCharLower(a);
-
-            guidChars[4] = ',';
-            guidChars[5] = '0';
-            guidChars[6] = 'x';
-
-            guidChars[7] = HexConverter.ToCharLower(b >> 4);
-            guidChars[8] = HexConverter.ToCharLower(b);
-
-            return 9;
-        }
-
         // IFormattable interface
         // We currently ignore provider
         public unsafe string ToString(string? format, IFormatProvider? provider)
@@ -1024,7 +982,7 @@ namespace System
                     case 'd':
                         {
                             string output = string.FastAllocateString(36);
-                            fixed (char* pinnedOutput = output)
+                            fixed (char* pinnedOutput = &output.GetPinnableReference())
                             {
                                 FormatDAvx((short*)pinnedOutput);
                             }
@@ -1034,7 +992,7 @@ namespace System
                     case 'n':
                         {
                             string output = string.FastAllocateString(32);
-                            fixed (char* pinnedOutput = output)
+                            fixed (char* pinnedOutput = &output.GetPinnableReference())
                             {
                                 FormatNAvx((short*)pinnedOutput);
                             }
@@ -1044,7 +1002,7 @@ namespace System
                     case 'b':
                         {
                             string output = string.FastAllocateString(38);
-                            fixed (char* pinnedOutput = output)
+                            fixed (char* pinnedOutput = &output.GetPinnableReference())
                             {
                                 pinnedOutput[0] = '{';
                                 FormatDAvx((short*)pinnedOutput + 1);
@@ -1056,7 +1014,7 @@ namespace System
                     case 'p':
                         {
                             string output = string.FastAllocateString(38);
-                            fixed (char* pinnedOutput = output)
+                            fixed (char* pinnedOutput = &output.GetPinnableReference())
                             {
                                 pinnedOutput[0] = '(';
                                 FormatDAvx((short*)pinnedOutput + 1);
@@ -1068,7 +1026,7 @@ namespace System
                     case 'x':
                         {
                             string output = string.FastAllocateString(68);
-                            fixed (char* pinnedOutput = output)
+                            fixed (char* pinnedOutput = &output.GetPinnableReference())
                             {
                                 FormatX(pinnedOutput);
                             }
@@ -1086,7 +1044,7 @@ namespace System
                     case 'd':
                         {
                             string output = string.FastAllocateString(36);
-                            fixed (char* pinnedOutput = output)
+                            fixed (char* pinnedOutput = &output.GetPinnableReference())
                             {
                                 FormatD(pinnedOutput);
                             }
@@ -1096,7 +1054,7 @@ namespace System
                     case 'n':
                         {
                             string output = string.FastAllocateString(32);
-                            fixed (char* pinnedOutput = output)
+                            fixed (char* pinnedOutput = &output.GetPinnableReference())
                             {
                                 FormatN(pinnedOutput);
                             }
@@ -1106,7 +1064,7 @@ namespace System
                     case 'b':
                         {
                             string output = string.FastAllocateString(38);
-                            fixed (char* pinnedOutput = output)
+                            fixed (char* pinnedOutput = &output.GetPinnableReference())
                             {
                                 pinnedOutput[0] = '{';
                                 FormatD(pinnedOutput + 1);
@@ -1118,7 +1076,7 @@ namespace System
                     case 'p':
                         {
                             string output = string.FastAllocateString(38);
-                            fixed (char* pinnedOutput = output)
+                            fixed (char* pinnedOutput = &output.GetPinnableReference())
                             {
                                 pinnedOutput[0] = '(';
                                 FormatD(pinnedOutput + 1);
@@ -1130,7 +1088,7 @@ namespace System
                     case 'x':
                         {
                             string output = string.FastAllocateString(68);
-                            fixed (char* pinnedOutput = output)
+                            fixed (char* pinnedOutput = &output.GetPinnableReference())
                             {
                                 FormatX(pinnedOutput);
                             }
@@ -1488,88 +1446,152 @@ namespace System
         private unsafe void FormatD(char* dest)
         {
             // dddddddd-dddd-dddd-dddd-dddddddddddd
-            uint* destUints = (uint*)dest;
-            char** destUintsAsChars = (char**)&destUints;
-            uint* tableToHex = TableToHex;
-
-            dest[8] = dest[13] = dest[18] = dest[23] = '-';
-            destUints[0] = tableToHex[(byte)(_a >> 24)];
-            destUints[1] = tableToHex[(byte)(_a >> 16)];
-            destUints[2] = tableToHex[(byte)(_a >> 8)];
-            destUints[3] = tableToHex[(byte)_a];
-            destUints[7] = tableToHex[(byte)(_c >> 8)];
-            destUints[8] = tableToHex[(byte)_c];
-            destUints[12] = tableToHex[_f];
-            destUints[13] = tableToHex[_g];
-            destUints[14] = tableToHex[_h];
-            destUints[15] = tableToHex[_i];
-            destUints[16] = tableToHex[_j];
-            destUints[17] = tableToHex[_k];
-            *destUintsAsChars += 1;
-            destUints[4] = tableToHex[(byte)(_b >> 8)];
-            destUints[5] = tableToHex[(byte)_b];
-            destUints[9] = tableToHex[_d];
-            destUints[10] = tableToHex[_e];
+            dest[0] = HexConverter.ToCharLower((byte)(_a >> 28));
+            dest[1] = HexConverter.ToCharLower((byte)(_a >> 24));
+            dest[2] = HexConverter.ToCharLower((byte)(_a >> 20));
+            dest[3] = HexConverter.ToCharLower((byte)(_a >> 16));
+            dest[4] = HexConverter.ToCharLower((byte)(_a >> 12));
+            dest[5] = HexConverter.ToCharLower((byte)(_a >> 8));
+            dest[6] = HexConverter.ToCharLower((byte)(_a >> 4));
+            dest[7] = HexConverter.ToCharLower((byte)_a);
+            dest[8] = '-';
+            dest[9] = HexConverter.ToCharLower((byte)(_b >> 12));
+            dest[10] = HexConverter.ToCharLower((byte)(_b >> 8));
+            dest[11] = HexConverter.ToCharLower((byte)(_b >> 4));
+            dest[12] = HexConverter.ToCharLower((byte)_b);
+            dest[13] = '-';
+            dest[14] = HexConverter.ToCharLower((byte)(_c >> 12));
+            dest[15] = HexConverter.ToCharLower((byte)(_c >> 8));
+            dest[16] = HexConverter.ToCharLower((byte)(_c >> 4));
+            dest[17] = HexConverter.ToCharLower((byte)_c);
+            dest[18] = '-';
+            dest[19] = HexConverter.ToCharLower((byte)(_d >> 4));
+            dest[20] = HexConverter.ToCharLower(_d);
+            dest[21] = HexConverter.ToCharLower((byte)(_e >> 4));
+            dest[22] = HexConverter.ToCharLower(_e);
+            dest[23] = '-';
+            dest[24] = HexConverter.ToCharLower((byte)(_f >> 4));
+            dest[25] = HexConverter.ToCharLower(_f);
+            dest[26] = HexConverter.ToCharLower((byte)(_g >> 4));
+            dest[27] = HexConverter.ToCharLower(_g);
+            dest[28] = HexConverter.ToCharLower((byte)(_h >> 4));
+            dest[29] = HexConverter.ToCharLower(_h);
+            dest[30] = HexConverter.ToCharLower((byte)(_i >> 4));
+            dest[31] = HexConverter.ToCharLower(_i);
+            dest[32] = HexConverter.ToCharLower((byte)(_j >> 4));
+            dest[33] = HexConverter.ToCharLower(_j);
+            dest[34] = HexConverter.ToCharLower((byte)(_k >> 4));
+            dest[35] = HexConverter.ToCharLower(_k);
         }
 
         private unsafe void FormatN(char* dest)
         {
             // dddddddddddddddddddddddddddddddd
-            uint* destUints = (uint*)dest;
-            uint* tableToHex = TableToHex;
-
-            destUints[0] = tableToHex[(byte)(_a >> 24)];
-            destUints[1] = tableToHex[(byte)(_a >> 16)];
-            destUints[2] = tableToHex[(byte)(_a >> 8)];
-            destUints[3] = tableToHex[(byte)_a];
-            destUints[4] = tableToHex[(byte)(_b >> 8)];
-            destUints[5] = tableToHex[(byte)_b];
-            destUints[6] = tableToHex[(byte)(_c >> 8)];
-            destUints[7] = tableToHex[(byte)_c];
-            destUints[8] = tableToHex[_d];
-            destUints[9] = tableToHex[_e];
-            destUints[10] = tableToHex[_f];
-            destUints[11] = tableToHex[_g];
-            destUints[12] = tableToHex[_h];
-            destUints[13] = tableToHex[_i];
-            destUints[14] = tableToHex[_j];
-            destUints[15] = tableToHex[_k];
+            dest[0] = HexConverter.ToCharLower((byte)(_a >> 28));
+            dest[1] = HexConverter.ToCharLower((byte)(_a >> 24));
+            dest[2] = HexConverter.ToCharLower((byte)(_a >> 20));
+            dest[3] = HexConverter.ToCharLower((byte)(_a >> 16));
+            dest[4] = HexConverter.ToCharLower((byte)(_a >> 12));
+            dest[5] = HexConverter.ToCharLower((byte)(_a >> 8));
+            dest[6] = HexConverter.ToCharLower((byte)(_a >> 4));
+            dest[7] = HexConverter.ToCharLower((byte)_a);
+            dest[8] = HexConverter.ToCharLower((byte)(_b >> 12));
+            dest[9] = HexConverter.ToCharLower((byte)(_b >> 8));
+            dest[10] = HexConverter.ToCharLower((byte)(_b >> 4));
+            dest[11] = HexConverter.ToCharLower((byte)_b);
+            dest[12] = HexConverter.ToCharLower((byte)(_c >> 12));
+            dest[13] = HexConverter.ToCharLower((byte)(_c >> 8));
+            dest[14] = HexConverter.ToCharLower((byte)(_c >> 4));
+            dest[15] = HexConverter.ToCharLower((byte)_c);
+            dest[16] = HexConverter.ToCharLower((byte)(_d >> 4));
+            dest[17] = HexConverter.ToCharLower(_d);
+            dest[18] = HexConverter.ToCharLower((byte)(_e >> 4));
+            dest[19] = HexConverter.ToCharLower(_e);
+            dest[20] = HexConverter.ToCharLower((byte)(_f >> 4));
+            dest[21] = HexConverter.ToCharLower(_f);
+            dest[22] = HexConverter.ToCharLower((byte)(_g >> 4));
+            dest[23] = HexConverter.ToCharLower(_g);
+            dest[24] = HexConverter.ToCharLower((byte)(_h >> 4));
+            dest[25] = HexConverter.ToCharLower(_h);
+            dest[26] = HexConverter.ToCharLower((byte)(_i >> 4));
+            dest[27] = HexConverter.ToCharLower(_i);
+            dest[28] = HexConverter.ToCharLower((byte)(_j >> 4));
+            dest[29] = HexConverter.ToCharLower(_j);
+            dest[30] = HexConverter.ToCharLower((byte)(_k >> 4));
+            dest[31] = HexConverter.ToCharLower(_k);
         }
-
-        private const uint ZeroX = 7864368U; // 0x
-        private const uint CommaBrace = 8060972U; // ,{
-        private const uint CloseBraces = 8192125U; // }}
 
         private unsafe void FormatX(char* dest)
         {
             // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
-            uint* destUints = (uint*)dest;
-            char** destUintsAsChars = (char**)&destUints;
-            uint* tableToHex = TableToHex;
-
             dest[0] = '{';
-            dest[11] = dest[18] = dest[31] = dest[36] = dest[41] = dest[46] = dest[51] = dest[56] = dest[61] = ',';
-            destUints[6] = destUints[16] = destUints[21] = destUints[26] = destUints[31] = ZeroX; // 0x
-            destUints[7] = tableToHex[(byte)(_b >> 8)];
-            destUints[8] = tableToHex[(byte)_b];
-            destUints[17] = tableToHex[_e];
-            destUints[22] = tableToHex[_g];
-            destUints[27] = tableToHex[_i];
-            destUints[32] = tableToHex[_k];
-            destUints[33] = CloseBraces; // }}
-            *destUintsAsChars += 1;
-            destUints[0] = destUints[9] = destUints[13] = destUints[18] = destUints[23] = destUints[28] = ZeroX; // 0x
-            destUints[1] = tableToHex[(byte)(_a >> 24)];
-            destUints[2] = tableToHex[(byte)(_a >> 16)];
-            destUints[3] = tableToHex[(byte)(_a >> 8)];
-            destUints[4] = tableToHex[(byte)_a];
-            destUints[10] = tableToHex[(byte)(_c >> 8)];
-            destUints[11] = tableToHex[(byte)_c];
-            destUints[12] = CommaBrace; // ,{
-            destUints[14] = tableToHex[_d];
-            destUints[19] = tableToHex[_f];
-            destUints[24] = tableToHex[_h];
-            destUints[29] = tableToHex[_j];
+            dest[1] = '0';
+            dest[2] = 'x';
+            dest[3] = HexConverter.ToCharLower((byte)(_a >> 28));
+            dest[4] = HexConverter.ToCharLower((byte)(_a >> 24));
+            dest[5] = HexConverter.ToCharLower((byte)(_a >> 20));
+            dest[6] = HexConverter.ToCharLower((byte)(_a >> 16));
+            dest[7] = HexConverter.ToCharLower((byte)(_a >> 12));
+            dest[8] = HexConverter.ToCharLower((byte)(_a >> 8));
+            dest[9] = HexConverter.ToCharLower((byte)(_a >> 4));
+            dest[10] = HexConverter.ToCharLower((byte)_a);
+            dest[11] = ',';
+            dest[12] = '0';
+            dest[13] = 'x';
+            dest[14] = HexConverter.ToCharLower((byte)(_b >> 12));
+            dest[15] = HexConverter.ToCharLower((byte)(_b >> 8));
+            dest[16] = HexConverter.ToCharLower((byte)(_b >> 4));
+            dest[17] = HexConverter.ToCharLower((byte)_b);
+            dest[18] = ',';
+            dest[19] = '0';
+            dest[20] = 'x';
+            dest[21] = HexConverter.ToCharLower((byte)(_c >> 12));
+            dest[22] = HexConverter.ToCharLower((byte)(_c >> 8));
+            dest[23] = HexConverter.ToCharLower((byte)(_c >> 4));
+            dest[24] = HexConverter.ToCharLower((byte)_c);
+            dest[25] = ',';
+            dest[26] = '{';
+            dest[27] = '0';
+            dest[28] = 'x';
+            dest[29] = HexConverter.ToCharLower((byte)(_d >> 4));
+            dest[30] = HexConverter.ToCharLower(_d);
+            dest[31] = ',';
+            dest[32] = '0';
+            dest[33] = 'x';
+            dest[34] = HexConverter.ToCharLower((byte)(_e >> 4));
+            dest[35] = HexConverter.ToCharLower(_e);
+            dest[36] = ',';
+            dest[37] = '0';
+            dest[38] = 'x';
+            dest[39] = HexConverter.ToCharLower((byte)(_f >> 4));
+            dest[40] = HexConverter.ToCharLower(_f);
+            dest[41] = ',';
+            dest[42] = '0';
+            dest[43] = 'x';
+            dest[44] = HexConverter.ToCharLower((byte)(_g >> 4));
+            dest[45] = HexConverter.ToCharLower(_g);
+            dest[46] = ',';
+            dest[47] = '0';
+            dest[48] = 'x';
+            dest[49] = HexConverter.ToCharLower((byte)(_h >> 4));
+            dest[50] = HexConverter.ToCharLower(_h);
+            dest[51] = ',';
+            dest[52] = '0';
+            dest[53] = 'x';
+            dest[54] = HexConverter.ToCharLower((byte)(_i >> 4));
+            dest[55] = HexConverter.ToCharLower(_i);
+            dest[56] = ',';
+            dest[57] = '0';
+            dest[58] = 'x';
+            dest[59] = HexConverter.ToCharLower((byte)(_j >> 4));
+            dest[60] = HexConverter.ToCharLower(_j);
+            dest[61] = ',';
+            dest[62] = '0';
+            dest[63] = 'x';
+            dest[64] = HexConverter.ToCharLower((byte)(_k >> 4));
+            dest[65] = HexConverter.ToCharLower(_k);
+            dest[66] = '}';
+            dest[67] = '}';
         }
     }
 }
