@@ -478,9 +478,9 @@ typedef struct  {
 
 /* MonoRuntimeInfo: Contains information about versions supported by this runtime */
 typedef struct  {
-	const char runtime_version [12];
-	const char framework_version [4];
-	const AssemblyVersionSet version_sets [5];
+	char runtime_version [12];
+	char framework_version [4];
+	AssemblyVersionSet version_sets [5];
 } MonoRuntimeInfo;
 
 #define mono_domain_assemblies_lock(domain) mono_locks_os_acquire(&(domain)->assemblies_lock, DomainAssembliesLock)
