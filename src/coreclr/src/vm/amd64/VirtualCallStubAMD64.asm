@@ -98,8 +98,8 @@ NESTED_ENTRY StubDispatchFixupStub, _TEXT, ProcessCLRException
         lea             rcx, [rsp + __PWTB_TransitionBlock]  ; pTransitionBlock
         mov             rdx, r11                             ; indirection cell address
 
-        xor             r8,r8                                ; sectionIndex
-        xor             r9,r9                                ; pModule
+        xor             r8,r8                                ; set sectionIndex to 0
+        xor             r9,r9                                ; set pModule to 0
 
         call            StubDispatchFixupWorker
 
