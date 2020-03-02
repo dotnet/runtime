@@ -1391,7 +1391,7 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHO
 
 GenTree* Compiler::impAESIntrinsic(NamedIntrinsic intrinsic,
                                    CORINFO_METHOD_HANDLE method,
-                                   CORINFO_SIG_INFO* sig
+                                   CORINFO_SIG_INFO* sig)
 {
     return nullptr;
 }
@@ -1447,43 +1447,43 @@ GenTree* Compiler::impPCLMULQDQIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHO
 {
     return nullptr;
 }
-
-GenTree* Compiler::impScalarIntrinsic(NamedIntrinsic        intrinsic,
-                                      CORINFO_SIG_INFO*     sig)
-{
-    assert(HWIntrinsicInfo::lookupCategory(intrinsic) == HW_Category_Scalar);
-    var_types callType = JITtype2varType(sig->retType);
-    GenTree * op1 = nullptr, *op2 = nullptr, *op3 = nullptr;
-
-    int numArgs = sig->numArgs;
-
-    switch (numArgs)
-    {
-        case 1:
-        {
-            op1 = impPopStack().val;
-            return gtNewScalarHWIntrinsicNode(callType, op1, intrinsic);
-        }
-
-        case 2:
-        {
-            op2 = impPopStack().val;
-            op1 = impPopStack().val;
-            return gtNewScalarHWIntrinsicNode(callType, op1, op2, intrinsic);
-        }
-
-        case 3:
-        {
-            op3 = impPopStack().val;
-            op2 = impPopStack().val;
-            op1 = impPopStack().val;
-            return gtNewScalarHWIntrinsicNode(callType, op1, op2, op3, intrinsic);
-        }
-
-        default:
-            assert(!"Unexpected arguments to HW Intrinsic instruction");
-            return nullptr;
-    }
-}
+//
+//GenTree* Compiler::impScalarIntrinsic(NamedIntrinsic        intrinsic,
+//                                      CORINFO_SIG_INFO*     sig)
+//{
+//    assert(HWIntrinsicInfo::lookupCategory(intrinsic) == HW_Category_Scalar);
+//    var_types callType = JITtype2varType(sig->retType);
+//    GenTree * op1 = nullptr, *op2 = nullptr, *op3 = nullptr;
+//
+//    int numArgs = sig->numArgs;
+//
+//    switch (numArgs)
+//    {
+//        case 1:
+//        {
+//            op1 = impPopStack().val;
+//            return gtNewScalarHWIntrinsicNode(callType, op1, intrinsic);
+//        }
+//
+//        case 2:
+//        {
+//            op2 = impPopStack().val;
+//            op1 = impPopStack().val;
+//            return gtNewScalarHWIntrinsicNode(callType, op1, op2, intrinsic);
+//        }
+//
+//        case 3:
+//        {
+//            op3 = impPopStack().val;
+//            op2 = impPopStack().val;
+//            op1 = impPopStack().val;
+//            return gtNewScalarHWIntrinsicNode(callType, op1, op2, op3, intrinsic);
+//        }
+//
+//        default:
+//            assert(!"Unexpected arguments to HW Intrinsic instruction");
+//            return nullptr;
+//    }
+//}
 
 #endif // FEATURE_HW_INTRINSICS

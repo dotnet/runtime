@@ -364,7 +364,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_ArmBase_LeadingZeroCount:
+        /*case NI_ArmBase_LeadingZeroCount:
         case NI_ArmBase_ReverseElementBits:
         case NI_ArmBase_Arm64_LeadingSignCount:
         case NI_ArmBase_Arm64_LeadingZeroCount:
@@ -375,7 +375,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
             return gtNewScalarHWIntrinsicNode(baseType, op1, intrinsic);
-        }
+        }*/
 
         case NI_Crc32_ComputeCrc32:
         case NI_Crc32_ComputeCrc32C:
@@ -405,9 +405,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     return retNode;
 }
 
-GenTree* Compiler::impScalarIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig)
-{
-    return nullptr;
-}
+//GenTree* Compiler::impScalarIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig)
+//{
+//    return nullptr;
+//}
 
 #endif // FEATURE_HW_INTRINSICS
