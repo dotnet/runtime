@@ -27,7 +27,7 @@
         CrossGenRootPath=$(CrossGenRootPath);
         ArtifactsBinDir=$(ArtifactsBinDir);
         ArtifactsPackagesDir=$(ArtifactsPackagesDir);
-        OSGroup=$(OSGroup);
+        BuildOS=$(BuildOS);
         TargetArchitecture=$(TargetArchitecture);
         NetCoreAppCurrent=$(NetCoreAppCurrent)" />
 
@@ -44,7 +44,7 @@
   <Target Name="Build"
           Condition="
             '$(SkipSigning)' != 'true' and
-            '$(OSGroup)' == 'Windows_NT'"
+            '$(BuildOS)' == 'Windows_NT'"
           DependsOnTargets="
             EnsureProjectsBuilt;
             RunArcadeSigning" />

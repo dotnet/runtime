@@ -2,7 +2,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <!--
-    Determine CoreCLR/Libraries OSGroup based on Installer OSGroup. For example,
+    Determine CoreCLR/Libraries BuildOS based on Installer BuildOS. For example,
     Installer uses Unix when applicable, but others go straight to Linux.
   -->
   <PropertyGroup>
