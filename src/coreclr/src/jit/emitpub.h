@@ -65,7 +65,7 @@ void emitFinishPrologEpilogGeneration();
 /************************************************************************/
 
 void*    emitCurBlock();
-unsigned emitCurOffset() const;
+unsigned emitCurOffset();
 
 UNATIVE_OFFSET emitCodeOffset(void* blockPtr, unsigned codeOffs);
 

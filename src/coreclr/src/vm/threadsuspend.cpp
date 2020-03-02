@@ -1257,14 +1257,7 @@ Thread::UserAbort(ThreadAbortRequester requester,
     EClrOperation operation;
     if (abortType == EEPolicy::TA_Rude)
     {
-        if (HasLockInCurrentDomain())
-        {
-            operation = OPR_ThreadRudeAbortInCriticalRegion;
-        }
-        else
-        {
-            operation = OPR_ThreadRudeAbortInNonCriticalRegion;
-        }
+        operation = OPR_ThreadRudeAbortInCriticalRegion;
     }
     else
     {
@@ -1321,10 +1314,6 @@ Thread::UserAbort(ThreadAbortRequester requester,
         if (abortType != EEPolicy::TA_Rude)
         {
             timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadAbort);
-        }
-        else if (!HasLockInCurrentDomain())
-        {
-            timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInNonCriticalRegion);
         }
         else
         {
@@ -1423,15 +1412,10 @@ LRetry:
                         action1 = GetEEPolicy()->GetActionOnTimeout(OPR_ThreadAbort, this);
                         timeout1 = GetEEPolicy()->GetTimeout(OPR_ThreadAbort);
                     }
-                    else if (HasLockInCurrentDomain())
+                    else
                     {
                         action1 = GetEEPolicy()->GetActionOnTimeout(OPR_ThreadRudeAbortInCriticalRegion, this);
                         timeout1 = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInCriticalRegion);
-                    }
-                    else
-                    {
-                        action1 = GetEEPolicy()->GetActionOnTimeout(OPR_ThreadRudeAbortInNonCriticalRegion, this);
-                        timeout1 = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInNonCriticalRegion);
                     }
                 }
                 if (action1 == eNoAction)
@@ -1876,13 +1860,9 @@ LPrepareRetry:
             {
                 operation1 = OPR_ThreadAbort;
             }
-            else if (HasLockInCurrentDomain())
-            {
-                operation1 = OPR_ThreadRudeAbortInCriticalRegion;
-            }
             else
             {
-                operation1 = OPR_ThreadRudeAbortInNonCriticalRegion;
+                operation1 = OPR_ThreadRudeAbortInCriticalRegion;
             }
             action1 = GetEEPolicy()->GetActionOnTimeout(operation1, this);
             switch (action1)
@@ -2055,10 +2035,6 @@ void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::Thread
         if (abortType != EEPolicy::TA_Rude)
         {
             timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadAbort);
-        }
-        else if (!HasLockInCurrentDomain())
-        {
-            timeoutFromPolicy = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInNonCriticalRegion);
         }
         else
         {
@@ -2620,13 +2596,9 @@ void Thread::HandleThreadAbortTimeout()
     {
         operation = OPR_ThreadAbort;
     }
-    else if (HasLockInCurrentDomain())
-    {
-        operation = OPR_ThreadRudeAbortInCriticalRegion;
-    }
     else
     {
-        operation = OPR_ThreadRudeAbortInNonCriticalRegion;
+        operation = OPR_ThreadRudeAbortInCriticalRegion;
     }
     action = GetEEPolicy()->GetActionOnTimeout(operation, this);
     // We only support escalation to rude abort
@@ -2726,25 +2698,23 @@ void Thread::PreWorkForThreadAbort()
     ResetUserInterrupted();
 
     if (IsRudeAbort()) {
-        if (HasLockInCurrentDomain()) {
-            AppDomain *pDomain = GetAppDomain();
-            // Cannot enable the following assertion.
-            // We may take the lock, but the lock will be released during exception backout.
-            //_ASSERTE(!pDomain->IsDefaultDomain());
-            EPolicyAction action = GetEEPolicy()->GetDefaultAction(OPR_ThreadRudeAbortInCriticalRegion, this);
-            switch (action)
-            {
-            case eExitProcess:
-            case eFastExitProcess:
-            case eRudeExitProcess:
-                    {
-                GetEEPolicy()->NotifyHostOnDefaultAction(OPR_ThreadRudeAbortInCriticalRegion,action);
-                GetEEPolicy()->HandleExitProcessFromEscalation(action,HOST_E_EXITPROCESS_ADUNLOAD);
-                    }
-                break;
-            default:
-                break;
-            }
+        AppDomain *pDomain = GetAppDomain();
+        // Cannot enable the following assertion.
+        // We may take the lock, but the lock will be released during exception backout.
+        //_ASSERTE(!pDomain->IsDefaultDomain());
+        EPolicyAction action = GetEEPolicy()->GetDefaultAction(OPR_ThreadRudeAbortInCriticalRegion, this);
+        switch (action)
+        {
+        case eExitProcess:
+        case eFastExitProcess:
+        case eRudeExitProcess:
+                {
+            GetEEPolicy()->NotifyHostOnDefaultAction(OPR_ThreadRudeAbortInCriticalRegion,action);
+            GetEEPolicy()->HandleExitProcessFromEscalation(action,HOST_E_EXITPROCESS_ADUNLOAD);
+                }
+            break;
+        default:
+            break;
         }
     }
 }
