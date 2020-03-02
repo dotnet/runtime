@@ -118,7 +118,7 @@ namespace System.Threading
             if (d == null)
                 throw new ArgumentNullException(nameof(d));
 
-            var ignored = _dispatcher.RunAsync(CoreDispatcherPriority.Normal, new Invoker(d, state).Invoke);
+            _ = _dispatcher.RunAsync(CoreDispatcherPriority.Normal, new Invoker(d, state).Invoke);
         }
 
         public override SynchronizationContext CreateCopy()
@@ -143,7 +143,7 @@ namespace System.Threading
             // We explicitly choose to ignore the return value here. This enqueue operation might fail if the
             // dispatcher queue was shut down before we got here. In that case, we choose to just move on and
             // pretend nothing happened.
-            var ignored = _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, new Invoker(d, state).Invoke);
+            _ = _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, new Invoker(d, state).Invoke);
         }
 
         public override SynchronizationContext CreateCopy()
