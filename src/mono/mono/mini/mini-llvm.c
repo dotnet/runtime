@@ -321,6 +321,7 @@ typedef enum {
 	INTRINS_TRUNCF,
 	INTRINS_COPYSIGN,
 	INTRINS_COPYSIGNF,
+	INTRINS_EXPECT_I32,
 	INTRINS_EXPECT_I8,
 	INTRINS_EXPECT_I1,
 	INTRINS_CTPOP_I32,
@@ -8057,6 +8058,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 #endif /* ENABLE_NETCORE */
 #endif /* SIMD */
 
+		case OP_UNLIKELY32: {
+			LLVMValueRef args [] = { lhs, LLVMConstInt (LLVMInt32Type (), 0, FALSE) };
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_EXPECT_I32), args, 2, "");
+			break;
+		}
+
 		case OP_DUMMY_USE:
 			break;
 
@@ -9365,6 +9372,7 @@ static IntrinsicDesc intrinsics[] = {
 	{INTRINS_TRUNCF, "llvm.trunc.f32"},
 	{INTRINS_COPYSIGN, "llvm.copysign.f64"},
 	{INTRINS_COPYSIGNF, "llvm.copysign.f32"},
+	{INTRINS_EXPECT_I32, "llvm.expect.i32"},
 	{INTRINS_EXPECT_I8, "llvm.expect.i8"},
 	{INTRINS_EXPECT_I1, "llvm.expect.i1"},
 	{INTRINS_CTPOP_I32, "llvm.ctpop.i32"},
@@ -9589,6 +9597,9 @@ add_intrinsic (LLVMModuleRef module, int id)
 	case INTRINS_COPYSIGN:
 	case INTRINS_POW:
 		AddFunc2 (module, name, LLVMDoubleType (), LLVMDoubleType (), LLVMDoubleType ());
+		break;
+	case INTRINS_EXPECT_I32:
+		AddFunc2 (module, name, LLVMInt32Type (), LLVMInt32Type (), LLVMInt32Type ());
 		break;
 	case INTRINS_EXPECT_I8:
 		AddFunc2 (module, name, LLVMInt8Type (), LLVMInt8Type (), LLVMInt8Type ());

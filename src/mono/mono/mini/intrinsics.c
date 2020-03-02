@@ -588,6 +588,17 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		MONO_ADD_INS (cfg->cbb, ins);
 		return ins;
 	}
+	else if (!strcmp (cmethod->name, "Unlikely") && COMPILE_LLVM (cfg)) {
+		g_assert (fsig->param_count == 1);
+
+		// LLVM should expand it as @llvm.expect.i32
+		MONO_INST_NEW (cfg, ins, OP_UNLIKELY32);
+		ins->type = STACK_I4;
+		ins->dreg = mono_alloc_ireg (cfg);
+		ins->sreg1 = args [0]->dreg;
+		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
+	}
 #endif
 
 	return NULL;
