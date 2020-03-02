@@ -21,7 +21,7 @@ namespace System.Runtime.CompilerServices
     internal static unsafe class CastHelpers
     {
         private static int[]? s_table;
-        private static readonly MethodTable* pObjMt = RuntimeHelpers.GetMethodTable(new object());
+        private static readonly MethodTable* pObjMt = (MethodTable*)RuntimeTypeHandle.GetValueInternal(typeof(object).TypeHandle);
 
         [DebuggerDisplay("Source = {_source}; Target = {_targetAndResult & ~1}; Result = {_targetAndResult & 1}; VersionNum = {_version & ((1 << 29) - 1)}; Distance = {_version >> 29};")]
         [StructLayout(LayoutKind.Sequential)]
@@ -253,7 +253,7 @@ namespace System.Runtime.CompilerServices
             return obj;
 
         slowPath:
-            return IsInstanceHelper(toTypeHnd, obj);
+            return IsInstance_Helper(toTypeHnd, obj);
         }
 
         [DebuggerHidden]
@@ -308,14 +308,14 @@ namespace System.Runtime.CompilerServices
             return obj;
 
         slowPath:
-            return IsInstanceHelper(toTypeHnd, obj);
+            return IsInstance_Helper(toTypeHnd, obj);
         }
 
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static object? IsInstanceHelper(void* toTypeHnd, object obj)
+        private static object? IsInstance_Helper(void* toTypeHnd, object obj)
         {
             CastResult result = TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
             if (result == CastResult.CanCast)
@@ -368,7 +368,7 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static object? ChkCastHelper(void* toTypeHnd, object obj)
+        private static object? ChkCast_Helper(void* toTypeHnd, object obj)
         {
             CastResult result = TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
             if (result == CastResult.CanCast)
@@ -420,7 +420,7 @@ namespace System.Runtime.CompilerServices
             return obj;
 
         slowPath:
-            return ChkCastHelper(toTypeHnd, obj);
+            return ChkCast_Helper(toTypeHnd, obj);
         }
 
         [DebuggerHidden]
@@ -481,7 +481,7 @@ namespace System.Runtime.CompilerServices
             return obj;
 
         slowPath:
-            return ChkCastHelper(toTypeHnd, obj);
+            return ChkCast_Helper(toTypeHnd, obj);
         }
 
         [DebuggerHidden]
@@ -517,10 +517,10 @@ namespace System.Runtime.CompilerServices
             ArrayElement[] arr = Unsafe.As<ArrayElement[]>(array);
 
             // this will throw appropriate exceptions if array is null or access is out of range.
-            nuint elementType = RuntimeHelpers.GetMethodTable(arr)->ElementType;
+            void* elementType = RuntimeHelpers.GetMethodTable(arr)->ElementType;
             ref object? element = ref arr[index].Value;
 
-            if (elementType != (nuint)type)
+            if (elementType != type)
                 goto throwArrayMismatch;
 
             return ref element;
@@ -537,13 +537,13 @@ namespace System.Runtime.CompilerServices
             ArrayElement[] arr = Unsafe.As<ArrayElement[]>(array);
 
             // this will throw appropriate exceptions if array is null or access is out of range.
-            nuint elementType = RuntimeHelpers.GetMethodTable(arr)->ElementType;
+            void* elementType = RuntimeHelpers.GetMethodTable(arr)->ElementType;
             ref object? element = ref arr[index].Value;
 
             if (obj == null)
                 goto assigningNull;
 
-            if (elementType != (nuint)RuntimeHelpers.GetMethodTable(obj))
+            if (elementType != RuntimeHelpers.GetMethodTable(obj))
                 goto notExactMatch;
 
             doWrite:
@@ -555,7 +555,7 @@ namespace System.Runtime.CompilerServices
                 return;
 
             notExactMatch:
-                if (elementType == (nuint)pObjMt)
+                if (elementType == pObjMt)
                     goto doWrite;
 
             StelemRef_Helper(ref element, elementType, obj);
@@ -564,7 +564,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        private static void StelemRef_Helper(ref object? element, nuint elementType, object obj)
+        private static void StelemRef_Helper(ref object? element, void* elementType, object obj)
         {
             CastResult result = TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);
             if (result == CastResult.CanCast)
@@ -573,17 +573,17 @@ namespace System.Runtime.CompilerServices
                 return;
             }
 
-            StelemRef_Helper_Slow(ref element, elementType, obj);
+            StelemRef_Helper_NoCacheLookup(ref element, elementType, obj);
         }
 
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        private static void StelemRef_Helper_Slow(ref object? element, nuint elementType, object obj)
+        private static void StelemRef_Helper_NoCacheLookup(ref object? element, void* elementType, object obj)
         {
             Debug.Assert(obj != null);
 
-            obj = IsInstanceOfAny_NoCacheLookup((void*)elementType, obj);
+            obj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
             if (obj != null)
             {
                 WriteBarrier(ref element, obj);

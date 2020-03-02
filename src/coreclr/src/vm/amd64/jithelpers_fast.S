@@ -406,7 +406,7 @@ LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
 LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
     // JIT_WriteBarrier(Object** dst, Object* src)
     jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
-LEAF_END JIT_Stelem_DoWrite, _TEXT
+LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
 #endif // FEATURE_WRITEBARRIER_COPY
 

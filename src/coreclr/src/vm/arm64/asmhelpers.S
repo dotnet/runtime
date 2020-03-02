@@ -1294,7 +1294,7 @@ LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
     // Branch to the write barrier (which is already correctly overwritten with
     // single or multi-proc code based on the current CPU
     b       C_FUNC(JIT_WriteBarrier)
-LEAF_END JIT_Stelem_DoWrite, _TEXT
+LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
 #ifdef PROFILING_SUPPORTED
 

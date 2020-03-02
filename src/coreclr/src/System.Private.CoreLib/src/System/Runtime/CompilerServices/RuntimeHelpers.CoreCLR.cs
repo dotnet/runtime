@@ -305,7 +305,7 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(ParentMethodTableOffset)]
         public MethodTable* ParentMethodTable;
         [FieldOffset(ElementTypeOffset)]
-        public nuint ElementType;
+        public void* ElementType;
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
 
