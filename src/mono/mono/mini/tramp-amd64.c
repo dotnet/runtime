@@ -393,19 +393,27 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	/* Obtain the trampoline argument which is encoded in the instruction stream */
 	if (aot) {
-		/* Load the GOT offset */
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, tramp_offset, sizeof (target_mgreg_t));
 		/*
-		 * r11 points to a call *<offset>(%rip) instruction, load the
-		 * pc-relative offset from the instruction itself.
+		 * tramp_index = (tramp_addr - specific_trampolines) / tramp_size
+		 * arg = mscorlib_amodule->got [specific_trampolines_got_offsets_base + (tramp_index * 2) + 1]
 		 */
-		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 3, 4);
-		/* 7 is the length of the call, 8 is the offset to the next got slot */
-		amd64_alu_reg_imm_size (code, X86_ADD, AMD64_RAX, 7 + sizeof (target_mgreg_t), sizeof (target_mgreg_t));
-		/* Compute the address of the GOT slot */
-		amd64_alu_reg_reg_size (code, X86_ADD, AMD64_R11, AMD64_RAX, sizeof (target_mgreg_t));
-		/* Load the value */
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0, sizeof (target_mgreg_t));
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES, NULL);
+		/* Trampoline addr */
+		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RBP, tramp_offset, sizeof (target_mgreg_t));
+		/* Trampoline offset */
+		amd64_alu_reg_reg (code, X86_SUB, AMD64_RAX, AMD64_R11);
+		/* Trampoline index */
+		amd64_shift_reg_imm (code, X86_SHR, AMD64_RAX, 3);
+		/* Every trampoline uses 2 got slots */
+		amd64_shift_reg_imm (code, X86_SHL, AMD64_RAX, 1);
+		/* pointer size */
+		amd64_shift_reg_imm (code, X86_SHL, AMD64_RAX, 3);
+		/* Address of block of got slots */
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE, NULL);
+		/* Address of got slots belonging to this trampoline */
+		amd64_alu_reg_reg (code, X86_ADD, AMD64_RAX, AMD64_R11);
+		/* The second slot contains the argument */
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RAX, sizeof (target_mgreg_t), sizeof (target_mgreg_t));
 	} else {
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, tramp_offset, sizeof (target_mgreg_t));
 		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 5, 1);

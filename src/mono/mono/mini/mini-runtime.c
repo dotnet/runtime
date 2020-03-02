@@ -1250,6 +1250,8 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_AOT_MODULE:
 	case MONO_PATCH_INFO_PROFILER_ALLOCATION_COUNT:
 	case MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT:
+	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES:
+	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE:
 		return hash;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 		return hash | ji->data.uindex;
@@ -1662,6 +1664,13 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	}
 	case MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT: {
 		target = (gpointer) &mono_profiler_state.exception_clause_count;
+		break;
+	}
+	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES:
+	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE: {
+		/* Resolved in aot-runtime.c */
+		g_assert_not_reached ();
+		target = NULL;
 		break;
 	}
 	default:
