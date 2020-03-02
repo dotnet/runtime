@@ -12,6 +12,7 @@ namespace System.IO.Tests
     public class Directory_CreateDirectory : FileSystemTest
     {
         public static TheoryData ReservedDeviceNames = IOInputs.GetReservedDeviceNames().ToTheoryData();
+
         #region Utilities
 
         public virtual DirectoryInfo Create(string path)
@@ -44,7 +45,11 @@ namespace System.IO.Tests
             string subdir = Path.GetRandomFileName();
             string fullPath = Path.Combine(TestDirectory, subdir);
             DirectoryInfo info = Create(fullPath);
-            Assert.Equal(fullPath, info.ToString());
+
+            // In Core, ToString now returns the full path
+            string actual = PlatformDetection.IsNetFramework ? info.FullName : info.ToString();
+
+            Assert.Equal(fullPath, actual);
         }
 
         [Fact]
@@ -63,9 +68,15 @@ namespace System.IO.Tests
         public void PathWithInvalidCharactersAsPath_Core(string invalidPath)
         {
             if (invalidPath.Contains('\0'))
-                Assert.Throws<ArgumentException>("path", () => Create(invalidPath));
+            {
+                string argName = (PlatformDetection.IsNetFramework) ? null : "path";
+                Assert.Throws<ArgumentException>(argName, () => Create(invalidPath));
+            }
             else
-                Assert.Throws<IOException>(() => Create(invalidPath));
+            {
+                // Same exception message, different exception type
+                AssertExtensions.Throws<IOException, ArgumentException>(() => Create(invalidPath));
+            }
         }
 
         [Fact]
@@ -224,6 +235,7 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Theory, MemberData(nameof(PathsWithInvalidColons))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Framework throws NotSupportedException")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void PathsWithInvalidColons_ThrowIOException_Core(string invalidPath)
         {
@@ -232,9 +244,21 @@ namespace System.IO.Tests
             Assert.ThrowsAny<IOException>(() => Create(invalidPath));
         }
 
+        [Theory, InlineData(@"file:///C|/My Documents/ALetter.html")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void PathsWithInvalidPipeChar_ThrowIOException(string invalidPath)
+        {
+            // You can't actually create a directory with a colon in it. It was a preemptive
+            // check, now we let the OS give us failures on usage.
+            // Same exception message, different exception type
+            AssertExtensions.Throws<IOException, ArgumentException>(() => Create(invalidPath));
+        }
+
+
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long paths can't be handled in Framework")]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path succeeds
-        public void DirectoryLongerThanMaxPath_Succeeds()
+        public void DirectoryLongerThanMaxPath_Succeeds_Core()
         {
             var paths = IOInputs.GetPathsLongerThanMaxPath(GetTestFilePath());
             Assert.All(paths, (path) =>
@@ -277,8 +301,9 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long paths can't be handled in Framework")]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path succeeds
-        public void DirectoryLongerThanMaxDirectoryAsPath_Succeeds()
+        public void DirectoryLongerThanMaxDirectoryAsPath_Succeeds_Core()
         {
             var paths = IOInputs.GetPathsLongerThanMaxDirectory(GetTestFilePath());
             Assert.All(paths, (path) =>
@@ -322,9 +347,10 @@ namespace System.IO.Tests
         [Theory,
             MemberData(nameof(ControlWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsWhiteSpaceAsPath_ThrowsIOException_Core(string path)
+        public void WindowsWhiteSpaceAsPath_ThrowsIOException(string path)
         {
-            Assert.Throws<IOException>(() => Create(path));
+            // Same exception message, different exception type
+            AssertExtensions.Throws<IOException, ArgumentException>(() => Create(path));
         }
 
 
@@ -393,6 +419,7 @@ namespace System.IO.Tests
 
         [Theory,
             MemberData(nameof(PathsWithColons))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Framework throws NotSupportedException")]
         [PlatformSpecific(TestPlatforms.Windows)] // alternate data streams
         public void PathWithColons_ThrowsIOException_Core(string path)
         {
@@ -426,16 +453,32 @@ namespace System.IO.Tests
         [Theory,
             MemberData(nameof(UncPathsWithoutShareName))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void UncPathWithoutShareNameAsPath_ThrowsIOException_Core(string path)
+        public void UncPathWithoutShareNameAsPath_ThrowsIOException(string path)
         {
-            Assert.ThrowsAny<IOException>(() => Create(path));
+            // Same exception message, different exception type
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.ThrowsAny<IOException>(() => Create(path));
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(() => Create(path));
+            }
         }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void UNCPathWithOnlySlashes_Core()
+        public void UNCPathWithOnlySlashes()
         {
-            Assert.ThrowsAny<IOException>(() => Create("//"));
+            // Same exception message, different exception type
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.ThrowsAny<IOException>(() => Create("//"));
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(() => Create("//"));
+            }
         }
 
         [Fact]
