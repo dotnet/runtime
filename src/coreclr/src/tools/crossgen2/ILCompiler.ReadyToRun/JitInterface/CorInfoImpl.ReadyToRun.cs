@@ -1151,6 +1151,21 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtStatic, originalMethod);
             }
 
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0
+                && originalMethod.IsNativeCallable)
+            {
+                // if (!originalMethod.Signature.IsStatic)
+                //     EX_THROW(EEResourceException, (kNotSupportedException, W("NotSupported_NonStaticMethod")));
+
+                // // No generic methods
+                // if (pMD->HasClassOrMethodInstantiation())
+                //     EX_THROW(EEResourceException, (kNotSupportedException, W("NotSupported_GenericMethod")));
+
+                // // Arguments
+                // if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
+                //     EX_THROW(EEResourceException, (kNotSupportedException, W("NotSupported_NonBlittableTypes")));
+            }
+
             exactType = type;
 
             constrainedType = null;
