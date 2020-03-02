@@ -12892,9 +12892,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_DV_2Q: // faddp, fmaxnmp, fmaxp, fminnmp, fminp (scalar)
         case IF_DV_2R: // fmaxnmv, fmaxv, fminnmv, fminv
-        case IF_DV_2S: // addp (scalar)
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_4C;
+            break;
+
+        case IF_DV_2S: // addp (scalar)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_3C;
             break;
 
         case IF_DV_3B: // fadd, fsub, fdiv, fmul, fmulx, fmla, fmls, fmin, fminnm, fmax, fmaxnm, fabd, fcmXX
@@ -12919,7 +12923,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fmaxp:
                 case INS_fminnmp:
                 case INS_fminp:
-                case INS_addp:
                     if (id->idOpSize() == EA_16BYTE)
                     {
                         // Q-form
@@ -13145,6 +13148,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency = PERFSCORE_LATENCY_2C;
                     break;
 
+                case INS_addp:
                 case INS_cmtst:
                 case INS_pmul:
                 case INS_sabd:
