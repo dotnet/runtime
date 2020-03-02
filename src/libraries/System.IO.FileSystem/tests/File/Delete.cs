@@ -190,6 +190,7 @@ namespace System.IO.Tests
             InlineData(":bar"),
             InlineData(":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException: The given path's format is not supported.")]
         public void WindowsDeleteAlternateDataStream(string streamName)
         {
             FileInfo testFile = Create(GetTestFilePath());
