@@ -922,10 +922,7 @@ namespace System
 
             _syntax = otherUri._syntax;
             _string = otherUri._string;
-            if (otherUri.OriginalStringSwitched)
-            {
-                _originalUnicodeString = otherUri._originalUnicodeString;
-            }
+            _originalUnicodeString = otherUri._originalUnicodeString;
         }
     }
 }

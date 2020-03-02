@@ -1087,27 +1087,11 @@ namespace System
         }
 
         //
-        //  Was the original string switched from m_String to m_OriginalUnicodeString
-        //  Will happen when Iri is turned on and we have unicode chars or of idn is
-        //  is on and we have an idn or unicode host.
+        //  Gets the exact string passed by a user.
+        //  The original string will switched from m_String to m_OriginalUnicodeString if
+        //  iri is turned on and we have non-ascii chars
         //
-        private bool OriginalStringSwitched
-        {
-            get
-            {
-                return (IriParsing && InFact(Flags.HasUnicode));
-            }
-        }
-
-        //
-        //    Gets the exact string passed by a user.
-        public string OriginalString
-        {
-            get
-            {
-                return OriginalStringSwitched ? _originalUnicodeString : _string;
-            }
-        }
+        public string OriginalString => _originalUnicodeString ?? _string;
 
         //
         //    Gets the host string that is unescaped and if it's Ipv6 host,
