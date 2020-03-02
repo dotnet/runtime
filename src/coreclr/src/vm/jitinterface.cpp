@@ -9214,7 +9214,7 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
             COMPlusThrow(kNotSupportedException, W("NotSupported_NonStaticMethod"));
 
         // No generic methods
-        if (pMD->HasMethodInstantiation())
+        if (pMD->HasClassOrMethodInstantiation())
             COMPlusThrow(kNotSupportedException, W("NotSupported_GenericMethod"));
 
         // Arguments
