@@ -115,6 +115,8 @@ __CrossGenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__BuildOS.$__BuildArch.$__Buil
 
 __CoreLibILDir=$__BinDir/IL
 
+setup_dirs_local
+
 # The cross build generates a crossgen with the target architecture.
 if [[ "$__CrossBuild" == 0 ]]; then
     # The architecture of host pc must be same architecture with target.
