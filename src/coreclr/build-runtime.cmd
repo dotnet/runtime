@@ -84,7 +84,6 @@ set __BuildNative=1
 set __BuildCrossArchNative=0
 set __SkipCrossArchNative=0
 set __RestoreOptData=1
-set __OfficialBuildIdArg=
 set __CrossArch=
 set __PgoOptDataPath=
 
@@ -164,8 +163,6 @@ if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!proc
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-crossgenaltjit"      (set __CrossgenAltJit=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-REM TODO remove these once they are no longer used in buildpipeline
-if /i "%1" == "-OfficialBuildId"     (set __OfficialBuildIdArg=/p:OfficialBuildId=%2&set processedArgs=!processedArgs! %1=%2&shift&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -232,7 +229,7 @@ if %__BuildTypeDebug%==1    set __BuildType=Debug
 if %__BuildTypeChecked%==1  set __BuildType=Checked
 if %__BuildTypeRelease%==1  set __BuildType=Release
 
-set __CommonMSBuildArgs=/p:__BuildOS=%__BuildOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch% !__OfficialBuildIdArg!
+set __CommonMSBuildArgs=/p:__BuildOS=%__BuildOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch%
 
 if %__EnforcePgo%==1 (
     if %__BuildArchArm%==1 (

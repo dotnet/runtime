@@ -6,8 +6,6 @@
     <ItemGroup>
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
-      <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
-      <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows)) and '$(Configuration)' == 'Release'" Include="-stripsymbols" />
     </ItemGroup>
 
     <PropertyGroup>

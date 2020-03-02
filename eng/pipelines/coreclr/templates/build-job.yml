@@ -84,12 +84,8 @@ jobs:
         value: true
     - name: officialBuildIdArg
       value: ''
-    - name: officialBuildIdArcadeArg
-      value: ''
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
-        value: '-officialbuildid=$(Build.BuildNumber)'
-      - name: officialBuildIdArcadeArg
         value: '/p:OfficialBuildId=$(Build.BuildNumber)'
     - name: enforcePgoArg
       value: ''
@@ -132,7 +128,7 @@ jobs:
         displayName: Build CoreCLR Runtime
 
     # Build CoreCLR Managed Components
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib-nativecorelib-tools-packages $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg) -ci
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib-nativecorelib-tools-packages $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build managed product components and packages
 
     # Build native test components

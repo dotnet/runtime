@@ -119,11 +119,6 @@ handle_arguments_local() {
             __SkipRestoreOptData=1
             ;;
 
-        officialbuildid=*|-officialbuildid=*)
-            __Id=$(echo "$1" | cut -d'=' -f 2)
-            __OfficialBuildIdArg="/p:OfficialBuildId=$__Id"
-            ;;
-
         pgoinstrument|-pgoinstrument)
             __PgoInstrument=1
             ;;
@@ -172,7 +167,6 @@ __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CrossBuild=0
 __DistroRid=""
-__OfficialBuildIdArg=""
 __PgoInstrument=0
 __PgoOptDataPath=""
 __PgoOptimize=1
