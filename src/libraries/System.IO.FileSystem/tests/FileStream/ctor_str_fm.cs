@@ -207,6 +207,7 @@ namespace System.IO.Tests
         }
 
         [Theory, MemberData(nameof(StreamSpecifiers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Framework throws ArgumentException: Append access can be requested only in write-only mode.")]
         public virtual void FileModeAppend(string streamSpecifier)
         {
             using (FileStream fs = CreateFileStream(GetTestFilePath() + streamSpecifier, FileMode.Append))
@@ -217,6 +218,7 @@ namespace System.IO.Tests
         }
 
         [Theory, MemberData(nameof(StreamSpecifiers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Framework throws ArgumentException: Append access can be requested only in write-only mode.")]
         public virtual void FileModeAppendExisting(string streamSpecifier)
         {
             string fileName = GetTestFilePath() + streamSpecifier;
