@@ -825,14 +825,6 @@ void DomainFile::ClearNativeImageStress()
     if (g_pConfig->RequireZaps() != EEConfig::REQUIRE_ZAPS_NONE)
         return;
 
-    // Its OK to ClearNativeImage even for a shared assembly, as the current PEFile will
-    // be discarded if we decide to share the assembly. However, we always use the same
-    // PEFile for the system assembly. So discarding the native image in the current
-    // AppDomain will actually affect the system assembly in the shared domain, and other
-    // appdomains may have already committed to using its ngen image.
-    if (GetFile()->IsSystem() && !this->GetAppDomain()->IsDefaultDomain())
-        return;
-
     if (g_IBCLogger.InstrEnabled())
         return;
 

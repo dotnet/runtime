@@ -9463,15 +9463,6 @@ void Debugger::SendExitAppDomainEvent(AppDomain* pRuntimeAppDomain)
 
     if (CORDebuggerAttached())
     {
-        if (pRuntimeAppDomain->IsDefaultDomain() )
-        {
-            // The Debugger expects to never get an unload event for the default Domain.
-            // Currently we should never get here because g_fProcessDetach will be true by
-            // the time this method is called.  However, we'd like to know if this ever changes
-            _ASSERTE(!"Trying to deliver notification of unload for default domain" );
-            return;
-        }
-
         // Send the exit appdomain event to the Right Side.
         DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
         InitIPCEvent(ipce,
