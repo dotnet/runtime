@@ -181,6 +181,9 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
     // In server GC, we should be competing for marking the statics
     // It's better to do this *after* stack scanning, because this way
     // we can make up for imbalances in stack scanning
+    // This would not apply to the initial mark phase in background GC,
+    // but it would apply to blocking Gen 2 collections and the final
+    // marking stage in background GC where we catch up to the user program
     if (GCHeapUtilities::MarkShouldCompeteForStatics())
     {
         if (condemned == max_gen && sc->promotion)
