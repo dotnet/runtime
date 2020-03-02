@@ -6,6 +6,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 {
 	[SetupCSharpCompilerToUse ("csc")]
 	[SetupCompileArgument ("/optimize+")]
+	[SetupLinkerArgument ("--enable-opt", "ipconstantpropagation")]
 	public class DeadVariables
 	{
 		public static void Main ()
