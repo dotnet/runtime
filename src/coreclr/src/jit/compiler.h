@@ -3673,7 +3673,9 @@ protected:
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
                                  CORINFO_METHOD_HANDLE method,
-                                 CORINFO_SIG_INFO*     sig);
+                                 CORINFO_SIG_INFO*     sig,
+                                 var_types             baseType,
+                                 var_types             retType);
 
     //GenTree* impScalarIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig);
 
