@@ -81,9 +81,7 @@ namespace System
 
             bool hasUnicode = false;
 
-            _iriParsing = IriParsingStatic(_syntax);
-
-            if (_iriParsing &&
+            if (IriParsing &&
                 (CheckForUnicode(_string) || CheckForEscapedUnreserved(_string)))
             {
                 _flags |= Flags.HasUnicode;
@@ -118,7 +116,7 @@ namespace System
                         e = null;
                     // will return from here
 
-                    if (_iriParsing && hasUnicode)
+                    if (IriParsing && hasUnicode)
                     {
                         // In this scenario we need to parse the whole string
                         try
@@ -168,7 +166,7 @@ namespace System
                             e = GetException(ParsingError.CannotCreateRelative);
                         }
 
-                        if (_iriParsing && hasUnicode)
+                        if (IriParsing && hasUnicode)
                         {
                             // In this scenario we need to parse the whole string
                             try
@@ -192,7 +190,7 @@ namespace System
             {
                 e = null;
                 _flags &= (Flags.UserEscaped | Flags.HasUnicode); // the only flags that makes sense for a relative uri
-                if (_iriParsing && hasUnicode)
+                if (IriParsing && hasUnicode)
                 {
                     // Iri'ze and then normalize relative uris
                     _string = EscapeUnescapeIri(_originalUnicodeString, 0, _originalUnicodeString.Length,
@@ -513,7 +511,7 @@ namespace System
                     Check result = CheckCanonical(str, ref idx, _info.Offset.Path, '/');
                     if (((result & (Check.ReservedFound | Check.BackslashInPath | Check.EscapedCanonical))
                         != Check.EscapedCanonical)
-                        && (!_iriParsing || (_iriParsing
+                        && (!IriParsing || (IriParsing
                             && ((result & (Check.DisplayCanonical | Check.FoundNonAscii | Check.NotIriCanonical))
                                 != (Check.DisplayCanonical | Check.FoundNonAscii)))))
                     {
@@ -924,7 +922,6 @@ namespace System
 
             _syntax = otherUri._syntax;
             _string = otherUri._string;
-            _iriParsing = otherUri._iriParsing;
             if (otherUri.OriginalStringSwitched)
             {
                 _originalUnicodeString = otherUri._originalUnicodeString;
