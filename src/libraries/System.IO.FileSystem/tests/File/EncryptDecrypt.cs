@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-using System.Security;
 using Xunit;
 
 namespace System.IO.Tests
@@ -17,12 +15,11 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentNullException>("path", () => File.Decrypt(null));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
         [Fact]
-        public static void EncryptDecrypt_NotSupported()
+        public static void EncryptDecrypt_NotFound()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => File.Encrypt("path"));
-            Assert.Throws<PlatformNotSupportedException>(() => File.Decrypt("path"));
+            Assert.Throws<FileNotFoundException>(() => File.Encrypt("path"));
+            Assert.Throws<FileNotFoundException>(() => File.Decrypt("path"));
         }
 
         // On Windows Nano Server and Home Edition, file encryption with File.Encrypt(string path) throws an IOException
