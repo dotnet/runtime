@@ -162,6 +162,14 @@
         ret
   } // end of method Unsafe::SkipInit
 
+  .method public hidebysig static bool Unlikely (bool condition) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 1
+        ldarg.0
+        ret
+  } // end of method Unsafe::Unlikely
+
   .method public hidebysig static int32 SizeOf<T>() cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )

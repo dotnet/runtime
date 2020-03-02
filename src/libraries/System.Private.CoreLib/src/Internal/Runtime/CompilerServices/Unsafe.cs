@@ -443,5 +443,13 @@ namespace Internal.Runtime.CompilerServices
 
             // ret
         }
+
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Unlikely(bool condition)
+        {
+            return condition;
+        }
     }
 }

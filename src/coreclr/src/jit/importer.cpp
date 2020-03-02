@@ -4127,6 +4127,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Runtime_CompilerServices_Unsafe_Unlikely:
+            {
+                if (compCurBB->bbJumpKind == BBJ_COND)
+                {
+                    compCurBB->bbNext->bbFlags |= BBF_RUN_RARELY;
+                    compCurBB->bbNext->setBBWeight(BB_ZERO_WEIGHT);
+                }
+                break;
+            }
+
 #ifdef FEATURE_HW_INTRINSICS
             case NI_System_Math_FusedMultiplyAdd:
             case NI_System_MathF_FusedMultiplyAdd:
@@ -4428,6 +4438,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_System_Type_IsAssignableFrom;
             }
+        }
+    }
+    else if ((strcmp(namespaceName, "Internal.Runtime.CompilerServices") == 0) ||
+            (strcmp(namespaceName, "System.Runtime.CompilerServices") == 0))
+    {
+        if ((strcmp(className, "Unsafe") == 0) && (strcmp(methodName, "Unlikely") == 0))
+        {
+            result = NI_System_Runtime_CompilerServices_Unsafe_Unlikely;
         }
     }
 #if defined(TARGET_XARCH) // We currently only support BSWAP on x86
