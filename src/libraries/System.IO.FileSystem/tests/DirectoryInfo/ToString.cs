@@ -38,6 +38,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug in .NET Framework fixed in .NET Core: ToString() returned '.'")]
         [PlatformSpecific(TestPlatforms.Windows)]  // Drive letter only
         public void DriveOnlyReturnsDrive_Windows()
         {
@@ -46,19 +47,8 @@ namespace System.IO.Tests
             Assert.Equal(path, info.ToString());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
-        public void ParentToString_Framework()
-        {
-            ParentToString(false);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
-        public void ParentToString_Core()
-        {
-            ParentToString(true);
-        }
-
-        private void ParentToString(bool compareFullName)
+        [Fact]
+        public void ParentToString()
         {
             string filePath = GetTestFilePath();
 
@@ -68,8 +58,8 @@ namespace System.IO.Tests
             string parentDirPath = Path.GetDirectoryName(dirPath);
             DirectoryInfo parentDirInfo = new DirectoryInfo(parentDirPath);
 
-            string dirInfoParentString = compareFullName ? dirInfo.Parent.FullName : dirInfo.Parent.Name;
-            string parentDirInfoString = compareFullName ? parentDirInfo.FullName : parentDirInfo.Name;
+            string dirInfoParentString = PlatformDetection.IsNetCore ? dirInfo.Parent.FullName : dirInfo.Parent.Name;
+            string parentDirInfoString = PlatformDetection.IsNetCore ? parentDirInfo.FullName : parentDirInfo.Name;
 
             Assert.Equal(dirInfo.Parent.ToString(), dirInfoParentString);
             Assert.Equal(dirInfo.Parent.ToString(), parentDirInfoString);
