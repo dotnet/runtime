@@ -40,7 +40,6 @@ namespace System.Runtime.CompilerServices
         public static unsafe T ReadUnaligned<T>(void* source) { throw null; }
         public static unsafe T Read<T>(void* source) { throw null; }
         public static void SkipInit<T>(out T value) { throw null; }
-        public static bool Unlikely(bool condition) { throw null; }
         public static int SizeOf<T>() { throw null; }
         public static ref T SubtractByteOffset<T>(ref T source, System.IntPtr byteOffset) { throw null; }
         public static unsafe void* Subtract<T>(void* source, int elementOffset) { throw null; }
