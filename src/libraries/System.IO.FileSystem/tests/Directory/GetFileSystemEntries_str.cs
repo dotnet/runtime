@@ -11,7 +11,6 @@ namespace System.IO.Tests
     {
         #region Utilities
 
-
         protected virtual bool TestFiles { get { return true; } }       // True if the virtual GetEntries mmethod returns files
         protected virtual bool TestDirectories { get { return true; } } // True if the virtual GetEntries mmethod returns Directories
 
@@ -205,26 +204,31 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        public void InvalidPath_Core()
+        public void InvalidPath()
         {
-            foreach (char invalid in Path.GetInvalidFileNameChars())
+            Assert.All(Path.GetInvalidFileNameChars(), invalidChar =>
             {
-                string badPath = string.Format($"{TestDirectory}{Path.DirectorySeparatorChar}te{invalid}st");
-                switch (invalid)
+                string badPath = string.Format($"{TestDirectory}{Path.DirectorySeparatorChar}te{invalidChar}st");
+
+                switch (invalidChar)
                 {
                     case '/':
                     case '\\':
-                    case ':':
                         Assert.Throws<DirectoryNotFoundException>(() => GetEntries(badPath));
+                        break;
+                    case ':':
+                        // Framework does not support reading colon
+                        AssertExtensions.Throws<DirectoryNotFoundException, NotSupportedException>(() => GetEntries(badPath));
                         break;
                     case '\0':
                         Assert.Throws<ArgumentException>(() => GetEntries(badPath));
                         break;
                     default:
-                        Assert.Throws<IOException>(() => GetEntries(badPath));
+                        // Same exception message, different exception type
+                        AssertExtensions.Throws<IOException, ArgumentException>(() => GetEntries(badPath));
                         break;
                 }
-            }
+            });
         }
 
         [Theory,
@@ -242,9 +246,10 @@ namespace System.IO.Tests
             InlineData("<"),
             InlineData("\t")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsInvalidCharsPath_Core(string invalid)
+        public void WindowsInvalidCharsPath(string invalid)
         {
-            Assert.Throws<IOException>(() => GetEntries(invalid));
+            // Same exception message, different exception type
+            AssertExtensions.Throws<IOException, ArgumentException>(() => GetEntries(invalid));
         }
 
         [Theory,
