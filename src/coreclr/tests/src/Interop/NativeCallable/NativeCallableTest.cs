@@ -37,6 +37,7 @@ public class Program
             NegativeTest_NonBlittable();
             NegativeTest_NonInstantiatedGenericArguments();
             NegativeTest_InstantiatedGenericArguments();
+            NegativeTest_FromInstantiatedGenericClass();
             NativeCallableViaUnmanagedCalli();
 
             if (args.Length != 0 && args[0].Equals("calli"))
@@ -283,6 +284,53 @@ public class Program
         {
             testNativeMethod();
             Assert.Fail($"Function {nameof(CallbackMethodGeneric)} has generic types");
+        }
+        catch (NotSupportedException)
+        {
+        }
+    }
+
+    public class GenericClass<T>
+    {
+        [NativeCallable]
+        public static int CallbackMethod(int n)
+        {
+            Assert.Fail($"Functions with attribute {nameof(NativeCallableAttribute)} within a generic type are invalid");
+            return -1;
+        }
+    }
+
+    public static void NegativeTest_FromInstantiatedGenericClass()
+    {
+        Console.WriteLine($"Running {nameof(NegativeTest_FromInstantiatedGenericClass)}...");
+
+        /*
+           void TestNativeCallableInstGenericType()
+           {
+                .locals init ([0] native int ptr)
+                IL_0000:  nop
+                IL_0001:  ldftn      int32 GenericClass<int>::CallbackMethod(int)
+                IL_0007:  stloc.0
+                IL_0008:  ret
+             }
+        */
+        DynamicMethod testNativeCallable = new DynamicMethod("TestNativeCallableInstGenericClass", null, null, typeof(Program).Module);
+        ILGenerator il = testNativeCallable.GetILGenerator();
+        il.DeclareLocal(typeof(IntPtr));
+        il.Emit(OpCodes.Nop);
+
+        // Get native function pointer of the callback from the instantiated generic class.
+        il.Emit(OpCodes.Ldftn, typeof(GenericClass<int>).GetMethod(nameof(GenericClass<int>.CallbackMethod)));
+        il.Emit(OpCodes.Stloc_0);
+
+        il.Emit(OpCodes.Ret);
+        var testNativeMethod = (NativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(NativeMethodInvoker));
+
+        // Try invoking method
+        try
+        {
+            testNativeMethod();
+            Assert.Fail($"Function {nameof(GenericClass<int>.CallbackMethod)} has generic class");
         }
         catch (NotSupportedException)
         {
