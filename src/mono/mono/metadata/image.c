@@ -805,7 +805,6 @@ mono_image_init (MonoImage *image)
 {
 	mono_os_mutex_init_recursive (&image->lock);
 	mono_os_mutex_init_recursive (&image->szarray_cache_lock);
-	mono_os_mutex_init_recursive (&image->references_lock);
 
 	image->mempool = mono_mempool_new_size (INITIAL_IMAGE_SIZE);
 	mono_internal_hash_table_init (&image->class_cache,
@@ -2372,7 +2371,6 @@ mono_image_close_except_pools (MonoImage *image)
 		}
 	} else {
 		if (image->references) {
-			mono_os_mutex_destroy (&image->references_lock);
 			g_free (image->references);
 			image->references = NULL;
 		}
@@ -2526,7 +2524,6 @@ mono_image_close_finish (MonoImage *image)
 				mono_assembly_close_finish (image->references [i]);
 		}
 
-		mono_os_mutex_destroy (&image->references_lock);
 		g_free (image->references);
 		image->references = NULL;
 	}
