@@ -284,9 +284,6 @@ public:
     void EnablePreemptiveGC() { }
     void DisablePreemptiveGC() { }
 
-    inline void IncLockCount() { }
-    inline void DecLockCount() { }
-
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD) { return NULL; }
 
     PTR_AppDomain GetDomain() { return ::GetAppDomain(); }
@@ -1187,9 +1184,7 @@ public:
         // unused                       = 0x00080000,
         TSNC_RaiseUnloadEvent           = 0x00100000, // Finalize thread is raising managed unload event which
                                                       // may call AppDomain.Unload.
-        TSNC_UnbalancedLocks            = 0x00200000, // Do not rely on lock accounting for this thread:
-                                                      // we left an app domain with a lock count different from
-                                                      // when we entered it
+        // unused                       = 0x00200000,
         // unused                       = 0x00400000,
         TSNC_IgnoreUnhandledExceptions  = 0x00800000, // Set for a managed thread born inside an appdomain created with the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag.
         TSNC_ProcessedUnhandledException = 0x01000000,// Set on a thread on which we have done unhandled exception processing so that
@@ -1504,10 +1499,6 @@ public:
     //-----------------------------------------------------------
     PTR_AppDomain       m_pDomain;
 
-    // Track the number of locks (critical section, spin lock, syncblock lock,
-    // EE Crst, GC lock) held by the current thread.
-    DWORD                m_dwLockCount;
-
     // Unique thread id used for thin locks - kept as small as possible, as we have limited space
     // in the object header to store it.
     DWORD                m_ThreadId;
@@ -1635,12 +1626,7 @@ public:
     // Flags for thread states that have no concurrency issues.
     ThreadStateNoConcurrency m_StateNC;
 
-    inline void IncLockCount();
-    inline void DecLockCount();
-
 private:
-    DWORD m_dwBeginLockCount;  // lock count when the thread enters current domain
-
 #ifdef _DEBUG
     DWORD dbg_m_cSuspendedThreads;
     // Count of suspended threads that we know are not in native code (and therefore cannot hold OS lock which prevents us calling out to host)
@@ -1720,21 +1706,6 @@ private:
     DWORD m_dwHashCodeSeed;
 
 public:
-
-    inline BOOL HasLockInCurrentDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(m_dwLockCount >= m_dwBeginLockCount);
-
-        // Equivalent to (m_dwLockCount != m_dwBeginLockCount ||
-        //                m_dwCriticalRegionCount ! m_dwBeginCriticalRegionCount),
-        // but without branching instructions
-        BOOL fHasLock = (m_dwLockCount ^ m_dwBeginLockCount);
-
-        return fHasLock;
-    }
-
     inline DWORD GetNewHashCode()
     {
         LIMITED_METHOD_CONTRACT;

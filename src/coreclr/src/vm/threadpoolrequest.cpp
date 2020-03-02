@@ -651,9 +651,6 @@ void ManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNotR
             }
         }
 
-        // We should have released all locks.
-        _ASSERTE(g_fEEShutDown || pThread->m_dwLockCount == 0 || pThread->m_fRudeAborted);
-
         *foundWork = true;
     }
 }
