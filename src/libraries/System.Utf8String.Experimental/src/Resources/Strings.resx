@@ -132,4 +132,10 @@
   <data name="Utf8Span_CannotCallEqualsObject" xml:space="preserve">
     <value>Cannot call Utf8Span.Equals(object). Use Equals(Utf8Span) or operator == instead.</value>
   </data>
+  <data name="Utf8String_InputContainedMalformedUtf16" xml:space="preserve">
+    <value>The input buffer contained ill-formed UTF-16 data.</value>
+  </data>
+  <data name="Utf8String_InputContainedMalformedUtf8" xml:space="preserve">
+    <value>The input buffer contained ill-formed UTF-8 data.</value>
+  </data>
 </root>

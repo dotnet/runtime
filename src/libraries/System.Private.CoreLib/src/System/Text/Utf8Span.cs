@@ -8,7 +8,10 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
-//using Internal.Runtime.CompilerServices;
+
+#if SYSTEM_PRIVATE_CORELIB
+using Internal.Runtime.CompilerServices;
+#endif
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Utf8Span.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
@@ -31,15 +34,14 @@ namespace System.Text
     [StructLayout(LayoutKind.Auto)]
     public readonly ref partial struct Utf8Span
     {
-        //TODO: eerhardt
-        ///// <summary>
-        ///// Creates a <see cref="Utf8Span"/> from an existing <see cref="Utf8String"/> instance.
-        ///// </summary>
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //public Utf8Span(Utf8String? value)
-        //{
-        //    Bytes = Utf8Extensions.AsBytes(value);
-        //}
+        /// <summary>
+        /// Creates a <see cref="Utf8Span"/> from an existing <see cref="Utf8String"/> instance.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Utf8Span(Utf8String? value)
+        {
+            Bytes = Utf8Extensions.AsBytes(value);
+        }
 
         /// <summary>
         /// Ctor for internal use only. Caller _must_ validate both invariants hold:
@@ -276,14 +278,13 @@ namespace System.Text
             }
         }
 
-        //TODO eerhardt
-        //public Utf8String ToUtf8String()
-        //{
-        //    // TODO_UTF8STRING: Since we know the underlying data is immutable, well-formed UTF-8,
-        //    // we can perform transcoding using an optimized code path that skips all safety checks.
+        public Utf8String ToUtf8String()
+        {
+            // TODO_UTF8STRING: Since we know the underlying data is immutable, well-formed UTF-8,
+            // we can perform transcoding using an optimized code path that skips all safety checks.
 
-        //    return Utf8String.UnsafeCreateWithoutValidation(Bytes);
-        //}
+            return Utf8String.UnsafeCreateWithoutValidation(Bytes);
+        }
 
         /// <summary>
         /// Wraps a <see cref="Utf8Span"/> instance around the provided <paramref name="buffer"/>,

@@ -9,7 +9,7 @@ using System.Text.Unicode;
 
 namespace System
 {
-    public static class Utf8Extensions
+    public static partial class Utf8Extensions
     {
         /// <summary>
         /// Projects <paramref name="text"/> as a <see cref="ReadOnlySpan{Byte}"/>.
@@ -30,7 +30,7 @@ namespace System
             if (text is null)
                 return default;
 
-            return new ReadOnlySpan<byte>(ref text.DangerousGetMutableReference(), text.Length);
+            return CreateSpan(text);
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace System
             if ((uint)start > (uint)text.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 
-            return new ReadOnlySpan<byte>(ref text.DangerousGetMutableReference(start), text.Length - start);
+            return CreateSpan(text, start);
         }
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 #endif
 
-            return new ReadOnlySpan<byte>(ref text.DangerousGetMutableReference(start), length);
+            return CreateSpan(text, start, length);
         }
 
         /// <summary>
@@ -135,10 +135,10 @@ namespace System
 
             if (Utf8Utility.IsUtf8ContinuationByte(text.DangerousGetMutableReference(start)))
             {
-                Utf8String.ThrowImproperStringSplit();
+                // TODO: eerhardt Utf8String.ThrowImproperStringSplit();
             }
 
-            return Utf8Span.UnsafeCreateWithoutValidation(new ReadOnlySpan<byte>(ref text.DangerousGetMutableReference(start), text.Length - start));
+            return Utf8Span.UnsafeCreateWithoutValidation(CreateSpan(text, start));
         }
 
         /// <summary>
@@ -180,12 +180,12 @@ namespace System
             if (Utf8Utility.IsUtf8ContinuationByte(text.DangerousGetMutableReference(start))
                 || Utf8Utility.IsUtf8ContinuationByte(text.DangerousGetMutableReference(start + length)))
             {
-                Utf8String.ThrowImproperStringSplit();
+                // TODO: eerhardt Utf8String.ThrowImproperStringSplit();
             }
 
-            return Utf8Span.UnsafeCreateWithoutValidation(new ReadOnlySpan<byte>(ref text.DangerousGetMutableReference(start), length));
+            return Utf8Span.UnsafeCreateWithoutValidation(CreateSpan(text, start, length));
         }
-
+/* // TODO eerhardt
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
         /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
@@ -389,7 +389,7 @@ namespace System
             (int start, int length) = range.GetOffsetAndLength(text.Length);
             return new ReadOnlyMemory<byte>(text, start, length);
         }
-
+*/
         /// <summary>
         /// Returns a <see cref="Utf8String"/> representation of this <see cref="Rune"/> instance.
         /// </summary>

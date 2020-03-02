@@ -263,6 +263,7 @@ namespace System
             return Ctor(value.AsSpan());
         }
 
+<<<<<<< HEAD
         /*
          * METHODS
          */
@@ -280,6 +281,15 @@ namespace System
             int length = Length;
             return new ReadOnlySpan<byte>(ref DangerousGetMutableReference(), length);
         }
+=======
+        /// <summary>
+        /// Returns a <em>mutable</em> reference to the first byte of this <see cref="Utf8String"/>
+        /// (or the null terminator if the string is empty).
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ref byte DangerousGetMutableReference() => ref Unsafe.AsRef(in _firstByte);
+>>>>>>> Get Utf8String building on netstandard2.0
 
         /// <summary>
         /// Returns a <em>mutable</em> <see cref="Span{Byte}"/> that can be used to populate this
@@ -296,6 +306,7 @@ namespace System
         }
 
         /// <summary>
+<<<<<<< HEAD
         /// Returns a <em>mutable</em> reference to the first byte of this <see cref="Utf8String"/>
         /// (or the null terminator if the string is empty).
         /// </summary>
@@ -304,6 +315,8 @@ namespace System
         internal ref byte DangerousGetMutableReference() => ref Unsafe.AsRef(in _firstByte);
 
         /// <summary>
+=======
+>>>>>>> Get Utf8String building on netstandard2.0
         /// Gets an immutable reference that can be used in a <see langword="fixed"/> statement. The resulting
         /// reference can be pinned and used as a null-terminated <em>LPCUTF8STR</em>.
         /// </summary>
@@ -313,9 +326,25 @@ namespace System
         [EditorBrowsable(EditorBrowsableState.Never)] // for compiler use only
         public ref readonly byte GetPinnableReference() => ref _firstByte;
 
+<<<<<<< HEAD
         /*
          * HELPER METHODS
          */
+=======
+        /// <summary>
+        /// Similar to <see cref="Utf8Extensions.AsBytes(Utf8String)"/>, but skips the null check on the input.
+        /// Throws a <see cref="NullReferenceException"/> if the input is null.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<byte> AsBytesSkipNullCheck()
+        {
+            // By dereferencing Length first, the JIT will skip the null check that normally precedes
+            // most instance method calls, and it'll use the field dereference as the null check.
+
+            int length = Length;
+            return new ReadOnlySpan<byte>(ref DangerousGetMutableReference(), length);
+        }
+>>>>>>> Get Utf8String building on netstandard2.0
 
         /// <summary>
         /// Creates a new zero-initialized instance of the specified length. Actual storage allocated is "length + 1" bytes

@@ -12,7 +12,6 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Text
 {
-    [StructLayout(LayoutKind.Auto)]
     public readonly ref partial struct Utf8Span
     {
         public Utf8Span this[Range range]

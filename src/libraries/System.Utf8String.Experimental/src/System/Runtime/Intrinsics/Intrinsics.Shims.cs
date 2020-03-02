@@ -40,7 +40,6 @@ namespace System.Runtime.Intrinsics.X86
             public static bool IsSupported { get; } = false;
             public static ulong LeadingZeroCount(ulong value) => throw new PlatformNotSupportedException();
         }
-
         public static bool IsSupported { get; } = false;
         public static uint LeadingZeroCount(uint value) => throw new PlatformNotSupportedException();
     }

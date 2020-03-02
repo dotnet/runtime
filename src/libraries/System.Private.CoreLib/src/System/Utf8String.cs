@@ -8,7 +8,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Unicode;
+
+#if CORECLR
 using Internal.Runtime.CompilerServices;
+#endif
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if TARGET_64BIT
@@ -53,6 +56,7 @@ namespace System
         public static implicit operator Utf8Span(Utf8String? value) => new Utf8Span(value);
 
         /*
+<<<<<<< HEAD
          * INDEXERS
          */
 
@@ -73,6 +77,8 @@ namespace System
         }
 
         /*
+=======
+>>>>>>> Get Utf8String building on netstandard2.0
          * METHODS
          */
 
@@ -122,7 +128,11 @@ namespace System
             // Allow retrieving references to the null terminator.
 
             Debug.Assert(index <= (uint)Length, "Caller should've performed bounds checking.");
+#if CORECLR
             return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), index);
+#else
+            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), (IntPtr)index); // TODO: IntPtr cast?
+#endif
         }
 
         /// <summary>
@@ -149,7 +159,11 @@ namespace System
 
             return !(value is null)
                 && this.Length == value.Length
+#if CORECLR
                 && SpanHelpers.SequenceEqual(ref this.DangerousGetMutableReference(), ref value.DangerousGetMutableReference(), (uint)Length);
+#else
+                && this.DangerousGetMutableSpan().SequenceEqual(value.DangerousGetMutableSpan());
+#endif
         }
 
         /// <summary>
@@ -174,7 +188,11 @@ namespace System
             return !(left is null)
                 && !(right is null)
                 && left.Length == right.Length
+#if CORECLR
                 && SpanHelpers.SequenceEqual(ref left.DangerousGetMutableReference(), ref right.DangerousGetMutableReference(), (uint)left.Length);
+#else
+                && left.DangerousGetMutableSpan().SequenceEqual(right.DangerousGetMutableSpan());
+#endif
         }
 
         /// <summary>
@@ -196,7 +214,11 @@ namespace System
             // TODO_UTF8STRING: Consider whether this should use a different seed than String.GetHashCode.
 
             ulong seed = Marvin.DefaultSeed;
+#if CORECLR
             return Marvin.ComputeHash32(ref DangerousGetMutableReference(), (uint)_length /* in bytes */, (uint)seed, (uint)(seed >> 32));
+#else
+            return Marvin.ComputeHash32(_bytes, seed);
+#endif
         }
 
         /// <summary>
@@ -238,10 +260,11 @@ namespace System
             return (value is null) || value.AsSpan().IsEmptyOrWhiteSpace();
         }
 
-        /// <summary>
-        /// Returns the entire <see cref="Utf8String"/> as an array of UTF-8 bytes.
-        /// </summary>
-        public byte[] ToByteArray() => this.AsSpanSkipNullCheck().ToByteArray();
+        // TODO: eerhardt - need Utf8Span.Conversion.cs
+        ///// <summary>
+        ///// Returns the entire <see cref="Utf8String"/> as an array of UTF-8 bytes.GetPinnableReference
+        ///// </summary>
+        //public byte[] ToByteArray() => this.AsSpanSkipNullCheck().ToByteArray();
 
         /// <summary>
         /// Converts this <see cref="Utf8String"/> instance to a <see cref="string"/>.
@@ -250,44 +273,20 @@ namespace System
         {
             // TODO_UTF8STRING: Optimize the call below, potentially by avoiding the two-pass.
 
+#if CORECLR || NETCOREAPP
             return Encoding.UTF8.GetString(this.AsBytesSkipNullCheck());
-        }
-
-        /// <summary>
-        /// Converts this <see cref="Utf8String"/> instance to a <see cref="string"/>.
-        /// </summary>
-        /// <remarks>
-        /// This routine throws <see cref="InvalidOperationException"/> if the underlying instance
-        /// contains invalid UTF-8 data.
-        /// </remarks>
-        internal unsafe string ToStringNoReplacement()
-        {
-            // TODO_UTF8STRING: Optimize the call below, potentially by avoiding the two-pass.
-
-            int utf16CharCount;
-
-            fixed (byte* pData = &_firstByte)
+#else
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(Length);
+            try
             {
-                byte* pFirstInvalidByte = Utf8Utility.GetPointerToFirstInvalidByte(pData, this.Length, out int utf16CodeUnitCountAdjustment, out _);
-                if (pFirstInvalidByte != pData + (uint)this.Length)
-                {
-                    // Saw bad UTF-8 data.
-                    // TODO_UTF8STRING: Throw a better exception below?
-
-                    ThrowHelper.ThrowInvalidOperationException();
-                }
-
-                utf16CharCount = this.Length + utf16CodeUnitCountAdjustment;
-                Debug.Assert(utf16CharCount <= this.Length && utf16CharCount >= 0);
+                _bytes.CopyTo(buffer.AsSpan());
+                return Encoding.UTF8.GetString(buffer, 0, Length);
             }
-
-            // TODO_UTF8STRING: Can we call string.FastAllocate directly?
-
-            return string.Create(utf16CharCount, this, (chars, thisObj) =>
+            finally
             {
-                OperationStatus status = Utf8.ToUtf16(thisObj.AsBytes(), chars, out _, out _, replaceInvalidSequences: false);
-                Debug.Assert(status == OperationStatus.Done, "Did somebody mutate this Utf8String instance unexpectedly?");
-            });
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+#endif
         }
     }
 }

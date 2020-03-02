@@ -56,5 +56,6 @@ namespace System
         index,
         input,
         value,
+        start,
     }
 }
