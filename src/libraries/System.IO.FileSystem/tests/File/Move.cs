@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class File_Move : FileSystemTest
+    public partial class File_Move : FileSystemTest
     {
         #region Utilities
 
@@ -15,24 +15,6 @@ namespace System.IO.Tests
             File.Move(sourceFile, destFile);
         }
 
-        protected virtual void Move(string sourceFile, string destFile, bool overwrite)
-        {
-            File.Move(sourceFile, destFile, overwrite);
-        }
-
-        private void MoveDestinationFileDoesNotExist(bool overwrite)
-        {
-            string srcPath = GetTestFilePath();
-            string destPath = GetTestFilePath();
-
-            byte[] srcContents = new byte[] { 1, 2, 3, 4, 5 };
-            File.WriteAllBytes(srcPath, srcContents);
-
-            Move(srcPath, destPath, overwrite);
-
-            Assert.False(File.Exists(srcPath));
-            Assert.Equal(srcContents, File.ReadAllBytes(destPath));
-        }
 
         #endregion
 
@@ -80,7 +62,8 @@ namespace System.IO.Tests
                 }
                 else
                 {
-                    Assert.ThrowsAny<IOException>(() => Move(testFile.FullName, invalidPath));
+                    // Same exception message, different exception type
+                    AssertExtensions.Throws<IOException, ArgumentException>(() => Move(testFile.FullName, invalidPath));
                 }
             }
         }
@@ -204,6 +187,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long paths not supported in Framework")]
         [PlatformSpecific(TestPlatforms.Windows)]  // Path longer than max path limit
         public void OverMaxPathWorks_Windows()
         {
@@ -253,21 +237,23 @@ namespace System.IO.Tests
 
         [Theory, MemberData(nameof(PathsWithInvalidColons))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsPathWithIllegalColons_Core(string invalidPath)
+        public void WindowsPathWithIllegalColons(string invalidPath)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
             testFile.Create().Dispose();
-            Assert.ThrowsAny<IOException>(() => Move(testFile.FullName, testFile.DirectoryName + Path.DirectorySeparatorChar + invalidPath));
+            // Same exception message, different exception types
+            AssertExtensions.Throws<IOException, NotSupportedException>(() => Move(testFile.FullName, testFile.DirectoryName + Path.DirectorySeparatorChar + invalidPath));
         }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsWildCharacterPath_Core()
+        public void WindowsWildCharacterPath()
         {
-            Assert.Throws<FileNotFoundException>(() => Move(Path.Combine(TestDirectory, "*"), GetTestFilePath()));
-            Assert.Throws<FileNotFoundException>(() => Move(GetTestFilePath(), Path.Combine(TestDirectory, "*")));
-            Assert.Throws<FileNotFoundException>(() => Move(GetTestFilePath(), Path.Combine(TestDirectory, "Test*t")));
-            Assert.Throws<FileNotFoundException>(() => Move(GetTestFilePath(), Path.Combine(TestDirectory, "*Test")));
+            // Same exception message, different exception type
+            AssertExtensions.Throws<FileNotFoundException, ArgumentException>(() => Move(Path.Combine(TestDirectory, "*"), GetTestFilePath()));
+            AssertExtensions.Throws<FileNotFoundException, ArgumentException>(() => Move(GetTestFilePath(), Path.Combine(TestDirectory, "*")));
+            AssertExtensions.Throws<FileNotFoundException, ArgumentException>(() => Move(GetTestFilePath(), Path.Combine(TestDirectory, "Test*t")));
+            AssertExtensions.Throws<FileNotFoundException, ArgumentException>(() => Move(GetTestFilePath(), Path.Combine(TestDirectory, "*Test")));
         }
 
 
@@ -298,10 +284,18 @@ namespace System.IO.Tests
         [Theory,
             MemberData(nameof(ControlWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsControlPath_Core(string whitespace)
+        public void WindowsControlPath(string whitespace)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
-            Assert.ThrowsAny<IOException>(() => Move(testFile.FullName, Path.Combine(TestDirectory, whitespace)));
+            // Same exception message, different exception type
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.ThrowsAny<IOException>(() => Move(testFile.FullName, Path.Combine(TestDirectory, whitespace)));
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(() => Move(testFile.FullName, Path.Combine(TestDirectory, whitespace)));
+            }
         }
 
         [Theory,
@@ -332,6 +326,7 @@ namespace System.IO.Tests
             InlineData("::$DATA", ":bar"),
             InlineData("::$DATA", ":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException: The given path's format is not supported.")]
         public void WindowsAlternateDataStreamMove(string defaultStream, string alternateStream)
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
@@ -348,52 +343,7 @@ namespace System.IO.Tests
             string testFile2 = Path.Combine(testDirectory.FullName, GetTestFileName());
             Assert.Throws<IOException>(() => Move(testFileAlternateStream, testFile2));
         }
+
         #endregion
-
-        [Fact]
-        public void BasicMoveWithOverwriteFileExists()
-        {
-            string srcPath = GetTestFilePath();
-            string destPath = GetTestFilePath();
-
-            byte[] srcContents = new byte[] { 1, 2, 3, 4, 5 };
-            byte[] destContents = new byte[] { 6, 7, 8, 9, 10 };
-            File.WriteAllBytes(srcPath, srcContents);
-            File.WriteAllBytes(destPath, destContents);
-
-            Move(srcPath, destPath, true);
-
-            Assert.False(File.Exists(srcPath));
-            Assert.Equal(srcContents, File.ReadAllBytes(destPath));
-        }
-
-        [Fact]
-        public void BasicMoveWithOverwriteFileDoesNotExist()
-        {
-            MoveDestinationFileDoesNotExist(true);
-        }
-
-        [Fact]
-        public void BasicMoveWithoutOverwriteFileDoesNotExist()
-        {
-            MoveDestinationFileDoesNotExist(false);
-        }
-
-        [Fact]
-        public void MoveOntoExistingFileNoOverwrite()
-        {
-            string srcPath = GetTestFilePath();
-            string destPath = GetTestFilePath();
-
-            byte[] srcContents = new byte[] { 1, 2, 3, 4, 5 };
-            byte[] destContents = new byte[] { 6, 7, 8, 9, 10 };
-            File.WriteAllBytes(srcPath, srcContents);
-            File.WriteAllBytes(destPath, destContents);
-
-            Assert.Throws<IOException>(() => Move(srcPath, destPath, false));
-            Assert.True(File.Exists(srcPath));
-            Assert.True(File.Exists(destPath));
-            Assert.Equal(destContents, File.ReadAllBytes(destPath));
-        }
     }
 }
