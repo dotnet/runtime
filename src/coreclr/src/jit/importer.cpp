@@ -4444,7 +4444,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         }
     }
     else if ((strcmp(namespaceName, "Internal.Runtime.CompilerServices") == 0) ||
-            (strcmp(namespaceName, "System.Runtime.CompilerServices") == 0))
+             (strcmp(namespaceName, "System.Runtime.CompilerServices") == 0))
     {
         if ((strcmp(className, "Unsafe") == 0) && (strcmp(methodName, "Unlikely") == 0))
         {
