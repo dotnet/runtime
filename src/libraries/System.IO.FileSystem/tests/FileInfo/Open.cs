@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.PlatformAbstractions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -14,6 +15,7 @@ namespace System.IO.Tests
         }
 
         [Theory, MemberData(nameof(StreamSpecifiers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Framework throws ArgumentException: Append access can be requested only in write-only mode.")]
         public override void FileModeAppend(string streamSpecifier)
         {
             using (FileStream fs = CreateFileStream(GetTestFilePath() + streamSpecifier, FileMode.Append))
@@ -24,6 +26,7 @@ namespace System.IO.Tests
         }
 
         [Theory, MemberData(nameof(StreamSpecifiers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Framework throws ArgumentException: Append access can be requested only in write-only mode.")]
         public override void FileModeAppendExisting(string streamSpecifier)
         {
             string fileName = GetTestFilePath() + streamSpecifier;
