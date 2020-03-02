@@ -99,6 +99,42 @@ namespace System.Security.Cryptography
                 DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 
+        /// <summary>
+        ///   Computes the hash value of the specified data and signs it using the specified signature format.
+        /// </summary>
+        /// <param name="data">The data to sign.</param>
+        /// <param name="offset">The offset into <paramref name="data"/> at which to begin hashing.</param>
+        /// <param name="count">The number of bytes to read from <paramref name="data"/>.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to create the hash value.</param>
+        /// <param name="signatureFormat">The encoding format to use for the signature.</param>
+        /// <returns>
+        ///   The ECDSA signature for the specified data.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="data"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat"/> is not a known format.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="offset" /> is less than zero.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="count" /> is less than zero.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="offset" /> + <paramref name="count"/> - 1 results in an index that is
+        ///   beyond the upper bound of <paramref name="data"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm"/> has a <see langword="null"/> or empty <see cref="HashAlgorithmName.Name"/>.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the hashing or signing operation.
+        /// </exception>
         public byte[] SignData(
             byte[] data,
             int offset,
@@ -120,6 +156,18 @@ namespace System.Security.Cryptography
             return SignDataCore(new ReadOnlySpan<byte>(data, offset, count), hashAlgorithm, signatureFormat);
         }
 
+        /// <summary>
+        ///   Computes the hash value of the specified data and signs it using the specified signature format.
+        /// </summary>
+        /// <param name="data">The data to sign.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to create the hash value.</param>
+        /// <param name="signatureFormat">The encoding format to use for the signature.</param>
+        /// <returns>
+        ///   The ECDSA signature for the specified data.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the hashing or signing operation.
+        /// </exception>
         protected virtual byte[] SignDataCore(
             ReadOnlySpan<byte> data,
             HashAlgorithmName hashAlgorithm,
@@ -157,6 +205,27 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        ///   Computes the hash value of the specified data and signs it using the specified signature format.
+        /// </summary>
+        /// <param name="data">The data to sign.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to create the hash value.</param>
+        /// <param name="signatureFormat">The encoding format to use for the signature.</param>
+        /// <returns>
+        ///   The ECDSA signature for the specified data.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="data"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat"/> is not a known format.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm"/> has a <see langword="null"/> or empty <see cref="HashAlgorithmName.Name"/>.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the hashing or signing operation.
+        /// </exception>
         public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
             if (data == null)
@@ -169,6 +238,27 @@ namespace System.Security.Cryptography
             return SignDataCore(data, hashAlgorithm, signatureFormat);
         }
 
+        /// <summary>
+        ///   Computes the hash value of the specified data and signs it using the specified signature format.
+        /// </summary>
+        /// <param name="data">The data to sign.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to create the hash value.</param>
+        /// <param name="signatureFormat">The encoding format to use for the signature.</param>
+        /// <returns>
+        ///   The ECDSA signature for the specified data.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="data"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat"/> is not a known format.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm"/> has a <see langword="null"/> or empty <see cref="HashAlgorithmName.Name"/>.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the hashing or signing operation.
+        /// </exception>
         public byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
             if (data == null)
@@ -181,6 +271,18 @@ namespace System.Security.Cryptography
             return SignDataCore(data, hashAlgorithm, signatureFormat);
         }
 
+        /// <summary>
+        ///   Computes the hash value of the specified data and signs it using the specified signature format.
+        /// </summary>
+        /// <param name="data">The data to sign.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to create the hash value.</param>
+        /// <param name="signatureFormat">The encoding format to use for the signature.</param>
+        /// <returns>
+        ///   The ECDSA signature for the specified data.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the hashing or signing operation.
+        /// </exception>
         protected virtual byte[] SignDataCore(
             Stream data,
             HashAlgorithmName hashAlgorithm,
@@ -190,6 +292,23 @@ namespace System.Security.Cryptography
             return SignHashCore(hash, signatureFormat);
         }
 
+        /// <summary>
+        ///   Computes the ECDSA signature for the specified hash value in the indicated format.
+        /// </summary>
+        /// <param name="hash">The hash value to sign.</param>
+        /// <param name="signatureFormat">The encoding format to use for the signature.</param>
+        /// <returns>
+        ///   The ECDSA signature for the specified data.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat"/> is not a known format.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the signing operation.
+        /// </exception>
         public byte[] SignHash(byte[] hash, DSASignatureFormat signatureFormat)
         {
             if (hash == null)
@@ -200,6 +319,17 @@ namespace System.Security.Cryptography
             return SignHashCore(hash, signatureFormat);
         }
 
+        /// <summary>
+        ///   Computes the ECDSA signature for the specified hash value in the indicated format.
+        /// </summary>
+        /// <param name="hash">The hash value to sign.</param>
+        /// <param name="signatureFormat">The encoding format to use for the signature.</param>
+        /// <returns>
+        ///   The ECDSA signature for the specified data.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the signing operation.
+        /// </exception>
         protected virtual byte[] SignHashCore(ReadOnlySpan<byte> hash, DSASignatureFormat signatureFormat)
         {
             Span<byte> signature = stackalloc byte[SignatureStackBufSize];
@@ -250,6 +380,31 @@ namespace System.Security.Cryptography
                 out bytesWritten);
         }
 
+        /// <summary>
+        ///   Attempts to create the ECDSA signature for the specified data in the indicated format
+        ///   into the provided buffer.
+        /// </summary>
+        /// <param name="data">The data to hash and sign.</param>
+        /// <param name="destination">The buffer to receive the signature.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to create the hash value.</param>
+        /// <param name="signatureFormat">The encoding format to use for the signature.</param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains a value that indicates the number of bytes written to
+        ///   <paramref name="destination"/>. This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if <paramref name="destination"/> is big enough to receive the signature;
+        ///   otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat"/> is not a known format.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm"/> has a <see langword="null"/> or empty <see cref="HashAlgorithmName.Name"/>.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the signing operation.
+        /// </exception>
         public bool TrySignData(
             ReadOnlySpan<byte> data,
             Span<byte> destination,
@@ -265,6 +420,25 @@ namespace System.Security.Cryptography
             return TrySignDataCore(data, destination, hashAlgorithm, signatureFormat, out bytesWritten);
         }
 
+        /// <summary>
+        ///   Attempts to create the ECDSA signature for the specified data in the indicated format
+        ///   into the provided buffer.
+        /// </summary>
+        /// <param name="data">The data to hash and sign.</param>
+        /// <param name="destination">The buffer to receive the signature.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to create the hash value.</param>
+        /// <param name="signatureFormat">The encoding format to use for the signature.</param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains a value that indicates the number of bytes written to
+        ///   <paramref name="destination"/>. This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if <paramref name="destination"/> is big enough to receive the signature;
+        ///   otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the signing operation.
+        /// </exception>
         protected virtual bool TrySignDataCore(
             ReadOnlySpan<byte> data,
             Span<byte> destination,
@@ -328,6 +502,43 @@ namespace System.Security.Cryptography
                 DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 
+        /// <summary>
+        ///   Verifies that a digital signature is valid for the provided data.
+        /// </summary>
+        /// <param name="data">An array that contains the signed data.</param>
+        /// <param name="offset">The starting index of the signed portion of <paramref name="data"/>.</param>
+        /// <param name="count">The number of bytes in <paramref name="data"/> that were signed.</param>
+        /// <param name="signature">The signature to verify.</param>
+        /// <param name="hashAlgorithm">The hash algorithm used to hash the data for the verification process.</param>
+        /// <param name="signatureFormat">The encoding format for <paramref name="signature"/>.</param>
+        /// <returns>
+        ///   <see langword="true"/> if the digital signature is valid for the provided data; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="data"/> or <paramref name="signature"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat"/> is not a known format.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="offset" /> is less than zero.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="count" /> is less than zero.
+        ///
+        ///   -or-
+        ///
+        ///   <paramref name="offset" /> + <paramref name="count"/> - 1 results in an index that is
+        ///   beyond the upper bound of <paramref name="data"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm"/> has a <see langword="null"/> or empty <see cref="HashAlgorithmName.Name"/>.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the hashing or verification operation.
+        /// </exception>
         public bool VerifyData(
             byte[] data,
             int offset,
@@ -356,6 +567,28 @@ namespace System.Security.Cryptography
                 signatureFormat);
         }
 
+        /// <summary>
+        ///   Verifies that a digital signature is valid for the provided data.
+        /// </summary>
+        /// <param name="data">The signed data.</param>
+        /// <param name="signature">The signature to verify.</param>
+        /// <param name="hashAlgorithm">The hash algorithm used to hash the data for the verification process.</param>
+        /// <param name="signatureFormat">The encoding format for <paramref name="signature"/>.</param>
+        /// <returns>
+        ///   <see langword="true"/> if the digital signature is valid for the provided data; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="data"/> or <paramref name="signature"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat"/> is not a known format.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm"/> has a <see langword="null"/> or empty <see cref="HashAlgorithmName.Name"/>.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the hashing or verification operation.
+        /// </exception>
         public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
             if (data == null)
@@ -378,6 +611,22 @@ namespace System.Security.Cryptography
             return VerifyDataCore(data, signature, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 
+        /// <summary>
+        ///   Verifies that a digital signature is valid for the provided data.
+        /// </summary>
+        /// <param name="data">The signed data.</param>
+        /// <param name="signature">The signature to verify.</param>
+        /// <param name="hashAlgorithm">The hash algorithm used to hash the data for the verification process.</param>
+        /// <param name="signatureFormat">The encoding format for <paramref name="signature"/>.</param>
+        /// <returns>
+        ///   <see langword="true"/> if the digital signature is valid for the provided data; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat"/> is not a known format.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the hashing or verification operation.
+        /// </exception>
         public bool VerifyData(
             ReadOnlySpan<byte> data,
             ReadOnlySpan<byte> signature,
@@ -392,6 +641,19 @@ namespace System.Security.Cryptography
             return VerifyDataCore(data, signature, hashAlgorithm, signatureFormat);
         }
 
+        /// <summary>
+        ///   Verifies that a digital signature is valid for the provided data.
+        /// </summary>
+        /// <param name="data">The signed data.</param>
+        /// <param name="signature">The signature to verify.</param>
+        /// <param name="hashAlgorithm">The hash algorithm used to hash the data for the verification process.</param>
+        /// <param name="signatureFormat">The encoding format for <paramref name="signature"/>.</param>
+        /// <returns>
+        ///   <see langword="true"/> if the digital signature is valid for the provided data; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the hashing or verification operation.
+        /// </exception>
         protected virtual bool VerifyDataCore(
             ReadOnlySpan<byte> data,
             ReadOnlySpan<byte> signature,
@@ -427,6 +689,28 @@ namespace System.Security.Cryptography
             return VerifyDataCore(data, signature, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 
+        /// <summary>
+        ///   Verifies that a digital signature is valid for the provided data.
+        /// </summary>
+        /// <param name="data">The signed data.</param>
+        /// <param name="signature">The signature to verify.</param>
+        /// <param name="hashAlgorithm">The hash algorithm used to hash the data for the verification process.</param>
+        /// <param name="signatureFormat">The encoding format for <paramref name="signature"/>.</param>
+        /// <returns>
+        ///   <see langword="true"/> if the digital signature is valid for the provided data; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="data"/> or <paramref name="signature"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat"/> is not a known format.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm"/> has a <see langword="null"/> or empty <see cref="HashAlgorithmName.Name"/>.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the hashing or verification operation.
+        /// </exception>
         public bool VerifyData(
             Stream data,
             byte[] signature,
@@ -445,6 +729,19 @@ namespace System.Security.Cryptography
             return VerifyDataCore(data, signature, hashAlgorithm, signatureFormat);
         }
 
+        /// <summary>
+        ///   Verifies that a digital signature is valid for the provided data.
+        /// </summary>
+        /// <param name="data">The signed data.</param>
+        /// <param name="signature">The signature to verify.</param>
+        /// <param name="hashAlgorithm">The hash algorithm used to hash the data for the verification process.</param>
+        /// <param name="signatureFormat">The encoding format for <paramref name="signature"/>.</param>
+        /// <returns>
+        ///   <see langword="true"/> if the digital signature is valid for the provided data; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the hashing or verification operation.
+        /// </exception>
         protected virtual bool VerifyDataCore(
             Stream data,
             ReadOnlySpan<byte> signature,
@@ -501,6 +798,27 @@ namespace System.Security.Cryptography
         public virtual bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
             => TrySignHashCore(hash, destination, DSASignatureFormat.IeeeP1363FixedFieldConcatenation, out bytesWritten);
 
+        /// <summary>
+        ///   Attempts to create the ECDSA signature for the specified hash value in the indicated format
+        ///   into the provided buffer.
+        /// </summary>
+        /// <param name="hash">The hash value to sign.</param>
+        /// <param name="destination">The buffer to receive the signature.</param>
+        /// <param name="signatureFormat">The encoding format to use for the signature.</param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains a value that indicates the number of bytes written to
+        ///   <paramref name="destination"/>. This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if <paramref name="destination"/> is big enough to receive the signature;
+        ///   otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat"/> is not a known format.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the signing operation.
+        /// </exception>
         public bool TrySignHash(
             ReadOnlySpan<byte> hash,
             Span<byte> destination,
@@ -513,6 +831,24 @@ namespace System.Security.Cryptography
             return TrySignHashCore(hash, destination, signatureFormat, out bytesWritten);
         }
 
+        /// <summary>
+        ///   Attempts to create the ECDSA signature for the specified hash value in the indicated format
+        ///   into the provided buffer.
+        /// </summary>
+        /// <param name="hash">The hash value to sign.</param>
+        /// <param name="destination">The buffer to receive the signature.</param>
+        /// <param name="signatureFormat">The encoding format to use for the signature.</param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains a value that indicates the number of bytes written to
+        ///   <paramref name="destination"/>. This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if <paramref name="destination"/> is big enough to receive the signature;
+        ///   otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the signing operation.
+        /// </exception>
         protected virtual bool TrySignHashCore(
             ReadOnlySpan<byte> hash,
             Span<byte> destination,
@@ -530,6 +866,24 @@ namespace System.Security.Cryptography
         public virtual bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
             VerifyHashCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
 
+        /// <summary>
+        ///   Verifies that a digital signature is valid for the provided hash.
+        /// </summary>
+        /// <param name="hash">The signed hash.</param>
+        /// <param name="signature">The signature to verify.</param>
+        /// <param name="signatureFormat">The encoding format for <paramref name="signature"/>.</param>
+        /// <returns>
+        ///   <see langword="true"/> if the digital signature is valid for the provided data; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash"/> or <paramref name="signature"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat"/> is not a known format.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the verification operation.
+        /// </exception>
         public bool VerifyHash(byte[] hash, byte[] signature, DSASignatureFormat signatureFormat)
         {
             if (hash == null)
@@ -542,6 +896,21 @@ namespace System.Security.Cryptography
             return VerifyHashCore(hash, signature, signatureFormat);
         }
 
+        /// <summary>
+        ///   Verifies that a digital signature is valid for the provided hash.
+        /// </summary>
+        /// <param name="hash">The signed hash.</param>
+        /// <param name="signature">The signature to verify.</param>
+        /// <param name="signatureFormat">The encoding format for <paramref name="signature"/>.</param>
+        /// <returns>
+        ///   <see langword="true"/> if the digital signature is valid for the provided data; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat"/> is not a known format.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the verification operation.
+        /// </exception>
         public bool VerifyHash(
             ReadOnlySpan<byte> hash,
             ReadOnlySpan<byte> signature,
@@ -553,6 +922,18 @@ namespace System.Security.Cryptography
             return VerifyHashCore(hash, signature, signatureFormat);
         }
 
+        /// <summary>
+        ///   Verifies that a digital signature is valid for the provided hash.
+        /// </summary>
+        /// <param name="hash">The signed hash.</param>
+        /// <param name="signature">The signature to verify.</param>
+        /// <param name="signatureFormat">The encoding format for <paramref name="signature"/>.</param>
+        /// <returns>
+        ///   <see langword="true"/> if the digital signature is valid for the provided data; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the verification operation.
+        /// </exception>
         protected virtual bool VerifyHashCore(
             ReadOnlySpan<byte> hash,
             ReadOnlySpan<byte> signature,
@@ -830,6 +1211,16 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        ///   Gets the largest size, in bytes, for a signature produced by this key in the indicated format.
+        /// </summary>
+        /// <param name="signatureFormat">The encoding format for a signature.</param>
+        /// <returns>
+        ///   The largest size, in bytes, for a signature produced by this key in the indicated format.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat"/> is not a known format.
+        /// </exception>
         public int GetMaxSignatureSize(DSASignatureFormat signatureFormat)
         {
             int fieldSizeBits = KeySize;
