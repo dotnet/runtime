@@ -43,7 +43,7 @@ namespace System.Net.NetworkInformation
 
         public override IPAddress Address { get { return _innerInfo.Address; } }
 
-        public override IPAddress? IPv4Mask
+        public override IPAddress IPv4Mask
         {
             get
             {
@@ -54,7 +54,7 @@ namespace System.Net.NetworkInformation
                     return IPAddress.Any;
                 }
 
-                return _ipv4Mask;
+                return _ipv4Mask!;
             }
         }
 

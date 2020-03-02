@@ -460,7 +460,7 @@ namespace System.Net.NetworkInformation
         public abstract long AddressValidLifetime { get; }
         public abstract long DhcpLeaseLifetime { get; }
         public abstract System.Net.NetworkInformation.DuplicateAddressDetectionState DuplicateAddressDetectionState { get; }
-        public abstract System.Net.IPAddress? IPv4Mask { get; }
+        public abstract System.Net.IPAddress IPv4Mask { get; }
         public virtual int PrefixLength { get { throw null; } }
         public abstract System.Net.NetworkInformation.PrefixOrigin PrefixOrigin { get; }
         public abstract System.Net.NetworkInformation.SuffixOrigin SuffixOrigin { get; }
