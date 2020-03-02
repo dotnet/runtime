@@ -33,6 +33,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug fixed in .NET Core")]
         public void InvalidAccess_DoesNotCloseHandle()
         {
             using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))
@@ -146,6 +147,7 @@ namespace System.IO.Tests
     public class DerivedFileStream_ctor_sfh_fa : FileSystemTest
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug fixed in .NET Core")]
         public void VirtualCanReadWrite_ShouldNotBeCalledDuringCtor()
         {
             using (var fs = File.Create(GetTestFilePath()))
