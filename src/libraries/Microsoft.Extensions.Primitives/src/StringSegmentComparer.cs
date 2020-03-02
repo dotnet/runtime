@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Primitives
         {
             return StringSegment.Compare(x, y, Comparison);
         }
-		
+
         public bool Equals(StringSegment x, StringSegment y)
         {
             return StringSegment.Equals(x, y, Comparison);
@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Primitives
 
         public int GetHashCode(StringSegment obj)
         {
-#if NETCOREAPP
+#if NETCOREAPP || NETSTANDARD2_1
             return string.GetHashCode(obj.AsSpan(), Comparison);
 #else
             if (!obj.HasValue)

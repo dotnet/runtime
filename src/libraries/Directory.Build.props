@@ -5,14 +5,19 @@
   <Import Project="..\..\Directory.Build.props" />
 
   <ItemGroup>
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\ref\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\src\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\tests\**\*csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\ref\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\src\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\Microsoft.Extensions.*.Tests.csproj" Exclude="@(PortedExtensionsProject)" />
   </ItemGroup>
 
-  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.')) and !$(MSBuildProjectName.EndsWith('.Tests'))">
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">
     <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
+    <!-- Temporarily ignore nit warning/errors (e.g. extra whitespace) from Extensions projects -->
+    <NoWarn Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">$(NoWarn);SA1129;SA1028;SA1027;SA1121;CA1200</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
