@@ -6787,12 +6787,14 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                                     // So, we also need to scan all 'lcl's fields, if any, to see if they
                                     // are exposed.
                                     //
-                                    // TODO: we should not need to check for TYP_I_IMPL here, any
-                                    // aliasing value should be TYP_BYREF.
-                                    //
-                                    // Note we don't need to check for native pointers (abstractly)
-                                    // because aliasing native pointers require pinning, and we
-                                    // reject all tail calls in methods with pinned locals.
+                                    // When looking for aliases from other args, we check for both TYP_BYREF
+                                    // and TYP_I_IMPL typed args here. Conceptually anything that points into
+                                    // an implicit byref parameter should be TYP_BYREF, as these parameters could
+                                    // refer to boxed heap locations (say if the method is invoked by reflection)
+                                    // but there are some stack only structs (like typed references) where
+                                    // the importer/runtime code uses TYP_I_IMPL, and fgInitArgInfo will
+                                    // transiently retype all simple address-of implicit parameter args as
+                                    // TYP_I_IMPL.
                                     //
                                     if ((arg2->argType == TYP_BYREF) || (arg2->argType == TYP_I_IMPL))
                                     {
