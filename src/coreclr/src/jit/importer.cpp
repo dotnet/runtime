@@ -4131,6 +4131,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 if (compCurBB->bbJumpKind == BBJ_COND)
                 {
+                    // I guess actually we need to change weight for a specific edge
+                    // rather than for the whole block (it can be non-cold for other conditions)
+                    // however, bbPreds are not calcaluted at this moment...
                     compCurBB->bbNext->bbFlags |= BBF_RUN_RARELY;
                     compCurBB->bbNext->setBBWeight(BB_ZERO_WEIGHT);
                 }
