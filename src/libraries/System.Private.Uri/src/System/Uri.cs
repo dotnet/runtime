@@ -149,7 +149,6 @@ namespace System
             public string? Query;
             public string? Fragment;
             public string? AbsoluteUri;
-            public int Hash;
             public string? RemoteUrl;
         };
 
@@ -1509,22 +1508,21 @@ namespace System
         {
             if (IsNotAbsoluteUri)
             {
-                MoreInfo moreInfo = (_info ??= new UriInfo()).MoreInfo ??= new MoreInfo();
-                if (moreInfo.Hash == 0)
-                {
-                    moreInfo.Hash = OriginalString.GetHashCode();
-                }
-                return moreInfo.Hash;
+                return OriginalString.GetHashCode();
             }
             else
             {
                 MoreInfo moreInfo = EnsureUriInfo().MoreInfo ??= new MoreInfo();
-                if (moreInfo.Hash == 0)
+                string remoteUrl = moreInfo.RemoteUrl ??= GetParts(UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped);
+
+                if (IsUncOrDosPath)
                 {
-                    string remoteUrl = moreInfo.RemoteUrl ??= GetParts(UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped);
-                    moreInfo.Hash = remoteUrl.GetHashCode(IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+                    return remoteUrl.GetHashCode(StringComparison.OrdinalIgnoreCase);
                 }
-                return moreInfo.Hash;
+                else
+                {
+                    return remoteUrl.GetHashCode();
+                }
             }
         }
 
