@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
-using Xunit;
 using System.Linq;
+using Xunit;
 
 namespace System.IO.Tests
 {
@@ -579,6 +578,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long path support only .NET Core")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsSearchPatternLongSegment()
         {
@@ -590,6 +590,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long paths not supported in Framework")]
         public void SearchPatternLongPath()
         {
             // Create a destination path longer than the traditional Windows limit of 256 characters
@@ -612,24 +613,38 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void SearchPatternWithDoubleDots_Core()
+        public void SearchPatternWithDoubleDots()
         {
-            // Search pattern with double dots no longer throws ArgumentException
             string directory = Directory.CreateDirectory(GetTestFilePath()).FullName;
-            Assert.Throws<DirectoryNotFoundException>(() => GetEntries(directory, Path.Combine("..ab ab.. .. abc..d", "abc..")));
-            GetEntries(directory, "..");
-            GetEntries(directory, @".." + Path.DirectorySeparatorChar);
 
-            Assert.Throws<DirectoryNotFoundException>(() => GetEntries(directory, Path.Combine("..ab ab.. .. abc..d", "abc", "..")));
-            GetEntries(directory, Path.Combine("..ab ab.. .. abc..d", "..", "abc"));
-            Assert.Throws<DirectoryNotFoundException>(() => GetEntries(directory, Path.Combine("..", "..ab ab.. .. abc..d", "abc")));
-            Assert.Throws<DirectoryNotFoundException>(() => GetEntries(directory, Path.Combine("..", "..ab ab.. .. abc..d", "abc") + Path.DirectorySeparatorChar));
+            // Same exception message, different exception type
+            AssertExtensions.Throws<DirectoryNotFoundException, ArgumentException>(() => GetEntries(directory, Path.Combine("..ab ab.. .. abc..d", "abc..")));
+            AssertExtensions.Throws<DirectoryNotFoundException, ArgumentException>(() => GetEntries(directory, Path.Combine("..ab ab.. .. abc..d", "abc", "..")));
+            AssertExtensions.Throws<DirectoryNotFoundException, ArgumentException>(() => GetEntries(directory, Path.Combine("..", "..ab ab.. .. abc..d", "abc")));
+            AssertExtensions.Throws<DirectoryNotFoundException, ArgumentException>(() => GetEntries(directory, Path.Combine("..", "..ab ab.. .. abc..d", "abc") + Path.DirectorySeparatorChar));
+
+            if (PlatformDetection.IsNetCore)
+            {
+                // Search pattern with double dots no longer throws ArgumentException
+                GetEntries(directory, "..");
+                GetEntries(directory, @".." + Path.DirectorySeparatorChar);
+                GetEntries(directory, Path.Combine("..ab ab.. .. abc..d", "..", "abc"));
+            }
+            else
+            {
+                // Framework does not support these
+                Assert.Throws<ArgumentException>(() => GetEntries(directory, ".."));
+                Assert.Throws<ArgumentException>(() => GetEntries(directory, @".." + Path.DirectorySeparatorChar));
+                Assert.Throws<ArgumentException>(() => GetEntries(directory, Path.Combine("..ab ab.. .. abc..d", "..", "abc")));
+
+            }
         }
 
         private static char[] OldWildcards = new char[] { '*', '?' };
         private static char[] NewWildcards = new char[] { '<', '>', '\"' };
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Illegal characters in path: '|'")]
         public void SearchPatternInvalid_Core()
         {
             GetEntries(TestDirectory, "|");
@@ -664,8 +679,9 @@ namespace System.IO.Tests
             });
         }
 
-        [Fact] // .NET Core doesn't throw on wildcards
-        public void WindowsSearchPatternInvalid_Wildcards_netcoreapp()
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Core no longer throws on wildcards")]
+        public void WindowsSearchPatternInvalid_Wildcards_Core()
         {
             Assert.All(OldWildcards, invalidChar =>
             {
