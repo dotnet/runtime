@@ -44,8 +44,6 @@ namespace System
         private string _originalUnicodeString = null!; // initialized in ctor via helper
 
         private UriParser _syntax = null!;   // Initialized in ctor via helper. This is a whole Uri syntax, not only the scheme name
-        // temporarily stores dnssafe host when we have unicode/idn host and idn is on
-        private string? _dnsSafeHost = null;
 
         [Flags]
         private enum Flags : ulong
@@ -1128,7 +1126,7 @@ namespace System
 
                 EnsureHostString(false);
 
-                if (!string.IsNullOrEmpty(_info.DnsSafeHost))
+                if (_info.DnsSafeHost != null)
                 {
                     // Cached
                     return _info.DnsSafeHost;
@@ -2375,7 +2373,6 @@ namespace System
 
         Done:
             cF |= Flags.MinimalUriInfoSet;
-            info.DnsSafeHost = _dnsSafeHost;
             lock (_string)
             {
                 if ((_flags & Flags.MinimalUriInfoSet) == 0)
