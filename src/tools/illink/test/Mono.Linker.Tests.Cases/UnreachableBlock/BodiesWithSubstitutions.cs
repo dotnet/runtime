@@ -6,6 +6,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 	[SetupLinkerSubstitutionFile ("BodiesWithSubstitutions.xml")]
 	[SetupCSharpCompilerToUse ("csc")]
 	[SetupCompileArgument ("/optimize+")]
+	[SetupLinkerArgument ("--enable-opt", "ipconstantpropagation")]
 	public class BodiesWithSubstitutions
 	{
 		static class ClassWithField

@@ -1,7 +1,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.UnreachableBlock
 {
+	[SetupLinkerArgument ("--enable-opt", "ipconstantpropagation")]
 	public class TryFinallyBlocks
 	{
 		public static void Main ()
