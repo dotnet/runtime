@@ -111,6 +111,13 @@
         <InGroup>False</InGroup>
       </AllProjects>
     </ItemGroup>
+
+    <ItemGroup>
+      <Project Include="@(AllProjects->WithMetadataValue('InGroup', 'True'))">
+        <AdditionalProperties>BuildOS=$(BuildOS)</AdditionalProperties>
+      </Project>
+    </ItemGroup>
+  
   </Target>
 
   <Import Project="..\dir.traversal.targets" />
