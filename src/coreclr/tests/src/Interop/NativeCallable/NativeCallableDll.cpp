@@ -2,11 +2,39 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include <platformdefines.h> 
+#include <platformdefines.h>
+
+#include <thread>
 
 typedef int (STDMETHODCALLTYPE *CALLBACKPROC)(int n);
 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc(CALLBACKPROC pCallbackProc, int n)
 {
     return pCallbackProc(n);
+}
+
+namespace
+{
+    struct ProxyCallContext
+    {
+        CALLBACKPROC CallbackProc;
+        int N;
+        int Result;
+    };
+
+    void ProxyCall(_In_ ProxyCallContext* cxt)
+    {
+        cxt->Result = CallManagedProc(cxt->CallbackProc, cxt->N);
+    }
+}
+
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProcOnNewThread(CALLBACKPROC pCallbackProc, int n)
+{
+    ProxyCallContext cxt{ pCallbackProc, n, 0 };
+    std::thread newThreadToRuntime{ ProxyCall, &cxt };
+
+    // Wait for new thread to complete
+    newThreadToRuntime.join();
+
+    return cxt.Result;
 }
