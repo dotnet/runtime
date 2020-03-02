@@ -5085,6 +5085,22 @@ void CEEInfo::getCallInfo(
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, W("?")));
     }
 
+    // If this call is for a LDFTN and the target method has the NativeCallableAttribute,
+    // then validate it adheres to the limitations.
+    if ((flags & CORINFO_CALLINFO_LDFTN) && pMD->HasNativeCallableAttribute())
+    {
+        if (!pMD->IsStatic())
+            EX_THROW(EEResourceException, (kNotSupportedException, W("NotSupported_NonStaticMethod")));
+
+        // No generic methods
+        if (pMD->HasClassOrMethodInstantiation())
+            EX_THROW(EEResourceException, (kNotSupportedException, W("NotSupported_GenericMethod")));
+
+        // Arguments
+        if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
+            EX_THROW(EEResourceException, (kNotSupportedException, W("NotSupported_NonBlittableTypes")));
+    }
+
     TypeHandle exactType = TypeHandle(pResolvedToken->hClass);
 
     TypeHandle constrainedType;
@@ -9206,21 +9222,6 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
     }
 
 #else
-    // If this method has the NativeCallableAttribute, then validate it
-    // adheres to the limitations.
-    if (pMD->HasNativeCallableAttribute())
-    {
-        if (!pMD->IsStatic())
-            COMPlusThrow(kNotSupportedException, W("NotSupported_NonStaticMethod"));
-
-        // No generic methods
-        if (pMD->HasClassOrMethodInstantiation())
-            COMPlusThrow(kNotSupportedException, W("NotSupported_GenericMethod"));
-
-        // Arguments
-        if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
-            COMPlusThrow(kNotSupportedException, W("NotSupported_NonBlittableTypes"));
-    }
 
     pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();
 
