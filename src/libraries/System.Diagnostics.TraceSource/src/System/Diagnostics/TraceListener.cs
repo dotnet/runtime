@@ -352,7 +352,7 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        public virtual void TraceData(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, params object[]? data)
+        public virtual void TraceData(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, params object?[]? data)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, null, data))
                 return;
@@ -368,7 +368,7 @@ namespace System.Diagnostics
                         sb.Append(", ");
 
                     if (data[i] != null)
-                        sb.Append(data[i].ToString());
+                        sb.Append(data[i]!.ToString());
                 }
             }
             WriteLine(sb.ToString());
@@ -393,7 +393,7 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        public virtual void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string format, params object[]? args)
+        public virtual void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string format, params object?[]? args)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args))
                 return;

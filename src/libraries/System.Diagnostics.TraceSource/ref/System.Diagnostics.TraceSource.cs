@@ -38,13 +38,13 @@ namespace System.Diagnostics
     {
         public EventTypeFilter(System.Diagnostics.SourceLevels level) { }
         public System.Diagnostics.SourceLevels EventType { get { throw null; } set { } }
-        public override bool ShouldTrace(System.Diagnostics.TraceEventCache? cache, string source, System.Diagnostics.TraceEventType eventType, int id, string? formatOrMessage, object[]? args, object? data1, object[]? data) { throw null; }
+        public override bool ShouldTrace(System.Diagnostics.TraceEventCache? cache, string source, System.Diagnostics.TraceEventType eventType, int id, string? formatOrMessage, object?[]? args, object? data1, object?[]? data) { throw null; }
     }
     public partial class SourceFilter : System.Diagnostics.TraceFilter
     {
         public SourceFilter(string source) { }
         public string Source { get { throw null; } set { } }
-        public override bool ShouldTrace(System.Diagnostics.TraceEventCache? cache, string source, System.Diagnostics.TraceEventType eventType, int id, string? formatOrMessage, object[]? args, object? data1, object[]? data) { throw null; }
+        public override bool ShouldTrace(System.Diagnostics.TraceEventCache? cache, string source, System.Diagnostics.TraceEventType eventType, int id, string? formatOrMessage, object?[]? args, object? data1, object?[]? data) { throw null; }
     }
     [System.FlagsAttribute]
     public enum SourceLevels
@@ -124,15 +124,15 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public static void TraceError(string? message) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public static void TraceError(string format, params object[]? args) { }
+        public static void TraceError(string format, params object?[]? args) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public static void TraceInformation(string? message) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public static void TraceInformation(string format, params object[]? args) { }
+        public static void TraceInformation(string format, params object?[]? args) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public static void TraceWarning(string? message) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public static void TraceWarning(string format, params object[]? args) { }
+        public static void TraceWarning(string format, params object?[]? args) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public static void Unindent() { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
@@ -194,7 +194,7 @@ namespace System.Diagnostics
     public abstract partial class TraceFilter
     {
         protected TraceFilter() { }
-        public abstract bool ShouldTrace(System.Diagnostics.TraceEventCache? cache, string source, System.Diagnostics.TraceEventType eventType, int id, string? formatOrMessage, object[]? args, object? data1, object[]? data);
+        public abstract bool ShouldTrace(System.Diagnostics.TraceEventCache? cache, string source, System.Diagnostics.TraceEventType eventType, int id, string? formatOrMessage, object?[]? args, object? data1, object?[]? data);
     }
     public enum TraceLevel
     {
@@ -224,10 +224,10 @@ namespace System.Diagnostics
         public virtual void Flush() { }
         protected virtual string[]? GetSupportedAttributes() { throw null; }
         public virtual void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, object? data) { }
-        public virtual void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, params object[]? data) { }
+        public virtual void TraceData(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, params object?[]? data) { }
         public virtual void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id) { }
         public virtual void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string? message) { }
-        public virtual void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string format, params object[]? args) { }
+        public virtual void TraceEvent(System.Diagnostics.TraceEventCache? eventCache, string source, System.Diagnostics.TraceEventType eventType, int id, string format, params object?[]? args) { }
         public virtual void TraceTransfer(System.Diagnostics.TraceEventCache? eventCache, string source, int id, string? message, System.Guid relatedActivityId) { }
         public virtual void Write(object? o) { }
         public virtual void Write(object? o, string? category) { }
@@ -294,17 +294,17 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public void TraceData(System.Diagnostics.TraceEventType eventType, int id, object? data) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public void TraceData(System.Diagnostics.TraceEventType eventType, int id, params object[]? data) { }
+        public void TraceData(System.Diagnostics.TraceEventType eventType, int id, params object?[]? data) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public void TraceEvent(System.Diagnostics.TraceEventType eventType, int id) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public void TraceEvent(System.Diagnostics.TraceEventType eventType, int id, string? message) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public void TraceEvent(System.Diagnostics.TraceEventType eventType, int id, string format, params object[]? args) { }
+        public void TraceEvent(System.Diagnostics.TraceEventType eventType, int id, string format, params object?[]? args) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public void TraceInformation(string message) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public void TraceInformation(string format, params object[]? args) { }
+        public void TraceInformation(string format, params object?[]? args) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public void TraceTransfer(int id, string? message, System.Guid relatedActivityId) { }
     }

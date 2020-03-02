@@ -263,7 +263,7 @@ namespace System.Diagnostics
         }
 
         [Conditional("TRACE")]
-        public void TraceEvent(TraceEventType eventType, int id, string format, params object[]? args)
+        public void TraceEvent(TraceEventType eventType, int id, string format, params object?[]? args)
         {
             Initialize();
 
@@ -353,7 +353,7 @@ namespace System.Diagnostics
         }
 
         [Conditional("TRACE")]
-        public void TraceData(TraceEventType eventType, int id, params object[]? data)
+        public void TraceData(TraceEventType eventType, int id, params object?[]? data)
         {
             Initialize();
 
@@ -405,7 +405,7 @@ namespace System.Diagnostics
         }
 
         [Conditional("TRACE")]
-        public void TraceInformation(string format, params object[]? args)
+        public void TraceInformation(string format, params object?[]? args)
         {
             // No need to call Initialize()
             TraceEvent(TraceEventType.Information, 0, format, args);
