@@ -108,8 +108,9 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Could not load file or assembly 'System.Memory'")]
         [MemberData(nameof(CopyFileWithData_MemberData))]
-        public void CopyFileWithData_MemberData(char[] data, bool readOnly)
+        public void TestCopyFileWithData_MemberData(char[] data, bool readOnly)
         {
             string testFileSource = GetTestFilePath();
             string testFileDest = GetTestFilePath();
@@ -179,8 +180,9 @@ namespace System.IO.Tests
             string testFile = GetTestFilePath();
             File.Create(testFile).Dispose();
 
-            Assert.Throws<IOException>(() => Copy(testFile, invalid));
-            Assert.Throws<IOException>(() => Copy(invalid, testFile));
+            // Same exception message, different exception type
+            AssertExtensions.Throws<IOException, ArgumentException>(() => Copy(testFile, invalid));
+            AssertExtensions.Throws<IOException, ArgumentException>(() => Copy(invalid, testFile));
         }
 
         [Theory,
@@ -207,6 +209,7 @@ namespace System.IO.Tests
             InlineData("", ":bar:$DATA"),
             InlineData("::$DATA", ":bar"),
             InlineData("::$DATA", ":bar:$DATA")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException: The given path's format is not supported.")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsAlternateDataStream(string defaultStream, string alternateStream)
         {
@@ -248,6 +251,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Could not load file or assembly 'System.Memory'")]
         public void OverwriteTrue()
         {
             string testFileSource = GetTestFilePath();
@@ -274,6 +278,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Could not load file or assembly 'System.Memory'")]
         public void OverwriteFalse()
         {
             string testFileSource = GetTestFilePath();
@@ -304,6 +309,7 @@ namespace System.IO.Tests
             InlineData("", ":bar:$DATA"),
             InlineData("::$DATA", ":bar"),
             InlineData("::$DATA", ":bar:$DATA")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException: The given path's format is not supported.")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsAlternateDataStreamOverwrite(string defaultStream, string alternateStream)
         {
