@@ -28,16 +28,11 @@ namespace System.IO.Tests.Enumeration
             foreach (FileInfo fi in directory.GetFiles())
             {
                 // Shouldn't throw hitting any of the Open overloads
-                using (FileStream stream = fi.Open(FileMode.Open))
-                { }
-                using (FileStream stream = fi.Open(FileMode.Open, FileAccess.Read))
-                { }
-                using (FileStream stream = fi.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                { }
-                using (FileStream stream = fi.OpenRead())
-                { }
-                using (FileStream stream = fi.OpenWrite())
-                { }
+fi.Open(FileMode.Open).Dispose();
+fi.Open(FileMode.Open, FileAccess.Read).Dispose();
+fi.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite).Dispose();
+fi.OpenRead().Dispose();
+fi.OpenWrite().Dispose();
             }
         }
 
