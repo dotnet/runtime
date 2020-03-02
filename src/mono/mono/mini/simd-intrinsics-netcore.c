@@ -673,6 +673,10 @@ static guint16 sse2_methods [] = {
 	SN_CompareGreaterThan,
 	SN_CompareLessThan,
 	SN_CompareNotEqual,
+	SN_ConvertScalarToVector128UInt32,
+	SN_ConvertScalarToVector128UInt64,
+	SN_ConvertToUInt32,
+	SN_ConvertToUInt64,
 	SN_LoadAlignedVector128,
 	SN_LoadVector128,
 	SN_MoveMask,
@@ -849,6 +853,14 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return emit_simd_ins_for_sig (cfg, klass, arg0_type == MONO_TYPE_R8 ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_GT, arg0_type, fsig, args);
 		case SN_CompareLessThan:
 			return emit_simd_ins_for_sig (cfg, klass, arg0_type == MONO_TYPE_R8 ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_LT, arg0_type, fsig, args);
+		case SN_ConvertScalarToVector128UInt32:
+			return emit_simd_ins_for_sig (cfg, klass, OP_EXPAND_I4, -1, arg0_type, fsig, args);
+		case SN_ConvertScalarToVector128UInt64:
+			return emit_simd_ins_for_sig (cfg, klass, OP_EXPAND_I8, -1, arg0_type, fsig, args);
+		case SN_ConvertToUInt32:
+			return emit_simd_ins_for_sig (cfg, klass, OP_EXTRACT_I4, 0 /*element index*/, arg0_type, fsig, args);
+		case SN_ConvertToUInt64:
+			return emit_simd_ins_for_sig (cfg, klass, OP_EXTRACT_I8, 0 /*element index*/, arg0_type, fsig, args);
 		case SN_LoadAlignedVector128:
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_LOADU, 16 /*alignment*/, arg0_type, fsig, args);
 		case SN_LoadVector128:

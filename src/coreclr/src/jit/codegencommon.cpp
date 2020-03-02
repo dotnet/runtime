@@ -11474,19 +11474,9 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
     // Is the first "VariableLiveRange" or the previous one has been closed so its "m_EndEmitLocation" is valid
     noway_assert(m_VariableLiveRanges->empty() || m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
 
-    if (!m_VariableLiveRanges->empty() && m_VariableLiveRanges->back().m_EndEmitLocation.IsPreviousInsNum(emit) &&
-        siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation)))
-    {
-        // The variable is being born just after the instruction at which it died.
-        // In this case, i.e. an update of the variable's value, we coalesce the live ranges.
-        m_VariableLiveRanges->back().m_EndEmitLocation.Init();
-    }
-    else
-    {
-        // Creates new live range with invalid end
-        m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
-        m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
-    }
+    // Creates new live range with invalid end
+    m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
+    m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
 
 #ifdef DEBUG
     if (!m_VariableLifeBarrier->hasLiveRangesToDump())

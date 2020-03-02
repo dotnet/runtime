@@ -1009,6 +1009,12 @@ public:
         return &m_ILStubGenLock;
     }
 
+    ListLock* GetNativeTypeLoadLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_NativeTypeLoadLock;
+    }
+
     STRINGREF *IsStringInterned(STRINGREF *pString);
     STRINGREF *GetOrInternString(STRINGREF *pString);
 
@@ -1159,6 +1165,7 @@ protected:
     ListLock         m_ClassInitLock;
     JitListLock      m_JITLock;
     ListLock         m_ILStubGenLock;
+    ListLock         m_NativeTypeLoadLock;
 
     CLRPrivBinderCoreCLR *m_pTPABinderContext; // Reference to the binding context that holds TPA list details
 

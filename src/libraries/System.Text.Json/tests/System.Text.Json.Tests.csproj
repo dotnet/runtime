@@ -50,6 +50,7 @@
     <Compile Include="Serialization\CustomConverterTests.Exceptions.cs" />
     <Compile Include="Serialization\CustomConverterTests.Int32.cs" />
     <Compile Include="Serialization\CustomConverterTests.List.cs" />
+    <Compile Include="Serialization\CustomConverterTests.NullableTypes.cs" />
     <Compile Include="Serialization\CustomConverterTests.NullValueType.cs" />
     <Compile Include="Serialization\CustomConverterTests.Object.cs" />
     <Compile Include="Serialization\CustomConverterTests.Point.cs" />

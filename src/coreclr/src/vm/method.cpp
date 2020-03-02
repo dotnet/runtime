@@ -29,6 +29,7 @@
 #include "interoputil.h"
 #include "prettyprintsig.h"
 #include "formattype.h"
+#include "fieldmarshaler.h"
 
 #ifdef FEATURE_PREJIT
 #include "compile.h"
@@ -103,7 +104,7 @@ class ArgIteratorBaseForPInvoke : public ArgIteratorBase
 protected:
     FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
     {
-        return pMT->GetLayoutInfo()->IsNativeStructPassedInRegisters();
+        return pMT->GetNativeLayoutInfo()->IsNativeStructPassedInRegisters();
     }
 };
 
