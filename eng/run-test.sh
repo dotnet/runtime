@@ -65,7 +65,7 @@ trap handle_ctrl_c INT
 ProjectRoot="$(dirname "$(dirname "$(realpath ${BASH_SOURCE[0]})")")"
 
 # Location parameters
-# OS/ConfigurationGroup defaults
+# OS/Configuration defaults
 Configuration="Debug"
 source $ProjectRoot/eng/native/init-os-and-arch.sh
 

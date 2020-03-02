@@ -146,7 +146,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "framework"            { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                   { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }
     "allconfigurations"    { $arguments += " /p:BuildAllConfigurations=true" }
-    "arch"                 { $arch = $PSBoundParameters[$argument]; $arguments += " /p:ArchGroup=$($PSBoundParameters[$argument]) /p:TargetArchitecture=$($PSBoundParameters[$argument])" }
+    "arch"                 { $arch = $PSBoundParameters[$argument]; $arguments += " /p:ArchGroup=$arch /p:TargetArchitecture=$arch" }
     "properties"           { $arguments += " " + $properties }
     default                { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
