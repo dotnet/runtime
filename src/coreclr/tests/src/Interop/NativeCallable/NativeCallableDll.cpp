@@ -22,7 +22,7 @@ namespace
         int Result;
     };
 
-    void ProxyCall(_In_ ProxyCallContext* cxt)
+    void ProxyCall(ProxyCallContext* cxt)
     {
         cxt->Result = CallManagedProc(cxt->CallbackProc, cxt->N);
     }
