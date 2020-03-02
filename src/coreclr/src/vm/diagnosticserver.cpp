@@ -48,7 +48,7 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
         while (!s_shuttingDown)
         {
             // FIXME: Ideally this would be something like a std::shared_ptr
-            IpcStream *pStream = s_pIpc->Accept(LoggingCallback);
+            IpcStream *pStream = s_pIpc->Accept(true, LoggingCallback);
 
             if (pStream == nullptr)
                 continue;

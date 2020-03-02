@@ -124,19 +124,47 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
     return new IpcStream::DiagnosticsIpc(serverSocket, &serverAddress);
 }
 
-IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback) const
+IpcStream *IpcStream::DiagnosticsIpc::Connect(const char *const pIpcName, ErrorCallback callback) const
+{
+    sockaddr_un serverAddress{};
+    serverAddress.sun_family = AF_UNIX;
+    const int clientSocket = ::socket(AF_UNIX, SOCK_STREAM, 0);
+    if (clientSocket == -1)
+    {
+        if (callback != nullptr)
+            callback(strerror(errno), errno);
+        // TODO: unlinks?
+    }
+
+    if (pIpcName != nullptr)
+    {
+        int chars = snprintf(serverAddress.sun_path, sizeof(serverAddress.sun_path), "%s", pIpcName);
+        _ASSERTE(chars > 0 && (unsigned int)chars < sizeof(serverAddress.sun_path));
+    }
+
+    if (::connect(clientSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
+    {
+        if (callback != nullptr)
+            callback(strerror(errno), errno);
+        // TODO: Anything else?
+    }
+
+    return new IpcStream(clientSocket, ServerMode::CLIENT);
+}
+
+IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback callback) const
 {
     sockaddr_un from;
     socklen_t fromlen = sizeof(from);
-    const int clientSocket = ::accept(_serverSocket, (sockaddr *)&from, &fromlen);
-    if (clientSocket == -1)
+    const int clientSocket = shouldBlock ? -1 : ::accept(_serverSocket, (sockaddr *)&from, &fromlen);
+    if (shouldBlock && clientSocket == -1)
     {
         if (callback != nullptr)
             callback(strerror(errno), errno);
         return nullptr;
     }
 
-    return new IpcStream(clientSocket);
+    return new IpcStream(shouldBlock ? clientSocket : _serverSocket);
 }
 
 void IpcStream::DiagnosticsIpc::Close(ErrorCallback callback)

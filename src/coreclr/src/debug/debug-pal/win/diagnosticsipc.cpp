@@ -50,14 +50,16 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
     return new IpcStream::DiagnosticsIpc(namedPipeName);
 }
 
-IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback) const
+IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback callback) const
 {
     const uint32_t nInBufferSize = 16 * 1024;
     const uint32_t nOutBufferSize = 16 * 1024;
     HANDLE hPipe = ::CreateNamedPipeA(
         _pNamedPipeName,                                            // pipe name
         PIPE_ACCESS_DUPLEX,                                         // read/write access
-        PIPE_TYPE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,    // message type pipe, message-read and blocking mode
+        PIPE_TYPE_BYTE | 
+        (shouldBlock ? PIPE_WAIT : PIPE_NOWAIT) | 
+        PIPE_REJECT_REMOTE_CLIENTS,                                 // message type pipe, message-read and blocking mode
         PIPE_UNLIMITED_INSTANCES,                                   // max. instances
         nOutBufferSize,                                             // output buffer size
         nInBufferSize,                                              // input buffer size
@@ -77,6 +79,9 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback) const
         const DWORD errorCode = ::GetLastError();
         switch (errorCode)
         {
+            case ERROR_PIPE_LISTENING:
+                // Occurs when there isn't a pending client and we're
+                // in PIPE_NOWAIT mode
             case ERROR_PIPE_CONNECTED:
                 // Occurs when a client connects before the function is called.
                 // In this case, there is a connection between client and
@@ -94,6 +99,31 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback) const
     return new IpcStream(hPipe);
 }
 
+IpcStream *IpcStream::DiagnosticsIpc::Connect(const char *const pIpcName, ErrorCallback callback)
+{
+    DiagnosticsIpc *diagnosticsIpc = DiagnosticsIpc::Create(pIpcName, callback);
+    const uint32_t nInBufferSize = 16 * 1024;
+    const uint32_t nOutBufferSize = 16 * 1024;
+    HANDLE hPipe = ::CreateFileA( 
+        diagnosticsIpc->_pNamedPipeName,    // pipe name 
+        GENERIC_READ |                      // read and write access 
+        GENERIC_WRITE, 
+        0,                                  // no sharing 
+        NULL,                               // default security attributes
+        OPEN_EXISTING,                      // opens existing pipe 
+        0,                                  // default attributes 
+        NULL);                              // no template file
+
+    if (hPipe == INVALID_HANDLE_VALUE)
+    {
+        if (callback != nullptr)
+            callback("Failed to connect to named pipe.", ::GetLastError());
+        return nullptr;
+    }
+
+    return new IpcStream(hPipe, ConnectionMode::CLIENT);
+}
+
 void IpcStream::DiagnosticsIpc::Close(ErrorCallback)
 {
 }
@@ -104,12 +134,50 @@ IpcStream::~IpcStream()
     {
         Flush();
 
-        const BOOL fSuccessDisconnectNamedPipe = ::DisconnectNamedPipe(_hPipe);
-        assert(fSuccessDisconnectNamedPipe != 0);
+        if (_mode == ConnectionMode::SERVER)
+        {
+            const BOOL fSuccessDisconnectNamedPipe = ::DisconnectNamedPipe(_hPipe);
+            assert(fSuccessDisconnectNamedPipe != 0);
+        }
 
         const BOOL fSuccessCloseHandle = ::CloseHandle(_hPipe);
         assert(fSuccessCloseHandle != 0);
     }
+}
+
+IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallback callback)
+{
+    // load up an array of handles
+    HANDLE *pHandles = new HANDLE[nStreams];
+    for (uint32_t i = 0; i < nStreams; i++)
+        pHandles[i] = pStreams[i]->_hPipe;
+
+    // call wait for multiple obj
+    DWORD dwWait = WaitForMultipleObjects(
+        nStreams,       // count
+        pHandles,       // handles
+        false,          // Don't wait all
+        INFINITE);      // wait infinitely
+
+    // determine which of the streams signaled
+    DWORD index = dwWait - WAIT_OBJECT_0;
+    if (index < 0 || index > (nStreams - 1))
+    {
+        if (callback != nullptr)
+            callback("Failed to select to named pipe.", ::GetLastError());
+        return nullptr;
+    }
+
+    // set that stream's mode to blocking
+    bool result = SetNamedPipeHandleState(
+        pHandles[index],                // handle
+        PIPE_READMODE_BYTE | PIPE_WAIT, // read mode and wait mode
+        NULL,                           // no collecting
+        NULL);                          // no collecting
+
+    // cleanup and return that stream
+    delete pHandles;
+    return pStreams[index];
 }
 
 bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead) const

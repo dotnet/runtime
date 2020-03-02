@@ -22,6 +22,13 @@ public:
     bool Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead) const;
     bool Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten) const;
     bool Flush() const;
+    static IpcStream *Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallback callback = nullptr);
+
+    enum ConnectionMode
+    {
+        CLIENT,
+        SERVER
+    };
 
     class DiagnosticsIpc final
     {
@@ -32,7 +39,9 @@ public:
         static DiagnosticsIpc *Create(const char *const pIpcName, ErrorCallback callback = nullptr);
 
         //! Enables the underlaying IPC implementation to accept connection.
-        IpcStream *Accept(ErrorCallback callback = nullptr) const;
+        IpcStream *Accept(bool shouldBlock, ErrorCallback callback = nullptr) const;
+
+        static IpcStream *Connect(const char *const pIpcName, ErrorCallback callback = nullptr);
 
         //! Closes an open IPC.
         void Close(ErrorCallback callback = nullptr);
@@ -66,11 +75,14 @@ public:
 private:
 #ifdef TARGET_UNIX
     int _clientSocket = -1;
-    IpcStream(int clientSocket) : _clientSocket(clientSocket) {}
+    IpcStream(int clientSocket, ConnectionMode mode = ConnectionMode::SERVER)
+        : _clientSocket(clientSocket), _mode(mode) {}
 #else
     HANDLE _hPipe = INVALID_HANDLE_VALUE;
-    IpcStream(HANDLE hPipe) : _hPipe(hPipe) {}
+    IpcStream(HANDLE hPipe, ConnectionMode mode = ConnectionMode::SERVER) : _hPipe(hPipe), _mode(mode) {}
 #endif /* TARGET_UNIX */
+
+    ConnectionMode _mode;
 
     IpcStream() = delete;
     IpcStream(const IpcStream &src) = delete;
