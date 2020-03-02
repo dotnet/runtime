@@ -11,7 +11,7 @@
     <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(TargetFrameworkSuffix)-$(Configuration)</OutputPath>
     <OutputPath Condition="'$(TargetFrameworkSuffix)' == ''">$(BaseOutputPath)$(TargetFramework)-$(Configuration)</OutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <AdditionalBuildTargetFrameworks Condition="'$(BuildAllProjects)' == 'true'">netstandard2.0-$(TargetFrameworkSuffix)</AdditionalBuildTargetFrameworks>
+    <AdditionalBuildTargetFrameworks Condition="'$(BuildAllProjects)' == 'true'">netstandard2.0-$(BuildOS)</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
   
   <!-- don't bring in props/targets from packages, we're not consuming them we're
