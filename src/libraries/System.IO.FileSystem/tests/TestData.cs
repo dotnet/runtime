@@ -47,8 +47,7 @@ internal static class TestData
                 @"http://server",
                 @"http://server/",
                 @"http://server/home",
-                @"file://",
-                @"file:///C|/My Documents/ALetter.html"
+                @"file://"
             };
         }
     }
