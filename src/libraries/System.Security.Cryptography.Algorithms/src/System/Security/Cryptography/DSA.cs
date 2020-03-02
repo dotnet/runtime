@@ -1095,11 +1095,11 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Gets the largest size for a signature produced by this key in the indicated format.
+        ///   Gets the largest size, in bytes, for a signature produced by this key in the indicated format.
         /// </summary>
         /// <param name="signatureFormat">The encoding format for a signature.</param>
         /// <returns>
-        ///   The largest size for a signature produced by this key in the indicated format.
+        ///   The largest size, in bytes, for a signature produced by this key in the indicated format.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="signatureFormat"/> is not a known format.
