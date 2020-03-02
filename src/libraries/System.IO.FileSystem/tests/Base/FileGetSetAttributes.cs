@@ -91,7 +91,7 @@ namespace System.IO.Tests
             Assert.Equal(FileAttributes.Normal, GetAttributes(path));
         }
 
-        [Theory,
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore)),
             InlineData(":bar"),
             InlineData(":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
