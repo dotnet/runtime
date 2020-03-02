@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System
 {
@@ -260,7 +261,7 @@ namespace System
         private UriInfo EnsureUriInfo()
         {
             Flags cF = _flags;
-            if ((_flags & Flags.MinimalUriInfoSet) == 0)
+            if ((cF & Flags.MinimalUriInfoSet) == 0)
             {
                 CreateUriInfo(cF);
             }
@@ -2376,11 +2377,12 @@ namespace System
         Done:
             cF |= Flags.MinimalUriInfoSet;
             info.DnsSafeHost = _dnsSafeHost;
-            lock (_string)
+
+            Interlocked.CompareExchange(ref _info, info, null!);
+            lock (_info)
             {
                 if ((_flags & Flags.MinimalUriInfoSet) == 0)
                 {
-                    _info = info;
                     _flags = (_flags & ~Flags.IndexMask) | cF;
                 }
             }
