@@ -33,6 +33,7 @@ public class Program
         {
             TestNativeCallableValid();
             TestNativeCallableValid_OnNewNativeThread();
+            NegativeTest_NonStaticMethod();
             NegativeTest_ViaDelegate();
             NegativeTest_NonBlittable();
             NegativeTest_NonInstantiatedGenericArguments();
@@ -162,6 +163,50 @@ public class Program
         {
             Func<int, int> invoker = ManagedDoubleCallback;
             invoker(0);
+        }
+    }
+
+    [NativeCallable]
+    public int CallbackNonStatic(int n)
+    {
+        Assert.Fail($"Instance functions with attribute {nameof(NativeCallableAttribute)} are invalid");
+        return -1;
+    }
+
+    public static void NegativeTest_NonStaticMethod()
+    {
+        Console.WriteLine($"Running {nameof(NegativeTest_NonStaticMethod)}...");
+
+        /*
+           void TestNativeCallableNonStatic()
+           {
+                .locals init ([0] native int ptr)
+                IL_0000:  nop
+                IL_0001:  ldftn      int32 CallbackNonStatic(int)
+                IL_0007:  stloc.0
+                IL_0008:  ret
+             }
+        */
+        DynamicMethod testNativeCallable = new DynamicMethod("TestNativeCallableNonStatic", null, null, typeof(Program).Module);
+        ILGenerator il = testNativeCallable.GetILGenerator();
+        il.DeclareLocal(typeof(IntPtr));
+        il.Emit(OpCodes.Nop);
+
+        // Get native function pointer of the callback
+        il.Emit(OpCodes.Ldftn, typeof(Program).GetMethod(nameof(CallbackNonStatic)));
+        il.Emit(OpCodes.Stloc_0);
+
+        il.Emit(OpCodes.Ret);
+        var testNativeMethod = (NativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(NativeMethodInvoker));
+
+        // Try invoking method
+        try
+        {
+            testNativeMethod();
+            Assert.Fail($"Function {nameof(CallbackNonStatic)} is non-static");
+        }
+        catch (NotSupportedException)
+        {
         }
     }
 
