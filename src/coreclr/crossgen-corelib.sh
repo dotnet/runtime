@@ -1,37 +1,8 @@
 #!/usr/bin/env bash
 
-# resolve python-version to use
-if [[ -z "$PYTHON" ]]; then
-    if ! PYTHON=$(command -v python3 || command -v python2 || command -v python || command -v py)
-    then
-       echo "Unable to locate build-dependency python!" 1>&2
-       exit 1
-    fi
-fi
-# validate python-dependency
-# useful in case of explicitly set option.
-if ! command -v "$PYTHON" > /dev/null
-then
-   echo "Unable to locate build-dependency python ($PYTHON)!" 1>&2
-   exit 1
-fi
-
-export PYTHON
-
-usage_list=("-crossgenonly: only run native image generation.")
-usage_list+=("-disableoss: Disable Open Source Signing for System.Private.CoreLib.")
 usage_list+=("-ibcinstrument: generate IBC-tuning-enabled native images when invoking crossgen.")
-usage_list+=("-nopgooptimize: do not use profile guided optimizations.")
-usage_list+=("-officialbuildid=^<ID^>: specify the official build ID to be used by this build.")
 usage_list+=("-partialngen: build CoreLib as PartialNGen.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
-usage_list+=("-skipcrossgen: skip native image generation.")
-usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
-usage_list+=("-skipmanagedtools: generate instrumented code for profile guided optimization enabled binaries.")
-usage_list+=("-skipmscorlib: skip native image generation of System.Private.CoreLib.")
-usage_list+=("-skiprestore: specify the official build ID to be used by this build.")
-usage_list+=("-skiprestoreoptdata: build CoreLib as PartialNGen.")
-usage_list+=("-staticanalyzer: skip native image generation.")
 
 setup_dirs_local()
 {
@@ -81,16 +52,6 @@ handle_arguments_local() {
             __IbcTuning="/Tuning"
             ;;
 
-        nopgooptimize|-nopgooptimize)
-            __PgoOptimize=0
-            __SkipRestoreOptData=1
-            ;;
-
-        officialbuildid=*|-officialbuildid=*)
-            __Id=$(echo "$1" | cut -d'=' -f 2)
-            __OfficialBuildIdArg="/p:OfficialBuildId=$__Id"
-            ;;
-
         partialngen|-partialngen)
             __PartialNgen=1
             ;;
@@ -138,7 +99,7 @@ if [[ "${__BuildArch}" != "${__HostArch}" ]]; then
 fi
 
 # Set dependent variables
-__LogsDir="$__RootBinDir/log"
+__LogsDir="$__RootBinDir/log/$__BuildType"
 
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/bin/coreclr/$__BuildOS.$__BuildArch.$__BuildType"

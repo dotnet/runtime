@@ -40,7 +40,7 @@ brew install icu4c
 brew link --force icu4c
 ```
 
-Build the Runtime and Microsoft Core Library
+Build the Runtime and System.Private.CoreLib
 ============================================
 
 To Build CoreCLR, run build.sh to build the CoreCLR subset category of the runtime:

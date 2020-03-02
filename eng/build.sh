@@ -69,6 +69,7 @@ initDistroRid()
     local buildArch="$2"
     local isCrossBuild="$3"
     # For RID calculation purposes, say we are always a portable build
+    # All of our packages that use the distro rid (CoreCLR packages) are portable.
     local isPortableBuild=1
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified.

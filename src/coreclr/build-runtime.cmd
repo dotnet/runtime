@@ -51,7 +51,7 @@ set "__RepoRootDir=%__ProjectDir%\..\.."
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__SourceDir=%__ProjectDir%\src"
 set "__RootBinDir=%__RepoRootDir%\artifacts"
-set "__LogsDir=%__RootBinDir%\log"
+set "__LogsDir=%__RootBinDir%\log\!__BuildType!"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
 set __BuildAll=
@@ -289,11 +289,6 @@ if not exist "%__RootBinDir%\Directory.Build.targets" copy %__ProjectDir%\EmptyP
 
 REM Set up the directory for MSBuild debug logs.
 set MSBUILDDEBUGPATH=%__MsbuildDebugLogsDir%
-
-REM It is convenient to have your Nuget search path include the location where the build
-REM will place packages.  However nuget used during the build will fail if that directory
-REM does not exist.   Avoid this in at least one case by aggressively creating the directory.
-if not exist "%__BinDir%\.nuget\pkg"           md "%__BinDir%\.nuget\pkg"
 
 echo %__MsgPrefix%Commencing CoreCLR product build
 
