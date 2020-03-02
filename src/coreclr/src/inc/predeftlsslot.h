@@ -48,14 +48,6 @@ enum PredefinedTlsSlots
     // may never return, in the case of exception stackwalk callbacks.
     TlsIdx_StackWalkerWalkingThread, // Thread* that the stack walker is currently walking.
 
-    // Save the last exception info.  Sometimes we need this info in our EX_CATCH, such as for SO.
-    // It will be better if VC can supply this in catch(...) block.
-    // !!! These data may become stale.  Use it only inside exception handling code.
-    // !!! Please access these fields through GetCurrentExceptionPointers which validates the data to some level.
-    TlsIdx_EXCEPTION_CODE,
-    TlsIdx_PEXCEPTION_RECORD,
-    TlsIdx_PCONTEXT,
-
     MAX_PREDEFINED_TLS_SLOT
 };
 
