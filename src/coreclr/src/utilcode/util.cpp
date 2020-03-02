@@ -3084,11 +3084,6 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, BOOL fCheckForSO /*
 
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-void EnableTerminationOnHeapCorruption()
-{
-    HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
-}
-
 namespace Clr
 {
 namespace Util

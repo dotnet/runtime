@@ -5072,13 +5072,6 @@ typedef void* (__cdecl *LocalizedFileHandler)(LPCWSTR);
 void* FindLocalizedFile(_In_z_ LPCWSTR wzResourceDllName, LocalizedFileHandler lfh, _In_opt_z_ LPCWSTR modulePath=NULL);
 
 
-
-// Helper to support termination due to heap corruption
-// It's not supported on Win2K, so we have to manually delay load it
-void EnableTerminationOnHeapCorruption();
-
-
-
 namespace Clr { namespace Util
 {
 
