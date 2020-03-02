@@ -23,6 +23,7 @@ namespace System.IO.Tests
             InlineData(":bar"),
             InlineData(":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException: The given path's format is not supported.")]
         public void GetAttributes_MissingAlternateDataStream_Windows(string streamName)
         {
             string path = CreateItem();
