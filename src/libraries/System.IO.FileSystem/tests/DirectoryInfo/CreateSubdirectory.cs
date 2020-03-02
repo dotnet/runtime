@@ -90,6 +90,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception thrown in .NET Core")]
         public void SubdirectoryOverlappingName_ThrowsArgumentException()
         {
             // What we're looking for here is trying to create C:\FooBar under C:\Foo by passing "..\FooBar"
@@ -171,13 +172,15 @@ namespace System.IO.Tests
         [Theory,
             MemberData(nameof(ControlWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsControlWhiteSpace_Core(string component)
+        public void WindowsControlWhiteSpace(string component)
         {
-            Assert.Throws<IOException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(component));
+            // Same exception message, different exception type
+            AssertExtensions.Throws<IOException, ArgumentException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(component));
         }
 
-        [Theory,
-            MemberData(nameof(SimpleWhiteSpace))]
+        [Theory]
+        [MemberData(nameof(SimpleWhiteSpace))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Framework did not handle empty space directory names, Core now throws: 'Path cannot be the empty string or all whitespace.'")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsSimpleWhiteSpaceThrowsException(string component)
         {
@@ -228,11 +231,11 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception is now thrown in .NET Core")]
         public void ParentDirectoryNameAsPrefixShouldThrow()
         {
             string randomName = GetTestFileName();
             DirectoryInfo di = Directory.CreateDirectory(Path.Combine(TestDirectory, randomName));
-
             Assert.Throws<ArgumentException>(() => di.CreateSubdirectory(Path.Combine("..", randomName + "abc", GetTestFileName())));
         }
 
