@@ -68,6 +68,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long paths not supported in Framework")]
         [PlatformSpecific(TestPlatforms.Windows)]  // Valid Windows path extended prefix, long path
         public void ValidCreation_LongPathExtendedSyntax()
         {
@@ -215,13 +216,26 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsWildCharacterPath_Core()
+        public void WindowsWildCharacterPath()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            Assert.ThrowsAny<IOException>(() => Create(Path.Combine(testDir.FullName, "dls;d", "442349-0", "v443094(*)(+*$#$*", new string(Path.DirectorySeparatorChar, 3))));
-            Assert.ThrowsAny<IOException>(() => Create(Path.Combine(testDir.FullName, "*")));
-            Assert.ThrowsAny<IOException>(() => Create(Path.Combine(testDir.FullName, "Test*t")));
-            Assert.ThrowsAny<IOException>(() => Create(Path.Combine(testDir.FullName, "*Tes*t")));
+
+            // Same exception message, different exception type
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.ThrowsAny<IOException>(() => Create(Path.Combine(testDir.FullName, "dls;d", "442349-0", "v443094(*)(+*$#$*", new string(Path.DirectorySeparatorChar, 3))));
+                Assert.ThrowsAny<IOException>(() => Create(Path.Combine(testDir.FullName, "*")));
+                Assert.ThrowsAny<IOException>(() => Create(Path.Combine(testDir.FullName, "Test*t")));
+                Assert.ThrowsAny<IOException>(() => Create(Path.Combine(testDir.FullName, "*Tes*t")));
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(() => Create(Path.Combine(testDir.FullName, "dls;d", "442349-0", "v443094(*)(+*$#$*", new string(Path.DirectorySeparatorChar, 3))));
+                Assert.Throws<ArgumentException>(() => Create(Path.Combine(testDir.FullName, "*")));
+                Assert.Throws<ArgumentException>(() => Create(Path.Combine(testDir.FullName, "Test*t")));
+                Assert.Throws<ArgumentException>(() => Create(Path.Combine(testDir.FullName, "*Tes*t")));
+            }
+            
         }
 
         [Theory,
@@ -241,9 +255,10 @@ namespace System.IO.Tests
             InlineData("<"),
             InlineData("\t")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsInvalidPath_Core(string path)
+        public void WindowsInvalidPath(string path)
         {
-            Assert.ThrowsAny<IOException>(() => Create(Path.Combine(TestDirectory, path)));
+            // Same exception message, different exception type
+            AssertExtensions.Throws<IOException, ArgumentException>(() => Create(Path.Combine(TestDirectory, path)));
         }
 
         [Fact]
@@ -274,6 +289,7 @@ namespace System.IO.Tests
             InlineData(":bar"),
             InlineData(":bar:$DATA"),
             InlineData("::$DATA")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException: The given path's format is not supported.")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsAlternateDataStream(string streamName)
         {
@@ -288,6 +304,7 @@ namespace System.IO.Tests
         [Theory,
             InlineData(":bar"),
             InlineData(":bar:$DATA")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException: The given path's format is not supported.")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsAlternateDataStream_OnExisting(string streamName)
         {
