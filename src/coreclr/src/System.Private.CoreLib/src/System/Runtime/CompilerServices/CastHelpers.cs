@@ -21,7 +21,6 @@ namespace System.Runtime.CompilerServices
     internal static unsafe class CastHelpers
     {
         private static int[]? s_table;
-        private static readonly MethodTable* pObjMt = (MethodTable*)RuntimeTypeHandle.GetValueInternal(typeof(object).TypeHandle);
 
         [DebuggerDisplay("Source = {_source}; Target = {_targetAndResult & ~1}; Result = {_targetAndResult & 1}; VersionNum = {_version & ((1 << 29) - 1)}; Distance = {_version >> 29};")]
         [StructLayout(LayoutKind.Sequential)]
@@ -534,11 +533,9 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static void StelemRef(Array array, int index, object? obj)
         {
-            ArrayElement[] arr = Unsafe.As<ArrayElement[]>(array);
-
             // this will throw appropriate exceptions if array is null or access is out of range.
-            void* elementType = RuntimeHelpers.GetMethodTable(arr)->ElementType;
-            ref object? element = ref arr[index].Value;
+            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
+            ref object? element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
 
             if (obj == null)
                 goto assigningNull;
@@ -555,7 +552,7 @@ namespace System.Runtime.CompilerServices
                 return;
 
             notExactMatch:
-                if (elementType == pObjMt)
+                if (array.GetType() == typeof(object[]))
                     goto doWrite;
 
             StelemRef_Helper(ref element, elementType, obj);
