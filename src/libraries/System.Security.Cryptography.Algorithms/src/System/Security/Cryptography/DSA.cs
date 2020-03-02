@@ -205,9 +205,6 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   The DSA signature for the specified data.
         /// </returns>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="hashAlgorithm"/> has a <see langword="null"/> or empty <see cref="HashAlgorithmName.Name"/>.
-        /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred in the hashing or signing operation.
         /// </exception>
