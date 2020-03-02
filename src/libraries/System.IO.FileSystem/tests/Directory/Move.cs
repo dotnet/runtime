@@ -239,6 +239,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Casing differentiation bug fixed in .NET Core")]
         public void SameDirectoryWithDifferentCasing_WithFileContent()
         {
             var fooDirectory = Path.Combine(TestDirectory, "foo");
@@ -261,6 +262,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Casing differentiation bug fixed in .NET Core")]
         public void SameDirectoryWithDifferentCasing_WithDirectoryContent()
         {
             var fooDirectoryPath = Path.Combine(TestDirectory, "foo");
@@ -277,6 +279,7 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Casing differentiation bug fixed in .NET Core")]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         public void DirectoryWithDifferentCasingThanFileSystem_ToAnotherDirectory()
         {
@@ -286,6 +289,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Casing differentiation bug fixed in .NET Core")]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         public void DirectoryWithDifferentCasingThanFileSystem_ToItself()
         {
@@ -352,6 +356,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long paths not supported in Framework")]
         [PlatformSpecific(TestPlatforms.Windows)]  // Long path succeeds
         public void Path_With_Longer_Than_MaxDirectory_Succeeds()
         {
@@ -378,12 +383,23 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsWildCharacterPath_Core()
+        public void WindowsWildCharacterPath()
         {
-            Assert.ThrowsAny<IOException>(() => Move(Path.Combine(TestDirectory, "*"), GetTestFilePath()));
-            Assert.ThrowsAny<IOException>(() => Move(TestDirectory, Path.Combine(TestDirectory, "*")));
-            Assert.ThrowsAny<IOException>(() => Move(TestDirectory, Path.Combine(TestDirectory, "Test*t")));
-            Assert.ThrowsAny<IOException>(() => Move(TestDirectory, Path.Combine(TestDirectory, "*Test")));
+            // Same exception message, different exception type
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.ThrowsAny<IOException>(() => Move(Path.Combine(TestDirectory, "*"), GetTestFilePath()));
+                Assert.ThrowsAny<IOException>(() => Move(TestDirectory, Path.Combine(TestDirectory, "*")));
+                Assert.ThrowsAny<IOException>(() => Move(TestDirectory, Path.Combine(TestDirectory, "Test*t")));
+                Assert.ThrowsAny<IOException>(() => Move(TestDirectory, Path.Combine(TestDirectory, "*Test")));
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(() => Move(Path.Combine(TestDirectory, "*"), GetTestFilePath()));
+                Assert.Throws<ArgumentException>(() => Move(TestDirectory, Path.Combine(TestDirectory, "*")));
+                Assert.Throws<ArgumentException>(() => Move(TestDirectory, Path.Combine(TestDirectory, "Test*t")));
+                Assert.Throws<ArgumentException>(() => Move(TestDirectory, Path.Combine(TestDirectory, "*Test")));
+            }
         }
 
         [Fact]
