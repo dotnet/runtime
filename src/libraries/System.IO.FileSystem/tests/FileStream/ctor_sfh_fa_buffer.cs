@@ -32,6 +32,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug fixed in .NET Core")]
         public void InvalidBufferSize_DoesNotCloseHandle()
         {
             using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))
