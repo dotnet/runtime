@@ -105,5 +105,9 @@ namespace System
             // just simulate a "fast allocate", since this is portable
             return new Utf8String(new byte[length + 1]);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlyMemory<byte> CreateMemoryBytes(int start, int length) =>
+            _bytes.AsMemory(start, length);
     }
 }

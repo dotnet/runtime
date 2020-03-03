@@ -287,6 +287,7 @@ namespace System
             (int start, int length) = range.GetOffsetAndLength(text.Length);
             return new ReadOnlyMemory<Char8>(text, start, length);
         }
+*/
 
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
@@ -296,7 +297,7 @@ namespace System
             if (text is null)
                 return default;
 
-            return new ReadOnlyMemory<byte>(text, 0, text.Length);
+            return CreateMemoryBytes(text, 0, text.Length);
         }
 
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
@@ -318,9 +319,9 @@ namespace System
             if ((uint)start > (uint)text.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 
-            return new ReadOnlyMemory<byte>(text, start, text.Length - start);
+            return CreateMemoryBytes(text, start, text.Length - start);
         }
-
+/* // TODO eerhardt
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
         /// <param name="startIndex">The index at which to begin this slice.</param>
@@ -340,6 +341,7 @@ namespace System
 
             return new ReadOnlyMemory<byte>(text, actualIndex, text.Length - actualIndex);
         }
+*/
 
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
@@ -367,9 +369,9 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 #endif
 
-            return new ReadOnlyMemory<byte>(text, start, length);
+            return CreateMemoryBytes(text, start, length);
         }
-
+/* // TODO eerhardt
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
         /// <param name="range">The range used to indicate the start and length of the sliced string.</param>

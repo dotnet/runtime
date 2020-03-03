@@ -19,5 +19,9 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ReadOnlySpan<byte> CreateSpan(Utf8String text, int start, int length) =>
             new ReadOnlySpan<byte>(ref text.DangerousGetMutableReference(start), length);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ReadOnlyMemory<byte> CreateMemoryBytes(Utf8String text, int start, int length) =>
+            new ReadOnlyMemory<byte>(text, start, length);
     }
 }
