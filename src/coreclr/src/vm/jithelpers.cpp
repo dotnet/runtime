@@ -23,7 +23,6 @@
 #include "dllimport.h"
 #include "gcheaputilities.h"
 #include "comdelegate.h"
-#include "jitperf.h" // to track jit perf
 #include "corprof.h"
 #include "eeprofinterfaces.h"
 

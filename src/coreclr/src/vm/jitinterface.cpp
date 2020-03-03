@@ -27,7 +27,6 @@
 #include "dllimport.h"
 #include "gcheaputilities.h"
 #include "comdelegate.h"
-#include "jitperf.h" // to track jit perf
 #include "corprof.h"
 #include "eeprofinterfaces.h"
 #ifdef PROFILING_SUPPORTED
@@ -74,10 +73,8 @@
                                         _ASSERTE(CURRENT_THREAD == GetThread());                    \
                                         INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;               \
                                         COOPERATIVE_TRANSITION_BEGIN();                             \
-                                        START_NON_JIT_PERF();
 
-#define EE_TO_JIT_TRANSITION()          STOP_NON_JIT_PERF();                                        \
-                                        COOPERATIVE_TRANSITION_END();                               \
+#define EE_TO_JIT_TRANSITION()          COOPERATIVE_TRANSITION_END();                               \
                                         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
 
 #define JIT_TO_EE_TRANSITION_LEAF()
