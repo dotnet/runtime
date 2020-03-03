@@ -125,6 +125,11 @@ namespace Internal.TypeSystem
         /// </summary>
         public class InvalidProgramException : TypeSystemException
         {
+            internal InvalidProgramException(ExceptionStringID id)
+                : base(id)
+            {
+            }
+
             internal InvalidProgramException(ExceptionStringID id, string method)
                 : base(id, method)
             {

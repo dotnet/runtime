@@ -34,6 +34,7 @@ namespace Internal.TypeSystem
         InvalidProgramNativeCallable,
         InvalidProgramCallAbstractMethod,
         InvalidProgramCallVirtStatic,
+        InvalidProgramNativeCallableAttributeUsage,
 
         // BadImageFormatException
         BadImageFormatGeneric,

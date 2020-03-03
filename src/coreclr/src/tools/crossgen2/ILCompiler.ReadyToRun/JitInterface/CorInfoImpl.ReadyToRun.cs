@@ -1154,16 +1154,12 @@ namespace Internal.JitInterface
             if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0
                 && originalMethod.IsNativeCallable)
             {
-                // if (!originalMethod.Signature.IsStatic)
-                //     EX_THROW(EEResourceException, (kNotSupportedException, W("NotSupported_NonStaticMethod")));
-
-                // // No generic methods
-                // if (pMD->HasClassOrMethodInstantiation())
-                //     EX_THROW(EEResourceException, (kNotSupportedException, W("NotSupported_GenericMethod")));
-
-                // // Arguments
-                // if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
-                //     EX_THROW(EEResourceException, (kNotSupportedException, W("NotSupported_NonBlittableTypes")));
+                if (!originalMethod.Signature.IsStatic // Must be a static method
+                    || originalMethod.HasInstantiation || originalMethod.OwningType.HasInstantiation // No generics involved
+                    || Marshaller.IsMarshallingRequired(originalMethod)) // Only blittable arguments
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNativeCallableAttributeUsage);
+                }
             }
 
             exactType = type;
