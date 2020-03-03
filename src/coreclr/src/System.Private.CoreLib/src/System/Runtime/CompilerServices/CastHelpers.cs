@@ -513,19 +513,14 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static ref object? LdelemaRef(Array array, int index, void* type)
         {
-            ArrayElement[] arr = Unsafe.As<ArrayElement[]>(array);
-
             // this will throw appropriate exceptions if array is null or access is out of range.
-            void* elementType = RuntimeHelpers.GetMethodTable(arr)->ElementType;
-            ref object? element = ref arr[index].Value;
+            ref object? element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
+            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
 
-            if (elementType != type)
-                goto throwArrayMismatch;
+            if (elementType == type)
+                return ref element;
 
-            return ref element;
-
-            throwArrayMismatch:
-                return ref ThrowArrayMismatchException();
+            return ref ThrowArrayMismatchException();
         }
 
         [DebuggerHidden]
@@ -534,8 +529,8 @@ namespace System.Runtime.CompilerServices
         private static void StelemRef(Array array, int index, object? obj)
         {
             // this will throw appropriate exceptions if array is null or access is out of range.
-            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
             ref object? element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
+            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
 
             if (obj == null)
                 goto assigningNull;
