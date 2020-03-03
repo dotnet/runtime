@@ -225,8 +225,8 @@ add_subdirectory(System.Native)
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
 if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable
-if (NOT CLR_CMAKE_TARGET_ANDROID)  # TODO: reenable
     add_subdirectory(System.Globalization.Native)
+if (NOT CLR_CMAKE_TARGET_ANDROID)  # TODO: reenable
     add_subdirectory(System.Net.Security.Native)
 endif()
 endif()

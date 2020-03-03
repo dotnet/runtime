@@ -10,28 +10,34 @@
 
 #include "config.h"
 
-#define U_DISABLE_RENAMING 1
+#if defined(TARGET_ANDROID)
+    #include "pal_icushim_internal_android.h"
+#else
 
-// All ICU headers need to be included here so that all function prototypes are
-// available before the function pointers are declared below.
-#include <unicode/ucurr.h>
-#include <unicode/ucal.h>
-#include <unicode/uchar.h>
-#include <unicode/ucol.h>
-#include <unicode/udat.h>
-#include <unicode/udatpg.h>
-#include <unicode/uenum.h>
-#include <unicode/uidna.h>
-#include <unicode/uldnames.h>
-#include <unicode/ulocdata.h>
-#include <unicode/unorm2.h>
-#include <unicode/unum.h>
-#include <unicode/ures.h>
-#include <unicode/usearch.h>
-#include <unicode/utf16.h>
-#include <unicode/utypes.h>
-#include <unicode/urename.h>
-#include <unicode/ustring.h>
+    #define U_DISABLE_RENAMING 1
+
+    // All ICU headers need to be included here so that all function prototypes are
+    // available before the function pointers are declared below.
+    #include <unicode/ucurr.h>
+    #include <unicode/ucal.h>
+    #include <unicode/uchar.h>
+    #include <unicode/ucol.h>
+    #include <unicode/udat.h>
+    #include <unicode/udatpg.h>
+    #include <unicode/uenum.h>
+    #include <unicode/uidna.h>
+    #include <unicode/uldnames.h>
+    #include <unicode/ulocdata.h>
+    #include <unicode/unorm2.h>
+    #include <unicode/unum.h>
+    #include <unicode/ures.h>
+    #include <unicode/usearch.h>
+    #include <unicode/utf16.h>
+    #include <unicode/utypes.h>
+    #include <unicode/urename.h>
+    #include <unicode/ustring.h>
+
+#endif
 
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
