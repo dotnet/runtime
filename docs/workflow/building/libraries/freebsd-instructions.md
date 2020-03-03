@@ -235,7 +235,7 @@ This has two parts. We need to build managed bits on supported OS. For example o
 git clone https://github.com/dotnet/corefx
 cd corefx
 git checkout d47cae744ddfb625db8e391cecb261e4c3d7bb1c
-./build.sh -c Release /p:BuildOS=FreeBSD
+./build.sh -c Release -os FreeBSD
 ```
 
 on FreeBSD we need to build native bits:
@@ -275,4 +275,3 @@ if missing add following section to `Microsoft.NETCore.App.deps.json`
             "fileVersion": "4.0.0.0"
           },
 ```
-

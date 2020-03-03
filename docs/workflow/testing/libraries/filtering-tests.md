@@ -28,7 +28,7 @@ Use this attribute on test methods to specify that this test may only be run on 
 
 When running tests by building a test project, tests that don't apply to the `BuildOS` are not run. For example, to run Linux-specific tests on a Linux box, use the following command line:
 ```sh
-dotnet msbuild <csproj_file> /t:BuildAndTest /p:BuildOS=Linux
+dotnet build <csproj_file> /t:BuildAndTest /p:BuildOS=Linux
 ```
 To run all Linux-compatible tests that are failing:
 ```sh
