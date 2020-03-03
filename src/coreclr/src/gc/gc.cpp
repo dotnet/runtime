@@ -527,11 +527,7 @@ void gc_heap::add_to_history_per_heap()
     current_hist->g_lowest = g_gc_lowest_address;
     current_hist->g_highest = g_gc_highest_address;
 
-    gchist_index_per_heap++;
-    if (gchist_index_per_heap == max_history_count)
-    {
-        gchist_index_per_heap = 0;
-    }
+    gchist_index_per_heap = (gchist_index_per_heap + 1) % max_history_count; //Reset to 0 once it hits max_history_count
 #endif //GC_HISTORY
 }
 
@@ -541,11 +537,7 @@ void gc_heap::add_to_history()
     gc_mechanisms_store* current_settings = &gchist[gchist_index];
     current_settings->store (&settings);
 
-    gchist_index++;
-    if (gchist_index == max_history_count)
-    {
-        gchist_index = 0;
-    }
+    gchist_index = (gchist_index + 1) % max_history_count; //Reset to 0 once it hits max_history_count
 #endif //GC_HISTORY
 }
 
