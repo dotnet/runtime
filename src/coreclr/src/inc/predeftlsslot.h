@@ -26,7 +26,7 @@ enum PredefinedTlsSlots
     TlsIdx_Unused4,
     TlsIdx_Unused5,
     TlsIdx_CantStopCount, // Can't-stop counter for any thread
-    TlsIdx_Check,
+    TlsIdx_Unused7,
     TlsIdx_Unused8,
     TlsIdx_ClrDebugState,         // Pointer to ClrDebugState* structure
     TlsIdx_Unused10,
