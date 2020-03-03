@@ -125,7 +125,6 @@ namespace R2RDump
 
             int leftTotal = 0;
             int rightTotal = 0;
-            StringBuilder line = new StringBuilder();
             foreach (string key in allKeys)
             {
                 int leftSize;
@@ -136,7 +135,7 @@ namespace R2RDump
                 leftTotal += leftSize;
                 rightTotal += rightSize;
 
-                line.Clear();
+                StringBuilder line = new StringBuilder();
                 if (inLeft)
                 {
                     line.AppendFormat("{0,10}", leftSize);
@@ -261,7 +260,7 @@ namespace R2RDump
                         RuntimeFunction rightRuntimeFunction = commonMethod.Value.RightMethod.RuntimeFunctions[rtfIndex];
                         int leftOffset = 0;
                         int rightOffset = 0;
-                        for (; ;)
+                        for (; ; )
                         {
                             bool leftAtEnd = (leftOffset >= leftRuntimeFunction.Size);
                             bool rightAtEnd = (rightOffset >= rightRuntimeFunction.Size);

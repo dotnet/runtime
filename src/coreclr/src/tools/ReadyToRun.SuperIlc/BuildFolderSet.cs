@@ -864,10 +864,9 @@ namespace ReadyToRun.SuperIlc
             title.Append(" | REASON");
             logWriter.WriteLine(title.ToString());
             logWriter.WriteLine(new string('-', title.Length));
-            var line = new StringBuilder();
             foreach (KeyValuePair<string, string> exclusion in _frameworkExclusions.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
             {
-                line.Clear();
+                var line = new StringBuilder();
                 line.Append(exclusion.Key);
                 line.Append(' ', keyLength - exclusion.Key.Length);
                 line.Append(" | ");

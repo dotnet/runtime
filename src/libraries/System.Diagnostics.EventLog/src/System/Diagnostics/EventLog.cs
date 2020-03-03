@@ -814,8 +814,14 @@ namespace System.Diagnostics
                 {
                     if (formatString.Length > i + 1)
                     {
-                        sb ??= new StringBuilder();
-                        sb.Clear();
+                        if (sb is null)
+                        {
+                            sb = new StringBuilder();
+                        }
+                        else
+                        {
+                            sb.Clear();
+                        }
 
                         while (i + 1 < formatString.Length && char.IsDigit(formatString[i + 1]))
                         {
