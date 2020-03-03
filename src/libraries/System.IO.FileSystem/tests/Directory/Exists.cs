@@ -207,7 +207,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long paths not supported in Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework cannot handle long paths")]
         [PlatformSpecific(TestPlatforms.Windows)]  // Long directory path doesn't throw on Exists
         public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
         {

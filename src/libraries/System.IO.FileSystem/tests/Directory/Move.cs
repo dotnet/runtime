@@ -239,7 +239,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Casing differentiation bug fixed in .NET Core")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework is unable to differentiate casing in file or folder names")]
         public void SameDirectoryWithDifferentCasing_WithFileContent()
         {
             var fooDirectory = Path.Combine(TestDirectory, "foo");
@@ -262,7 +262,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Casing differentiation bug fixed in .NET Core")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework is unable to differentiate casing in file or folder names")]
         public void SameDirectoryWithDifferentCasing_WithDirectoryContent()
         {
             var fooDirectoryPath = Path.Combine(TestDirectory, "foo");
@@ -279,7 +279,7 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Casing differentiation bug fixed in .NET Core")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework is unable to differentiate casing in file or folder names")]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         public void DirectoryWithDifferentCasingThanFileSystem_ToAnotherDirectory()
         {
@@ -289,7 +289,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Casing differentiation bug fixed in .NET Core")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework is unable to differentiate casing in file or folder names")]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         public void DirectoryWithDifferentCasingThanFileSystem_ToItself()
         {
@@ -356,7 +356,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long paths not supported in Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework cannot handle long paths")]
         [PlatformSpecific(TestPlatforms.Windows)]  // Long path succeeds
         public void Path_With_Longer_Than_MaxDirectory_Succeeds()
         {
@@ -385,7 +385,6 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsWildCharacterPath()
         {
-            // Same exception message, different exception type
             if (PlatformDetection.IsNetCore)
             {
                 Assert.ThrowsAny<IOException>(() => Move(Path.Combine(TestDirectory, "*"), GetTestFilePath()));

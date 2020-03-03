@@ -90,7 +90,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception thrown in .NET Core")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not throw with a name overlap")]
         public void SubdirectoryOverlappingName_ThrowsArgumentException()
         {
             // What we're looking for here is trying to create C:\FooBar under C:\Foo by passing "..\FooBar"
@@ -174,13 +174,12 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsControlWhiteSpace(string component)
         {
-            // Same exception message, different exception type
             AssertExtensions.Throws<IOException, ArgumentException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(component));
         }
 
         [Theory]
         [MemberData(nameof(SimpleWhiteSpace))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Framework did not handle empty space directory names, Core now throws: 'Path cannot be the empty string or all whitespace.'")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework did not throw when passing directory names consisting of whitespace characters'")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsSimpleWhiteSpaceThrowsException(string component)
         {
@@ -231,7 +230,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception is now thrown in .NET Core")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework did nothing when attempting to create a subidrectory with a '..' prefix")]
         public void ParentDirectoryNameAsPrefixShouldThrow()
         {
             string randomName = GetTestFileName();

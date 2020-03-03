@@ -74,7 +74,6 @@ namespace System.IO.Tests
             }
             else
             {
-                // Same exception message, different exception type
                 AssertExtensions.Throws<IOException, ArgumentException>(() => Create(invalidPath));
             }
         }
@@ -235,7 +234,7 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Theory, MemberData(nameof(PathsWithInvalidColons))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Framework throws NotSupportedException")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException when passing a path with a colon")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void PathsWithInvalidColons_ThrowIOException_Core(string invalidPath)
         {
@@ -250,13 +249,12 @@ namespace System.IO.Tests
         {
             // You can't actually create a directory with a colon in it. It was a preemptive
             // check, now we let the OS give us failures on usage.
-            // Same exception message, different exception type
             AssertExtensions.Throws<IOException, ArgumentException>(() => Create(invalidPath));
         }
 
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long paths can't be handled in Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework cannot handle long paths")]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path succeeds
         public void DirectoryLongerThanMaxPath_Succeeds_Core()
         {
@@ -301,7 +299,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long paths can't be handled in Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework cannot handle long paths")]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path succeeds
         public void DirectoryLongerThanMaxDirectoryAsPath_Succeeds_Core()
         {
@@ -349,7 +347,6 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsWhiteSpaceAsPath_ThrowsIOException(string path)
         {
-            // Same exception message, different exception type
             AssertExtensions.Throws<IOException, ArgumentException>(() => Create(path));
         }
 
@@ -419,7 +416,7 @@ namespace System.IO.Tests
 
         [Theory,
             MemberData(nameof(PathsWithColons))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Framework throws NotSupportedException")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException when passing a path with a colon")]
         [PlatformSpecific(TestPlatforms.Windows)] // alternate data streams
         public void PathWithColons_ThrowsIOException_Core(string path)
         {
@@ -455,7 +452,6 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void UncPathWithoutShareNameAsPath_ThrowsIOException(string path)
         {
-            // Same exception message, different exception type
             if (PlatformDetection.IsNetCore)
             {
                 Assert.ThrowsAny<IOException>(() => Create(path));
@@ -470,7 +466,6 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void UNCPathWithOnlySlashes()
         {
-            // Same exception message, different exception type
             if (PlatformDetection.IsNetCore)
             {
                 Assert.ThrowsAny<IOException>(() => Create("//"));

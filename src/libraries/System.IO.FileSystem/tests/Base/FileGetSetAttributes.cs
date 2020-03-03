@@ -91,10 +91,11 @@ namespace System.IO.Tests
             Assert.Equal(FileAttributes.Normal, GetAttributes(path));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore)),
+        [Theory,
             InlineData(":bar"),
             InlineData(":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException with alternate data streams: The given path's format is not supported.")]
         public void GettingAndSettingAttributes_AlternateDataStream_Windows(string streamName)
         {
             string path = CreateItem();

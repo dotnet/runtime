@@ -33,7 +33,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug fixed in .NET Core")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework unexpectedly closes the passed handle when the FileStream constructor fails")]
         public void InvalidAccess_DoesNotCloseHandle()
         {
             using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))
@@ -147,7 +147,7 @@ namespace System.IO.Tests
     public class DerivedFileStream_ctor_sfh_fa : FileSystemTest
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug fixed in .NET Core")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework calls CanRead/CanWrite/CanSeek during Ctor")]
         public void VirtualCanReadWrite_ShouldNotBeCalledDuringCtor()
         {
             using (var fs = File.Create(GetTestFilePath()))

@@ -68,7 +68,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long paths not supported in Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework cannot handle long paths")]
         [PlatformSpecific(TestPlatforms.Windows)]  // Valid Windows path extended prefix, long path
         public void ValidCreation_LongPathExtendedSyntax()
         {
@@ -220,7 +220,6 @@ namespace System.IO.Tests
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
 
-            // Same exception message, different exception type
             if (PlatformDetection.IsNetCore)
             {
                 Assert.ThrowsAny<IOException>(() => Create(Path.Combine(testDir.FullName, "dls;d", "442349-0", "v443094(*)(+*$#$*", new string(Path.DirectorySeparatorChar, 3))));
@@ -257,7 +256,6 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsInvalidPath(string path)
         {
-            // Same exception message, different exception type
             AssertExtensions.Throws<IOException, ArgumentException>(() => Create(Path.Combine(TestDirectory, path)));
         }
 
@@ -289,7 +287,7 @@ namespace System.IO.Tests
             InlineData(":bar"),
             InlineData(":bar:$DATA"),
             InlineData("::$DATA")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException: The given path's format is not supported.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException with alternate data streams: The given path's format is not supported.")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsAlternateDataStream(string streamName)
         {
@@ -304,7 +302,7 @@ namespace System.IO.Tests
         [Theory,
             InlineData(":bar"),
             InlineData(":bar:$DATA")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException: The given path's format is not supported.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException with alternate data streams: The given path's format is not supported.")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsAlternateDataStream_OnExisting(string streamName)
         {

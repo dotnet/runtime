@@ -62,7 +62,6 @@ namespace System.IO.Tests
                 }
                 else
                 {
-                    // Same exception message, different exception type
                     AssertExtensions.Throws<IOException, ArgumentException>(() => Move(testFile.FullName, invalidPath));
                 }
             }
@@ -187,7 +186,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long paths not supported in Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework cannot handle long paths")]
         [PlatformSpecific(TestPlatforms.Windows)]  // Path longer than max path limit
         public void OverMaxPathWorks_Windows()
         {
@@ -241,7 +240,6 @@ namespace System.IO.Tests
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
             testFile.Create().Dispose();
-            // Same exception message, different exception types
             AssertExtensions.Throws<IOException, NotSupportedException>(() => Move(testFile.FullName, testFile.DirectoryName + Path.DirectorySeparatorChar + invalidPath));
         }
 
@@ -249,7 +247,6 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsWildCharacterPath()
         {
-            // Same exception message, different exception type
             AssertExtensions.Throws<FileNotFoundException, ArgumentException>(() => Move(Path.Combine(TestDirectory, "*"), GetTestFilePath()));
             AssertExtensions.Throws<FileNotFoundException, ArgumentException>(() => Move(GetTestFilePath(), Path.Combine(TestDirectory, "*")));
             AssertExtensions.Throws<FileNotFoundException, ArgumentException>(() => Move(GetTestFilePath(), Path.Combine(TestDirectory, "Test*t")));
@@ -287,7 +284,6 @@ namespace System.IO.Tests
         public void WindowsControlPath(string whitespace)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
-            // Same exception message, different exception type
             if (PlatformDetection.IsNetCore)
             {
                 Assert.ThrowsAny<IOException>(() => Move(testFile.FullName, Path.Combine(TestDirectory, whitespace)));
@@ -326,7 +322,7 @@ namespace System.IO.Tests
             InlineData("::$DATA", ":bar"),
             InlineData("::$DATA", ":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException: The given path's format is not supported.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException with alternate data streams: The given path's format is not supported.")]
         public void WindowsAlternateDataStreamMove(string defaultStream, string alternateStream)
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());

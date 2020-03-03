@@ -224,7 +224,6 @@ namespace System.IO.Tests
                         Assert.Throws<ArgumentException>(() => GetEntries(badPath));
                         break;
                     default:
-                        // Same exception message, different exception type
                         AssertExtensions.Throws<IOException, ArgumentException>(() => GetEntries(badPath));
                         break;
                 }
@@ -248,7 +247,6 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsInvalidCharsPath(string invalid)
         {
-            // Same exception message, different exception type
             AssertExtensions.Throws<IOException, ArgumentException>(() => GetEntries(invalid));
         }
 

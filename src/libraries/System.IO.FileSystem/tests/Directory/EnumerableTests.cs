@@ -33,7 +33,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Framework bug prevents creating directories with a space as its name")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not create a subdirectory with a non breaking space character as its name")]
         public void EnumerateDirectories_NonBreakingSpace()
         {
             DirectoryInfo rootDirectory = Directory.CreateDirectory(GetTestFilePath());

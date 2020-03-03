@@ -31,7 +31,7 @@ namespace System.IO.Tests.Enumeration
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, @"Framework fixed in Core: Trailing spaces & periods are respected when using \\?\ syntax")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, @".NET Framework does not respect trailing spaces/periods in paths thats start with \\?\")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void TrimmedPathsDeletion_Windows()
         {

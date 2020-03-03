@@ -38,7 +38,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug in .NET Framework fixed in .NET Core: ToString() returned '.'")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework returns '.' when calling DirectoryInfo.ToString() on a drive-only path")]
         [PlatformSpecific(TestPlatforms.Windows)]  // Drive letter only
         public void DriveOnlyReturnsDrive_Windows()
         {

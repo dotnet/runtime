@@ -578,7 +578,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long path support only .NET Core")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework cannot handle long paths")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsSearchPatternLongSegment()
         {
@@ -590,7 +590,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Long paths not supported in Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework cannot handle long paths")]
         public void SearchPatternLongPath()
         {
             // Create a destination path longer than the traditional Windows limit of 256 characters
@@ -617,7 +617,6 @@ namespace System.IO.Tests
         {
             string directory = Directory.CreateDirectory(GetTestFilePath()).FullName;
 
-            // Same exception message, different exception type
             AssertExtensions.Throws<DirectoryNotFoundException, ArgumentException>(() => GetEntries(directory, Path.Combine("..ab ab.. .. abc..d", "abc..")));
             AssertExtensions.Throws<DirectoryNotFoundException, ArgumentException>(() => GetEntries(directory, Path.Combine("..ab ab.. .. abc..d", "abc", "..")));
             AssertExtensions.Throws<DirectoryNotFoundException, ArgumentException>(() => GetEntries(directory, Path.Combine("..", "..ab ab.. .. abc..d", "abc")));
@@ -644,7 +643,7 @@ namespace System.IO.Tests
         private static char[] NewWildcards = new char[] { '<', '>', '\"' };
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Illegal characters in path: '|'")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws ArgumentException because it considers '|' an illegal path character")]
         public void SearchPatternInvalid_Core()
         {
             GetEntries(TestDirectory, "|");
@@ -680,7 +679,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Core no longer throws on wildcards")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws ArgumentException because it considers wildcard characters illegal path characters")]
         public void WindowsSearchPatternInvalid_Wildcards_Core()
         {
             Assert.All(OldWildcards, invalidChar =>

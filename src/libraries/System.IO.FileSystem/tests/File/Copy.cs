@@ -180,7 +180,6 @@ namespace System.IO.Tests
             string testFile = GetTestFilePath();
             File.Create(testFile).Dispose();
 
-            // Same exception message, different exception type
             AssertExtensions.Throws<IOException, ArgumentException>(() => Copy(testFile, invalid));
             AssertExtensions.Throws<IOException, ArgumentException>(() => Copy(invalid, testFile));
         }
@@ -209,7 +208,7 @@ namespace System.IO.Tests
             InlineData("", ":bar:$DATA"),
             InlineData("::$DATA", ":bar"),
             InlineData("::$DATA", ":bar:$DATA")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException: The given path's format is not supported.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException with alternate data streams: The given path's format is not supported.")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsAlternateDataStream(string defaultStream, string alternateStream)
         {
@@ -309,7 +308,7 @@ namespace System.IO.Tests
             InlineData("", ":bar:$DATA"),
             InlineData("::$DATA", ":bar"),
             InlineData("::$DATA", ":bar:$DATA")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException: The given path's format is not supported.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NotSupportedException with alternate data streams: The given path's format is not supported.")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsAlternateDataStreamOverwrite(string defaultStream, string alternateStream)
         {
