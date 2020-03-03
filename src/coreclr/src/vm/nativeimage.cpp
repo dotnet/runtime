@@ -20,28 +20,17 @@ BOOL AssemblyNameIndexHashTraits::Equals(LPCUTF8 a, LPCUTF8 b)
 {
     WRAPPER_NO_CONTRACT;
 
-    SString s1;
-    SString s2;
-    s1.SetUTF8(a);
-    s2.SetUTF8(b);
-    return s1.CompareCaseInsensitive(s2) == 0;
+    return SString(SString::Utf8Literal, a).Compare(SString(SString::Utf8Literal, b)) == 0;
 }
 
 AssemblyNameIndexHashTraits::count_t AssemblyNameIndexHashTraits::Hash(LPCUTF8 s)
 {
     WRAPPER_NO_CONTRACT;
 
-    SString s1;
-    s1.SetUTF8(s);
-    return s1.HashCaseInsensitive();
+    return SString(SString::Utf8Literal, s).HashCaseInsensitive();
 }
 
-NativeImage::NativeImage(
-    NewHolder<PEImageLayout>& peImageLayout,
-    READYTORUN_HEADER *pHeader,
-    LPCUTF8 nativeImageName,
-    LoaderAllocator *pLoaderAllocator,
-    AllocMemTracker *pamTracker)
+NativeImage::NativeImage(PEImageLayout *pImageLayout, LPCUTF8 imageFileName)
     : m_eagerFixupsLock(CrstNativeImageEagerFixups)
 {
     CONTRACTL
@@ -53,12 +42,16 @@ NativeImage::NativeImage(
     }
     CONTRACTL_END;
 
-    LoaderHeap *pHeap = pLoaderAllocator->GetHighFrequencyHeap();
-    m_utf8SimpleName = nativeImageName;
-    m_peImageLayout.Assign(peImageLayout.Extract());
+    m_pImageLayout = pImageLayout;
+    m_fileName = imageFileName;
     m_eagerFixupsHaveRun = false;
+}
 
-    m_pReadyToRunInfo.Assign(new ReadyToRunInfo(/*pModule*/ NULL, peImageLayout, pHeader, /*compositeImage*/ NULL, pamTracker), /*takeOwnership*/ TRUE);
+void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
+{
+    LoaderHeap *pHeap = pLoaderAllocator->GetHighFrequencyHeap();
+
+    m_pReadyToRunInfo = new ReadyToRunInfo(/*pModule*/ NULL, m_pImageLayout, pHeader, /*compositeImage*/ NULL, pamTracker);
     m_pComponentAssemblies = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ComponentAssemblies);
     m_componentAssemblyCount = m_pComponentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY);
     
@@ -80,39 +73,52 @@ NativeImage::NativeImage(
 
 NativeImage::~NativeImage()
 {
+    STANDARD_VM_CONTRACT;
+
+    delete m_pReadyToRunInfo;
+    delete m_pImageLayout;
+
     if (m_pManifestMetadata != NULL)
     {
         m_pManifestMetadata->Release();
     }
 }
 
-bool NativeImage::Matches(LPCUTF8 utf8SimpleName) const
-{
-    return !_stricmp(utf8SimpleName, m_utf8SimpleName);
-}
-
 #ifndef DACCESS_COMPILE
 NativeImage *NativeImage::Open(
     LPCWSTR fullPath,
-    LPCUTF8 nativeImageName,
+    LPCUTF8 nativeImageFileName,
     LoaderAllocator *pLoaderAllocator,
     AllocMemTracker *pamTracker)
 {
+    STANDARD_VM_CONTRACT;
+
     NewHolder<PEImageLayout> peLoadedImage = PEImageLayout::LoadNative(fullPath);
 
-    uint32_t headerRVA = peLoadedImage->GetExport("RTR_HEADER");
-    if (headerRVA + sizeof(READYTORUN_HEADER) > peLoadedImage->GetSize())
+    READYTORUN_HEADER *pHeader = (READYTORUN_HEADER *)peLoadedImage->GetExport("RTR_HEADER");
+    if (pHeader == NULL)
     {
-        return NULL;
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
-    READYTORUN_HEADER *pHeader = (READYTORUN_HEADER *)((BYTE *)peLoadedImage->GetBase() + headerRVA);
-    return new NativeImage(peLoadedImage, pHeader, nativeImageName, pLoaderAllocator, pamTracker);
+    if (pHeader->Signature != READYTORUN_SIGNATURE)
+    {
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+    if (pHeader->MajorVersion < MINIMUM_READYTORUN_MAJOR_VERSION || pHeader->MajorVersion > READYTORUN_MAJOR_VERSION)
+    {
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+    NewHolder<NativeImage> image = new NativeImage(peLoadedImage.Extract(), nativeImageFileName);
+    image->Initialize(pHeader, pLoaderAllocator, pamTracker);
+    return image.Extract();
 }
 #endif
 
 #ifndef DACCESS_COMPILE
 Assembly *NativeImage::LoadComponentAssembly(uint32_t rowid)
 {
+    STANDARD_VM_CONTRACT;
+
     AssemblySpec spec;
     spec.InitializeSpec(TokenFromRid(rowid, mdtAssemblyRef), m_pManifestMetadata, NULL);
     return spec.LoadAssembly(FILE_LOADED);
@@ -122,10 +128,12 @@ Assembly *NativeImage::LoadComponentAssembly(uint32_t rowid)
 #ifndef DACCESS_COMPILE
 PTR_READYTORUN_CORE_HEADER NativeImage::GetComponentAssemblyHeader(LPCUTF8 simpleName)
 {
+    STANDARD_VM_CONTRACT;
+
     const AssemblyNameIndex *assemblyNameIndex = m_assemblySimpleNameToIndexMap.LookupPtr(simpleName);
     if (assemblyNameIndex != NULL)
     {
-        const BYTE *pImageBase = (const BYTE *)m_peImageLayout->GetBase();
+        const BYTE *pImageBase = (const BYTE *)m_pImageLayout->GetBase();
         const READYTORUN_COMPONENT_ASSEMBLIES_ENTRY *componentAssembly =
             (const READYTORUN_COMPONENT_ASSEMBLIES_ENTRY *)&pImageBase[m_pComponentAssemblies->VirtualAddress] + assemblyNameIndex->Index;
         return (PTR_READYTORUN_CORE_HEADER)&pImageBase[componentAssembly->ReadyToRunCoreHeader.VirtualAddress];
@@ -137,6 +145,8 @@ PTR_READYTORUN_CORE_HEADER NativeImage::GetComponentAssemblyHeader(LPCUTF8 simpl
 #ifndef DACCESS_COMPILE
 IMDInternalImport *NativeImage::LoadManifestMetadata()
 {
+    STANDARD_VM_CONTRACT;
+
     IMAGE_DATA_DIRECTORY *pMeta = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ManifestMetadata);
 
     if (pMeta == NULL)
@@ -145,7 +155,7 @@ IMDInternalImport *NativeImage::LoadManifestMetadata()
     }
 
     IMDInternalImport *pNewImport = NULL;
-    IfFailThrow(GetMetaDataInternalInterface((BYTE *)m_peImageLayout->GetBase() + VAL32(pMeta->VirtualAddress),
+    IfFailThrow(GetMetaDataInternalInterface((BYTE *)m_pImageLayout->GetBase() + VAL32(pMeta->VirtualAddress),
                                              VAL32(pMeta->Size),
                                              ofRead,
                                              IID_IMDInternalImport,

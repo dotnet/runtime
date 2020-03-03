@@ -26,15 +26,25 @@ NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUT
     PTR_LoaderAllocator moduleLoaderAllocator = componentModule->GetLoaderAllocator();
 
     int nativeImageCount = m_nativeImages.GetCount();
+#ifndef FEATURE_CASE_SENSITIVE_FILESYSTEM
+    SString nativeImageNameString;
+    nativeImageNameString.SetUTF8(nativeImageName);
+#endif
     for (int nativeImageIndex = 0; nativeImageIndex < nativeImageCount; nativeImageIndex++)
     {
         NativeImage *nativeImage = m_nativeImages[nativeImageIndex];
-        if (nativeImage->Matches(nativeImageName))
+        LPCUTF8 existingImageFileName = nativeImage->GetFileName();
+#ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
+        bool match = (strcmp(nativeImageName, existingImageFileName) == 0);
+#else
+        bool match = SString(SString::Utf8Literal, existingImageFileName).EqualsCaseInsensitive(nativeImageNameString);
+#endif
+        if (match)
         {
             return nativeImage;
         }
     }
-    
+
     SString path = componentModule->GetPath();
     SString::Iterator lastPathSeparatorIter = path.End();
     size_t pathDirLength = 0;

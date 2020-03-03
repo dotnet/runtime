@@ -2336,16 +2336,16 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
 }
 
 #ifndef DACCESS_COMPILE
-uint32_t PEDecoder::GetExport(LPCSTR exportName) const
+void *PEDecoder::GetExport(LPCSTR exportName) const
 {
     // Get the export directory entry
     PIMAGE_DATA_DIRECTORY pExportDirectoryEntry = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT);
     if (pExportDirectoryEntry->VirtualAddress == 0 || pExportDirectoryEntry->Size == 0)
     {
-        return 0;
+        return NULL;
     }
     
-    const uint8_t *imageBase = (const uint8_t *)GetBase();
+    uint8_t *imageBase = (uint8_t *)GetBase();
     const IMAGE_EXPORT_DIRECTORY *pExportDir = (const IMAGE_EXPORT_DIRECTORY *)GetDirectoryData(pExportDirectoryEntry);
     
     uint32_t namePointerCount = VAL32(pExportDir->NumberOfNames);
@@ -2360,13 +2360,13 @@ uint32_t PEDecoder::GetExport(LPCSTR exportName) const
             const char *namePointer = (const char *)&imageBase[namePointerRVA];
             if (!strcmp(namePointer, exportName))
             {
-                uint32_t headerRVA = VAL32(*(const uint32_t *)&imageBase[addressTableRVA + sizeof(uint32_t) * nameIndex]);
-                return headerRVA;
+                uint32_t exportRVA = VAL32(*(const uint32_t *)&imageBase[addressTableRVA + sizeof(uint32_t) * nameIndex]);
+                return &imageBase[exportRVA];
             }
         }
     }
 
-    return 0;
+    return NULL;
 }
 #endif
 

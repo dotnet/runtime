@@ -352,7 +352,7 @@ class PEDecoder
     void *GetNativeEntryPoint() const;
 
     // Look up a named symbol in the export directory
-    uint32_t GetExport(LPCSTR exportName) const;
+    void *GetExport(LPCSTR exportName) const;
 
 #ifdef _DEBUG
     // Stress mode for relocations
@@ -407,7 +407,7 @@ class PEDecoder
     IMAGE_COR20_HEADER *FindCorHeader() const;
     CORCOMPILE_HEADER *FindNativeHeader() const;
     READYTORUN_HEADER *FindReadyToRunHeader() const;
-    
+
     // Flat mapping utilities
     RVA InternalAddressToRva(SIZE_T address) const;
 

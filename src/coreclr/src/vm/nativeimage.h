@@ -57,11 +57,11 @@ class NativeImage
 {
 private:
     // Points to the OwnerCompositeExecutable section content within the component MSIL module
-    LPCUTF8 m_utf8SimpleName;
+    LPCUTF8 m_fileName;
     
-    NewHolder<ReadyToRunInfo> m_pReadyToRunInfo;
+    ReadyToRunInfo *m_pReadyToRunInfo;
     IMDInternalImport *m_pManifestMetadata;
-    NewHolder<PEImageLayout> m_peImageLayout;
+    PEImageLayout *m_pImageLayout;
     
     IMAGE_DATA_DIRECTORY *m_pComponentAssemblies;
     uint32_t m_componentAssemblyCount;
@@ -71,27 +71,24 @@ private:
     bool m_eagerFixupsHaveRun;
 
 private:
-    NativeImage(
-        NewHolder<PEImageLayout>& peImageLayout,
-        READYTORUN_HEADER *header,
-        LPCUTF8 nativeImageName,
-        LoaderAllocator *loaderAllocator,
-        AllocMemTracker *pamTracker);
+    NativeImage(PEImageLayout *peImageLayout, LPCUTF8 imageFileName);
+
+protected:
+    void Initialize(READYTORUN_HEADER *header, LoaderAllocator *loaderAllocator, AllocMemTracker *pamTracker);
 
 public:
     ~NativeImage();
 
     static NativeImage *Open(
         LPCWSTR fullPath,
-        LPCUTF8 nativeImageName,
+        LPCUTF8 nativeImageFileName,
         LoaderAllocator *pLoaderAllocator,
         AllocMemTracker *pamTracker);
 
-    bool Matches(LPCUTF8 utf8SimpleName) const;
-
     Crst *EagerFixupsLock() { return &m_eagerFixupsLock; }
-    bool EagerFixupsHaveRun() const  { return m_eagerFixupsHaveRun; }
+    bool EagerFixupsHaveRun() const { return m_eagerFixupsHaveRun; }
     void SetEagerFixupsHaveRun() { m_eagerFixupsHaveRun = true; }
+    LPCUTF8 GetFileName() const { return m_fileName; }
 
     uint32_t GetComponentAssemblyCount() const { return m_componentAssemblyCount; }
     ReadyToRunInfo *GetReadyToRunInfo() const { return m_pReadyToRunInfo; }
