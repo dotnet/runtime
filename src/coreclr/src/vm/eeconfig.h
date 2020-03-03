@@ -334,7 +334,6 @@ public:
 
 #ifdef _DEBUG
     bool GenDebuggableCode(void)                    const {LIMITED_METHOD_CONTRACT;  return fDebuggable; }
-    bool IsStressOn(void)                           const {LIMITED_METHOD_CONTRACT;  return fStressOn; }
     int GetAPIThreadStressCount(void)               const {LIMITED_METHOD_CONTRACT;  return apiThreadStressCount; }
 
     bool ShouldExposeExceptionsInCOMToConsole()     const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 1) != 0; }
@@ -820,7 +819,6 @@ private: //----------------------------------------------------------------
     static bool IsInMethList(MethodNamesList* list, MethodDesc* pMD);
 
     bool fDebuggable;
-    bool fStressOn;
     int apiThreadStressCount;
 
     MethodNamesList* pPrestubHalt;      // list of methods on which to break when hit prestub
@@ -1124,10 +1122,6 @@ public:
         }                                                               \
     } while(0)
 
-    // STRESS_ASSERT is meant to be temperary additions to the code base that stop the
-    // runtime quickly when running stress
-#define STRESS_ASSERT(cond)   do { if (!(cond) && g_pConfig->IsStressOn())  DebugBreak();    } while(0)
-
 #define FILE_FORMAT_CHECK_MSG(_condition, _message)                     \
     do {                                                                \
         if (g_pConfig != NULL && g_pConfig->fAssertOnBadImageFormat())  \
@@ -1140,7 +1134,6 @@ public:
 
 #else
 
-#define STRESS_ASSERT(cond)
 #define BAD_FORMAT_NOTHROW_ASSERT(str)
 
 #define FILE_FORMAT_CHECK_MSG(_condition, _message)
