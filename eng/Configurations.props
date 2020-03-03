@@ -8,6 +8,7 @@
     <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' != 'checked'">$(RuntimeConfiguration)</MonoConfiguration>
     <!-- There's no checked configuration on Mono. -->
     <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' == 'checked'">Debug</MonoConfiguration>
+    <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -16,18 +17,10 @@
     <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</__TargetOS>
     <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</__TargetOS>
     <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">Windows_NT</__TargetOS>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <TargetOS Condition="'$(TargetOS)' == ''">$(__TargetOS)</TargetOS>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
     <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
     <LibrariesTargetOS Condition="'$(LibrariesTargetOS)' == ''">$(TargetOS)</LibrariesTargetOS>
-    <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
     <LibrariesTargetOSConfigurationArchitecture Condition="'$(LibrariesTargetOSConfigurationArchitecture)' == ''">$(LibrariesTargetOS)-$(LibrariesConfiguration)-$(TargetArchitecture)</LibrariesTargetOSConfigurationArchitecture>
   </PropertyGroup>
-
 </Project>
