@@ -11,12 +11,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!--
-      Use MSBuild property functions for platform detection:
-      https://docs.microsoft.com/en-us/visualstudio/msbuild/property-functions?view=vs-2019#msbuild-property-functions
-      Note that some of these intrinsic functions are implemented using RuntimeInformation:
-      https://github.com/Microsoft/msbuild/blob/3a9d1d2ae23e41b32a612ea6b0dce531fcf86be7/src/Build/Evaluation/IntrinsicFunctions.cs#L431
-    -->
     <__TargetOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">OSX</__TargetOS>
     <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</__TargetOS>
     <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</__TargetOS>

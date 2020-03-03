@@ -42,7 +42,7 @@
 
     <!-- RuntimeOS is calculated based on the build system OS, however if building for WebAssembly we need to let
          the build system to use webassembly as the RuntimeOS for produced package RIDs. -->
-    <RuntimeOS Condition="'$(OSGrTargetOSoup)' == 'WebAssembly'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
+    <RuntimeOS Condition="'$(TargetOS)' == 'WebAssembly'">$(TargetOS.ToLowerInvariant())</RuntimeOS>
  
     <!-- Initialize BuildSettings from the individual properties if it wasn't already explicitly set -->
     <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
