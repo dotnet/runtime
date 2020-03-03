@@ -216,6 +216,7 @@ typedef struct MonoAotOptions {
 	gboolean try_llvm;
 	gboolean llvm;
 	gboolean llvm_only;
+	gboolean method_table_as_data;
 	int nthreads;
 	int ntrampolines;
 	int nrgctx_trampolines;
@@ -332,7 +333,7 @@ typedef struct MonoAotCompile {
 	guint32 nmethods;
 	int call_table_entry_size;
 	guint32 nextra_methods;
-	guint32 opts;
+	guint32 jit_opts;
 	guint32 simd_opts;
 	MonoMemPool *mempool;
 	MonoAotStats stats;
@@ -4161,7 +4162,7 @@ add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth
 			mono_error_cleanup (error);
 			return;
 		}
-	} else if ((acfg->opts & MONO_OPT_GSHAREDVT) && prefer_gsharedvt_method (acfg, method) && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
+	} else if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && prefer_gsharedvt_method (acfg, method) && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
 		/* Use the gsharedvt version */
 		method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 		mono_error_assert_ok (error);
@@ -4741,7 +4742,7 @@ add_wrappers (MonoAotCompile *acfg)
 				}
 				mono_custom_attrs_free (cattr);
 			}
-		} else if ((acfg->opts & MONO_OPT_GSHAREDVT) && mono_class_is_gtd (klass)) {
+		} else if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && mono_class_is_gtd (klass)) {
 			ERROR_DECL (error);
 			MonoGenericContext ctx;
 			MonoMethod *inst, *gshared;
@@ -4844,7 +4845,7 @@ add_wrappers (MonoAotCompile *acfg)
 		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 			if (method->is_generic) {
 				// FIXME:
-			} else if ((acfg->opts & MONO_OPT_GSHAREDVT) && mono_class_is_gtd (method->klass)) {
+			} else if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && mono_class_is_gtd (method->klass)) {
 				ERROR_DECL (error);
 				MonoGenericContext ctx;
 				MonoMethod *inst, *gshared, *m;
@@ -5198,13 +5199,13 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	 * Use gsharedvt for generic collections with vtype arguments to avoid code blowup.
 	 * Enable this only for some classes since gsharedvt might not support all methods.
 	 */
-	if ((acfg->opts & MONO_OPT_GSHAREDVT) && m_class_get_image (klass) == mono_defaults.corlib && mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->context.class_inst && is_vt_inst (mono_class_get_generic_class (klass)->context.class_inst) &&
+	if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && m_class_get_image (klass) == mono_defaults.corlib && mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->context.class_inst && is_vt_inst (mono_class_get_generic_class (klass)->context.class_inst) &&
 		(!strcmp (m_class_get_name (klass), "Dictionary`2") || !strcmp (m_class_get_name (klass), "List`1") || !strcmp (m_class_get_name (klass), "ReadOnlyCollection`1")))
 		use_gsharedvt = TRUE;
 
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
-		if ((acfg->opts & MONO_OPT_GSHAREDVT) && method->is_inflated && mono_method_get_context (method)->method_inst) {
+		if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && method->is_inflated && mono_method_get_context (method)->method_inst) {
 			/*
 			 * This is partial sharing, and we can't handle it yet
 			 */
@@ -8693,7 +8694,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		flags = (JitFlags)(flags | JIT_FLAG_SELF_INIT);
 
 	jit_time_start = mono_time_track_start ();
-	cfg = mini_method_compile (method, acfg->opts, mono_get_root_domain (), flags, 0, index);
+	cfg = mini_method_compile (method, acfg->jit_opts, mono_get_root_domain (), flags, 0, index);
 	mono_time_track_end (&mono_jit_stats.jit_time, jit_time_start);
 
 	if (cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
@@ -10209,7 +10210,13 @@ emit_code (MonoAotCompile *acfg)
 #endif
 
 	sprintf (symbol, "method_addresses");
-	emit_section_change (acfg, RODATA_REL_SECT, !!is_func);
+	if (acfg->aot_opts.method_table_as_data) {
+		/* Emit the method address table as a table of pointers */
+		emit_section_change (acfg, ".data", 0);
+		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_METHOD_TABLE_AS_DATA);
+	} else {
+		emit_section_change (acfg, RODATA_REL_SECT, !!is_func);
+	}
 	emit_alignment_code (acfg, 8);
 	emit_info_symbol (acfg, symbol, is_func);
 	if (acfg->aot_opts.write_symbols)
@@ -10220,10 +10227,17 @@ emit_code (MonoAotCompile *acfg)
 
 	for (i = 0; i < acfg->nmethods; ++i) {
 #ifdef MONO_ARCH_AOT_SUPPORTED
-		if (!ignore_cfg (acfg->cfgs [i])) {
-			arch_emit_label_address (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &acfg->call_table_entry_size);
+		if (acfg->aot_opts.method_table_as_data) {
+			if (!ignore_cfg (acfg->cfgs [i]))
+				emit_pointer (acfg, acfg->cfgs [i]->asm_symbol);
+			else
+				emit_pointer (acfg, NULL);
 		} else {
-			arch_emit_label_address (acfg, symbol, FALSE, FALSE, NULL, &acfg->call_table_entry_size);
+			if (!ignore_cfg (acfg->cfgs [i])) {
+				arch_emit_label_address (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &acfg->call_table_entry_size);
+			} else {
+				arch_emit_label_address (acfg, symbol, FALSE, FALSE, NULL, &acfg->call_table_entry_size);
+			}
 		}
 #endif
 	}
@@ -11241,7 +11255,7 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	info->call_table_entry_size = acfg->call_table_entry_size;
 	info->nextra_methods = acfg->nextra_methods;
 	info->flags = acfg->flags;
-	info->opts = acfg->opts;
+	info->opts = acfg->jit_opts;
 	info->simd_opts = acfg->simd_opts;
 	info->gc_name_index = acfg->gc_name_offset;
 	info->datafile_size = acfg->datafile_offset;
@@ -12044,7 +12058,7 @@ collect_methods (MonoAotCompile *acfg)
 		MonoMethod *method;
 		guint32 token = MONO_TOKEN_METHOD_DEF | (mindex + 1);
 
-		if (!(acfg->opts & MONO_OPT_GSHAREDVT))
+		if (!(acfg->jit_opts & MONO_OPT_GSHAREDVT))
 			continue;
 
 		method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
@@ -12841,7 +12855,7 @@ init_got_info (GotInfo *info)
 }
 
 static MonoAotCompile*
-acfg_create (MonoAssembly *ass, guint32 opts)
+acfg_create (MonoAssembly *ass, guint32 jit_opts)
 {
 	MonoImage *image = ass->image;
 	MonoAotCompile *acfg;
@@ -12860,7 +12874,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->image_table = g_ptr_array_new ();
 	acfg->globals = g_ptr_array_new ();
 	acfg->image = image;
-	acfg->opts = opts;
+	acfg->jit_opts = jit_opts;
 	/* TODO: Write out set of SIMD instructions used, rather than just those available */
 #ifndef MONO_CROSS_COMPILE
 	acfg->simd_opts = mono_arch_cpu_enumerate_simd_versions ();
@@ -13608,7 +13622,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	//acfg->aot_opts.print_skipped_methods = TRUE;
 
 #if !defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
-	if (acfg->opts & MONO_OPT_GSHAREDVT) {
+	if (acfg->jit_opts & MONO_OPT_GSHAREDVT) {
 		aot_printerrf (acfg, "-O=gsharedvt not supported on this platform.\n");
 		return 1;
 	}
@@ -13618,7 +13632,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	}
 #else
 	if (acfg->aot_opts.llvm_only || mono_aot_mode_is_full (&acfg->aot_opts) || mono_aot_mode_is_hybrid (&acfg->aot_opts))
-		acfg->opts |= MONO_OPT_GSHAREDVT;
+		acfg->jit_opts |= MONO_OPT_GSHAREDVT;
 #endif
 
 #if !defined(ENABLE_LLVM)
@@ -13632,7 +13646,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	}
 #endif
 
-	if (acfg->opts & MONO_OPT_GSHAREDVT)
+	if (acfg->jit_opts & MONO_OPT_GSHAREDVT)
 		mono_set_generic_sharing_vt_supported (TRUE);
 
 	if (!acfg->dedup_collect_only)
@@ -13739,7 +13753,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 #endif
 	acfg->num_trampolines [MONO_AOT_TRAMP_IMT] = mono_aot_mode_is_full (&acfg->aot_opts) ? acfg->aot_opts.nimt_trampolines : 0;
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
-	if (acfg->opts & MONO_OPT_GSHAREDVT)
+	if (acfg->jit_opts & MONO_OPT_GSHAREDVT)
 		acfg->num_trampolines [MONO_AOT_TRAMP_GSHAREDVT_ARG] = mono_aot_mode_is_full (&acfg->aot_opts) ? acfg->aot_opts.ngsharedvt_arg_trampolines : 0;
 #endif
 #ifdef MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE

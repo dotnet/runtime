@@ -2373,12 +2373,16 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 			addr = get_method (i);
 		}
 
-		/* method_addresses () contains a table of branches, since the ios linker can update those correctly */
-		if (!addr && amodule->info.method_addresses) {
-			addr = get_call_table_entry (amodule->info.method_addresses, i, amodule->info.call_table_entry_size);
-			g_assert (addr);
-			if (addr == amodule->info.method_addresses)
-				addr = NULL;
+		if (amodule->info.flags & MONO_AOT_FILE_FLAG_METHOD_TABLE_AS_DATA) {
+			addr = ((gpointer*)amodule->info.method_addresses) [i];
+		} else {
+			/* method_addresses () contains a table of branches, since the ios linker can update those correctly */
+			if (!addr && amodule->info.method_addresses) {
+				addr = get_call_table_entry (amodule->info.method_addresses, i, amodule->info.call_table_entry_size);
+				g_assert (addr);
+				if (addr == amodule->info.method_addresses)
+					addr = NULL;
+			}
 		}
 		if (addr == NULL)
 			amodule->methods [i] = GINT_TO_POINTER (-1);
