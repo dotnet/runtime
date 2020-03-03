@@ -2826,13 +2826,24 @@ namespace Internal.JitInterface
 #endif
                )
             {
+#if !READYTORUN
                 // This list needs to match the list of intrinsics we can generate detection code for
                 // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
+#else
+                // For ReadyToRun, this list needs to match up with the behavior of FilterNamedIntrinsicMethodAttribs
+                // In particular, that this list of supported hardware will not generate non-SSE2 safe instruction
+                // sequences when paired with the behavior in FilterNamedIntrinsicMethodAttribs
+#endif
                 flags.Set(CorJitFlag.CORJIT_FLAG_USE_AES);
                 flags.Set(CorJitFlag.CORJIT_FLAG_USE_PCLMULQDQ);
                 flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSE3);
                 flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSSE3);
                 flags.Set(CorJitFlag.CORJIT_FLAG_USE_LZCNT);
+#if READYTORUN
+                flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSE41);
+                flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSE42);
+                flags.Set(CorJitFlag.CORJIT_FLAG_USE_POPCNT);
+#endif
             }
 
             if (this.MethodBeingCompiled.IsNativeCallable)
