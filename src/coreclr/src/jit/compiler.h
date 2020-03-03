@@ -3657,11 +3657,10 @@ protected:
                             CORINFO_METHOD_HANDLE method,
                             CORINFO_SIG_INFO*     sig,
                             bool                  mustExpand);
-    void impHWTODO1(NamedIntrinsic       intrinsic,
+    var_types getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
                         CORINFO_CLASS_HANDLE clsHnd,
                         CORINFO_SIG_INFO*    sig,
-                        var_types& retType,
-                        var_types& baseType);
+                        var_types baseType);
     GenTree* impUnsupportedHWIntrinsic(unsigned              helper,
                                        CORINFO_METHOD_HANDLE method,
                                        CORINFO_SIG_INFO*     sig,
@@ -3673,11 +3672,7 @@ protected:
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
                                  CORINFO_METHOD_HANDLE method,
-                                 CORINFO_SIG_INFO*     sig,
-                                 var_types             baseType,
-                                 var_types             retType);
-
-    //GenTree* impScalarIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig);
+                                 CORINFO_SIG_INFO*     sig);
 
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);

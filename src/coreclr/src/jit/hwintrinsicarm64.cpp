@@ -228,6 +228,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //
 // Arguments:
 //    intrinsic  -- id of the intrinsic function.
+//    clsHnd     -- class handle containing the intrinsic function.
 //    method     -- method handle of the intrinsic function.
 //    sig        -- signature of the intrinsic call
 //
@@ -237,67 +238,42 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_CLASS_HANDLE  clsHnd,
                                        CORINFO_METHOD_HANDLE method,
-                                       CORINFO_SIG_INFO*     sig,
-    var_types baseType,
-    var_types retType)
+                                       CORINFO_SIG_INFO*     sig)
 {
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
     int                 numArgs  = sig->numArgs;
-    //var_types           retType  = JITtype2varType(sig->retType);
-    //var_types           baseType = TYP_UNKNOWN;
+    var_types           retType  = JITtype2varType(sig->retType);
+    var_types           baseType = TYP_UNKNOWN;
 
-    //if ((retType == TYP_STRUCT) && featureSIMD)
-    //{
-    //    unsigned int sizeBytes;
-    //    baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
-    //    retType  = getSIMDTypeForSize(sizeBytes);
-    //    assert(sizeBytes != 0);
+    if ((retType == TYP_STRUCT) && featureSIMD)
+    {
+        unsigned int sizeBytes;
+        baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
+        retType  = getSIMDTypeForSize(sizeBytes);
+        assert(sizeBytes != 0);
 
-    //    if (!varTypeIsArithmetic(baseType))
-    //    {
-    //        assert((intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector128_As));
-    //        return nullptr;
-    //    }
-    //}
+        if (!varTypeIsArithmetic(baseType))
+        {
+            assert((intrinsic == NI_Vector64_AsByte) || (intrinsic == NI_Vector128_As));
+            return nullptr;
+        }
+    }
 
-    //if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic) || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
-    //{
-    //    CORINFO_ARG_LIST_HANDLE arg = sig->args;
+    baseType = getBaseTypeFromArgIfNeeded(intrinsic, clsHnd, sig, baseType);
 
-    //    if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
-    //    {
-    //        arg = info.compCompHnd->getArgNext(arg);
-    //    }
-
-    //    CORINFO_CLASS_HANDLE argClass = info.compCompHnd->getArgClass(sig, arg);
-    //    baseType                      = getBaseTypeAndSizeOfSIMDType(argClass);
-
-    //    if (baseType == TYP_UNKNOWN) // the argument is not a vector
-    //    {
-    //        CORINFO_CLASS_HANDLE tmpClass;
-    //        CorInfoType          corInfoType = strip(info.compCompHnd->getArgType(sig, arg, &tmpClass));
-
-    //        if (corInfoType == CORINFO_TYPE_PTR)
-    //        {
-    //            corInfoType = info.compCompHnd->getChildType(argClass, &tmpClass);
-    //        }
-
-    //        baseType = JITtype2varType(corInfoType);
-    //    }
-    //}
-    //else if (baseType == TYP_UNKNOWN)
-    //{
-    //    if (category != HW_Category_Scalar)
-    //    {
-    //        unsigned int sizeBytes;
-    //        baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
-    //        assert(sizeBytes != 0);
-    //    }
-    //    else
-    //    {
-    //        baseType = retType;
-    //    }
-    //}
+    if (baseType == TYP_UNKNOWN)
+    {
+        if (category != HW_Category_Scalar)
+        {
+            unsigned int sizeBytes;
+            baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
+            assert(sizeBytes != 0);
+        }
+        else
+        {
+            baseType = retType;
+        }
+    }
 
     if (!varTypeIsArithmetic(baseType))
     {
@@ -366,19 +342,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        /*case NI_ArmBase_LeadingZeroCount:
-        case NI_ArmBase_ReverseElementBits:
-        case NI_ArmBase_Arm64_LeadingSignCount:
-        case NI_ArmBase_Arm64_LeadingZeroCount:
-        case NI_ArmBase_Arm64_ReverseElementBits:
-        case NI_Sha1_FixedRotate:
-        {
-            assert(numArgs == 1);
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
-            op1     = getArgForHWIntrinsic(argType, argClass);
-            return gtNewScalarHWIntrinsicNode(baseType, op1, intrinsic);
-        }*/
-
         case NI_Crc32_ComputeCrc32:
         case NI_Crc32_ComputeCrc32C:
         case NI_Crc32_Arm64_ComputeCrc32:
@@ -406,10 +369,5 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     return retNode;
 }
-
-//GenTree* Compiler::impScalarIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig)
-//{
-//    return nullptr;
-//}
 
 #endif // FEATURE_HW_INTRINSICS
