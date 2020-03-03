@@ -246,6 +246,26 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        // Invalid initial bytes with numeric major type
+        [InlineData("3c")]
+        [InlineData("3d")]
+        [InlineData("3e")]
+        // valid initial bytes missing required data
+        [InlineData("38")]
+        [InlineData("3912")]
+        [InlineData("3a000000")]
+        [InlineData("3b00000000000000")]
+        public static void ReadCborNegativeIntegerEncoding_InvalidData_ShouldThrowFormatException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            Assert.Throws<FormatException>(() =>
+            {
+                var reader = new CborValueReader(data);
+                reader.ReadCborNegativeIntegerEncoding();
+            });
+        }
+
+        [Theory]
         [InlineData("1f")]
         [InlineData("3f")]
         public static void ReadInt64_IndefiniteLengthIntegers_ShouldThrowNotImplementedException(string hexEncoding)

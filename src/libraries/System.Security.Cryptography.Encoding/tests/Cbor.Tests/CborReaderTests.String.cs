@@ -342,5 +342,20 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadTextString();
             });
         }
+
+        [Theory]
+        [InlineData("61ff")]
+        [InlineData("62f090")]
+        public static void TryReadTextString_InvalidUnicode_ShouldThrowDecoderFallbackException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            char[] buffer = new char[32];
+
+            Assert.Throws<System.Text.DecoderFallbackException>(() =>
+            {
+                var reader = new CborValueReader(data);
+                reader.TryReadTextString(buffer, out int _);
+            });
+        }
     }
 }
