@@ -9433,73 +9433,6 @@ void Debugger::SendCreateAppDomainEvent(AppDomain * pRuntimeAppDomain)
 }
 
 
-
-
-//
-// SendExitAppDomainEvent is called when an app domain is destroyed.
-//
-void Debugger::SendExitAppDomainEvent(AppDomain* pRuntimeAppDomain)
-{
-    CONTRACTL
-    {
-        MAY_DO_HELPER_THREAD_DUTY_THROWS_CONTRACT;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-    }
-    CONTRACTL_END;
-
-    if (CORDBUnrecoverableError(this))
-        return;
-
-    LOG((LF_CORDB, LL_INFO100, "D::EAD: Exit AppDomain 0x%08x.\n",
-        pRuntimeAppDomain));
-
-    STRESS_LOG2(LF_CORDB, LL_INFO10000, "D::EAD: AppDomain exit:%#08x, %#08x\n",
-            pRuntimeAppDomain, CORDebuggerAttached());
-
-    Thread *thread = g_pEEInterface->GetThread();
-    // Prevent other Runtime threads from handling events.
-    SENDIPCEVENT_BEGIN(this, thread);
-
-    if (CORDebuggerAttached())
-    {
-        if (pRuntimeAppDomain->IsDefaultDomain() )
-        {
-            // The Debugger expects to never get an unload event for the default Domain.
-            // Currently we should never get here because g_fProcessDetach will be true by
-            // the time this method is called.  However, we'd like to know if this ever changes
-            _ASSERTE(!"Trying to deliver notification of unload for default domain" );
-            return;
-        }
-
-        // Send the exit appdomain event to the Right Side.
-        DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
-        InitIPCEvent(ipce,
-                     DB_IPCE_EXIT_APP_DOMAIN,
-                     thread,
-                     pRuntimeAppDomain);
-        m_pRCThread->SendIPCEvent();
-
-        // Delete any left over modules for this appdomain.
-        // Note that we're doing this under the lock.
-        if (m_pModules != NULL)
-        {
-            DebuggerDataLockHolder ch(this);
-            m_pModules->RemoveModules(pRuntimeAppDomain);
-        }
-
-        // Stop all Runtime threads
-        TrapAllRuntimeThreads();
-    }
-    else
-    {
-        LOG((LF_CORDB,LL_INFO1000, "D::EAD: Skipping SendIPCEvent because RS detached."));
-    }
-
-    SENDIPCEVENT_END;
-}
-
-
-
 //
 // LoadAssembly is called when a new Assembly gets loaded.
 //
@@ -14914,11 +14847,9 @@ ErrExit:
     // UnLock the list
     m_pAppDomainCB->Unlock();
 
-    // send event to debugger if one is attached
-    if (CORDebuggerAttached())
-    {
-        SendExitAppDomainEvent(pAppDomain);
-    }
+    //
+    // The Debugger expects to never get an unload event for the default AppDomain.
+    //
 
     return hr;
 }
