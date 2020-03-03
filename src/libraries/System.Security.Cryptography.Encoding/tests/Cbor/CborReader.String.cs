@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return result;
         }
 
-        public bool TryReadTextString(Span<char> buffer, out int charsWritten)
+        public bool TryReadTextString(Span<char> destination, out int charsWritten)
         {
             CborInitialByte header = Peek(expectedType: CborMajorType.TextString);
             int byteLength = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
