@@ -96,7 +96,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(MONO_JIT_INCLUDE_DIR);$(MONO_EGLIB_SOURCE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;HOST_WIN32;TARGET_WIN32;__i386__;TARGET_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
       <DisableSpecificWarnings>4996;4018;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -112,7 +112,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(MONO_JIT_INCLUDE_DIR);$(MONO_EGLIB_SOURCE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
       <StringPooling>true</StringPooling>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -135,7 +135,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(MONO_JIT_INCLUDE_DIR);$(MONO_EGLIB_SOURCE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_WINDOWS;__WIN32__;HOST_WIN32;TARGET_WIN32;__i386__;TARGET_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
       <DisableSpecificWarnings>4996;4018;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -154,7 +154,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(MONO_JIT_INCLUDE_DIR);$(MONO_EGLIB_SOURCE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
       <StringPooling>true</StringPooling>
       <IntrinsicFunctions>true</IntrinsicFunctions>

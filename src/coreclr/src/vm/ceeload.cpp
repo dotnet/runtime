@@ -67,7 +67,6 @@
 #endif // _MSC_VER
 
 
-#include "perflog.h"
 #include "ecall.h"
 #include "../md/compiler/custattr.h"
 #include "typekey.h"
@@ -9031,14 +9030,6 @@ void Module::PlaceType(DataImage *image, TypeHandle th, DWORD profilingFlags)
                 {
                     image->PlaceInternedStructureForAddress(pDictionary, CORCOMPILE_SECTION_READONLY_SHARED_HOT, CORCOMPILE_SECTION_READONLY_HOT);
                 }
-            }
-        }
-
-        if (profilingFlags & (1 << ReadFieldMarshalers))
-        {
-            if (pClass->HasLayout() && pClass->GetLayoutInfo()->GetNumCTMFields() > 0)
-            {
-                image->PlaceStructureForAddress((void *)pClass->GetLayoutInfo()->GetNativeFieldDescriptors(), CORCOMPILE_SECTION_HOT);
             }
         }
     }

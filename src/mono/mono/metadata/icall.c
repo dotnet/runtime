@@ -5728,7 +5728,10 @@ add_file_to_modules_array (MonoDomain *domain, MonoArrayHandle dest, int dest_id
 		goto_if_nok (error, leave);
 		if (!m) {
 			const char *filename = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
-			mono_error_set_file_not_found (error, filename, "%s", "");
+			gboolean refonly = FALSE;
+			if (image->assembly)
+				refonly = mono_asmctx_get_kind (&image->assembly->context) == MONO_ASMCTX_REFONLY;
+			mono_error_set_simple_file_not_found (error, filename, refonly);
 			goto leave;
 		}
 		MonoReflectionModuleHandle rm = mono_module_get_object_handle (domain, m, error);
@@ -6030,9 +6033,13 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 
 	if (!image){
 		if (status == MONO_IMAGE_IMAGE_INVALID)
-			mono_error_set_bad_image_by_name (error, filename, "Invalid Image");
-		else
-			mono_error_set_file_not_found (error, filename, "%s", "");
+			mono_error_set_bad_image_by_name (error, filename, "Invalid Image: %s", filename);
+		else {
+			gboolean refonly = FALSE;
+			if (image->assembly)
+				refonly = mono_asmctx_get_kind (&image->assembly->context) == MONO_ASMCTX_REFONLY;
+			mono_error_set_simple_file_not_found (error, filename, refonly);
+		}
 		g_free (filename);
 		return;
 	}
@@ -6469,7 +6476,7 @@ ves_icall_Mono_Runtime_ExceptionToState (MonoExceptionHandle exc_handle, guint64
 		// FIXME: Push handles down into mini/mini-exceptions.c
 		MonoException *exc = MONO_HANDLE_RAW (exc_handle);
 		MonoThreadSummary out;
-		mono_summarize_timeline_start ();
+		mono_summarize_timeline_start ("ExceptionToState");
 		mono_summarize_timeline_phase_log (MonoSummarySuspendHandshake);
 		mono_summarize_timeline_phase_log (MonoSummaryUnmanagedStacks);
 		mono_get_eh_callbacks ()->mono_summarize_exception (exc, &out);
@@ -6632,7 +6639,7 @@ ves_icall_Mono_Runtime_DumpStateTotal (guint64 *portable_hash, guint64 *unportab
 
 	mono_get_runtime_callbacks ()->install_state_summarizer ();
 
-	mono_summarize_timeline_start ();
+	mono_summarize_timeline_start ("DumpStateTotal");
 
 	gboolean success = mono_threads_summarize (ctx, &out, &hashes, TRUE, FALSE, scratch, MONO_MAX_SUMMARY_LEN_ICALL);
 	mono_summarize_timeline_phase_log (MonoSummaryCleanup);

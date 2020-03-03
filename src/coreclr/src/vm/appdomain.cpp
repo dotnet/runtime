@@ -669,11 +669,7 @@ BaseDomain::BaseDomain()
     m_JITLock.PreInit();
     m_ClassInitLock.PreInit();
     m_ILStubGenLock.PreInit();
-
-#ifdef FEATURE_CODE_VERSIONING
-    m_codeVersionManager.PreInit();
-#endif
-
+    m_NativeTypeLoadLock.PreInit();
 } //BaseDomain::BaseDomain
 
 //*****************************************************************************
@@ -724,6 +720,7 @@ void BaseDomain::Init()
     m_ClassInitLock.Init(CrstClassInit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
 
     m_ILStubGenLock.Init(CrstILStubGen, CrstFlags(CRST_REENTRANCY), TRUE);
+    m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
 
     // Large heap handle table CRST.
     m_LargeHeapHandleTableCrst.Init(CrstAppDomainHandleTable);
@@ -1567,10 +1564,11 @@ void SystemDomain::Attach()
     ILStubManager::Init();
     InteropDispatchStubManager::Init();
     StubLinkStubManager::Init();
-
     ThunkHeapStubManager::Init();
-
     TailCallStubManager::Init();
+#ifdef FEATURE_TIERED_COMPILATION
+    CallCountingStubManager::Init();
+#endif
 
     PerAppDomainTPCountList::InitAppDomainIndexList();
 #endif // CROSSGEN_COMPILE

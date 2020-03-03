@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>.NET Core hosting and startup abstractions for applications.</Description>
+    <TargetFrameworks>netstandard2.0;$(DefaultNetCoreTargetFramework)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(DefaultNetCoreTargetFramework)</TargetFrameworks>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageTags>hosting</PackageTags>
+    <RootNamespace>Microsoft.Extensions.Hosting</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <IsShipping>true</IsShipping>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <Reference Include="Microsoft.Extensions.FileProviders.Abstractions" />
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
+  </ItemGroup>
+
+</Project>

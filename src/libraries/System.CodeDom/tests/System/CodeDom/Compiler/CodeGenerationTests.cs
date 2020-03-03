@@ -111,16 +111,24 @@ namespace System.CodeDom.Compiler.Tests
             CodeDomProvider provider = GetProvider();
             string code = GenerateCode(c, provider);
 
+            Assert.Equal(
+                CoalesceWhitespace(expected), 
+                CoalesceWhitespace(code));            
+        }
+
+        protected void AssertEqualPreserveLineBreaks(CodeObject c, string expected)
+        {
+            // Validate all identifiers are valid
+            CodeGenerator.ValidateIdentifiers(c);
+
+            // Generate code
+            CodeDomProvider provider = GetProvider();
+            string code = GenerateCode(c, provider);
+
             // Make sure the code matches what we expected
-            try
-            {
-                Assert.Equal(CoalesceWhitespace(expected), CoalesceWhitespace(code));
-            }
-            catch
-            {
-                Console.WriteLine(code);
-                throw;
-            }
+            Assert.Equal(
+                CoalesceWhitespace(expected, preserveNewLines: true), 
+                CoalesceWhitespace(code, preserveNewLines: true));
         }
 
         private static string GenerateCode(CodeObject c, CodeDomProvider provider)
@@ -161,7 +169,7 @@ namespace System.CodeDom.Compiler.Tests
             return sb.ToString();
         }
 
-        private static string CoalesceWhitespace(string str)
+        private static string CoalesceWhitespace(string str, bool preserveNewLines = false)
         {
             var sb = new StringBuilder();
             bool lastWasWhitespace = false;
@@ -169,9 +177,20 @@ namespace System.CodeDom.Compiler.Tests
             {
                 if (char.IsWhiteSpace(c))
                 {
-                    if (lastWasWhitespace || sb.Length == 0) continue;
-                    lastWasWhitespace = true;
-                    sb.Append(' ');
+                    if (preserveNewLines && (c == '\r' || c == '\n'))
+                    {
+                        lastWasWhitespace = true;
+                        sb.Append(c);
+                    }
+                    else if (lastWasWhitespace || sb.Length == 0) 
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        lastWasWhitespace = true;
+                        sb.Append(' ');
+                    }
                 }
                 else
                 {
