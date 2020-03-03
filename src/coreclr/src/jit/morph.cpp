@@ -8901,6 +8901,7 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
             case IAT_VALUE:
                 tree = gtNewOperNode(GT_NOP, tree->TypeGet(), tree); // prevents constant folding
                 break;
+
             default:
                 noway_assert(!"Unknown addrInfo.accessType");
         }
