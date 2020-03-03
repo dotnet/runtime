@@ -9099,15 +9099,7 @@ REDO_RETURN_NODE:
         GenTree* op1 = op->AsObj()->Addr();
 
         // We will fold away OBJ/ADDR
-        // except for OBJ/ADDR/INDEX
-        //     as the array type influences the array element's offset
-        //     Later in this method we change op->gtType to info.compRetNativeType
-        //     This is not correct when op is a GT_INDEX as the starting offset
-        //     for the array elements 'elemOffs' is different for an array of
-        //     TYP_REF than an array of TYP_STRUCT (which simply wraps a TYP_REF)
-        //     Also refer to the GTF_INX_REFARR_LAYOUT flag
-        //
-        if ((op1->gtOper == GT_ADDR) && (op1->AsOp()->gtOp1->gtOper != GT_INDEX))
+        if (op1->gtOper == GT_ADDR)
         {
             // Change '*(&X)' to 'X' and see if we can do better
             op = op1->AsOp()->gtOp1;

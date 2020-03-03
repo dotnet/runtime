@@ -5552,8 +5552,15 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     // This is an array index expression.
     tree->gtFlags |= GTF_IND_ARR_INDEX;
 
-    /* An indirection will cause a GPF if the address is null */
-    tree->gtFlags |= GTF_EXCEPT;
+    // If there's a bounds check, the the indir won't fault.
+    if (bndsChk)
+    {
+        tree->gtFlags |= GTF_IND_NONFAULTING;
+    }
+    else
+    {
+        tree->gtFlags |= GTF_EXCEPT;
+    }
 
     if (nCSE)
     {
