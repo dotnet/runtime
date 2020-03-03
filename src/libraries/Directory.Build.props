@@ -5,9 +5,7 @@
   <Import Project="..\..\Directory.Build.props" />
 
   <ItemGroup>
-    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\ref\**\*csproj" />
-    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\src\**\*csproj" />
-    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\tests\**\*csproj" />
+    <PortedExtensionsProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\**\*csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\ref\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\src\**\Microsoft.Extensions.*proj" Exclude="@(PortedExtensionsProject)" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\Microsoft.Extensions.*.Tests.csproj" Exclude="@(PortedExtensionsProject)" />
