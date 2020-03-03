@@ -1485,3 +1485,19 @@ ProbeLoop:
         EPILOG_POP "{r7}"
         EPILOG_BRANCH_REG lr
         LEAF_END_MARKED JIT_StackProbe, _TEXT
+
+#ifdef FEATURE_TIERED_COMPILATION
+
+    NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add     r0, sp, #__PWTB_TransitionBlock // TransitionBlock *
+        mov     r1, r12 // stub-identifying token
+        bl      C_FUNC(OnCallCountThresholdReached)
+        mov     r12, r0
+
+        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+        EPILOG_BRANCH_REG r12
+    NESTED_END OnCallCountThresholdReachedStub, _TEXT
+
+#endif // FEATURE_TIERED_COMPILATION
