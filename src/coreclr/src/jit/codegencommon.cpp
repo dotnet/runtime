@@ -6112,18 +6112,17 @@ regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegZeroed)
 #endif // !TARGET_ARM64
 }
 
-/*-----------------------------------------------------------------------------
- *
- * Do we have any untracked pointer locals at all,
- * or do we need to initialize memory for locspace?
- *
- * untrLclHi      - (Untracked locals High-Offset)   The upper bound offset at which the zero init code will end
- * initializing memory (not inclusive).
- * untrLclLo      - (Untracked locals Low-Offset)    The lower bound at which the zero init code will start zero
- * initializing memory.
- * initReg        - A scratch register (that gets set to zero on some platforms).
- * pInitRegZeroed - Sets a flag that tells the callee whether or not the initReg register got zeroed.
- */
+//-----------------------------------------------------------------------------
+// genZeroInitFrame: Zero any untracked pointer locals and/or initialize memory for locspace
+//
+// Arguments:
+//    untrLclHi      - (Untracked locals High-Offset)  The upper bound offset at which the zero init
+//                                                     code will end initializing memory (not inclusive).
+//    untrLclLo      - (Untracked locals Low-Offset)   The lower bound at which the zero init code will
+//                                                     start zero initializing memory.
+//    initReg        - A scratch register (that gets set to zero on some platforms).
+//    pInitRegZeroed - Sets a flag that tells the callee whether or not the initReg register got zeroed.
+//
 void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     assert(compiler->compGeneratingProlog);
