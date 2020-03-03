@@ -10,6 +10,7 @@ parameters:
   pool: ''
   condition: true
   llvm: false
+  isOfficialBuild: false
   crossrootfsDir: ''
 
 ### Product build
@@ -50,7 +51,22 @@ jobs:
       value: ${{ parameters.osGroup }}
     - name: osSubgroup
       value: ${{ parameters.osSubgroup }}
-
+    - name: officialBuildIdArg
+      value: ''
+    # Strip symbols only on the release build
+    - ${{ if eq(parameters.buildConfig, 'Release') }}:
+      - name: stripSymbolsArg
+        value: '-stripsymbols'
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: officialBuildIdArg
+        value: '/p:officialBuildId=$(Build.BuildNumber)'
+    - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
+      # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
+      # lowercase for RID format. (Detection normally converts, but we're preventing it.)
+      - name: OutputRidArg
+        value: /p:OutputRid=linux-musl-${{ parameters.archType }}
+      - name: _PortableBuild
+        value: true
     - ${{ parameters.variables }}
 
     steps:
@@ -85,6 +101,39 @@ jobs:
         archiveExtension: $(archiveExtension)
         artifactName: $(buildProductArtifactName)
         displayName: 'product build'
+
+    # Build packages
+    - ${{ if and(ne(parameters.llvm, true), ne(parameters.osGroup, 'Windows_NT')) }}:
+      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
+        displayName: Build nupkg
+    - ${{ if and(ne(parameters.llvm, true), eq(parameters.osGroup, 'Windows_NT')) }}:
+      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
+        displayName: Build nupkg
+
+    # Save packages using the prepare-signed-artifacts format.
+    - ${{ if eq(parameters.isOfficialBuild, true) }}:
+      - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+        parameters:
+          name: ${{ parameters.platform }}
+
+    # Publish official build
+    - ${{ if and(ne(parameters.llvm, true), eq(parameters.publishToBlobFeed, 'true')) }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - script: $(Build.SourcesDirectory)/eng/common/build.sh --ci --restore --publish --configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__BuildOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)/artifacts/log/publish-pkgs.binlog" --projects $(Build.SourcesDirectory)/eng/empty.csproj
+          displayName: Publish packages to blob feed
+          env:
+            # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
+            NUGET_PACKAGES: $(Build.SourcesDirectory)/.packages
+            ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+              # Arcade uses this SDK instead of trying to restore one.
+              DotNetCoreSdkDir: /usr/local/dotnet
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        # TODO: pass publish feed url and access token in from the internal pipeline
+        - powershell: eng\common\build.ps1 -ci -restore -publish -configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__BuildOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)\artifacts\log\publish-pkgs.binlog" -projects $(Build.SourcesDirectory)\eng\empty.csproj
+          displayName: Publish packages to blob feed
+          env:
+            # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
+            NUGET_PACKAGES: $(Build.SourcesDirectory)\.packages
 
     # Publish Logs
     - task: PublishPipelineArtifact@1
