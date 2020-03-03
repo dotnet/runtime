@@ -20455,8 +20455,8 @@ BOOL gc_heap::background_process_mark_overflow (BOOL concurrent_p)
 
     BOOL  overflow_p = FALSE;
 recheck:
-    if ((! ((background_max_overflow_address == 0)) ||
-         ! ((background_min_overflow_address == MAX_PTR))))
+    if (((background_max_overflow_address != 0) ||
+        (background_min_overflow_address != MAX_PTR)))
     {
         overflow_p = TRUE;
 
@@ -20547,9 +20547,8 @@ size_t gc_heap::get_total_heap_size()
     size_t total_heap_size = 0;
 
 #ifdef MULTIPLE_HEAPS
-    int hn = 0;
 
-    for (hn = 0; hn < gc_heap::n_heaps; hn++)
+    for (int hn = 0; hn < gc_heap::n_heaps; hn++)
     {
         gc_heap* hp2 = gc_heap::g_heaps [hn];
         for (int i = max_generation; i < total_generation_count; i++)
@@ -20650,9 +20649,7 @@ size_t gc_heap::get_total_committed_size()
     size_t total_committed = 0;
 
 #ifdef MULTIPLE_HEAPS
-    int hn = 0;
-
-    for (hn = 0; hn < gc_heap::n_heaps; hn++)
+    for (int hn = 0; hn < gc_heap::n_heaps; hn++)
     {
         gc_heap* hp = gc_heap::g_heaps [hn];
         total_committed += hp->committed_size();
@@ -20701,8 +20698,8 @@ BOOL gc_heap::process_mark_overflow(int condemned_gen_number)
     size_t last_promoted_bytes = promoted_bytes (heap_number);
     BOOL  overflow_p = FALSE;
 recheck:
-    if ((! (max_overflow_address == 0) ||
-         ! (min_overflow_address == MAX_PTR)))
+    if (((max_overflow_address != 0) ||
+        (min_overflow_address != MAX_PTR)))
     {
         overflow_p = TRUE;
         // Try to grow the array.
