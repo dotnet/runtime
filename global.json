@@ -5,7 +5,7 @@
     "rollForward": "major"
   },
   "tools": {
-    "dotnet": "5.0.100-preview.1.20112.7"
+    "dotnet": "5.0.100-preview.2.20153.3"
   },
   "native-tools": {
     "cmake": "3.14.2",
