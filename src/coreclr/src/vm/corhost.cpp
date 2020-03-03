@@ -1463,10 +1463,9 @@ void CExecutionEngine::DeleteTLS(void ** pTlsData)
         fNeed = FALSE;
         for (int i=0; i<MAX_PREDEFINED_TLS_SLOT; i++)
         {
-            if (i == TlsIdx_ClrDebugState ||
-                i == TlsIdx_StressLog)
+            if (i == TlsIdx_ClrDebugState)
             {
-                // StressLog and DebugState may be needed during callback.
+                // DebugState may be needed during callback.
                 continue;
             }
             // If we have some data and a callback, issue it.
@@ -1480,10 +1479,10 @@ void CExecutionEngine::DeleteTLS(void ** pTlsData)
         }
     } while (fNeed);
 
-    if (pTlsInfo->data[TlsIdx_StressLog] != 0)
+    if (StressLog::t_pCurrentThreadLog != NULL)
     {
 #ifdef STRESS_LOG
-        StressLog::ThreadDetach((ThreadStressLog *)pTlsInfo->data[TlsIdx_StressLog]);
+        StressLog::ThreadDetach();
 #else
         _ASSERTE (!"should not have StressLog");
 #endif

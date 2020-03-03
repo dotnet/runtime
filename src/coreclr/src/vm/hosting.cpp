@@ -226,7 +226,7 @@ LPVOID EEHeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes)
             && GetExecutionEngine ()
            // If we have not created StressLog ring buffer, we should not try to use it.
            // StressLog is going to do a memory allocation.  We may enter an endless loop.
-           && ClrFlsGetValue(TlsIdx_StressLog) != NULL )
+           && StressLog::t_pCurrentThreadLog != NULL )
         {
             STRESS_LOG_OOM_STACK(dwBytes);
         }
