@@ -2109,6 +2109,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	int native = 0;
 	int is_void = 0;
 	int need_null_check = is_virtual;
+	gboolean is_delegate_invoke = FALSE;
 
 	guint32 token = read32 (td->ip + 1);
 
@@ -2332,12 +2333,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	/* We need to convert delegate invoke to a indirect call on the interp_invoke_impl field */
 	if (target_method && m_class_get_parent (target_method->klass) == mono_defaults.multicastdelegate_class) {
 		const char *name = target_method->name;
-		if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
-			calli = TRUE;
-			interp_add_ins (td, MINT_LD_DELEGATE_INVOKE_IMPL);
-			td->last_ins->data [0] = csignature->param_count + 1;
-			PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
-		}
+		if (*name == 'I' && (strcmp (name, "Invoke") == 0))
+			is_delegate_invoke = TRUE;
 	}
 
 	/* Pop the function pointer */
@@ -2394,7 +2391,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			td->last_ins->data [1] = get_data_item_index (td, mono_method_signature_internal (target_method));
 		}
 #endif
-	} else if (!calli && !is_virtual && mono_interp_jit_call_supported (target_method, csignature)) {
+	} else if (!calli && !is_delegate_invoke && !is_virtual && mono_interp_jit_call_supported (target_method, csignature)) {
 		interp_add_ins (td, MINT_JIT_CALL);
 		td->last_ins->data [0] = get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error));
 		mono_error_assert_ok (error);
@@ -2406,6 +2403,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 #endif
 		if (csignature->call_convention == MONO_CALL_VARARG)
 			interp_add_ins (td, MINT_CALL_VARARG);
+		else if (is_delegate_invoke)
+			interp_add_ins (td, MINT_CALL_DELEGATE);
 		else if (calli)
 			interp_add_ins (td, native ? ((op != -1) ? MINT_CALLI_NAT_FAST : MINT_CALLI_NAT) : MINT_CALLI);
 		else if (is_virtual && !mono_class_is_marshalbyref (target_method->klass))
@@ -2415,7 +2414,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		else
 			interp_add_ins (td, is_void ? MINT_VCALL : MINT_CALL);
 
-		if (calli) {
+		if (is_delegate_invoke) {
+			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
+		} else if (calli) {
 			td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
 			if (op != -1) {
 				td->last_ins->data[1] = op;
@@ -6316,6 +6317,12 @@ get_inst_stack_usage (TransformData *td, InterpInst *ins, int *pop, int *push)
 			break;
 		}
 #endif
+		case MINT_CALL_DELEGATE: {
+			MonoMethodSignature *csignature = (MonoMethodSignature*) td->data_items [ins->data [0]];
+			*pop = csignature->param_count + 1;
+			*push = csignature->ret->type != MONO_TYPE_VOID;
+			break;
+		}
 		case MINT_CALLI:
 		case MINT_CALLI_NAT:
 		case MINT_CALLI_NAT_FAST: {
