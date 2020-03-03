@@ -755,6 +755,23 @@
         "fedora-x64"
       ]
     },
+    "fedora.33": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.33-arm64": {
+      "#import": [
+        "fedora.33",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.33-x64": {
+      "#import": [
+        "fedora.33",
+        "fedora-x64"
+      ]
+    },
     "freebsd": {
       "#import": [
         "unix"
