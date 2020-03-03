@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(2, 3)]
         [InlineData(10, 11)]
         [InlineData(70, 71)]
-        [InlineData(10, 0)]
+        [InlineData(10, 0)] // 0 (or default) max depth is treated as 64
         public static void WriteCyclic(int objectHierarchyDepth, int maxDepth)
         {
             var rootObj = new TestClassWithCycle("root");
@@ -43,7 +43,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(2, 2, 1)]
         [InlineData(10, 10, 9)]
         [InlineData(70, 70, 69)]
-        [InlineData(70, 0, 63)]
+        [InlineData(70, 0, 63)] // 0 (or default) max depth is treated as 64
         public static void WriteCyclicFail(int objectHierarchyDepth, int maxDepth, int expectedPathDepth)
         {
             var rootObj = new TestClassWithCycle("root");
