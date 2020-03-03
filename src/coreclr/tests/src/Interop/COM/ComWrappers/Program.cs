@@ -155,16 +155,6 @@ namespace ComWrappersTests
         {
             public static readonly TestComWrappers Global = new TestComWrappers();
 
-            public TestComWrappers()
-            {
-                DefaultReleaseObjects = true;
-            }
-
-            public bool DefaultReleaseObjects
-            {
-                get; set;
-            }
-
             protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
             {
                 Assert.IsTrue(obj is Test);
@@ -205,13 +195,11 @@ namespace ComWrappersTests
                 return new ITrackerObjectWrapper(iTestComObject);
             }
 
+            public const int ReleaseObjectsCallAck = unchecked((int)-1);
+
             protected override void ReleaseObjects(IEnumerable objects)
             {
-                if (DefaultReleaseObjects)
-                {
-                    base.ReleaseObjects(objects);
-                    Assert.Fail("Default implementation should throw exception");
-                }
+                throw new Exception() { HResult = ReleaseObjectsCallAck };
             }
 
             public static void ValidateIUnknownImpls()
@@ -296,7 +284,7 @@ namespace ComWrappersTests
             var nativeWrapper = new ITrackerObjectWrapper(iTestComObject);
 
             // Request wrapper, but supply the wrapper.
-            var nativeWrapper2 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject, nativeWrapper);
+            var nativeWrapper2 = (ITrackerObjectWrapper)cw.GetOrRegisterObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject, nativeWrapper);
             Assert.AreEqual(nativeWrapper, nativeWrapper2);
 
             // Ownership has been transferred to the wrapper.
@@ -307,7 +295,7 @@ namespace ComWrappersTests
             Assert.Throws<NotSupportedException>(
                 () =>
                 {
-                    cw.GetOrCreateObjectForComInstance(trackerObjRaw2, CreateObjectFlags.None, nativeWrapper2);
+                    cw.GetOrRegisterObjectForComInstance(trackerObjRaw2, CreateObjectFlags.None, nativeWrapper2);
                 });
             Marshal.Release(trackerObjRaw2);
         }
@@ -343,7 +331,6 @@ namespace ComWrappersTests
                         Assert.Fail("Invalid failure mode");
                         throw new Exception("UNREACHABLE");
                 }
-
             }
 
             protected override object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
@@ -358,6 +345,11 @@ namespace ComWrappersTests
                         Assert.Fail("Invalid failure mode");
                         throw new Exception("UNREACHABLE");
                 }
+            }
+
+            protected override void ReleaseObjects(IEnumerable objects)
+            {
+                throw new NotSupportedException();
             }
         }
 
@@ -485,17 +477,9 @@ namespace ComWrappersTests
             int hr;
             var cw = TestComWrappers.Global;
 
-            // Trigger the thread lifetime end API and verify the default behavior.
+            // Trigger the thread lifetime end API and verify the callback occurs.
             hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
-            Assert.AreEqual(unchecked((int)0x80004001), hr);
-
-            cw.DefaultReleaseObjects = false;
-            // Trigger the thread lifetime end API and verify the customizable behavior.
-            hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
-            Assert.AreEqual(0, hr);
-
-            // Reset the global wrapper state.
-            cw.DefaultReleaseObjects = true;
+            Assert.AreEqual(TestComWrappers.ReleaseObjectsCallAck, hr);
         }
 
         static int Main(string[] doNotUse)
