@@ -30,7 +30,7 @@ namespace System.Text.Json.Tests
         private static string GenerateRandomValidLargeString()
         {
             var random = new Random(42);
-            var charArray = new char[502];
+            var charArray = new char[502]; // valid Base64 strings must have length divisible by 4 (not including surrounding quotes)
             charArray[0] = '"';
             for (int i = 1; i < charArray.Length - 1; i++)
             {
