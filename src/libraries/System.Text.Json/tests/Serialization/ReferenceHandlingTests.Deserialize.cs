@@ -912,12 +912,13 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(@"{""$iz"": ""1""}")]
-        [InlineData(@"{""$rez"": ""1""}")]
-        [InlineData(@"{""$valuez"": []}")]
-        public static void InvalidMetadataPropertyNameWithSameLengthIsNotRecognized(string json)
+        [InlineData(@"{""$iz"": ""1""}", "$.$iz")]
+        [InlineData(@"{""$rez"": ""1""}", "$.$rez")]
+        [InlineData(@"{""$valuez"": []}", "$.$valuez")]
+        public static void InvalidMetadataPropertyNameWithSameLengthIsNotRecognized(string json, string expectedPath)
         {
             JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, s_deserializerOptionsPreserve));
+            Assert.Equal(expectedPath, ex.Path);
         }
 
         #endregion
