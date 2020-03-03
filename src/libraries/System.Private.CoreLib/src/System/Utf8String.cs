@@ -260,11 +260,10 @@ namespace System
             return (value is null) || value.AsSpan().IsEmptyOrWhiteSpace();
         }
 
-        // TODO: eerhardt - need Utf8Span.Conversion.cs
-        ///// <summary>
-        ///// Returns the entire <see cref="Utf8String"/> as an array of UTF-8 bytes.GetPinnableReference
-        ///// </summary>
-        //public byte[] ToByteArray() => this.AsSpanSkipNullCheck().ToByteArray();
+        /// <summary>
+        /// Returns the entire <see cref="Utf8String"/> as an array of UTF-8 bytes.GetPinnableReference
+        /// </summary>
+        public byte[] ToByteArray() => this.AsSpanSkipNullCheck().ToByteArray();
 
         /// <summary>
         /// Converts this <see cref="Utf8String"/> instance to a <see cref="string"/>.

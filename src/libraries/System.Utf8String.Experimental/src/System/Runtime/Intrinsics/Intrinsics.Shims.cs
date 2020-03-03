@@ -8,11 +8,13 @@ namespace System.Runtime.Intrinsics
     {
         public static Vector128<short> Create(short value) => throw new PlatformNotSupportedException();
         public static Vector128<ushort> Create(ushort value) => throw new PlatformNotSupportedException();
+        public static Vector128<ulong> CreateScalarUnsafe(ulong value) => throw new PlatformNotSupportedException();
         public static Vector128<byte> AsByte<T>(this Vector128<T> vector) where T : struct => throw new PlatformNotSupportedException();
         public static Vector128<short> AsInt16<T>(this Vector128<T> vector) where T : struct => throw new PlatformNotSupportedException();
         public static Vector128<ushort> AsUInt16<T>(this Vector128<T> vector) where T : struct => throw new PlatformNotSupportedException();
         public static Vector128<uint> AsUInt32<T>(this Vector128<T> vector) where T : struct => throw new PlatformNotSupportedException();
         public static Vector128<ulong> AsUInt64<T>(this Vector128<T> vector) where T : struct => throw new PlatformNotSupportedException();
+        public static T GetElement<T>(this Vector128<T> vector, int index) where T : struct => throw new PlatformNotSupportedException();
     }
     internal readonly struct Vector128<T>
         where T : struct
@@ -84,6 +86,10 @@ namespace System.Runtime.Intrinsics.X86
 
     internal abstract class Sse41
     {
+        public abstract class X64
+        {
+            public static bool IsSupported { get; } = false;
+        }
         public static bool IsSupported { get; } = false;
         public static bool TestZ(Vector128<short> left, Vector128<short> right) => throw new PlatformNotSupportedException();
         public static bool TestZ(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();

@@ -55,6 +55,9 @@
     <Compile Include="$(CoreLibSharedDir)\System\Text\ASCIIUtility.Helpers.cs">
       <Link>System\Text\ASCIIUtility.Helpers.cs</Link>
     </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8.cs">
+      <Link>System\Text\Unicode\Utf8.cs</Link>
+    </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.cs">
       <Link>System\Text\Unicode\Utf8Utility.cs</Link>
     </Compile>
@@ -63,6 +66,9 @@
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.Validation.cs">
       <Link>System\Text\Unicode\Utf8Utility.Validation.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.Transcoding.cs">
+      <Link>System\Text\Unicode\Utf8Utility.Transcoding.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.WhiteSpace.netstandard.cs">
       <Link>System\Text\Unicode\Utf8Utility.WhiteSpace.netstandard.cs</Link>
@@ -87,10 +93,10 @@
     <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Construction.cs">
       <Link>System\Utf8String.Construction.cs</Link>
     </Compile>
-    <!--<Compile Include="$(CoreLibSharedDir)\System\Utf8String.Conversion.cs">
+    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Conversion.cs">
       <Link>System\Utf8String.Conversion.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Enumeration.cs">
+    <!--<Compile Include="$(CoreLibSharedDir)\System\Utf8String.Enumeration.cs">
       <Link>System\Utf8String.Enumeration.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Manipulation.cs">
@@ -104,9 +110,9 @@
     <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Comparison.cs">
       <Link>System\Text\Utf8Span.Comparison.cs</Link>
     </Compile>
-    <!--<Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Conversion.cs">
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Conversion.cs">
       <Link>System\Text\Utf8Span.Conversion.cs</Link>
-    </Compile>-->
+    </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Enumeration.cs">
       <Link>System\Text\Utf8Span.Enumeration.cs</Link>
     </Compile>

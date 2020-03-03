@@ -20,7 +20,7 @@ namespace System
 
         public Utf8String(ReadOnlySpan<byte> value)
         {
-            _bytes = Array.Empty<byte>(); //TODO: eerhardt //TODO: eerhardt
+            _bytes = Array.Empty<byte>(); //TODO: eerhardt
         }
 
         public Utf8String(byte[] value, int startIndex, int length)
