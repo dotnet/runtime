@@ -2191,7 +2191,7 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
                     CORINFO_SIG_INFO sig;
                     pZapInfo->getMethodSig(ftn, &sig, NULL);
                     CORINFO_CLASS_HANDLE argClass;
-                    if (pZapInfo->getArgType(&sig, sig.args, &argClass) == CORINFO_TYPE_VALUECLASS)
+                    if ((CorInfoType)pZapInfo->getArgType(&sig, sig.args, &argClass) == CORINFO_TYPE_VALUECLASS)
                     {
                         fTreatAsRegularMethodCall = TRUE;
                     }
