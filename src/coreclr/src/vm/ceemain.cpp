@@ -150,7 +150,6 @@
 #include "olevariant.h"
 #include "comcallablewrapper.h"
 #include "apithreadstress.h"
-#include "perflog.h"
 #include "../dlls/mscorrc/resource.h"
 #include "util.hpp"
 #include "shimload.h"
@@ -727,10 +726,6 @@ void EEStartupHelper(COINITIEE fFlags)
 #ifdef LOGGING
         InitializeLogging();
 #endif
-
-#ifdef ENABLE_PERF_LOG
-        PerfLog::PerfLogInitialize();
-#endif //ENABLE_PERF_LOG
 
 #ifdef FEATURE_PERFMAP
         PerfMap::Initialize();
@@ -1565,10 +1560,6 @@ part2:
 
                 //@TODO: find the right place for this
                 VirtualCallStubManager::UninitStatic();
-
-#ifdef ENABLE_PERF_LOG
-                PerfLog::PerfLogDone();
-#endif //ENABLE_PERF_LOG
 
                 // Unregister our vectored exception and continue handlers from the OS.
                 // This will ensure that if any other DLL unload (after ours) has an exception,
