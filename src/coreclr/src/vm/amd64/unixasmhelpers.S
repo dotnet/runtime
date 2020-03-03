@@ -229,3 +229,24 @@ NullObject:
         jmp     C_FUNC(JIT_InternalThrow)
 
 LEAF_END SinglecastDelegateInvokeStub, _TEXT
+
+#ifdef FEATURE_TIERED_COMPILATION
+
+LEAF_ENTRY OnCallCountThresholdReachedStub, _TEXT
+        // Pop the return address (the stub-identifying token) into a non-argument volatile register that can be trashed
+        pop     rax
+        jmp     C_FUNC(OnCallCountThresholdReachedStub2)
+LEAF_END OnCallCountThresholdReachedStub, _TEXT
+
+NESTED_ENTRY OnCallCountThresholdReachedStub2, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        lea     rdi, [rsp + __PWTB_TransitionBlock] // TransitionBlock *
+        mov     rsi, rax // stub-identifying token, see OnCallCountThresholdReachedStub
+        call    C_FUNC(OnCallCountThresholdReached)
+
+        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+        TAILJMP_RAX
+NESTED_END OnCallCountThresholdReachedStub2, _TEXT
+
+#endif // FEATURE_TIERED_COMPILATION

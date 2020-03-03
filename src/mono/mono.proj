@@ -78,7 +78,7 @@
   <Target Name="BuildMonoRuntimeWindows" Condition="'$(OS)' == 'Windows_NT'">
     <PropertyGroup>
         <_MonoBuildParams>/p:MONO_BUILD_DIR_PREFIX=&quot;&quot;$(MonoObjDir)&quot;&quot; /p:MONO_ENABLE_NETCORE=true /p:CL_MPCount=8 /v:minimal</_MonoBuildParams>
-        <_MonoBuildParams Condition="$(MonoEnableLLVM) == true">/p:MONO_ENABLE_LLVM=true $(_MonoBuildParams)</_MonoBuildParams>
+        <_MonoBuildParams Condition="$(MonoEnableLLVM) == true">/p:MONO_ENABLE_LLVM=true /p:MONO_EXTERNAL_LLVM_CONFIG=&quot;&quot;$(MonoLLVMDir)\bin\llvm-config.exe&quot;&quot; $(_MonoBuildParams)</_MonoBuildParams>
         <_MonoBuildPlatform Condition="'$(Platform)' == 'x64'">x64</_MonoBuildPlatform>
         <_MonoBuildPlatform Condition="'$(Platform)' == 'x86'">win32</_MonoBuildPlatform>
     </PropertyGroup>

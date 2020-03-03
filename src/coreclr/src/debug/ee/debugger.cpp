@@ -3633,7 +3633,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
 
     CodeVersionManager *pCodeVersionManager = module->GetCodeVersionManager();
     {
-        CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
         ILCodeVersion ilCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(module, mdMeth);
         if (!ilCodeVersion.IsDefaultVersion())
         {
@@ -15240,6 +15240,15 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
     {
         // SP is not aligned, we cannot do a FuncEval here
         LOG((LF_CORDB, LL_INFO1000, "D::FES SP is unaligned"));
+        return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
+    }
+
+    if (MethodDescBackpatchInfoTracker::IsLockOwnedByAnyThread())
+    {
+        // A thread may have suspended for the debugger while holding the slot backpatching lock while trying to enter
+        // cooperative GC mode. If the FuncEval calls a method that is eligible for slot backpatching (virtual or interface
+        // methods that are eligible for tiering), the FuncEval may deadlock on trying to acquire the same lock. Fail the
+        // FuncEval to avoid the issue.
         return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
     }
 

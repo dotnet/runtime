@@ -351,9 +351,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_26311/GitHub_26311/*">
             <Issue>https://github.com/dotnet/runtime/issues/13296</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/interlocked/compareexchange/compareexchangedouble/*">
-            <Issue>https://github.com/dotnet/runtime/issues/129</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows x86 specific excludes -->
