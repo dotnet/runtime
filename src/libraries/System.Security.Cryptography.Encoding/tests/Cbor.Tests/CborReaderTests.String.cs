@@ -101,7 +101,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("\u6c34", "63e6b0b4")]
         [InlineData("\x3bb", "62cebb")]
         [InlineData("\ud800\udd51", "64f0908591")]
-        public static void TryReadTextString_BufferTooSmall_ShouldReturnNegativeOne(string actualValue, string hexEncoding)
+        public static void TryReadTextString_BufferTooSmall_ShouldReturnFalse(string actualValue, string hexEncoding)
         {
             char[] buffer = new char[actualValue.Length - 1];
             byte[] encoding = hexEncoding.HexToByteArray();
@@ -149,6 +149,48 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 var reader = new CborValueReader(data);
                 reader.ReadTextString();
+            });
+        }
+
+        [Theory]
+        [InlineData("00")] // 0
+        [InlineData("20")] // -1
+        [InlineData("60")] // empty text string
+        [InlineData("f6")] // null
+        [InlineData("80")] // []
+        [InlineData("a0")] // {}
+        [InlineData("f97e00")] // NaN
+        [InlineData("fb3ff199999999999a")] // 1.1
+        public static void TryReadByteString_InvalidType_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            byte[] buffer = new byte[32];
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                var reader = new CborValueReader(data);
+                reader.TryReadByteString(buffer, out int _);
+            });
+        }
+
+        [Theory]
+        [InlineData("00")] // 0
+        [InlineData("20")] // -1
+        [InlineData("40")] // empty byte string
+        [InlineData("f6")] // null
+        [InlineData("80")] // []
+        [InlineData("a0")] // {}
+        [InlineData("f97e00")] // NaN
+        [InlineData("fb3ff199999999999a")] // 1.1
+        public static void TryReadTextString_InvalidType_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            char[] buffer = new char[32];
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                var reader = new CborValueReader(data);
+                reader.TryReadTextString(buffer, out int _);
             });
         }
 
@@ -201,6 +243,62 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 var reader = new CborValueReader(data);
                 reader.ReadTextString();
+            });
+        }
+
+        [Theory]
+        // Invalid initial bytes with byte string major type
+        [InlineData("5c")]
+        [InlineData("5d")]
+        [InlineData("5e")]
+        // valid initial bytes missing required length data
+        [InlineData("58")]
+        [InlineData("5912")]
+        [InlineData("5a000000")]
+        [InlineData("5b00000000000000")]
+        // valid string length data missing required bytes
+        [InlineData("41")]
+        [InlineData("42ff")]
+        [InlineData("5803ffff")]
+        [InlineData("590100ff")]
+        [InlineData("5a00010000ff")]
+        public static void TryReadByteString_InvalidData_ShouldThrowFormatException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            byte[] buffer = new byte[32];
+
+            Assert.Throws<FormatException>(() =>
+            {
+                var reader = new CborValueReader(data);
+                reader.TryReadByteString(buffer, out int _);
+            });
+        }
+
+        [Theory]
+        // Invalid initial bytes with byte string major type
+        [InlineData("7c")]
+        [InlineData("7d")]
+        [InlineData("7e")]
+        // valid initial bytes missing required length data
+        [InlineData("78")]
+        [InlineData("7912")]
+        [InlineData("7a000000")]
+        [InlineData("7b00000000000000")]
+        // valid string length data missing required bytes
+        [InlineData("61")]
+        [InlineData("62ff")]
+        [InlineData("7803ffff")]
+        [InlineData("790100ff")]
+        [InlineData("7a00010000ff")]
+        public static void TryReadTextString_InvalidData_ShouldThrowFormatException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            char[] buffer = new char[32];
+
+            Assert.Throws<FormatException>(() =>
+            {
+                var reader = new CborValueReader(data);
+                reader.TryReadTextString(buffer, out int _);
             });
         }
 
