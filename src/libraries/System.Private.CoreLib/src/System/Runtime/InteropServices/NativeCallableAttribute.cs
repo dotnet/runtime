@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Optional. If omitted, the runtime will choose one for you based on the platform.
+        /// Optional. If omitted, the runtime will use the default platform calling convention.
         /// </summary>
         public CallingConvention CallingConvention;
 
