@@ -1346,10 +1346,6 @@ LError:
 #define GetProcessHeap() Dont_Use_GetProcessHeap()
 #define HeapFree(hHeap, dwFlags, lpMem) Dont_Use_HeapFree(hHeap, dwFlags, lpMem)
     }
-    // If this is for the stack probe, and we failed to allocate memory for it, we won't
-    // put in a guard page.
-    if (slot == TlsIdx_ClrDebugState)
-        return NULL;
 
     ThrowOutOfMemory();
 }
@@ -1441,6 +1437,11 @@ void CExecutionEngine::ThreadDetaching(void ** pTlsData)
     }
 }
 
+#ifdef ENABLE_CONTRACTS_IMPL
+// Fls callback to deallocate ClrDebugState when our FLS block goes away.
+void FreeClrDebugState(LPVOID pTlsData);
+#endif
+
 void CExecutionEngine::DeleteTLS(void ** pTlsData)
 {
     // Can not cause memory allocation during thread detach, so no real contracts.
@@ -1463,11 +1464,6 @@ void CExecutionEngine::DeleteTLS(void ** pTlsData)
         fNeed = FALSE;
         for (int i=0; i<MAX_PREDEFINED_TLS_SLOT; i++)
         {
-            if (i == TlsIdx_ClrDebugState)
-            {
-                // DebugState may be needed during callback.
-                continue;
-            }
             // If we have some data and a callback, issue it.
             if (Callbacks[i] != 0 && pTlsInfo->data[i] != 0)
             {
@@ -1488,12 +1484,14 @@ void CExecutionEngine::DeleteTLS(void ** pTlsData)
 #endif
     }
 
-    if (Callbacks[TlsIdx_ClrDebugState] != 0 && pTlsInfo->data[TlsIdx_ClrDebugState] != 0)
+#ifdef ENABLE_CONTRACTS_IMPL
+    if (t_pClrDebugState != NULL)
     {
-        void* pData = pTlsInfo->data[TlsIdx_ClrDebugState];
-        pTlsInfo->data[TlsIdx_ClrDebugState] = 0;
-        ThreadDetachingHelper(Callbacks[TlsIdx_ClrDebugState], pData);
+        void* pData = t_pClrDebugState;
+        t_pClrDebugState = 0;
+        FreeClrDebugState(pData);
     }
+#endif // ENABLE_CONTRACTS_IMPL
 
     // NULL TLS and FLS entry so that we don't double free.
     // We may get two callback here on thread death
@@ -1512,11 +1510,6 @@ void CExecutionEngine::DeleteTLS(void ** pTlsData)
 
 }
 
-#ifdef ENABLE_CONTRACTS_IMPL
-// Fls callback to deallocate ClrDebugState when our FLS block goes away.
-void FreeClrDebugState(LPVOID pTlsData);
-#endif
-
 VOID STDMETHODCALLTYPE CExecutionEngine::TLS_AssociateCallback(DWORD slot, PTLS_CALLBACK_FUNCTION callback)
 {
     WRAPPER_NO_CONTRACT;
@@ -1526,21 +1519,8 @@ VOID STDMETHODCALLTYPE CExecutionEngine::TLS_AssociateCallback(DWORD slot, PTLS_
     // They can toggle between a callback and no callback.  But anything else looks like
     // confusion on their part.
     //
-    // (TlsIdx_ClrDebugState associates its callback from utilcode.lib - which can be replicated. But
-    // all the callbacks are equally good.)
-    _ASSERTE(slot == TlsIdx_ClrDebugState || Callbacks[slot] == 0 || Callbacks[slot] == callback || callback == 0);
-    if (slot == TlsIdx_ClrDebugState)
-    {
-#ifdef ENABLE_CONTRACTS_IMPL
-        // ClrDebugState is shared among many dlls.  Some dll, like perfcounter.dll, may be unloaded.
-        // We force the callback function to be in mscorwks.dll.
-        Callbacks[slot] = FreeClrDebugState;
-#else
-        _ASSERTE (!"should not get here");
-#endif
-    }
-    else
-        Callbacks[slot] = callback;
+    _ASSERTE(Callbacks[slot] == 0 || Callbacks[slot] == callback || callback == 0);
+    Callbacks[slot] = callback;
 }
 
 LPVOID* STDMETHODCALLTYPE CExecutionEngine::TLS_GetDataBlock()

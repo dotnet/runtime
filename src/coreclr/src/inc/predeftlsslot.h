@@ -28,7 +28,7 @@ enum PredefinedTlsSlots
     TlsIdx_CantStopCount, // Can't-stop counter for any thread
     TlsIdx_Unused7,
     TlsIdx_Unused8,
-    TlsIdx_ClrDebugState,         // Pointer to ClrDebugState* structure
+    TlsIdx_Unused9,
     TlsIdx_Unused10,
 
     // Add more indices here.

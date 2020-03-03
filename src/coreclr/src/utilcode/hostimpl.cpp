@@ -70,15 +70,6 @@ static void **CheckThreadState(DWORD slot, BOOL force = TRUE)
 
         if (pTlsData == NULL)
         {
-            // workaround! We don't want exceptions being thrown during ClrInitDebugState. Just return NULL out of TlsSetValue.
-            // ClrInitDebugState will do a confirming FlsGet to see if the value stuck.
-
-            // If this is for the stack probe, and we failed to allocate memory for it, we won't
-            // put in a guard page.
-            if (slot == TlsIdx_ClrDebugState)
-            {
-                return NULL;
-            }
             RaiseException(STATUS_NO_MEMORY, 0, 0, NULL);
         }
         for (int i=0; i<MAX_PREDEFINED_TLS_SLOT; i++)
@@ -129,9 +120,7 @@ VOID  STDMETHODCALLTYPE UtilExecutionEngine::TLS_AssociateCallback(DWORD slot, P
     // They can toggle between a callback and no callback.  But anything else looks like
     // confusion on their part.
     //
-    // (TlsIdx_ClrDebugState associates its callback from utilcode.lib - which can be replicated. But
-    // all the callbacks are equally good.)
-    _ASSERTE(slot == TlsIdx_ClrDebugState || Callbacks[slot] == 0 || Callbacks[slot] == callback || callback == 0);
+    _ASSERTE(Callbacks[slot] == 0 || Callbacks[slot] == callback || callback == 0);
     Callbacks[slot] = callback;
 }
 
@@ -180,8 +169,17 @@ VOID STDMETHODCALLTYPE UtilExecutionEngine::TLS_ThreadDetaching()
             if (Callbacks[i] != 0 && pTlsData[i] != 0)
                 (*Callbacks[i])(pTlsData[i]);
         }
-        ::HeapFree (GetProcessHeap(),0,pTlsData);
 
+#ifdef ENABLE_CONTRACTS_IMPL
+        if (t_pClrDebugState != NULL)
+        {
+            void* pData = t_pClrDebugState;
+            t_pClrDebugState = 0;
+            FreeClrDebugState(pData);
+        }
+#endif // ENABLE_CONTRACTS_IMPL
+
+        ::HeapFree (GetProcessHeap(),0,pTlsData);
     }
 }
 
