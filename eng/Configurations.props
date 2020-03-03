@@ -17,15 +17,15 @@
       Note that some of these intrinsic functions are implemented using RuntimeInformation:
       https://github.com/Microsoft/msbuild/blob/3a9d1d2ae23e41b32a612ea6b0dce531fcf86be7/src/Build/Evaluation/IntrinsicFunctions.cs#L431
     -->
-    <__BuildOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">OSX</__BuildOS>
-    <__BuildOS Condition="'$(__BuildOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</__BuildOS>
-    <__BuildOS Condition="'$(__BuildOS)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</__BuildOS>
-    <__BuildOS Condition="'$(__BuildOS)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</__BuildOS>
-    <__BuildOS Condition="'$(__BuildOS)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">Windows_NT</__BuildOS>
+    <__TargetOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">OSX</__TargetOS>
+    <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</__TargetOS>
+    <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</__TargetOS>
+    <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</__TargetOS>
+    <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">Windows_NT</__TargetOS>
   </PropertyGroup>
 
   <PropertyGroup>
-    <BuildOS Condition="'$(BuildOS)' == ''">$(__BuildOS)</BuildOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">$(__TargetOS)</TargetOS>
   </PropertyGroup>
 
 </Project>

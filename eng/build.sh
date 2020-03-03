@@ -103,7 +103,7 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
      -os)
-      arguments="$arguments /p:BuildOS=$2"
+      arguments="$arguments /p:TargetOS=$2"
       shift 2
       ;;
      -allconfigurations)

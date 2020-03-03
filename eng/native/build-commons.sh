@@ -11,7 +11,7 @@ initTargetDistroRid()
         passedRootfsDir="$ROOTFS_DIR"
     fi
 
-    initDistroRidGlobal "$__BuildOS" "$__BuildArch" "$__PortableBuild" "$passedRootfsDir"
+    initDistroRidGlobal "$__TargetOS" "$__BuildArch" "$__PortableBuild" "$passedRootfsDir"
 }
 
 isMSBuildOnNETCoreSupported()
@@ -73,7 +73,7 @@ build_native()
     message="$5"
 
     # All set to commence the build
-    echo "Commencing build of \"$message\" for $__BuildOS.$__BuildArch.$__BuildType in $intermediatesDir"
+    echo "Commencing build of \"$message\" for $__TargetOS.$__BuildArch.$__BuildType in $intermediatesDir"
 
     if [[ "$__UseNinja" == 1 ]]; then
         generator="ninja"
@@ -244,38 +244,38 @@ esac
 OSName=$(uname -s)
 case "$OSName" in
     Darwin)
-        __BuildOS=OSX
+        __TargetOS=OSX
         __HostOS=OSX
         ;;
 
     FreeBSD)
-        __BuildOS=FreeBSD
+        __TargetOS=FreeBSD
         __HostOS=FreeBSD
         ;;
 
     Linux)
-        __BuildOS=Linux
+        __TargetOS=Linux
         __HostOS=Linux
         ;;
 
     NetBSD)
-        __BuildOS=NetBSD
+        __TargetOS=NetBSD
         __HostOS=NetBSD
         ;;
 
     OpenBSD)
-        __BuildOS=OpenBSD
+        __TargetOS=OpenBSD
         __HostOS=OpenBSD
         ;;
 
     SunOS)
-        __BuildOS=SunOS
+        __TargetOS=SunOS
         __HostOS=SunOS
         ;;
 
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        __BuildOS=Linux
+        __TargetOS=Linux
         __HostOS=Linux
         ;;
 esac
@@ -456,7 +456,7 @@ else
   __NumProc=$(nproc --all)
 fi
 
-__CommonMSBuildArgs="/p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__BuildOS=$__BuildOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
+__CommonMSBuildArgs="/p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
 
 # Configure environment if we are doing a verbose build
 if [[ "$__VerboseBuild" == 1 ]]; then

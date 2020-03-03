@@ -78,7 +78,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ExeSuffix Condition="'$(BuildOS)' == 'Windows_NT'">.exe</ExeSuffix>
+    <ExeSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.exe</ExeSuffix>
   </PropertyGroup>
 
   <Import Project="$(HostMachineInfoProps)"
@@ -90,10 +90,10 @@
 
   <!-- Portable -->
   <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
-    <OutputRid Condition="'$(BuildOS)' == 'Windows_NT'">win-$(TargetArchitecture)</OutputRid>
-    <OutputRid Condition="'$(BuildOS)' == 'OSX'">osx-$(TargetArchitecture)</OutputRid>
-    <OutputRid Condition="'$(BuildOS)' == 'Linux' or '$(BuildOS)' == 'Unix'">linux-$(TargetArchitecture)</OutputRid>
-    <OutputRid Condition="'$(BuildOS)' == 'FreeBSD' or $([MSBuild]::IsOSPlatform('FREEBSD'))">freebsd-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(TargetOS)' == 'Windows_NT'">win-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Unix'">linux-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(TargetOS)' == 'FreeBSD' or $([MSBuild]::IsOSPlatform('FREEBSD'))">freebsd-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -128,7 +128,7 @@
   <PropertyGroup>
     <DisableCrossgen>false</DisableCrossgen>
     <!-- Disable cross-gen on FreeBSD for now. This can be revisited when we have full support. -->
-    <DisableCrossgen Condition="'$(BuildOS)'=='FreeBSD'">true</DisableCrossgen>
+    <DisableCrossgen Condition="'$(TargetOS)'=='FreeBSD'">true</DisableCrossgen>
     <OutputVersionBadge>$(AssetOutputPath)sharedfx_$(OutputRid)_$(Configuration)_version_badge.svg</OutputVersionBadge>
   </PropertyGroup>
 
@@ -146,10 +146,10 @@
 
     <!-- OSX specific intermediate package suffix . OSX specific intermediate packages are suffixed with -internal to avoid name collision for bundle package (dotnet-runtime-*)
          and runtime ( earlier as dotnet-sharedframework-*)	-->
-    <InstallerStartSuffix Condition="'$(BuildOS)' == 'OSX'">internal</InstallerStartSuffix>
-    <SharedHostInstallerStart Condition="'$(BuildOS)' == 'OSX'">$(SharedHostInstallerStart)$(InstallerStartSuffix)-</SharedHostInstallerStart>
-    <HostFxrInstallerStart Condition="'$(BuildOS)' == 'OSX'">$(HostFxrInstallerStart)$(InstallerStartSuffix)-</HostFxrInstallerStart>
-    <SharedFrameworkInstallerStart Condition="'$(BuildOS)' == 'OSX'">$(SharedFrameworkInstallerStart)$(InstallerStartSuffix)-</SharedFrameworkInstallerStart>
+    <InstallerStartSuffix Condition="'$(TargetOS)' == 'OSX'">internal</InstallerStartSuffix>
+    <SharedHostInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(SharedHostInstallerStart)$(InstallerStartSuffix)-</SharedHostInstallerStart>
+    <HostFxrInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(HostFxrInstallerStart)$(InstallerStartSuffix)-</HostFxrInstallerStart>
+    <SharedFrameworkInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(SharedFrameworkInstallerStart)$(InstallerStartSuffix)-</SharedFrameworkInstallerStart>
 
   </PropertyGroup>
 
@@ -272,14 +272,14 @@
   </Choose>
 
   <PropertyGroup>
-    <CompressedFileExtension Condition="'$(BuildOS)' == 'Windows_NT'">.zip</CompressedFileExtension>
-    <CompressedFileExtension Condition="'$(BuildOS)' != 'Windows_NT'">.tar.gz</CompressedFileExtension>
-    <InstallerExtension Condition="'$(BuildOS)' == 'Windows_NT'">.msi</InstallerExtension>
-    <InstallerExtension Condition="'$(BuildOS)' == 'OSX'">.pkg</InstallerExtension>
+    <CompressedFileExtension Condition="'$(TargetOS)' == 'Windows_NT'">.zip</CompressedFileExtension>
+    <CompressedFileExtension Condition="'$(TargetOS)' != 'Windows_NT'">.tar.gz</CompressedFileExtension>
+    <InstallerExtension Condition="'$(TargetOS)' == 'Windows_NT'">.msi</InstallerExtension>
+    <InstallerExtension Condition="'$(TargetOS)' == 'OSX'">.pkg</InstallerExtension>
     <InstallerExtension Condition="'$(TargetsDebian)' == 'true' or '$(TargetsUbuntu)' == 'true' or '$(TargetsLinuxMint)' == 'true' or '$(HostMachineRidTargetsDebianPackages)' == 'true'">.deb</InstallerExtension>
     <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true' or '$(TargetsOpensuse)' == 'true' or '$(TargetsFedora)' == 'true' or '$(TargetsOracle)' == 'true' or '$(TargetsSles)' == 'true' or '$(HostMachineRidTargetsRpmPackages)' == 'true'">.rpm</InstallerExtension>
-    <CombinedInstallerExtension Condition="'$(BuildOS)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
-    <CombinedInstallerExtension Condition="'$(BuildOS)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>
+    <CombinedInstallerExtension Condition="'$(TargetOS)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
+    <CombinedInstallerExtension Condition="'$(TargetOS)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>
   </PropertyGroup>
 
   <!-- Use actual publishable (non-dummy) package name produced by the build system for this RID -->
@@ -316,20 +316,20 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <LibPrefix Condition="'$(BuildOS)' != 'Windows_NT'">lib</LibPrefix>
+    <LibPrefix Condition="'$(TargetOS)' != 'Windows_NT'">lib</LibPrefix>
     <LibSuffix>.so</LibSuffix>
-    <LibSuffix Condition="'$(BuildOS)' == 'Windows_NT'">.dll</LibSuffix>
-    <LibSuffix Condition="'$(BuildOS)' == 'OSX'">.dylib</LibSuffix>
+    <LibSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.dll</LibSuffix>
+    <LibSuffix Condition="'$(TargetOS)' == 'OSX'">.dylib</LibSuffix>
     <StaticLibPrefix>lib</StaticLibPrefix>
     <StaticLibSuffix>.a</StaticLibSuffix>
-    <StaticLibSuffix Condition="'$(BuildOS)' == 'Windows_NT'">.lib</StaticLibSuffix>
+    <StaticLibSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.lib</StaticLibSuffix>
   </PropertyGroup>
 
   <PropertyGroup>
     <CrossGenSymbolExtension>.map</CrossGenSymbolExtension>
-    <CrossGenSymbolExtension Condition="'$(BuildOS)' == 'Windows_NT'">.ni.pdb</CrossGenSymbolExtension>
+    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'Windows_NT'">.ni.pdb</CrossGenSymbolExtension>
     <!-- OSX doesn't have crossgen symbols, yet -->
-    <CrossGenSymbolExtension Condition="'$(BuildOS)' == 'OSX'"></CrossGenSymbolExtension>
+    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'OSX'"></CrossGenSymbolExtension>
   </PropertyGroup>
 
 </Project>

@@ -21,7 +21,7 @@ initDistroRid()
         passedRootfsDir=${ROOTFS_DIR}
     fi
 
-    initDistroRidGlobal ${__BuildOS} ${__BuildArch} ${__IsPortableBuild} ${passedRootfsDir}
+    initDistroRidGlobal ${__TargetOS} ${__BuildArch} ${__IsPortableBuild} ${passedRootfsDir}
 }
 
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -34,38 +34,38 @@ __CrossBuild=0
 OSName=$(uname -s)
 case $OSName in
     Linux)
-        __BuildOS=Linux
+        __TargetOS=Linux
         __HostOS=Linux
         ;;
 
     Darwin)
-        __BuildOS=OSX
+        __TargetOS=OSX
         __HostOS=OSX
         ;;
 
     FreeBSD)
-        __BuildOS=FreeBSD
+        __TargetOS=FreeBSD
         __HostOS=FreeBSD
         ;;
 
     OpenBSD)
-        __BuildOS=OpenBSD
+        __TargetOS=OpenBSD
         __HostOS=OpenBSD
         ;;
 
     NetBSD)
-        __BuildOS=NetBSD
+        __TargetOS=NetBSD
         __HostOS=NetBSD
         ;;
 
     SunOS)
-        __BuildOS=SunOS
+        __TargetOS=SunOS
         __HostOS=SunOS
         ;;
 
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        __BuildOS=Linux
+        __TargetOS=Linux
         __HostOS=Linux
         ;;
 esac
@@ -129,7 +129,7 @@ fi
 logFile=$__RepoRootDir/artifacts/log/build-packages.binlog
 $__RepoRootDir/eng/common/build.sh -r -b -projects $__ProjectRoot/src/.nuget/packages.builds \
                                    -verbosity minimal -bl:$logFile \
-                                   /p:__BuildOS=$__BuildOS \
+                                   /p:__TargetOS=$__TargetOS \
                                    /p:PortableBuild=true /p:__DistroRid=$__DistroRid \
                                    $buildArgs $unprocessedBuildArgs
 if [ $? -ne 0 ]

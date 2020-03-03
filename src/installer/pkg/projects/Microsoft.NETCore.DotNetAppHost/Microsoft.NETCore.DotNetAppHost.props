@@ -3,6 +3,6 @@
 
   <Import
     Condition="'$(PackageTargetRuntime)' != ''"
-    Project="$(MSBuildThisFileDirectory)runtime.$(BuildOS).$(MSBuildThisFile)" />
+    Project="$(MSBuildThisFileDirectory)runtime.$(TargetOS).$(MSBuildThisFile)" />
 
 </Project>

@@ -10,7 +10,7 @@ set __ThisScriptDir="%~dp0"
 :: Set the default arguments
 set __BuildArch=x64
 set __BuildType=Debug
-set __BuildOS=Windows_NT
+set __TargetOS=Windows_NT
 
 set "__ProjectDir=%~dp0"
 :: remove trailing slash
@@ -108,8 +108,8 @@ if defined __TestEnv (if not exist %__TestEnv% echo %__MsgPrefix%Error: Test Env
 :: Set the remaining variables based upon the determined configuration
 set __MSBuildBuildArch=%__BuildArch%
 
-set "__BinDir=%__RootBinDir%\bin\coreclr\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__TestWorkingDir=%__RootBinDir%\tests\coreclr\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
+set "__TestWorkingDir=%__RootBinDir%\tests\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
 
 :: Default global test environment variables
 :: REVIEW: are these ever expected to be defined on entry to this script? Why? By whom?
@@ -208,8 +208,8 @@ REM Set up the directory for MSBuild debug logs.
 set MSBUILDDEBUGPATH=%__MsbuildDebugLogsDir%
 
 REM These log files are created automatically by the test run process. Q: what do they depend on being set?
-set __TestRunHtmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.html
-set __TestRunXmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.xml
+set __TestRunHtmlLog=%__LogsDir%\TestRun_%__TargetOS%__%__BuildArch%__%__BuildType%.html
+set __TestRunXmlLog=%__LogsDir%\TestRun_%__TargetOS%__%__BuildArch%__%__BuildType%.xml
 
 REM Prepare the Test Drop
 
@@ -377,9 +377,9 @@ REM ============================================================================
 
 echo %__MsgPrefix%Invoking msbuild
 
-set "__BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-set "__BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-set "__BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+set "__BuildLog=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.log"
+set "__BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn"
+set "__BuildErr=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.err"
 
 set __msbuildLogArgs=^
 /fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%";Append ^

@@ -26,7 +26,7 @@ if defined VS160COMNTOOLS (
 :: Set the default arguments for build
 set __BuildArch=x64
 set __BuildType=Debug
-set __BuildOS=Windows_NT
+set __TargetOS=Windows_NT
 
 set "__ProjectDir=%~dp0"
 :: remove trailing slash
@@ -137,21 +137,21 @@ if "%__TargetsWindows%"=="1" (
 
 @if defined _echo @echo on
 
-set __CommonMSBuildArgs=/p:__BuildOS=%__BuildOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch%
-set __msbuildArgs=/p:__BuildOS=%__BuildOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch% /nologo /verbosity:minimal /clp:Summary /maxcpucount
+set __CommonMSBuildArgs=/p:__TargetOS=%__TargetOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch%
+set __msbuildArgs=/p:__TargetOS=%__TargetOS% /p:__BuildType=%__BuildType% /p:__BuildArch=%__BuildArch% /nologo /verbosity:minimal /clp:Summary /maxcpucount
 
 echo %__MsgPrefix%Commencing CoreCLR test build
 
-set "__BinDir=%__RootBinDir%\bin\coreclr\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
 set "__TestRootDir=%__RootBinDir%\tests\coreclr"
-set "__TestBinDir=%__TestRootDir%\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__TestBinDir=%__TestRootDir%\%__TargetOS%.%__BuildArch%.%__BuildType%"
 
 REM We have different managed and native intermediate dirs because the managed bits will include
 REM the configuration information deeper in the intermediates path.
 REM These variables are used by the msbuild project files.
 
 if not defined __TestIntermediateDir (
-    set "__TestIntermediateDir=tests\coreclr\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
+    set "__TestIntermediateDir=tests\coreclr\obj\%__TargetOS%.%__BuildArch%.%__BuildType%"
 )
 set "__NativeTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDir%\Native"
 set "__ManagedTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDir%\Managed"
@@ -251,9 +251,9 @@ if not exist "%__NativeTestIntermediatesDir%\CMakeCache.txt" (
 )
 
 set __BuildLogRootName=Tests_Native
-set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.log"
+set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn"
+set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.err"
 set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
 set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
 set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
@@ -283,9 +283,9 @@ if not defined XunitTestBinBase set XunitTestBinBase=%__TestBinDir%\
 set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
 
 set __BuildLogRootName=Restore_Product
-set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
-set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
-set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
+set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.log
+set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn
+set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.err
 set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
 set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
@@ -325,9 +325,9 @@ if not defined VSINSTALLDIR (
 )
 set __AppendToLog=false
 set __BuildLogRootName=Tests_Managed
-set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
-set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
-set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
+set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.log
+set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn
+set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.err
 
 REM Execute msbuild test build in stages - workaround for excessive data retention in MSBuild ConfigCache
 REM See https://github.com/Microsoft/msbuild/issues/2993
@@ -450,9 +450,9 @@ if defined __RuntimeId (
 )
 
 set __BuildLogRootName=Tests_Overlay_Managed
-set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
-set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
-set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
+set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.log
+set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn
+set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.err
 set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
 set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
@@ -485,9 +485,9 @@ if defined __SkipManaged goto SkipBuildingWrappers
 echo %__MsgPrefix%Creating test wrappers
 
 set __BuildLogRootName=Tests_XunitWrapper
-set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
-set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
-set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
+set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.log
+set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn
+set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__TargetOS%__%__BuildArch%__%__BuildType%.err
 set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
 set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
@@ -503,7 +503,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo { "build_os": "%__BuildOS%", "build_arch": "%__BuildArch%", "build_type": "%__BuildType%" } > "%__TestBinDir%/build_info.json"
+echo { "build_os": "%__TargetOS%", "build_arch": "%__BuildArch%", "build_type": "%__BuildType%" } > "%__TestBinDir%/build_info.json"
 
 :SkipBuildingWrappers
 
