@@ -49,12 +49,7 @@ public class Program
             NegativeTest_InstantiatedGenericArguments();
             NegativeTest_FromInstantiatedGenericClass();
             TestNativeCallableViaUnmanagedCalli();
-
-            // Exception handling is only supported on Windows.
-            if (TestLibrary.Utilities.IsWindows)
-            {
-                TestNativeCallableViaUnmanagedCalli_ThrowException();
-            }
+            TestNativeCallableViaUnmanagedCalli_ThrowException();
 
             if (args.Length != 0 && args[0].Equals("calli"))
             {
