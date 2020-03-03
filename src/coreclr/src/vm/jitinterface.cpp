@@ -8007,7 +8007,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         if (CORProfilerEnableRejit())
         {
             CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
-            CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
             ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
             if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
             {
@@ -8220,7 +8220,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
             // If we end up reporting an inlining on a method with non-default IL it means the race
             // happened and we need to manually request ReJIT for it since it was missed.
             CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
-            CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
             ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
             if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
             {
@@ -14009,7 +14009,7 @@ NativeCodeVersion EECodeInfo::GetNativeCodeVersion()
     if (pMD->IsVersionable())
     {
         CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
-        CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
         return pCodeVersionManager->GetNativeCodeVersion(pMD, PINSTRToPCODE(GetStartAddress()));
     }
 #endif
