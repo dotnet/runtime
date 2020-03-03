@@ -20,6 +20,7 @@ namespace System.Runtime.Intrinsics
         where T : struct
     {
         public static Vector128<T> Zero => throw new PlatformNotSupportedException();
+        public static int Count => throw new PlatformNotSupportedException();
     }
 }
 
@@ -65,7 +66,11 @@ namespace System.Runtime.Intrinsics.X86
             public static ulong ConvertToUInt64(Vector128<ulong> value) => throw new PlatformNotSupportedException();
         }
         public static bool IsSupported { get; } = false;
+        public static Vector128<ushort> Add(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
         public static Vector128<ushort> AddSaturate(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
+        public static Vector128<ushort> AndNot(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
+        public static Vector128<short> CompareGreaterThan(Vector128<short> left, Vector128<short> right) => throw new PlatformNotSupportedException();
+        public static Vector128<short> CompareLessThan(Vector128<short> left, Vector128<short> right) => throw new PlatformNotSupportedException();
         public static Vector128<uint> ConvertScalarToVector128UInt32(uint value) => throw new PlatformNotSupportedException();
         public static uint ConvertToUInt32(Vector128<uint> value) => throw new PlatformNotSupportedException();
         public static unsafe Vector128<byte> LoadAlignedVector128(byte* address) => throw new PlatformNotSupportedException();
@@ -77,9 +82,11 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<short> Or(Vector128<short> left, Vector128<short> right) => throw new PlatformNotSupportedException();
         public static Vector128<ushort> Or(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
         public static Vector128<byte> PackUnsignedSaturate(Vector128<short> left, Vector128<short> right) => throw new PlatformNotSupportedException();
+        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, byte count) => throw new PlatformNotSupportedException();
         public static unsafe void Store(byte* address, Vector128<byte> source) => throw new PlatformNotSupportedException();
         public static unsafe void StoreAligned(byte* address, Vector128<byte> source) => throw new PlatformNotSupportedException();
         public static unsafe void StoreScalar(ulong* address, Vector128<ulong> source) => throw new PlatformNotSupportedException();
+        public static Vector128<ushort> Subtract(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
         public static Vector128<byte> UnpackHigh(Vector128<byte> left, Vector128<byte> right) => throw new PlatformNotSupportedException();
         public static Vector128<byte> UnpackLow(Vector128<byte> left, Vector128<byte> right) => throw new PlatformNotSupportedException();
     }
@@ -91,6 +98,7 @@ namespace System.Runtime.Intrinsics.X86
             public static bool IsSupported { get; } = false;
         }
         public static bool IsSupported { get; } = false;
+        public static Vector128<ushort> Min(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
         public static bool TestZ(Vector128<short> left, Vector128<short> right) => throw new PlatformNotSupportedException();
         public static bool TestZ(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
     }

@@ -13,15 +13,17 @@ namespace System
 {
     public sealed partial class Utf8String
     {
-#if CORECLR // TODO: eerhardt
         private const int MAX_STACK_TRANSCODE_CHAR_COUNT = 128;
 
         // For values beyond U+FFFF, it's 4 UTF-8 bytes per 2 UTF-16 chars (2:1 ratio)
         private const int MAX_UTF8_BYTES_PER_UTF16_CHAR = 3;
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 #endif
 >>>>>>> Get Utf8String building on netstandard2.0
+=======
+>>>>>>> Build Utf8String Comparison and Enumeration for netstandard.
 
         /*
          * STATIC FACTORIES
@@ -74,7 +76,6 @@ namespace System
             }
         }
 
-#if CORECLR // TODO: eerhardt
         /// <summary>
         /// Creates a <see cref="Utf8String"/> instance from existing UTF-16 data, transcoding the
         /// existing data to UTF-8 upon creation.
@@ -100,7 +101,6 @@ namespace System
             value = CreateFromUtf16Common(buffer, replaceInvalidSequences: false);
             return !(value is null);
         }
-#endif
 
         /// <summary>
         /// Creates a <see cref="Utf8String"/> instance from existing UTF-8 data.
@@ -133,7 +133,6 @@ namespace System
             return Utf8Utility.ValidateAndFixupUtf8String(newString);
         }
 
-#if CORECLR // TODO: eerhardt
         /// <summary>
         /// Creates a <see cref="Utf8String"/> instance from existing UTF-16 data.
         /// </summary>
@@ -161,7 +160,6 @@ namespace System
 
             return newString;
         }
-#endif
 
         internal static Utf8String CreateFromRune(Rune value)
         {
@@ -186,7 +184,6 @@ namespace System
             }
         }
 
-#if CORECLR // TODO: eerhardt
         // Returns 'null' if the input buffer does not represent well-formed UTF-16 data and 'replaceInvalidSequences' is false.
         private static Utf8String? CreateFromUtf16Common(ReadOnlySpan<char> value, bool replaceInvalidSequences)
         {
@@ -273,7 +270,6 @@ namespace System
 
             return newString;
         }
-#endif
 
         /// <summary>
         /// Creates a new <see cref="Utf8String"/> instance populated with a copy of the provided contents.

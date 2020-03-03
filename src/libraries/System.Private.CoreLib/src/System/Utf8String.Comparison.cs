@@ -58,7 +58,11 @@ namespace System
                 return false;
             }
 
-            return AreEquivalentOrdinalSkipShortCircuitingChecks(utf8Text.AsBytes(), utf16Text);
+            return AreEquivalentOrdinalSkipShortCircuitingChecks(utf8Text.AsBytes(), utf16Text
+#if NETSTANDARD
+                .AsSpan()
+#endif
+                );
         }
 
         /// <summary>
@@ -172,9 +176,14 @@ namespace System
             Span<byte> runeBytes = stackalloc byte[Utf8Utility.MaxBytesPerScalar];
             int runeBytesWritten = value.EncodeToUtf8(runeBytes);
 
+#if SYSTEM_PRIVATE_CORELIB
             return SpanHelpers.IndexOf(
                 ref DangerousGetMutableReference(), Length,
                 ref MemoryMarshal.GetReference(runeBytes), runeBytesWritten) >= 0;
+#else
+            return DangerousGetMutableSpan()
+                .IndexOf(runeBytes.Slice(0, runeBytesWritten)) >= 0;
+#endif
         }
 
         /// <summary>
@@ -185,7 +194,11 @@ namespace System
         {
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
+#if SYSTEM_PRIVATE_CORELIB || NETCOREAPP
             return ToString().Contains(value.ToString(), comparison);
+#else
+            return ToString().IndexOf(value.ToString(), comparison) >= 0;
+#endif
         }
 
         /// <summary>
@@ -215,7 +228,11 @@ namespace System
 
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
+#if SYSTEM_PRIVATE_CORELIB || NETCOREAPP
             return ToString().Contains(value.ToString(), comparison);
+#else
+            return ToString().IndexOf(value.ToString(), comparison) >= 0;
+#endif
         }
 
         /// <summary>

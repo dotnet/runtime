@@ -95,7 +95,7 @@ namespace System.Text
 #if SYSTEM_PRIVATE_CORELIB || NETCOREAPP
             return this.ToString().Contains(value.ToString(), comparison);
 #else
-            return this.ToString().IndexOf(value.ToString(), comparison) != -1;
+            return this.ToString().IndexOf(value.ToString(), comparison) >= 0;
 #endif
         }
 

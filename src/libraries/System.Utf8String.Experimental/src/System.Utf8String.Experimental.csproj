@@ -28,6 +28,9 @@
     <Compile Include="$(CommonPath)System\Marvin.cs">
       <Link>Common\System\Marvin.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Char8.cs">
       <Link>System\Char8.cs</Link>
     </Compile>
@@ -39,6 +42,9 @@
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf16Utility.cs">
       <Link>System\Text\Unicode\Utf16Utility.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf16Utility.Validation.cs">
+      <Link>System\Text\Unicode\Utf16Utility.Validation.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\Rune.cs">
       <Link>System\Text\Rune.cs</Link>
@@ -87,19 +93,19 @@
     <Compile Include="$(CoreLibSharedDir)\System\Utf8String.cs">
       <Link>System\Utf8String.cs</Link>
     </Compile>
-    <!--<Compile Include="$(CoreLibSharedDir)\System\Utf8String.Comparison.cs">
+    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Comparison.cs">
       <Link>System\Utf8String.Comparison.cs</Link>
-    </Compile>-->
+    </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Construction.cs">
       <Link>System\Utf8String.Construction.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Conversion.cs">
       <Link>System\Utf8String.Conversion.cs</Link>
     </Compile>
-    <!--<Compile Include="$(CoreLibSharedDir)\System\Utf8String.Enumeration.cs">
+    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Enumeration.cs">
       <Link>System\Utf8String.Enumeration.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Manipulation.cs">
+    <!--<Compile Include="$(CoreLibSharedDir)\System\Utf8String.Manipulation.cs">
       <Link>System\Utf8String.Manipulation.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Searching.cs">
