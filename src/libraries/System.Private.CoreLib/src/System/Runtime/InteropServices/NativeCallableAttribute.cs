@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
         public CallingConvention CallingConvention;
 
         /// <summary>
-        /// Optional. If omitted, then the method is native callable, but no export is emitted during AOT compilation.
+        /// Optional. If omitted, then the method is native callable, but no export is emitted during compilation.
         /// </summary>
         public string? EntryPoint;
     }
