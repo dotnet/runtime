@@ -283,7 +283,7 @@ namespace ComWrappersTests
             Assert.AreEqual(hr, 0);
             var nativeWrapper = new ITrackerObjectWrapper(iTestComObject);
 
-            // Request wrapper, but supply the wrapper.
+            // Register wrapper, but supply the wrapper.
             var nativeWrapper2 = (ITrackerObjectWrapper)cw.GetOrRegisterObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject, nativeWrapper);
             Assert.AreEqual(nativeWrapper, nativeWrapper2);
 
@@ -298,6 +298,13 @@ namespace ComWrappersTests
                     cw.GetOrRegisterObjectForComInstance(trackerObjRaw2, CreateObjectFlags.None, nativeWrapper2);
                 });
             Marshal.Release(trackerObjRaw2);
+
+            // Validate passing null wrapper fails.
+            Assert.Throws<ArgumentNullException>(
+                () =>
+                {
+                    cw.GetOrRegisterObjectForComInstance(trackerObjRaw, CreateObjectFlags.None, null);
+                });
         }
 
         static void ValidateIUnknownImpls()
