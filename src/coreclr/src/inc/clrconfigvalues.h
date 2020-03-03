@@ -438,7 +438,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterFallback, W("InterpreterFallback"),
 ///
 /// Loader
 ///
-CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_APIThreadStress, W("APIThreadStress"), "Used to test Loader for race conditions")
 RETAIL_CONFIG_STRING_INFO(INTERNAL_WinMDPath, W("WinMDPath"), "Path for Windows WinMD files")
 
 ///

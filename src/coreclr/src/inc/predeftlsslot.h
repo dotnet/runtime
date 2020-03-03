@@ -29,7 +29,7 @@ enum PredefinedTlsSlots
     TlsIdx_Check,
     TlsIdx_ForbidGCLoaderUseCount,
     TlsIdx_ClrDebugState,         // Pointer to ClrDebugState* structure
-    TlsIdx_StressThread,
+    TlsIdx_Unused10,
 
     // Add more indices here.
     TlsIdx_ThreadType, // bit flags to indicate special thread's type

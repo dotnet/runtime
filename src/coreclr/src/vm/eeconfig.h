@@ -334,7 +334,6 @@ public:
 
 #ifdef _DEBUG
     bool GenDebuggableCode(void)                    const {LIMITED_METHOD_CONTRACT;  return fDebuggable; }
-    int GetAPIThreadStressCount(void)               const {LIMITED_METHOD_CONTRACT;  return apiThreadStressCount; }
 
     bool ShouldExposeExceptionsInCOMToConsole()     const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 1) != 0; }
     bool ShouldExposeExceptionsInCOMToMsgBox()      const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 2) != 0; }
@@ -819,7 +818,6 @@ private: //----------------------------------------------------------------
     static bool IsInMethList(MethodNamesList* list, MethodDesc* pMD);
 
     bool fDebuggable;
-    int apiThreadStressCount;
 
     MethodNamesList* pPrestubHalt;      // list of methods on which to break when hit prestub
     MethodNamesList* pPrestubGC;        // list of methods on which to cause a GC when hit prestub
