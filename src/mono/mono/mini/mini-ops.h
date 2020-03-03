@@ -1440,8 +1440,17 @@ MINI_OP(OP_XEQUAL, "xequal", IREG, XREG, XREG)
 /* Per element compate, inst_c0 contains a CompRelation */
 MINI_OP(OP_XCOMPARE, "xcompare", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_FP, "xcompare_fp", XREG, XREG, XREG)
+
+/*
+ * Generic SIMD operations, the rest of the JIT doesn't care about the exact operation.
+ */
 /* Binary op, inst_c0 contains the operation */
 MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
+/* inst_c0 contains a SimdOp, inst_c1 might contain additional data */
+MINI_OP(OP_XOP_I4_X, "xop_i4_x", IREG, XREG, NONE)
+MINI_OP(OP_XOP_I8_X, "xop_i8_x", LREG, XREG, NONE)
+MINI_OP(OP_XOP_X_X_I8, "xop_x_x_i8", XREG, XREG, LREG)
+
 MINI_OP(OP_XCAST, "xcast", XREG, XREG, NONE)
 /* Extract element of vector */
 /* The index is assumed to be in range */

@@ -2881,6 +2881,21 @@ enum {
 	SIMD_PREFETCH_MODE_2,
 };
 
+/* SIMD operations */
+typedef enum {
+	SIMD_OP_SSE_CVTSS2SI,
+	SIMD_OP_SSE_CVTTSS2SI,
+	SIMD_OP_SSE_CVTSS2SI64,
+	SIMD_OP_SSE_CVTTSS2SI64,
+	SIMD_OP_SSE_CVTSD2SI,
+	SIMD_OP_SSE_CVTSD2SI64,
+	SIMD_OP_SSE_CVTTSD2SI64,
+	SIMD_OP_SSE_CVTSI2SS,
+	SIMD_OP_SSE_CVTSI2SS64,
+	SIMD_OP_SSE_CVTSI2SD,
+	SIMD_OP_SSE_CVTSI2SD64
+} SimdOp;
+
 const char *mono_arch_xregname (int reg);
 guint32     mono_arch_cpu_enumerate_simd_versions (void);
 MonoCPUFeatures mono_arch_get_cpu_features (void);

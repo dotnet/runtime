@@ -181,6 +181,9 @@ emit_simd_ins (MonoCompile *cfg, MonoClass *klass, int opcode, int sreg1, int sr
 	} else if (spec [MONO_INST_DEST] == 'i') {
 		ins->dreg = alloc_ireg (cfg);
 		ins->type = STACK_I4;
+	} else if (spec [MONO_INST_DEST] == 'l') {
+		ins->dreg = alloc_lreg (cfg);
+		ins->type = STACK_I8;
 	}
 	ins->sreg1 = sreg1;
 	ins->sreg2 = sreg2;
@@ -645,6 +648,11 @@ static guint16 sse_methods [] = {
 	SN_AndNot,
 	SN_CompareEqual,
 	SN_CompareNotEqual,
+	SN_ConvertScalarToVector128Single,
+	SN_ConvertToInt32,
+	SN_ConvertToInt32WithTruncation,
+	SN_ConvertToInt64,
+	SN_ConvertToInt64WithTruncation,
 	SN_Divide,
 	SN_LoadAlignedVector128,
 	SN_LoadVector128,
@@ -673,10 +681,13 @@ static guint16 sse2_methods [] = {
 	SN_CompareGreaterThan,
 	SN_CompareLessThan,
 	SN_CompareNotEqual,
+	SN_ConvertScalarToVector128Double,
 	SN_ConvertScalarToVector128Int32,
 	SN_ConvertScalarToVector128Int64,
 	SN_ConvertScalarToVector128UInt32,
 	SN_ConvertScalarToVector128UInt64,
+	SN_ConvertToInt64,
+	SN_ConvertToInt64WithTruncation,
 	SN_ConvertToUInt32,
 	SN_ConvertToUInt64,
 	SN_LoadAlignedVector128,
@@ -816,6 +827,22 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_STORE, 1 /*alignment*/, arg0_type, fsig, args);
 		case SN_StoreAligned:
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_STORE, 16 /*alignment*/, arg0_type, fsig, args);
+		case SN_ConvertToInt32:
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_I4_X, SIMD_OP_SSE_CVTSS2SI, 0, fsig, args);
+		case SN_ConvertToInt32WithTruncation:
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_I4_X, SIMD_OP_SSE_CVTTSS2SI, 0, fsig, args);
+		case SN_ConvertToInt64:
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_I8_X, SIMD_OP_SSE_CVTSS2SI64, 0, fsig, args);
+		case SN_ConvertToInt64WithTruncation:
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_I8_X, SIMD_OP_SSE_CVTTSS2SI64, 0, fsig, args);
+		case SN_ConvertScalarToVector128Single:
+			if (fsig->params [1]->type == MONO_TYPE_I4)
+				return NULL;
+			else if (fsig->params [1]->type == MONO_TYPE_I8)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I8, SIMD_OP_SSE_CVTSI2SS64, 0, fsig, args);
+			else
+				g_assert_not_reached ();
+			break;
 		default:
 			return NULL;
 		}
@@ -1360,7 +1387,8 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #ifdef TARGET_AMD64 // TODO: test and enable for x86 too
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86")) {
-		return emit_x86_intrinsics (cfg ,cmethod, fsig, args);
+		MonoInst *ins = emit_x86_intrinsics (cfg ,cmethod, fsig, args);
+		return ins;
 	}
 #endif
 

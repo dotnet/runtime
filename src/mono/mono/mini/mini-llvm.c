@@ -361,6 +361,17 @@ typedef enum {
 	INTRINS_SSE_CVTPS2DQ,
 	INTRINS_SSE_CVTPD2PS,
 	INTRINS_SSE_CVTPS2PD,
+	INTRINS_SSE_CVTSS2SI,
+	INTRINS_SSE_CVTSS2SI64,
+	INTRINS_SSE_CVTTSS2SI,
+	INTRINS_SSE_CVTTSS2SI64,
+	INTRINS_SSE_CVTSD2SI,
+	INTRINS_SSE_CVTSD2SI64,
+	INTRINS_SSE_CVTTSD2SI64,
+	INTRINS_SSE_CVTSI2SS,
+	INTRINS_SSE_CVTSI2SS64,
+	INTRINS_SSE_CVTSI2SD,
+	INTRINS_SSE_CVTSI2SD64,
 	INTRINS_SSE_CMPPD,
 	INTRINS_SSE_CMPPS,
 	INTRINS_SSE_PACKSSWB,
@@ -1382,6 +1393,12 @@ static LLVMValueRef
 convert (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype)
 {
 	return convert_full (ctx, v, dtype, FALSE);
+}
+
+static LLVMValueRef
+emit_intrins_call (EmitContext *ctx, int id, LLVMValueRef *args, int nargs, const char *name)
+{
+	return LLVMBuildCall (ctx->builder, get_intrins (ctx, id), args, nargs, name);
 }
 
 static void
@@ -7985,6 +8002,56 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			ctx->bblocks [bb->block_num].end_bblock = cbb;
 			break;
 		}
+		case OP_XOP_I4_X:
+		case OP_XOP_I8_X:
+		case OP_XOP_X_X_I8: {
+			switch (ins->inst_c0) {
+			case SIMD_OP_SSE_CVTSS2SI:
+				values [ins->dreg] = emit_intrins_call (ctx, INTRINS_SSE_CVTSS2SI, &lhs, 1, "");
+				break;
+			case SIMD_OP_SSE_CVTTSS2SI:
+				values [ins->dreg] = emit_intrins_call (ctx, INTRINS_SSE_CVTTSS2SI, &lhs, 1, "");
+				break;
+			case SIMD_OP_SSE_CVTSS2SI64:
+				values [ins->dreg] = emit_intrins_call (ctx, INTRINS_SSE_CVTSS2SI64, &lhs, 1, "");
+				break;
+			case SIMD_OP_SSE_CVTTSS2SI64:
+				values [ins->dreg] = emit_intrins_call (ctx, INTRINS_SSE_CVTTSS2SI64, &lhs, 1, "");
+				break;
+			case SIMD_OP_SSE_CVTSD2SI:
+				values [ins->dreg] = emit_intrins_call (ctx, INTRINS_SSE_CVTSD2SI, &lhs, 1, "");
+				break;
+			case SIMD_OP_SSE_CVTSD2SI64:
+				values [ins->dreg] = emit_intrins_call (ctx, INTRINS_SSE_CVTSD2SI64, &lhs, 1, "");
+				break;
+			case SIMD_OP_SSE_CVTTSD2SI64:
+				values [ins->dreg] = emit_intrins_call (ctx, INTRINS_SSE_CVTTSD2SI64, &lhs, 1, "");
+				break;
+			case SIMD_OP_SSE_CVTSI2SS: {
+				LLVMValueRef args [] = { lhs, rhs };
+				values [ins->dreg] = emit_intrins_call (ctx, INTRINS_SSE_CVTSI2SS, args, 2, "");
+				break;
+			}
+			case SIMD_OP_SSE_CVTSI2SS64: {
+				LLVMValueRef args [] = { lhs, rhs };
+				values [ins->dreg] = emit_intrins_call (ctx, INTRINS_SSE_CVTSI2SS64, args, 2, "");
+				break;
+			}
+			case SIMD_OP_SSE_CVTSI2SD: {
+				LLVMValueRef args [] = { lhs, rhs };
+				values [ins->dreg] = emit_intrins_call (ctx, INTRINS_SSE_CVTSI2SD, args, 2, "");
+				break;
+			}
+			case SIMD_OP_SSE_CVTSI2SD64: {
+				LLVMValueRef args [] = { lhs, rhs };
+				values [ins->dreg] = emit_intrins_call (ctx, INTRINS_SSE_CVTSI2SD64, args, 2, "");
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+			}
+			break;
+		}
 		case OP_POPCNT32:
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrins (ctx, INTRINS_CTPOP_I32), &lhs, 1, "");
 			break;
@@ -9408,6 +9475,17 @@ static IntrinsicDesc intrinsics[] = {
 	{INTRINS_SSE_CVTPS2DQ, "llvm.x86.sse2.cvtps2dq"},
 	{INTRINS_SSE_CVTPD2PS, "llvm.x86.sse2.cvtpd2ps"},
 	{INTRINS_SSE_CVTPS2PD, "llvm.x86.sse2.cvtps2pd"},
+	{INTRINS_SSE_CVTSS2SI, "llvm.x86.sse.cvtss2si"},
+	{INTRINS_SSE_CVTSS2SI64, "llvm.x86.sse.cvtss2si64"},
+	{INTRINS_SSE_CVTTSS2SI, "llvm.x86.sse.cvttss2si"},
+	{INTRINS_SSE_CVTTSS2SI64, "llvm.x86.sse.cvttss2si64"},
+	{INTRINS_SSE_CVTSD2SI, "llvm.x86.sse2.cvtsd2si"},
+	{INTRINS_SSE_CVTSD2SI64, "llvm.x86.sse2.cvtsd2si64"},
+	{INTRINS_SSE_CVTTSD2SI64, "llvm.x86.sse2.cvttsd2si64"},
+	{INTRINS_SSE_CVTSI2SS, "llvm.x86.sse.cvtsi2ss"},
+	{INTRINS_SSE_CVTSI2SS64, "llvm.x86.sse.cvtsi642ss"},
+	{INTRINS_SSE_CVTSI2SD, "llvm.x86.sse2.cvtsi2sd"},
+	{INTRINS_SSE_CVTSI2SD64, "llvm.x86.sse2.cvtsi642sd"},
 	{INTRINS_SSE_CMPPD, "llvm.x86.sse2.cmp.pd"},
 	{INTRINS_SSE_CMPPS, "llvm.x86.sse.cmp.ps"},
 	{INTRINS_SSE_PACKSSWB, "llvm.x86.sse2.packsswb.128"},
@@ -9723,6 +9801,33 @@ add_intrinsic (LLVMModuleRef module, int id)
 		ret_type = type_to_simd_type (MONO_TYPE_R8);
 		arg_types [0] = type_to_simd_type (MONO_TYPE_R4);
 		AddFunc (module, name, ret_type, arg_types, 1);
+		break;
+	case INTRINS_SSE_CVTSS2SI:
+	case INTRINS_SSE_CVTTSS2SI:
+		AddFunc1 (module, name, LLVMInt32Type (), type_to_simd_type (MONO_TYPE_R4));
+		break;
+	case INTRINS_SSE_CVTSD2SI:
+		AddFunc1 (module, name, LLVMInt32Type (), type_to_simd_type (MONO_TYPE_R8));
+		break;
+	case INTRINS_SSE_CVTSD2SI64:
+	case INTRINS_SSE_CVTTSD2SI64:
+		AddFunc1 (module, name, LLVMInt64Type (), type_to_simd_type (MONO_TYPE_R8));
+		break;
+	case INTRINS_SSE_CVTSS2SI64:
+	case INTRINS_SSE_CVTTSS2SI64:
+		AddFunc1 (module, name, LLVMInt64Type (), type_to_simd_type (MONO_TYPE_R4));
+		break;
+	case INTRINS_SSE_CVTSI2SS:
+		AddFunc2 (module, name, type_to_simd_type (MONO_TYPE_R4), type_to_simd_type (MONO_TYPE_R4), LLVMInt32Type ());
+		break;
+	case INTRINS_SSE_CVTSI2SS64:
+		AddFunc2 (module, name, type_to_simd_type (MONO_TYPE_R4), type_to_simd_type (MONO_TYPE_R4), LLVMInt64Type ());
+		break;
+	case INTRINS_SSE_CVTSI2SD:
+		AddFunc2 (module, name, type_to_simd_type (MONO_TYPE_R8), type_to_simd_type (MONO_TYPE_R8), LLVMInt32Type ());
+		break;
+	case INTRINS_SSE_CVTSI2SD64:
+		AddFunc2 (module, name, type_to_simd_type (MONO_TYPE_R8), type_to_simd_type (MONO_TYPE_R8), LLVMInt64Type ());
 		break;
 	case INTRINS_SSE_CMPPD:
 		/* cmp pd/ps */
