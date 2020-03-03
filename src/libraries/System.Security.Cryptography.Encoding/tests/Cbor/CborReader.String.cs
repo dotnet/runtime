@@ -28,13 +28,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             int length = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
             EnsureBuffer(1 + additionalBytes + length);
 
-            if (length > buffer.Length)
+            if (length > destination.Length)
             {
                 bytesWritten = 0;
                 return false;
             }
 
-            _buffer.Slice(1 + additionalBytes, length).CopyTo(buffer);
+            _buffer.Slice(1 + additionalBytes, length).CopyTo(destination);
             AdvanceBuffer(1 + additionalBytes + length);
 
             bytesWritten = length;
@@ -61,13 +61,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             ReadOnlySpan<byte> encodedSlice = _buffer.Slice(1 + additionalBytes, byteLength);
             int charLength = s_utf8Encoding.GetCharCount(encodedSlice);
-            if (charLength > buffer.Length)
+            if (charLength > destination.Length)
             {
                 charsWritten = 0;
                 return false;
             }
 
-            s_utf8Encoding.GetChars(encodedSlice, buffer);
+            s_utf8Encoding.GetChars(encodedSlice, destination);
             AdvanceBuffer(1 + additionalBytes + byteLength);
             charsWritten = charLength;
             return true;
