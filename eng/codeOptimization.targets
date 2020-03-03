@@ -11,7 +11,7 @@
           BeforeTargets="CoreCompile">
     <PropertyGroup>
       <IbcOptimizationDataDir Condition="'$(BuildOS)' == 'Unix' or '$(BuildOS)' == 'Linux'">$(IbcOptimizationDataDir)Linux\</IbcOptimizationDataDir>
-      <IbcOptimizationDataDir Condition="'$(BuildOS)' != 'Unix' and '$(BuildOS)' != 'Linux'">$(IbcOptimizationDataDir)Windows\</IbcOptimizationDataDir>
+      <IbcOptimizationDataDir Condition="'$(BuildOS)' == 'Windows_NT'">$(IbcOptimizationDataDir)Windows\</IbcOptimizationDataDir>
     </PropertyGroup>
     <ItemGroup>
       <_optimizationDataAssembly Include="$(IbcOptimizationDataDir)**\$(TargetFileName)" />

@@ -17,24 +17,7 @@
 
   <Import Project="$(RuntimePropsFile)" Condition="Exists('$(RuntimePropsFile)')"/>
 
-  <!-- Platform detection -->
-  <PropertyGroup>
-    <!--
-      Use MSBuild property functions for platform detection:
-      https://docs.microsoft.com/en-us/visualstudio/msbuild/property-functions?view=vs-2019#msbuild-property-functions
-      Note that some of these intrinsic functions are implemented using RuntimeInformation:
-      https://github.com/Microsoft/msbuild/blob/3a9d1d2ae23e41b32a612ea6b0dce531fcf86be7/src/Build/Evaluation/IntrinsicFunctions.cs#L431
-    -->
-    <DefaultOSGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">OSX</DefaultOSGroup>
-    <DefaultOSGroup Condition="'$(DefaultOSGroup)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</DefaultOSGroup>
-    <DefaultOSGroup Condition="'$(DefaultOSGroup)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</DefaultOSGroup>
-    <DefaultOSGroup Condition="'$(DefaultOSGroup)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</DefaultOSGroup>
-    <DefaultOSGroup Condition="'$(DefaultOSGroup)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">Windows_NT</DefaultOSGroup>
-  </PropertyGroup>
 
-  <PropertyGroup>
-    <BuildOS Condition="'$(BuildOS)' == ''">$(DefaultOSGroup)</BuildOS>
-  </PropertyGroup>
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" />
   
   <PropertyGroup>

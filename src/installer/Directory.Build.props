@@ -52,18 +52,7 @@
     <TargetArchitecture  Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)'==''">$(TargetArchitecture)</Platform>
   </PropertyGroup>
-  <!--
-  Projects that have no OS-specific implementations just use Debug and Release for $(Configuration).
-  Projects that do have OS-specific implementations use OS_Debug and OS_Release, for all OS's we support even
-  if the code is the same between some OS's (so if you have some project that just calls POSIX APIs, we still have
-  OSX_[Debug|Release] and Linux_[Debug|Release] configurations.  We do this so that we place all the output under
-  a single binary folder and can have a similar experience between the command line and Visual Studio.
-  -->
 
-  <PropertyGroup>
-    <BuildOS Condition="'$(OS)'=='Unix' AND Exists('/Applications')">OSX</BuildOS>
-    <BuildOS Condition="'$(BuildOS)' == ''">$(OS)</BuildOS>
-  </PropertyGroup>
 
   <PropertyGroup>
     <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
@@ -76,27 +65,17 @@
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
-  <Choose>
-    <When Condition="'$(Configuration)'=='Debug'">
-      <PropertyGroup>
-        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-        <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
-        <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(Configuration)' == 'Release'">
-      <PropertyGroup>
-        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-        <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
-        <DefineConstants>$(DefineConstants),TRACE</DefineConstants>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown Configuration [$(Configuration)] specificed in your project.</ConfigurationErrorMsg>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+    <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
+    <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+    <DefineConstants>$(DefineConstants),TRACE</DefineConstants>
+  </PropertyGroup>
 
   <PropertyGroup>
     <ExeSuffix Condition="'$(BuildOS)' == 'Windows_NT'">.exe</ExeSuffix>

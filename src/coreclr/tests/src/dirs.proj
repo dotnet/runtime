@@ -117,7 +117,7 @@
         <AdditionalProperties>BuildOS=$(BuildOS)</AdditionalProperties>
       </Project>
     </ItemGroup>
-  
+
   </Target>
 
   <Import Project="..\dir.traversal.targets" />

@@ -55,15 +55,6 @@
     <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
-  <!-- Expose the target OS in a more convenient fashion -->
-  <PropertyGroup>
-    <BuildOS Condition="'$(BuildOS)'=='' and $(OSPlatformConfig.StartsWith('Windows'))">Windows_NT</BuildOS>
-    <BuildOS Condition="'$(BuildOS)'=='' and $(OSPlatformConfig.StartsWith('Linux'))">Linux</BuildOS>
-    <BuildOS Condition="'$(BuildOS)'=='' and $(OSPlatformConfig.StartsWith('OSX'))">OSX</BuildOS>
-    <BuildOS Condition="'$(BuildOS)'=='' and $(OSPlatformConfig.StartsWith('FreeBSD'))">FreeBSD</BuildOS>
-    <BuildOS Condition="'$(BuildOS)'==''">AnyOS</BuildOS>
-  </PropertyGroup>
-
   <!-- Setup properties per BuildOS -->
   <Choose>
     <When Condition="'$(BuildOS)'=='AnyOS'">
@@ -100,11 +91,6 @@
         <TestNugetRuntimeId>ubuntu.14.04-$(__BuildArch)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
-    <Otherwise>
-      <PropertyGroup>
-        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown BuildOS [$(BuildOS)] specificed in your project.</ConfigurationErrorMsg>
-      </PropertyGroup>
-    </Otherwise>
   </Choose>
 
   <PropertyGroup>
