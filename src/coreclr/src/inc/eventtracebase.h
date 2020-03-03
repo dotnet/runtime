@@ -345,9 +345,9 @@ private:
         return ComponentSpan(start, end);
     }
 
-    LPCWSTR ParseProviderName(ComponentSpan const & component) const
+    NewArrayHolder<WCHAR> ParseProviderName(ComponentSpan const & component) const
     {
-        auto providerName = (WCHAR*)nullptr;
+        NewArrayHolder<WCHAR> providerName = nullptr;
         if ((component.End - component.Start) != 0)
         {
             auto const length = component.End - component.Start;
@@ -378,9 +378,9 @@ private:
         return level;
     }
 
-    LPCWSTR ParseArgument(ComponentSpan const & component) const
+    NewArrayHolder<WCHAR> ParseArgument(ComponentSpan const & component) const
     {
-        auto argument = (WCHAR*)nullptr;
+        NewArrayHolder<WCHAR> argument = nullptr;
         if ((component.End - component.Start) != 0)
         {
             auto const length = component.End - component.Start;
@@ -391,10 +391,10 @@ private:
         return argument;
     }
 
-    LPCWSTR _provider;
+    NewArrayHolder<WCHAR> _provider;
     uint64_t _enabledKeywords;
     uint32_t _level;
-    LPCWSTR _argument;
+    NewArrayHolder<WCHAR> _argument;
     bool _isValid;
 };
 #endif // FEATURE_PERFTRACING

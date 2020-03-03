@@ -131,7 +131,7 @@ void EventPipe::EnableViaEnvironmentVariables()
         int providerCnt = 0;
 
         // Create EventPipeProviderConfiguration and start tracing.
-        EventPipeProviderConfiguration* pProviders = nullptr;
+        NewHolder<EventPipeProviderConfiguration> pProviders = nullptr;
 
         // If COMPlus_EnableEventPipe is set to 1 but no configuration was specified, enable EventPipe session
         // with the default provider configurations.
