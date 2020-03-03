@@ -770,6 +770,31 @@ namespace System.Text.Json.Serialization.Tests
             public GenericIImmutableDictionaryWrapper<string, JsonElement> MyOverflow { get; set; }
         }
 
+        [Fact]
+        public static void DeserializeIntoGenericDictionaryParameterCount()
+        {
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyNoGenericParameters>("{\"hello\":\"world\"}");
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyOneGenericParameter>("{\"hello\":\"world\"}");
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyThreeGenericParameters>("{\"hello\":\"world\"}");
+        }
+
+        private class ClassWithExtensionPropertyNoGenericParameters
+        {
+            [JsonExtensionData]
+            public StringToObjectIDictionaryWrapper MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyOneGenericParameter
+        {
+            [JsonExtensionData]
+            public StringToGenericIDictionaryWrapper<object> MyOverflow { get; set; }
+        }
+
+        private class ClassWithExtensionPropertyThreeGenericParameters
+        {
+            [JsonExtensionData]
+            public GenericIDictonaryWrapperThreeGenericParameters<string, object, string> MyOverflow { get; set; }
+        }
 
         [Fact]
         public static void CustomObjectConverterInExtensionProperty()

@@ -121,7 +121,6 @@ if /i "%1" == "-debug"               (set __BuildTypeDebug=1&set processedArgs=!
 if /i "%1" == "-checked"             (set __BuildTypeChecked=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-release"             (set __BuildTypeRelease=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "-ci"                  (set __ArcadeScriptArgs="-ci"&set __ErrMsgPrefix=##vso[task.logissue type=error]&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -156,6 +155,9 @@ if [!__PassThroughArgs!]==[] (
     set __PassThroughArgs=%__PassThroughArgs% %1
 )
 
+if /i "%1" == "-ci"                  (set __ArcadeScriptArgs="-ci"&set __ErrMsgPrefix=##vso[task.logissue type=error]&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-OfficialBuildId"     (set __OfficialBuildIdArg=/p:OfficialBuildId=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1=%2&shift&shift&goto Arg_Loop)
+
 if /i "%1" == "-alpinedac"           (set __BuildCoreLib=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=alpine&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-linuxdac"            (set __BuildCoreLib=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
@@ -180,10 +182,9 @@ if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!p
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-crossgenaltjit"      (set __CrossgenAltJit=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-crossgenaltjit"      (set __CrossgenAltJit=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 REM TODO remove these once they are no longer used in buildpipeline
 if /i "%1" == "-skiprestore"         (set __SkipRestoreArg=/p:RestoreDuringBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-OfficialBuildId"     (set __OfficialBuildIdArg=/p:OfficialBuildId=%2&set processedArgs=!processedArgs! %1=%2&shift&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -207,7 +208,7 @@ if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!pr
 if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "crossgenaltjit"      (set __CrossgenAltJit=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "crossgenaltjit"      (set __CrossgenAltJit=%2&set __PassThroughArgs=%__PassThroughArgs% %2set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 REM TODO remove this once it's no longer used in buildpipeline
 if /i "%1" == "--"                  (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
@@ -275,6 +276,15 @@ REM Determine if this is a cross-arch build. Only do cross-arch build if we're a
 
 if %__SkipCrossArchNative% EQU 0 (
     if %__BuildNative% EQU 1 (
+        if %__BuildCrossArchNative% EQU 0 (
+            if /i not "%__BuildArch%"=="x86" (
+                REM Make recursive calls to build the cross OS DAC
+                call :BuildCrossOSDac -linuxdac
+                if not !errorlevel! == 0 (
+                    goto ExitWithError
+                )
+            )
+        )
         if /i "%__BuildArch%"=="arm64" (
             set __BuildCrossArchNative=1
         )
@@ -917,6 +927,20 @@ exit /b 1
 :ExitWithCode
 exit /b !__exitCode!
 
+:BuildCrossOSDac
+setlocal
+set __BuildDacOption=%1
+set __NextCmd=call %__ThisScriptFull% %__BuildDacOption% %__BuildArch% %__BuildType% %__PassThroughArgs%
+echo %__MsgPrefix%Invoking: %__NextCmd%
+%__NextCmd%
+if not !errorlevel! == 0 (
+    echo %__MsgPrefix%    %__BuildDacOption% %__BuildArch% %__BuildType% %__PassThroughArgs%
+    endlocal
+    goto ExitWithError
+)
+endlocal
+exit /b 0
+
 :Usage
 echo.
 echo Build the CoreCLR repo.
@@ -942,6 +966,9 @@ echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fai
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
 echo -ibcinstrument: generate IBC-tuning-enabled native images when invoking crossgen.
 echo -configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
+echo -alpinedac: Build a linux musl DAC with minimal support for printing exceptions in a dump on a windows host.
+echo -linuxdac: Build a linux DAC with minimal support for printing exceptions in a dump on a windows host.
+
 echo -skipconfigure: skip CMake ^(default: CMake is run^)
 echo -skipmscorlib: skip building System.Private.CoreLib ^(default: System.Private.CoreLib is built^).
 echo -skipnative: skip building native components ^(default: native components are built^).

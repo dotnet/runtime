@@ -4030,6 +4030,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		break;
 	}
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
+	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES:
+	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE:
 		break;
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
 		ji->data.index = decode_value (p, &p);
@@ -5373,6 +5375,11 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 			if (ji->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR) {
 				target = mono_create_specific_trampoline (GUINT_TO_POINTER (ji->data.uindex), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
 				target = mono_create_ftnptr_malloc ((guint8 *)target);
+			} else if (ji->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES) {
+				target = amodule->info.specific_trampolines;
+				g_assert (target);
+			} else if (ji->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE) {
+				target = &amodule->got [amodule->info.trampoline_got_offset_base [MONO_AOT_TRAMP_SPECIFIC]];
 			} else if (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
 				const MonoJitICallId jit_icall_id = (MonoJitICallId)ji->data.jit_icall_id;
 				switch (jit_icall_id) {

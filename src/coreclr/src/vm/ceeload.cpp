@@ -67,7 +67,6 @@
 #endif // _MSC_VER
 
 
-#include "perflog.h"
 #include "ecall.h"
 #include "../md/compiler/custattr.h"
 #include "typekey.h"
