@@ -12,7 +12,7 @@
     <!-- Test unsupported outside of windows -->
     <!-- Test unsupported on arm targets -->
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-    <DisableProjectBuild Condition=" '$(Platform)' == 'arm64' or '$(Platform)' == 'arm' or '$(TargetsUnix)' == 'true' ">true</DisableProjectBuild>
+    <DisableProjectBuild Condition=" '$(BuildArch)' == 'arm64' or '$(BuildArch)' == 'arm' or '$(TargetsUnix)' == 'true' ">true</DisableProjectBuild>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Fails with JIT stress modes, issue #19415 -->
