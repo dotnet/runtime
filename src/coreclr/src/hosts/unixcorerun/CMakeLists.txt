@@ -30,4 +30,8 @@ if(NOT CLR_CMAKE_TARGET_ANDROID)
   )
 endif()
 
+if(CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_ARM)
+    add_definitions(-D_FILE_OFFSET_BITS=64)
+endif()
+
 install_clr(TARGETS corerun)
