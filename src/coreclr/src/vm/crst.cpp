@@ -389,6 +389,9 @@ void CrstBase::Leave()
 
 
 #ifdef _DEBUG
+
+thread_local CrstBase* t_pOwnedCrstsChain;
+
 void CrstBase::PreEnter()
 {
     STATIC_CONTRACT_NOTHROW;
@@ -470,10 +473,10 @@ void CrstBase::PostEnter()
         _ASSERTE((m_next == NULL) && (m_prev == NULL));
 
         // Link this Crst into the Thread's chain of OwnedCrsts
-        CrstBase *pcrst = GetThreadsOwnedCrsts();
+        CrstBase *pcrst = t_pOwnedCrstsChain;
         if (pcrst == NULL)
         {
-            SetThreadsOwnedCrsts (this);
+            t_pOwnedCrstsChain = this;
         }
         else
         {
@@ -528,7 +531,7 @@ void CrstBase::PreLeave()
         if (m_prev)
             m_prev->m_next = m_next;
         else
-            SetThreadsOwnedCrsts(m_next);
+            t_pOwnedCrstsChain = m_next;
 
         if (m_next)
             m_next->m_prev = m_prev;
@@ -585,16 +588,6 @@ struct CrstDebugInfo
 };
 const int crstDebugInfoCount = 4000;
 CrstDebugInfo crstDebugInfo[crstDebugInfoCount];
-
-CrstBase *CrstBase::GetThreadsOwnedCrsts()
-{
-    return (CrstBase*)ClrFlsGetValue(TlsIdx_OwnedCrstsChain);
-}
-void CrstBase::SetThreadsOwnedCrsts(CrstBase *pCrst)
-{
-    WRAPPER_NO_CONTRACT;
-    ClrFlsSetValue(TlsIdx_OwnedCrstsChain, (LPVOID) (pCrst));
-}
 
 void CrstBase::DebugInit(CrstType crstType, CrstFlags flags)
 {
@@ -655,7 +648,7 @@ void CrstBase::DebugDestroy()
             {
                 if (m_next)
                     m_next->m_prev = NULL; // workaround: break up the chain
-                SetThreadsOwnedCrsts(NULL);
+                t_pOwnedCrstsChain = NULL;
             }
         }
         else
@@ -753,7 +746,7 @@ BOOL CrstBase::IsSafeToTake()
 
     // See if the current thread already owns a lower or sibling lock.
     BOOL fSafe = TRUE;
-    for (CrstBase *pcrst = GetThreadsOwnedCrsts(); pcrst != NULL; pcrst = pcrst->m_next)
+    for (CrstBase *pcrst = t_pOwnedCrstsChain; pcrst != NULL; pcrst = pcrst->m_next)
     {
         fSafe =
             !pcrst->m_holderthreadid.IsCurrentThread()

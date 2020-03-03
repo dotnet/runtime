@@ -19,7 +19,7 @@
 // them.
 enum PredefinedTlsSlots
 {
-    TlsIdx_OwnedCrstsChain, // slot to store the Crsts owned by this thread
+    TlsIdx_Unused0,
     TlsIdx_Unused1,
     TlsIdx_Unused2,
     TlsIdx_Unused3,
