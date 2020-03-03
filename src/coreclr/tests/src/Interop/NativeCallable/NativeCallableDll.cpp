@@ -38,3 +38,17 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProcOnNewThread(CALLBACKP
 
     return cxt.Result;
 }
+
+#ifdef _WIN32
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProcCatchException(CALLBACKPROC pCallbackProc, int n)
+{
+    __try
+    {
+        return CallManagedProc(pCallbackProc, n);
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+        return -1;
+    }
+}
+#endif // _WIN32
