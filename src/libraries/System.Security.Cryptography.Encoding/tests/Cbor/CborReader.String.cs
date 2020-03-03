@@ -22,6 +22,23 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return result;
         }
 
+        public int ReadByteString(Span<byte> buffer)
+        {
+            CborInitialByte header = Peek(expectedType: CborMajorType.ByteString);
+            int length = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
+            EnsureBuffer(1 + additionalBytes + length);
+
+            if (length > buffer.Length)
+            {
+                return -1;
+            }
+
+            _buffer.Slice(1 + additionalBytes, length).CopyTo(buffer);
+            AdvanceBuffer(1 + additionalBytes + length);
+
+            return length;
+        }
+
         // Implements major type 3 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public string ReadTextString()
         {
@@ -32,6 +49,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             string result = s_utf8Encoding.GetString(encodedString);
             AdvanceBuffer(1 + additionalBytes + length);
             return result;
+        }
+
+        public int ReadTextString(Span<char> buffer)
+        {
+            CborInitialByte header = Peek(expectedType: CborMajorType.TextString);
+            int byteLength = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
+            EnsureBuffer(1 + additionalBytes + byteLength);
+
+            ReadOnlySpan<byte> encodedSlice = _buffer.Slice(1 + additionalBytes, byteLength);
+            int charLength = s_utf8Encoding.GetCharCount(encodedSlice);
+            if (charLength > buffer.Length)
+            {
+                return -1;
+            }
+
+            s_utf8Encoding.GetChars(encodedSlice, buffer);
+            AdvanceBuffer(1 + additionalBytes + byteLength);
+            return charLength;
         }
     }
 }

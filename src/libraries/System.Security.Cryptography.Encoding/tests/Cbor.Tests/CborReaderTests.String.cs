@@ -27,12 +27,28 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData("", "40")]
+        [InlineData("01020304", "4401020304")]
+        [InlineData("ffffffffffffffffffffffffffff", "4effffffffffffffffffffffffffff")]
+        public static void ReadByteStringSpan_SingleValue_HappyPath(string hexExpectedValue, string hexEncoding)
+        {
+            byte[] buffer = new byte[32];
+            byte[] encoding = hexEncoding.HexToByteArray();
+            byte[] expectedValue = hexExpectedValue.HexToByteArray();
+            var reader = new CborValueReader(encoding);
+            int result = reader.ReadByteString(buffer);
+            Assert.Equal(expectedValue.Length, result);
+            Assert.Equal(expectedValue, buffer[..result]);
+        }
+
+        [Theory]
         [InlineData("", "60")]
         [InlineData("a", "6161")]
         [InlineData("IETF", "6449455446")]
         [InlineData("\"\\", "62225c")]
         [InlineData("\u00fc", "62c3bc")]
         [InlineData("\u6c34", "63e6b0b4")]
+        [InlineData("\x3bb", "62cebb")]
         [InlineData("\ud800\udd51", "64f0908591")]
         public static void ReadTextString_SingleValue_HappyPath(string expectedValue, string hexEncoding)
         {
@@ -40,6 +56,56 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborValueReader(data);
             string actualResult = reader.ReadTextString();
             Assert.Equal(expectedValue, actualResult);
+        }
+
+        [Theory]
+        [InlineData("", "60")]
+        [InlineData("a", "6161")]
+        [InlineData("IETF", "6449455446")]
+        [InlineData("\"\\", "62225c")]
+        [InlineData("\u00fc", "62c3bc")]
+        [InlineData("\u6c34", "63e6b0b4")]
+        [InlineData("\x3bb", "62cebb")]
+        [InlineData("\ud800\udd51", "64f0908591")]
+        public static void ReadTextStringSpan_SingleValue_HappyPath(string expectedValue, string hexEncoding)
+        {
+            char[] buffer = new char[32];
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborValueReader(data);
+            int result = reader.ReadTextString(buffer);
+            Assert.Equal(expectedValue.Length, result);
+            Assert.Equal(expectedValue.ToCharArray(), buffer[..result]);
+        }
+
+        [Theory]
+        [InlineData("01020304", "4401020304")]
+        [InlineData("ffffffffffffffffffffffffffff", "4effffffffffffffffffffffffffff")]
+        public static void ReadByteStringSpan_BufferTooSmall_ShouldReturnNegativeOne(string actualValue, string hexEncoding)
+        {
+            byte[] buffer = new byte[actualValue.Length / 2 - 1];
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborValueReader(encoding);
+            int result = reader.ReadByteString(buffer);
+            Assert.Equal(-1, result);
+            Assert.All(buffer, (b => Assert.Equal(0, b)));
+        }
+
+        [Theory]
+        [InlineData("a", "6161")]
+        [InlineData("IETF", "6449455446")]
+        [InlineData("\"\\", "62225c")]
+        [InlineData("\u00fc", "62c3bc")]
+        [InlineData("\u6c34", "63e6b0b4")]
+        [InlineData("\x3bb", "62cebb")]
+        [InlineData("\ud800\udd51", "64f0908591")]
+        public static void ReadTextStringSpan_BufferTooSmall_ShouldReturnNegativeOne(string actualValue, string hexEncoding)
+        {
+            char[] buffer = new char[actualValue.Length - 1];
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborValueReader(encoding);
+            int result = reader.ReadTextString(buffer);
+            Assert.Equal(-1, result);
+            Assert.All(buffer, (b => Assert.Equal(0, '\0')));
         }
 
         [Theory]
