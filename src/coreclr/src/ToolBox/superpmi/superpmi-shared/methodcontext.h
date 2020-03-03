@@ -1453,7 +1453,7 @@ enum mcPackets
     Packet_GetSecurityPrologHelper                       = 85, // Retired 2/18/2020
     Packet_GetSharedCCtorHelper                          = 86,
     Packet_GetTailCallCopyArgsThunk                      = 87,
-    Packet_GetTailCallHelpers                            = 175, // Added 09/20/19
+    Packet_GetTailCallHelpers                            = 176,
     Packet_GetThreadTLSIndex                             = 88,
     Packet_GetTokenTypeAsHandle                          = 89,
     Packet_GetTypeForBox                                 = 90,

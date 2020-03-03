@@ -2119,10 +2119,6 @@ void Compiler::optAssertionGen(GenTree* tree)
             }
             break;
 
-                assertionInfo = optCreateAssertion(thisArg, nullptr, OAK_NOT_EQUAL);
-            }
-            break;
-
         case GT_CAST:
             // We only create this assertion for global assertion prop
             if (!optLocalAssertionProp)

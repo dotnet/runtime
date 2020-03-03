@@ -836,7 +836,7 @@ void TailCallHelp::AppendTypeHandle(SigBuilder& builder, TypeHandle th)
     if (th.IsByRef())
     {
         builder.AppendElementType(ELEMENT_TYPE_BYREF);
-        th = th.AsTypeDesc()->GetBaseTypeParam();
+        th = th.AsTypeDesc()->GetRootTypeParam();
     }
 
     CorElementType ty = th.GetSignatureCorElementType();

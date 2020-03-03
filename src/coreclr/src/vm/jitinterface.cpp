@@ -2218,6 +2218,11 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
 }
 
 
+unsigned CEEInfo::getClassGClayoutStatic(TypeHandle VMClsHnd, BYTE* gcPtrs)
+{
+    unsigned result = 0;
+    MethodTable* pMT = VMClsHnd.GetMethodTable();
+
     if (VMClsHnd.IsNativeValueType())
     {
         // native value types have no GC pointers
@@ -2272,8 +2277,6 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
             }
         }
     }
-
-    EE_TO_JIT_TRANSITION();
 
     return result;
 }
