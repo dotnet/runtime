@@ -677,7 +677,7 @@ Add Pattern Recognition (SampleStep2 shelveset):
 
 ### Reference
 - The RyuJIT Overview document is available here:
-        https://github.com/dotnet/runtime/blob/master/src/corDocumentation/botr/ryujit-overview.md
+        https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/ryujit-overview.md
 
 ## Backup
 

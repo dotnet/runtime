@@ -10630,6 +10630,7 @@ namespace System.Threading.Tasks
         public TaskCompletionSource(System.Threading.Tasks.TaskCreationOptions creationOptions) { }
         public System.Threading.Tasks.Task<TResult> Task { get { throw null; } }
         public void SetCanceled() { }
+        public void SetCanceled(System.Threading.CancellationToken cancellationToken) { }
         public void SetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { }
         public void SetException(System.Exception exception) { }
         public void SetResult(TResult result) { }

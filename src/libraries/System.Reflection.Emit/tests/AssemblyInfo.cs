@@ -4,4 +4,4 @@
 
 using Xunit;
 
-[assembly: SkipOnMono("Test hangs: https://github.com/dotnet/runtime/issues/32177")]
+[assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/32177", TestRuntimes.Mono)] // Test hangs

@@ -31,7 +31,6 @@ namespace System.Net.Http
 
             private readonly Http2Connection _connection;
             private readonly int _streamId;
-            private readonly CreditManager _streamWindow;
             private readonly HttpRequestMessage _request;
             private HttpResponseMessage _response;
             /// <summary>Stores any trailers received after returning the response content to the caller.</summary>
@@ -39,6 +38,8 @@ namespace System.Net.Http
 
             private ArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
             private int _pendingWindowUpdate;
+            private CancelableCreditWaiter _creditWaiter;
+            private int _availableCredit;
 
             private StreamCompletionState _requestCompletionState;
             private StreamCompletionState _responseCompletionState;
@@ -104,8 +105,7 @@ namespace System.Net.Http
                 _responseBuffer = new ArrayBuffer(InitialStreamBufferSize, usePool: true);
 
                 _pendingWindowUpdate = 0;
-
-                _streamWindow = new CreditManager(this, nameof(_streamWindow), initialWindowSize);
+                _availableCredit = initialWindowSize;
 
                 _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
 
@@ -135,7 +135,7 @@ namespace System.Net.Http
                 if (NetEventSource.IsEnabled) Trace($"{request}, {nameof(initialWindowSize)}={initialWindowSize}");
             }
 
-            private object SyncObject => _streamWindow;
+            private object SyncObject => this; // this isn't handed out to code that may lock on it
 
             public int StreamId => _streamId;
 
@@ -326,7 +326,15 @@ namespace System.Net.Http
 
                 _connection.RemoveStream(this);
 
-                _streamWindow.Dispose();
+                lock (SyncObject)
+                {
+                    CreditWaiter w = _creditWaiter;
+                    if (w != null)
+                    {
+                        w.Dispose();
+                        _creditWaiter = null;
+                    }
+                }
             }
 
             private void Cancel()
@@ -397,7 +405,21 @@ namespace System.Net.Http
                 return (signalWaiter, sendReset);
             }
 
-            public void OnWindowUpdate(int amount) => _streamWindow.AdjustCredit(amount);
+            public void OnWindowUpdate(int amount)
+            {
+                lock (SyncObject)
+                {
+                    _availableCredit = checked(_availableCredit + amount);
+                    if (_availableCredit > 0 && _creditWaiter != null && _creditWaiter.IsPending)
+                    {
+                        int granted = Math.Min(_availableCredit, _creditWaiter.Amount);
+                        if (_creditWaiter.TrySetResult(granted))
+                        {
+                            _availableCredit -= granted;
+                        }
+                    }
+                }
+            }
 
             void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
             {
@@ -1031,7 +1053,34 @@ namespace System.Net.Http
                 {
                     while (buffer.Length > 0)
                     {
-                        int sendSize = await _streamWindow.RequestCreditAsync(buffer.Length, cancellationToken).ConfigureAwait(false);
+                        int sendSize = -1;
+                        lock (SyncObject)
+                        {
+                            if (_availableCredit > 0)
+                            {
+                                sendSize = Math.Min(buffer.Length, _availableCredit);
+                                _availableCredit -= sendSize;
+                            }
+                            else
+                            {
+                                if (_creditWaiter is null)
+                                {
+                                    _creditWaiter = new CancelableCreditWaiter(SyncObject, cancellationToken);
+                                }
+                                else
+                                {
+                                    Debug.Assert(!_creditWaiter.IsPending);
+                                    _creditWaiter.ResetForAwait(cancellationToken);
+                                }
+                                _creditWaiter.Amount = buffer.Length;
+                            }
+                        }
+
+                        if (sendSize == -1)
+                        {
+                            sendSize = await _creditWaiter.AsValueTask().ConfigureAwait(false);
+                            _creditWaiter.CleanUp();
+                        }
 
                         ReadOnlyMemory<byte> current;
                         (current, buffer) = SplitBuffer(buffer, sendSize);

@@ -615,7 +615,7 @@ ves_icall_System_Diagnostics_Process_GetProcessData (int pid, gint32 data_type, 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 
 static void
-mono_pin_string (MonoStringHandle in_coophandle, MonoStringHandle *out_coophandle, gunichar2 **chars, gsize *length, gchandle_t *gchandle)
+mono_pin_string (MonoStringHandle in_coophandle, MonoStringHandle *out_coophandle, gunichar2 **chars, gsize *length, MonoGCHandle *gchandle)
 {
 	*out_coophandle = in_coophandle;
 	if (!MONO_HANDLE_IS_NULL (in_coophandle)) {
@@ -644,7 +644,7 @@ mono_createprocess_coop_init (MonoCreateProcessCoop *coop, MonoW32ProcessStartIn
 }
 
 static void
-mono_unpin_array (gchandle_t *gchandles, gsize count)
+mono_unpin_array (MonoGCHandle *gchandles, gsize count)
 {
 	for (gsize i = 0; i < count; ++i) {
 		mono_gchandle_free_internal (gchandles [i]);
@@ -655,7 +655,7 @@ mono_unpin_array (gchandle_t *gchandles, gsize count)
 void
 mono_createprocess_coop_cleanup (MonoCreateProcessCoop *coop)
 {
-	mono_unpin_array ((gchandle_t*)&coop->gchandle, sizeof (coop->gchandle) / sizeof (gchandle_t));
+	mono_unpin_array ((MonoGCHandle*)&coop->gchandle, sizeof (coop->gchandle) / sizeof (MonoGCHandle));
 	memset (coop, 0, sizeof (*coop));
 }
 

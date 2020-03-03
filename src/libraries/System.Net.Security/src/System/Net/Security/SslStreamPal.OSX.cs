@@ -34,9 +34,9 @@ namespace System.Net.Security
 
         public static SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials credential,
-            ref SafeDeleteSslContext context,
+            ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
-            ref byte[] outputBuffer,
+            ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
@@ -44,10 +44,10 @@ namespace System.Net.Security
 
         public static SecurityStatusPal InitializeSecurityContext(
             ref SafeFreeCredentials credential,
-            ref SafeDeleteSslContext context,
-            string targetName,
+            ref SafeDeleteSslContext? context,
+            string? targetName,
             ReadOnlySpan<byte> inputBuffer,
-            ref byte[] outputBuffer,
+            ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
@@ -62,7 +62,7 @@ namespace System.Net.Security
             return new SafeFreeSslCredentials(certificate, protocols, policy);
         }
 
-        internal static byte[] GetNegotiatedApplicationProtocol(SafeDeleteContext context)
+        internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteContext? context)
         {
             if (context == null)
                 return null;
@@ -116,7 +116,7 @@ namespace System.Net.Security
                         }
                         else
                         {
-                            output = sslContext.ReadPendingWrites();
+                            output = sslContext.ReadPendingWrites()!;
                             resultSize = output.Length;
                         }
 
@@ -199,7 +199,7 @@ namespace System.Net.Security
             }
         }
 
-        public static ChannelBinding QueryContextChannelBinding(
+        public static ChannelBinding? QueryContextChannelBinding(
             SafeDeleteContext securityContext,
             ChannelBindingKind attribute)
         {
@@ -217,7 +217,7 @@ namespace System.Net.Security
         }
 
         public static void QueryContextStreamSizes(
-            SafeDeleteContext securityContext,
+            SafeDeleteContext? securityContext,
             out StreamSizes streamSizes)
         {
             streamSizes = StreamSizes.Default;
@@ -232,20 +232,20 @@ namespace System.Net.Security
 
         private static SecurityStatusPal HandshakeInternal(
             SafeFreeCredentials credential,
-            ref SafeDeleteSslContext context,
+            ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
-            ref byte[] outputBuffer,
+            ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
             Debug.Assert(!credential.IsInvalid);
 
             try
             {
-                SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)context);
+                SafeDeleteSslContext? sslContext = ((SafeDeleteSslContext?)context);
 
                 if ((null == context) || context.IsInvalid)
                 {
-                    sslContext = new SafeDeleteSslContext(credential as SafeFreeSslCredentials, sslAuthenticationOptions);
+                    sslContext = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                     context = sslContext;
 
                     if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost))
@@ -262,10 +262,10 @@ namespace System.Net.Security
 
                 if (inputBuffer.Length > 0)
                 {
-                    sslContext.Write(inputBuffer);
+                    sslContext!.Write(inputBuffer);
                 }
 
-                SafeSslHandle sslHandle = sslContext.SslContext;
+                SafeSslHandle sslHandle = sslContext!.SslContext;
                 SecurityStatusPal status;
 
                 lock (sslHandle)
@@ -312,8 +312,8 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal ApplyAlertToken(
-            ref SafeFreeCredentials credentialsHandle,
-            SafeDeleteContext securityContext,
+            ref SafeFreeCredentials? credentialsHandle,
+            SafeDeleteContext? securityContext,
             TlsAlertType alertType,
             TlsAlertMessage alertMessage)
         {
@@ -324,7 +324,7 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal ApplyShutdownToken(
-            ref SafeFreeCredentials credentialsHandle,
+            ref SafeFreeCredentials? credentialsHandle,
             SafeDeleteContext securityContext)
         {
             SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)securityContext);

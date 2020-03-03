@@ -1757,23 +1757,6 @@ class ICorCompileInfo
     virtual BOOL HasCustomAttribute(CORINFO_METHOD_HANDLE method, LPCSTR customAttributeName) = 0;
 };
 
-/*****************************************************************************/
-// This function determines the compile flags to use for a generic intatiation
-// since only the open instantiation can be verified.
-// See the comment associated with CORJIT_FLAG_SKIP_VERIFICATION for details.
-//
-// On return:
-// if *raiseVerificationException=TRUE, the caller should raise a VerificationException.
-// if *unverifiableGenericCode=TRUE, the method is a generic instantiation with
-// unverifiable code
-
-CORJIT_FLAGS GetCompileFlagsIfGenericInstantiation(
-        CORINFO_METHOD_HANDLE method,
-        CORJIT_FLAGS compileFlags,
-        ICorJitInfo * pCorJitInfo,
-        BOOL * raiseVerificationException,
-        BOOL * unverifiableGenericCode);
-
 // Returns the global instance of JIT->EE interface for NGen
 
 extern "C" ICorDynamicInfo * __stdcall GetZapJitInfo();

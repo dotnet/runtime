@@ -2918,7 +2918,6 @@ private:
 #ifdef UNIX_AMD64_ABI
     // checks whether the struct is enregisterable.
     void SystemVAmd64CheckForPassStructInRegister();
-    void SystemVAmd64CheckForPassNativeStructInRegister();
     // Store the eightbyte classification into the EEClass
     void StoreEightByteClassification(SystemVStructRegisterPassingHelper* helper);
 

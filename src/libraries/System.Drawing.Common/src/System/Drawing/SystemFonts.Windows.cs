@@ -19,11 +19,11 @@ namespace System.Drawing
             }
         }
 
-        public static Font CaptionFont
+        public static Font? CaptionFont
         {
             get
             {
-                Font captionFont = null;
+                Font? captionFont = null;
 
                 if (GetNonClientMetrics(out Interop.User32.NONCLIENTMETRICS metrics))
                 {
@@ -35,11 +35,11 @@ namespace System.Drawing
             }
         }
 
-        public static Font SmallCaptionFont
+        public static Font? SmallCaptionFont
         {
             get
             {
-                Font smcaptionFont = null;
+                Font? smcaptionFont = null;
 
                 if (GetNonClientMetrics(out Interop.User32.NONCLIENTMETRICS metrics))
                 {
@@ -51,11 +51,11 @@ namespace System.Drawing
             }
         }
 
-        public static Font MenuFont
+        public static Font? MenuFont
         {
             get
             {
-                Font menuFont = null;
+                Font? menuFont = null;
 
                 if (GetNonClientMetrics(out Interop.User32.NONCLIENTMETRICS metrics))
                 {
@@ -67,11 +67,11 @@ namespace System.Drawing
             }
         }
 
-        public static Font StatusFont
+        public static Font? StatusFont
         {
             get
             {
-                Font statusFont = null;
+                Font? statusFont = null;
 
                 if (GetNonClientMetrics(out Interop.User32.NONCLIENTMETRICS metrics))
                 {
@@ -83,11 +83,11 @@ namespace System.Drawing
             }
         }
 
-        public static Font MessageBoxFont
+        public static Font? MessageBoxFont
         {
             get
             {
-                Font messageBoxFont = null;
+                Font? messageBoxFont = null;
 
                 if (GetNonClientMetrics(out Interop.User32.NONCLIENTMETRICS metrics))
                 {
@@ -111,11 +111,11 @@ namespace System.Drawing
                 ex is FileNotFoundException);
         }
 
-        public static unsafe Font IconTitleFont
+        public static unsafe Font? IconTitleFont
         {
             get
             {
-                Font iconTitleFont = null;
+                Font? iconTitleFont = null;
 
                 Interop.User32.LOGFONT itfont = default;
                 if (Interop.User32.SystemParametersInfoW(Interop.User32.SystemParametersAction.SPI_GETICONTITLELOGFONT, (uint)sizeof(Interop.User32.LOGFONT), &itfont, 0))
@@ -132,7 +132,7 @@ namespace System.Drawing
         {
             get
             {
-                Font defaultFont = null;
+                Font? defaultFont = null;
 
                 // For Arabic systems, always return Tahoma 8.
                 if ((ushort)UnsafeNativeMethods.GetSystemDefaultLCID() == 0x0001)
@@ -195,7 +195,7 @@ namespace System.Drawing
         {
             get
             {
-                Font dialogFont = null;
+                Font? dialogFont = null;
 
                 if ((ushort)UnsafeNativeMethods.GetSystemDefaultLCID() == 0x0011)
                 {
@@ -226,7 +226,7 @@ namespace System.Drawing
 
                 // For Japanese cultures, SystemFonts.DefaultFont returns a new Font object every time it is invoked.
                 // So for Japanese we return the DefaultFont with its SystemFontName set to DialogFont.
-                dialogFont.SetSystemFontName(nameof(DialogFont));
+                dialogFont!.SetSystemFontName(nameof(DialogFont));
                 return dialogFont;
             }
         }
@@ -238,7 +238,7 @@ namespace System.Drawing
 
         private static Font GetFontFromData(Interop.User32.LOGFONT logFont)
         {
-            Font font = null;
+            Font? font = null;
             try
             {
                 font = Font.FromLogFont(ref logFont);

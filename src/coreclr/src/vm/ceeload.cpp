@@ -67,7 +67,6 @@
 #endif // _MSC_VER
 
 
-#include "perflog.h"
 #include "ecall.h"
 #include "../md/compiler/custattr.h"
 #include "typekey.h"
@@ -556,6 +555,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_FixupCrst.Init(CrstModuleFixup, (CrstFlags)(CRST_HOST_BREAKABLE|CRST_REENTRANCY));
     m_InstMethodHashTableCrst.Init(CrstInstMethodHashTable, CRST_REENTRANCY);
     m_ISymUnmanagedReaderCrst.Init(CrstISymUnmanagedReader, CRST_DEBUGGER_THREAD);
+    m_DictionaryCrst.Init(CrstDomainLocalBlock);
 
     if (!m_file->HasNativeImage())
     {
@@ -688,7 +688,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 #endif // defined (PROFILING_SUPPORTED) &&!defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%ws\".\n", GetDebugName()));
-
 }
 
 #endif // DACCESS_COMPILE
@@ -9031,14 +9030,6 @@ void Module::PlaceType(DataImage *image, TypeHandle th, DWORD profilingFlags)
                 {
                     image->PlaceInternedStructureForAddress(pDictionary, CORCOMPILE_SECTION_READONLY_SHARED_HOT, CORCOMPILE_SECTION_READONLY_HOT);
                 }
-            }
-        }
-
-        if (profilingFlags & (1 << ReadFieldMarshalers))
-        {
-            if (pClass->HasLayout() && pClass->GetLayoutInfo()->GetNumCTMFields() > 0)
-            {
-                image->PlaceStructureForAddress((void *)pClass->GetLayoutInfo()->GetNativeFieldDescriptors(), CORCOMPILE_SECTION_HOT);
             }
         }
     }

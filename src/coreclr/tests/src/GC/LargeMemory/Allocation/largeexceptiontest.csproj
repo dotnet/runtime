@@ -9,7 +9,7 @@
     <Compile Include="largeexceptiontest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="largeobject.csproj" />
-    <ProjectReference Include="memcheck.csproj" />
+    <ProjectReference Include="../largeobject.csproj" />
+    <ProjectReference Include="../memcheck.csproj" />
   </ItemGroup>
 </Project>

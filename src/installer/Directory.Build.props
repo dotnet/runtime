@@ -60,38 +60,9 @@
   a single binary folder and can have a similar experience between the command line and Visual Studio.
   -->
 
-  <!--
-  If Configuration is empty that means we are not being built in VS and so folks need to explicitly pass the different
-  values for $(ConfigurationGroup) or $(OSGroup) or accept the defaults for them.
-  -->
   <PropertyGroup>
     <OSGroup Condition="'$(OS)'=='Unix' AND Exists('/Applications')">OSX</OSGroup>
     <OSGroup Condition="'$(OSGroup)' == ''">$(OS)</OSGroup>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)'==''">
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">Debug</ConfigurationGroup>
-    <Configuration>$(ConfigurationGroup)</Configuration>
-    <Configuration>$(OSGroup)_$(Configuration)</Configuration>
-  </PropertyGroup>
-
-  <!--
-  If Configuration is set then someone explicitly passed it in or we building from VS. In either case
-  default $(ConfigurationGroup) or $(OSGroup) from the Configuration if they aren't
-  already explicitly set.
-  -->
-  <PropertyGroup Condition="'$(Configuration)'!=''">
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)'=='' and $(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)'=='' and $(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">Debug</ConfigurationGroup>
-
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Windows'))">Windows_NT</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Unix'))">Unix</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Linux'))">Linux</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('OSX'))">OSX</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('FreeBSD'))">FreeBSD</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('NetBSD'))">NetBSD</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'==''">AnyOS</OSGroup>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -106,14 +77,14 @@
 
   <!-- Set up Default symbol and optimization for Configuration -->
   <Choose>
-    <When Condition="'$(ConfigurationGroup)'=='Debug'">
+    <When Condition="'$(Configuration)'=='Debug'">
       <PropertyGroup>
         <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
         <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
         <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants>
       </PropertyGroup>
     </When>
-    <When Condition="'$(ConfigurationGroup)' == 'Release'">
+    <When Condition="'$(Configuration)' == 'Release'">
       <PropertyGroup>
         <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
         <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
@@ -122,7 +93,7 @@
     </When>
     <Otherwise>
       <PropertyGroup>
-        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown ConfigurationGroup [$(ConfigurationGroup)] specificed in your project.</ConfigurationErrorMsg>
+        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown Configuration [$(Configuration)] specificed in your project.</ConfigurationErrorMsg>
       </PropertyGroup>
     </Otherwise>
   </Choose>
@@ -157,7 +128,7 @@
 
   <!-- Set up the default output and intermediate paths -->
   <PropertyGroup>
-    <OSPlatformConfig>$(OutputRid).$(ConfigurationGroup)</OSPlatformConfig>
+    <OSPlatformConfig>$(OutputRid).$(Configuration)</OSPlatformConfig>
 
     <BaseOutputRootPath>$(ArtifactsBinDir)$(OSPlatformConfig)\</BaseOutputRootPath>
     <CrossGenRootPath>$(BaseOutputRootPath)crossgen\</CrossGenRootPath>
@@ -179,7 +150,7 @@
     <DisableCrossgen>false</DisableCrossgen>
     <!-- Disable cross-gen on FreeBSD for now. This can be revisited when we have full support. -->
     <DisableCrossgen Condition="'$(OSGroup)'=='FreeBSD'">true</DisableCrossgen>
-    <OutputVersionBadge>$(AssetOutputPath)sharedfx_$(OutputRid)_$(ConfigurationGroup)_version_badge.svg</OutputVersionBadge>
+    <OutputVersionBadge>$(AssetOutputPath)sharedfx_$(OutputRid)_$(Configuration)_version_badge.svg</OutputVersionBadge>
   </PropertyGroup>
 
   <PropertyGroup>

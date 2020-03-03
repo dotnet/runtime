@@ -52,7 +52,7 @@
 
     <!-- Sign api-ms-win-core-xstate-l2-1-0 binary as it is only catalog signed in the current SDK. -->
     <ItemsToSign
-      Condition="'$(ConfigurationGroup)' == 'Release' and '$(TargetArchitecture)' == 'x86'"
+      Condition="'$(Configuration)' == 'Release' and '$(TargetArchitecture)' == 'x86'"
       Include="$(CoreCLRArtifactsPath)Redist\ucrt\DLLs\$(TargetArchitecture)\api-ms-win-core-xstate-l2-1-0.dll" />
 
     <!-- Sign libraries. -->

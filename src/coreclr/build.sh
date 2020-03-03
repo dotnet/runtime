@@ -53,6 +53,7 @@ restore_optdata()
         echo "Restoring the OptimizationData package"
         "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                                $OptDataProjectFilePath /t:Restore /m \
+                                               -bl:"$__LogsDir/OptRestore_$__ConfigTriplet.binlog"\
                                                $__CommonMSBuildArgs $__UnprocessedBuildArgs \
                                                /nodereuse:false
         local exit_code="$?"
@@ -68,7 +69,9 @@ restore_optdata()
         local PgoDataPackagePathOutputFile="${__IntermediatesDir}/optdatapath.txt"
 
         # Writes into ${PgoDataPackagePathOutputFile}
-        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackagePath ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} > /dev/null 2>&1
+        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackagePath\
+                                             ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} \
+                                             -bl:"$__LogsDir/PgoVersionRead_$__ConfigTriplet.binlog" > /dev/null 2>&1
         local exit_code="$?"
         if [[ "$exit_code" != 0 || ! -f "${PgoDataPackagePathOutputFile}" ]]; then
             echo "${__ErrMsgPrefix}Failed to get PGO data package path."
@@ -190,7 +193,8 @@ build_CoreLib()
     "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                            $__ProjectDir/src/build.proj /t:Restore \
                                            /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true \
-                                           /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
+                                           /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__ConfigTriplet.log \
+                                           -bl:"$__LogsDir/System.Private.CoreLib_$__ConfigTriplet.binlog" \
                                            /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
                                            $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
 
@@ -204,6 +208,7 @@ build_CoreLib()
                                            $__ProjectDir/src/build.proj \
                                            /p:PortableBuild=true /maxcpucount \
                                            /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
+                                           -bl:"$__LogsDir/System.Private.CoreLib_$__ConfigTriplet.binlog" \
                                            /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
                                            $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
 
@@ -452,8 +457,9 @@ if [[ "${__BuildArch}" != "${__HostArch}" ]]; then
 fi
 
 # Set dependent variables
-__LogsDir="$__RootBinDir/log"
+__LogsDir="$__RootBinDir/log/$__BuildType"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
+__ConfigTriplet=$__BuildOS__$__BuildArch__$__BuildType
 
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/bin/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
@@ -468,7 +474,7 @@ __CrossArch="$__HostArch"
 if [[ "$__CrossBuild" == 1 ]]; then
     __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
 fi
-__CrossGenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__BuildOS.$__BuildArch.$__BuildType.log"
+__CrossGenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__ConfigTriplet.log"
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
 # This is needed by CLI to function.

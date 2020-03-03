@@ -39,7 +39,7 @@ namespace System.Drawing
     {
         internal static readonly Hashtable contextReference = new Hashtable();
         internal static readonly object lockobj = new object();
-        internal static readonly Delegate hwnd_delegate = GetHwndDelegate();
+        internal static readonly Delegate? hwnd_delegate = GetHwndDelegate();
 
 #if DEBUG_CLIPPING
         internal static float red = 1.0f;
@@ -48,17 +48,17 @@ namespace System.Drawing
         internal static int debug_threshold = 1;
 #endif
 
-        private static Delegate GetHwndDelegate()
+        private static Delegate? GetHwndDelegate()
         {
 #if !NETSTANDARD1_6
             foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
             {
                 if (string.Equals(asm.GetName().Name, "System.Windows.Forms"))
                 {
-                    Type driver_type = asm.GetType("System.Windows.Forms.XplatUICarbon");
+                    Type? driver_type = asm.GetType("System.Windows.Forms.XplatUICarbon");
                     if (driver_type != null)
                     {
-                        return (Delegate)driver_type.GetTypeInfo().GetField("HwndDelegate", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+                        return (Delegate?)driver_type.GetTypeInfo().GetField("HwndDelegate", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null);
                     }
                 }
             }
@@ -130,7 +130,7 @@ namespace System.Drawing
 
             CGContextSaveGState(context);
 
-            Rectangle[] clip_rectangles = (Rectangle[])hwnd_delegate.DynamicInvoke(new object[] { handle });
+            Rectangle[]? clip_rectangles = (Rectangle[]?)hwnd_delegate!.DynamicInvoke(new object[] { handle });
             if (clip_rectangles != null && clip_rectangles.Length > 0)
             {
                 int length = clip_rectangles.Length;

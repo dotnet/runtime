@@ -6,13 +6,13 @@
 
   <PropertyGroup>
     <!-- Hardcode version paths in a global location. -->
-    <NativeVersionFile Condition="'$(OS)' == 'Windows_NT'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
-    <NativeVersionFile Condition="'$(OS)' != 'Windows_NT'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <NativeVersionFile Condition="'$(OSGroup)' == 'Windows_NT'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    <NativeVersionFile Condition="'$(OSGroup)' != 'Windows_NT'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
     <_BuildNativeArgs>$(ArchGroup) $(Configuration) outconfig $(BuildTargetFramework)-$(OSGroup)-$(Configuration)-$(ArchGroup)</_BuildNativeArgs>
   </PropertyGroup>
 
   <Target Name="BuildNativeUnix"
-          Condition="'$(OS)' != 'Windows_NT'">
+          Condition="'$(OSGroup)' != 'Windows_NT'">
 
     <PropertyGroup>
       <!--
@@ -40,7 +40,7 @@
 
   <!-- We don't have any native components when building for netfx. -->
   <Target Name="BuildNativeWindows"
-          Condition="'$(OS)' == 'Windows_NT' and '$(TargetsNetFx)' != 'true'">
+          Condition="'$(OSGroup)' == 'Windows_NT' and '$(TargetsNetFx)' != 'true'">
 
     <!-- Run script that invokes Cmake to create VS files, and then calls msbuild to compile them -->
     <Message Text="&quot;$(MSBuildProjectDirectory)\build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>

@@ -4550,23 +4550,22 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						// extra stack to hold this and return value, before call.
 						simulate_runtime_stack_increase (td, 2);
 
-						if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT)
-							interp_add_ins (td, MINT_NEWOBJ_VTST_FAST);
-						else
-							interp_add_ins (td, MINT_NEWOBJ_VT_FAST);
+						const gboolean vt = mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT;
+
+						interp_add_ins (td, vt ? MINT_NEWOBJ_VTST_FAST : MINT_NEWOBJ_VT_FAST);
 
 						td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 						td->last_ins->data [1] = csignature->param_count;
 
-						if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT) {
+						if (vt)
 							td->last_ins->data [2] = mono_class_value_size (klass, NULL);
-						}
 					}
 				} else {
 					// Runtime (interp_exec_method_full in interp.c) inserts
 					// extra stack to hold this and return value, before call.
 					simulate_runtime_stack_increase (td, 2);
 					interp_add_ins (td, MINT_NEWOBJ);
+					g_assert (!m_class_is_valuetype (klass));
 					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 				}
 				goto_if_nok (error, exit);
@@ -5026,7 +5025,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					mono_error_set_bad_image (error, image, "Cannot box IsByRefLike type '%s.%s'", m_class_get_name_space (klass), m_class_get_name (klass));
 					goto exit;
 				}
-				if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT) {
+
+				const gboolean vt = mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT;
+
+				if (vt) {
 					size = mono_class_value_size (klass, NULL);
 					size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
 					td->vt_sp -= size;
@@ -5036,10 +5038,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
 				goto_if_nok (error, exit);
 
-				if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT)
-					interp_add_ins (td, MINT_BOX_VT);
-				else
-					interp_add_ins (td, MINT_BOX);
+				interp_add_ins (td, vt ? MINT_BOX_VT : MINT_BOX);
 				td->last_ins->data [0] = get_data_item_index (td, vtable);
 				td->last_ins->data [1] = 0;
 				SET_TYPE(td->sp - 1, STACK_TYPE_O, klass);

@@ -229,6 +229,8 @@ namespace Internal.JitInterface
                 _compilation.NodeFactory.Target.MinimumFunctionAlignment :
                 _compilation.NodeFactory.Target.OptimumFunctionAlignment;
 
+            alignment = Math.Max(alignment, _codeAlignment);
+
             var objectData = new ObjectNode.ObjectData(_code,
                                                        relocs,
                                                        alignment,
@@ -698,8 +700,6 @@ namespace Internal.JitInterface
                 }
             }
 
-            result |= CorInfoFlag.CORINFO_FLG_NOSECURITYWRAP;
-
             return (uint)result;
         }
 
@@ -884,15 +884,6 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("satisfiesMethodConstraints"); }
         private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, ref bool pfIsOpenDelegate)
         { throw new NotImplementedException("isCompatibleDelegate"); }
-        private CorInfoInstantiationVerification isInstantiationOfVerifiedGeneric(CORINFO_METHOD_STRUCT_* method)
-        { throw new NotImplementedException("isInstantiationOfVerifiedGeneric"); }
-        private void initConstraintsForVerification(CORINFO_METHOD_STRUCT_* method, ref bool pfHasCircularClassConstraints, ref bool pfHasCircularMethodConstraint)
-        { throw new NotImplementedException("isInstantiationOfVerifiedGeneric"); }
-
-        private CorInfoCanSkipVerificationResult canSkipMethodVerification(CORINFO_METHOD_STRUCT_* ftnHandle)
-        {
-            return CorInfoCanSkipVerificationResult.CORINFO_VERIFICATION_CAN_SKIP;
-        }
 
         private void methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_STRUCT_* method)
         {
@@ -1115,7 +1106,16 @@ namespace Internal.JitInterface
         private void findSig(CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
             var methodIL = (MethodIL)HandleToObject((IntPtr)module);
-            Get_CORINFO_SIG_INFO((MethodSignature)methodIL.GetObject((int)sigTOK), sig);
+            var methodSig = (MethodSignature)methodIL.GetObject((int)sigTOK);
+            Get_CORINFO_SIG_INFO(methodSig, sig);
+
+#if !READYTORUN
+            // Check whether we need to report this as a fat pointer call
+            if (_compilation.IsFatPointerCandidate(methodIL.OwningMethod, methodSig))
+            {
+                sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
+            }
+#endif
         }
 
         private void findCallSiteSig(CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
@@ -1150,8 +1150,6 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("isValidToken"); }
         private bool isValidStringRef(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
         { throw new NotImplementedException("isValidStringRef"); }
-        private bool shouldEnforceCallvirtRestriction(CORINFO_MODULE_STRUCT_* scope)
-        { throw new NotImplementedException("shouldEnforceCallvirtRestriction"); }
 
         private char* getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
         {
@@ -1234,8 +1232,6 @@ namespace Internal.JitInterface
             // NOTE: cls can be null
             return CorInfoInlineTypeCheck.CORINFO_INLINE_TYPECHECK_PASS;
         }
-
-        private bool canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_STRUCT_* cls) { throw new NotImplementedException(); }
 
         private uint getClassAttribs(CORINFO_CLASS_STRUCT_* cls)
         {
@@ -1519,8 +1515,6 @@ namespace Internal.JitInterface
 
         private CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_STRUCT_* clsHnd)
         { throw new NotImplementedException("getSharedCCtorHelper"); }
-        private CorInfoHelpFunc getSecurityPrologHelper(CORINFO_METHOD_STRUCT_* ftn)
-        { throw new NotImplementedException("getSecurityPrologHelper"); }
 
         private CORINFO_CLASS_STRUCT_* getTypeForBox(CORINFO_CLASS_STRUCT_* cls)
         {
@@ -2042,9 +2036,6 @@ namespace Internal.JitInterface
             return (uint)fieldDesc.Offset.AsInt;
         }
 
-        private bool isWriteBarrierHelperRequired(CORINFO_FIELD_STRUCT_* field)
-        { throw new NotImplementedException("isWriteBarrierHelperRequired"); }
-
         private CORINFO_FIELD_ACCESSOR getFieldIntrinsic(FieldDesc field)
         {
             Debug.Assert(field.IsIntrinsic);
@@ -2093,14 +2084,14 @@ namespace Internal.JitInterface
             extendOthers = true;
         }
 
-        private void* allocateArray(uint cBytes)
+        private void* allocateArray(UIntPtr cBytes)
         {
-            return (void*)Marshal.AllocCoTaskMem((int)cBytes);
+            return (void*)Marshal.AllocHGlobal((IntPtr)(void*)cBytes);
         }
 
         private void freeArray(void* array)
         {
-            Marshal.FreeCoTaskMem((IntPtr)array);
+            Marshal.FreeHGlobal((IntPtr)array);
         }
 
         private CORINFO_ARG_LIST_STRUCT_* getArgNext(CORINFO_ARG_LIST_STRUCT_* args)
@@ -2209,8 +2200,6 @@ namespace Internal.JitInterface
 
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
-
-            pEEInfoOut.offsetOfObjArrayData = (uint)(2 * pointerSize);
 
             pEEInfoOut.sizeOfReversePInvokeFrame = (uint)(2 * pointerSize);
 
@@ -2401,10 +2390,8 @@ namespace Internal.JitInterface
             }
         }
 
-        private void getLocationOfThisType(out CORINFO_LOOKUP_KIND result, CORINFO_METHOD_STRUCT_* context)
+        private void getLocationOfThisType(CORINFO_METHOD_STRUCT_* context, ref CORINFO_LOOKUP_KIND result)
         {
-            result = new CORINFO_LOOKUP_KIND();
-
             MethodDesc method = HandleToObject(context);
 
             if (method.IsSharedByGenericInstantiations)
@@ -2419,10 +2406,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private void* getPInvokeUnmanagedTarget(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
-        { throw new NotImplementedException("getPInvokeUnmanagedTarget"); }
-        private void* getAddressOfPInvokeFixup(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
-        { throw new NotImplementedException("getAddressOfPInvokeFixup"); }
         private void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, ref void* ppIndirection)
         { throw new NotImplementedException("GetCookieForPInvokeCalliSig"); }
         private CORINFO_JUST_MY_CODE_HANDLE_* getJustMyCodeHandle(CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_* ppIndirection)
@@ -2506,16 +2489,9 @@ namespace Internal.JitInterface
             return null;
         }
 
-        private void* getMemoryManager()
-        {
-            // This method is completely handled by the C++ wrapper to the JIT-EE interface,
-            // and should never reach the managed implementation.
-            Debug.Fail("CorInfoImpl.getMemoryManager should not be called");
-            throw new NotSupportedException("getMemoryManager");
-        }
-
         private byte[] _code;
         private byte[] _coldCode;
+        private int _codeAlignment;
 
         private byte[] _roData;
 
@@ -2535,11 +2511,25 @@ namespace Internal.JitInterface
             if (coldCodeSize != 0)
                 coldCodeBlock = (void*)GetPin(_coldCode = new byte[coldCodeSize]);
 
+            _codeAlignment = -1;
+            if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+            {
+                _codeAlignment = 32;
+            }
+            else if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+            {
+                _codeAlignment = 16;
+            }
+
             if (roDataSize != 0)
             {
                 int alignment = 8;
 
-                if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+                if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+                {
+                    alignment = 32;
+                }
+                else if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
                 {
                     alignment = 16;
                 }
@@ -2595,11 +2585,6 @@ namespace Internal.JitInterface
         {
             _gcInfo = new byte[(int)size];
             return (void*)GetPin(_gcInfo);
-        }
-
-        private void yieldExecution()
-        {
-            // Nothing to do
         }
 
         private bool logMsg(uint level, byte* fmt, IntPtr args)
@@ -2790,9 +2775,6 @@ namespace Internal.JitInterface
                     return UInt16.MaxValue;
             }
         }
-
-        private void getModuleNativeEntryPointRange(ref void* pStart, ref void* pEnd)
-        { throw new NotImplementedException("getModuleNativeEntryPointRange"); }
 
         private uint getExpectedTargetArchitecture()
         {

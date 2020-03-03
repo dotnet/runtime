@@ -22,14 +22,7 @@ jobs:
     workspace:
       clean: all
 
-    variables:
-    - ${{ each variable in parameters.variables }}:
-      - ${{insert}}: ${{ variable }}
-    - name: noWarnAsErrorArg
-      value: ''
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - name: noWarnAsErrorArg
-        value: -warnAsError:0
+    variables: ${{ parameters.variables }}
 
     steps:
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
@@ -45,7 +38,7 @@ jobs:
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(noWarnAsErrorArg) ${{ parameters.buildArgs }}
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} ${{ parameters.buildArgs }}
       displayName: Build product
 
     - task: PublishBuildArtifacts@1

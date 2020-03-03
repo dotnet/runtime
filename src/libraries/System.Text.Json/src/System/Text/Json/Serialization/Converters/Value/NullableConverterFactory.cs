@@ -26,14 +26,17 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(valueTypeToConvert);
             }
 
-            JsonConverter converter = (JsonConverter)Activator.CreateInstance(
+            return CreateValueConverter(valueTypeToConvert, valueConverter);
+        }
+
+        public static JsonConverter CreateValueConverter(Type valueTypeToConvert, JsonConverter valueConverter)
+        {
+            return (JsonConverter)Activator.CreateInstance(
                 typeof(NullableConverter<>).MakeGenericType(valueTypeToConvert),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 args: new object[] { valueConverter },
                 culture: null)!;
-
-            return converter;
         }
     }
 }

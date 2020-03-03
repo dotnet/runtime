@@ -186,6 +186,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     unwind.h
     utils.h
     valuenum.h
+    valuenumfuncs.h
     valuenumtype.h
     varset.h
     vartype.h

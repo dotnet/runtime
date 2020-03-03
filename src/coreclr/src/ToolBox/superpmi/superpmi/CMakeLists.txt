@@ -17,11 +17,8 @@ include_directories(../superpmi-shared)
 
 set(SUPERPMI_SOURCES
     commandline.cpp
-    coreclrcallbacks.cpp
     cycletimer.cpp
     icorjitinfo.cpp
-    ieememorymanager.cpp
-    iexecutionengine.cpp
     jitdebugger.cpp
     jitinstance.cpp
     methodstatsemitter.cpp

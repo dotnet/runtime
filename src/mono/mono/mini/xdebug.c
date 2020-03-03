@@ -109,7 +109,7 @@ G_BEGIN_DECLS
 /* GDB puts a breakpoint in this function.  */
 void MONO_NEVER_INLINE __jit_debug_register_code(void);
 
-#if !defined(MONO_LLVM_LOADED) && defined(ENABLE_LLVM) && !defined(MONO_CROSS_COMPILE)
+#if defined(ENABLE_LLVM) && !defined(MONO_CROSS_COMPILE)
 
 /* LLVM already defines these */
 

@@ -102,8 +102,6 @@ jobs:
         # Windows variables
         - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
           - _runtimeOSArg: /p:RuntimeOS=win10
-          # Remove when: https://github.com/dotnet/runtime/issues/31888 is fixed.
-          - _warnAsErrorArg: -warnAsError:0
 
         # Non-Windows variables
         - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:

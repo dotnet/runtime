@@ -131,8 +131,7 @@ namespace System.Reflection
 
             List<MethodInfo>? otherList = null;
 
-            MetadataEnumResult associatesData;
-            scope.Enum(MetadataTokenType.MethodDef, mdPropEvent, out associatesData);
+            scope.Enum(MetadataTokenType.MethodDef, mdPropEvent, out MetadataEnumResult associatesData);
 
             int cAssociates = associatesData.Length / 2;
 

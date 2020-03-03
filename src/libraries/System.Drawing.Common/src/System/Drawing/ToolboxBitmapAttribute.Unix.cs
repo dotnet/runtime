@@ -42,8 +42,8 @@ namespace System.Drawing
     [AttributeUsage(AttributeTargets.Class)]
     public class ToolboxBitmapAttribute : Attribute
     {
-        private Image smallImage = null;
-        private Image bigImage = null;
+        private Image? smallImage = null;
+        private Image? bigImage = null;
         public static readonly ToolboxBitmapAttribute Default = new ToolboxBitmapAttribute();
 
         private ToolboxBitmapAttribute()
@@ -64,7 +64,7 @@ namespace System.Drawing
             smallImage = GetImageFromResource(t, name, false);
         }
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (!(value is ToolboxBitmapAttribute))
                 return false;
@@ -75,30 +75,30 @@ namespace System.Drawing
 
         public override int GetHashCode()
         {
-            return (smallImage.GetHashCode() ^ bigImage.GetHashCode());
+            return (smallImage!.GetHashCode() ^ bigImage!.GetHashCode());
         }
 
-        public Image GetImage(object component)
+        public Image? GetImage(object component)
         {
             return GetImage(component.GetType(), null, false);
         }
 
-        public Image GetImage(object component, bool large)
+        public Image? GetImage(object component, bool large)
         {
             return GetImage(component.GetType(), null, large);
         }
 
-        public Image GetImage(Type type)
+        public Image? GetImage(Type type)
         {
             return GetImage(type, null, false);
         }
 
-        public Image GetImage(Type type, bool large)
+        public Image? GetImage(Type type, bool large)
         {
             return GetImage(type, null, large);
         }
 
-        public Image GetImage(Type type, string imgName, bool large)
+        public Image? GetImage(Type type, string? imgName, bool large)
         {
             if (smallImage == null)
                 smallImage = GetImageFromResource(type, imgName, false);
@@ -106,14 +106,14 @@ namespace System.Drawing
             if (large)
             {
                 if (bigImage == null)
-                    bigImage = new Bitmap(smallImage, 32, 32);
+                    bigImage = new Bitmap(smallImage!, 32, 32);
                 return bigImage;
             }
             else
                 return smallImage;
         }
 
-        public static Image GetImageFromResource(Type t, string imageName, bool large)
+        public static Image? GetImageFromResource(Type t, string? imageName, bool large)
         {
             Bitmap bitmap;
             if (imageName == null)
@@ -121,7 +121,7 @@ namespace System.Drawing
 
             try
             {
-                using (System.IO.Stream s = t.GetTypeInfo().Assembly.GetManifestResourceStream(t.Namespace + "." + imageName))
+                using (System.IO.Stream? s = t.GetTypeInfo().Assembly.GetManifestResourceStream(t.Namespace + "." + imageName))
                 {
                     if (s == null)
                     {

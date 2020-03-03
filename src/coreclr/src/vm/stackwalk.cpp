@@ -47,55 +47,6 @@ Assembly* CrawlFrame::GetAssembly()
     return pAssembly;
 }
 
-#ifndef DACCESS_COMPILE
-OBJECTREF* CrawlFrame::GetAddrOfSecurityObject()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    if (isFrameless)
-    {
-        _ASSERTE(pFunc);
-
-#if defined(TARGET_X86)
-        if (isCachedMethod)
-        {
-            return pSecurityObject;
-        }
-        else
-#endif // TARGET_X86
-        {
-            return (static_cast <OBJECTREF*>(GetCodeManager()->GetAddrOfSecurityObject(this)));
-        }
-    }
-    else
-    {
-#ifdef FEATURE_INTERPRETER
-        // Check for an InterpreterFrame.
-        Frame* pFrm = GetFrame();
-        if (pFrm != NULL && pFrm->GetVTablePtr() == InterpreterFrame::GetMethodFrameVPtr())
-        {
-#ifdef DACCESS_COMPILE
-            // TBD: DACize the interpreter.
-            return NULL;
-#else
-            return dac_cast<PTR_InterpreterFrame>(pFrm)->GetInterpreter()->GetAddressOfSecurityObject();
-#endif
-        }
-        // Otherwise...
-#endif // FEATURE_INTERPRETER
-
-        /*ISSUE: Are there any other functions holding a security desc? */
-        if (pFunc && (pFunc->IsIL() || pFunc->IsNoMetadata()))
-                return dac_cast<PTR_FramedMethodFrame>
-                    (pFrame)->GetAddrOfSecurityDesc();
-    }
-    return NULL;
-}
-#endif
-
 BOOL CrawlFrame::IsInCalleesFrames(LPVOID stackPointer)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1509,7 +1460,6 @@ void StackFrameIterator::ResetCrawlFrame()
 
     m_crawl.pThread = this->m_pThread;
 
-    m_crawl.pSecurityObject = NULL;
     m_crawl.isCachedMethod  = false;
     m_crawl.stackWalkCache.ClearEntry();
 
@@ -2945,18 +2895,6 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             {
                 m_crawl.isCachedMethod = m_crawl.stackWalkCache.Lookup((UINT_PTR)GetControlPC(m_crawl.pRD));
                 _ASSERTE (m_crawl.isCachedMethod != m_crawl.stackWalkCache.IsEmpty());
-
-                m_crawl.pSecurityObject = NULL;
-#if defined(TARGET_X86)
-                if (m_crawl.isCachedMethod && m_crawl.stackWalkCache.m_CacheEntry.HasSecurityObject())
-                {
-                    // pCallback will use this to save time on GetAddrOfSecurityObject
-                    StackwalkCacheUnwindInfo stackwalkCacheUnwindInfo(&m_crawl.stackWalkCache.m_CacheEntry);
-                    m_crawl.pSecurityObject = EECodeManager::GetAddrOfSecurityObjectFromCachedInfo(
-                                                m_crawl.pRD,
-                                                &stackwalkCacheUnwindInfo);
-                }
-#endif // TARGET_X86
             }
 #endif // DACCESS_COMPILE
 

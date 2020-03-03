@@ -101,9 +101,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Interfaces/Interfaces001/*">
             <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/readytorun/coreroot_determinism/coreroot_determinism/*">
-            <Issue>32333</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets -->
@@ -353,9 +350,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_26311/GitHub_26311/*">
             <Issue>https://github.com/dotnet/runtime/issues/13296</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/interlocked/compareexchange/compareexchangedouble/*">
-            <Issue>https://github.com/dotnet/runtime/issues/129</Issue>
         </ExcludeList>
     </ItemGroup>
 

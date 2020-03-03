@@ -105,7 +105,6 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
     GenTree*             tree          = *pTree;
     ShadowParamVarInfo*  shadowVarInfo = pState->comp->gsShadowVarInfo;
     assert(shadowVarInfo);
-    unsigned lclNum;
 
     assert(!pState->isAssignSrc || pState->lvAssignDef != (unsigned)-1);
 
@@ -119,6 +118,7 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
     {
         // Indirections - look for *p uses and defs
         case GT_IND:
+        case GT_BLK:
         case GT_OBJ:
         case GT_ARR_ELEM:
         case GT_ARR_INDEX:
@@ -136,7 +136,8 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
         // local vars and param uses
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-            lclNum = tree->AsLclVarCommon()->GetLclNum();
+        {
+            unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
 
             if (pState->isUnderIndir)
             {
@@ -183,6 +184,7 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
                 }
             }
             return WALK_CONTINUE;
+        }
 
         // Calls - Mark arg variables
         case GT_CALL:
@@ -227,50 +229,34 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
             }
             return WALK_SKIP_SUBTREES;
 
-        default:
+        case GT_ASG:
+        {
+            GenTreeOp* asg = tree->AsOp();
+            GenTree*   dst = asg->gtGetOp1();
+            GenTree*   src = asg->gtGetOp2();
             // Assignments - track assign groups and *p defs.
-            if (tree->OperIs(GT_ASG))
+
+            // Walk dst side
+            comp->fgWalkTreePre(&dst, comp->gsMarkPtrsAndAssignGroups, (void*)&newState);
+
+            // Now handle src side
+            if (dst->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
-                bool isLocVar;
-                bool isLocFld;
-
-                if (tree->OperIsBlkOp())
-                {
-                    // Blk assignments are always handled as if they have implicit indirections.
-                    // TODO-1stClassStructs: improve this.
-                    newState.isUnderIndir = true;
-                    comp->fgWalkTreePre(&tree->AsOp()->gtOp1, comp->gsMarkPtrsAndAssignGroups, (void*)&newState);
-
-                    if (tree->OperIsInitBlkOp())
-                    {
-                        newState.isUnderIndir = false;
-                    }
-                    comp->fgWalkTreePre(&tree->AsOp()->gtOp2, comp->gsMarkPtrsAndAssignGroups, (void*)&newState);
-                }
-                else
-                {
-                    // Walk dst side
-                    comp->fgWalkTreePre(&tree->AsOp()->gtOp1, comp->gsMarkPtrsAndAssignGroups, (void*)&newState);
-
-                    // Now handle src side
-                    isLocVar = tree->AsOp()->gtOp1->OperGet() == GT_LCL_VAR;
-                    isLocFld = tree->AsOp()->gtOp1->OperGet() == GT_LCL_FLD;
-
-                    if ((isLocVar || isLocFld) && tree->AsOp()->gtOp2)
-                    {
-                        lclNum               = tree->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
-                        newState.lvAssignDef = lclNum;
-                        newState.isAssignSrc = true;
-                    }
-
-                    comp->fgWalkTreePre(&tree->AsOp()->gtOp2, comp->gsMarkPtrsAndAssignGroups, (void*)&newState);
-                }
-
-                return WALK_SKIP_SUBTREES;
+                unsigned lclNum      = dst->AsLclVarCommon()->GetLclNum();
+                newState.lvAssignDef = lclNum;
+                newState.isAssignSrc = true;
             }
-    }
 
-    return WALK_CONTINUE;
+            comp->fgWalkTreePre(&src, comp->gsMarkPtrsAndAssignGroups, (void*)&newState);
+            assert(dst == asg->gtGetOp1());
+            assert(src == asg->gtGetOp2());
+
+            return WALK_SKIP_SUBTREES;
+        }
+
+        default:
+            return WALK_CONTINUE;
+    }
 }
 
 /*****************************************************************************

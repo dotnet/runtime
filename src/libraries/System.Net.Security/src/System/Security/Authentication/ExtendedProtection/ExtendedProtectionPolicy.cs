@@ -15,14 +15,14 @@ namespace System.Security.Authentication.ExtendedProtection
     /// </summary>
     public class ExtendedProtectionPolicy : ISerializable
     {
-        private readonly ServiceNameCollection _customServiceNames;
+        private readonly ServiceNameCollection? _customServiceNames;
         private readonly PolicyEnforcement _policyEnforcement;
         private readonly ProtectionScenario _protectionScenario;
-        private readonly ChannelBinding _customChannelBinding;
+        private readonly ChannelBinding? _customChannelBinding;
 
         public ExtendedProtectionPolicy(PolicyEnforcement policyEnforcement,
                                         ProtectionScenario protectionScenario,
-                                        ServiceNameCollection customServiceNames)
+                                        ServiceNameCollection? customServiceNames)
         {
             if (policyEnforcement == PolicyEnforcement.Never)
             {
@@ -41,9 +41,9 @@ namespace System.Security.Authentication.ExtendedProtection
 
         public ExtendedProtectionPolicy(PolicyEnforcement policyEnforcement,
                                         ProtectionScenario protectionScenario,
-                                        ICollection customServiceNames)
+                                        ICollection? customServiceNames)
             : this(policyEnforcement, protectionScenario,
-                   customServiceNames == null ? (ServiceNameCollection)null : new ServiceNameCollection(customServiceNames))
+                   customServiceNames == null ? (ServiceNameCollection?)null : new ServiceNameCollection(customServiceNames))
         {
         }
 
@@ -82,7 +82,7 @@ namespace System.Security.Authentication.ExtendedProtection
             throw new PlatformNotSupportedException();
         }
 
-        public ServiceNameCollection CustomServiceNames
+        public ServiceNameCollection? CustomServiceNames
         {
             get { return _customServiceNames; }
         }
@@ -97,7 +97,7 @@ namespace System.Security.Authentication.ExtendedProtection
             get { return _protectionScenario; }
         }
 
-        public ChannelBinding CustomChannelBinding
+        public ChannelBinding? CustomChannelBinding
         {
             get { return _customChannelBinding; }
         }
@@ -128,7 +128,7 @@ namespace System.Security.Authentication.ExtendedProtection
             else
             {
                 bool first = true;
-                foreach (string serviceName in _customServiceNames)
+                foreach (string? serviceName in _customServiceNames)
                 {
                     if (first)
                     {
