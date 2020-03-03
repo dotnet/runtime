@@ -22,4 +22,12 @@
     <TargetOS Condition="'$(TargetOS)' == ''">$(__TargetOS)</TargetOS>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
+    <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
+    <LibrariesTargetOS Condition="'$(LibrariesTargetOS)' == ''">$(TargetOS)</LibrariesTargetOS>
+    <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
+    <LibrariesTargetOSConfigurationArchitecture Condition="'$(LibrariesTargetOSConfigurationArchitecture)' == ''">$(LibrariesTargetOS)-$(LibrariesConfiguration)-$(TargetArchitecture)</LibrariesTargetOSConfigurationArchitecture>
+  </PropertyGroup>
+
 </Project>

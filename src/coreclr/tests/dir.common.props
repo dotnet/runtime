@@ -11,7 +11,7 @@
 
   <PropertyGroup>
     <OSPlatformConfig>$(TargetOS).$(BuildArch).$(Configuration)</OSPlatformConfig>
-  
+
     <TestSrcDir>$(MSBuildThisFileDirectory)src</TestSrcDir>
     <BuildProjectRelativeDir>$([MSBuild]::MakeRelative($(TestSrcDir), $(MSBuildProjectDirectory)))\$(MSBuildProjectName)\</BuildProjectRelativeDir>
 
