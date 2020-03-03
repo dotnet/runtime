@@ -201,7 +201,7 @@ namespace JitBench
             }
         }
 
-        
+
 
         public static string GetRuntimeDownloadLink(string version, Architecture arch)
         {
@@ -303,7 +303,6 @@ namespace JitBench
                 "sos.NETCore.dll",
                 GetNativeDllNameConvention("clretwrc", os),
                 "System.Private.CoreLib.dll",
-                "mscorrc.debug.dll",
                 "mscorrc.dll"
             };
         }
@@ -342,7 +341,7 @@ namespace JitBench
             }
         }
 
-        public string DotNetExe { get; } 
+        public string DotNetExe { get; }
         public string DotNetDir { get; }
         public string FrameworkDir { get; }
         public string FrameworkVersion { get; }

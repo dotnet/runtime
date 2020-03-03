@@ -22,7 +22,6 @@ namespace ReadyToRun.SuperIlc
             "coreclr",
             "clrjit",
             "mscorrc",
-            "mscorrc.debug",
             "mscordaccore",
             "mscordbi",
         };

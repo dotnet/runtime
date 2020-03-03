@@ -723,7 +723,7 @@ public:
         FPGETTHREADUICULTUREID* fpGetThreadUICultureId
     );
 
-    // Get the default resource location (mscorrc.dll for desktop, mscorrc.debug.dll for CoreCLR)
+    // Get the default resource location (mscorrc.dll)
     static CCompRC* GetDefaultResourceDll();
 
     static void GetDefaultCallbacks(

@@ -335,7 +335,7 @@ set(JIT_ARCH_LINK_LIBRARIES
 
 if(CLR_CMAKE_HOST_UNIX)
     list(APPEND JIT_LINK_LIBRARIES
-       mscorrc_debug
+       mscorrc
        coreclrpal
        palrt
     )

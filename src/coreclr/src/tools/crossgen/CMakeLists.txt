@@ -56,7 +56,7 @@ target_link_libraries(crossgen
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(crossgen
-        mscorrc_debug
+        mscorrc
         coreclrpal
         palrt
     )

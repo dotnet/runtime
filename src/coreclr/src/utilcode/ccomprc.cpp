@@ -10,7 +10,7 @@
 #include "../dlls/mscorrc/resource.h"
 #ifdef HOST_UNIX
 #include "resourcestring.h"
-#define NATIVE_STRING_RESOURCE_NAME mscorrc_debug
+#define NATIVE_STRING_RESOURCE_NAME mscorrc
 __attribute__((visibility("default"))) DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME);
 #endif
 #include "sstring.h"
@@ -112,10 +112,10 @@ HRESULT CCompRC::AddMapNode(LocaleID langId, HRESOURCEDLL hInst, BOOL fMissing)
 //*****************************************************************************
 // Initialize
 //*****************************************************************************
-LPCWSTR CCompRC::m_pDefaultResource = W("mscorrc.debug.dll");
+LPCWSTR CCompRC::m_pDefaultResource = W("mscorrc.dll");
 
 #ifdef HOST_UNIX
-LPCSTR CCompRC::m_pDefaultResourceDomain = "mscorrc.debug";
+LPCSTR CCompRC::m_pDefaultResourceDomain = "mscorrc";
 #endif // HOST_UNIX
 
 HRESULT CCompRC::Init(LPCWSTR pResourceFile)
