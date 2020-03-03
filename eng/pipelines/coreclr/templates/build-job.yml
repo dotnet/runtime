@@ -124,7 +124,7 @@ jobs:
       - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(officialBuildIdArg) $(enforcePgoArg)
+      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg)
         displayName: Build CoreCLR Runtime
 
     # Build CoreCLR Managed Components
