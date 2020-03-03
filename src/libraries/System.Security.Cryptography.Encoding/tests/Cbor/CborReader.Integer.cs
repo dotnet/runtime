@@ -24,24 +24,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     throw new OverflowException();
 
                 default:
-                    throw new InvalidOperationException("Data item type mismatch");
-            }
-        }
-
-        public bool TryReadUInt64(out ulong value)
-        {
-            CborInitialByte header = Peek();
-
-            switch (header.MajorType)
-            {
-                case CborMajorType.UnsignedInteger:
-                    value = ReadUnsignedInteger(header, out int additionalBytes);
-                    AdvanceBuffer(1 + additionalBytes);
-                    return true;
-
-                default:
-                    value = 0;
-                    return false;
+                    throw new InvalidOperationException("Data item major type mismatch.");
             }
         }
 
@@ -66,51 +49,18 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     return value;
 
                 default:
-                    throw new InvalidOperationException("Data item type mismatch");
+                    throw new InvalidOperationException("Data item major type mismatch.");
             }
         }
 
-        public bool TryReadInt64(out long value)
+        // Returns the next CBOR negative integer encoding according to
+        // https://tools.ietf.org/html/rfc7049#section-2.1
+        public ulong ReadCborNegativeIntegerEncoding()
         {
-            ulong result;
-            int additionalBytes;
-
-            CborInitialByte header = Peek();
-
-            switch (header.MajorType)
-            {
-                case CborMajorType.UnsignedInteger:
-                    result = ReadUnsignedInteger(header, out additionalBytes);
-                    if (result > long.MaxValue)
-                    {
-                        value = 0;
-                        return false;
-                    }
-                    else
-                    {
-                        value = (long)result;
-                        AdvanceBuffer(1 + additionalBytes);
-                        return true;
-                    }
-
-                case CborMajorType.NegativeInteger:
-                    result = ReadUnsignedInteger(header, out additionalBytes);
-                    if (result > long.MaxValue)
-                    {
-                        value = 0;
-                        return false;
-                    }
-                    else
-                    {
-                        value = -1 - (long)result;
-                        AdvanceBuffer(1 + additionalBytes);
-                        return true;
-                    }
-
-                default:
-                    value = 0;
-                    return false;
-            }
+            CborInitialByte header = Peek(expectedType: CborMajorType.NegativeInteger);
+            ulong value = ReadUnsignedInteger(header, out int additionalBytes);
+            AdvanceBuffer(1 + additionalBytes);
+            return value;
         }
 
         // Unsigned integer decoding https://tools.ietf.org/html/rfc7049#section-2.1

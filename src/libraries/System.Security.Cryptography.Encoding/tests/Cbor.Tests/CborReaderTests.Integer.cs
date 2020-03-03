@@ -80,6 +80,24 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Theory]
+        [InlineData(0, "20")]
+        [InlineData(9, "29")]
+        [InlineData(23, "37")]
+        [InlineData(99, "3863")]
+        [InlineData(999, "3903e7")]
+        [InlineData(byte.MaxValue, "38ff")]
+        [InlineData(ushort.MaxValue, "39ffff")]
+        [InlineData(uint.MaxValue, "3affffffff")]
+        [InlineData(ulong.MaxValue, "3bffffffffffffffff")]
+        public static void ReadCborNegativeIntegerEncoding_SingleValue_HappyPath(ulong expectedResult, string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborValueReader(data);
+            ulong actualResult = reader.ReadCborNegativeIntegerEncoding();
+            Assert.Equal(expectedResult, actualResult);
+        }
+
+        [Theory]
         // all possible definite-length encodings for the value 23
         [InlineData("17")]
         [InlineData("1817")]
@@ -155,7 +173,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt64();
             });
 
-            Assert.Equal("Data item type mismatch", exn.Message);
+            Assert.Equal("Data item major type mismatch.", exn.Message);
         }
 
         [Theory]
@@ -170,12 +188,34 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] data = hexEncoding.HexToByteArray();
             InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() =>
-                {
-                    var reader = new CborValueReader(data);
-                    reader.ReadUInt64();
-                });
+            {
+                var reader = new CborValueReader(data);
+                reader.ReadUInt64();
+            });
 
-            Assert.Equal("Data item type mismatch", exn.Message);
+            Assert.Equal("Data item major type mismatch.", exn.Message);
+        }
+
+        [Theory]
+        [InlineData("00")] // 0
+        [InlineData("17")] // 23
+        [InlineData("40")] // empty byte string
+        [InlineData("60")] // empty text string
+        [InlineData("f6")] // null
+        [InlineData("80")] // []
+        [InlineData("a0")] // {}
+        [InlineData("f97e00")] // NaN
+        [InlineData("fb3ff199999999999a")] // 1.1
+        public static void ReadCborNegativeIntegerEncoding_InvalidTypes_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            byte[] data = hexEncoding.HexToByteArray();
+            InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() =>
+            {
+                var reader = new CborValueReader(data);
+                reader.ReadCborNegativeIntegerEncoding();
+            });
+
+            Assert.Equal("Data item major type mismatch.", exn.Message);
         }
 
         [Theory]
