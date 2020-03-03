@@ -146,6 +146,7 @@
   </Target>
 
   <Target Name="EnsureLocalArtifactsExist">
+    <Message Text="!!! LibrariesConfiguration $(LibrariesConfiguration)" Importance="High" />
     <Error Condition="!Exists('$(LibrariesSharedFrameworkRefArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesSharedFrameworkRefArtifactsPath)" />
     <Error Condition="!Exists('$(LibrariesAllRefArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesAllRefArtifactsPath)" />
   </Target>

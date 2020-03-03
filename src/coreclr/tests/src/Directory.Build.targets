@@ -241,7 +241,8 @@
   <PropertyGroup>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
     <TargetArchitecture>$(BuildArch)</TargetArchitecture>
-    <LibrariesConfiguration>Release</LibrariesConfiguration>
+    <!-- <LibrariesConfiguration>Release</LibrariesConfiguration> -->
+    <LibrariesConfiguration>$(Configuration)</LibrariesConfiguration>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets"/>

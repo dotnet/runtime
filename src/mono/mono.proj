@@ -239,6 +239,7 @@
   <!-- Run coreclr tests using runtest.py -->
   <Target Name="RunCoreClrTests" DependsOnTargets="ValidateLocalDotnet;PatchCoreClrCoreRoot">
     <Exec Condition="'$(OS)' == 'Windows_NT'" Command="$(MonoProjectRoot)..\coreclr\tests\runtest.cmd $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
+    <Message Importance="High" Text="!!! Command: $(MonoProjectRoot)../coreclr/tests/./runtest.sh $(CoreClrTestConfig)" />
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(MonoProjectRoot)../coreclr/tests/./runtest.sh $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
   </Target>
 

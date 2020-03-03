@@ -8,7 +8,8 @@
     <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(TargetRid)</RuntimeIdentifiers>
     <TargetArchitecture>$(BuildArch)</TargetArchitecture>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
-    <LibrariesConfiguration>Release</LibrariesConfiguration>
+    <!-- <LibrariesConfiguration>Release</LibrariesConfiguration> -->
+    <LibrariesConfiguration>$(Configuration)</LibrariesConfiguration>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tools.RuntimeClient" Version="$(MicrosoftDiagnosticsToolsRuntimeClientVersion)" />
