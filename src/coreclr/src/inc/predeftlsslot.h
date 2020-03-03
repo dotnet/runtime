@@ -27,7 +27,7 @@ enum PredefinedTlsSlots
     TlsIdx_StressLog,
     TlsIdx_CantStopCount, // Can't-stop counter for any thread
     TlsIdx_Check,
-    TlsIdx_ForbidGCLoaderUseCount,
+    TlsIdx_Unused8,
     TlsIdx_ClrDebugState,         // Pointer to ClrDebugState* structure
     TlsIdx_Unused10,
 

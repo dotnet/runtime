@@ -6126,6 +6126,9 @@ if (g_pConfig->GetGCStressLevel() && g_pConfig->FastGCStressLevel() > 1) {   \
 #endif  // _DEBUG
 
 #ifdef _DEBUG_IMPL
+
+extern thread_local int t_ForbidGCLoaderUseCount;
+
 // Holder for incrementing the ForbidGCLoaderUse counter.
 class GCForbidLoaderUseHolder
 {
@@ -6133,13 +6136,13 @@ class GCForbidLoaderUseHolder
     GCForbidLoaderUseHolder()
     {
         WRAPPER_NO_CONTRACT;
-        ClrFlsIncrementValue(TlsIdx_ForbidGCLoaderUseCount, 1);
+        t_ForbidGCLoaderUseCount++;
     }
 
     ~GCForbidLoaderUseHolder()
     {
         WRAPPER_NO_CONTRACT;
-        ClrFlsIncrementValue(TlsIdx_ForbidGCLoaderUseCount, -1);
+        t_ForbidGCLoaderUseCount--;
     }
 };
 
@@ -6204,12 +6207,8 @@ class GCForbidLoaderUseHolder
 #define FORBIDGC_LOADER_USE_ENABLED() true
 
 #else // DACCESS_COMPILE
-#if defined (_DEBUG_IMPL) || defined(_PREFAST_)
-#ifndef DACCESS_COMPILE
-#define FORBIDGC_LOADER_USE_ENABLED() (ClrFlsGetValue(TlsIdx_ForbidGCLoaderUseCount))
-#else
-#define FORBIDGC_LOADER_USE_ENABLED() TRUE
-#endif
+#ifdef _DEBUG_IMPL
+#define FORBIDGC_LOADER_USE_ENABLED() (t_ForbidGCLoaderUseCount)
 #else   // _DEBUG_IMPL
 
 // If you got an error about FORBIDGC_LOADER_USE_ENABLED being undefined, it's because you tried

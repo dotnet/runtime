@@ -54,6 +54,10 @@
 #include "eventpipebuffermanager.h"
 #endif // FEATURE_PERFTRACING
 
+#if defined (_DEBUG_IMPL) || defined(_PREFAST_)
+thread_local int t_ForbidGCLoaderUseCount;
+#endif
+
 uint64_t Thread::dead_threads_non_alloc_bytes = 0;
 
 SPTR_IMPL(ThreadStore, ThreadStore, s_pThreadStore);
