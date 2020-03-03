@@ -659,9 +659,9 @@ echo.
 echo Build the CoreCLR repo.
 echo.
 echo Usage:
-echo     build.cmd [option1] [option2]
+echo     build-runtime.cmd [option1] [option2]
 echo or:
-echo     build.cmd all [option1] [option2]
+echo     build-runtime.cmd all [option1] [option2]
 echo.
 echo All arguments are optional. The options are:
 echo.
@@ -676,11 +676,8 @@ echo -configureonly: skip all builds; only run CMake ^(default: CMake and builds
 echo -skipconfigure: skip CMake ^(default: CMake is run^)
 echo -skipnative: skip building native components ^(default: native components are built^).
 echo -skipcrossarchnative: skip building cross-architecture native components ^(default: components are built^).
-echo -skipmanagedtools: skip build tools such as R2R dump and RunInContext
 echo -skiprestoreoptdata: skip restoring optimization data used by profile-based optimizations.
-echo -skiprestore: skip restoring packages ^(default: packages are restored during build^).
 echo -priority=^<N^> : specify a set of test that will be built and run, with priority N.
-echo -officialbuildid=^<ID^>: specify the official build ID to be used by this build.
 echo portable : build for portable RID.
 echo.
 echo If "all" is specified, then all build architectures and types are built. If, in addition,
