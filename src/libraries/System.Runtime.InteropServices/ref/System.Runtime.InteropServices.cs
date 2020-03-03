@@ -1007,14 +1007,15 @@ namespace System.Runtime.InteropServices
         }
         public struct ComInterfaceDispatch
         {
-            public System.IntPtr vftbl;
+            public System.IntPtr Vtable;
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class { throw null; }
         }
         public System.IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags) { throw null; }
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
-        public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object? wrapper = null) { throw null; }
+        public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags) { throw null; }
         protected abstract object CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
-        protected virtual void ReleaseObjects(System.Collections.IEnumerable objects) { throw null; }
+        public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper) { throw null; }
+        protected abstract void ReleaseObjects(System.Collections.IEnumerable objects);
         public void RegisterAsGlobalInstance() { }
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }

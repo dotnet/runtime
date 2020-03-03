@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
     }
 
     /// <summary>
-    /// Enumeration of flags for <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags, object?)"/>.
+    /// Enumeration of flags for <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags)"/>.
     /// </summary>
     [Flags]
     public enum CreateObjectFlags
@@ -83,17 +83,17 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public struct ComInterfaceDispatch
         {
-            public IntPtr vftbl;
+            public IntPtr Vtable;
 
             /// <summary>
-            /// Given a <see cref="System.IntPtr"/> from a generated VTable, convert to the target type.
+            /// Given a <see cref="System.IntPtr"/> from a generated Vtable, convert to the target type.
             /// </summary>
             /// <typeparam name="T">Desired type.</typeparam>
-            /// <param name="dispatchPtr">Pointer supplied to VTable function entry.</param>
+            /// <param name="dispatchPtr">Pointer supplied to Vtable function entry.</param>
             /// <returns>Instance of type associated with dispatched function call.</returns>
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class
             {
-                // See the CCW dispatch section in the runtime for details on the masking below.
+                // See the dispatch section in the runtime for details on the masking below.
                 const long DispatchThisPtrMask = ~0xfL;
                 var comInstance = *(ComInterfaceInstance**)(((long)dispatchPtr) & DispatchThisPtrMask);
 
@@ -112,9 +112,9 @@ namespace System.Runtime.InteropServices
         private static ComWrappers? s_globalInstance;
 
         /// <summary>
-        /// Create an COM representation of the supplied object that can be passed to an non-managed environment.
+        /// Create a COM representation of the supplied object that can be passed to a non-managed environment.
         /// </summary>
-        /// <param name="instance">A GC Handle to the managed object to expose outside the .NET runtime.</param>
+        /// <param name="instance">The managed object to expose outside the .NET runtime.</param>
         /// <param name="flags">Flags used to configure the generated interface.</param>
         /// <returns>The generated COM interface that can be passed outside the .NET runtime.</returns>
         public IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
@@ -130,10 +130,10 @@ namespace System.Runtime.InteropServices
         private static extern IntPtr GetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack comWrappersImpl, ObjectHandleOnStack instance, CreateComInterfaceFlags flags);
 
         /// <summary>
-        /// Compute the desired VTables for <paramref name="obj"/> respecting the values of <paramref name="flags"/>.
+        /// Compute the desired Vtable for <paramref name="obj"/> respecting the values of <paramref name="flags"/>.
         /// </summary>
-        /// <param name="obj">Target of the returned VTables.</param>
-        /// <param name="flags">Flags used to compute VTables.</param>
+        /// <param name="obj">Target of the returned Vtables.</param>
+        /// <param name="flags">Flags used to compute Vtables.</param>
         /// <param name="count">The number of elements contained in the returned memory.</param>
         /// <returns><see cref="ComInterfaceEntry" /> pointer containing memory for all COM interface entries.</returns>
         /// <remarks>
@@ -153,25 +153,10 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="externalComObject">Object to import for usage into the .NET runtime.</param>
         /// <param name="flags">Flags used to describe the external object.</param>
-        /// <param name="wrapper">An optional <see cref="object"/> to be used as the wrapper for the external object</param>
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
-        /// <remarks>
-        /// Providing a <paramref name="wrapper"/> instance means <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags, object?)"/>
-        /// will not be called.
-        ///
-        /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="System.NotSupportedException"/> will be thrown.
-        /// </remarks>
-        public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object? wrapper = null)
+        public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {
-            if (externalComObject == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(externalComObject));
-
-            ComWrappers impl = this;
-            object? wrapperLocal = wrapper;
-            object? retValue = null;
-            GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack.Create(ref impl), externalComObject, flags, ObjectHandleOnStack.Create(ref wrapperLocal), ObjectHandleOnStack.Create(ref retValue));
-
-            return retValue!;
+            return GetOrCreateObjectForComInstanceEx(externalComObject, flags, null);
         }
 
         [DllImport(RuntimeHelpers.QCall)]
@@ -184,7 +169,7 @@ namespace System.Runtime.InteropServices
         /// <param name="flags">Flags used to describe the external object.</param>
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
         /// <remarks>
-        /// If the object cannot be created and <code>null</code> is returned, the call to <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags, object?)"/> will throw a <see cref="System.ArgumentNullException"/>.
+        /// If the object cannot be created and <code>null</code> is returned, the call to <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags)"/> will throw a <see cref="System.ArgumentNullException"/>.
         /// </remarks>
         protected abstract object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags);
 
@@ -193,16 +178,38 @@ namespace System.Runtime.InteropServices
             => (comWrappersImpl ?? s_globalInstance!).CreateObject(externalComObject, flags);
 
         /// <summary>
-        /// Called when a request is made for a collection of objects to be released.
+        /// Get the currently registered managed object or uses the supplied managed object and registers it.
+        /// </summary>
+        /// <param name="externalComObject">Object to import for usage into the .NET runtime.</param>
+        /// <param name="flags">Flags used to describe the external object.</param>
+        /// <param name="wrapper">The <see cref="object"/> to be used as the wrapper for the external object</param>
+        /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
+        /// <remarks>
+        /// If the <paramref name="wrapper"/> instance already has an associated external object a <see cref="System.NotSupportedException"/> will be thrown.
+        /// </remarks>
+        public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper)
+        {
+            return GetOrCreateObjectForComInstanceEx(externalComObject, flags, wrapper);
+        }
+
+        private object GetOrCreateObjectForComInstanceEx(IntPtr externalComObject, CreateObjectFlags flags, object? wrapper)
+        {
+            if (externalComObject == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(externalComObject));
+
+            ComWrappers impl = this;
+            object? wrapperLocal = wrapper;
+            object? retValue = null;
+            GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack.Create(ref impl), externalComObject, flags, ObjectHandleOnStack.Create(ref wrapperLocal), ObjectHandleOnStack.Create(ref retValue));
+
+            return retValue!;
+        }
+
+        /// <summary>
+        /// Called when a request is made for a collection of objects to be released outside of normal object or COM interface lifetime.
         /// </summary>
         /// <param name="objects">Collection of objects to release.</param>
-        /// <remarks>
-        /// The default implementation of this function throws <see cref="System.NotImplementedException"/>.
-        /// </remarks>
-        protected virtual void ReleaseObjects(IEnumerable objects)
-        {
-            throw new NotImplementedException();
-        }
+        protected abstract void ReleaseObjects(IEnumerable objects);
 
         // Call to execute the virtual instance function
         internal static void CallReleaseObjects(ComWrappers? comWrappersImpl, IEnumerable objects)

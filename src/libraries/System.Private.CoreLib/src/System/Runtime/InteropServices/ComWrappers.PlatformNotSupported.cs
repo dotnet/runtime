@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices
 
         public struct ComInterfaceDispatch
         {
-            public IntPtr vftbl;
+            public IntPtr Vtable;
 
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class
             {
@@ -49,17 +49,19 @@ namespace System.Runtime.InteropServices
 
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
-        public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object? wrapper = null)
+        public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {
             throw new PlatformNotSupportedException();
         }
 
         protected abstract object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags);
 
-        protected virtual void ReleaseObjects(IEnumerable objects)
+        public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper)
         {
             throw new PlatformNotSupportedException();
         }
+
+        protected abstract void ReleaseObjects(IEnumerable objects);
 
         public void RegisterAsGlobalInstance()
         {
