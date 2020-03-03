@@ -4774,7 +4774,7 @@ void CodeGen::genCheckUseBlockInit()
 
     // We can clear using aligned SIMD so the threshold is lower,
     // and clears in order which is better for auto-prefetching
-    genUseBlockInit = genInitStkLclCnt > (largeGcStructs + 4);
+    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4));
 
 #else // !defined(TARGET_AMD64)
 
@@ -6329,7 +6329,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         // Aligning low we want to move up to next boundary
         int alignedLclLo = (untrLclLo + (XMM_REGSIZE_BYTES - 1)) & -XMM_REGSIZE_BYTES;
 
-        if (untrLclLo != alignedLclLo && blkSize < 2 * XMM_REGSIZE_BYTES)
+        if ((untrLclLo != alignedLclLo) && (blkSize < 2 * XMM_REGSIZE_BYTES))
         {
             // If unaligned and smaller then 2 x SIMD size we won't bother trying to align
             assert((alignedLclLo - untrLclLo) < XMM_REGSIZE_BYTES);
@@ -6350,7 +6350,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
             }
 #if defined(TARGET_AMD64)
-            assert(i == blkSize || (i + sizeof(int) == blkSize));
+            assert((i == blkSize) || (i + sizeof(int) == blkSize));
             if (i != blkSize)
             {
                 emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
@@ -6375,7 +6375,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             int       alignedLclHi;
             int       alignmentHiBlkSize;
 
-            if (blkSize < 2 * XMM_REGSIZE_BYTES || untrLclLo == alignedLclLo)
+            if ((blkSize < 2 * XMM_REGSIZE_BYTES) || (untrLclLo == alignedLclLo))
             {
                 // Either aligned or smaller then 2 x SIMD size so we won't try to align
                 // However, we still want to zero anything that is not in a 16 byte chunk at end
@@ -6411,7 +6411,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
                 }
-                assert(i == alignmentLoBlkSize || (i + sizeof(int) == alignmentLoBlkSize));
+                assert((i == alignmentLoBlkSize) || (i + sizeof(int) == alignmentLoBlkSize));
                 if (i != alignmentLoBlkSize)
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
@@ -6432,7 +6432,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 #endif
             // The loop is unrolled 3 times so we do not move to the loop block until it
             // will loop at least once so the threshold is 6.
-            if (blkSize < 6 * XMM_REGSIZE_BYTES)
+            if (blkSize < (6 * XMM_REGSIZE_BYTES))
             {
                 // Generate the following code:
                 //
@@ -6529,7 +6529,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                     emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, alignedLclHi + i);
                 }
 #if defined(TARGET_AMD64)
-                assert(i == alignmentHiBlkSize || (i + sizeof(int) == alignmentHiBlkSize));
+                assert((i == alignmentHiBlkSize) || (i + sizeof(int) == alignmentHiBlkSize));
                 if (i != alignmentHiBlkSize)
                 {
                     emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, alignedLclHi + i);
