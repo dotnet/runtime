@@ -10,9 +10,3 @@ if(CLR_CMAKE_HOST_WIN32)
 endif(CLR_CMAKE_HOST_WIN32)
 
 add_subdirectory(full)
-
-# Only add the small version of the resources if the platform is Windows.
-if(CLR_CMAKE_TARGET_WIN32)
-    add_subdirectory(small)
-endif(CLR_CMAKE_TARGET_WIN32)
-
