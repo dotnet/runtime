@@ -33,7 +33,7 @@ enum PredefinedTlsSlots
 
     // Add more indices here.
     TlsIdx_ThreadType, // bit flags to indicate special thread's type
-    TlsIdx_CantAllocCount, //Can't allocate memory on heap in this thread
+    TlsIdx_Unused12,
 
     // A transient thread value that indicates this thread is currently walking its stack
     // or the stack of another thread. This value is useful to help short-circuit

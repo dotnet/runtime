@@ -358,8 +358,17 @@ private:
 
 HMODULE GetCLRModule ();
 
-extern void IncCantAllocCount();
-extern void DecCantAllocCount();
+extern thread_local int t_CantAllocCount;
+
+inline void IncCantAllocCount()
+{
+    t_CantAllocCount++;
+}
+
+inline void DecCantAllocCount()
+{
+    t_CantAllocCount--;
+}
 
 class CantAllocHolder
 {
@@ -375,18 +384,13 @@ public:
 };
 
 // At places where want to allocate stress log, we need to first check if we are allowed to do so.
-// If ClrTlsInfo doesn't exist for this thread, we take it as can alloc
 inline bool IsInCantAllocRegion ()
 {
-    size_t count = 0;
-    if (ClrFlsCheckValue(TlsIdx_CantAllocCount, (LPVOID *)&count))
-    {
-        _ASSERTE (count >= 0);
-        return count > 0;
-    }
-    return false;
+    return t_CantAllocCount != 0;
 }
-// for stress log the rule is more restrict, we have to check the global counter too
-extern BOOL IsInCantAllocStressLogRegion();
+inline BOOL IsInCantAllocStressLogRegion()
+{
+    return t_CantAllocCount != 0;
+}
 
 #endif
