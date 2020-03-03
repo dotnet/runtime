@@ -4626,49 +4626,6 @@ private:
 
 //*********************************************************************************
 
-// When we're hosted, operations called by the host (such as Thread::YieldTask)
-// may not cause calls back into the host, as the host needs not be reentrant.
-// Use the following holder for code in which calls into the host are forbidden.
-// (If a call into the host is attempted nevertheless, an assert will fire.)
-
-class ForbidCallsIntoHostOnThisThread
-{
-private:
-    static Volatile<PVOID> s_pvOwningFiber;
-
-    FORCEINLINE static BOOL Enter(BOOL)
-    {
-        WRAPPER_NO_CONTRACT;
-        return InterlockedCompareExchangePointer(
-            &s_pvOwningFiber, ClrTeb::GetFiberPtrId(), NULL) == NULL;
-    }
-
-    FORCEINLINE static void Leave(BOOL)
-    {
-        LIMITED_METHOD_CONTRACT;
-        s_pvOwningFiber = NULL;
-    }
-
-public:
-    typedef ConditionalStateHolder<BOOL, ForbidCallsIntoHostOnThisThread::Enter, ForbidCallsIntoHostOnThisThread::Leave> Holder;
-
-    FORCEINLINE static BOOL CanThisThreadCallIntoHost()
-    {
-        WRAPPER_NO_CONTRACT;
-        return s_pvOwningFiber != ClrTeb::GetFiberPtrId();
-    }
-};
-
-typedef ForbidCallsIntoHostOnThisThread::Holder ForbidCallsIntoHostOnThisThreadHolder;
-
-FORCEINLINE BOOL CanThisThreadCallIntoHost()
-{
-    WRAPPER_NO_CONTRACT;
-    return ForbidCallsIntoHostOnThisThread::CanThisThreadCallIntoHost();
-}
-
-//*********************************************************************************
-
 #include "contract.inl"
 
 namespace util

@@ -263,7 +263,7 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
     }
 
     //if we are not allowed to allocate stress log, we should not even try to take the lock
-    if (!StressLogChunk::s_LogChunkHeap || !CanThisThreadCallIntoHost() || IsInCantAllocStressLogRegion ())
+    if (!StressLogChunk::s_LogChunkHeap || IsInCantAllocStressLogRegion ())
     {
         return NULL;
     }

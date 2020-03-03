@@ -1141,13 +1141,6 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
     _ASSERTE(pThread  != NULL);
     _ASSERTE(pRegDisp != NULL);
 
-#if !defined(DACCESS_COMPILE)
-    // When the LIGHTUNWIND flag is set, we use the stack walk cache.
-    // On x64, accesses to the stack walk cache are synchronized by
-    // a CrstStatic, which may need to call back into the host.
-    _ASSERTE(CanThisThreadCallIntoHost() || (flags & LIGHTUNWIND) == 0);
-#endif // DACCESS_COMPILE
-
 #ifdef FEATURE_EH_FUNCLETS
     _ASSERTE(!(flags & POPFRAMES));
     _ASSERTE(pRegDisp->pCurrentContext);

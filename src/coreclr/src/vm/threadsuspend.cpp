@@ -526,18 +526,13 @@ static inline BOOL CheckSuspended(Thread *pThread)
     _ASSERTE(CheckPointer(pThread));
 
 #ifndef DISABLE_THREADSUSPEND
-    // Only perform this test if we're allowed to call back into the host.
-    // Thread::SuspendThread contains several potential calls into the host.
-    if (CanThisThreadCallIntoHost())
+    DWORD dwSuspendCount;
+    Thread::SuspendThreadResult str = pThread->SuspendThread(FALSE, &dwSuspendCount);
+    forceStackA = &dwSuspendCount;
+    if (str == Thread::STR_Success)
     {
-        DWORD dwSuspendCount;
-        Thread::SuspendThreadResult str = pThread->SuspendThread(FALSE, &dwSuspendCount);
-        forceStackA = &dwSuspendCount;
-        if (str == Thread::STR_Success)
-        {
-            pThread->ResumeThread();
-            return dwSuspendCount >= 1;
-        }
+        pThread->ResumeThread();
+        return dwSuspendCount >= 1;
     }
 #endif // !DISABLE_THREADSUSPEND
     return TRUE;
