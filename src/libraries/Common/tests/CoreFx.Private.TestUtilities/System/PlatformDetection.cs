@@ -20,6 +20,7 @@ namespace System
 
         public static bool IsNetCore => RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
+        public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
 
@@ -200,6 +201,12 @@ namespace System
             }
 
             return (IsOSX || (IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
+        }
+
+        private static bool GetIsRunningOnMonoInterpreter()
+        {
+            var val = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");
+            return (val != null && val.Contains("--interpreter"));
         }
     }
 }
