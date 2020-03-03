@@ -10,8 +10,8 @@
        tests/dir.props directly - these should eventually go away. -->
 
   <PropertyGroup>
-    <OSPlatformConfig>$(TargetOS).$(Platform).$(Configuration)</OSPlatformConfig>
-
+    <OSPlatformConfig>$(TargetOS).$(BuildArch).$(Configuration)</OSPlatformConfig>
+  
     <TestSrcDir>$(MSBuildThisFileDirectory)src</TestSrcDir>
     <BuildProjectRelativeDir>$([MSBuild]::MakeRelative($(TestSrcDir), $(MSBuildProjectDirectory)))\$(MSBuildProjectName)\</BuildProjectRelativeDir>
 
