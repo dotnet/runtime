@@ -83,10 +83,9 @@ namespace System.Security.Cryptography
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
+            // hashAlgorithm is verified in the overload
 
-            return SignDataCore(data, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            return SignData(data, 0, data.Length, hashAlgorithm);
         }
 
         /// <summary>
@@ -133,10 +132,8 @@ namespace System.Security.Cryptography
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
 
-            return SignDataCore(
-                new ReadOnlySpan<byte>(data, offset, count),
-                hashAlgorithm,
-                DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            byte[] hash = HashData(data, offset, count, hashAlgorithm);
+            return CreateSignature(hash);
         }
 
         /// <summary>
@@ -234,7 +231,8 @@ namespace System.Security.Cryptography
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
 
-            return SignDataCore(data, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            byte[] hash = HashData(data, hashAlgorithm);
+            return CreateSignature(hash);
         }
 
         /// <summary>
@@ -311,11 +309,8 @@ namespace System.Security.Cryptography
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
 
-            return VerifyDataCore(
-                new ReadOnlySpan<byte>(data, offset, count),
-                signature,
-                hashAlgorithm,
-                DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            byte[] hash = HashData(data, offset, count, hashAlgorithm);
+            return VerifySignature(hash, signature);
         }
 
         /// <summary>
@@ -388,7 +383,8 @@ namespace System.Security.Cryptography
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
 
-            return VerifyDataCore(data, signature, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            byte[] hash = HashData(data, hashAlgorithm);
+            return VerifySignature(hash, signature);
         }
 
         /// <summary>
@@ -535,11 +531,14 @@ namespace System.Security.Cryptography
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
 
-            return TrySignDataCore(data,
-                destination,
-                hashAlgorithm,
-                DSASignatureFormat.IeeeP1363FixedFieldConcatenation,
-                out bytesWritten);
+            if (TryHashData(data, destination, hashAlgorithm, out int hashLength) &&
+                TryCreateSignature(destination.Slice(0, hashLength), destination, out bytesWritten))
+            {
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <summary>
@@ -813,8 +812,8 @@ namespace System.Security.Cryptography
             return VerifySignatureCore(rgbHash, rgbSignature, signatureFormat);
         }
 
-        public virtual bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
-            => VerifySignatureCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+        public virtual bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
+            VerifySignature(hash.ToArray(), signature.ToArray());
 
         /// <summary>
         ///   Verifies that a digital signature is valid for the provided hash.
@@ -872,7 +871,7 @@ namespace System.Security.Cryptography
 
             // The only available implementation here is abstract method, use it.
             // Since it requires an exactly-sized array, skip pooled arrays.
-            return VerifySignature(hash.ToArray(), sig);
+            return VerifySignature(hash, sig);
         }
 
         private ReadOnlySpan<byte> HashSpanToTmp(
