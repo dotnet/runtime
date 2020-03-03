@@ -11,22 +11,31 @@
 // to their indices within the component assembly header table.
 struct AssemblyNameIndex
 {
-    SString Name;
+    LPCUTF8 Name;
     int32_t Index;
     
-    AssemblyNameIndex() : Index(-1) {}
-    AssemblyNameIndex(const SString& name, int32_t index);
+    AssemblyNameIndex() : Name(NULL), Index(-1) {}
+    AssemblyNameIndex(LPCUTF8 name, int32_t index) : Name(name), Index(index) {}
+    
+    static AssemblyNameIndex GetNull() { return AssemblyNameIndex(); }
+    bool IsNull() const { return Index < 0; }
 };
 
-class AssemblyNameIndexHashTraits : public NoRemoveSHashTraits< PtrSHashWithCleanupTraits<AssemblyNameIndex, const SString&> >
+class AssemblyNameIndexHashTraits : public NoRemoveSHashTraits< DefaultSHashTraits<AssemblyNameIndex> >
 {
 public:
-    static AssemblyNameIndex *Null() { return NULL; }
-    static bool IsNull(const AssemblyNameIndex *e) { return e == NULL; }
+    // Similar to BaseAssemblySpec::CompareStrings, we're using temporary SStrings that throw
+    // for case-insensitive UTF8 assembly name comparisons.
+    static const bool s_NoThrow = false;
 
-    static const SString& GetKey(const AssemblyNameIndex *assemblyNameIndex) { return assemblyNameIndex->Name; }
-    static BOOL Equals(const SString& a, const SString& b) { return a.Equals(b); }
-    static count_t Hash(const SString& a) { return a.Hash(); }
+    typedef LPCUTF8 key_t;
+
+    static AssemblyNameIndex Null() { return AssemblyNameIndex::GetNull(); }
+    static bool IsNull(const AssemblyNameIndex& e) { return e.IsNull(); }
+
+    static LPCUTF8 GetKey(const AssemblyNameIndex& assemblyNameIndex) { return assemblyNameIndex.Name; }
+    static BOOL Equals(LPCUTF8 a, LPCUTF8 b);
+    static count_t Hash(LPCUTF8 a);
 };
 
 class AssemblyLoadContext;
@@ -47,11 +56,12 @@ class PEImage;
 class NativeImage
 {
 private:
+    // Points to the OwnerCompositeExecutable section content within the component MSIL module
     LPCUTF8 m_utf8SimpleName;
     
     NewHolder<ReadyToRunInfo> m_pReadyToRunInfo;
     IMDInternalImport *m_pManifestMetadata;
-    PEImageLayout *m_pPeImageLayout;
+    NewHolder<PEImageLayout> m_peImageLayout;
     
     IMAGE_DATA_DIRECTORY *m_pComponentAssemblies;
     uint32_t m_componentAssemblyCount;
@@ -60,23 +70,30 @@ private:
     Crst m_eagerFixupsLock;
     bool m_eagerFixupsHaveRun;
 
+    HMODULE m_hModule;
+#ifdef TARGET_UNIX
+    PALPEFileHolder m_loadedFile;
+#endif
+
 private:
     NativeImage(
-        PEFile *peFile,
-        PEImageLayout *peImageLayout,
+        NewHolder<PEImageLayout>& peImageLayout,
         READYTORUN_HEADER *header,
         LPCUTF8 nativeImageName,
+#if TARGET_UNIX
+        PALPEFileHolder& loadedFile,
+#endif
         LoaderAllocator *loaderAllocator,
-        AllocMemTracker& amTracker);
+        AllocMemTracker *pamTracker);
 
 public:
     ~NativeImage();
 
     static NativeImage *Open(
-        PEFile *pPeFile,
-        PEImageLayout *pPeImageLayout,
+        LPCWSTR fullPath,
         LPCUTF8 nativeImageName,
-        LoaderAllocator *pLoaderAllocator);
+        LoaderAllocator *pLoaderAllocator,
+        AllocMemTracker *pamTracker);
 
     bool Matches(LPCUTF8 utf8SimpleName) const;
 
@@ -90,7 +107,7 @@ public:
 
     Assembly *LoadComponentAssembly(uint32_t rowid);
     
-    PTR_READYTORUN_CORE_HEADER GetComponentAssemblyHeader(const SString& assemblySimpleName);
+    PTR_READYTORUN_CORE_HEADER GetComponentAssemblyHeader(LPCUTF8 assemblySimpleName);
     
 private:
     IMDInternalImport *LoadManifestMetadata();

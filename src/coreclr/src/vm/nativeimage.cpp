@@ -16,23 +16,40 @@
 
 #include <shlwapi.h>
 
-AssemblyNameIndex::AssemblyNameIndex(const SString& name, int32_t index)
-    : Name(name), Index(index)
+BOOL AssemblyNameIndexHashTraits::Equals(LPCUTF8 a, LPCUTF8 b)
 {
-    Name.Normalize();
+    WRAPPER_NO_CONTRACT;
+
+    SString s1;
+    SString s2;
+    s1.SetUTF8(a);
+    s2.SetUTF8(b);
+    return s1.CompareCaseInsensitive(s2) == 0;
+}
+
+AssemblyNameIndexHashTraits::count_t AssemblyNameIndexHashTraits::Hash(LPCUTF8 s)
+{
+    WRAPPER_NO_CONTRACT;
+
+    SString s1;
+    s1.SetUTF8(s);
+    return s1.HashCaseInsensitive();
 }
 
 NativeImage::NativeImage(
-    PEFile *pPeFile,
-    PEImageLayout *pPeImageLayout,
+    NewHolder<PEImageLayout>& peImageLayout,
     READYTORUN_HEADER *pHeader,
     LPCUTF8 nativeImageName,
+#ifdef TARGET_UNIX
+    PALPEFileHolder& loadedFile,
+#endif
     LoaderAllocator *pLoaderAllocator,
-    AllocMemTracker& amTracker)
+    AllocMemTracker *pamTracker)
     : m_eagerFixupsLock(CrstNativeImageEagerFixups)
 {
     CONTRACTL
     {
+        THROWS;
         CONSTRUCTOR_CHECK;
         STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM(););
@@ -41,11 +58,14 @@ NativeImage::NativeImage(
 
     LoaderHeap *pHeap = pLoaderAllocator->GetHighFrequencyHeap();
     m_utf8SimpleName = nativeImageName;
-    m_pPeImageLayout = pPeImageLayout;
+    m_peImageLayout.Assign(peImageLayout.Extract());
     m_eagerFixupsHaveRun = false;
+
+#if TARGET_UNIX
+    m_loadedFile = loadedFile;
+#endif
     
-    m_pReadyToRunInfo.Assign(new (amTracker.Track(pHeap->AllocMem((S_SIZE_T)sizeof(ReadyToRunInfo))))
-        ReadyToRunInfo(/*pModule*/ NULL, pPeImageLayout, pHeader, /*compositeImage*/ NULL, &amTracker), /*takeOwnership*/ TRUE);
+    m_pReadyToRunInfo.Assign(new ReadyToRunInfo(/*pModule*/ NULL, peImageLayout, pHeader, /*compositeImage*/ NULL, pamTracker), /*takeOwnership*/ TRUE);
     m_pComponentAssemblies = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ComponentAssemblies);
     m_componentAssemblyCount = m_pComponentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY);
     
@@ -60,8 +80,7 @@ NativeImage::NativeImage(
     {
         LPCSTR assemblyName;
         hr = m_pManifestMetadata->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL);
-        m_assemblySimpleNameToIndexMap.Add(new (amTracker.Track(pHeap->AllocMem((S_SIZE_T)sizeof(AssemblyNameIndex))))
-            AssemblyNameIndex(SString(SString::Ansi, assemblyName), assemblyIndex));
+        m_assemblySimpleNameToIndexMap.Add(AssemblyNameIndex(assemblyName, assemblyIndex));
         assemblyIndex++;
     }
 }
@@ -79,55 +98,55 @@ bool NativeImage::Matches(LPCUTF8 utf8SimpleName) const
     return !_stricmp(utf8SimpleName, m_utf8SimpleName);
 }
 
-NativeImage *NativeImage::Open(
-    PEFile *pPeFile,
-    PEImageLayout *pPeImageLayout,
-    LPCUTF8 nativeImageName,
-    LoaderAllocator *pLoaderAllocator)
-{
 #ifndef DACCESS_COMPILE
-    uint32_t headerRVA = pPeImageLayout->GetExport("RTR_HEADER");
-    if (headerRVA + sizeof(READYTORUN_HEADER) > pPeImageLayout->GetSize())
+NativeImage *NativeImage::Open(
+    LPCWSTR fullPath,
+    LPCUTF8 nativeImageName,
+    LoaderAllocator *pLoaderAllocator,
+    AllocMemTracker *pamTracker)
+{
+    NewHolder<PEImageLayout> peLoadedImage = PEImageLayout::LoadNative(fullPath);
+
+    uint32_t headerRVA = peLoadedImage->GetExport("RTR_HEADER");
+    if (headerRVA + sizeof(READYTORUN_HEADER) > peLoadedImage->GetSize())
     {
         return NULL;
     }
-    READYTORUN_HEADER *pHeader = (READYTORUN_HEADER *)((BYTE *)pPeImageLayout->GetBase() + headerRVA);
-    AllocMemTracker amTracker;
-    NativeImage *result = new NativeImage(pPeFile, pPeImageLayout, pHeader, nativeImageName, pLoaderAllocator, amTracker);
-    amTracker.SuppressRelease();
-    return result;
-#else
-    return NULL;
+    READYTORUN_HEADER *pHeader = (READYTORUN_HEADER *)((BYTE *)peLoadedImage->GetBase() + headerRVA);
+    return new NativeImage(
+        peLoadedImage, pHeader, nativeImageName,
+#ifdef TARGET_UNIX
+        loadedFile,
 #endif
+        pLoaderAllocator, pamTracker);
 }
+#endif
 
+#ifndef DACCESS_COMPILE
 Assembly *NativeImage::LoadComponentAssembly(uint32_t rowid)
 {
-#ifndef DACCESS_COMPILE
     AssemblySpec spec;
     spec.InitializeSpec(TokenFromRid(rowid, mdtAssemblyRef), m_pManifestMetadata, NULL);
     return spec.LoadAssembly(FILE_LOADED);
-#else
-    return nullptr;
-#endif
 }
+#endif
 
-PTR_READYTORUN_CORE_HEADER NativeImage::GetComponentAssemblyHeader(const SString& simpleName)
-{
 #ifndef DACCESS_COMPILE
-    simpleName.Normalize();
-    const AssemblyNameIndex *assemblyNameIndex = m_assemblySimpleNameToIndexMap.Lookup(simpleName);
+PTR_READYTORUN_CORE_HEADER NativeImage::GetComponentAssemblyHeader(LPCUTF8 simpleName)
+{
+    const AssemblyNameIndex *assemblyNameIndex = m_assemblySimpleNameToIndexMap.LookupPtr(simpleName);
     if (assemblyNameIndex != NULL)
     {
-        const BYTE *pImageBase = (const BYTE *)m_pPeImageLayout->GetBase();
+        const BYTE *pImageBase = (const BYTE *)m_peImageLayout->GetBase();
         const READYTORUN_COMPONENT_ASSEMBLIES_ENTRY *componentAssembly =
             (const READYTORUN_COMPONENT_ASSEMBLIES_ENTRY *)&pImageBase[m_pComponentAssemblies->VirtualAddress] + assemblyNameIndex->Index;
         return (PTR_READYTORUN_CORE_HEADER)&pImageBase[componentAssembly->ReadyToRunCoreHeader.VirtualAddress];
     }
-#endif
     return NULL;
 }
+#endif
 
+#ifndef DACCESS_COMPILE
 IMDInternalImport *NativeImage::LoadManifestMetadata()
 {
     IMAGE_DATA_DIRECTORY *pMeta = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ManifestMetadata);
@@ -138,13 +157,12 @@ IMDInternalImport *NativeImage::LoadManifestMetadata()
     }
 
     IMDInternalImport *pNewImport = NULL;
-#ifndef DACCESS_COMPILE
-    IfFailThrow(GetMetaDataInternalInterface((BYTE *)m_pPeImageLayout->GetBase() + VAL32(pMeta->VirtualAddress),
+    IfFailThrow(GetMetaDataInternalInterface((BYTE *)m_peImageLayout->GetBase() + VAL32(pMeta->VirtualAddress),
                                              VAL32(pMeta->Size),
                                              ofRead,
                                              IID_IMDInternalImport,
                                              (void **) &pNewImport));
 
-#endif
     return pNewImport;
 }
+#endif

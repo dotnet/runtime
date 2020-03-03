@@ -2335,9 +2335,9 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
     return NULL;
 }
 
+#ifndef DACCESS_COMPILE
 uint32_t PEDecoder::GetExport(LPCSTR exportName) const
 {
-#ifndef DACCESS_COMPILE
     // Get the export directory entry
     PIMAGE_DATA_DIRECTORY pExportDirectoryEntry = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT);
     if (pExportDirectoryEntry->VirtualAddress == 0 || pExportDirectoryEntry->Size == 0)
@@ -2365,10 +2365,10 @@ uint32_t PEDecoder::GetExport(LPCSTR exportName) const
             }
         }
     }
-#endif
 
     return 0;
 }
+#endif
 
 //
 // code:PEDecoder::CheckILMethod and code:PEDecoder::ComputeILMethodSize really belong to

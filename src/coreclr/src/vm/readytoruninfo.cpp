@@ -631,7 +631,6 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
         // In multi-assembly composite images, per assembly sections are stored next to their core headers.
         m_pCompositeInfo = pNativeImage->GetReadyToRunInfo();
         m_pComposite = m_pCompositeInfo->GetComponentInfo();
-        SString componentAssemblyName(SString::Utf8, pModule->GetSimpleName());
         if (pNativeImage->GetComponentAssemblyCount() == 1)
         {
             // When there's just 1 component assembly in the composite image, we're skipping the
@@ -640,7 +639,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
         }
         else
         {
-            m_component = ReadyToRunCoreInfo(m_pComposite->GetLayout(), pNativeImage->GetComponentAssemblyHeader(componentAssemblyName));
+            m_component = ReadyToRunCoreInfo(m_pComposite->GetLayout(), pNativeImage->GetComponentAssemblyHeader(pModule->GetSimpleName()));
         }
         m_isComponentAssembly = true;
     }

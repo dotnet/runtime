@@ -16,11 +16,11 @@ HRESULT AssemblyLoadContext::GetBinderID(
     return S_OK;
 }
 
+#ifndef DACCESS_COMPILE
 NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUTF8 nativeImageName)
 {
     STANDARD_VM_CONTRACT;
 
-#ifndef DACCESS_COMPILE
     BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
     AssemblyLoadContext *loadContext = componentModule->GetFile()->GetAssemblyLoadContext();
     PTR_LoaderAllocator moduleLoaderAllocator = componentModule->GetLoaderAllocator();
@@ -48,16 +48,15 @@ NativeImage *AssemblyLoadContext::LoadNativeImage(Module *componentModule, LPCUT
     fullPath.Set(path, path.Begin(), (COUNT_T)pathDirLength);
     fullPath += compositeImageFileName;
 
-    PTR_PEImage peImage = PEImage::OpenImage(fullPath);
-    PTR_PEFile peFile = PEFile::Open(peImage);
-
-    NativeImage *nativeImage = NativeImage::Open(peFile, peImage->GetLoadedLayout(), nativeImageName, moduleLoaderAllocator);
+    AllocMemTracker amTracker;
+    NativeImage *nativeImage = NativeImage::Open(fullPath, nativeImageName, moduleLoaderAllocator, &amTracker);
     if (nativeImage != NULL)
     {
         m_nativeImages.Append(nativeImage);
+        amTracker.SuppressRelease();
         return nativeImage;
     }
-#endif
     
     return NULL;
 }
+#endif
