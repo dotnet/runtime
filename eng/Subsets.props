@@ -61,7 +61,7 @@
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <!-- TODO: Split into multiple sets. -->
     <DefaultLibrariesSubsets>all</DefaultLibrariesSubsets>
-    <DefaultCoreClrSubsets>runtime-corelib-nativecorelib-tools-packages</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets>runtime-linuxdac-corelib-nativecorelib-tools-packages</DefaultCoreClrSubsets>
     <DefaultMonoSubsets>all</DefaultMonoSubsets>
 
     <_subsetCategory Condition="'$(SubsetCategory)' != ''">$(SubsetCategory.ToLowerInvariant())</_subsetCategory>
@@ -85,6 +85,8 @@
 
     <!-- CoreClr -->
     <SubsetName Include="Runtime" Category="CoreClr" Description="The CoreCLR .NET runtime." />
+    <SubsetName Condition="$([MSBuild]::IsOsPlatform(Windows))" Include="LinuxDac" Category="CoreClr" Description="The cross-OS Windows->libc-based Linux DAC." />
+    <SubsetName Condition="$([MSBuild]::IsOsPlatform(Windows))" Include="AlpineDac" Category="CoreClr" OnDemand="true" Description="The cross-OS Windows->musl-libc-based Linux DAC." />
     <SubsetName Include="CoreLib" Category="CoreClr" Description="The managed System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="NativeCoreLib" Category="CoreClr" Description="Run crossgen on System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Tools" Category="CoreClr" Description="Managed tools that support CoreCLR development and testing." />
@@ -148,6 +150,16 @@
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-runtime-'))">
     <CoreClrProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" BuildInParallel="false" />
     <ProjectToBuild Include="@(CoreClrProjectToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-linuxdac-')) and $([MSBuild]::IsOsPlatform(Windows))">
+    <CoreClrLinuxDacProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" BuildInParallel="false" AdditionalProperties="%(AdditionalProperties);CrossDac=linux" />
+    <ProjectToBuild Include="@(CoreClrLinuxDacProjectToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-alpinedac-')) and $([MSBuild]::IsOsPlatform(Windows))">
+    <CoreClrAlpineLinuxDacProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" BuildInParallel="false" AdditionalProperties="%(AdditionalProperties);CrossDac=alpine" />
+    <ProjectToBuild Include="@(CoreClrAlpineLinuxDacProjectToBuild)" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('-nativecorelib-'))">

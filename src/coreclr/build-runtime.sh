@@ -19,11 +19,8 @@ fi
 export PYTHON
 
 usage_list+=("-nopgooptimize: do not use profile guided optimizations.")
-usage_list+=("-officialbuildid=^<ID^>: specify the official build ID to be used by this build.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
-usage_list+=("-skipmanagedtools: generate instrumented code for profile guided optimization enabled binaries.")
-usage_list+=("-skiprestore: specify the official build ID to be used by this build.")
 usage_list+=("-skiprestoreoptdata: skip restoring optimization data.")
 usage_list+=("-staticanalyzer: skip native image generation.")
 
@@ -105,10 +102,6 @@ build_cross_architecture_components()
 handle_arguments_local() {
     case "$1" in
 
-        disableoss|-disableoss)
-            __SignTypeArg="/p:SignType=real"
-            ;;
-
         ignorewarnings|-ignorewarnings)
             __IgnoreWarnings=1
             __CMakeArgs="-DCLR_CMAKE_WARNINGS_ARE_ERRORS=OFF $__CMakeArgs"
@@ -125,10 +118,6 @@ handle_arguments_local() {
 
         skipcrossarchnative|-skipcrossarchnative)
             __SkipCrossArchNative=1
-            ;;
-
-        skiprestore|-skiprestore)
-            __SkipRestoreArg="/p:RestoreDuringBuild=false"
             ;;
 
         staticanalyzer|-staticanalyzer)
