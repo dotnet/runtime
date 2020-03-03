@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <!-- Get artifact locations to sign. -->
+  <Import Project="$(RepositoryEngineeringDir)/Configurations.props" />
   <Import Project="$(RepositoryEngineeringDir)/liveBuilds.targets" />
 
   <ItemGroup>
