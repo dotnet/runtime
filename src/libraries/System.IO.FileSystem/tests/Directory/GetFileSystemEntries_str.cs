@@ -217,7 +217,7 @@ namespace System.IO.Tests
                         Assert.Throws<DirectoryNotFoundException>(() => GetEntries(badPath));
                         break;
                     case ':':
-                        // Framework does not support reading colon
+                        // .NET Framework does not support reading colon
                         AssertExtensions.Throws<DirectoryNotFoundException, NotSupportedException>(() => GetEntries(badPath));
                         break;
                     case '\0':
