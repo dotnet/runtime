@@ -1058,8 +1058,7 @@ const char *
 mono_metadata_string_heap_checked (MonoImage *meta, guint32 index, MonoError *error)
 {
 	if (G_UNLIKELY (!(index < meta->heap_strings.size))) {
-		const char *image_name = meta && meta->name ? meta->name : "unknown image";
-		mono_error_set_bad_image_by_name (error, image_name, "string heap index %ud out bounds %u: %s", index, meta->heap_strings.size, image_name);
+		mono_error_set_bad_image_by_name (error, meta->name ? meta->name : "unknown image", "string heap index %ud out bounds %u", index, meta->heap_strings.size);
 		return NULL;
 	}
 	return meta->heap_strings.data + index;
@@ -1128,8 +1127,7 @@ mono_metadata_blob_heap_checked (MonoImage *meta, guint32 index, MonoError *erro
 	if (G_UNLIKELY (index == 0 && meta->heap_blob.size == 0))
 		return NULL;
 	if (G_UNLIKELY (!(index < meta->heap_blob.size))) {
-		const char *image_name = meta && meta->name ? meta->name : "unknown image";
-		mono_error_set_bad_image_by_name (error, image_name, "blob heap index %u out of bounds %u: %s", index, meta->heap_blob.size, image_name);
+		mono_error_set_bad_image_by_name (error, meta->name ? meta->name : "unknown image", "blob heap index %u out of bounds %u", index, meta->heap_blob.size);
 		return NULL;
 	}
 	return meta->heap_blob.data + index;
@@ -1218,13 +1216,13 @@ mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t
 	const char *image_name = image && image->name ? image->name : "unknown image";
 
 	if (G_UNLIKELY (! (idx < t->rows && idx >= 0))) {
-		mono_error_set_bad_image_by_name (error, image_name, "row index %d out of bounds: %d rows: %s", idx, t->rows, image_name);
+		mono_error_set_bad_image_by_name (error, image_name, "row index %d out of bounds: %d rows", idx, t->rows);
 		return FALSE;
 	}
 	const char *data = t->base + idx * t->row_size;
 
 	if (G_UNLIKELY (res_size != count)) {
-		mono_error_set_bad_image_by_name (error, image_name, "res_size %d != count %d: %s", res_size, count, image_name);
+		mono_error_set_bad_image_by_name (error, image_name, "res_size %d != count %d", res_size, count);
 		return FALSE;
 	}
 
@@ -1239,7 +1237,7 @@ mono_metadata_decode_row_checked (const MonoImage *image, const MonoTableInfo *t
 		case 4:
 			res [i] = read32 (data); break;
 		default:
-			mono_error_set_bad_image_by_name (error, image_name, "unexpected table [%d] size %d: %s", i, n, image_name);
+			mono_error_set_bad_image_by_name (error, image_name, "unexpected table [%d] size %d", i, n);
 			return FALSE;
 		}
 		data += n;
