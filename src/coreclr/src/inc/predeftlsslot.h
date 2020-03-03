@@ -23,7 +23,7 @@ enum PredefinedTlsSlots
     TlsIdx_Unused1,
     TlsIdx_Unused2,
     TlsIdx_Unused3,
-    TlsIdx_AssertDlgStatus, // Whether the thread is displaying an assert dialog
+    TlsIdx_Unused4,
     TlsIdx_StressLog,
     TlsIdx_CantStopCount, // Can't-stop counter for any thread
     TlsIdx_Check,
