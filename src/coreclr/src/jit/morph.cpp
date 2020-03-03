@@ -7528,8 +7528,8 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
             thisPtr = objp;
         }
 
-        // During rationalization tmp="this" and null check will
-        // materialize as embedded stmts in right execution order.
+        // During rationalization tmp="this" and null check will be materialized
+        // in the right execution order.
         assert(thisPtr != nullptr);
         call->gtCallArgs = gtPrependNewCallArg(thisPtr, call->gtCallArgs);
         call->fgArgInfo  = nullptr;
