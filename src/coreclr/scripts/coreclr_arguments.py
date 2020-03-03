@@ -240,7 +240,7 @@ class CoreclrArguments:
 
             if os.path.isdir(default_product_location) or not self.require_built_product_dir:
                 return default_product_location
-            elif os.path.isdir(product_location) and self.require_build_product_dir:
+            if os.path.isdir(product_location) and self.require_build_product_dir:
                 return False
 
             return product_location
