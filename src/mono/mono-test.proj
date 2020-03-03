@@ -7,6 +7,16 @@
     <MonoObjTestsDir>$(MonoObjDir)mono/tests/</MonoObjTestsDir>
   </PropertyGroup>
 
+  <!-- stolen from mono.proj -->
+  <PropertyGroup>
+    <DotNetExec Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</DotNetExec>
+    <DotNetExec Condition="'$(DotNetExec)' == ''">dotnet</DotNetExec>
+    <LocalDotnetDir>$(RepoRoot).dotnet</LocalDotnetDir>
+    <LocalDotnet>$(LocalDotnetDir)\$(DotNetExec)</LocalDotnet>
+    <LocalMonoDotnetDir>$(RepoRoot).dotnet-mono</LocalMonoDotnetDir>
+    <LocalMonoDotnet>$(LocalMonoDotnetDir)\$(DotNetExec)</LocalMonoDotnet>
+  </PropertyGroup>
+
   <!-- stolen from src/coreclr/tests/src/Directory.Build.props and modified -->
   <PropertyGroup>
     <BaseOutputPath>$(ArtifactsDir)\tests\mono</BaseOutputPath>
@@ -22,6 +32,7 @@
       <![CDATA[
 <Project>
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -75,6 +86,10 @@
     <WriteLinesToFile File="$(__MonoTestsSimpleCsprojPath)" Lines="$(MonoTestsSimpleCsprojTemplate)" Overwrite="true" />
   </Target>
 
+  <!-- For each item in @(MonoTestsSimpleWithAttr) invoke the
+       CreateSingleCsprojFileForMonoRuntimeTest target passing each item's
+       metadata as __MonoTestSimpleCsProjTemplateXYZ properties which will
+       write the template out to each test's csproj file -->
   <Target Name="CreateProjFilesForMonoRuntimeTests" DependsOnTargets="SelectViableMonoRuntimeTests">
     <Message Text="Creating .csproj files for mono runtime tests" Importance="High" />
     <Message Text="Mono obj dir is $(MonoObjDir)" Importance="High" />
@@ -86,10 +101,35 @@
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateSingleCsprojFileForMonoRuntimeTest" Properties="__MonoTestsSimpleCsprojTemplateOutputPath=%(MonoTestsSimpleWithAttr.OutputDir);__MonoTestsSimpleCsprojPath=%(MonoTestsSimpleWithAttr.Csproj);__MonoTestSimpleCsprojTemplateSourceFile=%(MonoTestsSimpleWithAttr.FullPath);__MonoTestSimpleCsprojTemplateTestType=%(MonoTestsSimpleWithAttr.MonoTestType)" />
   </Target>
   
+  <!-- entrypoint: Create .csproj files for tests in src/mono/mono/tests/ in
+       artifacts/obj/mono/<platformconfig>/tests/ then compile the projects and put the results in
+       artifacts/tests/mono/<platformconfig>/ -->
   <Target Name="CompileMonoRuntimeTests" DependsOnTargets="CreateProjFilesForMonoRuntimeTests">
     <Message Text="Compiling mono runtime tests" Importance="High" />
     <Message Text="There are @(MonoTests->Count()) tests, @(MonoTestsSimpleWithAttr->Count()) simple" Importance="High" />
     <Message Text="  Csproj %(MonoTestsSimpleWithAttr.Csproj)" Importance="High" />
     <MSBuild Projects="%(MonoTestsSimpleWithAttr.Csproj)" Targets="Restore;Build" />
   </Target>
+
+  <!-- entrypoint: For each test in @(MonoTestsSimpleWithAttr) run its assembly in
+       artifacts/tests/mono/<platformconfig>/  using .dotnet-mono/dotnet -->
+  <!-- FIXME: actually we want some kinda xunit wrapper to run them so that we can:
+       1. disable tests that are not expected to work.
+       2. Don't fail on the first failing tests, batch up the results, handle timeouts/hangs, etc.
+  -->
+  <Target Name="RunMonoRuntimeTests" DependsOnTargets="SelectViableMonoRuntimeTests">
+    <ItemGroup>
+      <MonoTestsSimpleRunnable Include="@(MonoTestsSimpleWithAttr)">
+	<MainAssemblyPath>%(OutputDir)%(Filename).dll</MainAssemblyPath>
+      </MonoTestsSimpleRunnable>
+    </ItemGroup>
+    <Message Text="Preparing to execute mono runtime tests" Importance="High" />
+    <Message Text="  Assemblies %(MonoTestsSimpleRunnable.MainAssemblyPath)" Importance="High" />
+    <Message Text="  Missing %(MonoTestsSimpleRunnable.MainAssemblyPath)" Condition="!Exists(%(MonoTestsSimpleRunnable.MainAssemblyPath))" Importance="High" />
+    <PropertyGroup>
+      <DotNetCommandLine>$(LocalMonoDotnet)</DotNetCommandLine>
+    </PropertyGroup>
+    <Exec Command="$(DotNetCommandLine) %(MonoTestsSimpleRunnable.MainAssemblyPath)" WorkingDirectory="%(MonoTestsSimpleRunnable.OutputDir)" />
+  </Target>
+
 </Project>

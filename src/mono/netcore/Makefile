@@ -80,6 +80,9 @@ aot-testhost-corefx:
 compile-tests-mono-runtime:
 	$(DOTNET) msbuild /t:CompileMonoRuntimeTests $(MONO_TEST_PROJ)
 
+run-tests-mono-runtime: patch-mono-dotnet
+	$(DOTNET) msbuild /t:RunMonoRuntimeTests $(MONO_TEST_PROJ)
+
 # run 'dotnet/performance' benchmarks
 # e.g. 'make run-benchmarks BenchmarksRepo=/prj/performance'
 # you can append BDN parameters at the end, e.g. ` -- --filter Burgers --keepFiles`
