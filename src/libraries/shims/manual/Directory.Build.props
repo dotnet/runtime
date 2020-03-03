@@ -15,8 +15,8 @@
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)</IntermediateOutputPath>
     <!-- Use runtime assemblies for the TargetFramework, using TargetOS -->
     <RefPath>$(ArtifactsBinDir)runtime/$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(ArchGroup)/</RefPath>
-    <CoreCLROSGroup>$(TargetOS)</CoreCLROSGroup>
-    <MonoOSGroup>$(TargetOS)</MonoOSGroup>
+    <CoreCLRTargetOS>$(TargetOS)</CoreCLRTargetOS>
+    <MonoTargetOS>$(TargetOS)</MonoTargetOS>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
 

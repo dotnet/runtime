@@ -6,11 +6,11 @@
     Installer uses Unix when applicable, but others go straight to Linux.
   -->
   <PropertyGroup>
-    <CoreCLROSGroup Condition="'$(TargetsWindows)' == 'true'">Windows_NT</CoreCLROSGroup>
-    <CoreCLROSGroup Condition="'$(TargetsLinux)' == 'true'">Linux</CoreCLROSGroup>
-    <CoreCLROSGroup Condition="'$(TargetsOSX)' == 'true'">OSX</CoreCLROSGroup>
-    <CoreCLROSGroup Condition="'$(TargetsFreeBSD)' == 'true'">FreeBSD</CoreCLROSGroup>
-    <LibrariesOSGroup>$(CoreCLROSGroup)</LibrariesOSGroup>
+    <CoreCLRTargetOS Condition="'$(TargetsWindows)' == 'true'">Windows_NT</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsLinux)' == 'true'">Linux</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsOSX)' == 'true'">OSX</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsFreeBSD)' == 'true'">FreeBSD</CoreCLRTargetOS>
+    <LibrariesTargetOS>$(CoreCLRTargetOS)</LibrariesTargetOS>
   </PropertyGroup>
 
   <PropertyGroup>

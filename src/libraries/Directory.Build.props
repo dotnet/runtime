@@ -24,7 +24,7 @@
     <BuildTargetFramework>netcoreapp5.0</BuildTargetFramework>
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
     <!-- TargetOS can be removed after renaming the property in arcade repo-->
-    <TargetOS>$(TargetOS)</TargetOS>
+    <BuildOS>$(TargetOS)</BuildOS>
     <AdditionalBuildTargetFrameworks Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(AdditionalBuildTargetFrameworks);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-NetBSD;$(NetCoreAppCurrent)-FreeBSD</AdditionalBuildTargetFrameworks>  
   </PropertyGroup>
 

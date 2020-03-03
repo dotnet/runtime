@@ -1,8 +1,8 @@
 <Project InitialTargets="AddSkipGetTargetFrameworkToProjectReferences">
   <PropertyGroup>
-    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(TargetOS)</CoreCLROSGroup>
+    <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
-    <MonoOSGroup Condition="'$(MonoCLROSGroup)' == ''">$(TargetOS)</MonoOSGroup>
+    <MonoTargetOS Condition="'$(MonoCLROSGroup)' == ''">$(TargetOS)</MonoTargetOS>
     <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(Configuration)</MonoConfiguration>
   </PropertyGroup>
 
