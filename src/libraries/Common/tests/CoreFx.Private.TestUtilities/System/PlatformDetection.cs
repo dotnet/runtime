@@ -205,6 +205,8 @@ namespace System
 
         private static bool GetIsRunningOnMonoInterpreter()
         {
+            // This is a temporary solution because mono does not support interpreter detection
+            // within the runtime.  
             var val = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");
             return (val != null && val.Contains("--interpreter"));
         }
