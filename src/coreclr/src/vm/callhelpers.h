@@ -39,7 +39,7 @@ struct CallDescrData
     // Return value
     //
 #ifdef ENREGISTERED_RETURNTYPE_MAXSIZE
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     // Use NEON128 to ensure proper alignment for vectors.
     DECLSPEC_ALIGN(16) NEON128 returnValue[ENREGISTERED_RETURNTYPE_MAXSIZE / sizeof(NEON128)];
 #else
@@ -57,7 +57,7 @@ struct CallDescrData
 
 extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData * pCallDescrData);
 
-#if !defined(BIT64) && defined(_DEBUG)
+#if !defined(HOST_64BIT) && defined(_DEBUG)
 void CallDescrWorker(CallDescrData * pCallDescrData);
 #else
 #define CallDescrWorker(pCallDescrData) CallDescrWorkerInternal(pCallDescrData)
@@ -485,7 +485,7 @@ void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap);
 /* Macros used to indicate a call to managed code is starting/ending   */
 /***********************************************************************/
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 // Install a native exception holder that doesn't catch any exceptions but its presence
 // in a stack range of native frames indicates that there was a call from native to
 // managed code. It is used by the DispatchManagedException to detect the case when
@@ -495,9 +495,9 @@ void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap);
 #define INSTALL_CALL_TO_MANAGED_EXCEPTION_HOLDER() \
     NativeExceptionHolderNoCatch __exceptionHolder;    \
     __exceptionHolder.Push();
-#else // FEATURE_PAL
+#else // TARGET_UNIX
 #define INSTALL_CALL_TO_MANAGED_EXCEPTION_HOLDER()
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 enum EEToManagedCallFlags
 {
@@ -513,8 +513,6 @@ enum EEToManagedCallFlags
     MAKE_CURRENT_THREAD_AVAILABLE();                                            \
     DECLARE_CPFH_EH_RECORD(CURRENT_THREAD);                                     \
     _ASSERTE(CURRENT_THREAD);                                                   \
-    _ASSERTE(!CURRENT_THREAD->IsAbortPrevented() ||                             \
-             CURRENT_THREAD->IsAbortCheckDisabled());                           \
     _ASSERTE((CURRENT_THREAD->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);     \
     /* This bit should never be set when we call into managed code.  The */     \
     /* stack walking code explicitly clears this around any potential calls */  \
@@ -635,7 +633,7 @@ enum DispatchCallSimpleFlags
 
 #ifdef CALLDESCR_ARGREGS
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
 // Arguments on x86 are passed backward
 #define ARGNUM_0    1

@@ -26,18 +26,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{BC439554-4AB4-4C94-8E28-C00EDE4FD1C7}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{BC439554-4AB4-4C94-8E28-C00EDE4FD1C7}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{BC439554-4AB4-4C94-8E28-C00EDE4FD1C7}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{BC439554-4AB4-4C94-8E28-C00EDE4FD1C7}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{2B96AA10-84C0-4927-8611-8D2474B990E8}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
-		{2B96AA10-84C0-4927-8611-8D2474B990E8}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
-		{2B96AA10-84C0-4927-8611-8D2474B990E8}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
-		{2B96AA10-84C0-4927-8611-8D2474B990E8}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
-		{3634FAA3-A33E-406A-94EE-5611C6CC2810}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{3634FAA3-A33E-406A-94EE-5611C6CC2810}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{3634FAA3-A33E-406A-94EE-5611C6CC2810}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{3634FAA3-A33E-406A-94EE-5611C6CC2810}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{BC439554-4AB4-4C94-8E28-C00EDE4FD1C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC439554-4AB4-4C94-8E28-C00EDE4FD1C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC439554-4AB4-4C94-8E28-C00EDE4FD1C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC439554-4AB4-4C94-8E28-C00EDE4FD1C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B96AA10-84C0-4927-8611-8D2474B990E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B96AA10-84C0-4927-8611-8D2474B990E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B96AA10-84C0-4927-8611-8D2474B990E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B96AA10-84C0-4927-8611-8D2474B990E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3634FAA3-A33E-406A-94EE-5611C6CC2810}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3634FAA3-A33E-406A-94EE-5611C6CC2810}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3634FAA3-A33E-406A-94EE-5611C6CC2810}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3634FAA3-A33E-406A-94EE-5611C6CC2810}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -270,7 +270,7 @@ namespace System.IO.Tests
         [Fact]
         public void GetDirectoryName_EmptyReturnsNull()
         {
-            // In NetFX this throws argument exception
+            // In .NET Framework this throws argument exception
             Assert.Null(Path.GetDirectoryName(string.Empty));
         }
 

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
 using System.Security.Principal;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Diagnostics.Tests
 {
@@ -28,7 +29,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ActiveIssue(34547)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28403")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [InlineData("System")]

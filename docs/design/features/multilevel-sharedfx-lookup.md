@@ -6,7 +6,7 @@ There are two possible ways of running .NET Core Applications: through dotnet.ex
 
 The executable is in charge of finding and loading the hostfxr.dll file. The hostfxr, in turn, must find and load the hostpolicy.dll file (it’s also responsible for searching for the SDK when running .NET commands). At last the coreclr.dll file must be found and loaded by the hostpolicy. Self-contained apps are supposed to keep all its dependencies in the same location as the executable. Framework-dependent apps must have the runtime files inside predefined folders.
 
-## Semantic Versioning 1.0.0
+## Semantic Versioning
 
 .NET Core uses the Semantic Versioning system to manage its version number. It’s important to understand how this system works because since it’s being proposed to search files from different locations, it’s necessary to establish the software behavior based on compatibility limitations.
 
@@ -68,7 +68,7 @@ Hostfxr must then locate the hostpolicy.dll file:
 
 The hostpolicy is then loaded into memory and executed.
 
-### Changes for 2.1 (support chained frameworks)
+### Chained frameworks (2.1+)
 There can only be one framework in 2.0. That framework is located in the app's runtimeconfig.json:
 ```javascript
 {
@@ -108,7 +108,7 @@ and Microsoft.AspNetCore.App's runtimeconfig.json would contain:
 ```
 and Microsoft.NETCore.App would not have a runtimeconfig.json because it doesn't have any framework dependency or need to change settings.
 
-### Proposed changes for 3.0 (specifying multiple frameworks)
+### Multiple Frameworks (3.0+)
 The 2.1 release added support for a chain of frameworks, where each framework can have one dependent framework. However, with the advent of frameworks for WPF and WinForms it becomes necessary for an application to be able to reference more than one dependent framework.
 
 The runtimeconfig.json will have a new `frameworks` array section that allows more than one framework to be specified:
@@ -208,10 +208,11 @@ Both files carry the filenames for dependencies that must be found. They can be 
 
 At last, the coreclr is loaded into memory and called to run the application.
 
-### Hostpolicy changes for 2.1+
-For 2.0, there are several probing paths that are used to find the dependencies. These paths follow a certain order and the first assembly found wins and that location will be passed to the coreclr. For example, the local app location has priority over the shared framework locations and if the same assembly exists in both locations, the coreclr will end up using the local app's copy of that assembly.
+### Probing for Assemblies
+Assemblies are found by looking through probing paths in a certain order.
 
-These semantics will be unchanged for 2.1 except when a roll-forward is performed at a non-patch version (meaning a change to the major or minor version). For these cases, the highest assembly version wins. This is necessary in run-time scenarios to prevent assembly load exceptions which occur when an assembly is referencing a higher version of another assembly, but a lower version is actually found. This situation of having assembly conflicts (or duplicates) is more likely to occur when there are multiple frameworks (as convered in hostfxr's changes for 2.1), so it is important for 2.1+ functionality.
+* In version 2.0, the local app location has priority over the shared framework locations and if the same assembly exists in both locations, the coreclr will end up using the local app's copy of that assembly.
+* In version 2.1 and later, if multiple assemblies with the same name are found, the assembly with the highest version wins. This is necessary to avoid downgrading assembly versions requested by the application.
 
 In order to compare versions of an assembly, the assemblyVersion and fileVersion attributes will be added for each assembly in the deps.json files. The application and every framework contains a <name>.deps.json file. The assemblyVersion is compared first, and if equal, the fileVersion is used as a tie-breaker.
 

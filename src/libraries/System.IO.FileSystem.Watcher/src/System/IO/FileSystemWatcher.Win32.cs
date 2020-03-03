@@ -4,6 +4,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
@@ -56,9 +57,9 @@ namespace System.IO
                 {
                     state.PreAllocatedOverlapped = new PreAllocatedOverlapped((errorCode, numBytes, overlappedPointer) =>
                     {
-                        AsyncReadState state = (AsyncReadState)ThreadPoolBoundHandle.GetNativeOverlappedState(overlappedPointer);
+                        AsyncReadState state = (AsyncReadState)ThreadPoolBoundHandle.GetNativeOverlappedState(overlappedPointer)!;
                         state.ThreadPoolBinding.FreeNativeOverlapped(overlappedPointer);
-                        if (state.WeakWatcher.TryGetTarget(out FileSystemWatcher watcher))
+                        if (state.WeakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
                         {
                             watcher.ReadDirectoryChangesCallback(errorCode, numBytes, state);
                         }
@@ -123,9 +124,9 @@ namespace System.IO
         private int _currentSession;
 
         // Unmanaged handle to monitored directory
-        private SafeFileHandle _directoryHandle;
+        private SafeFileHandle? _directoryHandle;
 
-        private static bool IsHandleInvalid(SafeFileHandle handle)
+        private static bool IsHandleInvalid([NotNullWhen(false)] SafeFileHandle? handle)
         {
             return handle == null || handle.IsInvalid || handle.IsClosed;
         }
@@ -137,6 +138,8 @@ namespace System.IO
         /// </summary>
         private unsafe void Monitor(AsyncReadState state)
         {
+            Debug.Assert(state.PreAllocatedOverlapped != null);
+
             // This method should only ever access the directory handle via the state object passed in, and not access it
             // via _directoryHandle.  While this function is executing asynchronously, another thread could set
             // EnableRaisingEvents to false and then back to true, restarting the FSW and causing a new directory handle
@@ -362,7 +365,7 @@ namespace System.IO
             internal byte[] Buffer { get; }
             internal SafeFileHandle DirectoryHandle { get; }
             internal ThreadPoolBoundHandle ThreadPoolBinding { get; }
-            internal PreAllocatedOverlapped PreAllocatedOverlapped { get; set;  }
+            internal PreAllocatedOverlapped? PreAllocatedOverlapped { get; set;  }
             internal WeakReference<FileSystemWatcher> WeakWatcher { get; }
         }
     }

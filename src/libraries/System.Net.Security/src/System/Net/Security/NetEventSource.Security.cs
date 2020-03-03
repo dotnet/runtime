@@ -10,7 +10,6 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
 {
-    //TODO: If localization resources are not found, logging does not work. Issue #5126.
     [EventSource(Name = "Microsoft-System-Net-Security", LocalizationResources = "FxResources.System.Net.Security.SR")]
     internal sealed partial class NetEventSource
     {
@@ -37,7 +36,7 @@ namespace System.Net
         private const int RemoteCertificateInvalidId = RemoteCertificateSuccesId + 1;
 
         [Event(EnumerateSecurityPackagesId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
-        public void EnumerateSecurityPackages(string securityPackage)
+        public void EnumerateSecurityPackages(string? securityPackage)
         {
             if (IsEnabled())
             {
@@ -55,7 +54,7 @@ namespace System.Net
         }
 
         [NonEvent]
-        public void SecureChannelCtor(SecureChannel secureChannel, string hostname, X509CertificateCollection clientCertificates, EncryptionPolicy encryptionPolicy)
+        public void SecureChannelCtor(SecureChannel secureChannel, string hostname, X509CertificateCollection? clientCertificates, EncryptionPolicy encryptionPolicy)
         {
             if (IsEnabled())
             {
@@ -115,7 +114,7 @@ namespace System.Net
             WriteEvent(NotFoundCertInStoreId, secureChannelHash);
 
         [NonEvent]
-        public void RemoteCertificate(X509Certificate remoteCertificate)
+        public void RemoteCertificate(X509Certificate? remoteCertificate)
         {
             if (IsEnabled())
             {
@@ -123,7 +122,7 @@ namespace System.Net
             }
         }
         [Event(RemoteCertificateId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
-        private void RemoteCertificate(string remoteCertificate) =>
+        private void RemoteCertificate(string? remoteCertificate) =>
             WriteEvent(RemoteCertificateId, remoteCertificate);
 
         [NonEvent]
@@ -163,7 +162,7 @@ namespace System.Net
             WriteEvent(NoDelegateButClientCertId, secureChannelHash);
 
         [NonEvent]
-        public void AttemptingRestartUsingCert(X509Certificate clientCertificate, SecureChannel secureChannel)
+        public void AttemptingRestartUsingCert(X509Certificate? clientCertificate, SecureChannel secureChannel)
         {
             if (IsEnabled())
             {
@@ -171,7 +170,7 @@ namespace System.Net
             }
         }
         [Event(AttemptingRestartUsingCertId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
-        private void AttemptingRestartUsingCert(string clientCertificate, int secureChannelHash) =>
+        private void AttemptingRestartUsingCert(string? clientCertificate, int secureChannelHash) =>
             WriteEvent(AttemptingRestartUsingCertId, clientCertificate, secureChannelHash);
 
         [NonEvent]
@@ -207,7 +206,7 @@ namespace System.Net
             }
         }
         [Event(SelectedCertId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
-        private void SelectedCert(string clientCertificate, int secureChannelHash) =>
+        private void SelectedCert(string? clientCertificate, int secureChannelHash) =>
             WriteEvent(SelectedCertId, clientCertificate, secureChannelHash);
 
         [NonEvent]
@@ -313,9 +312,9 @@ namespace System.Net
         private void RemoteCertUserDeclaredInvalid(int secureChannelHash) =>
             WriteEvent(RemoteCertificateInvalidId, secureChannelHash);
 
-        static partial void AdditionalCustomizedToString<T>(T value, ref string result)
+        static partial void AdditionalCustomizedToString<T>(T value, ref string? result)
         {
-            X509Certificate cert = value as X509Certificate;
+            X509Certificate? cert = value as X509Certificate;
             if (cert != null)
             {
                 result = cert.ToString(fVerbose: true);

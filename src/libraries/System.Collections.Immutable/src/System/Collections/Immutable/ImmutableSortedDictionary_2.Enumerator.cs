@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace System.Collections.Immutable
 {
@@ -37,7 +38,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The builder being enumerated, if applicable.
             /// </summary>
-            private readonly Builder _builder;
+            private readonly Builder? _builder;
 
             /// <summary>
             /// A unique ID for this instance of this enumerator.
@@ -53,12 +54,12 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The stack to use for enumerating the binary tree.
             /// </summary>
-            private SecurePooledObject<Stack<RefAsValueType<Node>>> _stack;
+            private SecurePooledObject<Stack<RefAsValueType<Node>>>? _stack;
 
             /// <summary>
             /// The node currently selected.
             /// </summary>
-            private Node _current;
+            private Node? _current;
 
             /// <summary>
             /// The version of the builder (when applicable) that is being enumerated.
@@ -70,7 +71,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="root">The root of the set to be enumerated.</param>
             /// <param name="builder">The builder, if applicable.</param>
-            internal Enumerator(Node root, Builder builder = null)
+            internal Enumerator(Node root, Builder? builder = null)
             {
                 Requires.NotNull(root, nameof(root));
 
@@ -127,13 +128,12 @@ namespace System.Collections.Immutable
             /// </summary>
             public void Dispose()
             {
-                _root = null;
+                _root = null!;
                 _current = null;
-                Stack<RefAsValueType<Node>> stack;
-                if (_stack != null && _stack.TryUse(ref this, out stack))
+                if (_stack != null && _stack.TryUse(ref this, out Stack<RefAsValueType<Node>>? stack))
                 {
                     stack.ClearFastWhenEmpty();
-                    s_enumeratingStacks.TryAdd(this, _stack);
+                    s_enumeratingStacks.TryAdd(this, _stack!);
                 }
 
                 _stack = null;
@@ -155,7 +155,7 @@ namespace System.Collections.Immutable
                     {
                         Node n = stack.Pop().Value;
                         _current = n;
-                        this.PushLeft(n.Right);
+                        this.PushLeft(n.Right!);
                         return true;
                     }
                 }
@@ -217,11 +217,12 @@ namespace System.Collections.Immutable
             private void PushLeft(Node node)
             {
                 Requires.NotNull(node, nameof(node));
+                Debug.Assert(_stack != null);
                 var stack = _stack.Use(ref this);
                 while (!node.IsEmpty)
                 {
                     stack.Push(new RefAsValueType<Node>(node));
-                    node = node.Left;
+                    node = node.Left!;
                 }
             }
         }

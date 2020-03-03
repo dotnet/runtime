@@ -12,7 +12,7 @@ namespace System.IO.Tests
     {
         protected abstract T CreateInfo(string path);
 
-        // In NetFX we ignore "not found" errors, which leaves the attributes
+        // In .NET Framework we ignore "not found" errors, which leaves the attributes
         // state as invalid (0xFFFFFFFF), which makes all flags true.
 
         [Theory, MemberData(nameof(TrailingCharacters))]

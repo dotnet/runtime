@@ -16,7 +16,7 @@ namespace Internal.Runtime
         public const uint Signature = 0x00525452; // 'RTR'
 
         public const ushort CurrentMajorVersion = 4;
-        public const ushort CurrentMinorVersion = 0;
+        public const ushort CurrentMinorVersion = 1;
     }
 
 #pragma warning disable 0169
@@ -59,10 +59,13 @@ namespace Internal.Runtime
         // 107 is deprecated - it was used by an older format of AvailableTypes
         AvailableTypes = 108,
         InstanceMethodEntryPoints = 109,
-        InliningInfo = 110, // Added in v2.1
+        InliningInfo = 110, // Added in v2.1, deprecated in 4.1
         ProfileDataInfo = 111, // Added in v2.2
         ManifestMetadata = 112, // Added in v2.3
         AttributePresence = 113, // Added in V3.1
+        InliningInfo2 = 114, // Added in 4.1
+        ComponentAssemblies = 115, // Added in 4.1
+        OwnerCompositeExecutable = 116, // Added in 4.1
 
         //
         // CoreRT ReadyToRun sections

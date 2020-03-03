@@ -373,7 +373,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
                         ecmd.cmd = ETHTOOL_GSET;
                         if (ioctl(socketfd, SIOCETHTOOL, &ifr) == 0)
                         {
-                            nii->Speed = (int)ethtool_cmd_speed(&ecmd);
+                            nii->Speed = (int64_t)ethtool_cmd_speed(&ecmd);
                             if (nii->Speed > 0)
                             {
                                 // If we did not get -1
@@ -424,6 +424,22 @@ int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceInd
 
     while (sysctl(routeDumpName, 6, buffer, &byteCount, NULL, 0) != 0)
     {
+        if (errno != ENOMEM)
+        {
+            return -1;
+        }
+
+        // If buffer is not big enough double size to avoid calling sysctl again
+        // as byteCount only gets estimated size when passed buffer is NULL.
+        // This only happens if routing table grows between first and second call.
+        size_t tmpEstimatedSize;
+        if (!multiply_s(byteCount, (size_t)2, &tmpEstimatedSize))
+        {
+            errno = ENOMEM;
+            return -1;
+        }
+
+        byteCount = tmpEstimatedSize;
         buffer = realloc(buffer, byteCount);
         if (buffer == NULL)
         {

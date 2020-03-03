@@ -22,14 +22,14 @@ namespace Internal.Cryptography.Pal
             Dispose();
         }
 
-        public byte[] Export(X509ContentType contentType, SafePasswordHandle password)
+        public byte[]? Export(X509ContentType contentType, SafePasswordHandle password)
         {
             Debug.Assert(password != null);
             switch (contentType)
             {
                 case X509ContentType.Cert:
                     {
-                        SafeCertContextHandle pCertContext = null;
+                        SafeCertContextHandle? pCertContext = null;
                         if (!Interop.crypt32.CertEnumCertificatesInStore(_certStore, ref pCertContext))
                             return null;
                         try
@@ -50,7 +50,7 @@ namespace Internal.Cryptography.Pal
 
                 case X509ContentType.SerializedCert:
                     {
-                        SafeCertContextHandle pCertContext = null;
+                        SafeCertContextHandle? pCertContext = null;
                         if (!Interop.crypt32.CertEnumCertificatesInStore(_certStore, ref pCertContext))
                             return null;
 

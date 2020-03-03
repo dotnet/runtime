@@ -19,11 +19,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lsra.h"
 #include "sideeffects.h"
 
-class Lowering : public Phase
+class Lowering final : public Phase
 {
 public:
     inline Lowering(Compiler* compiler, LinearScanInterface* lsra)
-        : Phase(compiler, "Lowering", PHASE_LOWERING), vtableCallTemp(BAD_VAR_NUM)
+        : Phase(compiler, PHASE_LOWERING), vtableCallTemp(BAD_VAR_NUM)
     {
         m_lsra = (LinearScan*)lsra;
         assert(m_lsra);
@@ -83,9 +83,10 @@ private:
     void ContainCheckReturnTrap(GenTreeOp* node);
     void ContainCheckArrOffset(GenTreeArrOffs* node);
     void ContainCheckLclHeap(GenTreeOp* node);
-    void ContainCheckRet(GenTreeOp* node);
+    void ContainCheckRet(GenTreeUnOp* ret);
     void ContainCheckJTrue(GenTreeOp* node);
 
+    void ContainCheckBitCast(GenTree* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
     void ContainCheckStoreIndir(GenTreeIndir* indirNode);
@@ -96,10 +97,10 @@ private:
     void ContainCheckCompare(GenTreeOp* node);
     void ContainCheckBinary(GenTreeOp* node);
     void ContainCheckBoundsChk(GenTreeBoundsChk* node);
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     void ContainCheckFloatBinary(GenTreeOp* node);
     void ContainCheckIntrinsic(GenTreeOp* node);
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 #ifdef FEATURE_SIMD
     void ContainCheckSIMD(GenTreeSIMD* simdNode);
 #endif // FEATURE_SIMD
@@ -118,13 +119,11 @@ private:
     void LowerBlock(BasicBlock* block);
     GenTree* LowerNode(GenTree* node);
 
-    void CheckVSQuirkStackPaddingNeeded(GenTreeCall* call);
-
     // ------------------------------
     // Call Lowering
     // ------------------------------
     void LowerCall(GenTree* call);
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
 #endif
     GenTree* OptimizeConstCompare(GenTree* cmp);
@@ -132,7 +131,7 @@ private:
     GenTree* LowerJTrue(GenTreeOp* jtrue);
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
-    void LowerRet(GenTree* ret);
+    void LowerRet(GenTreeUnOp* ret);
     GenTree* LowerDelegateInvoke(GenTreeCall* call);
     GenTree* LowerIndirectNonvirtCall(GenTreeCall* call);
     GenTree* LowerDirectCall(GenTreeCall* call);
@@ -150,7 +149,7 @@ private:
     void ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
     GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* info, var_types type);
     void LowerArg(GenTreeCall* call, GenTree** ppTree);
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
     GenTree* LowerFloatArg(GenTree** pArg, fgArgTabEntry* info);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
@@ -221,7 +220,7 @@ private:
     // return true if this call target is within range of a pc-rel call on the machine
     bool IsCallTargetInRange(void* addr);
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     GenTree* PreferredRegOptionalOperand(GenTree* tree);
 
     // ------------------------------------------------------------------
@@ -273,11 +272,11 @@ private:
             regOptionalOperand->SetRegOptional();
         }
     }
-#endif // defined(_TARGET_XARCH_)
+#endif // defined(TARGET_XARCH)
 
     // Per tree node member functions
     void LowerStoreIndir(GenTreeIndir* node);
-    void LowerAdd(GenTreeOp* node);
+    GenTree* LowerAdd(GenTreeOp* node);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);
     GenTree* LowerSignedDivOrMod(GenTree* node);

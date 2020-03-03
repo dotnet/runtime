@@ -81,15 +81,9 @@ public:
     void IncrementSequenceNumber();
 };
 
-#ifndef __GNUC__
-#define EVENTPIPE_THREAD_LOCAL __declspec(thread)
-#else  // !__GNUC__
-#define EVENTPIPE_THREAD_LOCAL thread_local
-#endif // !__GNUC__
-
 class EventPipeThread
 {
-    static EVENTPIPE_THREAD_LOCAL EventPipeThreadHolder gCurrentEventPipeThreadHolder;
+    static thread_local EventPipeThreadHolder gCurrentEventPipeThreadHolder;
 
     ~EventPipeThread();
 

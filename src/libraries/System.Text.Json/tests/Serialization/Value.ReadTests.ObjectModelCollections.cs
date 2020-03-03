@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(c[0]);
             Assert.False(c[1]);
 
-            // Regression test for https://github.com/dotnet/corefx/issues/40597.
+            // Regression test for https://github.com/dotnet/runtime/issues/30686.
             ObservableCollection<bool> oc = JsonSerializer.Deserialize<ObservableCollection<bool>>("[true,false]");
             Assert.Equal(2, oc.Count);
             Assert.True(oc[0]);

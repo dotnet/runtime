@@ -2,25 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-
 namespace System.Text.RegularExpressions
 {
     // Callback class
     public delegate string MatchEvaluator(Match match);
 
+    internal delegate bool MatchCallback<TState>(ref TState state, Match match);
+
     public partial class Regex
     {
-        private const int ReplaceBufferSize = 256;
-
         /// <summary>
         /// Replaces all occurrences of the pattern with the <paramref name="replacement"/> pattern, starting at
         /// the first character in the input string.
         /// </summary>
         public static string Replace(string input, string pattern, string replacement) =>
-            new Regex(pattern, addToCache: true).Replace(input, replacement);
+            RegexCache.GetOrAdd(pattern).Replace(input, replacement);
 
         /// <summary>
         /// Replaces all occurrences of
@@ -28,10 +24,10 @@ namespace System.Text.RegularExpressions
         /// pattern, starting at the first character in the input string.
         /// </summary>
         public static string Replace(string input, string pattern, string replacement, RegexOptions options) =>
-            Replace(input, pattern, replacement, options, s_defaultMatchTimeout);
+            RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Replace(input, replacement);
 
         public static string Replace(string input, string pattern, string replacement, RegexOptions options, TimeSpan matchTimeout) =>
-            new Regex(pattern, options, matchTimeout, true).Replace(input, replacement);
+            RegexCache.GetOrAdd(pattern, options, matchTimeout).Replace(input, replacement);
 
         /// <summary>
         /// Replaces all occurrences of the previously defined pattern with the
@@ -40,8 +36,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string Replace(string input, string replacement)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
 
             return Replace(input, replacement, -1, UseOptionR() ? input.Length : 0);
         }
@@ -53,8 +51,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string Replace(string input, string replacement, int count)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
 
             return Replace(input, replacement, count, UseOptionR() ? input.Length : 0);
         }
@@ -66,16 +66,20 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string Replace(string input, string replacement, int count, int startat)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
+            if (replacement is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.replacement);
+            }
 
-            if (replacement == null)
-                throw new ArgumentNullException(nameof(replacement));
-
-            // Gets the weakly cached replacement helper or creates one if there isn't one already.
-            RegexReplacement repl = RegexReplacement.GetOrCreate(_replref!, replacement, caps!, capsize, capnames!, roptions);
-
-            return repl.Replace(this, input, count, startat);
+            // Gets the weakly cached replacement helper or creates one if there isn't one already,
+            // then uses it to perform the replace.
+            return
+                RegexReplacement.GetOrCreate(_replref!, replacement, caps!, capsize, capnames!, roptions).
+                Replace(this, input, count, startat);
         }
 
         /// <summary>
@@ -83,17 +87,17 @@ namespace System.Text.RegularExpressions
         /// replacement pattern.
         /// </summary>
         public static string Replace(string input, string pattern, MatchEvaluator evaluator) =>
-            new Regex(pattern, addToCache: true).Replace(input, evaluator);
+            RegexCache.GetOrAdd(pattern).Replace(input, evaluator);
 
         /// <summary>
         /// Replaces all occurrences of the <paramref name="pattern"/> with the recent
         /// replacement pattern, starting at the first character.
         /// </summary>
         public static string Replace(string input, string pattern, MatchEvaluator evaluator, RegexOptions options) =>
-            Replace(input, pattern, evaluator, options, s_defaultMatchTimeout);
+            RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Replace(input, evaluator);
 
         public static string Replace(string input, string pattern, MatchEvaluator evaluator, RegexOptions options, TimeSpan matchTimeout) =>
-            new Regex(pattern, options, matchTimeout, addToCache: true).Replace(input, evaluator);
+            RegexCache.GetOrAdd(pattern, options, matchTimeout).Replace(input, evaluator);
 
         /// <summary>
         /// Replaces all occurrences of the previously defined pattern with the recent
@@ -101,10 +105,12 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string Replace(string input, MatchEvaluator evaluator)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
 
-            return Replace(input, evaluator, -1, UseOptionR() ? input.Length : 0);
+            return Replace(evaluator, this, input, -1, UseOptionR() ? input.Length : 0);
         }
 
         /// <summary>
@@ -113,10 +119,12 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string Replace(string input, MatchEvaluator evaluator, int count)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
 
-            return Replace(input, evaluator, count, UseOptionR() ? input.Length : 0);
+            return Replace(evaluator, this, input, count, UseOptionR() ? input.Length : 0);
         }
 
         /// <summary>
@@ -126,8 +134,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string Replace(string input, MatchEvaluator evaluator, int count, int startat)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
 
             return Replace(evaluator, this, input, count, startat);
         }
@@ -143,79 +153,65 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private static string Replace(MatchEvaluator evaluator, Regex regex, string input, int count, int startat)
         {
-            if (evaluator == null)
-                throw new ArgumentNullException(nameof(evaluator));
+            if (evaluator is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.evaluator);
+            }
             if (count < -1)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.CountTooSmall);
-            if (startat < 0 || startat > input.Length)
-                throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.CountTooSmall);
+            }
+            if ((uint)startat > (uint)input.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startat, ExceptionResource.BeginIndexNotNegative);
+            }
 
             if (count == 0)
-                return input;
-
-            Match match = regex.Match(input, startat);
-
-            if (!match.Success)
             {
                 return input;
+            }
+
+            var state = (segments: new SegmentStringBuilder(256), evaluator, prevat: 0, input, count);
+
+            if (!regex.RightToLeft)
+            {
+                regex.Run(input, startat, ref state, (ref (SegmentStringBuilder segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
+                {
+                    state.segments.Add(state.input.AsMemory(state.prevat, match.Index - state.prevat));
+                    state.prevat = match.Index + match.Length;
+                    state.segments.Add(state.evaluator(match).AsMemory());
+                    return --state.count != 0;
+                });
+
+                if (state.segments.Count == 0)
+                {
+                    return input;
+                }
+
+                state.segments.Add(input.AsMemory(state.prevat, input.Length - state.prevat));
             }
             else
             {
-                var vsb = new ValueStringBuilder(stackalloc char[ReplaceBufferSize]);
+                state.prevat = input.Length;
 
-                if (!regex.RightToLeft)
+                regex.Run(input, startat, ref state, (ref (SegmentStringBuilder segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
                 {
-                    int prevat = 0;
+                    state.segments.Add(state.input.AsMemory(match.Index + match.Length, state.prevat - match.Index - match.Length));
+                    state.prevat = match.Index;
+                    state.segments.Add(evaluator(match).AsMemory());
+                    return --state.count != 0;
+                });
 
-                    do
-                    {
-                        if (match.Index != prevat)
-                            vsb.Append(input.AsSpan(prevat, match.Index - prevat));
-
-                        prevat = match.Index + match.Length;
-                        string result = evaluator(match);
-                        if (!string.IsNullOrEmpty(result))
-                            vsb.Append(result);
-
-                        if (--count == 0)
-                            break;
-
-                        match = match.NextMatch();
-                    } while (match.Success);
-
-                    if (prevat < input.Length)
-                        vsb.Append(input.AsSpan(prevat, input.Length - prevat));
-                }
-                else
+                if (state.segments.Count == 0)
                 {
-                    // In right to left mode append all the inputs in reversed order to avoid an extra dynamic data structure
-                    // and to be able to work with Spans. A final reverse of the transformed reversed input string generates
-                    // the desired output. Similar to Tower of Hanoi.
-
-                    int prevat = input.Length;
-
-                    do
-                    {
-                        if (match.Index + match.Length != prevat)
-                            vsb.AppendReversed(input.AsSpan(match.Index + match.Length, prevat - match.Index - match.Length));
-
-                        prevat = match.Index;
-                        vsb.AppendReversed(evaluator(match));
-
-                        if (--count == 0)
-                            break;
-
-                        match = match.NextMatch();
-                    } while (match.Success);
-
-                    if (prevat > 0)
-                        vsb.AppendReversed(input.AsSpan(0, prevat));
-
-                    vsb.Reverse();
+                    return input;
                 }
 
-                return vsb.ToString();
+                state.segments.Add(input.AsMemory(0, state.prevat));
+                state.segments.AsSpan().Reverse();
             }
+
+            return state.segments.ToString();
         }
     }
 }

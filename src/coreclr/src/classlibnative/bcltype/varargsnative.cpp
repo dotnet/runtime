@@ -24,7 +24,7 @@
 //       so if you change this implementation be sure to update the debugger's version as well.
 static void AdjustArgPtrForAlignment(VARARGS *pData, size_t cbArg)
 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     // Only 64-bit primitives or value types with embedded 64-bit primitives are aligned on 64-bit boundaries.
     if (cbArg < 8)
         return;
@@ -50,7 +50,7 @@ static void AdjustArgPtrForAlignment(VARARGS *pData, size_t cbArg)
         // One of the primitive 64-bit types
     }
     pData->ArgPtr = (BYTE*)ALIGN_UP(pData->ArgPtr, 8);
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -83,7 +83,7 @@ static void InitCommon(VARARGS *data, VASigCookie** cookie)
     // Get a pointer to the cookie arg.
     data->ArgPtr = (BYTE *) cookie;
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     //  STACK_GROWS_DOWN_ON_ARGS_WALK
 
     //   <return address>  ;; lower memory
@@ -530,10 +530,10 @@ TryAgain:
         case ELEMENT_TYPE_U8:
         case ELEMENT_TYPE_R8:
         value->type = MscorlibBinder::GetElementType(elemType);
-#if !defined(BIT64) && (DATA_ALIGNMENT > 4)
+#if !defined(HOST_64BIT) && (DATA_ALIGNMENT > 4)
         if ( fData && origArgPtr == value->data ) {
             // allocate an aligned copy of the value
-            value->data = value->type.GetMethodTable()->Box(origArgPtr, FALSE)->UnBox();
+            value->data = value->type.AsMethodTable()->Box(origArgPtr, FALSE)->UnBox();
         }
 #endif
         break;
@@ -580,12 +580,12 @@ TryAgain:
         case ELEMENT_TYPE_CLASS: {
             value->type = data->SigPtr.GetTypeHandleThrowing(data->ArgCookie->pModule, &typeContext);
 
-            if (value->type.GetMethodTable()->IsByRefLike())
+            if (value->type.AsMethodTable()->IsByRefLike())
             {
                 COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
             }
 
-            if (elemType == ELEMENT_TYPE_CLASS && value->type.GetMethodTable()->IsValueType())
+            if (elemType == ELEMENT_TYPE_CLASS && value->type.AsMethodTable()->IsValueType())
                 value->type = g_pObjectClass;
             } break;
 

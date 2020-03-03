@@ -368,7 +368,7 @@ namespace DefaultNamespace
 
     public class Test
     {
-        public static int Main()
+        public static int Main(string[] args)
         {
             TestLibrary.Logging.WriteLine("Building Graph with 800 vertices...");
             Graph MyGraph = new Graph(800);  // graph with 800 nodes

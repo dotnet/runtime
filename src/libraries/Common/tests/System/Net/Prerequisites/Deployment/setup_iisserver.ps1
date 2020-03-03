@@ -61,7 +61,7 @@ $script:webApps = @(
      }
 )
 
-$script:COREFX_ROLE_NAME = "COREFX_NET_IISSERVER"
+$script:LIBRARIES_ROLE_NAME = "LIBRARIES_NET_IISSERVER"
 
 Function InstallIIS
 {
@@ -162,7 +162,7 @@ Function RemoveServerCode
 
 Function Install
 {
-    Write-Host -ForegroundColor Cyan "Installing prerequisites for test role: $($script:COREFX_ROLE_NAME)"
+    Write-Host -ForegroundColor Cyan "Installing prerequisites for test role: $($script:LIBRARIES_ROLE_NAME)"
     CheckMachineInfo
 
     InstallIIS
@@ -177,7 +177,7 @@ Function Install
 
 Function Uninstall
 {
-    Write-Host -ForegroundColor Cyan "Removing prerequisites for test role: $($script:COREFX_ROLE_NAME)"
+    Write-Host -ForegroundColor Cyan "Removing prerequisites for test role: $($script:LIBRARIES_ROLE_NAME)"
 
     EnvironmentCheckUninstallRoleStatus
 

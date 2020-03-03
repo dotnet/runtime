@@ -1,0 +1,54 @@
+parameters:
+  PublishRidAgnosticPackagesFromPlatform: Windows_NT_x64
+
+stages:
+
+- stage: PrepareForPublish
+  displayName: Prepare for Publish
+  jobs:
+
+  # Prep artifacts: sign them and upload pipeline artifacts expected by stages-based publishing.
+  - template: /eng/pipelines/official/jobs/prepare-signed-artifacts.yml
+    parameters:
+      PublishRidAgnosticPackagesFromPlatform: ${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
+
+  # Publish to Build Asset Registry in order to generate the ReleaseConfigs artifact.
+  - template: /eng/common/templates/job/publish-build-assets.yml
+    parameters:
+      publishUsingPipelines: true
+      dependsOn: PrepareSignedArtifacts
+      pool:
+        name: NetCoreInternal-Pool
+        queue: buildpool.windows.10.amd64.vs2017
+
+# Stages-based publishing entry point
+- template: /eng/common/templates/post-build/post-build.yml
+  parameters:
+    validateDependsOn:
+    - PrepareForPublish
+    # Symbol validation is not ready yet. https://github.com/dotnet/arcade/issues/2871
+    enableSymbolValidation: false
+    # SourceLink validation doesn't work in dev builds: tries to pull from GitHub. https://github.com/dotnet/arcade/issues/3604
+    enableSourceLinkValidation: false
+    # Allow symbol publish to emit expected warnings without failing the build. Include single
+    # quotes inside the string so that it passes through to MSBuild without script interference.
+    symbolPublishingAdditionalParameters: "'-warnAsError:$false'"
+    # Publish to blob storage.
+    publishInstallersAndChecksums: true
+    # Enable SDL validation, passing through values from the 'core-setup-sdl-validation' group.
+    SDLValidationParameters:
+      enable: false # TODO: (Consolidation) Decide who owns SDL validation errors and enable. https://github.com/dotnet/runtime/issues/1027
+      artifactNames:
+      - PackageArtifacts
+      - BlobArtifacts
+      params: >-
+        -SourceToolsList @("policheck","credscan")
+        -TsaInstanceURL "$(TsaInstanceURL)"
+        -TsaProjectName "$(TsaProjectName)"
+        -TsaNotificationEmail "$(TsaNotificationEmail)"
+        -TsaCodebaseAdmin "$(TsaCodebaseAdmin)"
+        -TsaBugAreaPath "$(TsaBugAreaPath)"
+        -TsaIterationPath "$(TsaIterationPath)"
+        -TsaRepositoryName "$(TsaRepositoryName)"
+        -TsaCodebaseName "$(TsaCodebaseName)"
+        -TsaPublish $True

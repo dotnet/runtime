@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -13,7 +14,7 @@ namespace System.Text.Json
     /// </summary>
     public sealed class JsonString : JsonNode, IEquatable<JsonString>
     {
-        private string _value;
+        private string _value = null!;
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonString"/> class representing the empty value.
@@ -109,7 +110,7 @@ namespace System.Text.Json
         ///   A return value indicates whether the conversion succeeded.
         /// </summary>
         /// <param name="value">
-        ///   When this method returns, contains the see cref="DateTime"/> value equivalent of the text contained in this instance,
+        ///   When this method returns, contains the <see cref="DateTime"/> value equivalent of the text contained in this instance,
         ///   if the conversion succeeded, or zero if the conversion failed.
         /// </param>
         /// <returns>
@@ -149,7 +150,7 @@ namespace System.Text.Json
         ///   <see langword="true"/> if the text value of this instance matches <paramref name="obj"/>,
         ///   <see langword="false"/> otherwise.
         /// </returns>
-        public override bool Equals(object obj) => obj is JsonString jsonString && Equals(jsonString);
+        public override bool Equals(object? obj) => obj is JsonString jsonString && Equals(jsonString);
 
         /// <summary>
         ///   Calculates a hash code of this instance.
@@ -165,7 +166,7 @@ namespace System.Text.Json
         ///   <see langword="true"/> if the text value of this instance matches <paramref name="other"/>,
         ///   <see langword="false"/> otherwise.
         /// </returns>
-        public bool Equals(JsonString other) => !(other is null) && Value == other.Value;
+        public bool Equals(JsonString? other) => !(other is null) && Value == other.Value;
 
         /// <summary>
         ///   Compares values of two JSON strings.
@@ -176,13 +177,13 @@ namespace System.Text.Json
         ///   <see langword="true"/> if values of instances match,
         ///   <see langword="false"/> otherwise.
         /// </returns>
-        public static bool operator ==(JsonString left, JsonString right)
+        public static bool operator ==(JsonString? left, JsonString? right)
         {
             // Test "right" first to allow branch elimination when inlined for null checks (== null)
             // so it can become a simple test
             if (right is null)
             {
-                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
                 return (left is null) ? true : false;
             }
 
@@ -198,7 +199,7 @@ namespace System.Text.Json
         ///   <see langword="true"/> if values of instances do not match,
         ///   <see langword="false"/> otherwise.
         /// </returns>
-        public static bool operator !=(JsonString left, JsonString right) => !(left == right);
+        public static bool operator !=(JsonString? left, JsonString? right) => !(left == right);
 
         /// <summary>
         ///   Creates a new JSON string that is a copy of the current instance.
@@ -213,16 +214,16 @@ namespace System.Text.Json
 
         /// <summary>
         ///   Converts the text value of this instance, which should encode binary data as base-64 digits, to an equivalent 8-bit unsigned <see cref="byte"/> array.
-        ///   The return value indicates wether the conversion succeeded.
+        ///   The return value indicates whether the conversion succeeded.
         /// </summary>
         /// <param name="value">
         ///   When this method returns, contains the <see cref="byte"/> array equivalent of the text contained in this instance,
         ///   if the conversion succeeded.
         /// </param>
         /// <returns>
-        ///   <see langword="true"/> if text was converted successfully; othwerwise returns <see langword="false"/>.
+        ///   <see langword="true"/> if text was converted successfully; otherwise returns <see langword="false"/>.
         /// </returns>
-        internal bool TryGetBytesFromBase64(out byte[] value)
+        internal bool TryGetBytesFromBase64([NotNullWhen(true)] out byte[]? value)
         {
             Debug.Assert(_value != null);
 
@@ -238,7 +239,7 @@ namespace System.Text.Json
             // be /4 * 3 - padding. To be on the safe side, keep padding and slice later
             int bufferSize = _value.Length / 4 * 3;
 
-            byte[] arrayToReturnToPool = null;
+            byte[]? arrayToReturnToPool = null;
             Span<byte> buffer = bufferSize <= JsonConstants.StackallocThreshold
                 ? stackalloc byte[JsonConstants.StackallocThreshold]
                 : arrayToReturnToPool = ArrayPool<byte>.Shared.Rent(bufferSize);

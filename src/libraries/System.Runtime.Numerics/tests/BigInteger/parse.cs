@@ -12,13 +12,13 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public partial class parseTest
+    public class parseTest
     {
         private static readonly int s_samples = 10;
         private static readonly Random s_random = new Random(100);
 
         // Invariant culture is commonly used for (de-)serialization and similar to en-US
-        // Ukrainian (Ukraine) added to catch regressions (issue #1642)
+        // Ukrainian (Ukraine) added to catch regressions (https://github.com/dotnet/runtime/issues/14545)
         // Current cultue to get additional value out of glob/loc test runs
         public static IEnumerable<object[]> Cultures
         {
@@ -81,6 +81,29 @@ namespace System.Numerics.Tests
                 //FormatProvider tests
                 RunFormatProviderParseStrings();
             }
+        }
+
+        [Theory]
+        [InlineData("123456789", 0, 9, "123456789")]
+        [InlineData("123456789", 0, 1, "1")]
+        [InlineData("123456789", 1, 3, "234")]
+        [InlineData("123456789", 8, 1, "9")]
+        [InlineData("123456789abc", 8, 1, "9")]
+        [InlineData("1\03456789", 0, 1, "1")]
+        [InlineData("1\03456789", 0, 2, "1")]
+        [InlineData("123456789\0", 0, 10, "123456789")]
+        public void Parse_Subspan_Success(string input, int offset, int length, string expected)
+        {
+            Eval(BigInteger.Parse(input.AsSpan(offset, length)), expected);
+            Assert.True(BigInteger.TryParse(input.AsSpan(offset, length), out BigInteger test));
+            Eval(test, expected);
+        }
+
+        [Fact]
+        public void Parse_EmptySubspan_Fails()
+        {
+            Assert.False(BigInteger.TryParse("12345".AsSpan(0, 0), out BigInteger result));
+            Assert.Equal(0, result);
         }
 
         private static void RunFormatProviderParseStrings()
@@ -397,7 +420,33 @@ namespace System.Numerics.Tests
             VerifyParseToString(num1, ns, failureNotExpected, Fix(num1.Trim(), ((ns & NumberStyles.AllowHexSpecifier) != 0), failureNotExpected));
         }
 
-        static partial void VerifyParseSpanToString(string num1, NumberStyles ns, bool failureNotExpected, string expected);
+        static void VerifyParseSpanToString(string num1, NumberStyles ns, bool failureNotExpected, string expected)
+        {
+            if (failureNotExpected)
+            {
+                Eval(BigInteger.Parse(num1.AsSpan(), ns), expected);
+
+                Assert.True(BigInteger.TryParse(num1.AsSpan(), ns, provider: null, out BigInteger test));
+                Eval(test, expected);
+
+                if (ns == NumberStyles.Integer)
+                {
+                    Assert.True(BigInteger.TryParse(num1.AsSpan(), out test));
+                    Eval(test, expected);
+                }
+            }
+            else
+            {
+                Assert.Throws<FormatException>(() => { BigInteger.Parse(num1.AsSpan(), ns); });
+
+                Assert.False(BigInteger.TryParse(num1.AsSpan(), ns, provider: null, out BigInteger test));
+
+                if (ns == NumberStyles.Integer)
+                {
+                    Assert.False(BigInteger.TryParse(num1.AsSpan(), out test));
+                }
+            }
+        }
 
         private static void VerifyParseToString(string num1, NumberStyles ns, bool failureNotExpected, string expected)
         {
@@ -428,7 +477,20 @@ namespace System.Numerics.Tests
             }
         }
 
-        static partial void VerifySimpleFormatParseSpan(string num1, NumberFormatInfo nfi, BigInteger expected, bool failureExpected);
+        static void VerifySimpleFormatParseSpan(string num1, NumberFormatInfo nfi, BigInteger expected, bool failureExpected)
+        {
+            if (!failureExpected)
+            {
+                Assert.Equal(expected, BigInteger.Parse(num1.AsSpan(), provider: nfi));
+                Assert.True(BigInteger.TryParse(num1.AsSpan(), NumberStyles.Any, nfi, out BigInteger test));
+                Assert.Equal(expected, test);
+            }
+            else
+            {
+                Assert.Throws<FormatException>(() => { BigInteger.Parse(num1.AsSpan(), provider: nfi); });
+                Assert.False(BigInteger.TryParse(num1.AsSpan(), NumberStyles.Any, nfi, out BigInteger test), string.Format("Expected TryParse to fail on {0}", num1));
+            }
+        }
 
         private static void VerifySimpleFormatParse(string num1, NumberFormatInfo nfi, BigInteger expected, bool failureExpected = false)
         {
@@ -452,7 +514,20 @@ namespace System.Numerics.Tests
             }
         }
 
-        static partial void VerifyFormatParseSpan(string s, NumberStyles ns, NumberFormatInfo nfi, BigInteger expected, bool failureExpected);
+        static void VerifyFormatParseSpan(string num1, NumberStyles ns, NumberFormatInfo nfi, BigInteger expected, bool failureExpected)
+        {
+            if (!failureExpected)
+            {
+                Assert.Equal(expected, BigInteger.Parse(num1.AsSpan(), ns, nfi));
+                Assert.True(BigInteger.TryParse(num1.AsSpan(), NumberStyles.Any, nfi, out BigInteger test));
+                Assert.Equal(expected, test);
+            }
+            else
+            {
+                Assert.Throws<FormatException>(() => { BigInteger.Parse(num1.AsSpan(), ns, nfi); });
+                Assert.False(BigInteger.TryParse(num1.AsSpan(), ns, nfi, out BigInteger test), string.Format("Expected TryParse to fail on {0}", num1));
+            }
+        }
 
         private static void VerifyFormatParse(string num1, NumberStyles ns, NumberFormatInfo nfi, BigInteger expected, bool failureExpected = false)
         {

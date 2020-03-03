@@ -1,17 +1,19 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.14.2)
 
 cmake_policy(SET CMP0042 NEW)
 
 # Set the project name
 project(CoreCLR)
 
-# Include cmake functions
-include(functions.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configureplatform.cmake)
 
-if (WIN32)
+# Include cmake functions
+include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
+
+if (CLR_CMAKE_HOST_WIN32)
   message(STATUS "VS_PLATFORM_TOOLSET is ${CMAKE_VS_PLATFORM_TOOLSET}")
   message(STATUS "VS_PLATFORM_NAME is ${CMAKE_VS_PLATFORM_NAME}")
-endif (WIN32)
+endif (CLR_CMAKE_HOST_WIN32)
 
 # Set commonly used directory names
 set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -20,6 +22,9 @@ set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/src/inc)
 set(GENERATED_EVENTING_DIR ${CMAKE_CURRENT_BINARY_DIR}/Eventing)
 set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 set(PAL_REDEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/src/dlls/mscordac/palredefines.S)
+
+# Avoid logging when skipping up-to-date copies
+set(CMAKE_INSTALL_MESSAGE LAZY)
 
 set(CORECLR_SET_RPATH ON)
 if(CORECLR_SET_RPATH)
@@ -31,8 +36,8 @@ OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 OPTION(CLR_CMAKE_WARNINGS_ARE_ERRORS "Warnings are errors" ON)
 
 # Ensure other tools are present
-if (WIN32)
-    if(CLR_CMAKE_HOST_ARCH STREQUAL arm)
+if (CLR_CMAKE_HOST_WIN32)
+    if(CLR_CMAKE_HOST_ARCH_ARM)
 
       # Confirm that Windows SDK is present
       if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
@@ -50,7 +55,7 @@ if (WIN32)
       # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
       # use ml[64].exe as the assembler.
       enable_language(ASM)
-    elseif(CLR_CMAKE_HOST_ARCH STREQUAL arm64)
+    elseif(CLR_CMAKE_HOST_ARCH_ARM64)
 
       # Confirm that Windows SDK is present
       if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
@@ -78,7 +83,7 @@ if (WIN32)
         message(FATAL_ERROR "MC not found")
     endif()
 
-else (WIN32)
+else (CLR_CMAKE_HOST_WIN32)
     enable_language(ASM)
 
     # Ensure that awk is present
@@ -92,7 +97,7 @@ else (WIN32)
     # to prevent applications to create executable memory mappings.
     find_program(PAXCTL paxctl)
 
-    if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    if (CLR_CMAKE_HOST_DARWIN)
 
       # Ensure that dsymutil and strip are present
       find_program(DSYMUTIL dsymutil)
@@ -106,13 +111,13 @@ else (WIN32)
       endif()
 
     endif()
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 #----------------------------------------------------
 # Configure compiler settings for environment
 #----------------------------------------------------
 include(configurecompiler.cmake)
-include(configuretools.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 #----------------------------------------------------
 # Cross target Component build specific configuration
@@ -126,26 +131,29 @@ endif(CLR_CROSS_COMPONENTS_BUILD)
 #-------------------
 include(pgosupport.cmake)
 
+#-------------------------------
+# Include libraries native shims
+#-------------------------------
+if(NOT CLR_CROSS_COMPONENTS_BUILD)
+  add_subdirectory(src/libraries-native)
+endif(NOT CLR_CROSS_COMPONENTS_BUILD)
+
 #-----------------------------------------
 # Add Projects
 #     - project which require platform header not clr's
 #     - do not depend on clr's compile definitions
 #-----------------------------------------
-if(CLR_CMAKE_PLATFORM_UNIX AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
-    add_subdirectory(src/corefx)
-endif()
-
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     add_subdirectory(src/pal)
-    add_subdirectory(src/coreclr/hosts)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+    add_subdirectory(src/hosts)
+endif(CLR_CMAKE_HOST_UNIX)
 
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(src/pal/prebuilt/inc)
 
 add_subdirectory(src/debug/debug-pal)
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
   add_subdirectory(src/gc/sample)
 endif()
 
@@ -154,10 +162,10 @@ add_subdirectory(src/tools/crossgen2/jitinterface)
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake
 # Do not add any new options here. They should be added in compileoptions.cmake
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
   add_compile_options(/FIWarningControl.h) # force include of WarningControl.h
   add_compile_options(/Zl) # omit default library name in .OBJ
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 #--------------------------------
 # Definition directives
@@ -178,11 +186,11 @@ if(FEATURE_STANDALONE_GC)
   add_subdirectory(src/gc)
 endif(FEATURE_STANDALONE_GC)
 
-if (CLR_CMAKE_PLATFORM_UNIX)
+if (CLR_CMAKE_HOST_UNIX)
   include_directories("src/pal/inc")
   include_directories("src/pal/inc/rt")
   include_directories("src/pal/src/safecrt")
-endif (CLR_CMAKE_PLATFORM_UNIX)
+endif (CLR_CMAKE_HOST_UNIX)
 
 #------------------------------
 # Add Product Directory

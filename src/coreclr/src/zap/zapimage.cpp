@@ -47,7 +47,7 @@ ZapImage::ZapImage(Zapper *zapper)
 ZapImage::~ZapImage()
 {
 #ifdef ZAP_HASHTABLE_TUNING
-    // If ZAP_HASHTABLE_TUNING is defined, preallocate is overloaded to print the tunning constants
+    // If ZAP_HASHTABLE_TUNING is defined, preallocate is overloaded to print the tuning constants
     Preallocate();
 #endif
 
@@ -223,7 +223,7 @@ void ZapImage::InitializeSectionsForReadyToRun()
         const char * pCompilerIdentifier = COMPILER_NAME " " FX_FILEVERSION_STR " " QUOTE_MACRO(__BUILDMACHINE__);
         ZapBlob * pCompilerIdentifierBlob = new (GetHeap()) ZapBlobPtr((PVOID)pCompilerIdentifier, strlen(pCompilerIdentifier) + 1);
 
-        GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_COMPILER_IDENTIFIER, pCompilerIdentifierBlob);
+        GetReadyToRunHeader()->RegisterSection(ReadyToRunSectionType::CompilerIdentifier, pCompilerIdentifierBlob);
         m_pHeaderSection->Place(pCompilerIdentifierBlob);
     }
 
@@ -283,7 +283,7 @@ void ZapImage::InitializeSectionsForReadyToRun()
     // Make sure the import sections table is in the image, so we can find the slot for module
     //
     _ASSERTE(m_pImportSectionsTable->GetSize() != 0);
-    GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_IMPORT_SECTIONS, m_pImportSectionsTable);
+    GetReadyToRunHeader()->RegisterSection(ReadyToRunSectionType::ImportSections, m_pImportSectionsTable);
 }
 #endif // FEATURE_READYTORUN_COMPILER
 
@@ -339,10 +339,10 @@ void ZapImage::AllocateVirtualSections()
 
         m_pExternalMethodCellSection = NewVirtualSection(pDataSection, IBCProfiledSection | HotColdSortedRange | ExternalMethodThunkSection, TARGET_POINTER_SIZE);
 
-        // m_pStubDispatchCellSection is  deliberately placed  directly after
+        // m_pStubDispatchCellSection is deliberately placed directly after
         // the last m_pDelayLoadInfoTableSection (all .data sections go together in the order indicated).
         // We do this to place it as the last "hot, written" section.  Why? Because
-        // we don't split the dispatch cells into hot/cold sections (We probably should),
+        // we don't split the dispatch cells into hot/cold sections (we probably should),
         // and so the section is actually half hot and half cold.
         // But it turns out that the hot dispatch cells always come
         // first (because the code that uses them is hot and gets compiled first).
@@ -363,14 +363,14 @@ void ZapImage::AllocateVirtualSections()
         // Virtual sections that are moved to .cdata when we have profile data.
         //
 
-        // This is everyhing that is assumed to be warm in the first strata
+        // This is everything that is assumed to be warm in the first strata
         // of non-profiled scenarios.  MethodTables related to objects etc.
         m_pPreloadSections[CORCOMPILE_SECTION_WARM] = NewVirtualSection(pDataSection, IBCProfiledSection | WarmRange | EEDataSection, TARGET_POINTER_SIZE);
 
         m_pPreloadSections[CORCOMPILE_SECTION_RVA_STATICS_COLD] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | RVAStaticsSection);
 
         // In an ideal world these are cold in both profiled and the first strata
-        // of non-profiled scenarios (i.e. no reflection, etc. )  The sections at the
+        // of non-profiled scenarios (i.e. no reflection, etc.)  The sections at the
         // bottom correspond to further strata of non-profiled scenarios.
         m_pPreloadSections[CORCOMPILE_SECTION_CLASS_COLD] = NewVirtualSection(pDataSection, IBCProfiledSection | ColdRange | ClassSection, TARGET_POINTER_SIZE);
         m_pPreloadSections[CORCOMPILE_SECTION_CROSS_DOMAIN_INFO] = NewVirtualSection(pDataSection, IBCUnProfiledSection | ColdRange | CrossDomainInfoSection, TARGET_POINTER_SIZE);
@@ -425,7 +425,7 @@ void ZapImage::AllocateVirtualSections()
         //
         // .text section
         //
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
         // for ARM, put the resource section at the end if it's very large - this
         // is because b and bl instructions have a limited distance range of +-16MB
         // which we should not exceed if we can avoid it.
@@ -516,17 +516,17 @@ void ZapImage::AllocateVirtualSections()
         //
         m_pHotGCSection = NewVirtualSection(pTextSection, IBCProfiledSection | WarmRange | GCInfoSection, sizeof(DWORD));
 
-#if !defined(_TARGET_ARM_)
-        // For ARM, put these sections more towards the end because bl/b instructions have limited diplacement
+#if !defined(TARGET_ARM)
+        // For ARM, put these sections more towards the end because bl/b instructions have limited displacement
 
         // IL
         m_pILSection  = NewVirtualSection(pTextSection, IBCProfiledSection | HotColdSortedRange | ILSection, sizeof(DWORD));
 
         //ILMetadata/Resources sections are reported as a statically known warm ranges for now.
         m_pILMetaDataSection = NewVirtualSection(pTextSection, IBCProfiledSection | HotColdSortedRange | ILMetadataSection, sizeof(DWORD));
-#endif  // _TARGET_ARM_
+#endif  // TARGET_ARM
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
         if (!bigResourceSection) // for ARM, put the resource section at the end if it's very large - see comment above
 #endif
             m_pResourcesSection = NewVirtualSection(pTextSection, IBCUnProfiledSection | WarmRange | ResourcesSection);
@@ -578,8 +578,8 @@ void ZapImage::AllocateVirtualSections()
         m_pColdCodeSection = NewVirtualSection(pTextSection, IBCProfiledSection | IBCUnProfiledSection | ColdRange | CodeSection, codeSectionAlign);
         m_pColdCodeSection->SetDefaultFill(DEFAULT_CODE_BUFFER_INIT);
 
-#if defined(_TARGET_ARM_)
-        // For ARM, put these sections more towards the end because bl/b instructions have limited diplacement
+#if defined(TARGET_ARM)
+        // For ARM, put these sections more towards the end because bl/b instructions have limited displacement
 
         // IL
         m_pILSection  = NewVirtualSection(pTextSection, IBCProfiledSection | HotColdSortedRange | ILSection, sizeof(DWORD));
@@ -589,7 +589,7 @@ void ZapImage::AllocateVirtualSections()
 
         if (bigResourceSection) // for ARM, put the resource section at the end if it's very large - see comment above
             m_pResourcesSection = NewVirtualSection(pTextSection, IBCUnProfiledSection | WarmRange | ResourcesSection);
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
         m_pColdCodeMapSection = NewVirtualSection(pTextSection, IBCProfiledSection | IBCUnProfiledSection | ColdRange | CodeManagerSection, sizeof(DWORD));
 
 #if !defined(FEATURE_EH_FUNCLETS)
@@ -639,7 +639,7 @@ void ZapImage::Preallocate()
 {
     COUNT_T cbILImage = m_ModuleDecoder.GetSize();
 
-    // Curb the estimate to handle corner cases gracefuly
+    // Curb the estimate to handle corner cases gracefully
     cbILImage = min(cbILImage, 50000000);
 
     PREALLOCATE_HASHTABLE(ZapImage::m_CompiledMethods, 0.0050, cbILImage);
@@ -1019,7 +1019,7 @@ HANDLE ZapImage::GenerateFile(LPCWSTR wszOutputFileName, CORCOMPILE_NGEN_SIGNATU
         rsds.magic = VAL32(0x53445352); // "SDSR";
         rsds.age = 1;
         // our PDB signature will be the same as our NGEN signature.
-        // However we want the printed version of the GUID to be be the same as the
+        // However we want the printed version of the GUID to be the same as the
         // byte dump of the signature so we swap bytes to make this work.
         //
         // * See code:CCorSvcMgr::CreatePdb for where this is used.
@@ -1079,10 +1079,10 @@ HANDLE ZapImage::SaveImage(LPCWSTR wszOutputFileName, LPCWSTR wszDllPath, CORCOM
 
     OutputTables();
 
-    // Create a empty export table.  This makes tools like symchk not think
-    // that native images are resoure-only DLLs.  It is important to NOT
+    // Create an empty export table.  This makes tools like symchk not think
+    // that native images are resource-only DLLs.  It is important to NOT
     // be a resource-only DLL because those DLL's PDBS are not put up on the
-    // symbol server and we want NEN PDBS to be placed there.
+    // symbol server and we want NGEN PDBS to be placed there.
     ZapPEExports* exports = new(GetHeap()) ZapPEExports(wszDllPath);
     m_pDebugSection->Place(exports);
     SetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT, exports);
@@ -1227,30 +1227,30 @@ void ZapImage::CalculateZapBaseAddress()
 
             if (!m_ModuleDecoder.IsDll())
             {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
                 // We use 30000000 for an exe
                 baseAddress = 0x30000000;
-#elif defined(_TARGET_64BIT_)
+#elif defined(TARGET_64BIT)
                 // We use 04000000 for an exe
-                // which is remapped to 0x642`88000000 on x64
+                // which is remapped to 0x644`88000000 on x64
                 baseAddress = 0x04000000;
 #endif
             }
             else
             {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
                 // We start a 31000000 for the main assembly with the manifest
                 baseAddress = 0x31000000;
-#elif defined(_TARGET_64BIT_)
+#elif defined(TARGET_64BIT)
                 // We start a 05000000 for the main assembly with the manifest
-                // which is remapped to 0x642`8A000000 on x64
+                // which is remapped to 0x644`8A000000 on x64
                 baseAddress = 0x05000000;
 #endif
             }
         }
         else // is dependent assembly of a multi-module assembly
         {
-            // Set the base address for a dependant multi module assembly
+            // Set the base address for a dependent multi-module assembly
 
             // We should have already set the nextBaseAddressForMultiModule
             // when we compiled the manifest module
@@ -1295,24 +1295,21 @@ void ZapImage::CalculateZapBaseAddress()
     nextBaseAddressForMultiModule = tempBaseAddress;
 
     //
-    // Now we remap the 32-bit address range used for x86 and PE32 images into thre
+    // Now we remap the 32-bit address range used for x86 and PE32 images into the
     // upper address range used on 64-bit platforms
     //
-#if USE_UPPER_ADDRESS
-#if defined(_TARGET_64BIT_)
+#if USE_UPPER_ADDRESS   // Implies TARGET_64BIT
     if (baseAddress < 0x80000000)
     {
         if (baseAddress < 0x40000000)
-            baseAddress += 0x40000000; // We map [00000000..3fffffff] to [642'80000000..642'ffffffff]
+            baseAddress += 0x40000000; // We map [00000000..3fffffff] to [644'80000000..644'ffffffff]
         else
-            baseAddress -= 0x40000000; // We map [40000000..7fffffff] to [642'00000000..642'7fffffff]
+            baseAddress -= 0x40000000; // We map [40000000..7fffffff] to [644'00000000..644'7fffffff]
 
         baseAddress *= UPPER_ADDRESS_MAPPING_FACTOR;
         baseAddress += CLR_UPPER_ADDRESS_MIN;
     }
 #endif
-#endif
-
 
     // Apply the calculated base address.
     SetBaseAddress(baseAddress);
@@ -1513,11 +1510,11 @@ void ZapImage::OutputTables()
     {
         USHORT dllCharacteristics = 0;
 
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
         dllCharacteristics |= IMAGE_DLLCHARACTERISTICS_NO_SEH;
 #endif
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         // Images without NX compat bit set fail to load on ARM
         dllCharacteristics |= IMAGE_DLLCHARACTERISTICS_NX_COMPAT;
 #endif
@@ -1531,7 +1528,7 @@ void ZapImage::OutputTables()
 #endif // _DEBUG
         {
             dllCharacteristics |= IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE;
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             // Large address aware, required for High Entry VA, is always enabled for 64bit native images.
             dllCharacteristics |= IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA;
 #endif
@@ -1547,10 +1544,10 @@ void ZapImage::OutputTables()
         SetSizeOfStackCommit(m_ModuleDecoder.GetSizeOfStackCommit());
     }
 
-#if defined(FEATURE_PAL) && !defined(_TARGET_64BIT_)
-    // To minimize wasted VA space on 32 bit systems align file to page bounaries (presumed to be 4K).
+#if defined(TARGET_UNIX) && !defined(TARGET_64BIT)
+    // To minimize wasted VA space on 32-bit systems, align file to page boundaries (presumed to be 4K).
     SetFileAlignment(0x1000);
-#elif defined(_TARGET_ARM_) && defined(FEATURE_CORESYSTEM)
+#elif defined(TARGET_ARM) && defined(FEATURE_CORESYSTEM)
     if (!IsReadyToRunCompilation())
     {
         // On ARM CoreSys builds, crossgen will use 4k file alignment, as requested by Phone perf team
@@ -1623,7 +1620,7 @@ void ZapImage::ProfileDisableInlining()
 }
 
 //  CompileHotRegion
-//     Performs the compilation and placement for all methods in the the "Hot" code region
+//     Performs the compilation and placement for all methods in the "Hot" code region
 //     Methods placed in this region typically correspond to all of the methods that were
 //     executed during any of the profiling scenarios.
 //
@@ -1663,7 +1660,7 @@ void ZapImage::CompileHotRegion()
             else if (TypeFromToken(token) == ibcMethodSpec)
             {
                 //
-                //  compile a generic/parameterized method
+                // Compile a generic/parameterized method
                 //
                 CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry = pProfileData->GetBlobSigEntry(token);
 
@@ -1687,7 +1684,7 @@ void ZapImage::CompileHotRegion()
                     else
                     {
                         // This generic/parameterized method is not part of the native image
-                        // Either the IBC type  specified no longer exists or it is a SIMD types
+                        // Either the IBC type specified no longer exists or it is a SIMD types
                         // or the type can't be loaded in a ReadyToRun native image because of
                         // a cross-module type dependencies.
                         //
@@ -1711,7 +1708,7 @@ void ZapImage::CompileHotRegion()
 }
 
 //  CompileColdRegion
-//     Performs the compilation and placement for all methods in the the "Cold" code region
+//     Performs the compilation and placement for all methods in the "Cold" code region
 //     Methods placed in this region typically correspond to all of the methods that were
 //     NOT executed during any of the profiling scenarios.
 //
@@ -1906,7 +1903,7 @@ BOOL ZapImage::IsVTableGapMethod(mdMethodDef md)
     DWORD dwAttributes;
 
     // Get method attributes and check that RTSpecialName was set for the method (this means the name has
-    // semantic import to the runtime and must be formatted rigorously with one of a few well known rules).
+    // semantic import to the runtime and must be formatted rigorously with one of a few well-known rules).
     // Note that we just return false on any failure path since this will just lead to our caller continuing
     // to throw the exception they were about to anyway.
     hr = m_pMDImport->GetMethodDefProps(md, &dwAttributes);
@@ -1995,7 +1992,7 @@ ZapImage::CompileStatus ZapImage::TryCompileInstantiatedMethod(CORINFO_METHOD_HA
         return COMPILE_EXCLUDED;
 
     // If we compiling this method because it was specified by the IBC profile data
-    // then issue an warning if this method is not on our uncompiled method list
+    // then issue a warning if this method is not on our uncompiled method list.
     //
     if (methodProfilingDataFlags != 0)
     {
@@ -2061,7 +2058,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
     //
     if (methodProfilingDataFlags != 0)
     {
-        // Report the profiling data flags for layout of the EE datastructures
+        // Report the profiling data flags for layout of the EE data structures
         m_pPreloader->SetMethodProfilingFlags(handle, methodProfilingDataFlags);
 
         // Hot methods can be marked to be excluded from the AOT native image.
@@ -2074,7 +2071,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
         }
 
         // Cold methods can be marked to be excluded from the AOT native image.
-        // We can reduced the size of the AOT native image by selectively
+        // We can reduce the size of the AOT native image by selectively
         // excluding the code for some of the cold methods.
         //
         if ((methodProfilingDataFlags & (1 << ExcludeColdMethodCode)) != 0)
@@ -2084,7 +2081,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
         }
 
         // If the code was never executed based on the profile data
-        // then don't compile this method now. Wait until until later
+        // then don't compile this method now. Wait until later
         // when we are compiling the methods in the cold section.
         //
         if ((methodProfilingDataFlags & (1 << ReadMethodCode)) == 0)
@@ -2167,9 +2164,9 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
         //     messages to the console
         if (IsReadyToRunCompilation())
         {
-            // When compiling the method we may receive an exeception when the
+            // When compiling the method, we may receive an exception when the
             // method uses a feature that is Not Implemented for ReadyToRun
-            // or a Type Load exception if the method uses for a SIMD type.
+            // or a Type Load exception if the method uses a SIMD type.
             //
             // We skip the compilation of such methods and we don't want to
             // issue a warning or error
@@ -2186,7 +2183,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
             ex->GetMessage(message);
 
             // FileNotFound errors here can be converted into a single error string per ngen compile,
-            //  and the detailed error is available with verbose logging
+            // and the detailed error is available with verbose logging
             if (hrException == COR_E_FILENOTFOUND)
             {
                 StackSString logMessage(W("System.IO.FileNotFoundException: "));
@@ -2437,15 +2434,6 @@ HRESULT ZapImage::LocateProfileData()
 #endif
 
     //
-    // Don't use IBC data from untrusted assemblies--this allows us to assume that
-    // the IBC data is not malicious
-    //
-    if (m_zapper->m_pEEJitInfo->canSkipVerification(m_hModule) != CORINFO_VERIFICATION_CAN_SKIP)
-    {
-        return S_FALSE;
-    }
-
-    //
     // See if there's profile data in the resource section of the PE
     //
     m_pRawProfileData = (BYTE*)m_ModuleDecoder.GetWin32Resource(W("PROFILE_DATA"), W("IBC"), &m_cRawProfileData);
@@ -2575,7 +2563,7 @@ HRESULT ZapImage::parseProfileData()
         return S_FALSE;
     }
 
-    // This module has profile data (this ends up controling the layout of physical and virtual
+    // This module has profile data (this ends up controlling the layout of physical and virtual
     // sections within the image, see ZapImage::AllocateVirtualSections.
     m_fHaveProfileData = true;
     m_zapper->m_pOpt->m_fHasAnyProfileData = true;
@@ -2929,7 +2917,7 @@ HRESULT ZapImage::convertProfileDataFromV1()
                 sizeWrite += blobEntry->cBuffer;
                 if (blobEntry->blobType == ParamMethodSpec)
                 {
-                    sizeWrite -= 1;  // Adjust for
+                    sizeWrite -= 1;  // Adjust for ENCODE_METHOD_SIG prefix removal
                 }
                 sizeRead  += sizeof(CORBBTPROF_BLOB_ENTRY_V1);
                 sizeRead  += blobEntry->cBuffer;
@@ -3325,7 +3313,7 @@ void ZapImage::hashBBUpdateFlagsAndCompileResult(mdToken token, unsigned methodP
         assert(pEntry->md == newEntry.md);
         assert(pEntry->flags == 0);   // the flags should not be set at this point.
 
-        // Copy and keep the two fleids that were previously set
+        // Copy and keep the two fields that were previously set
         newEntry.size = pEntry->size;
         newEntry.pos = pEntry->pos;
     }
@@ -3447,7 +3435,7 @@ bool ZapImage::canIntraModuleDirectCall(
         goto CALL_VIA_ENTRY_POINT;
     }
 
-    // Does the methods's class have a cctor, etc?
+    // Does the method's class have a cctor, etc?
 
     if (!m_pPreloader->CanSkipMethodPreparation(callerFtn, targetFtn, pReason, accessFlags))
         goto CALL_VIA_ENTRY_POINT;
@@ -3455,7 +3443,7 @@ bool ZapImage::canIntraModuleDirectCall(
     ZapMethodHeader * pMethod;
     pMethod = GetCompiledMethod(targetFtn);
 
-    // If we have not compiled the method then we can't call direct
+    // If we have not compiled the method, then we can't call directly
 
     if (pMethod == NULL)
     {
@@ -3556,13 +3544,13 @@ void ZapImage::Error(mdToken token, HRESULT hr, UINT resID,  LPCWSTR message)
     // Some warnings are demoted to informational level
     if (resID == IDS_EE_SIMD_NGEN_DISALLOWED)
     {
-        // Supress printing of "Target-dependent SIMD vector types may not be used with ngen."
+        // Suppress printing of "Target-dependent SIMD vector types may not be used with ngen."
         level = CORZAP_LOGLEVEL_INFO;
     }
 
     if (resID == IDS_EE_HWINTRINSIC_NGEN_DISALLOWED)
     {
-        // Supress printing of "Hardware intrinsics may not be used with ngen."
+        // Suppress printing of "Hardware intrinsics may not be used with ngen."
         level = CORZAP_LOGLEVEL_INFO;
     }
 
@@ -3574,7 +3562,7 @@ void ZapImage::Error(mdToken token, HRESULT hr, UINT resID,  LPCWSTR message)
         if (m_zapper->m_pOpt->m_ignoreErrors && !m_zapper->m_pOpt->m_verbose)
             return;
 
-        // Supress printing of "The generic type/method specified by the IBC data is not available to this assembly"
+        // Suppress printing of "The generic type/method specified by the IBC data is not available to this assembly"
         level = CORZAP_LOGLEVEL_INFO;
     }
 #endif
@@ -3622,7 +3610,7 @@ ZapNode * ZapImage::GetHelperThunk(CorInfoHelpFunc ftnNum)
     if (pHelperThunk == NULL)
     {
         pHelperThunk = new (GetHeap()) ZapHelperThunk(ftnNum);
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         pHelperThunk = GetInnerPtr(pHelperThunk, THUMB_CODE);
 #endif
         m_pHelperThunks[ftnNum] = pHelperThunk;

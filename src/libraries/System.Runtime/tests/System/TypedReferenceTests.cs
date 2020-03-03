@@ -81,7 +81,6 @@ namespace System.Tests
             Assert.Equal(structObj, TypedReference.ToObject(reference));
         }
 
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "https://github.com/dotnet/coreclr/pull/21193")]
         [Fact]
         public static void MakeTypedReference_ReadOnlyField_Succeeds()
         {

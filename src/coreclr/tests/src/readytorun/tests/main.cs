@@ -8,9 +8,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-#if CORECLR
 using System.Runtime.Loader;
-#endif
 using System.Reflection;
 using System.IO;
 
@@ -77,28 +75,25 @@ class Program
         Assert.AreEqual(o.MovedToBaseClass(), "MovedToBaseClass");
         Assert.AreEqual(o.ChangedToVirtual(), "ChangedToVirtual");
 
-        if (!LLILCJitEnabled)
-        {
-            o = null;
+        o = null;
 
+        try
+        {
+            o.MovedToBaseClass();
+        }
+        catch (NullReferenceException)
+        {
             try
             {
-                o.MovedToBaseClass();
+                o.ChangedToVirtual();
             }
             catch (NullReferenceException)
             {
-                try
-                {
-                    o.ChangedToVirtual();
-                }
-                catch (NullReferenceException)
-                {
-                    return;
-                }
+                return;
             }
-
-            Assert.AreEqual("NullReferenceException", "thrown");
         }
+
+        Assert.AreEqual("NullReferenceException", "thrown");
     }
 
 
@@ -185,28 +180,25 @@ class Program
         Assert.AreEqual(o.MovedToBaseClass<WeakReference>(), typeof(List<WeakReference>).ToString());
         Assert.AreEqual(o.ChangedToVirtual<WeakReference>(), typeof(List<WeakReference>).ToString());
 
-        if (!LLILCJitEnabled)
-        {
-            o = null;
+        o = null;
 
+        try
+        {
+            o.MovedToBaseClass<WeakReference>();
+        }
+        catch (NullReferenceException)
+        {
             try
             {
-                o.MovedToBaseClass<WeakReference>();
+                o.ChangedToVirtual<WeakReference>();
             }
             catch (NullReferenceException)
             {
-                try
-                {
-                    o.ChangedToVirtual<WeakReference>();
-                }
-                catch (NullReferenceException)
-                {
-                    return;
-                }
+                return;
             }
-
-            Assert.AreEqual("NullReferenceException", "thrown");
         }
+
+        Assert.AreEqual("NullReferenceException", "thrown");
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -329,7 +321,6 @@ class Program
         Assert.AreEqual(array[2], 2);
     }
 
-#if CORECLR
     class MyLoadContext : AssemblyLoadContext
     {
         // If running in a collectible context, make the MyLoadContext collectible too so that it doesn't prevent
@@ -352,13 +343,10 @@ class Program
 
     static void TestMultipleLoads()
     {
-        if (!LLILCJitEnabled) {
-            // Runtime should be able to load the same R2R image in another load context,
-            // even though it will be treated as an IL-only image.
-            new MyLoadContext().TestMultipleLoads();
-        }
+        // Runtime should be able to load the same R2R image in another load context,
+        // even though it will be treated as an IL-only image.
+        new MyLoadContext().TestMultipleLoads();
     }
-#endif
 
     static void TestFieldLayoutNGenMixAndMatch()
     {
@@ -470,9 +458,7 @@ class Program
 
         TestGetType();
 
-#if CORECLR
         TestMultipleLoads();
-#endif
 
         TestFieldLayoutNGenMixAndMatch();
 
@@ -495,15 +481,6 @@ class Program
 
     static int Main()
     {
-        // Code compiled by LLILC jit can't catch exceptions yet so the tests
-        // don't throw them if LLILC jit is enabled. This should be removed once
-        // exception catching is supported by LLILC jit.
-        string AltJitName = System.Environment.GetEnvironmentVariable("complus_altjitname");
-        LLILCJitEnabled =
-            ((AltJitName != null) && AltJitName.ToLower().StartsWith("llilcjit") &&
-             ((System.Environment.GetEnvironmentVariable("complus_altjit") != null) ||
-              (System.Environment.GetEnvironmentVariable("complus_altjitngen") != null)));
-
         // Run all tests 3x times to exercise both slow and fast paths work
         for (int i = 0; i < 3; i++)
            RunAllTests();
@@ -511,8 +488,6 @@ class Program
         Console.WriteLine("PASSED");
         return Assert.HasAssertFired ? 1 : 100;
     }
-
-    static bool LLILCJitEnabled;
 
     static int s;
 }

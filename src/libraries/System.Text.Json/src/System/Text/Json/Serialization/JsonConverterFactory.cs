@@ -19,10 +19,12 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected JsonConverterFactory() { }
 
-        internal JsonConverter GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
+        internal sealed override ClassType ClassType
         {
-            Debug.Assert(CanConvert(typeToConvert));
-            return CreateConverter(typeToConvert, options);
+            get
+            {
+                return ClassType.Invalid;
+            }
         }
 
         /// <summary>
@@ -32,7 +34,47 @@ namespace System.Text.Json.Serialization
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <returns>
         /// An instance of a <see cref="JsonConverter{T}"/> where T is compatible with <paramref name="typeToConvert"/>.
+        /// If <see langword="null"/> is returned, a <see cref="NotSupportedException"/> will be thrown.
         /// </returns>
-        public abstract JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options);
+        public abstract JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options);
+
+        internal override JsonPropertyInfo CreateJsonPropertyInfo()
+        {
+            // We should never get here.
+            Debug.Assert(false);
+
+            throw new InvalidOperationException();
+        }
+
+        internal sealed override Type? ElementType => null;
+
+        internal JsonConverter? GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
+        {
+            Debug.Assert(CanConvert(typeToConvert));
+            return CreateConverter(typeToConvert, options);
+        }
+
+        internal sealed override bool TryReadAsObject(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options,
+            ref ReadStack state,
+            out object? value)
+        {
+            // We should never get here.
+            Debug.Assert(false);
+
+            throw new InvalidOperationException();
+        }
+
+        internal sealed override bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            // We should never get here.
+            Debug.Assert(false);
+
+            throw new InvalidOperationException();
+        }
+
+        internal sealed override Type TypeToConvert => null!;
     }
 }

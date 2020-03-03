@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 
 /*****************************************************************************/
 /*****************************************************************************/
@@ -730,6 +730,44 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2()));
             break;
 
+        case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Sd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
+                       // fminp - scalar)
+            if (id->idOpSize() == EA_16BYTE)
+            {
+                assert(id->idInsOpt() == INS_OPTS_2D);
+            }
+            else
+            {
+                assert(id->idOpSize() == EA_8BYTE);
+                assert(id->idInsOpt() == INS_OPTS_2S);
+            }
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
+
+        case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
+            assert(id->idOpSize() == EA_16BYTE);
+            assert(id->idInsOpt() == INS_OPTS_4S);
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
+
+        case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
+            assert(id->idOpSize() == EA_16BYTE);
+            assert(id->idInsOpt() == INS_OPTS_2D);
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
+
+        case IF_DV_2T: // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv,
+                       // umaxv, uminv)
+            assert(isValidVectorDatasize(id->idOpSize()));
+            elemsize = optGetElemsize(id->idInsOpt());
+            assert((elemsize != EA_8BYTE) && (id->idInsOpt() != INS_OPTS_2S)); // can't use 2D or 1D or 2S
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
+
         case IF_DV_3A: // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
             assert(isValidVectorDatasize(id->idOpSize()));
             assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
@@ -894,6 +932,11 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn      (abs, neg - vector)
         case IF_DV_2P: // DV_2P   ................ ......nnnnnddddd      Vd Vn      (aes*, sha1su1) - Vd both source and
                        // destination
+
+        case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Sd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
+                       // fminp - scalar)
+        case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
+        case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
 
         case IF_DV_3A:  // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
         case IF_DV_3AI: // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector)
@@ -1084,6 +1127,7 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
         case INS_str:
         case INS_ldur:
         case INS_stur:
+        case INS_ld1:
             result = id->idOpSize();
             break;
 
@@ -1526,7 +1570,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode2M[2] = {IF_DV_3A, IF_DV_3AI};
     const static insFormat formatEncode2N[2] = {IF_DV_2N, IF_DV_2O};
     const static insFormat formatEncode2O[2] = {IF_DV_3E, IF_DV_3A};
-    const static insFormat formatEncode2P[2] = {IF_DV_2G, IF_DV_3B};
+    const static insFormat formatEncode2P[2] = {IF_DV_2Q, IF_DV_3B};
+    const static insFormat formatEncode2Q[2] = {IF_DV_2S, IF_DV_3A};
 
     code_t    code           = BAD_CODE;
     insFormat insFmt         = emitInsFormat(ins);
@@ -1975,6 +2020,17 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             }
             break;
 
+        case IF_EN2Q:
+            for (index = 0; index < 2; index++)
+            {
+                if (fmt == formatEncode2Q[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
+            break;
+
         case IF_BI_0A:
         case IF_BI_0B:
         case IF_BI_0C:
@@ -2037,6 +2093,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case IF_DV_2N:
         case IF_DV_2O:
         case IF_DV_2P:
+        case IF_DV_2R:
+        case IF_DV_2T:
         case IF_DV_3A:
         case IF_DV_3AI:
         case IF_DV_3B:
@@ -3367,7 +3425,10 @@ void emitter::emitIns(instruction ins)
     instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
     insFormat  fmt = emitInsFormat(ins);
 
-    assert(fmt == IF_SN_0A);
+    if (ins != INS_BREAKPOINT)
+    {
+        assert(fmt == IF_SN_0A);
+    }
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -3875,6 +3936,7 @@ void emitter::emitIns_R_R(
             assert(isGeneralRegisterOrZR(reg2));
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
+            assert(opt != INS_OPTS_1D); // Reserved encoding
             fmt = IF_DV_2C;
             break;
 
@@ -4019,6 +4081,14 @@ void emitter::emitIns_R_R(
         case INS_uaddlv:
         case INS_umaxv:
         case INS_uminv:
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isValidVectorDatasize(size));
+            assert(isValidArrangement(size, opt));
+            assert((opt != INS_OPTS_2S) && (opt != INS_OPTS_1D) && (opt != INS_OPTS_2D)); // Reserved encodings
+            fmt = IF_DV_2T;
+            break;
+
         case INS_rev64:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
@@ -4288,12 +4358,34 @@ void emitter::emitIns_R_R(
             break;
 
         case INS_faddp:
+        case INS_fmaxnmp:
+        case INS_fmaxp:
+        case INS_fminnmp:
+        case INS_fminp:
             // Scalar operation
-            assert(insOptsNone(opt));
-            assert(isValidVectorElemsizeFloat(size));
+            assert(((size == EA_8BYTE) && (opt == INS_OPTS_2S)) || ((size == EA_16BYTE) && (opt == INS_OPTS_2D)));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
-            fmt = IF_DV_2G;
+            fmt = IF_DV_2Q;
+            break;
+
+        case INS_fmaxnmv:
+        case INS_fmaxv:
+        case INS_fminnmv:
+        case INS_fminv:
+            assert(size == EA_16BYTE);
+            assert(opt == INS_OPTS_4S);
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            fmt = IF_DV_2R;
+            break;
+
+        case INS_addp:
+            assert(size == EA_16BYTE);
+            assert(opt == INS_OPTS_2D);
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            fmt = IF_DV_2S;
             break;
 
         case INS_fcvt:
@@ -5247,24 +5339,25 @@ void emitter::emitIns_R_R_R(
         case INS_cmgt:
         case INS_cmhi:
         case INS_cmhs:
-        case INS_ctst:
+        case INS_cmtst:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
 
-            if (isValidVectorDatasize(size))
+            if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(insOptsAnyArrangement(opt));
+                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
-                fmt      = IF_DV_3A;
+                assert(opt != INS_OPTS_1D); // Reserved encoding
+                fmt = IF_DV_3A;
             }
             else
             {
-                NYI("Untested");
                 // Scalar operation
-                assert(size == EA_8BYTE); // Only Double supported
+                assert(insOptsNone(opt));
+                assert(size == EA_8BYTE); // Only Int64/UInt64 supported
                 fmt = IF_DV_3E;
             }
             break;
@@ -5276,10 +5369,10 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
 
-            if (isValidVectorDatasize(size))
+            if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(insOptsAnyArrangement(opt));
+                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
                 assert((elemsize == EA_8BYTE) || (elemsize == EA_4BYTE)); // Only Double/Float supported
@@ -5288,8 +5381,8 @@ void emitter::emitIns_R_R_R(
             }
             else
             {
-                NYI("Untested");
                 // Scalar operation
+                assert(insOptsNone(opt));
                 assert((size == EA_8BYTE) || (size == EA_4BYTE)); // Only Double/Float supported
                 fmt = IF_DV_3D;
             }
@@ -5298,11 +5391,25 @@ void emitter::emitIns_R_R_R(
         case INS_saba:
         case INS_sabd:
         case INS_smax:
+        case INS_smaxp:
         case INS_smin:
+        case INS_sminp:
         case INS_uaba:
         case INS_uabd:
         case INS_umax:
+        case INS_umaxp:
         case INS_umin:
+        case INS_uminp:
+            assert(elemsize != EA_8BYTE); // can't use 2D or 1D
+            __fallthrough;
+
+        case INS_addp:
+        case INS_uzp1:
+        case INS_uzp2:
+        case INS_zip1:
+        case INS_zip2:
+        case INS_trn1:
+        case INS_trn2:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -5312,7 +5419,6 @@ void emitter::emitIns_R_R_R(
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
             elemsize = optGetElemsize(opt);
-            assert(elemsize != EA_8BYTE); // can't use 2D or 1D
 
             fmt = IF_DV_3A;
             break;
@@ -5379,10 +5485,14 @@ void emitter::emitIns_R_R_R(
         case INS_fsub:
         case INS_fdiv:
         case INS_fmax:
+        case INS_fmaxnm:
         case INS_fmin:
+        case INS_fminnm:
         case INS_fabd:
         case INS_fmul:
         case INS_fmulx:
+        case INS_facge:
+        case INS_facgt:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -5416,6 +5526,11 @@ void emitter::emitIns_R_R_R(
             break;
 
         case INS_faddp:
+        case INS_fmaxnmp:
+        case INS_fmaxp:
+        case INS_fminnmp:
+        case INS_fminp:
+
         case INS_fmla:
         case INS_fmls:
             assert(isVectorRegister(reg1));
@@ -9978,6 +10093,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DV_2A: // DV_2A   .Q.......X...... ......nnnnnddddd      Vd Vn      (fabs, fcvt - vector)
+        case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
             code |= insEncodeVectorsize(id->idOpSize()); // Q
@@ -10058,7 +10174,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_DV_2G: // DV_2G   .........X...... ......nnnnnddddd      Vd Vn      (fmov,fcvtXX - register)
+        case IF_DV_2G: // DV_2G   .........X...... ......nnnnnddddd      Vd Vn      (fmov, fcvtXX - register)
             elemsize = id->idOpSize();
             code     = emitInsCode(ins, fmt);
             code |= insEncodeFloatElemsize(elemsize); // X
@@ -10112,6 +10228,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn      (abs, neg   - vector)
+        case IF_DV_2T: // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv,
+                       // umaxv, uminv)
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
             code |= insEncodeVectorsize(id->idOpSize()); // Q
@@ -10144,6 +10262,25 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_DV_2P: // DV_2P   ............... ......nnnnnddddd      Vd Vn      (aes*, sha1su1)
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Vd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
+                       // fminp - scalar)
+            elemsize = optGetElemsize(id->idInsOpt());
+            code     = emitInsCode(ins, fmt);
+            code |= insEncodeFloatElemsize(elemsize); // X
+            code |= insEncodeReg_Vd(id->idReg1());    // ddddd
+            code |= insEncodeReg_Vn(id->idReg2());    // nnnnn
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
+            elemsize = optGetElemsize(id->idInsOpt());
+            code     = emitInsCode(ins, fmt);
+            code |= insEncodeElemsize(elemsize);   // XX
             code |= insEncodeReg_Vd(id->idReg1()); // ddddd
             code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
@@ -11027,11 +11164,11 @@ void emitter::emitDispIns(
             }
             else if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
+                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
             }
             else
             {
-                printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
         }
         break;
@@ -11065,11 +11202,11 @@ void emitter::emitDispIns(
             emitDispReg(id->idReg1(), size, true);
             if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
+                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
             }
             else
             {
-                printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
             break;
 
@@ -11079,11 +11216,11 @@ void emitter::emitDispIns(
             emitDispImm(emitGetInsSC(id), true);
             if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
+                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
             }
             else
             {
-                printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
             break;
 
@@ -11140,11 +11277,11 @@ void emitter::emitDispIns(
                 }
                 else if (id->idIsBound())
                 {
-                    printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
+                    printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
                 }
                 else
                 {
-                    printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                    printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
                 }
             }
             printf("]");
@@ -11174,7 +11311,6 @@ void emitter::emitDispIns(
             break;
 
         case IF_LS_2D: // LS_2D   .Q.............. xx.xssnnnnnttttt      Vt Rn
-            assert(insOptsNone(id->idInsOpt()));
             assert(emitGetInsSC(id) == 0);
             emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
             emitDispAddrRI(id->idReg2(), id->idInsOpt(), 0);
@@ -11556,8 +11692,12 @@ void emitter::emitDispIns(
             break;
 
         case IF_DV_2A: // DV_2A   .Q.......X...... ......nnnnnddddd      Vd Vn   (fabs, fcvt - vector)
-        case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn   (abs, neg   - vector)
         case IF_DV_2P: // DV_2P   ................ ......nnnnnddddd      Vd Vn   (aes*, sha1su1)
+            emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            break;
+
+        case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn   (abs, neg - vector)
             emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
             emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             break;
@@ -11675,6 +11815,17 @@ void emitter::emitDispIns(
 
             emitDispReg(id->idReg1(), dstsize, true);
             emitDispReg(id->idReg2(), srcsize, false);
+            break;
+
+        case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Sd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
+                       // fminp - scalar)
+        case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
+        case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
+        case IF_DV_2T: // DV_2T   .Q......XX...... ......nnnnnddddd      Sd Vn      (addv, saddlv, smaxv, sminv, uaddlv,
+                       // umaxv, uminv)
+            elemsize = optGetElemsize(id->idInsOpt());
+            emitDispReg(id->idReg1(), elemsize, true);
+            emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             break;
 
         case IF_DV_3A: // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm  (vector)
@@ -12195,6 +12346,11 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
 //    A struct containing the current instruction execution characteristics
 //
 // Notes:
+//    The instruction latencies and throughput values returned by this function
+//    are from
+//
+//    The Arm Cortex-A55 Software Optimization Guide:
+//    https://static.docs.arm.com/epm128372/20/arm_cortex_a55_software_optimization_guide_v2.pdf
 //
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
@@ -12209,25 +12365,965 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     result.insThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
     result.insLatency    = PERFSCORE_LATENCY_ILLEGAL;
 
+    // Initialize insLatency based upon the instruction's memAccessKind and local access values
+    //
     if (memAccessKind == PERFSCORE_MEMORY_READ)
     {
-        result.insLatency = PERFSCORE_LATENCY_4C;
+        result.insLatency = isLocalAccess ? PERFSCORE_LATENCY_RD_STACK : PERFSCORE_LATENCY_RD_GENERAL;
     }
     else if (memAccessKind == PERFSCORE_MEMORY_WRITE)
     {
-        result.insLatency = PERFSCORE_LATENCY_1C;
+        result.insLatency = isLocalAccess ? PERFSCORE_LATENCY_WR_STACK : PERFSCORE_LATENCY_WR_GENERAL;
     }
     else if (memAccessKind == PERFSCORE_MEMORY_READ_WRITE)
     {
-        result.insLatency = PERFSCORE_LATENCY_5C;
+        result.insLatency = isLocalAccess ? PERFSCORE_LATENCY_RD_WR_STACK : PERFSCORE_LATENCY_RD_WR_GENERAL;
     }
 
-    // ToDo: Determine individual instruction throughput as latency
-    //
-    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
-    if (memAccessKind == PERFSCORE_MEMORY_NONE)
+    switch (insFmt)
     {
-        result.insLatency = PERFSCORE_LATENCY_DEFAULT;
+        //
+        //  Branch Instructions
+        //
+
+        case IF_BI_0A:                                      // b, bl_local
+        case IF_BI_0C:                                      // bl, b_tail
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C; // but is Dual Issue
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_BI_0B: // beq, bne, bge, blt, bgt, ble, ...
+        case IF_BI_1A: // cbz, cbnz
+        case IF_BI_1B: // tbz, tbnz
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_BR_1B: // blr, br_tail
+            if (ins == INS_blr)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+                break;
+            }
+            // otherwise we should have a br_tail instruction
+            assert(ins == INS_br_tail);
+            __fallthrough;
+        case IF_BR_1A: // ret, br
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        //
+        //  Arithmetic and logical instructions
+        //
+
+        // ALU, basic
+        case IF_DR_3A: // add, adds, adc, adcs, and, ands, bic, bics,
+                       // eon, eor, orn, orr, sub, subs, sbc, sbcs
+                       // asr, asrv, lsl, lslv, lsr, lsrv, ror, rorv
+                       // sdiv, udiv, mul, smull, smulh, umull, umulh, mneg
+        case IF_DR_2A: // cmp, cmn, tst
+
+            switch (ins)
+            {
+                case INS_mul:
+                case INS_smull:
+                case INS_umull:
+                case INS_mneg:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_smulh:
+                case INS_umulh:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                    result.insLatency    = PERFSCORE_LATENCY_6C;
+                    break;
+
+                case INS_sdiv:
+                case INS_udiv:
+                    if (id->idOpSize() == EA_4BYTE)
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                        result.insLatency    = PERFSCORE_LATENCY_12C;
+                        break;
+                    }
+                    else
+                    {
+                        assert(id->idOpSize() == EA_8BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                        result.insLatency    = PERFSCORE_LATENCY_20C;
+                        break;
+                    }
+
+                case INS_add:
+                case INS_adds:
+                case INS_adc:
+                case INS_adcs:
+                case INS_and:
+                case INS_ands:
+                case INS_bic:
+                case INS_bics:
+                case INS_eon:
+                case INS_eor:
+                case INS_orn:
+                case INS_orr:
+                case INS_sub:
+                case INS_subs:
+                case INS_sbc:
+                case INS_sbcs:
+                case INS_asr:
+                case INS_lsl:
+                case INS_lsr:
+                case INS_ror:
+                case INS_cmp:
+                case INS_cmn:
+                case INS_tst:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+
+                case INS_asrv:
+                case INS_lslv:
+                case INS_lsrv:
+                case INS_rorv:
+                    // variable shift by register
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+
+                case INS_crc32b:
+                case INS_crc32h:
+                case INS_crc32cb:
+                case INS_crc32ch:
+                case INS_crc32x:
+                case INS_crc32cx:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case INS_crc32w:
+                case INS_crc32cw:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+
+        // ALU, basic immediate
+        case IF_DI_1A: // cmp, cmn
+        case IF_DI_1C: // tst
+        case IF_DI_1D: // mov reg, imm(N,r,s)
+        case IF_DI_1F: // ccmp, ccmn
+        case IF_DI_2A: // add, adds, suv, subs
+        case IF_DI_2C: // and, ands, eor, orr
+
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_DR_2D: // cinc, cinv, cneg
+        case IF_DR_2E: // mov, neg, mvn, negs
+
+        case IF_DI_1E: // adr, adrp
+        case IF_DI_1B: // mov, movk, movn, movz
+
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        // ALU, shift by immediate
+        case IF_DR_3B: // add, adds, and, ands, bic, bics,
+                       // eon, eor, orn, orr, sub, subs
+        case IF_DR_2B: // cmp, cmn, tst
+        case IF_DR_2F: // neg, negs, mvn
+        case IF_DI_2B: // ror
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        // ALU, extend, scale
+        case IF_DR_3C: // add, adc, and, bic, eon, eor, orn, orr, sub, sbc
+        case IF_DR_2C: // cmp
+        case IF_DR_2J: // sha1h
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+        // ALU, Conditional select
+        case IF_DR_1D: // cset, csetm
+        case IF_DR_3D: // csel, csinc, csinv, csneg
+
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        // ALU, Conditional compare
+        case IF_DR_2I: // ccmp , ccmn
+
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        // Multiply accumulate
+        case IF_DR_4A: // madd, msub, smaddl, smsubl, umaddl, umsubl
+            if (id->idOpSize() == EA_4BYTE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency    = PERFSCORE_LATENCY_3C;
+                break;
+            }
+            else
+            {
+                assert(id->idOpSize() == EA_8BYTE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_5C;
+                result.insLatency    = PERFSCORE_LATENCY_3C;
+                break;
+            }
+
+        // Miscellaneous Data Preocessing instructions
+        case IF_DR_3E: // extr
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_DR_2H: // sxtb, sxth, sxtw, uxtb, uxth, sha1h
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_DI_2D: // lsl, lsr, asr, sbfm, bfm, ubfm, sbfiz, bfi, ubfiz, sbfx, bfxil, ubfx
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_DR_2G: // mov sp, cls, clz, rbit, rev16, rev32, rev
+            if (ins == INS_rbit)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency    = PERFSCORE_LATENCY_2C;
+                break;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+                break;
+            }
+
+        //
+        //  Load/Store Instructions
+        //
+
+        case IF_LS_1A: // ldr, ldrsw (literal, pc relative immediate)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case IF_LS_2A: // ldr, ldrsw, ldrb, ldrh, ldrsb, ldrsh, str, strb, strh (no immediate)
+                       // ldar, ldarb, ldarh, ldxr, ldxrb, ldxrh,
+                       // ldaxr, ldaxrb, ldaxrh, stlr, stlrb, stlrh
+
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            // ToDo: store release have 2/4 cycle latency
+            break;
+
+        case IF_LS_2B: // ldr, ldrsw, ldrb, ldrh, ldrsb, ldrsh, str, strb, strh (scaled immediate)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case IF_LS_2C: // ldr, ldrsw, ldrb, ldrh, ldrsb, ldrsh, str, strb, strh
+                       // ldur, ldurb, ldurh, ldursb, ldursh, ldursw, stur, sturb, sturh
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case IF_LS_3A: // ldr, ldrsw, ldrb, ldrh, ldrsb, ldrsh, str, strb strh (register extend, scale 2,4,8)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case IF_LS_3B: // ldp, ldpsw, ldnp, stp, stnp  (load/store pair zero offset)
+        case IF_LS_3C: // load/store pair with offset pre/post inc
+            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            {
+                // ldp, ldpsw, ldnp
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                if (emitIGisInEpilog(emitCurIG) && (ins == INS_ldp))
+                {
+                    // Reduce latency for ldp instructions in the epilog
+                    //
+                    result.insLatency = PERFSCORE_LATENCY_2C;
+                }
+                else if (id->idOpSize() == EA_8BYTE) // X-form
+                {
+                    // the X-reg variant has an extra cycle of latency
+                    // and two cycle throughput
+                    result.insLatency += 1.0;
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                }
+            }
+            else // store instructions
+            {
+                // stp, stnp
+                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            break;
+
+        case IF_LS_3D: // stxr, stxrb, stxrh, stlxr, stlxrb, srlxrh
+            // Store exclusive register, returning status
+            assert(emitInsIsStore(ins));
+            // @ToDo - find out the actual latency
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = max(PERFSCORE_LATENCY_4C, result.insLatency);
+            break;
+
+        case IF_LS_3E: //  ARMv8.1 LSE Atomics
+            if (memAccessKind == PERFSCORE_MEMORY_WRITE)
+            {
+                // staddb, staddlb, staddh, staddlh, stadd. staddl
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                result.insLatency    = PERFSCORE_LATENCY_2C;
+            }
+            else
+            {
+                assert(memAccessKind == PERFSCORE_MEMORY_READ_WRITE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                result.insLatency    = max(PERFSCORE_LATENCY_3C, result.insLatency);
+            }
+            break;
+
+        case IF_LS_2D: // ld1                         (vector - multiple structures)
+        case IF_LS_2E: // ld1                         (vector - single structure)
+        case IF_LS_3F: // ld1                         (vector - multiple structures)
+        case IF_LS_3G: // ld1                         (vector - single structure)
+            if (id->idOpSize() == EA_8BYTE)
+            {
+                // D-form
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency    = PERFSCORE_LATENCY_3C;
+            }
+            else
+            {
+                // Q-form
+                assert(id->idOpSize() == EA_16BYTE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                result.insLatency    = PERFSCORE_LATENCY_4C;
+            }
+            break;
+
+        case IF_SN_0A: // bkpt, brk, nop
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            break;
+
+        case IF_SI_0B: // dmb, dsb, isb
+            // @ToDo - find out the actual latency
+            result.insThroughput = PERFSCORE_THROUGHPUT_10C;
+            result.insLatency    = PERFSCORE_LATENCY_10C;
+            break;
+
+        case IF_DV_2J: // fcvt  Vd Vn
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_4C;
+            break;
+
+        case IF_DV_2K: // fcmp  Vd Vn
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_DV_1A: // fmov - immediate (scalar)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_DV_1B: // fmov, orr, bic, movi, mvni  (immediate vector)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_DV_1C: // fcmp vn, #0.0
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_3C;
+            break;
+
+        case IF_DV_2A: // fabs, fneg, fsqrt, fcvtXX, frintX, scvtf, ucvtf, fcmXX (vector)
+            switch (ins)
+            {
+                case INS_fabs:
+                case INS_fneg:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency = (id->idOpSize() == EA_8BYTE) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_3C / 2;
+                    break;
+
+                case INS_fsqrt:
+                    if ((id->idInsOpt() == INS_OPTS_2S) || (id->idInsOpt() == INS_OPTS_4S))
+                    {
+                        // S-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                        result.insLatency    = PERFSCORE_LATENCY_11C;
+                    }
+                    else
+                    {
+                        // D-form
+                        assert(id->idInsOpt() == INS_OPTS_2D);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_6C;
+                        result.insLatency    = PERFSCORE_LATENCY_18C;
+                    }
+                    break;
+
+                case INS_fcvtas:
+                case INS_fcvtau:
+                case INS_fcvtms:
+                case INS_fcvtmu:
+                case INS_fcvtns:
+                case INS_fcvtnu:
+                case INS_fcvtps:
+                case INS_fcvtpu:
+                case INS_fcvtzs:
+                case INS_fcvtzu:
+                case INS_frinta:
+                case INS_frinti:
+                case INS_frintm:
+                case INS_frintn:
+                case INS_frintp:
+                case INS_frintx:
+                case INS_frintz:
+                case INS_scvtf:
+                case INS_ucvtf:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_fcmeq:
+                case INS_fcmge:
+                case INS_fcmgt:
+                case INS_fcmle:
+                case INS_fcmlt:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_DV_2G: // fmov, fabs, fneg, fsqrt, fcmXX, fcvtXX, frintX, scvtf, ucvtf (scalar)
+            switch (ins)
+            {
+                case INS_fmov:
+                    // FP move, vector register
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+
+                case INS_fabs:
+                case INS_fneg:
+
+                case INS_fcvtas:
+                case INS_fcvtau:
+                case INS_fcvtms:
+                case INS_fcvtmu:
+                case INS_fcvtns:
+                case INS_fcvtnu:
+                case INS_fcvtps:
+                case INS_fcvtpu:
+                case INS_fcvtzs:
+                case INS_fcvtzu:
+                case INS_scvtf:
+                case INS_ucvtf:
+
+                case INS_frinta:
+                case INS_frinti:
+                case INS_frintm:
+                case INS_frintn:
+                case INS_frintp:
+                case INS_frintx:
+                case INS_frintz:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_fcvtl:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_fsqrt:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_19C;
+                        result.insLatency    = PERFSCORE_LATENCY_22C;
+                    }
+                    else
+                    {
+                        // S-form
+                        assert(id->idOpSize() == EA_4BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_9C;
+                        result.insLatency    = PERFSCORE_LATENCY_12C;
+                    }
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_DV_2Q: // faddp, fmaxnmp, fmaxp, fminnmp, fminp (scalar)
+        case IF_DV_2R: // fmaxnmv, fmaxv, fminnmv, fminv
+        case IF_DV_2S: // addp (scalar)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_4C;
+            break;
+
+        case IF_DV_3B: // fadd, fsub, fdiv, fmul, fmulx, fmla, fmls, fmin, fminnm, fmax, fmaxnm, fabd, fcmXX
+                       // faddp, fmaxnmp, fmaxp, fminnmp, fminp, addp (vector)
+            switch (ins)
+            {
+                case INS_fmin:
+                case INS_fminnm:
+                case INS_fmax:
+                case INS_fmaxnm:
+                case INS_fabd:
+                case INS_fadd:
+                case INS_fsub:
+                case INS_fmul:
+                case INS_fmulx:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_faddp:
+                case INS_fmaxnmp:
+                case INS_fmaxp:
+                case INS_fminnmp:
+                case INS_fminp:
+                case INS_addp:
+                    if (id->idOpSize() == EA_16BYTE)
+                    {
+                        // Q-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    else
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    break;
+
+                case INS_facge:
+                case INS_facgt:
+                case INS_fcmeq:
+                case INS_fcmge:
+                case INS_fcmgt:
+                case INS_fcmle:
+                case INS_fcmlt:
+                    if (id->idOpSize() == EA_16BYTE)
+                    {
+                        // Q-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
+                    else
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
+                    break;
+
+                case INS_fdiv:
+                    if ((id->idInsOpt() == INS_OPTS_2S) || (id->idInsOpt() == INS_OPTS_4S))
+                    {
+                        // S-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_10C;
+                        result.insLatency    = PERFSCORE_LATENCY_13C;
+                    }
+                    else
+                    {
+                        // D-form
+                        assert(id->idInsOpt() == INS_OPTS_2D);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_10C;
+                        result.insLatency    = PERFSCORE_LATENCY_22C;
+                    }
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_DV_3BI: // fmul, fmulx, fmla, fmls (vector by elem)
+        case IF_DV_3AI: // mul, mla, mls (vector by elem)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_4C;
+            break;
+
+        case IF_DV_4A: // fmadd, fmsub, fnmadd, fnsub (scalar)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_4C;
+            break;
+
+        case IF_DV_3D: // fadd, fsub, fdiv, fmul, fmulx, fmla, fmls, fmin, fminnm, fmax, fmaxnm, fabd, fcmXX (scalar)
+            switch (ins)
+            {
+                case INS_fadd:
+                case INS_fsub:
+                case INS_fmin:
+                case INS_fminnm:
+                case INS_fmax:
+                case INS_fmaxnm:
+                case INS_fmul:
+                case INS_fmulx:
+                case INS_fnmul:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_facge:
+                case INS_facgt:
+                case INS_fcmeq:
+                case INS_fcmge:
+                case INS_fcmgt:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case INS_fdiv:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_6C;
+                        result.insLatency    = PERFSCORE_LATENCY_15C;
+                    }
+                    else
+                    {
+                        // S-form
+                        assert(id->idOpSize() == EA_4BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                        result.insLatency    = PERFSCORE_LATENCY_10C;
+                    }
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_DV_2H: // fmov, fcvtXX - to general
+            // fmov : FP transfer to general register
+            // fcvtaXX : FP convert from vector to general
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_3C;
+            break;
+
+        case IF_DV_2I: // fmov, Xcvtf - from general
+            switch (ins)
+            {
+                case INS_fmov:
+                    // FP transfer from general register
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case INS_scvtf:
+                case INS_ucvtf:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_5C;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_DV_3C: // mov,and, bic, eor, mov,mvn, orn, bsl, bit, bif (vector)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_DV_2E: // mov, dup (scalar)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_DV_2F: // mov, ins (element)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_DV_2B: // smov, umov - to general)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_DV_2C: // mov, dup, ins - from general)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            if (ins == INS_dup)
+            {
+                result.insLatency = PERFSCORE_LATENCY_3C;
+            }
+            else
+            {
+                assert((ins == INS_ins) || (ins == INS_mov));
+                result.insLatency = PERFSCORE_LATENCY_2C;
+            }
+            break;
+
+        case IF_DV_2D: // dup (dvector)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_DV_3A: // (vector)
+            // add, sub, mul, mla, mls, cmeq, cmge, cmgt, cmhi, cmhs, ctst,
+            // pmul, saba, uaba, sabd, uabd, umin, uminp, umax, umaxp, smin, sminp, smax, smaxp
+            switch (ins)
+            {
+                case INS_add:
+                case INS_sub:
+                case INS_cmeq:
+                case INS_cmge:
+                case INS_cmgt:
+                case INS_cmhi:
+                case INS_cmhs:
+                case INS_smax:
+                case INS_smaxp:
+                case INS_smin:
+                case INS_sminp:
+                case INS_umax:
+                case INS_umaxp:
+                case INS_umin:
+                case INS_uminp:
+                case INS_uzp1:
+                case INS_uzp2:
+                case INS_zip1:
+                case INS_zip2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case INS_trn1:
+                case INS_trn2:
+                    if (id->idInsOpt() == INS_OPTS_2D)
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    }
+                    else
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    }
+
+                    result.insLatency = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case INS_cmtst:
+                case INS_pmul:
+                case INS_sabd:
+                case INS_uabd:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_mul:
+                case INS_mla:
+                case INS_mls:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_saba:
+                case INS_uaba:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_DV_3DI: // mul, mla, mls (scalar by elem)
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_4C;
+            break;
+
+        case IF_DV_3E: // add, sub, cmeq, cmge, cmgt, cmhi, cmhs, ctst, (scalar)
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_DV_2L: // abs, neg, cmeq, cmge, cmgt, cmle, cmlt (scalar)
+        case IF_DV_2M: // (vector)
+            // abs, neg, mvn, not, cmeq, cmge, cmgt, cmle, cmlt,
+            // addv, saddlv,  uaddlv, smaxv, sminv, umaxv, uminv
+            // cls, clz, cnt, rbit, rev16, rev32, rev64,
+            // xtn, xtn2, shll, shll2
+            switch (ins)
+            {
+                case INS_abs:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_addv:
+                case INS_saddlv:
+                case INS_uaddlv:
+                case INS_cls:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_sminv:
+                case INS_smaxv:
+                case INS_uminv:
+                case INS_umaxv:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_cmeq:
+                case INS_cmge:
+                case INS_cmgt:
+                case INS_cmle:
+                case INS_cmlt:
+
+                case INS_clz:
+                case INS_cnt:
+                case INS_rbit:
+                case INS_rev16:
+                case INS_rev32:
+                case INS_rev64:
+                case INS_xtn:
+                case INS_xtn2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case INS_mvn:
+                case INS_not:
+                case INS_neg:
+                case INS_shll:
+                case INS_shll2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_DV_2N: // sshr, ssra, srshr, srsra, shl, ushr, usra, urshr, ursra, sri, sli (shift by immediate -
+                       // scalar)
+        case IF_DV_2O: // sshr, ssra, srshr, srsra, shl, ushr, usra, urshr, ursra, sri, sli (shift by immediate -
+                       // vector)
+                       // sshll, sshll2, ushll, ushll2, shrn, shrn2, rshrn, rshrn2, sxrl, sxl2, uxtl, uxtl2
+            switch (ins)
+            {
+                case INS_shl:
+                case INS_shrn:
+                case INS_shrn2:
+                case INS_sli:
+                case INS_sri:
+                case INS_sshr:
+                case INS_ushr:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case INS_shll:
+                case INS_shll2:
+                case INS_sshll:
+                case INS_sshll2:
+                case INS_ushll:
+                case INS_ushll2:
+                case INS_sxtl:
+                case INS_sxtl2:
+                case INS_uxtl:
+                case INS_uxtl2:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case INS_rshrn:
+                case INS_rshrn2:
+                case INS_srshr:
+                case INS_urshr:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_DV_2P: // aese, aesd, aesmc, aesimc, sha1su1, sha256su0
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_DV_3F: // sha1c, sha1m, sha1p, sha1su0, sha256h, sha256h2, sha256su1 (vector)
+            switch (ins)
+            {
+                case INS_sha1su0:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case INS_sha256su0:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_sha1c:
+                case INS_sha1m:
+                case INS_sha1p:
+                case INS_sha256h:
+                case INS_sha256h2:
+                case INS_sha256su1:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_SI_0A: // brk   imm16
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        default:
+            // all other instructions
+            perfScoreUnhandledInstruction(id, &result);
+            break;
     }
 
     return result;
@@ -12235,4 +13331,4 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)

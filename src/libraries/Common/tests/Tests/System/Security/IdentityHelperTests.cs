@@ -31,14 +31,14 @@ namespace Tests.System.Security
         [Fact]
         public void GetNormalizedStrongNameHash()
         {
-            // Validating that we match the exact hash the desktop IsolatedStorage implementation would create.
+            // Validating that we match the exact hash the .NET Framework IsolatedStorage implementation would create.
             Assert.Equal(@"10nbq10da2m1qfsisndjihnhqmilalwl", IdentityHelper.GetNormalizedStrongNameHash(GetAssemblyNameWithFullKey()));
         }
 
         [Fact]
         public void GetNormalizedUrlHash()
         {
-            // Validating that we match the exact hash the desktop IsolatedStorage implementation would create.
+            // Validating that we match the exact hash the .NET Framework IsolatedStorage implementation would create.
             Uri uri = new Uri(@"file://C:/Users/jerem/Documents/Visual Studio 2015/Projects/LongPath/LongPath/bin/Debug/TestAssembly.EXE");
             Assert.Equal(@"qgeirsoc3cznuklvq5xlalurh1m0unxl", IdentityHelper.GetNormalizedUriHash(uri));
         }

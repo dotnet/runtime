@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 namespace System.Collections.Immutable
@@ -39,7 +40,9 @@ namespace System.Collections.Immutable
         /// <summary>
         /// An empty (initialized) instance of <see cref="ImmutableArray{T}"/>.
         /// </summary>
-#pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
+#pragma warning disable CA1825
+        // Array.Empty<T>() doesn't exist in all configurations
+        // Switching to Array.Empty also has a non-negligible impact on the working set memory
         public static readonly ImmutableArray<T> Empty = new ImmutableArray<T>(new T[0]);
 #pragma warning restore CA1825
 
@@ -50,14 +53,14 @@ namespace System.Collections.Immutable
         /// This would be private, but we make it internal so that our own extension methods can access it.
         /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        internal T[] array;
+        internal T[]? array;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct
         /// *without making a defensive copy*.
         /// </summary>
         /// <param name="items">The array to use. May be null for "default" arrays.</param>
-        internal ImmutableArray(T[] items)
+        internal ImmutableArray(T[]? items)
         {
             this.array = items;
         }
@@ -127,7 +130,7 @@ namespace System.Collections.Immutable
                 // The reason for this is perf.
                 // Length and the indexer must be absolutely trivially implemented for the JIT optimization
                 // of removing array bounds checking to work.
-                return this.array[index];
+                return this.array![index];
             }
         }
 
@@ -144,7 +147,7 @@ namespace System.Collections.Immutable
             // The reason for this is perf.
             // Length and the indexer must be absolutely trivially implemented for the JIT optimization
             // of removing array bounds checking to work.
-            return ref this.array[index];
+            return ref this.array![index];
         }
 #endif
 
@@ -172,7 +175,7 @@ namespace System.Collections.Immutable
                 // The reason for this is perf.
                 // Length and the indexer must be absolutely trivially implemented for the JIT optimization
                 // of removing array bounds checking to work.
-                return this.array.Length;
+                return this.array!.Length;
             }
         }
 
@@ -202,7 +205,7 @@ namespace System.Collections.Immutable
         /// Gets an untyped reference to the array.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        Array IImmutableArray.Array
+        Array? IImmutableArray.Array
         {
             get { return this.array; }
         }
@@ -229,7 +232,7 @@ namespace System.Collections.Immutable
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
-            Array.Copy(self.array, 0, destination, 0, self.Length);
+            Array.Copy(self.array!, 0, destination, 0, self.Length);
         }
 
         /// <summary>
@@ -242,7 +245,7 @@ namespace System.Collections.Immutable
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
-            Array.Copy(self.array, 0, destination, destinationIndex, self.Length);
+            Array.Copy(self.array!, 0, destination, destinationIndex, self.Length);
         }
 
         /// <summary>
@@ -257,7 +260,7 @@ namespace System.Collections.Immutable
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
-            Array.Copy(self.array, sourceIndex, destination, destinationIndex, length);
+            Array.Copy(self.array!, sourceIndex, destination, destinationIndex, length);
         }
 
         /// <summary>
@@ -283,11 +286,12 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <returns>An enumerator.</returns>
         [Pure]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator()
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
-            return new Enumerator(self.array);
+            return new Enumerator(self.array!);
         }
 
         /// <summary>
@@ -311,15 +315,9 @@ namespace System.Collections.Immutable
         ///   <c>true</c> if the specified <see cref="object"/> is equal to this instance; otherwise, <c>false</c>.
         /// </returns>
         [Pure]
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            IImmutableArray other = obj as IImmutableArray;
-            if (other != null)
-            {
-                return this.array == other.Array;
-            }
-
-            return false;
+            return obj is IImmutableArray other && this.array == other.Array;
         }
 
         /// <summary>
@@ -360,7 +358,7 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableArray<TOther> CastArray<TOther>() where TOther : class
         {
-            return new ImmutableArray<TOther>((TOther[])(object)array);
+            return new ImmutableArray<TOther>((TOther[])(object)array!);
         }
 
         /// <summary>
@@ -381,7 +379,7 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableArray<TOther> As<TOther>() where TOther : class
         {
-            return new ImmutableArray<TOther>(this.array as TOther[]);
+            return new ImmutableArray<TOther>((this.array as TOther[])!);
         }
 
         /// <summary>
@@ -394,7 +392,7 @@ namespace System.Collections.Immutable
         {
             var self = this;
             self.ThrowInvalidOperationIfNotInitialized();
-            return EnumeratorObject.Create(self.array);
+            return EnumeratorObject.Create(self.array!);
         }
 
         /// <summary>
@@ -407,7 +405,7 @@ namespace System.Collections.Immutable
         {
             var self = this;
             self.ThrowInvalidOperationIfNotInitialized();
-            return EnumeratorObject.Create(self.array);
+            return EnumeratorObject.Create(self.array!);
         }
 
         /// <summary>
@@ -423,7 +421,7 @@ namespace System.Collections.Immutable
             // if we are going to do anything with the array, we will need Length anyways
             // so touching it, and potentially causing a cache miss, is not going to be an
             // extra expense.
-            _ = this.array.Length;
+            _ = this.array!.Length;
         }
 
         /// <summary>

@@ -118,10 +118,10 @@ namespace System.Buffers.Text
             // We use 8 instead of 7 so that we also capture the dash if we're asked to insert one.
 
             { _ = destination[8]; }
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte03, destination, 0, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte02, destination, 2, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte01, destination, 4, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte00, destination, 6, FormattingHelpers.HexCasing.Lowercase);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte03, destination, 0, HexConverter.Casing.Lower);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte02, destination, 2, HexConverter.Casing.Lower);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte01, destination, 4, HexConverter.Casing.Lower);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte00, destination, 6, HexConverter.Casing.Lower);
 
             if (flags < 0 /* use dash? */)
             {
@@ -134,8 +134,8 @@ namespace System.Buffers.Text
             }
 
             { _ = destination[4]; }
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte05, destination, 0, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte04, destination, 2, FormattingHelpers.HexCasing.Lowercase);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte05, destination, 0, HexConverter.Casing.Lower);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte04, destination, 2, HexConverter.Casing.Lower);
 
             if (flags < 0 /* use dash? */)
             {
@@ -148,8 +148,8 @@ namespace System.Buffers.Text
             }
 
             { _ = destination[4]; }
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte07, destination, 0, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte06, destination, 2, FormattingHelpers.HexCasing.Lowercase);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte07, destination, 0, HexConverter.Casing.Lower);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte06, destination, 2, HexConverter.Casing.Lower);
 
             if (flags < 0 /* use dash? */)
             {
@@ -162,8 +162,8 @@ namespace System.Buffers.Text
             }
 
             { _ = destination[4]; }
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte08, destination, 0, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte09, destination, 2, FormattingHelpers.HexCasing.Lowercase);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte08, destination, 0, HexConverter.Casing.Lower);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte09, destination, 2, HexConverter.Casing.Lower);
 
             if (flags < 0 /* use dash? */)
             {
@@ -176,12 +176,12 @@ namespace System.Buffers.Text
             }
 
             { _ = destination[11]; } // can't hoist bounds check on the final brace (if exists)
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte10, destination, 0, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte11, destination, 2, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte12, destination, 4, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte13, destination, 6, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte14, destination, 8, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte15, destination, 10, FormattingHelpers.HexCasing.Lowercase);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte10, destination, 0, HexConverter.Casing.Lower);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte11, destination, 2, HexConverter.Casing.Lower);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte12, destination, 4, HexConverter.Casing.Lower);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte13, destination, 6, HexConverter.Casing.Lower);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte14, destination, 8, HexConverter.Casing.Lower);
+            HexConverter.ToBytesBuffer(guidAsBytes.Byte15, destination, 10, HexConverter.Casing.Lower);
 
             if ((byte)flags != 0)
             {

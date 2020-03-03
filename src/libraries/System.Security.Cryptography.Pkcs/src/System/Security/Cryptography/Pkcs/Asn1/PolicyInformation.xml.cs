@@ -16,16 +16,16 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     {
         internal string PolicyIdentifier;
         internal System.Security.Cryptography.Pkcs.Asn1.PolicyQualifierInfo[] PolicyQualifiers;
-      
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
             writer.WriteObjectIdentifier(PolicyIdentifier);
 
             if (PolicyQualifiers != null)
@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 writer.PushSequence();
                 for (int i = 0; i < PolicyQualifiers.Length; i++)
                 {
-                    PolicyQualifiers[i].Encode(writer); 
+                    PolicyQualifiers[i].Encode(writer);
                 }
                 writer.PopSequence();
 
@@ -47,33 +47,27 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static PolicyInformation Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, expectedTag, out PolicyInformation decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, expectedTag, encoded, out PolicyInformation decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out PolicyInformation decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out PolicyInformation decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            Decode(reader, Asn1Tag.Sequence, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out PolicyInformation decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out PolicyInformation decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
-            AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnReader collectionReader;
-            
+            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            AsnValueReader collectionReader;
+
             decoded.PolicyIdentifier = sequenceReader.ReadObjectIdentifierAsString();
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
@@ -87,7 +81,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
                     while (collectionReader.HasData)
                     {
-                        System.Security.Cryptography.Pkcs.Asn1.PolicyQualifierInfo.Decode(collectionReader, out tmpItem); 
+                        System.Security.Cryptography.Pkcs.Asn1.PolicyQualifierInfo.Decode(ref collectionReader, rebind, out tmpItem);
                         tmpList.Add(tmpItem);
                     }
 

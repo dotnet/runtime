@@ -11,27 +11,14 @@ namespace System.Runtime.Tests
 {
     public class ProfileOptimizationTest : FileCleanupTestBase
     {
-        // Active issue https://github.com/dotnet/corefx/issues/31792
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotRedHatFamily6))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31853", TestRuntimes.Mono)]
         public void ProfileOptimization_CheckFileExists()
         {
             string profileFile = GetTestFileName();
 
             RemoteExecutor.Invoke((_profileFile) =>
             {
-                // tracking down why test sporadically fails on RedHat69
-                // write to the file first to check permissions
-                // See https://github.com/dotnet/corefx/issues/31792
-                File.WriteAllText(_profileFile, "42");
-
-                // Verify this write succeeded
-                Assert.True(File.Exists(_profileFile), $"'{_profileFile}' does not exist");
-                Assert.True(new FileInfo(_profileFile).Length > 0, $"'{_profileFile}' is empty");
-
-                // Delete the file and verify the delete
-                File.Delete(_profileFile);
-                Assert.True(!File.Exists(_profileFile), $"'{_profileFile} ought to not exist now");
-
                 // Perform the test work
                 ProfileOptimization.SetProfileRoot(Path.GetDirectoryName(_profileFile));
                 ProfileOptimization.StartProfile(Path.GetFileName(_profileFile));

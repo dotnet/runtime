@@ -281,11 +281,11 @@ HRESULT EEConfig::Init()
 
     pZapSet = DEFAULT_ZAP_SET;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     dwDisableStackwalkCache = 0;
-#else // _TARGET_X86_
+#else // TARGET_X86
     dwDisableStackwalkCache = 1;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     szZapBBInstr     = NULL;
     szZapBBInstrDir  = NULL;
@@ -320,7 +320,7 @@ HRESULT EEConfig::Init()
     fSuppressLockViolationsOnReentryFromOS = false;
 #endif
 
-#if defined(_DEBUG) && defined(_TARGET_AMD64_)
+#if defined(_DEBUG) && defined(TARGET_AMD64)
     // For determining if we should force generation of long jump dispatch stubs.
     m_cGenerateLongJumpDispatchStubRatio = (size_t)(-1);
     m_cDispatchStubsGenerated = 0;
@@ -335,8 +335,10 @@ HRESULT EEConfig::Init()
     fTieredCompilation_QuickJit = false;
     fTieredCompilation_QuickJitForLoops = false;
     fTieredCompilation_CallCounting = false;
+    fTieredCompilation_UseCallCountingStubs = false;
     tieredCompilation_CallCountThreshold = 1;
     tieredCompilation_CallCountingDelayMs = 0;
+    tieredCompilation_DeleteCallCountingStubsAfter = 0;
 #endif
 
 #ifndef CROSSGEN_COMPILE
@@ -802,7 +804,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
 #endif //STRESS_HEAP
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     iGCAffinityMask = GetConfigULONGLONG_DontUse_(CLRConfig::EXTERNAL_GCHeapAffinitizeMask, iGCAffinityMask);
     if (!iGCAffinityMask) iGCAffinityMask =  Configuration::GetKnobULONGLONGValue(W("System.GC.HeapAffinitizeMask"));
     if (!iGCSegmentSize) iGCSegmentSize =  GetConfigULONGLONG_DontUse_(CLRConfig::UNSUPPORTED_GCSegmentSize, iGCSegmentSize);
@@ -812,7 +814,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     if (!iGCAffinityMask) iGCAffinityMask = Configuration::GetKnobDWORDValue(W("System.GC.HeapAffinitizeMask"), 0);
     if (!iGCSegmentSize) iGCSegmentSize =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCSegmentSize, iGCSegmentSize);
     if (!iGCgen0size) iGCgen0size = GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_GCgen0size, iGCgen0size);
-#endif //BIT64
+#endif //HOST_64BIT
 
     const ULONGLONG ullHeapHardLimit = Configuration::GetKnobULONGLONGValue(W("System.GC.HeapHardLimit"));
     iGCHeapHardLimit = FitsIn<size_t, ULONGLONG>(ullHeapHardLimit)
@@ -844,7 +846,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     iGCConservative =  (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConservative) != 0);
 #endif // FEATURE_CONSERVATIVE_GC
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     iGCAllowVeryLargeObjects = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_gcAllowVeryLargeObjects) != 0);
 #endif
 
@@ -996,7 +998,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     iJitOptimizeType      =  GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_JitOptimizeType, iJitOptimizeType);
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     fPInvokeRestoreEsp = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Jit_NetFx40PInvokeStackResilience);
 #endif
 
@@ -1174,7 +1176,7 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     }
 
 
-#if defined(_DEBUG) && defined(_TARGET_AMD64_)
+#if defined(_DEBUG) && defined(TARGET_AMD64)
     m_cGenerateLongJumpDispatchStubRatio = GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_GenerateLongJumpDispatchStubRatio,
                                                           static_cast<DWORD>(m_cGenerateLongJumpDispatchStubRatio));
 #endif
@@ -1203,23 +1205,28 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
         fTieredCompilation_CallCounting = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCounting) != 0;
 
-        tieredCompilation_CallCountThreshold = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountThreshold);
-        if (tieredCompilation_CallCountThreshold < 1)
+        DWORD tieredCompilation_ConfiguredCallCountThreshold =
+            CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountThreshold);
+        if (tieredCompilation_ConfiguredCallCountThreshold == 0)
         {
             tieredCompilation_CallCountThreshold = 1;
         }
-        else if (tieredCompilation_CallCountThreshold > INT_MAX) // CallCounter uses 'int'
+        else if (tieredCompilation_ConfiguredCallCountThreshold > UINT16_MAX)
         {
-            tieredCompilation_CallCountThreshold = INT_MAX;
+            tieredCompilation_CallCountThreshold = UINT16_MAX;
+        }
+        else
+        {
+            tieredCompilation_CallCountThreshold = (UINT16)tieredCompilation_ConfiguredCallCountThreshold;
         }
 
         tieredCompilation_CallCountingDelayMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountingDelayMs);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         bool hadSingleProcessorAtStartup = CPUGroupInfo::HadSingleProcessorAtStartup();
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
         bool hadSingleProcessorAtStartup = g_SystemInfo.dwNumberOfProcessors == 1;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
         if (hadSingleProcessorAtStartup)
         {
             DWORD delayMultiplier = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_DelaySingleProcMultiplier);
@@ -1231,6 +1238,28 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
                     tieredCompilation_CallCountingDelayMs = newDelay;
                 }
             }
+        }
+
+        if (fTieredCompilation_CallCounting)
+        {
+            fTieredCompilation_UseCallCountingStubs =
+                CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_UseCallCountingStubs) != 0;
+            if (fTieredCompilation_UseCallCountingStubs)
+            {
+                tieredCompilation_DeleteCallCountingStubsAfter =
+                    CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_DeleteCallCountingStubsAfter);
+            }
+        }
+
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_TC_AggressiveTiering) != 0)
+        {
+            // TC_AggressiveTiering may be used in some benchmarks to have methods be tiered up more quickly, for example when
+            // the measurement is sensitive to GC allocations or activity. Methods tiered up more quickly may have different
+            // performance characteristics, as timing of the rejit may play a role. If there are multiple tiers before the final
+            // tier, the expectation is that the method progress through all tiers as quickly as possible, ideally running the
+            // code for each tier at least once before progressing to the next tier.
+            tieredCompilation_CallCountThreshold = 1;
+            tieredCompilation_CallCountingDelayMs = 0;
         }
 
         if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())

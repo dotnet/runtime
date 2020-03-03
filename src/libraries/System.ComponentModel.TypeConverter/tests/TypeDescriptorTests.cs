@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public partial class TypeDescriptorTests
+    public class TypeDescriptorTests
     {
         [Fact]
         public void AddProvider_InvokeObject_GetProviderReturnsExpected()
@@ -484,6 +484,8 @@ namespace System.ComponentModel.Tests
         [InlineData(typeof(ClassIDerived), typeof(IBaseConverter))]
         [InlineData(typeof(Uri), typeof(UriTypeConverter))]
         [InlineData(typeof(CultureInfo), typeof(CultureInfoConverter))]
+        [InlineData(typeof(Version), typeof(VersionConverter))]
+        [InlineData(typeof(IComponent), typeof(ComponentConverter))]
         public static void GetConverter(Type targetType, Type resultConverterType)
         {
             TypeConverter converter = TypeDescriptor.GetConverter(targetType);
@@ -1098,7 +1100,6 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NullReferenceException")]
         public void SortDescriptorArray_Invoke_ReturnsExpected()
         {
             var notADescriptor1 = new object();

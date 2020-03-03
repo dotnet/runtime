@@ -171,6 +171,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15152", TestRuntimes.Mono)]
         [MemberData(nameof(Pointers))]
         public void PointerPropertyGetValue(int value)
         {

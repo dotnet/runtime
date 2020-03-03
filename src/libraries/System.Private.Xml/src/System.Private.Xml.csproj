@@ -1,18 +1,21 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Private.Xml</AssemblyName>
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573;649;169;414</NoWarn>
     <DefineConstants>$(DefineConstants);FEATURE_COMPILED_XSL</DefineConstants>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
-      <Link>System\StringBuilderCache.cs</Link>
+    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
+      <Link>Common\System\StringBuilderCache.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Marvin.cs">
-      <Link>System\Marvin.cs</Link>
+      <Link>Common\System\Marvin.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
     </Compile>
     <Compile Include="System\Xml\BinaryXml\XmlBinaryReader.cs" />
     <Compile Include="System\Xml\BinaryXml\BinXmlToken.cs" />
@@ -163,7 +166,6 @@
     <Compile Include="System\Xml\Core\ReadContentAsBinaryHelperAsync.cs" />
     <Compile Include="System\Xml\Core\ReadOnlyTernaryTree.cs" />
     <Compile Include="System\Xml\Core\ReadState.cs" />
-    <Compile Include="System\Xml\Core\SecureStringHasher.cs" />
     <Compile Include="System\Xml\Core\ValidatingReaderNodeData.cs" />
     <Compile Include="System\Xml\Core\ValidationType.cs" />
     <Compile Include="System\Xml\Core\WhitespaceHandling.cs" />
@@ -570,8 +572,6 @@
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Console" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.FileSystem" />
@@ -582,7 +582,6 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Reflection.Primitives" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
@@ -590,7 +589,6 @@
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
   <ItemGroup>

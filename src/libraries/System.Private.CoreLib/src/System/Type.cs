@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Threading;
-using System.Reflection;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System
 {
@@ -107,7 +109,7 @@ namespace System
         protected virtual bool IsMarshalByRefImpl() => false;
         public bool IsPrimitive => IsPrimitiveImpl();
         protected abstract bool IsPrimitiveImpl();
-        public bool IsValueType => IsValueTypeImpl();
+        public bool IsValueType { [Intrinsic] get => IsValueTypeImpl(); }
         protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
 
         public virtual bool IsSignatureType => false;
@@ -313,8 +315,8 @@ namespace System
 
         public virtual InterfaceMapping GetInterfaceMap(Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
-        public virtual bool IsInstanceOfType(object? o) => o == null ? false : IsAssignableFrom(o.GetType());
-        public virtual bool IsEquivalentTo(Type? other) => this == other;
+        public virtual bool IsInstanceOfType([NotNullWhen(true)] object? o) => o == null ? false : IsAssignableFrom(o.GetType());
+        public virtual bool IsEquivalentTo([NotNullWhen(true)] Type? other) => this == other;
 
         public virtual Type GetEnumUnderlyingType()
         {

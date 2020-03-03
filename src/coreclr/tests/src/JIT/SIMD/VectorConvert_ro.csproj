@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(BuildArch)' == 'x86'">
-    <DefineConstants>BIT32;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_32BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>
@@ -12,5 +12,8 @@
   <ItemGroup>
     <Compile Include="VectorConvert.cs" />
     <Compile Include="VectorUtil.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <TraitTags Include="BitSpecific" />
   </ItemGroup>
 </Project>

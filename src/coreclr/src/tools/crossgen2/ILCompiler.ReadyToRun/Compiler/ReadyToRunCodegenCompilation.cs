@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -8,6 +8,7 @@ using System.IO;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 using Internal.IL;
 using Internal.IL.Stubs;
@@ -17,6 +18,8 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.TypeSystem.Ecma;
+using System.Linq;
 
 namespace ILCompiler
 {
@@ -26,7 +29,7 @@ namespace ILCompiler
         protected readonly NodeFactory _nodeFactory;
         protected readonly Logger _logger;
         private readonly DevirtualizationManager _devirtualizationManager;
-        private ILCache _methodILCache;
+        protected ILCache _methodILCache;
         private readonly HashSet<ModuleDesc> _modulesBeingInstrumented;
 
 
@@ -79,10 +82,6 @@ namespace ILCompiler
 
         public virtual MethodIL GetMethodIL(MethodDesc method)
         {
-            // Flush the cache when it grows too big
-            if (_methodILCache.Count > 1000)
-                _methodILCache = new ILCache(_methodILCache.ILProvider, NodeFactory.CompilationModuleGroup);
-
             return _methodILCache.GetOrCreateValue(method).MethodIL;
         }
 
@@ -106,7 +105,7 @@ namespace ILCompiler
             return _modulesBeingInstrumented.Contains(module);
         }
 
-        private sealed class ILCache : LockFreeReaderHashtable<MethodDesc, ILCache.MethodILData>
+        public sealed class ILCache : LockFreeReaderHashtable<MethodDesc, ILCache.MethodILData>
         {
             public ILProvider ILProvider { get; }
             private readonly CompilationModuleGroup _compilationModuleGroup;
@@ -146,7 +145,7 @@ namespace ILCompiler
                 return new MethodILData() { Method = key, MethodIL = methodIL };
             }
 
-            internal class MethodILData
+            public class MethodILData
             {
                 public MethodDesc Method;
                 public MethodIL MethodIL;
@@ -172,11 +171,6 @@ namespace ILCompiler
                 IMethodNode methodEntryPoint = _factory.MethodEntrypoint(canonMethod);
                 _rootAdder(methodEntryPoint, reason);
             }
-
-            public void AddCompilationRoot(TypeDesc type, string reason)
-            {
-                _rootAdder(_factory.ConstructedTypeSymbol(type), reason);
-            }
         }
     }
 
@@ -189,59 +183,109 @@ namespace ILCompiler
     public sealed class ReadyToRunCodegenCompilation : Compilation
     {
         /// <summary>
-        /// JIT configuration provider.
+        /// We only need one CorInfoImpl per thread, and we don't want to unnecessarily construct them
+        /// because their construction takes a significant amount of time.
         /// </summary>
-        private readonly JitConfigProvider _jitConfigProvider;
+        private readonly ConditionalWeakTable<Thread, CorInfoImpl> _corInfoImpls;
 
         /// <summary>
-        /// Name of the compilation input MSIL file.
+        /// Input MSIL file names.
         /// </summary>
-        private readonly string _inputFilePath;
+        private readonly IEnumerable<string> _inputFiles;
 
         private bool _resilient;
 
-        public new ReadyToRunCodegenNodeFactory NodeFactory { get; }
+        private int _parallelism;
+
+        private bool _generateMapFile;
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
 
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
-            ReadyToRunCodegenNodeFactory nodeFactory,
+            NodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
             ILProvider ilProvider,
             Logger logger,
             DevirtualizationManager devirtualizationManager,
-            JitConfigProvider configProvider,
-            string inputFilePath,
-            IEnumerable<ModuleDesc> modulesBeingInstrumented,
-            bool resilient)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, devirtualizationManager, modulesBeingInstrumented, logger)
+            IEnumerable<string> inputFiles,
+            bool resilient,
+            bool generateMapFile,
+            int parallelism)
+            : base(
+                  dependencyGraph,
+                  nodeFactory,
+                  roots,
+                  ilProvider,
+                  devirtualizationManager,
+                  modulesBeingInstrumented: nodeFactory.CompilationModuleGroup.CompilationModuleSet,
+                  logger)
         {
             _resilient = resilient;
-            NodeFactory = nodeFactory;
+            _parallelism = parallelism;
+            _generateMapFile = generateMapFile;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
-            _jitConfigProvider = configProvider;
-
-            _inputFilePath = inputFilePath;
-
-            CorInfoImpl.RegisterJITModule(configProvider);
+            _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
+            _inputFiles = inputFiles;
         }
 
         public override void Compile(string outputFile)
         {
-            using (FileStream inputFile = File.OpenRead(_inputFilePath))
+            _dependencyGraph.ComputeMarkedNodes();
+            var nodes = _dependencyGraph.MarkedNodeList;
+
+            using (PerfEventSource.StartStopEvents.EmittingEvents())
             {
-                PEReader inputPeReader = new PEReader(inputFile);
+                NodeFactory.SetMarkingComplete();
+                ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: null, nodes, NodeFactory, _generateMapFile);
+                CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
-                _dependencyGraph.ComputeMarkedNodes();
-                var nodes = _dependencyGraph.MarkedNodeList;
-
-                using (PerfEventSource.StartStopEvents.EmittingEvents())
+                if (moduleGroup.IsCompositeBuildMode)
                 {
-                    NodeFactory.SetMarkingComplete();
-                    ReadyToRunObjectWriter.EmitObject(inputPeReader, outputFile, nodes, NodeFactory);
+                    // In composite mode with standalone MSIL we rewrite all input MSIL assemblies to the
+                    // output folder, adding a format R2R header to them with forwarding information to
+                    // the composite executable.
+                    string outputDirectory = Path.GetDirectoryName(outputFile);
+                    string ownerExecutableName = Path.GetFileName(outputFile);
+                    foreach (string inputFile in _inputFiles)
+                    {
+                        string standaloneMsilOutputFile = Path.Combine(outputDirectory, Path.GetFileName(inputFile));
+                        RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName);
+                    }
                 }
             }
+        }
+
+        private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName)
+        {
+            EcmaModule inputModule = NodeFactory.TypeSystemContext.GetModuleFromPath(inputFile);
+
+            CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
+            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule);
+            NodeFactory componentFactory = new NodeFactory(
+                _nodeFactory.TypeSystemContext,
+                _nodeFactory.CompilationModuleGroup,
+                _nodeFactory.NameMangler,
+                copiedCorHeader,
+                debugDirectory,
+                win32Resources: new Win32Resources.ResourceData(inputModule),
+                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_Component);
+
+            IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
+            DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);
+
+            componentGraph.AddRoot(componentFactory.Header, "Component module R2R header");
+            OwnerCompositeExecutableNode ownerExecutableNode = new OwnerCompositeExecutableNode(_nodeFactory.Target, ownerExecutableName);
+            componentGraph.AddRoot(ownerExecutableNode, "Owner composite executable name");
+            componentGraph.AddRoot(copiedCorHeader, "Copied COR header");
+            componentGraph.AddRoot(debugDirectory, "Debug directory");
+            if (componentFactory.Win32ResourcesNode != null)
+            {
+                componentGraph.AddRoot(componentFactory.Win32ResourcesNode, "Win32 resources");
+            }
+            componentGraph.ComputeMarkedNodes();
+            componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode, ownerExecutableNode);
+            ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: inputModule, componentGraph.MarkedNodeList, componentFactory, generateMapFile: false);
         }
 
         public override void WriteDependencyLog(string outputFileName)
@@ -268,8 +312,11 @@ namespace ILCompiler
         {
             using (PerfEventSource.StartStopEvents.JitEvents())
             {
-                ConditionalWeakTable<Thread, CorInfoImpl> cwt = new ConditionalWeakTable<Thread, CorInfoImpl>();
-                foreach (DependencyNodeCore<NodeFactory> dependency in obj)
+                ParallelOptions options = new ParallelOptions
+                {
+                    MaxDegreeOfParallelism = _parallelism
+                };
+                Parallel.ForEach(obj, options, dependency =>
                 {
                     MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
                     MethodDesc method = methodCodeNodeNeedingCode.Method;
@@ -284,7 +331,7 @@ namespace ILCompiler
                     {
                         using (PerfEventSource.StartStopEvents.JitMethodEvents())
                         {
-                            CorInfoImpl corInfoImpl = cwt.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
+                            CorInfoImpl corInfoImpl = _corInfoImpls.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
                             corInfoImpl.CompileMethod(methodCodeNodeNeedingCode);
                         }
                     }
@@ -301,7 +348,12 @@ namespace ILCompiler
                     {
                         Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                     }
-                }
+                });
+            }
+
+            if (_methodILCache.Count > 1000)
+            {
+                _methodILCache = new ILCache(_methodILCache.ILProvider, NodeFactory.CompilationModuleGroup);
             }
         }
 

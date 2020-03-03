@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +15,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public partial class ProcessStreamReadTests : ProcessTestBase
+    public class ProcessStreamReadTests : ProcessTestBase
     {
         [Fact]
         public void TestSyncErrorStream()
@@ -330,7 +331,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestEOFReceivedWhenStdInClosed()
         {
-            // This is the test for the fix of dotnet/corefx issue #13447.
+            // This is the test for the fix of https://github.com/dotnet/runtime/issues/19277.
             //
             // Summary of the issue:
             // When an application starts more than one child processes with their standard inputs redirected on Unix,
@@ -543,6 +544,49 @@ namespace System.Diagnostics.Tests
                 Assert.Throws<InvalidOperationException>(() => p.BeginErrorReadLine());
                 Assert.True(p.WaitForExit(WaitInMS));
             }
+        }
+
+        [Fact]
+        public void TestCustomStandardInputEncoding()
+        {
+            var process = CreateProcessPortable(RemotelyInvokable.ReadLineWithCustomEncodingWriteLineWithUtf8, Encoding.UTF32.WebName);
+            process.StartInfo.RedirectStandardInput = true;
+            process.StartInfo.StandardInputEncoding = Encoding.UTF32;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+            process.Start();
+
+            const string TestLine = "\U0001f627\U0001f62e\U0001f62f";
+            process.StandardInput.WriteLine(TestLine);
+            process.StandardInput.Close();
+
+            var output = process.StandardOutput.ReadLine();
+            Assert.Equal(TestLine, output);
+
+            Assert.True(process.WaitForExit(WaitInMS));
+            Assert.Equal(RemotelyInvokable.SuccessExitCode, process.ExitCode);
+        }
+
+        [Fact]
+        public void TestMismatchedStandardInputEncoding()
+        {
+            var process = CreateProcessPortable(RemotelyInvokable.ReadLineWithCustomEncodingWriteLineWithUtf8, Encoding.UTF32.WebName);
+            process.StartInfo.RedirectStandardInput = true;
+            // incorrect: the process will be writing in UTF-32
+            process.StartInfo.StandardInputEncoding = Encoding.ASCII;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+            process.Start();
+
+            const string TestLine = "\U0001f627\U0001f62e\U0001f62f";
+            process.StandardInput.WriteLine(TestLine);
+            process.StandardInput.Close();
+
+            var output = process.StandardOutput.ReadLine();
+            Assert.NotEqual(TestLine, output);
+
+            Assert.True(process.WaitForExit(WaitInMS));
+            Assert.Equal(RemotelyInvokable.SuccessExitCode, process.ExitCode);
         }
     }
 }

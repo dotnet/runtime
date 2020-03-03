@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>library</OutputType>
     <CLRTestKind>SharedLibrary</CLRTestKind>
-    <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="assem.cs" />

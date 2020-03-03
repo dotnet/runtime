@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn Condition=" '$(TargetsFreeBSD)' == 'true'">$(NoWarn);CA1823</NoWarn>
-    <Configurations>netcoreapp-FreeBSD-Debug;netcoreapp-FreeBSD-Release;netcoreapp-Linux-Debug;netcoreapp-Linux-Release;netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\NetworkInformation\DuplicateAddressDetectionState.cs" />
@@ -52,6 +52,9 @@
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\NetworkInformationException.cs">
       <Link>Common\System\Net\NetworkInformation\NetworkInformationException.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <!-- Logging -->
@@ -60,10 +63,10 @@
     </Compile>
     <!-- Interop -->
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs">
-      <Link>Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs</Link>
+      <Link>Common\Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs">
-      <Link>Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs</Link>
+      <Link>Common\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs</Link>
     </Compile>
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Windows.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Windows.cs" />
@@ -116,37 +119,27 @@
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Windows.cs">
       <Link>Common\System\Net\NetworkInformation\HostInformationPal.Windows.cs</Link>
     </Compile>
-    <!-- Common -->
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
-    </Compile>
     <!-- Interop -->
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs">
-      <Link>Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs</Link>
+      <Link>Common\Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs">
+      <Link>Common\Interop\Windows\IpHlpApi\Interop.GetNetworkParams.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.NetworkInformation.cs">
-      <Link>Interop\Windows\IpHlpApi\Interop.NetworkInformation.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
-      <Link>Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs">
-      <Link>Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs">
-      <Link>Interop\Windows\Kernel32\Interop.LocalFree.cs</Link>
+      <Link>Common\Interop\Windows\IpHlpApi\Interop.NetworkInformation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WinsockBSD.cs">
-      <Link>Interop\Windows\WinSock\Interop.WinsockBSD.cs</Link>
+      <Link>Common\Interop\Windows\WinSock\Interop.WinsockBSD.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAEventSelect.cs">
-      <Link>Interop\Windows\WinSock\Interop.WSAEventSelect.cs</Link>
+      <Link>Common\Interop\Windows\WinSock\Interop.WSAEventSelect.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAIoctl.cs">
-      <Link>Interop\Windows\WinSock\Interop.WSAIoctl.cs</Link>
+      <Link>Common\Interop\Windows\WinSock\Interop.WSAIoctl.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Unix -->
@@ -165,28 +158,28 @@
     <Compile Include="System\Net\NetworkInformation\UnixUnicastIPAddressInformation.cs" />
     <!-- Unix Common -->
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Interop\Unix\Interop.Libraries.cs</Link>
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.EnumerateInterfaceAddresses.cs">
-      <Link>Interop\Unix\System.Native\Interop.EnumerateInterfaceAddresses.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.EnumerateInterfaceAddresses.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Unix.cs">
       <Link>System\Net\NetworkInformation\HostInformationPal.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDomainName.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetDomainName.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.GetDomainName.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MapTcpState.cs">
-      <Link>Interop\Unix\System.Native\Interop.MapTcpState.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.MapTcpState.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
-      <Link>Interop\CoreLib\Unix\Interop.Errors.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\CoreLib\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs">
       <Link>Common\System\IO\RowConfigReader.cs</Link>
@@ -199,7 +192,6 @@
     <Compile Include="System\Net\NetworkInformation\LinuxIcmpV6Statistics.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxTcpStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxUdpStatistics.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Linux.cs" />
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Linux.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPAddressInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPGlobalProperties.cs" />
@@ -220,10 +212,7 @@
       <Link>Common\System\IO\StringParser.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Linux\Interop.LinuxNetDeviceFlags.cs">
-      <Link>Interop\Linux\Interop.LinuxNetDeviceFlags.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Linux\System.Native\Interop.NetworkChange.cs">
-      <Link>Interop\Linux\System.Native\Interop.NetworkChange.cs</Link>
+      <Link>Common\Interop\Linux\Interop.LinuxNetDeviceFlags.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- OSX -->
@@ -244,35 +233,40 @@
     <Compile Include="System\Net\NetworkInformation\BsdUdpStatistics.cs" />
     <!-- BSD Common -->
     <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.ProtocolStatistics.cs">
-      <Link>Interop\BSD\System.Native\Interop.ProtocolStatistics.cs</Link>
+      <Link>Common\Interop\BSD\System.Native\Interop.ProtocolStatistics.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.TcpConnectionInfo.cs">
-      <Link>Interop\BSD\System.Native\Interop.TcpConnectionInfo.cs</Link>
+      <Link>Common\Interop\BSD\System.Native\Interop.TcpConnectionInfo.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOsx)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.OSX.cs" />
     <!-- OSX Common -->
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs">
-      <Link>Interop\OSX\Interop.CoreFoundation.cs</Link>
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
-      <Link>Interop\OSX\Interop.Libraries.cs</Link>
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.RunLoop.cs">
-      <Link>Interop\OSX\Interop.RunLoop.cs</Link>
+      <Link>Common\Interop\OSX\Interop.RunLoop.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\OSX\Interop.SystemConfiguration.cs">
-      <Link>Interop\OSX\Interop.SystemConfiguration.cs</Link>
+      <Link>Common\Interop\OSX\Interop.SystemConfiguration.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true'">
-    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.UnknownUnix.cs" />
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs">
-      <Link>Interop\FreeBSD\Interop.Libraries.cs</Link>
+      <Link>Common\Interop\FreeBSD\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' OR '$(TargetsFreeBSD)' == 'true'">
+    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.NetworkChange.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.NetworkChange.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Unknown Unix -->
@@ -284,12 +278,10 @@
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
@@ -303,7 +295,7 @@
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' OR '$(TargetsFreeBSD)' == 'true'">
     <Reference Include="System.Threading.Timer" />
   </ItemGroup>
 </Project>

@@ -48,14 +48,14 @@ namespace System.Reflection.TypeLoading.Ecma
         public bool IsSystemType(RoType type) => type == Loader.TryGetCoreType(CoreType.Type);
         public PrimitiveTypeCode GetUnderlyingEnumType(RoType type) => type.GetEnumUnderlyingPrimitiveTypeCode(Loader);
 
-        public RoType GetTypeFromSerializedName(string name)
+        public RoType GetTypeFromSerializedName(string? name)
         {
             // Called when an attribute argument is of type System.Type ([MyAttribute(typeof(Foo))]
             // Parse an assembly-qualified name as Assembly.GetType() does. If the assembly part is missing, search in _module (the
             // module in which the custom attribute metadata was found.)
             if (name == null)
-                return null; // This gets hit if the custom attribute passes "(Type)null"
-            return Helpers.LoadTypeFromAssemblyQualifiedName(name, GetRoAssembly(), ignoreCase: false, throwOnError: true);
+                return null!; // This gets hit if the custom attribute passes "(Type)null"
+            return Helpers.LoadTypeFromAssemblyQualifiedName(name, GetRoAssembly(), ignoreCase: false, throwOnError: true)!;
         }
     }
 }

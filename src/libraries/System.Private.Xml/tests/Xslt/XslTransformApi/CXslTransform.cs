@@ -474,11 +474,12 @@ namespace System.Xml.Tests
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.TextWriter, DocType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15353", TestRuntimes.Mono)]
         public void TC_AbsolutePath_Transform(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
             TestUsingTemporaryCopyOfResolverDocument(() =>
             {
-                LoadXSL("xmlResolver_document_function_absolute_uri.xsl", inputType, readerType);
+                LoadXSL("xmlResolver_document_function_absolute_uri_replaced.xsl", inputType, readerType);
                 xslt.XmlResolver = new XmlUrlResolver();
                 Transform("fruits.xml", transformType, docType);
                 VerifyResult(@"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>");
@@ -803,7 +804,6 @@ namespace System.Xml.Tests
             }
         }
 
-        //[Variation("Load stylesheet with entity reference: Bug #68450 ")]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Reader, DocType.XPathDocument)]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Reader, ReaderType.XmlValidatingReader, TransformType.Writer, DocType.XPathDocument)]
@@ -2098,11 +2098,12 @@ namespace System.Xml.Tests
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.TextWriter, DocType.XPathDocument)]
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15353", TestRuntimes.Mono)]
         public void TC_AbsolutePath_Transform(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
             TestUsingTemporaryCopyOfResolverDocument(() =>
             {
-                LoadXSL("xmlResolver_document_function_absolute_uri.xsl", inputType, readerType);
+                LoadXSL("xmlResolver_document_function_absolute_uri_replaced.xsl", inputType, readerType);
                 TransformResolver("fruits.xml", transformType, docType, new XmlUrlResolver());
                 VerifyResult(@"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>");
             });

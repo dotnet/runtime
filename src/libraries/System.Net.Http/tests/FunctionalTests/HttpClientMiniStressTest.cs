@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -18,7 +19,6 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientMiniStress_NoVersion : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_NoVersion(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
 
         [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         [InlineData(1000000)]
@@ -31,17 +31,22 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3 : HttpClientMiniStress
+    {
+        public SocketsHttpHandler_HttpClientMiniStress_Http3(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version30;
+    }
+
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http2 : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_Http2(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
-        protected override bool UseHttp2 => true;
+        protected override Version UseVersion => HttpVersion.Version20;
     }
 
     public sealed class SocketsHttpHandler_HttpClientMiniStress_Http11 : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_Http11(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => true;
 
         [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         [MemberData(nameof(PostStressOptions))]
@@ -237,7 +242,7 @@ namespace System.Net.Http.Functional.Tests
         protected (List<HttpHeaderData> Headers, string Content) CreateResponse(string asciiBody)
         {
             var headers = new List<HttpHeaderData>();
-            if (!UseHttp2)
+            if (UseVersion.Major < 2)
             {
                 headers.Add(new HttpHeaderData("Content-Length", asciiBody.Length.ToString()));
             }

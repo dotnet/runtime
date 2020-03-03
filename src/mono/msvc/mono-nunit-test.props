@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="UserMacros">
+    <MONO_NUNIT_TEST_DIR>$(MONO_DIR)/mcs/class/System</MONO_NUNIT_TEST_DIR>
+    <MONO_NUNIT_TARGET>$(MONO_DIR)/mcs/class/lib/net_4_x/nunit-console.exe</MONO_NUNIT_TARGET>
+    <MONO_PATH>$(MONO_PATH);$(MONO_NUNIT_TEST_DIR)</MONO_PATH>
+    <MONO_CFG_DIR>$(MONO_DIR)/runtime/etc</MONO_CFG_DIR>
+    <MONO_NUNIT_RUN_TARGET>net_4_x_System_test.dll</MONO_NUNIT_RUN_TARGET>
+    <MONO_NUNIT_FIXTURE>
+    </MONO_NUNIT_FIXTURE>
+    <MONO_NUNIT_ARGS>-noshadow -exclude=NotWorking,CAS /labels</MONO_NUNIT_ARGS>
+    <MONO_NUNIT_ARGS Condition="'$(MONO_NUNIT_FIXTURE)'!=''">$(MONO_NUNIT_ARGS) -fixture $(MONO_NUNIT_FIXTURE)</MONO_NUNIT_ARGS>
+    <MONO_NUNIT_RUN_ADDITIONAL_ARGS>
+    </MONO_NUNIT_RUN_ADDITIONAL_ARGS>
+    <MONO_NUNIT_RUN_ARGS>--handlers=atexit-waitkeypress "$(MONO_NUNIT_TARGET)" "$(MONO_NUNIT_RUN_TARGET)" $(MONO_NUNIT_ARGS) $(MONO_NUNIT_RUN_ADDITIONAL_ARGS)</MONO_NUNIT_RUN_ARGS>
+  </PropertyGroup>
+  <ItemGroup>
+    <BuildMacro Include="MONO_NUNIT_TEST_DIR">
+      <Value>$(MONO_NUNIT_TEST_DIR)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_NUNIT_TARGET">
+      <Value>$(MONO_NUNIT_TARGET)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_PATH">
+      <Value>$(MONO_PATH)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_CFG_DIR">
+      <Value>$(MONO_CFG_DIR)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_NUNIT_RUN_TARGET">
+      <Value>$(MONO_NUNIT_RUN_TARGET)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_NUNIT_FIXTURE">
+      <Value>$(MONO_NUNIT_FIXTURE)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_NUNIT_ARGS">
+      <Value>$(MONO_NUNIT_ARGS)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_NUNIT_RUN_ADDITIONAL_ARGS">
+      <Value>$(MONO_NUNIT_RUN_ADDITIONAL_ARGS)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_NUNIT_RUN_ARGS">
+      <Value>$(MONO_NUNIT_RUN_ARGS)</Value>
+    </BuildMacro>
+  </ItemGroup>
+  <ItemDefinitionGroup />
+</Project>

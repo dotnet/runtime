@@ -10,13 +10,13 @@ namespace System.IO
     public class FileSystemEventArgs : EventArgs
     {
         private readonly WatcherChangeTypes _changeType;
-        private readonly string _name;
+        private readonly string? _name;
         private readonly string _fullPath;
 
         /// <devdoc>
         /// Initializes a new instance of the <see cref='System.IO.FileSystemEventArgs'/> class.
         /// </devdoc>
-        public FileSystemEventArgs(WatcherChangeTypes changeType, string directory, string name)
+        public FileSystemEventArgs(WatcherChangeTypes changeType, string directory, string? name)
         {
             _changeType = changeType;
             _name = name;
@@ -31,7 +31,7 @@ namespace System.IO
         /// This is like Path.Combine, except without argument validation,
         /// and a separator is used even if the name argument is empty.
         /// </remarks>
-        internal static string Combine(string directoryPath, string name)
+        internal static string Combine(string directoryPath, string? name)
         {
             bool hasSeparator = false;
             if (directoryPath.Length > 0)
@@ -71,7 +71,7 @@ namespace System.IO
         /// <devdoc>
         ///       Gets the name of the affected file or directory.
         /// </devdoc>
-        public string Name
+        public string? Name
         {
             get
             {

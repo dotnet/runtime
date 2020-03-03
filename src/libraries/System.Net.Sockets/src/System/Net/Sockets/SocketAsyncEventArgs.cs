@@ -12,8 +12,8 @@ namespace System.Net.Sockets
     public partial class SocketAsyncEventArgs : EventArgs, IDisposable
     {
         // AcceptSocket property variables.
-        private Socket _acceptSocket;
-        private Socket _connectSocket;
+        private Socket? _acceptSocket;
+        private Socket? _connectSocket;
 
         // Single buffer.
         private Memory<byte> _buffer;
@@ -22,8 +22,8 @@ namespace System.Net.Sockets
         private bool _bufferIsExplicitArray;
 
         // BufferList property variables.
-        private IList<ArraySegment<byte>> _bufferList;
-        private List<ArraySegment<byte>> _bufferListInternal;
+        private IList<ArraySegment<byte>>? _bufferList;
+        private List<ArraySegment<byte>>? _bufferListInternal;
 
         // BytesTransferred property variables.
         private int _bytesTransferred;
@@ -38,39 +38,39 @@ namespace System.Net.Sockets
         private IPPacketInformation _receiveMessageFromPacketInfo;
 
         // RemoteEndPoint property variables.
-        private EndPoint _remoteEndPoint;
+        private EndPoint? _remoteEndPoint;
 
         // SendPacketsSendSize property variable.
         private int _sendPacketsSendSize;
 
         // SendPacketsElements property variables.
-        private SendPacketsElement[] _sendPacketsElements;
+        private SendPacketsElement[]? _sendPacketsElements;
 
         // SendPacketsFlags property variable.
         private TransmitFileOptions _sendPacketsFlags;
 
         // SocketError property variables.
         private SocketError _socketError;
-        private Exception _connectByNameError;
+        private Exception? _connectByNameError;
 
         // SocketFlags property variables.
         private SocketFlags _socketFlags;
 
         // UserToken property variables.
-        private object _userToken;
+        private object? _userToken;
 
         // Internal buffer for AcceptEx when Buffer not supplied.
-        private byte[] _acceptBuffer;
+        private byte[]? _acceptBuffer;
         private int _acceptAddressBufferCount;
 
         // Internal SocketAddress buffer.
-        internal Internals.SocketAddress _socketAddress;
+        internal Internals.SocketAddress? _socketAddress;
 
         // Misc state variables.
         private readonly bool _flowExecutionContext;
-        private ExecutionContext _context;
+        private ExecutionContext? _context;
         private static readonly ContextCallback s_executionCallback = ExecutionCallback;
-        private Socket _currentSocket;
+        private Socket? _currentSocket;
         private bool _userSocket; // if false when performing Connect, _currentSocket should be disposed
         private bool _disposeCalled;
 
@@ -81,35 +81,35 @@ namespace System.Net.Sockets
         private const int Disposed = 2;
         private int _operating;
 
-        private MultipleConnectAsync _multipleConnect;
+        private MultipleConnectAsync? _multipleConnect;
 
-        public SocketAsyncEventArgs() : this(flowExecutionContext: true)
+        public SocketAsyncEventArgs() : this(unsafeSuppressExecutionContextFlow: false)
         {
         }
 
         /// <summary>Initialize the SocketAsyncEventArgs</summary>
-        /// <param name="flowExecutionContext">
-        /// Whether to capture and flow ExecutionContext. ExecutionContext flow should only
+        /// <param name="unsafeSuppressExecutionContextFlow">
+        /// Whether to disable the capturing and flow of ExecutionContext. ExecutionContext flow should only
         /// be disabled if it's going to be handled by higher layers.
         /// </param>
-        internal SocketAsyncEventArgs(bool flowExecutionContext)
+        public SocketAsyncEventArgs(bool unsafeSuppressExecutionContextFlow)
         {
-            _flowExecutionContext = flowExecutionContext;
+            _flowExecutionContext = !unsafeSuppressExecutionContextFlow;
             InitializeInternals();
         }
 
-        public Socket AcceptSocket
+        public Socket? AcceptSocket
         {
             get { return _acceptSocket; }
             set { _acceptSocket = value; }
         }
 
-        public Socket ConnectSocket
+        public Socket? ConnectSocket
         {
             get { return _connectSocket; }
         }
 
-        public byte[] Buffer
+        public byte[]? Buffer
         {
             get
             {
@@ -139,7 +139,7 @@ namespace System.Net.Sockets
 
         // NOTE: this property is mutually exclusive with Buffer.
         // Setting this property with an existing non-null Buffer will throw.
-        public IList<ArraySegment<byte>> BufferList
+        public IList<ArraySegment<byte>>? BufferList
         {
             get { return _bufferList; }
             set
@@ -196,7 +196,7 @@ namespace System.Net.Sockets
             get { return _bytesTransferred; }
         }
 
-        public event EventHandler<SocketAsyncEventArgs> Completed;
+        public event EventHandler<SocketAsyncEventArgs>? Completed;
 
         protected virtual void OnCompleted(SocketAsyncEventArgs e)
         {
@@ -220,13 +220,13 @@ namespace System.Net.Sockets
             get { return _receiveMessageFromPacketInfo; }
         }
 
-        public EndPoint RemoteEndPoint
+        public EndPoint? RemoteEndPoint
         {
             get { return _remoteEndPoint; }
             set { _remoteEndPoint = value; }
         }
 
-        public SendPacketsElement[] SendPacketsElements
+        public SendPacketsElement[]? SendPacketsElements
         {
             get { return _sendPacketsElements; }
             set
@@ -255,7 +255,7 @@ namespace System.Net.Sockets
             set { _socketError = value; }
         }
 
-        public Exception ConnectByNameError
+        public Exception? ConnectByNameError
         {
             get { return _connectByNameError; }
         }
@@ -266,7 +266,7 @@ namespace System.Net.Sockets
             set { _socketFlags = value; }
         }
 
-        public object UserToken
+        public object? UserToken
         {
             get { return _userToken; }
             set { _userToken = value; }
@@ -318,7 +318,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public void SetBuffer(byte[] buffer, int offset, int count)
+        public void SetBuffer(byte[]? buffer, int offset, int count)
         {
             StartConfiguring();
             try
@@ -405,7 +405,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                SocketException socketException = exception as SocketException;
+                SocketException? socketException = exception as SocketException;
                 if (socketException != null)
                 {
                     _socketError = socketException.SocketErrorCode;
@@ -417,9 +417,9 @@ namespace System.Net.Sockets
             }
         }
 
-        private static void ExecutionCallback(object state)
+        private static void ExecutionCallback(object? state)
         {
-            var thisRef = (SocketAsyncEventArgs)state;
+            var thisRef = (SocketAsyncEventArgs)state!;
             thisRef.OnCompleted(thisRef);
         }
 
@@ -495,7 +495,7 @@ namespace System.Net.Sockets
 
         // Prepares for a native async socket call.
         // This method performs the tasks common to all socket operations.
-        internal void StartOperationCommon(Socket socket, SocketAsyncOperation operation)
+        internal void StartOperationCommon(Socket? socket, SocketAsyncOperation operation)
         {
             // Change status to "in-use".
             int status = Interlocked.CompareExchange(ref _operating, InProgress, Free);
@@ -524,7 +524,7 @@ namespace System.Net.Sockets
             // AcceptEx needs a single buffer that's the size of two native sockaddr buffers with 16
             // extra bytes each. It can also take additional buffer space in front of those special
             // sockaddr structures that can be filled in with initial data coming in on a connection.
-            _acceptAddressBufferCount = 2 * (Socket.GetAddressSize(_currentSocket._rightEndPoint) + 16);
+            _acceptAddressBufferCount = 2 * (Socket.GetAddressSize(_currentSocket!._rightEndPoint!) + 16);
 
             // If our caller specified a buffer (willing to get received data with the Accept) then
             // it needs to be large enough for the two special sockaddr buffers that AcceptEx requires.
@@ -549,7 +549,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal void StartOperationConnect(MultipleConnectAsync multipleConnect, bool userSocket)
+        internal void StartOperationConnect(MultipleConnectAsync? multipleConnect, bool userSocket)
         {
             _multipleConnect = multipleConnect;
             _connectSocket = null;
@@ -586,7 +586,7 @@ namespace System.Net.Sockets
             // the attempt socket will be closed anyways, so not updating the state is OK.
             // If we're doing a static ConnectAsync to an IPEndPoint, we need to dispose
             // of the socket, as we manufactured it and the caller has no opportunity to do so.
-            Socket currentSocket = _currentSocket;
+            Socket? currentSocket = _currentSocket;
             if (currentSocket != null)
             {
                 currentSocket.UpdateStatusAfterSocketError(socketError);
@@ -619,7 +619,7 @@ namespace System.Net.Sockets
 
         internal void FinishOperationAsyncFailure(SocketError socketError, int bytesTransferred, SocketFlags flags)
         {
-            ExecutionContext context = _context; // store context before it's cleared as part of finishing the operation
+            ExecutionContext? context = _context; // store context before it's cleared as part of finishing the operation
 
             FinishOperationSyncFailure(socketError, bytesTransferred, flags);
 
@@ -635,7 +635,7 @@ namespace System.Net.Sockets
 
         internal void FinishConnectByNameAsyncFailure(Exception exception, int bytesTransferred, SocketFlags flags)
         {
-            ExecutionContext context = _context; // store context before it's cleared as part of finishing the operation
+            ExecutionContext? context = _context; // store context before it's cleared as part of finishing the operation
 
             FinishConnectByNameSyncFailure(exception, bytesTransferred, flags);
 
@@ -649,14 +649,14 @@ namespace System.Net.Sockets
             }
         }
 
-        internal void FinishWrapperConnectSuccess(Socket connectSocket, int bytesTransferred, SocketFlags flags)
+        internal void FinishWrapperConnectSuccess(Socket? connectSocket, int bytesTransferred, SocketFlags flags)
         {
             SetResults(SocketError.Success, bytesTransferred, flags);
             _currentSocket = connectSocket;
             _connectSocket = connectSocket;
 
             // Complete the operation and raise the event.
-            ExecutionContext context = _context; // store context before it's cleared as part of completing the operation
+            ExecutionContext? context = _context; // store context before it's cleared as part of completing the operation
             Complete();
             if (context == null)
             {
@@ -682,13 +682,13 @@ namespace System.Net.Sockets
             {
                 case SocketAsyncOperation.Accept:
                     // Get the endpoint.
-                    Internals.SocketAddress remoteSocketAddress = IPEndPointExtensions.Serialize(_currentSocket._rightEndPoint);
+                    Internals.SocketAddress remoteSocketAddress = IPEndPointExtensions.Serialize(_currentSocket!._rightEndPoint!);
 
                     socketError = FinishOperationAccept(remoteSocketAddress);
 
                     if (socketError == SocketError.Success)
                     {
-                        _acceptSocket = _currentSocket.UpdateAcceptSocket(_acceptSocket, _currentSocket._rightEndPoint.Create(remoteSocketAddress));
+                        _acceptSocket = _currentSocket.UpdateAcceptSocket(_acceptSocket!, _currentSocket._rightEndPoint!.Create(remoteSocketAddress));
 
                         if (NetEventSource.IsEnabled) NetEventSource.Accepted(_acceptSocket, _acceptSocket.RemoteEndPoint, _acceptSocket.LocalEndPoint);
                     }
@@ -704,33 +704,33 @@ namespace System.Net.Sockets
                     socketError = FinishOperationConnect();
                     if (socketError == SocketError.Success)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.Connected(_currentSocket, _currentSocket.LocalEndPoint, _currentSocket.RemoteEndPoint);
+                        if (NetEventSource.IsEnabled) NetEventSource.Connected(_currentSocket!, _currentSocket!.LocalEndPoint, _currentSocket.RemoteEndPoint);
 
                         // Mark socket connected.
-                        _currentSocket.SetToConnected();
+                        _currentSocket!.SetToConnected();
                         _connectSocket = _currentSocket;
                     }
                     else
                     {
                         SetResults(socketError, bytesTransferred, flags);
-                        _currentSocket.UpdateStatusAfterSocketError(socketError);
+                        _currentSocket!.UpdateStatusAfterSocketError(socketError);
                     }
                     break;
 
                 case SocketAsyncOperation.Disconnect:
-                    _currentSocket.SetToDisconnected();
+                    _currentSocket!.SetToDisconnected();
                     _currentSocket._remoteEndPoint = null;
                     break;
 
                 case SocketAsyncOperation.ReceiveFrom:
                     // Deal with incoming address.
-                    _socketAddress.InternalSize = GetSocketAddressSize();
-                    Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint);
+                    _socketAddress!.InternalSize = GetSocketAddressSize();
+                    Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint!);
                     if (!socketAddressOriginal.Equals(_socketAddress))
                     {
                         try
                         {
-                            _remoteEndPoint = _remoteEndPoint.Create(_socketAddress);
+                            _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress);
                         }
                         catch
                         {
@@ -740,13 +740,13 @@ namespace System.Net.Sockets
 
                 case SocketAsyncOperation.ReceiveMessageFrom:
                     // Deal with incoming address.
-                    _socketAddress.InternalSize = GetSocketAddressSize();
-                    socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint);
+                    _socketAddress!.InternalSize = GetSocketAddressSize();
+                    socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint!);
                     if (!socketAddressOriginal.Equals(_socketAddress))
                     {
                         try
                         {
-                            _remoteEndPoint = _remoteEndPoint.Create(_socketAddress);
+                            _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress);
                         }
                         catch
                         {
@@ -766,7 +766,7 @@ namespace System.Net.Sockets
 
         internal void FinishOperationAsyncSuccess(int bytesTransferred, SocketFlags flags)
         {
-            ExecutionContext context = _context; // store context before it's cleared as part of finishing the operation
+            ExecutionContext? context = _context; // store context before it's cleared as part of finishing the operation
 
             FinishOperationSyncSuccess(bytesTransferred, flags);
 

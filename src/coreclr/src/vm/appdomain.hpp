@@ -955,9 +955,6 @@ public:
 
     virtual BOOL IsAppDomain()    { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
 
-    BOOL IsSharedDomain() { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
-    BOOL IsDefaultDomain() { LIMITED_METHOD_DAC_CONTRACT; return TRUE; }
-
     PTR_LoaderAllocator GetLoaderAllocator();
     virtual PTR_AppDomain AsAppDomain()
     {
@@ -1008,6 +1005,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return &m_ILStubGenLock;
+    }
+
+    ListLock* GetNativeTypeLoadLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_NativeTypeLoadLock;
     }
 
     STRINGREF *IsStringInterned(STRINGREF *pString);
@@ -1160,6 +1163,7 @@ protected:
     ListLock         m_ClassInitLock;
     JitListLock      m_JITLock;
     ListLock         m_ILStubGenLock;
+    ListLock         m_NativeTypeLoadLock;
 
     CLRPrivBinderCoreCLR *m_pTPABinderContext; // Reference to the binding context that holds TPA list details
 
@@ -2882,10 +2886,10 @@ public:
     //****************************************************************************************
     // Methods used to get the callers module and hence assembly and app domain.
 
-    static MethodDesc* GetCallersMethod(StackCrawlMark* stackMark, AppDomain **ppAppDomain = NULL);
-    static MethodTable* GetCallersType(StackCrawlMark* stackMark, AppDomain **ppAppDomain = NULL);
-    static Module* GetCallersModule(StackCrawlMark* stackMark, AppDomain **ppAppDomain = NULL);
-    static Assembly* GetCallersAssembly(StackCrawlMark* stackMark, AppDomain **ppAppDomain = NULL);
+    static MethodDesc* GetCallersMethod(StackCrawlMark* stackMark);
+    static MethodTable* GetCallersType(StackCrawlMark* stackMark);
+    static Module* GetCallersModule(StackCrawlMark* stackMark);
+    static Assembly* GetCallersAssembly(StackCrawlMark* stackMark);
 
     static bool IsReflectionInvocationMethod(MethodDesc* pMeth);
 

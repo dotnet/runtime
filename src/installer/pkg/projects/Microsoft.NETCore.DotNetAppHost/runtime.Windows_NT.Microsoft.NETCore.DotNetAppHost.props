@@ -6,6 +6,7 @@
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/ijwhost.dll" />
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/ijwhost.lib" />
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/nethost.dll" />
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/libnethost.lib" />
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/nethost.h" />
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/nethost.lib" />
 

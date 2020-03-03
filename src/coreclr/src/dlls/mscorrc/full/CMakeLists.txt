@@ -1,6 +1,6 @@
 add_definitions(-DFX_VER_INTERNALNAME_STR=mscorrc.debug.dll)
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
 
   add_library_clr(mscorrc.debug SHARED
     ../include.rc
@@ -16,5 +16,5 @@ else()
     ${TARGET_CPP_FILE}
   )
 
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 

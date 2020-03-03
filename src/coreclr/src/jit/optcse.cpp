@@ -498,8 +498,22 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
                 /* Start the list with the first CSE candidate recorded */
 
-                hashDsc->csdTreeList = newElem;
-                hashDsc->csdTreeLast = newElem;
+                hashDsc->csdTreeList  = newElem;
+                hashDsc->csdTreeLast  = newElem;
+                hashDsc->csdStructHnd = NO_CLASS_HANDLE;
+
+                hashDsc->csdStructHndMismatch = false;
+
+                if (varTypeIsStruct(tree->gtType))
+                {
+                    // When we have a GT_IND node with a SIMD type then we don't have a reliable
+                    // struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
+                    //
+                    if ((hashDsc->csdTree->OperGet() != GT_IND) || !varTypeIsSIMD(tree))
+                    {
+                        hashDsc->csdStructHnd = gtGetStructHandleIfPresent(hashDsc->csdTree);
+                    }
+                }
             }
 
             noway_assert(hashDsc->csdTreeList);
@@ -515,6 +529,38 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
             hashDsc->csdTreeLast->tslNext = newElem;
             hashDsc->csdTreeLast          = newElem;
+
+            if (varTypeIsStruct(newElem->tslTree->gtType))
+            {
+                // When we have a GT_IND node with a SIMD type then we don't have a reliable
+                // struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
+                //
+                if ((newElem->tslTree->OperGet() != GT_IND) || !varTypeIsSIMD(newElem->tslTree))
+                {
+                    CORINFO_CLASS_HANDLE newElemStructHnd = gtGetStructHandleIfPresent(newElem->tslTree);
+                    if (newElemStructHnd != NO_CLASS_HANDLE)
+                    {
+                        if (hashDsc->csdStructHnd == NO_CLASS_HANDLE)
+                        {
+                            // The previous node(s) were GT_IND's and didn't carry the struct handle info
+                            // The current node does have the struct handle info, so record it now
+                            //
+                            hashDsc->csdStructHnd = newElemStructHnd;
+                        }
+                        else if (newElemStructHnd != hashDsc->csdStructHnd)
+                        {
+                            hashDsc->csdStructHndMismatch = true;
+#ifdef DEBUG
+                            if (verbose)
+                            {
+                                printf("Abandoned - CSE candidate has mismatching struct handles!\n");
+                                printTreeID(newElem->tslTree);
+                            }
+#endif // DEBUG
+                        }
+                    }
+                }
+            }
 
             optDoCSE = true; // Found a duplicate CSE tree
 
@@ -541,7 +587,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
             hashDsc->csdHashKey        = key;
             hashDsc->csdIndex          = 0;
-            hashDsc->csdLiveAcrossCall = 0;
+            hashDsc->csdLiveAcrossCall = false;
             hashDsc->csdDefCount       = 0;
             hashDsc->csdUseCount       = 0;
             hashDsc->csdDefWtCnt       = 0;
@@ -1537,7 +1583,7 @@ class CSE_Heuristic
 
     unsigned               aggressiveRefCnt;
     unsigned               moderateRefCnt;
-    unsigned               enregCount; // count of the number of enregisterable variables
+    unsigned               enregCount; // count of the number of predicted enregistered variables
     bool                   largeFrame;
     bool                   hugeFrame;
     Compiler::codeOptimize codeOptKind;
@@ -1578,13 +1624,6 @@ public:
         sortTab          = nullptr;
         sortSiz          = 0;
 
-#ifdef _TARGET_XARCH_
-        if (m_pCompiler->compLongUsed)
-        {
-            enregCount++;
-        }
-#endif
-
         unsigned   frameSize        = 0;
         unsigned   regAvailEstimate = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2) + 1);
         unsigned   lclNum;
@@ -1592,7 +1631,14 @@ public:
 
         for (lclNum = 0, varDsc = m_pCompiler->lvaTable; lclNum < m_pCompiler->lvaCount; lclNum++, varDsc++)
         {
+            // Locals with no references don't use any local stack frame slots
             if (varDsc->lvRefCnt() == 0)
+            {
+                continue;
+            }
+
+            // Incoming stack arguments don't use any local stack frame slots
+            if (varDsc->lvIsParam && !varDsc->lvIsRegArg)
             {
                 continue;
             }
@@ -1617,7 +1663,7 @@ public:
                 onStack = true;
             }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             // Treat floating point and 64 bit integers as always on the stack
             if (varTypeIsFloating(varDsc->TypeGet()) || varTypeIsLong(varDsc->TypeGet()))
                 onStack = true;
@@ -1633,6 +1679,7 @@ public:
                 // will consider this LclVar as being enregistered.
                 // Now we reduce the remaining regAvailEstimate by
                 // an appropriate amount.
+                //
                 if (varDsc->lvRefCnt() <= 2)
                 {
                     // a single use single def LclVar only uses 1
@@ -1652,59 +1699,120 @@ public:
                     }
                 }
             }
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
             if (frameSize > 0x080)
             {
                 // We likely have a large stack frame.
-                // Thus we might need to use large displacements when loading or storing
-                // to CSE LclVars that are not enregistered
+                //
+                // On XARCH stack frame displacements can either use a 1-byte or a 4-byte displacement
+                // with a large franme we will need to use some 4-byte displacements.
+                //
                 largeFrame = true;
                 break; // early out,  we don't need to keep increasing frameSize
             }
-#else // _TARGET_ARM_
+#elif defined(TARGET_ARM)
             if (frameSize > 0x0400)
             {
+                // We likely have a large stack frame.
+                //
+                // Thus we might need to use large displacements when loading or storing
+                // to CSE LclVars that are not enregistered
+                // On ARM32 this means using rsGetRsvdReg() to hold the large displacement
                 largeFrame = true;
             }
             if (frameSize > 0x10000)
             {
                 hugeFrame = true;
-                break;
+                break; // early out,  we don't need to keep increasing frameSize
+            }
+#elif defined(TARGET_ARM64)
+            if (frameSize > 0x1000)
+            {
+                // We likely have a large stack frame.
+                //
+                // Thus we might need to use large displacements when loading or storing
+                // to CSE LclVars that are not enregistered
+                // On ARM64 this means using rsGetRsvdReg() to hold the large displacement
+                //
+                largeFrame = true;
+                break; // early out,  we don't need to keep increasing frameSize
             }
 #endif
         }
 
+        // Iterate over the sorted list of tracked local variables
+        // these are the register candidates for LSRA
+        // We normally vist the LclVar in order of their weighted ref counts
+        // and our hueristic assumes that the highest weighted ref count
+        // LclVars will be enregistered and that the lowest weighted ref count
+        // are likely be allocated in the stack frame.
+        // The value of enregCount is incremented when we visit a LclVar
+        // that can be enregistered.
+        //
         for (unsigned trackedIndex = 0; trackedIndex < m_pCompiler->lvaTrackedCount; trackedIndex++)
         {
             LclVarDsc* varDsc = m_pCompiler->lvaGetDescByTrackedIndex(trackedIndex);
             var_types  varTyp = varDsc->TypeGet();
 
-            if (varDsc->lvDoNotEnregister)
+            // Locals with no references aren't enregistered
+            if (varDsc->lvRefCnt() == 0)
             {
                 continue;
             }
 
-            if (!varTypeIsFloating(varTyp))
+            // Some LclVars always have stack homes
+            if ((varDsc->lvDoNotEnregister) || (varDsc->lvType == TYP_LCLBLK))
             {
-                // TODO-1stClassStructs: Revisit this; it is here to duplicate previous behavior.
-                // Note that this makes genTypeStSz return 1, but undoing it pessimizes some code.
-                if (varTypeIsStruct(varTyp))
-                {
-                    varTyp = TYP_STRUCT;
-                }
-                enregCount += genTypeStSz(varTyp);
+                continue;
             }
 
-            if ((aggressiveRefCnt == 0) && (enregCount > (CNT_CALLEE_ENREG * 3 / 2)))
+            // The enregCount only tracks the uses of integer registers
+            //
+            // We could track floating point register usage seperately
+            // but it isn't worth the additional complexity as floating point CSEs
+            // are rare and we typically have plenty of floating point register available.
+            //
+            if (!varTypeIsFloating(varTyp))
+            {
+                enregCount++; // The primitive types, including TYP_SIMD types use one register
+
+#ifndef TARGET_64BIT
+                if (varTyp == TYP_LONG)
+                {
+                    enregCount++; // on 32-bit targets longs use two registers
+                }
+#endif
+            }
+
+            // Set the cut off values to use for deciding when we want to use aggressive, moderate or conservative
+            //
+            // The value of aggressiveRefCnt and moderateRefCnt start off as zero and
+            // when enregCount reached a certain value we assign the current LclVar
+            // (weighted) ref count to aggressiveRefCnt or moderateRefCnt.
+            //
+            const unsigned aggressiveEnregNum = (CNT_CALLEE_ENREG * 3 / 2);
+            const unsigned moderateEnregNum   = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2));
+            //
+            // On Windows x64 this yeilds:
+            // aggressiveEnregNum == 12 and moderateEnregNum == 38
+            // Thus we will typically set the cutoff values for
+            //   aggressiveRefCnt based upon the weight of T13 (the 13th tracked LclVar)
+            //   moderateRefCnt based upon the weight of T39 (the 39th tracked LclVar)
+            //
+            // For other architecture and platforms these values dynamically change
+            // based upon the number of callee saved and callee scratch registers.
+            //
+            if ((aggressiveRefCnt == 0) && (enregCount > aggressiveEnregNum))
             {
                 if (CodeOptKind() == Compiler::SMALL_CODE)
                 {
-                    aggressiveRefCnt = varDsc->lvRefCnt() + BB_UNITY_WEIGHT;
+                    aggressiveRefCnt = varDsc->lvRefCnt();
                 }
                 else
                 {
-                    aggressiveRefCnt = varDsc->lvRefCntWtd() + BB_UNITY_WEIGHT;
+                    aggressiveRefCnt = varDsc->lvRefCntWtd();
                 }
+                aggressiveRefCnt += BB_UNITY_WEIGHT;
             }
             if ((moderateRefCnt == 0) && (enregCount > ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2))))
             {
@@ -1716,17 +1824,19 @@ public:
                 {
                     moderateRefCnt = varDsc->lvRefCntWtd();
                 }
+                moderateRefCnt += (BB_UNITY_WEIGHT / 2);
             }
         }
-        unsigned mult = 3;
-        // use smaller value for mult when enregCount is in [0..4]
-        if (enregCount <= 4)
-        {
-            mult = (enregCount <= 2) ? 1 : 2;
-        }
 
-        aggressiveRefCnt = max(BB_UNITY_WEIGHT * mult, aggressiveRefCnt);
-        moderateRefCnt   = max((BB_UNITY_WEIGHT * mult) / 2, moderateRefCnt);
+        // The minumum value that we want to use for aggressiveRefCnt is BB_UNITY_WEIGHT * 2
+        // so increase it when we are below that value
+        //
+        aggressiveRefCnt = max(BB_UNITY_WEIGHT * 2, aggressiveRefCnt);
+
+        // The minumum value that we want to use for moderateRefCnt is BB_UNITY_WEIGHT
+        // so increase it when we are below that value
+        //
+        moderateRefCnt = max(BB_UNITY_WEIGHT, moderateRefCnt);
 
 #ifdef DEBUG
         if (m_pCompiler->verbose)
@@ -1734,6 +1844,7 @@ public:
             printf("\n");
             printf("Aggressive CSE Promotion cutoff is %u\n", aggressiveRefCnt);
             printf("Moderate CSE Promotion cutoff is %u\n", moderateRefCnt);
+            printf("enregCount is %u\n", enregCount);
             printf("Framesize estimate is 0x%04X\n", frameSize);
             printf("We have a %s frame\n", hugeFrame ? "huge" : (largeFrame ? "large" : "small"));
         }
@@ -1807,17 +1918,49 @@ public:
         Compiler::CSEdsc* m_CseDsc;
 
         unsigned m_cseIndex;
-
         unsigned m_defCount;
         unsigned m_useCount;
-
         unsigned m_Cost;
         unsigned m_Size;
 
+        // When this Candidate is successfully promoted to a CSE we record
+        // the following information about what category was used when promoting it.
+        //
+        //  We will set m_Aggressive:
+        //    When we believe that the CSE very valuable in terms of weighted ref counts,
+        //    such that it would always be enregistered by the register allocator.
+        //
+        //  We will set m_Moderate:
+        //    When we believe that the CSE is moderately valuable in terms of weighted ref counts,
+        //    such that it is more likely than not to be enregistered by the register allocator
+        //
+        //  We will set m_Conservative:
+        //    When we didn't set m_Aggressive or  m_Moderate.
+        //    Such candidates typically are expensive to compute and thus are
+        //    always profitable to promote even when they aren't enregistered.
+        //
+        //  We will set  m_StressCSE:
+        //    When the candidate is only being promoted because of a Stress mode.
+        //
+        bool m_Aggressive;
+        bool m_Moderate;
+        bool m_Conservative;
+        bool m_StressCSE;
+
     public:
-        CSE_Candidate(CSE_Heuristic* context, Compiler::CSEdsc* cseDsc) : m_context(context), m_CseDsc(cseDsc)
+        CSE_Candidate(CSE_Heuristic* context, Compiler::CSEdsc* cseDsc)
+            : m_context(context)
+            , m_CseDsc(cseDsc)
+            , m_cseIndex(m_CseDsc->csdIndex)
+            , m_defCount(0)
+            , m_useCount(0)
+            , m_Cost(0)
+            , m_Size(0)
+            , m_Aggressive(false)
+            , m_Moderate(false)
+            , m_Conservative(false)
+            , m_StressCSE(false)
         {
-            m_cseIndex = m_CseDsc->csdIndex;
         }
 
         Compiler::CSEdsc* CseDsc()
@@ -1852,8 +1995,47 @@ public:
 
         bool LiveAcrossCall()
         {
-            //            return (m_CseDsc->csdLiveAcrossCall != 0);
-            return false; // The old behavior for now
+            return m_CseDsc->csdLiveAcrossCall;
+        }
+
+        void SetAggressive()
+        {
+            m_Aggressive = true;
+        }
+
+        bool IsAggressive()
+        {
+            return m_Aggressive;
+        }
+
+        void SetModerate()
+        {
+            m_Moderate = true;
+        }
+
+        bool IsModerate()
+        {
+            return m_Moderate;
+        }
+
+        void SetConservative()
+        {
+            m_Conservative = true;
+        }
+
+        bool IsConservative()
+        {
+            return m_Conservative;
+        }
+
+        void SetStressCSE()
+        {
+            m_StressCSE = true;
+        }
+
+        bool IsStressCSE()
+        {
+            return m_StressCSE;
         }
 
         void InitializeCounts()
@@ -1961,7 +2143,11 @@ public:
         if (stressResult != 0)
         {
             // Stress is enabled. Check whether to perform CSE or not.
-            return (stressResult > 0);
+            if (stressResult > 0)
+            {
+                candidate->SetStressCSE();
+                return true;
+            }
         }
 
         if (m_pCompiler->optConfigDisableCSE2())
@@ -2049,19 +2235,34 @@ public:
 
         if (CodeOptKind() == Compiler::SMALL_CODE)
         {
+            // Note that when optimizing for SMALL_CODE we set the cse_def_cost/cse_use_cost based
+            // upon the code size and we use unweighted ref counts instead of weighted ref counts.
+            // Also note that optimizing for SMALL_CODE is rare, we typically only optimize this way
+            // for class constructors, because we know that they will only run once.
+            //
             if (cseRefCnt >= aggressiveRefCnt)
             {
+                // Record that we are choosing to use the aggressive promotion rules
+                //
+                candidate->SetAggressive();
 #ifdef DEBUG
                 if (m_pCompiler->verbose)
                 {
                     printf("Aggressive CSE Promotion (%u >= %u)\n", cseRefCnt, aggressiveRefCnt);
                 }
 #endif
-                cse_def_cost = slotCount;
-                cse_use_cost = slotCount;
+                // With aggressive promotion we expect that the candidate will be enregistered
+                // so we set the use and def costs to their miniumum values
+                //
+                cse_def_cost = 1;
+                cse_use_cost = 1;
 
+                // Check if this candidate is likely to live on the stack
+                //
                 if (candidate->LiveAcrossCall() || !canEnregister)
                 {
+                    // Increase the costs when we have a large or huge frame
+                    //
                     if (largeFrame)
                     {
                         cse_def_cost++;
@@ -2074,65 +2275,92 @@ public:
                     }
                 }
             }
-            else if (largeFrame)
+            else // not aggressiveRefCnt
             {
+                // Record that we are choosing to use the conservative promotion rules
+                //
+                candidate->SetConservative();
+                if (largeFrame)
+                {
 #ifdef DEBUG
-                if (m_pCompiler->verbose)
-                {
-                    printf("Codesize CSE Promotion (%s frame)\n", hugeFrame ? "huge" : "large");
-                }
+                    if (m_pCompiler->verbose)
+                    {
+                        printf("Codesize CSE Promotion (%s frame)\n", hugeFrame ? "huge" : "large");
+                    }
 #endif
-#ifdef _TARGET_XARCH_
-                /* The following formula is good choice when optimizing CSE for SMALL_CODE */
-                cse_def_cost = 6; // mov [EBP-0x00001FC],reg
-                cse_use_cost = 5; //     [EBP-0x00001FC]
-#else                             // _TARGET_ARM_
-                if (hugeFrame)
-                {
-                    cse_def_cost = 10 + (2 * slotCount); // movw/movt r10 and str reg,[sp+r10]
-                    cse_use_cost = 10 + (2 * slotCount);
-                }
-                else
-                {
-                    cse_def_cost = 6 + (2 * slotCount); // movw r10 and str reg,[sp+r10]
-                    cse_use_cost = 6 + (2 * slotCount);
-                }
+#ifdef TARGET_XARCH
+                    /* The following formula is good choice when optimizing CSE for SMALL_CODE */
+                    cse_def_cost = 6; // mov [EBP-0x00001FC],reg
+                    cse_use_cost = 5; //     [EBP-0x00001FC]
+#else                                 // TARGET_ARM
+                    if (hugeFrame)
+                    {
+                        cse_def_cost = 10 + 2; // movw/movt r10 and str reg,[sp+r10]
+                        cse_use_cost = 10 + 2;
+                    }
+                    else
+                    {
+                        cse_def_cost = 6 + 2; // movw r10 and str reg,[sp+r10]
+                        cse_use_cost = 6 + 2;
+                    }
 #endif
+                }
+                else // small frame
+                {
+#ifdef DEBUG
+                    if (m_pCompiler->verbose)
+                    {
+                        printf("Codesize CSE Promotion (small frame)\n");
+                    }
+#endif
+#ifdef TARGET_XARCH
+                    /* The following formula is good choice when optimizing CSE for SMALL_CODE */
+                    cse_def_cost = 3; // mov [EBP-1C],reg
+                    cse_use_cost = 2; //     [EBP-1C]
+
+#else // TARGET_ARM
+
+                    cse_def_cost = 2; // str reg,[sp+0x9c]
+                    cse_use_cost = 2; // ldr reg,[sp+0x9c]
+#endif
+                }
             }
-            else // small frame
+#ifdef TARGET_AMD64
+            if (varTypeIsFloating(candidate->Expr()->TypeGet()))
             {
-#ifdef DEBUG
-                if (m_pCompiler->verbose)
-                {
-                    printf("Codesize CSE Promotion (small frame)\n");
-                }
-#endif
-#ifdef _TARGET_XARCH_
-                /* The following formula is good choice when optimizing CSE for SMALL_CODE */
-                cse_def_cost = 3 * slotCount; // mov [EBP-1C],reg
-                cse_use_cost = 2 * slotCount; //     [EBP-1C]
-#else                                         // _TARGET_ARM_
-                cse_def_cost = 2 * slotCount; // str reg,[sp+0x9c]
-                cse_use_cost = 2 * slotCount; // ldr reg,[sp+0x9c]
-#endif
+                // floating point loads/store encode larger
+                cse_def_cost += 2;
+                cse_use_cost += 1;
             }
+#endif // TARGET_AMD64
         }
         else // not SMALL_CODE ...
         {
+            // Note that when optimizing for BLENDED_CODE or FAST_CODE we set cse_def_cost/cse_use_cost
+            // based upon the execution costs of the code and we use weighted ref counts.
+            //
             if ((cseRefCnt >= aggressiveRefCnt) && canEnregister)
             {
+                // Record that we are choosing to use the aggressive promotion rules
+                //
+                candidate->SetAggressive();
 #ifdef DEBUG
                 if (m_pCompiler->verbose)
                 {
                     printf("Aggressive CSE Promotion (%u >= %u)\n", cseRefCnt, aggressiveRefCnt);
                 }
 #endif
-                cse_def_cost = slotCount;
-                cse_use_cost = slotCount;
+                // With aggressive promotion we expect that the candidate will be enregistered
+                // so we set the use and def costs to their miniumum values
+                //
+                cse_def_cost = 1;
+                cse_use_cost = 1;
             }
             else if (cseRefCnt >= moderateRefCnt)
             {
-
+                // Record that we are choosing to use the moderate promotion rules
+                //
+                candidate->SetModerate();
                 if (!candidate->LiveAcrossCall() && canEnregister)
                 {
 #ifdef DEBUG
@@ -2154,14 +2382,29 @@ public:
                                moderateRefCnt);
                     }
 #endif
-                    cse_def_cost   = 2 * slotCount;
-                    cse_use_cost   = 2 * slotCount;
-                    extra_yes_cost = BB_UNITY_WEIGHT * 2; // Extra cost in case we have to spill/restore a caller
-                                                          // saved register
+                    cse_def_cost = 2;
+                    if (canEnregister)
+                    {
+                        if (enregCount < (CNT_CALLEE_ENREG * 3 / 2))
+                        {
+                            cse_use_cost = 1;
+                        }
+                        else
+                        {
+                            cse_use_cost = 2;
+                        }
+                    }
+                    else
+                    {
+                        cse_use_cost = 3;
+                    }
                 }
             }
             else // Conservative CSE promotion
             {
+                // Record that we are choosing to use the conservative promotion rules
+                //
+                candidate->SetConservative();
                 if (!candidate->LiveAcrossCall() && canEnregister)
                 {
 #ifdef DEBUG
@@ -2182,30 +2425,72 @@ public:
                         printf("Conservative CSE Promotion (%u < %u)\n", cseRefCnt, moderateRefCnt);
                     }
 #endif
-                    cse_def_cost   = 3 * slotCount;
-                    cse_use_cost   = 3 * slotCount;
-                    extra_yes_cost = BB_UNITY_WEIGHT * 4; // Extra cost in case we have to spill/restore a caller
-                                                          // saved register
+                    cse_def_cost = 2;
+                    cse_use_cost = 3;
                 }
 
                 // If we have maxed out lvaTrackedCount then this CSE may end up as an untracked variable
                 if (m_pCompiler->lvaTrackedCount == lclMAX_TRACKED)
                 {
-                    cse_def_cost += slotCount;
-                    cse_use_cost += slotCount;
+                    cse_def_cost += 1;
+                    cse_use_cost += 1;
+                }
+            }
+        }
+
+        if (slotCount > 1)
+        {
+            cse_def_cost *= slotCount;
+            cse_use_cost *= slotCount;
+        }
+
+        // If this CSE is live across a call then we may need to spill an additional caller save register
+        //
+        if (candidate->LiveAcrossCall())
+        {
+            // If we don't have a lot of variables to enregister or we have a floating point type
+            // then we will likely need to spill an additional caller save register.
+            //
+            if ((enregCount < (CNT_CALLEE_ENREG * 3 / 2)) || varTypeIsFloating(candidate->Expr()->TypeGet()))
+            {
+                // Extra cost in case we have to spill/restore a caller saved register
+                extra_yes_cost = BB_UNITY_WEIGHT;
+
+                if (cseRefCnt < moderateRefCnt) // If Conservative CSE promotion
+                {
+                    extra_yes_cost *= 2; // full cost if we are being Conservative
                 }
             }
 
-            if (largeFrame)
+#ifdef FEATURE_SIMD
+            // SIMD types may cause a SIMD register to be spilled/restored in the prolog and epilog.
+            //
+            if (varTypeIsSIMD(candidate->Expr()->TypeGet()))
             {
-                cse_def_cost++;
-                cse_use_cost++;
+                // We don't have complete information about when these extra spilled/restore will be needed.
+                // Instead we are conservative and assume that each SIMD CSE that is live across a call
+                // will cause an additional spill/restore in the prolog and epilog.
+                //
+                int spillSimdRegInProlog = 1;
+
+                // If we have a SIMD32 that is live across a call we have even higher spill costs
+                //
+                if (candidate->Expr()->TypeGet() == TYP_SIMD32)
+                {
+                    // Additionally for a simd32 CSE candidate we assume that and second spilled/restore will be needed.
+                    // (to hold the upper half of the simd32 register that isn't preserved across the call)
+                    //
+                    spillSimdRegInProlog++;
+
+                    // We also increase the CSE use cost here to because we may have to generate instructions
+                    // to move the upper half of the simd32 before and after a call.
+                    //
+                    cse_use_cost += 2;
+                }
+
+                extra_yes_cost = (BB_UNITY_WEIGHT * spillSimdRegInProlog) * 3;
             }
-            if (hugeFrame)
-            {
-                cse_def_cost++;
-                cse_use_cost++;
-            }
+#endif // FEATURE_SIMD
         }
 
         // estimate the cost from lost codesize reduction if we do not perform the CSE
@@ -2239,7 +2524,7 @@ public:
             printf("CSE cost savings check (%u >= %u) %s\n", no_cse_cost, yes_cse_cost,
                    (no_cse_cost >= yes_cse_cost) ? "passes" : "fails");
         }
-#endif
+#endif // DEBUG
 
         // Should we make this candidate into a CSE?
         // Is the yes cost less than the no cost
@@ -2319,16 +2604,40 @@ public:
             }
         }
 
+#ifdef DEBUG
+        // Setup the message arg for lvaGrabTemp()
+        //
+        const char* grabTempMessage = "CSE - unknown";
+
+        if (successfulCandidate->IsAggressive())
+        {
+            grabTempMessage = "CSE - aggressive";
+        }
+        else if (successfulCandidate->IsModerate())
+        {
+            grabTempMessage = "CSE - moderate";
+        }
+        else if (successfulCandidate->IsConservative())
+        {
+            grabTempMessage = "CSE - conservative";
+        }
+        else if (successfulCandidate->IsStressCSE())
+        {
+            grabTempMessage = "CSE - stress mode";
+        }
+#endif // DEBUG
+
         /* Introduce a new temp for the CSE */
 
-        // we will create a  long lifetime temp for the new cse LclVar
-        unsigned  cseLclVarNum = m_pCompiler->lvaGrabTemp(false DEBUGARG("ValNumCSE"));
+        // we will create a  long lifetime temp for the new CSE LclVar
+        unsigned  cseLclVarNum = m_pCompiler->lvaGrabTemp(false DEBUGARG(grabTempMessage));
         var_types cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
         if (varTypeIsStruct(cseLclVarTyp))
         {
-            // After call args have been morphed, we don't need a handle for SIMD types.
-            // They are only required where the size is not implicit in the type and/or there are GC refs.
-            CORINFO_CLASS_HANDLE structHnd = m_pCompiler->gtGetStructHandleIfPresent(successfulCandidate->Expr());
+            // Retrieve the struct handle that we recorded while bulding the list of CSE candidates.
+            // If all occurances were in GT_IND nodes it could still be NO_CLASS_HANDLE
+            //
+            CORINFO_CLASS_HANDLE structHnd = successfulCandidate->CseDsc()->csdStructHnd;
             assert((structHnd != NO_CLASS_HANDLE) || (cseLclVarTyp != TYP_STRUCT));
             if (structHnd != NO_CLASS_HANDLE)
             {
@@ -2363,7 +2672,7 @@ public:
 
         if (dsc->csdDefCount == 1)
         {
-            JITDUMP("CSE #%02u is single-def, so associated cse temp V%02u will be in SSA\n", dsc->csdIndex,
+            JITDUMP("CSE #%02u is single-def, so associated CSE temp V%02u will be in SSA\n", dsc->csdIndex,
                     cseLclVarNum);
             m_pCompiler->lvaTable[cseLclVarNum].lvInSsa = true;
 
@@ -2651,7 +2960,7 @@ public:
 
                 noway_assert(asg->AsOp()->gtOp1->gtOper == GT_LCL_VAR);
 
-                // Backpatch the SSA def, if we're putting this cse temp into ssa.
+                // Backpatch the SSA def, if we're putting this CSE temp into ssa.
                 asg->AsOp()->gtOp1->AsLclVar()->SetSsaNum(cseSsaNum);
 
                 if (cseSsaNum != SsaConfig::RESERVED_SSA_NUM)
@@ -2713,7 +3022,7 @@ public:
 
             noway_assert(link);
 
-            // Mutate this link, thus replacing the old exp with the new cse representation
+            // Mutate this link, thus replacing the old exp with the new CSE representation
             //
             *link = cse;
 
@@ -2742,13 +3051,19 @@ public:
         for (; (cnt > 0); cnt--, ptr++)
         {
             Compiler::CSEdsc* dsc = *ptr;
+            CSE_Candidate     candidate(this, dsc);
+
             if (dsc->defExcSetPromise == ValueNumStore::NoVN)
             {
-                JITDUMP("Abandoned CSE #%02u because we had defs with different Exc sets\n");
+                JITDUMP("Abandoned CSE #%02u because we had defs with different Exc sets\n", candidate.CseIndex());
                 continue;
             }
 
-            CSE_Candidate candidate(this, dsc);
+            if (dsc->csdStructHndMismatch)
+            {
+                JITDUMP("Abandoned CSE #%02u because we had mismatching struct handles\n", candidate.CseIndex());
+                continue;
+            }
 
             candidate.InitializeCounts();
 
@@ -2768,7 +3083,7 @@ public:
                 m_pCompiler->gtDispTree(candidate.Expr());
                 printf("\n");
             }
-#endif
+#endif // DEBUG
 
             if ((dsc->csdDefCount <= 0) || (dsc->csdUseCount == 0))
             {
@@ -2910,7 +3225,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         return false;
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (type == TYP_FLOAT)
     {
         // TODO-X86-CQ: Revisit this
@@ -3048,10 +3363,58 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_LE:
         case GT_GE:
         case GT_GT:
-            return true; // Also CSE these Comparison Operators
+            return true; // Allow the CSE of Comparison operators
+
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+            return true; // allow SIMD intrinsics to be CSE-ed
+
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+        {
+            GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
+            assert(hwIntrinsicNode != nullptr);
+            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(hwIntrinsicNode->gtHWIntrinsicId);
+
+            switch (category)
+            {
+                case HW_Category_SimpleSIMD:
+                case HW_Category_IMM:
+                case HW_Category_Scalar:
+                case HW_Category_SIMDScalar:
+                case HW_Category_Helper:
+                    break;
+
+                case HW_Category_MemoryLoad:
+                case HW_Category_MemoryStore:
+                case HW_Category_Special:
+                default:
+                    return false;
+            }
+
+            if (hwIntrinsicNode->OperIsMemoryStore())
+            {
+                // NI_BMI2_MultiplyNoFlags, etc...
+                return false;
+            }
+            if (hwIntrinsicNode->OperIsMemoryLoad())
+            {
+                // NI_AVX2_BroadcastScalarToVector128, NI_AVX2_GatherVector128, etc...
+                return false;
+            }
+
+            return true; // allow Hardware Intrinsics to be CSE-ed
+        }
+
+#endif // FEATURE_HW_INTRINSICS
 
         case GT_INTRINSIC:
-            return true; // Intrinsics
+            return true; // allow Intrinsics to be CSE-ed
+
+        case GT_OBJ:
+            return varTypeIsEnregisterable(type); // Allow enregisterable GT_OBJ's to be CSE-ed. (i.e. SIMD types)
 
         case GT_COMMA:
             return true; // Allow GT_COMMA nodes to be CSE-ed.

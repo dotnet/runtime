@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Collections.Immutable
@@ -36,7 +37,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="firstElement">The first element.</param>
             /// <param name="additionalElements">The additional elements.</param>
-            private HashBucket(KeyValuePair<TKey, TValue> firstElement, ImmutableList<KeyValuePair<TKey, TValue>>.Node additionalElements = null)
+            private HashBucket(KeyValuePair<TKey, TValue> firstElement, ImmutableList<KeyValuePair<TKey, TValue>>.Node? additionalElements = null)
             {
                 _firstValue = firstElement;
                 _additionalElements = additionalElements ?? ImmutableList<KeyValuePair<TKey, TValue>>.Node.EmptyNode;
@@ -110,7 +111,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Throws an exception to catch any errors in comparing <see cref="HashBucket"/> instances.
             /// </summary>
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
                 // This should never be called, as hash buckets don't know how to equate themselves.
                 throw new NotSupportedException();
@@ -221,7 +222,7 @@ namespace System.Collections.Immutable
                     return this;
                 }
 
-                var kv = new KeyValuePair<TKey, TValue>(key, default(TValue));
+                var kv = new KeyValuePair<TKey, TValue>(key, default(TValue)!);
                 if (keyOnlyComparer.Equals(_firstValue, kv))
                 {
                     if (_additionalElements.IsEmpty)
@@ -233,7 +234,7 @@ namespace System.Collections.Immutable
                     {
                         // We can promote any element from the list into the first position, but it's most efficient
                         // to remove the root node in the binary tree that implements the list.
-                        int indexOfRootNode = _additionalElements.Left.Count;
+                        int indexOfRootNode = _additionalElements.Left!.Count;
                         result = OperationResult.SizeChanged;
                         return new HashBucket(_additionalElements.Key, _additionalElements.RemoveAt(indexOfRootNode));
                     }
@@ -259,11 +260,11 @@ namespace System.Collections.Immutable
             /// <param name="comparers">The comparers.</param>
             /// <param name="value">The value for the given key.</param>
             /// <returns>A value indicating whether the key was found.</returns>
-            internal bool TryGetValue(TKey key, Comparers comparers, out TValue value)
+            internal bool TryGetValue(TKey key, Comparers comparers, [MaybeNullWhen(false)] out TValue value)
             {
                 if (this.IsEmpty)
                 {
-                    value = default(TValue);
+                    value = default(TValue)!;
                     return false;
                 }
 
@@ -273,11 +274,11 @@ namespace System.Collections.Immutable
                     return true;
                 }
 
-                var kv = new KeyValuePair<TKey, TValue>(key, default(TValue));
+                var kv = new KeyValuePair<TKey, TValue>(key, default(TValue)!);
                 var index = _additionalElements.IndexOf(kv, comparers.KeyOnlyComparer);
                 if (index < 0)
                 {
-                    value = default(TValue);
+                    value = default(TValue)!;
                     return false;
                 }
 
@@ -316,7 +317,7 @@ namespace System.Collections.Immutable
                     return true;
                 }
 
-                var kv = new KeyValuePair<TKey, TValue>(equalKey, default(TValue));
+                var kv = new KeyValuePair<TKey, TValue>(equalKey, default(TValue)!);
                 var index = _additionalElements.IndexOf(kv, comparers.KeyOnlyComparer);
                 if (index < 0)
                 {

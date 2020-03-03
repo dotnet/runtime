@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Runtime.CompilerServices;
 
@@ -31,7 +32,8 @@ namespace System.Linq.Expressions
         /// <param name="node">The expression to visit.</param>
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
-        public virtual Expression Visit(Expression node) => node?.Accept(this);
+        [return: NotNullIfNotNull("node")]
+        public virtual Expression? Visit(Expression? node) => node?.Accept(this);
 
         /// <summary>
         /// Dispatches the list of expressions to one of the more specialized visit methods in this class.
@@ -42,7 +44,7 @@ namespace System.Linq.Expressions
         public ReadOnlyCollection<Expression> Visit(ReadOnlyCollection<Expression> nodes)
         {
             ContractUtils.RequiresNotNull(nodes, nameof(nodes));
-            Expression[] newNodes = null;
+            Expression[]? newNodes = null;
             for (int i = 0, n = nodes.Count; i < n; i++)
             {
                 Expression node = Visit(nodes[i]);
@@ -68,12 +70,12 @@ namespace System.Linq.Expressions
             return new TrueReadOnlyCollection<Expression>(newNodes);
         }
 
-        private Expression[] VisitArguments(IArgumentProvider nodes)
+        private Expression[]? VisitArguments(IArgumentProvider nodes)
         {
             return ExpressionVisitorUtils.VisitArguments(this, nodes);
         }
 
-        private ParameterExpression[] VisitParameters(IParameterProvider nodes, string callerName)
+        private ParameterExpression[]? VisitParameters(IParameterProvider nodes, string callerName)
         {
             return ExpressionVisitorUtils.VisitParameters(this, nodes, callerName);
         }
@@ -91,7 +93,7 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(nodes, nameof(nodes));
             ContractUtils.RequiresNotNull(elementVisitor, nameof(elementVisitor));
-            T[] newNodes = null;
+            T[]? newNodes = null;
             for (int i = 0, n = nodes.Count; i < n; i++)
             {
                 T node = elementVisitor(nodes[i]);
@@ -125,13 +127,14 @@ namespace System.Linq.Expressions
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
         /// <exception cref="InvalidOperationException">The visit method for this node returned a different type.</exception>
-        public T VisitAndConvert<T>(T node, string callerName) where T : Expression
+        [return: NotNullIfNotNull("node")]
+        public T? VisitAndConvert<T>(T? node, string? callerName) where T : Expression
         {
             if (node == null)
             {
                 return null;
             }
-            node = Visit(node) as T;
+            node = (Visit(node) as T);
             if (node == null)
             {
                 throw Error.MustRewriteToSameNode(callerName, typeof(T), callerName);
@@ -148,13 +151,13 @@ namespace System.Linq.Expressions
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
         /// <exception cref="InvalidOperationException">The visit method for this node returned a different type.</exception>
-        public ReadOnlyCollection<T> VisitAndConvert<T>(ReadOnlyCollection<T> nodes, string callerName) where T : Expression
+        public ReadOnlyCollection<T> VisitAndConvert<T>(ReadOnlyCollection<T> nodes, string? callerName) where T : Expression
         {
             ContractUtils.RequiresNotNull(nodes, nameof(nodes));
-            T[] newNodes = null;
+            T[]? newNodes = null;
             for (int i = 0, n = nodes.Count; i < n; i++)
             {
-                T node = Visit(nodes[i]) as T;
+                T? node = Visit(nodes[i]) as T;
                 if (node == null)
                 {
                     throw Error.MustRewriteToSameNode(callerName, typeof(T), callerName);
@@ -208,7 +211,7 @@ namespace System.Linq.Expressions
         /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitBlock(BlockExpression node)
         {
-            Expression[] nodes = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
+            Expression[]? nodes = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
             ReadOnlyCollection<ParameterExpression> v = VisitAndConvert(node.Variables, "VisitBlock");
 
             if (v == node.Variables && nodes == null)
@@ -216,7 +219,7 @@ namespace System.Linq.Expressions
                 return node;
             }
 
-            return node.Rewrite(v, nodes);
+            return node.Rewrite(v, nodes!);
         }
 
         /// <summary>
@@ -300,7 +303,7 @@ namespace System.Linq.Expressions
         protected internal virtual Expression VisitInvocation(InvocationExpression node)
         {
             Expression e = Visit(node.Expression);
-            Expression[] a = VisitArguments(node);
+            Expression[]? a = VisitArguments(node);
             if (e == node.Expression && a == null)
             {
                 return node;
@@ -315,7 +318,8 @@ namespace System.Linq.Expressions
         /// <param name="node">The expression to visit.</param>
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
-        protected virtual LabelTarget VisitLabelTarget(LabelTarget node)
+        [return: NotNullIfNotNull("node")]
+        protected virtual LabelTarget? VisitLabelTarget(LabelTarget? node)
         {
             return node;
         }
@@ -341,7 +345,7 @@ namespace System.Linq.Expressions
         protected internal virtual Expression VisitLambda<T>(Expression<T> node)
         {
             Expression body = Visit(node.Body);
-            ParameterExpression[] parameters = VisitParameters(node, nameof(VisitLambda));
+            ParameterExpression[]? parameters = VisitParameters(node, nameof(VisitLambda));
 
             if (body == node.Body && parameters == null)
             {
@@ -381,8 +385,8 @@ namespace System.Linq.Expressions
         /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitIndex(IndexExpression node)
         {
-            Expression o = Visit(node.Object);
-            Expression[] a = VisitArguments(node);
+            Expression o = Visit(node.Object)!;
+            Expression[]? a = VisitArguments(node);
             if (o == node.Object && a == null)
             {
                 return node;
@@ -399,8 +403,8 @@ namespace System.Linq.Expressions
         /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitMethodCall(MethodCallExpression node)
         {
-            Expression o = Visit(node.Object);
-            Expression[] a = VisitArguments(node);
+            Expression o = Visit(node.Object)!;
+            Expression[]? a = VisitArguments(node);
             if (o == node.Object && a == null)
             {
                 return node;
@@ -426,10 +430,9 @@ namespace System.Linq.Expressions
         /// <param name="node">The expression to visit.</param>
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
         protected internal virtual Expression VisitNew(NewExpression node)
         {
-            Expression[] a = VisitArguments(node);
+            Expression[]? a = VisitArguments(node);
             if (a == null)
             {
                 return node;
@@ -709,7 +712,7 @@ namespace System.Linq.Expressions
         /// otherwise, returns the original expression.</returns>
         protected internal virtual Expression VisitDynamic(DynamicExpression node)
         {
-            Expression[] a = VisitArguments((IArgumentProvider)node);
+            Expression[]? a = VisitArguments((IArgumentProvider)node);
             if (a == null)
             {
                 return node;

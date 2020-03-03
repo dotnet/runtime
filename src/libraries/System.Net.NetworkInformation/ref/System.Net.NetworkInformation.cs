@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Net.NetworkInformation
@@ -370,6 +370,9 @@ namespace System.Net.NetworkInformation
         public byte[] GetAddressBytes() { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Net.NetworkInformation.PhysicalAddress Parse(string address) { throw null; }
+        public static System.Net.NetworkInformation.PhysicalAddress Parse(ReadOnlySpan<char> address) { throw null; }
+        public static bool TryParse(string address, out System.Net.NetworkInformation.PhysicalAddress value) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> address, out System.Net.NetworkInformation.PhysicalAddress value) { throw null; }
         public override string ToString() { throw null; }
     }
     public enum PrefixOrigin

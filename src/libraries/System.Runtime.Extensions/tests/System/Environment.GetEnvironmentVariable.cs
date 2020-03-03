@@ -221,7 +221,7 @@ namespace System.Tests
         {
             bool lookForSetValue = (target == EnvironmentVariableTarget.Process) || PlatformDetection.IsWindowsAndElevated;
             
-            // [ActiveIssue(40226)]
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/30566")]
             if (PlatformDetection.IsWindowsNanoServer && target == EnvironmentVariableTarget.User)
             {
                 lookForSetValue = false;

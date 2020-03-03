@@ -1,4 +1,5 @@
 trigger:
+  batch: true
   branches:
     include:
     - master
@@ -19,6 +20,7 @@ trigger:
     - src/libraries/*
     - eng/pipelines/installer/*
     - eng/pipelines/libraries/*
+    - eng/pipelines/runtime.yml
 
 
 pr: none
@@ -41,7 +43,6 @@ jobs:
     - Linux_arm64
     - Linux_musl_arm64
     - Linux_musl_x64
-    - Linux_rhel6_x64
     - Linux_x64
     - OSX_x64
     - Windows_NT_arm
@@ -77,6 +78,18 @@ jobs:
       testGroup: outerloop
 
 #
+# Release library builds
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/build-job.yml
+    buildConfig: Release
+    platformGroup: all
+    jobParameters:
+      isOfficialBuild: false
+      liveRuntimeBuildConfig: checked
+
+#
 # Checked test builds
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -92,6 +105,8 @@ jobs:
     - Windows_NT_x64
     - Windows_NT_x86
     testGroup: outerloop
+    jobParameters:
+      liveLibrariesBuildConfig: Release
 
 #
 # Checked JIT test runs
@@ -105,6 +120,7 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: outerloop
+      liveLibrariesBuildConfig: Release
 
 #
 # Checked R2R test runs
@@ -117,7 +133,6 @@ jobs:
     - Linux_arm64
     - Linux_musl_x64
     - Linux_musl_arm64
-    - Linux_rhel6_x64
     - Linux_x64
     - OSX_x64
     - Windows_NT_x64
@@ -130,6 +145,7 @@ jobs:
       testGroup: outerloop
       readyToRun: true
       displayNameArgs: R2R
+      liveLibrariesBuildConfig: Release
 
 #
 # Crossgen-comparison jobs
@@ -139,7 +155,9 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/crossgen-comparison-job.yml
     buildConfig: release
     platforms:
-    - Linux_arm
+    # Currently failing globally, should be uncommented once the tracking bug gets fixed:
+    # https://github.com/dotnet/runtime/issues/1282
+    # - Linux_arm
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
 

@@ -19,7 +19,7 @@ internal static partial class Interop
         );
 
         internal static unsafe uint LsaOpenPolicy(
-            string SystemName,
+            string? SystemName,
             ref OBJECT_ATTRIBUTES Attributes,
             int AccessMask,
             out SafeLsaPolicyHandle PolicyHandle)

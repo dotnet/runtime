@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
@@ -18,7 +19,7 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
-        public static unsafe void CreateDirectory(string fullPath, byte[] securityDescriptor = null)
+        public static unsafe void CreateDirectory(string fullPath, byte[]? securityDescriptor = null)
         {
             // We can save a bunch of work if the directory we want to create already exists.  This also
             // saves us in the case where sub paths are inaccessible (due to ERROR_ACCESS_DENIED) but the
@@ -126,7 +127,7 @@ namespace System.IO
             // Handle CreateDirectory("X:\\") when X: doesn't exist. Similarly for n/w paths.
             if ((count == 0) && !somepathexists)
             {
-                string root = Path.GetPathRoot(fullPath);
+                string? root = Path.GetPathRoot(fullPath);
 
                 if (!DirectoryExists(root))
                 {

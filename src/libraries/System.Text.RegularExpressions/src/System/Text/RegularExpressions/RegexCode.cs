@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 // This RegexCode class is internal to the regular expression package.
-// It provides operator constants for use by the Builder and the Machine.
 
 // Implementation notes:
 //
@@ -16,9 +15,8 @@
 // Strings and sets are indices into a string table.
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
@@ -49,7 +47,7 @@ namespace System.Text.RegularExpressions
         public const int Bol = 14;                //                          ^
         public const int Eol = 15;                //                          $
         public const int Boundary = 16;           //                          \b
-        public const int Nonboundary = 17;        //                          \B
+        public const int NonBoundary = 17;        //                          \B
         public const int Beginning = 18;          //                          \A
         public const int Start = 19;              //                          \G
         public const int EndZ = 20;               //                          \Z
@@ -76,11 +74,17 @@ namespace System.Text.RegularExpressions
         public const int Testref = 37;            //                          backtrack if ref undefined
         public const int Goto = 38;               //          jump            just go
 
-        public const int Prune = 39;              //                          prune it baby
         public const int Stop = 40;               //                          done!
 
         public const int ECMABoundary = 41;       //                          \b
         public const int NonECMABoundary = 42;    //                          \B
+
+        // Manufactured primitive operations, derived from the tree that comes from the parser.
+        // These exist to reduce backtracking (both actually performing it and spitting code for it).
+
+        public const int Oneloopatomic = 43;      // lef,back char,min,max    (?> a {,n} )
+        public const int Notoneloopatomic = 44;   // lef,back set,min,max     (?> . {,n} )
+        public const int Setloopatomic = 45;      // lef,back set,min,max     (?> [\d]{,n} )
 
         // Modifiers for alternate modes
         public const int Mask = 63;   // Mask to get unmodified ordinary operator
@@ -89,31 +93,36 @@ namespace System.Text.RegularExpressions
         public const int Back2 = 256; // bit to indicate that we're backtracking on a second branch.
         public const int Ci = 512;    // bit to indicate that we're case-insensitive.
 
-        public readonly int[] Codes;                     // the code
-        public readonly string[] Strings;                // the string/set table
-        public readonly int TrackCount;                  // how many instructions use backtracking
-        public readonly Hashtable? Caps;                 // mapping of user group numbers -> impl group slots
-        public readonly int CapSize;                     // number of impl group slots
-        public readonly RegexPrefix? FCPrefix;           // the set of candidate first characters (may be null)
-        public readonly RegexBoyerMoore? BMPrefix;       // the fixed prefix string as a Boyer-Moore machine (may be null)
-        public readonly int Anchors;                     // the set of zero-length start anchors (RegexFCD.Bol, etc)
-        public readonly bool RightToLeft;                // true if right to left
+        public readonly RegexTree Tree;                                                 // the optimized parse tree
+        public readonly int[] Codes;                                                    // the code
+        public readonly string[] Strings;                                               // the string/set table
+        public readonly int[]?[] StringsAsciiLookup;                                    // the ASCII lookup table optimization for the sets in Strings
+        public readonly int TrackCount;                                                 // how many instructions use backtracking
+        public readonly Hashtable? Caps;                                                // mapping of user group numbers -> impl group slots
+        public readonly int CapSize;                                                    // number of impl group slots
+        public readonly (string CharClass, bool CaseInsensitive)[]? LeadingCharClasses; // the set of candidate first characters, if available.  Each entry corresponds to the next char in the input.
+        public int[]? LeadingCharClassAsciiLookup;                                      // the ASCII lookup table optimization for LeadingCharClasses[0], if it exists; only used by the interpreter
+        public readonly RegexBoyerMoore? BoyerMoorePrefix;                              // the fixed prefix string as a Boyer-Moore machine, if available
+        public readonly int Anchors;                                                    // the set of zero-length start anchors (RegexPrefixAnalyzer.Bol, etc)
+        public readonly bool RightToLeft;                                               // true if right to left
 
-        public RegexCode(int[] codes, List<string> stringlist, int trackcount,
-                           Hashtable? caps, int capsize,
-                           RegexBoyerMoore? bmPrefix, RegexPrefix? fcPrefix,
-                           int anchors, bool rightToLeft)
+        public RegexCode(RegexTree tree, int[] codes, string[] strings, int trackcount,
+                         Hashtable? caps, int capsize,
+                         RegexBoyerMoore? boyerMoorePrefix,
+                         (string CharClass, bool CaseInsensitive)[]? leadingCharClasses,
+                         int anchors, bool rightToLeft)
         {
-            Debug.Assert(codes != null, "codes cannot be null.");
-            Debug.Assert(stringlist != null, "stringlist cannot be null.");
+            Debug.Assert(boyerMoorePrefix is null || leadingCharClasses is null);
 
+            Tree = tree;
             Codes = codes;
-            Strings = stringlist.ToArray();
+            Strings = strings;
+            StringsAsciiLookup = new int[strings.Length][];
             TrackCount = trackcount;
             Caps = caps;
             CapSize = capsize;
-            BMPrefix = bmPrefix;
-            FCPrefix = fcPrefix;
+            BoyerMoorePrefix = boyerMoorePrefix;
+            LeadingCharClasses = leadingCharClasses;
             Anchors = anchors;
             RightToLeft = rightToLeft;
         }
@@ -161,7 +170,7 @@ namespace System.Text.RegularExpressions
                 case Bol:
                 case Eol:
                 case Boundary:
-                case Nonboundary:
+                case NonBoundary:
                 case ECMABoundary:
                 case NonECMABoundary:
                 case Beginning:
@@ -188,7 +197,6 @@ namespace System.Text.RegularExpressions
                 case Lazybranch:
                 case Branchmark:
                 case Lazybranchmark:
-                case Prune:
                 case Set:
                     return 2;
 
@@ -198,12 +206,15 @@ namespace System.Text.RegularExpressions
                 case Onerep:
                 case Notonerep:
                 case Oneloop:
+                case Oneloopatomic:
                 case Notoneloop:
+                case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
                 case Setlazy:
                 case Setrep:
                 case Setloop:
+                case Setloopatomic:
                     return 3;
 
                 default:
@@ -212,45 +223,77 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        private static readonly string[] s_codeStr = new string[]
-        {
-            "Onerep", "Notonerep", "Setrep",
-            "Oneloop", "Notoneloop", "Setloop",
-            "Onelazy", "Notonelazy", "Setlazy",
-            "One", "Notone", "Set",
-            "Multi", "Ref",
-            "Bol", "Eol", "Boundary", "Nonboundary", "Beginning", "Start", "EndZ", "End",
-            "Nothing",
-            "Lazybranch", "Branchmark", "Lazybranchmark",
-            "Nullcount", "Setcount", "Branchcount", "Lazybranchcount",
-            "Nullmark", "Setmark", "Capturemark", "Getmark",
-            "Setjump", "Backjump", "Forejump", "Testref", "Goto",
-            "Prune", "Stop",
-#if ECMA
-            "ECMABoundary", "NonECMABoundary",
-#endif
-        };
-
+        [ExcludeFromCodeCoverage]
         private static string OperatorDescription(int Opcode)
         {
-            bool isCi = ((Opcode & Ci) != 0);
-            bool isRtl = ((Opcode & Rtl) != 0);
-            bool isBack = ((Opcode & Back) != 0);
-            bool isBack2 = ((Opcode & Back2) != 0);
+            string codeStr = (Opcode & Mask) switch
+            {
+                Onerep => nameof(Onerep),
+                Notonerep => nameof(Notonerep),
+                Setrep => nameof(Setrep),
+                Oneloop => nameof(Oneloop),
+                Notoneloop => nameof(Notoneloop),
+                Setloop => nameof(Setloop),
+                Onelazy => nameof(Onelazy),
+                Notonelazy => nameof(Notonelazy),
+                Setlazy => nameof(Setlazy),
+                One => nameof(One),
+                Notone => nameof(Notone),
+                Set => nameof(Set),
+                Multi => nameof(Multi),
+                Ref => nameof(Ref),
+                Bol => nameof(Bol),
+                Eol => nameof(Eol),
+                Boundary => nameof(Boundary),
+                NonBoundary => nameof(NonBoundary),
+                Beginning => nameof(Beginning),
+                Start => nameof(Start),
+                EndZ => nameof(EndZ),
+                End => nameof(End),
+                Nothing => nameof(Nothing),
+                Lazybranch => nameof(Lazybranch),
+                Branchmark => nameof(Branchmark),
+                Lazybranchmark => nameof(Lazybranchmark),
+                Nullcount => nameof(Nullcount),
+                Setcount => nameof(Setcount),
+                Branchcount => nameof(Branchcount),
+                Lazybranchcount => nameof(Lazybranchcount),
+                Nullmark => nameof(Nullmark),
+                Setmark => nameof(Setmark),
+                Capturemark => nameof(Capturemark),
+                Getmark => nameof(Getmark),
+                Setjump => nameof(Setjump),
+                Backjump => nameof(Backjump),
+                Forejump => nameof(Forejump),
+                Testref => nameof(Testref),
+                Goto => nameof(Goto),
+                Stop => nameof(Stop),
+                ECMABoundary => nameof(ECMABoundary),
+                NonECMABoundary => nameof(NonECMABoundary),
+                Oneloopatomic => nameof(Oneloopatomic),
+                Notoneloopatomic => nameof(Notoneloopatomic),
+                Setloopatomic => nameof(Setloopatomic),
+                _ => "(unknown)"
+            };
 
-            return s_codeStr[Opcode & Mask] +
-            (isCi ? "-Ci" : "") + (isRtl ? "-Rtl" : "") + (isBack ? "-Back" : "") + (isBack2 ? "-Back2" : "");
+            return
+                codeStr +
+                ((Opcode & Ci) != 0 ? "-Ci" : "") +
+                ((Opcode & Rtl) != 0 ? "-Rtl" : "") +
+                ((Opcode & Back) != 0 ? "-Back" : "") +
+                ((Opcode & Back2) != 0 ? "-Back2" : "");
         }
 
+        [ExcludeFromCodeCoverage]
         public string OpcodeDescription(int offset)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             int opcode = Codes[offset];
 
             sb.AppendFormat("{0:D6} ", offset);
             sb.Append(OpcodeBacktracks(opcode & Mask) ? '*' : ' ');
             sb.Append(OperatorDescription(opcode));
-            sb.Append('(');
+            sb.Append(Indent());
 
             opcode &= Mask;
 
@@ -261,45 +304,45 @@ namespace System.Text.RegularExpressions
                 case Onerep:
                 case Notonerep:
                 case Oneloop:
+                case Oneloopatomic:
                 case Notoneloop:
+                case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
-                    sb.Append("Ch = ");
-                    sb.Append(RegexCharClass.CharDescription((char)Codes[offset + 1]));
+                    sb.Append('\'').Append(RegexCharClass.CharDescription((char)Codes[offset + 1])).Append('\'');
                     break;
 
                 case Set:
                 case Setrep:
                 case Setloop:
+                case Setloopatomic:
                 case Setlazy:
-                    sb.Append("Set = ");
                     sb.Append(RegexCharClass.SetDescription(Strings[Codes[offset + 1]]));
                     break;
 
                 case Multi:
-                    sb.Append("String = ");
-                    sb.Append(Strings[Codes[offset + 1]]);
+                    sb.Append('"').Append(Strings[Codes[offset + 1]]).Append('"');
                     break;
 
                 case Ref:
                 case Testref:
-                    sb.Append("Index = ");
+                    sb.Append("index = ");
                     sb.Append(Codes[offset + 1]);
                     break;
 
                 case Capturemark:
-                    sb.Append("Index = ");
+                    sb.Append("index = ");
                     sb.Append(Codes[offset + 1]);
                     if (Codes[offset + 2] != -1)
                     {
-                        sb.Append(", Unindex = ");
+                        sb.Append(", unindex = ");
                         sb.Append(Codes[offset + 2]);
                     }
                     break;
 
                 case Nullcount:
                 case Setcount:
-                    sb.Append("Value = ");
+                    sb.Append("value = ");
                     sb.Append(Codes[offset + 1]);
                     break;
 
@@ -309,7 +352,7 @@ namespace System.Text.RegularExpressions
                 case Lazybranchmark:
                 case Branchcount:
                 case Lazybranchcount:
-                    sb.Append("Addr = ");
+                    sb.Append("addr = ");
                     sb.Append(Codes[offset + 1]);
                     break;
             }
@@ -319,13 +362,16 @@ namespace System.Text.RegularExpressions
                 case Onerep:
                 case Notonerep:
                 case Oneloop:
+                case Oneloopatomic:
                 case Notoneloop:
+                case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
                 case Setrep:
                 case Setloop:
+                case Setloopatomic:
                 case Setlazy:
-                    sb.Append(", Rep = ");
+                    sb.Append(", rep = ");
                     if (Codes[offset + 2] == int.MaxValue)
                         sb.Append("inf");
                     else
@@ -334,7 +380,7 @@ namespace System.Text.RegularExpressions
 
                 case Branchcount:
                 case Lazybranchcount:
-                    sb.Append(", Limit = ");
+                    sb.Append(", limit = ");
                     if (Codes[offset + 2] == int.MaxValue)
                         sb.Append("inf");
                     else
@@ -342,32 +388,47 @@ namespace System.Text.RegularExpressions
                     break;
             }
 
-            sb.Append(')');
+            string Indent() => new string(' ', Math.Max(1, 25 - sb.Length));
 
             return sb.ToString();
         }
 
-        public void Dump()
+        [ExcludeFromCodeCoverage]
+        public void Dump() => Debug.WriteLine(ToString());
+
+        [ExcludeFromCodeCoverage]
+        public override string ToString()
         {
-            int i;
+            var sb = new StringBuilder();
 
-            Debug.WriteLine("Direction:  " + (RightToLeft ? "right-to-left" : "left-to-right"));
-            Debug.WriteLine("Firstchars: " + (FCPrefix == null ? "n/a" : RegexCharClass.SetDescription(FCPrefix.GetValueOrDefault().Prefix)));
-            Debug.WriteLine("Prefix:     " + (BMPrefix == null ? "n/a" : Regex.Escape(BMPrefix.ToString())));
-            Debug.WriteLine("Anchors:    " + RegexFCD.AnchorDescription(Anchors));
-            Debug.WriteLine("");
-            if (BMPrefix != null)
+            sb.AppendLine("Direction:  " + (RightToLeft ? "right-to-left" : "left-to-right"));
+            sb.AppendLine("Anchors:    " + RegexPrefixAnalyzer.AnchorDescription(Anchors));
+            sb.AppendLine("");
+
+            if (BoyerMoorePrefix != null)
             {
-                Debug.WriteLine("BoyerMoore:");
-                Debug.WriteLine(BMPrefix.Dump("    "));
-            }
-            for (i = 0; i < Codes.Length;)
-            {
-                Debug.WriteLine(OpcodeDescription(i));
-                i += OpcodeSize(Codes[i]);
+                sb.AppendLine("Boyer-Moore:");
+                sb.AppendLine(BoyerMoorePrefix.Dump("    "));
+                sb.AppendLine();
             }
 
-            Debug.WriteLine("");
+            if (LeadingCharClasses != null)
+            {
+                sb.AppendLine("First Chars:");
+                for (int i = 0; i < LeadingCharClasses.Length; i++)
+                {
+                    sb.AppendLine($"{i}: {RegexCharClass.SetDescription(LeadingCharClasses[i].CharClass)}");
+                }
+                sb.AppendLine();
+            }
+
+            for (int i = 0; i < Codes.Length; i += OpcodeSize(Codes[i]))
+            {
+                sb.AppendLine(OpcodeDescription(i));
+            }
+            sb.AppendLine();
+
+            return sb.ToString();
         }
 #endif
     }

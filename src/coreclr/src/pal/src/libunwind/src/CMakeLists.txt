@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8.12.2)
-
 project(unwind)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -28,7 +26,7 @@ elseif()
   add_compile_options(-Wno-unused-value)
 endif()
 
-if(CLR_CMAKE_PLATFORM_ARCH_ARM)
+if(CLR_CMAKE_HOST_ARCH_ARM)
     # Ensure that the remote and local unwind code can reside in the same binary without name clashing
     add_definitions("-Darm_search_unwind_table=UNW_OBJ(arm_search_unwind_table)")
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -47,14 +45,14 @@ if(CLR_CMAKE_PLATFORM_ARCH_ARM)
     # in include/tdep like it works for similar files on other architectures. So we need to add
     # the include/tdep-arm to include directories
     include_directories(../include/tdep-arm)
-elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+elseif(CLR_CMAKE_HOST_ARCH_ARM64)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         # Disable warning due to labs function called on unsigned argument
         add_compile_options(-Wno-absolute-value)
     endif()
     # We compile code with -std=c99 and the asm keyword is not recognized as it is a gnu extension
     add_definitions(-Dasm=__asm__)
-elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+elseif(CLR_CMAKE_HOST_ARCH_I386)
     # Disable warning for a bug in the libunwind source src/x86/Gos-linux.c, but not in code that we exercise
     add_compile_options(-Wno-incompatible-pointer-types)
 endif()
@@ -116,7 +114,7 @@ SET(libunwind_la_SOURCES_os_freebsd_local
 # Nothing
 )
 
-if(CLR_CMAKE_PLATFORM_LINUX)
+if(CLR_CMAKE_HOST_LINUX)
     SET(libunwind_la_SOURCES_os                 ${libunwind_la_SOURCES_os_linux})
     SET(libunwind_la_SOURCES_os_local           ${libunwind_la_SOURCES_os_linux_local})
     SET(libunwind_la_SOURCES_x86_os             x86/Gos-linux.c)
@@ -127,7 +125,7 @@ if(CLR_CMAKE_PLATFORM_LINUX)
     SET(libunwind_la_SOURCES_arm_os             arm/Gos-linux.c)
     SET(libunwind_la_SOURCES_arm_os_local       arm/Los-linux.c)
     list(APPEND libunwind_coredump_la_SOURCES   coredump/_UCD_access_reg_linux.c)
-elseif(CLR_CMAKE_PLATFORM_FREEBSD)
+elseif(CLR_CMAKE_HOST_FREEBSD)
     SET(libunwind_la_SOURCES_os                 ${libunwind_la_SOURCES_os_freebsd})
     SET(libunwind_la_SOURCES_os_local           ${libunwind_la_SOURCES_os_freebsd_local})
     SET(libunwind_la_SOURCES_x86_os             x86/Gos-freebsd.c)
@@ -321,22 +319,22 @@ SET(libunwind_x86_64_la_SOURCES_x86_64
     x86_64/Gstash_frame.c x86_64/Gstep.c x86_64/Gtrace.c
 )
 
-if(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+if(CLR_CMAKE_HOST_ARCH_ARM64)
     SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_aarch64})
     SET(libunwind_remote_la_SOURCES             ${libunwind_aarch64_la_SOURCES_aarch64})
     SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
     list(APPEND libunwind_setjmp_la_SOURCES     aarch64/siglongjmp.S)
-elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+elseif(CLR_CMAKE_HOST_ARCH_ARM)
     SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_arm})
     SET(libunwind_remote_la_SOURCES             ${libunwind_arm_la_SOURCES_arm})
     SET(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
     list(APPEND libunwind_setjmp_la_SOURCES     arm/siglongjmp.S)
-elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+elseif(CLR_CMAKE_HOST_ARCH_I386)
     SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86} ${libunwind_x86_la_SOURCES_os})
     SET(libunwind_remote_la_SOURCES             ${libunwind_x86_la_SOURCES_x86})
     SET(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
     list(APPEND libunwind_setjmp_la_SOURCES     x86/longjmp.S x86/siglongjmp.S)
-elseif(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+elseif(CLR_CMAKE_HOST_ARCH_AMD64)
     SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86_64})
     SET(libunwind_remote_la_SOURCES             ${libunwind_x86_64_la_SOURCES_x86_64})
     SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})

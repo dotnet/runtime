@@ -1,9 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <NoWarn>$(NoWarn);0436</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
+    <DefineConstants>$(DefineConstants);WINHTTPHANDLER_DLL</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusions Include="System.Net.Http.WinHttpHandler" />
@@ -39,8 +40,8 @@
     <Compile Include="$(CommonPath)System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\IO\StreamHelpers.CopyValidation.cs">
-      <Link>System\IO\StreamHelpers.CopyValidation.cs</Link>
+    <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs">
+      <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
@@ -66,6 +67,9 @@
     <Compile Include="$(CommonPath)System\Net\Http\NoWriteNoSeekStreamContent.cs">
       <Link>Common\System\Net\Http\NoWriteNoSeekStreamContent.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\WinInetProxyHelper.cs">
+      <Link>Common\System\Net\Http\WinInetProxyHelper.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Net\Security\CertificateHelper.cs">
       <Link>Common\System\Net\Security\CertificateHelper.cs</Link>
     </Compile>
@@ -81,8 +85,8 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\RendezvousAwaitable.cs">
       <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs">
       <Link>ProductionCode\WinHttpAuthHelper.cs</Link>
@@ -125,9 +129,6 @@
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpTransportContext.cs">
       <Link>ProductionCode\WinHttpTransportContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\WinInetProxyHelper.cs">
-      <Link>ProductionCode\WinInetProxyHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs">
       <Link>ProductionCode\HttpWindowsProxy.cs</Link>

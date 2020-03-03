@@ -123,7 +123,7 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <returns>The base ToString plus the Line Number</returns>
         ''' <remarks></remarks>
         Public Overrides Function ToString() As String
-            Return MyBase.ToString() & " " & GetResourceString(SR.TextFieldParser_MalformedExtraData, LineNumber.ToString(CultureInfo.InvariantCulture))
+            Return MyBase.ToString() & " " & SR.Format(SR.TextFieldParser_MalformedExtraData, LineNumber.ToString(CultureInfo.InvariantCulture))
         End Function
 
         ' Holds the line number

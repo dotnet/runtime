@@ -456,7 +456,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     pHp->maxCodeHeapSize = m_TotalBytesAvailable - pTracker->size;
     pHp->reserveForJumpStubs = 0;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     emitJump((LPBYTE)pHp->CLRPersonalityRoutine, (void *)ProcessCLRException);
 #endif
 
@@ -849,21 +849,26 @@ void DynamicMethodDesc::Destroy()
 
     _ASSERTE(IsDynamicMethod());
     LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
-
     LOG((LF_BCL, LL_INFO1000, "Level3 - Destroying DynamicMethod {0x%p}\n", this));
-    if (!m_pSig.IsNull())
-    {
-        delete[] (BYTE*)m_pSig.GetValue();
-        m_pSig.SetValueMaybeNull(NULL);
-    }
-    m_cSig = 0;
-    if (!m_pszMethodName.IsNull())
-    {
-        delete[] m_pszMethodName.GetValue();
-        m_pszMethodName.SetValueMaybeNull(NULL);
-    }
+
+    // The m_pSig and m_pszMethodName need to be destroyed after the GetLCGMethodResolver()->Destroy() call
+    // otherwise the EEJitManager::CodeHeapIterator could return DynamicMethodDesc with these members NULLed, but
+    // the nibble map for the corresponding code memory indicating that this DynamicMethodDesc is still alive.
+    PCODE pSig = m_pSig.GetValue();
+    PTR_CUTF8 pszMethodName = m_pszMethodName.GetValue();
 
     GetLCGMethodResolver()->Destroy();
+    // The current DynamicMethodDesc storage is destroyed at this point
+
+    if (pszMethodName != NULL)
+    {
+        delete[] pszMethodName;
+    }
+
+    if (pSig != NULL)
+    {
+        delete[] (BYTE*)pSig;
+    }
 
     if (pLoaderAllocator->IsCollectible())
     {
@@ -981,10 +986,10 @@ void LCGMethodResolver::Destroy()
 
     if (m_recordCodePointer)
     {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
         // Remove the unwind information (if applicable)
         UnwindInfoTable::UnpublishUnwindInfoForMethod((TADDR)m_recordCodePointer);
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
 
         HostCodeHeap *pHeap = HostCodeHeap::GetCodeHeap((TADDR)m_recordCodePointer);
         LOG((LF_BCL, LL_INFO1000, "Level3 - Resolver {0x%p} - Release reference to heap {%p, vt(0x%x)} \n", this, pHeap, *(size_t*)pHeap));
@@ -1190,6 +1195,21 @@ LCGMethodResolver::IsValidStringRef(mdToken metaTok)
     GCX_COOP();
 
     return GetStringLiteral(metaTok) != NULL;
+}
+
+int
+LCGMethodResolver::GetStringLiteralLength(mdToken metaTok)
+{
+    STANDARD_VM_CONTRACT;
+
+    GCX_COOP();
+
+    STRINGREF str = GetStringLiteral(metaTok);
+    if (str != NULL)
+    {
+        return str->GetStringLength();
+    }
+    return -1;
 }
 
 //---------------------------------------------------------------------------------------

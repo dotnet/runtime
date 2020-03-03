@@ -3,12 +3,6 @@
   <Import Project="..\..\Directory.Build.props" />
 
   <!--
-    Get ProjectToBuild and '<subset>ProjectToBuild' items. Using the items lets projects handle
-    $(Subset) automatically when creating project-to-project dependencies.
-  -->
-  <Import Project="$(RepositoryEngineeringDir)Subsets.props" />
-
-  <!--
     Before Microsoft.Common.targets, set the extensions path to match the restore dir as Arcade
     sets it, so MSBuild packages with targets files will be found and imported.
   -->
@@ -19,6 +13,9 @@
   <PropertyGroup>
     <ArcadeSdkMSBuildProjectDir>$([System.IO.Path]::GetDirectoryName('$(ArcadeSdkBuildTasksAssembly)'))\..\</ArcadeSdkMSBuildProjectDir>
     <ArcadeSdkSignProject>$(ArcadeSdkMSBuildProjectDir)Sign.proj</ArcadeSdkSignProject>
+
+    <!-- Clear AssemblyVersion as we need to align with the NuGet conventions, when empty arcade will do that for us. -->
+    <AssemblyVersion />
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
@@ -29,26 +26,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <InstallerProjectRoot>$(MSBuildThisFileDirectory)</InstallerProjectRoot>
     <SigningToolsDir>$(InstallerProjectRoot)signing\</SigningToolsDir>
-    <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
   </PropertyGroup>
 
   <PropertyGroup>
     <HostMachineInfoProps>$(ArtifactsObjDir)HostMachineInfo.props</HostMachineInfoProps>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!--
-      This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used to find source code for debugging
-      It is also used to name the build output manifest for orchestrated builds.
-    -->
-    <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">core-setup</GitHubRepositoryName>
-  </PropertyGroup>
-
-  <!-- Build as portable by default -->
-  <PropertyGroup>
-    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -66,7 +48,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <BuildArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</BuildArchitecture>
     <TargetArchitecture  Condition="'$(TargetArchitecture)' == '' AND '$(BuildArchitecture)' == 'arm64'">$(BuildArchitecture)</TargetArchitecture>
     <TargetArchitecture  Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)'==''">$(TargetArchitecture)</Platform>
@@ -79,38 +60,9 @@
   a single binary folder and can have a similar experience between the command line and Visual Studio.
   -->
 
-  <!--
-  If Configuration is empty that means we are not being built in VS and so folks need to explicitly pass the different
-  values for $(ConfigurationGroup) or $(OSGroup) or accept the defaults for them.
-  -->
   <PropertyGroup>
     <OSGroup Condition="'$(OS)'=='Unix' AND Exists('/Applications')">OSX</OSGroup>
     <OSGroup Condition="'$(OSGroup)' == ''">$(OS)</OSGroup>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)'==''">
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">Debug</ConfigurationGroup>
-    <Configuration>$(ConfigurationGroup)</Configuration>
-    <Configuration>$(OSGroup)_$(Configuration)</Configuration>
-  </PropertyGroup>
-
-  <!--
-  If Configuration is set then someone explicitly passed it in or we building from VS. In either case
-  default $(ConfigurationGroup) or $(OSGroup) from the Configuration if they aren't
-  already explicitly set.
-  -->
-  <PropertyGroup Condition="'$(Configuration)'!=''">
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)'=='' and $(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)'=='' and $(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">Debug</ConfigurationGroup>
-
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Windows'))">Windows_NT</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Unix'))">Unix</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Linux'))">Linux</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('OSX'))">OSX</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('FreeBSD'))">FreeBSD</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('NetBSD'))">NetBSD</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'==''">AnyOS</OSGroup>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -121,20 +73,18 @@
     <EnableSourceLink>false</EnableSourceLink>
     <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
     <DeterministicSourcePaths>false</DeterministicSourcePaths>
-    <!-- Normally set by sourcelink, and needed by the Pack targets -->
-    <RepositoryUrl Condition="'$(RepositoryUrl)' == '''">https://github.com/dotnet/core-setup</RepositoryUrl>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
   <Choose>
-    <When Condition="'$(ConfigurationGroup)'=='Debug'">
+    <When Condition="'$(Configuration)'=='Debug'">
       <PropertyGroup>
         <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
         <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
         <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants>
       </PropertyGroup>
     </When>
-    <When Condition="'$(ConfigurationGroup)' == 'Release'">
+    <When Condition="'$(Configuration)' == 'Release'">
       <PropertyGroup>
         <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
         <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
@@ -143,7 +93,7 @@
     </When>
     <Otherwise>
       <PropertyGroup>
-        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown ConfigurationGroup [$(ConfigurationGroup)] specificed in your project.</ConfigurationErrorMsg>
+        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown Configuration [$(Configuration)] specificed in your project.</ConfigurationErrorMsg>
       </PropertyGroup>
     </Otherwise>
   </Choose>
@@ -164,7 +114,7 @@
     <OutputRid Condition="'$(OSGroup)' == 'Windows_NT'">win-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(OSGroup)' == 'OSX'">osx-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(OSGroup)' == 'Linux' or '$(OSGroup)' == 'Unix'">linux-$(TargetArchitecture)</OutputRid>
-    <OutputRid Condition="'$(OSGroup)' == 'FreeBSD'">freebsd-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(OSGroup)' == 'FreeBSD' or $([MSBuild]::IsOSPlatform('FREEBSD'))">freebsd-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -178,7 +128,7 @@
 
   <!-- Set up the default output and intermediate paths -->
   <PropertyGroup>
-    <OSPlatformConfig>$(OutputRid).$(ConfigurationGroup)</OSPlatformConfig>
+    <OSPlatformConfig>$(OutputRid).$(Configuration)</OSPlatformConfig>
 
     <BaseOutputRootPath>$(ArtifactsBinDir)$(OSPlatformConfig)\</BaseOutputRootPath>
     <CrossGenRootPath>$(BaseOutputRootPath)crossgen\</CrossGenRootPath>
@@ -200,7 +150,7 @@
     <DisableCrossgen>false</DisableCrossgen>
     <!-- Disable cross-gen on FreeBSD for now. This can be revisited when we have full support. -->
     <DisableCrossgen Condition="'$(OSGroup)'=='FreeBSD'">true</DisableCrossgen>
-    <OutputVersionBadge>$(AssetOutputPath)sharedfx_$(OutputRid)_$(ConfigurationGroup)_version_badge.svg</OutputVersionBadge>
+    <OutputVersionBadge>$(AssetOutputPath)sharedfx_$(OutputRid)_$(Configuration)_version_badge.svg</OutputVersionBadge>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -320,10 +270,24 @@
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
+    <When Condition="$(OutputRid.StartsWith('freebsd'))">
+      <PropertyGroup>
+        <TargetsFreeBSD>true</TargetsFreeBSD>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
     <Otherwise>
       <PropertyGroup>
         <TargetsLinux>true</TargetsLinux>
         <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+      <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
+        <HostMachineRidTargetsDebianPackages Condition="
+          $(HostMachineRid.StartsWith('debian')) or
+          $(HostMachineRid.StartsWith('ubuntu')) or
+          $(HostMachineRid.StartsWith('linuxmint'))">true</HostMachineRidTargetsDebianPackages>
+        <!-- If the build machine isn't known to be Debian-based, try to build RPM packages. -->
+        <HostMachineRidTargetsRpmPackages Condition="'$(HostMachineRidTargetsDebianPackages)' != 'true'">true</HostMachineRidTargetsRpmPackages>
       </PropertyGroup>
     </Otherwise>
   </Choose>
@@ -333,8 +297,8 @@
     <CompressedFileExtension Condition="'$(OSGroup)' != 'Windows_NT'">.tar.gz</CompressedFileExtension>
     <InstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.msi</InstallerExtension>
     <InstallerExtension Condition="'$(OSGroup)' == 'OSX'">.pkg</InstallerExtension>
-    <InstallerExtension Condition="'$(TargetsDebian)' == 'true' or '$(TargetsUbuntu)' == 'true' or '$(TargetsLinuxMint)' == 'true'">.deb</InstallerExtension>
-    <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true' or '$(TargetsOpensuse)' == 'true' or '$(TargetsFedora)' == 'true' or '$(TargetsOracle)' == 'true' or '$(TargetsSles)' == 'true'">.rpm</InstallerExtension>
+    <InstallerExtension Condition="'$(TargetsDebian)' == 'true' or '$(TargetsUbuntu)' == 'true' or '$(TargetsLinuxMint)' == 'true' or '$(HostMachineRidTargetsDebianPackages)' == 'true'">.deb</InstallerExtension>
+    <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true' or '$(TargetsOpensuse)' == 'true' or '$(TargetsFedora)' == 'true' or '$(TargetsOracle)' == 'true' or '$(TargetsSles)' == 'true' or '$(HostMachineRidTargetsRpmPackages)' == 'true'">.rpm</InstallerExtension>
     <CombinedInstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
     <CombinedInstallerExtension Condition="'$(OSGroup)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>
   </PropertyGroup>
@@ -374,9 +338,12 @@
 
   <PropertyGroup>
     <LibPrefix Condition="'$(OSGroup)' != 'Windows_NT'">lib</LibPrefix>
-    <LibSuffix>.so</LibSuffix> 
+    <LibSuffix>.so</LibSuffix>
     <LibSuffix Condition="'$(OSGroup)' == 'Windows_NT'">.dll</LibSuffix>
     <LibSuffix Condition="'$(OSGroup)' == 'OSX'">.dylib</LibSuffix>
+    <StaticLibPrefix>lib</StaticLibPrefix>
+    <StaticLibSuffix>.a</StaticLibSuffix>
+    <StaticLibSuffix Condition="'$(OSGroup)' == 'Windows_NT'">.lib</StaticLibSuffix>
   </PropertyGroup>
 
   <PropertyGroup>

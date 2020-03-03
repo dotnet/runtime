@@ -92,13 +92,13 @@ inline void SwapGuid(GUID *pGuid)
 
 #endif  // !BIGENDIAN
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define VALPTR(x) VAL64(x)
 #else
 #define VALPTR(x) VAL32(x)
 #endif
 
-#ifdef _ARM_
+#ifdef HOST_ARM
 #define LOG2_PTRSIZE	2
 #define ALIGN_ACCESS    ((1<<LOG2_PTRSIZE)-1)
 #endif

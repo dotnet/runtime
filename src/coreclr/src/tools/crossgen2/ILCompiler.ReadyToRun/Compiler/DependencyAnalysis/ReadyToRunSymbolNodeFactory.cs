@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -37,9 +37,9 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class ReadyToRunSymbolNodeFactory
     {
-        private readonly ReadyToRunCodegenNodeFactory _codegenNodeFactory;
+        private readonly NodeFactory _codegenNodeFactory;
 
-        public ReadyToRunSymbolNodeFactory(ReadyToRunCodegenNodeFactory codegenNodeFactory)
+        public ReadyToRunSymbolNodeFactory(NodeFactory codegenNodeFactory)
         {
             _codegenNodeFactory = codegenNodeFactory;
             CreateNodeCaches();
@@ -47,36 +47,36 @@ namespace ILCompiler.DependencyAnalysis
 
         private void CreateNodeCaches()
         {
-            _importStrings = new NodeCache<ModuleTokenAndSignatureContext, ISymbolNode>(key =>
+            _importStrings = new NodeCache<ModuleToken, ISymbolNode>(key =>
             {
-                return new StringImport(_codegenNodeFactory.StringImports, key.ModuleToken, key.SignatureContext);
+                return new StringImport(_codegenNodeFactory.StringImports, key);
             });
 
             _r2rHelpers = new NodeCache<ReadyToRunHelperKey, ISymbolNode>(CreateReadyToRunHelper);
 
-            _fieldAddressCache = new NodeCache<FieldAndSignatureContext, ISymbolNode>(key =>
+            _fieldAddressCache = new NodeCache<FieldDesc, ISymbolNode>(key =>
             {
                 return new DelayLoadHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
                     ReadyToRunHelper.DelayLoad_Helper,
-                    new FieldFixupSignature(ReadyToRunFixupKind.FieldAddress, key.Field, key.SignatureContext)
+                    new FieldFixupSignature(ReadyToRunFixupKind.FieldAddress, key)
                 );
             });
 
-            _fieldOffsetCache = new NodeCache<FieldAndSignatureContext, ISymbolNode>(key =>
+            _fieldOffsetCache = new NodeCache<FieldDesc, ISymbolNode>(key =>
             {
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
-                    new FieldFixupSignature(ReadyToRunFixupKind.FieldOffset, key.Field, key.SignatureContext)
+                    new FieldFixupSignature(ReadyToRunFixupKind.FieldOffset, key)
                 );
             });
 
-            _fieldBaseOffsetCache = new NodeCache<TypeAndSignatureContext, ISymbolNode>(key =>
+            _fieldBaseOffsetCache = new NodeCache<TypeDesc, ISymbolNode>(key =>
             {
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
-                    _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.FieldBaseOffset, key.Type, key.SignatureContext)
+                    _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.FieldBaseOffset, key)
                 );
             });
 
@@ -91,26 +91,23 @@ namespace ILCompiler.DependencyAnalysis
                     useInstantiatingStub: false,
                     _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.VirtualEntry,
                         cellKey.Method,
-                        cellKey.IsUnboxingStub, isInstantiatingStub: false, cellKey.SignatureContext),
-                    cellKey.SignatureContext,
+                        cellKey.IsUnboxingStub, isInstantiatingStub: false),
                     cellKey.CallSite);
             });
 
             _delegateCtors = new NodeCache<TypeAndMethod, ISymbolNode>(ctorKey =>
             {
-                SignatureContext signatureContext = ctorKey.SignatureContext;
                 IMethodNode targetMethodNode = _codegenNodeFactory.MethodEntrypoint(
                     ctorKey.Method,
                     isUnboxingStub: false,
-                    isInstantiatingStub: false,
-                    isPrecodeImportRequired: false,
-                    signatureContext: signatureContext);
+                    isInstantiatingStub: ctorKey.Method.Method.HasInstantiation,
+                    isPrecodeImportRequired: false);
 
                 return new DelayLoadHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
-                    ReadyToRunHelper.DelayLoad_Helper,
-                    new DelegateCtorSignature(ctorKey.Type, targetMethodNode, ctorKey.Method.Token, signatureContext));
+                    ReadyToRunHelper.DelayLoad_Helper_ObjObj,
+                    new DelegateCtorSignature(ctorKey.Type, targetMethodNode, ctorKey.Method.Token));
             });
 
             _genericLookupHelpers = new NodeCache<GenericLookupKey, ISymbolNode>(key =>
@@ -125,76 +122,42 @@ namespace ILCompiler.DependencyAnalysis
                         key.TypeArgument,
                         key.MethodArgument,
                         key.FieldArgument,
-                        key.MethodContext,
-                        key.SignatureContext));
+                        key.MethodContext));
             });
 
-            _indirectPInvokeTargetNodes = new NodeCache<IndirectPInvokeTargetKey, ISymbolNode>(key =>
+            _pInvokeTargetNodes = new NodeCache<PInvokeTargetKey, ISymbolNode>(key =>
             {
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.MethodSignature(
-                        ReadyToRunFixupKind.IndirectPInvokeTarget,
+                        key.IsIndirect ? ReadyToRunFixupKind.IndirectPInvokeTarget : ReadyToRunFixupKind.PInvokeTarget,
                         key.MethodWithToken,
-                        signatureContext: key.SignatureContext,
                         isUnboxingStub: false,
                         isInstantiatingStub: false));
             });
         }
 
-        private struct ModuleTokenAndSignatureContext : IEquatable<ModuleTokenAndSignatureContext>
+        private NodeCache<ModuleToken, ISymbolNode> _importStrings;
+
+        public ISymbolNode StringLiteral(ModuleToken moduleToken)
         {
-            public readonly ModuleToken ModuleToken;
-            public readonly SignatureContext SignatureContext;
-
-            public ModuleTokenAndSignatureContext(ModuleToken moduleToken, SignatureContext signatureContext)
-            {
-                ModuleToken = moduleToken;
-                SignatureContext = signatureContext;
-            }
-
-            public bool Equals(ModuleTokenAndSignatureContext other)
-            {
-                return ModuleToken.Equals(other.ModuleToken)
-                    && SignatureContext.Equals(other.SignatureContext);
-            }
-
-            public override bool Equals(object obj)
-            {
-                return obj is ModuleTokenAndSignatureContext other && Equals(other);
-            }
-
-            public override int GetHashCode()
-            {
-                return ModuleToken.GetHashCode() ^ (SignatureContext.GetHashCode() * 31);
-            }
-        }
-
-        private NodeCache<ModuleTokenAndSignatureContext, ISymbolNode> _importStrings;
-
-        public ISymbolNode StringLiteral(ModuleToken moduleToken, SignatureContext signatureContext)
-        {
-            return _importStrings.GetOrAdd(new ModuleTokenAndSignatureContext(moduleToken, signatureContext));
+            return _importStrings.GetOrAdd(moduleToken);
         }
 
         private struct ReadyToRunHelperKey
         {
             public readonly ReadyToRunHelperId Id;
             public readonly object Target;
-            public readonly SignatureContext SignatureContext;
 
-            public ReadyToRunHelperKey(ReadyToRunHelperId id, object target, SignatureContext signatureContext)
+            public ReadyToRunHelperKey(ReadyToRunHelperId id, object target)
             {
                 Id = id;
                 Target = target;
-                SignatureContext = signatureContext;
             }
 
             public bool Equals(ReadyToRunHelperKey other)
             {
-                return Id == other.Id
-                    && Target.Equals(other.Target)
-                    && SignatureContext.Equals(other.SignatureContext);
+                return Id == other.Id && Target.Equals(other.Target);
             }
 
             public override bool Equals(object obj)
@@ -204,9 +167,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public override int GetHashCode()
             {
-                return Id.GetHashCode()
-                    ^ (Target.GetHashCode() * 23)
-                    ^ (SignatureContext.GetHashCode() * 31);
+                return Id.GetHashCode() ^ (Target.GetHashCode() * 23);
             }
         }
 
@@ -217,137 +178,137 @@ namespace ILCompiler.DependencyAnalysis
             switch (key.Id)
             {
                 case ReadyToRunHelperId.NewHelper:
-                    return CreateNewHelper((TypeDesc)key.Target, key.SignatureContext);
+                    return CreateNewHelper((TypeDesc)key.Target);
 
                 case ReadyToRunHelperId.NewArr1:
-                    return CreateNewArrayHelper((ArrayType)key.Target, key.SignatureContext);
+                    return CreateNewArrayHelper((ArrayType)key.Target);
 
                 case ReadyToRunHelperId.GetGCStaticBase:
-                    return CreateGCStaticBaseHelper((TypeDesc)key.Target, key.SignatureContext);
+                    return CreateGCStaticBaseHelper((TypeDesc)key.Target);
 
                 case ReadyToRunHelperId.GetNonGCStaticBase:
-                    return CreateNonGCStaticBaseHelper((TypeDesc)key.Target, key.SignatureContext);
+                    return CreateNonGCStaticBaseHelper((TypeDesc)key.Target);
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
-                    return CreateThreadGcStaticBaseHelper((TypeDesc)key.Target, key.SignatureContext);
+                    return CreateThreadGcStaticBaseHelper((TypeDesc)key.Target);
 
                 case ReadyToRunHelperId.GetThreadNonGcStaticBase:
-                    return CreateThreadNonGcStaticBaseHelper((TypeDesc)key.Target, key.SignatureContext);
+                    return CreateThreadNonGcStaticBaseHelper((TypeDesc)key.Target);
 
                 case ReadyToRunHelperId.IsInstanceOf:
-                    return CreateIsInstanceOfHelper((TypeDesc)key.Target, key.SignatureContext);
+                    return CreateIsInstanceOfHelper((TypeDesc)key.Target);
 
                 case ReadyToRunHelperId.CastClass:
-                    return CreateCastClassHelper((TypeDesc)key.Target, key.SignatureContext);
+                    return CreateCastClassHelper((TypeDesc)key.Target);
 
                 case ReadyToRunHelperId.TypeHandle:
-                    return CreateTypeHandleHelper((TypeDesc)key.Target, key.SignatureContext);
+                    return CreateTypeHandleHelper((TypeDesc)key.Target);
 
                 case ReadyToRunHelperId.MethodHandle:
-                    return CreateMethodHandleHelper((MethodWithToken)key.Target, key.SignatureContext);
+                    return CreateMethodHandleHelper((MethodWithToken)key.Target);
 
                 case ReadyToRunHelperId.FieldHandle:
-                    return CreateFieldHandleHelper((FieldDesc)key.Target, key.SignatureContext);
+                    return CreateFieldHandleHelper((FieldDesc)key.Target);
 
                 case ReadyToRunHelperId.CctorTrigger:
-                    return CreateCctorTrigger((TypeDesc)key.Target, key.SignatureContext);
+                    return CreateCctorTrigger((TypeDesc)key.Target);
 
                 case ReadyToRunHelperId.TypeDictionary:
-                    return CreateTypeDictionary((TypeDesc)key.Target, key.SignatureContext);
+                    return CreateTypeDictionary((TypeDesc)key.Target);
 
                 case ReadyToRunHelperId.MethodDictionary:
-                    return CreateMethodDictionary((MethodWithToken)key.Target, key.SignatureContext);
+                    return CreateMethodDictionary((MethodWithToken)key.Target);
 
                 default:
                     throw new NotImplementedException(key.Id.ToString());
             }
         }
 
-        public ISymbolNode CreateReadyToRunHelper(ReadyToRunHelperId id, object target, SignatureContext signatureContext)
+        public ISymbolNode CreateReadyToRunHelper(ReadyToRunHelperId id, object target)
         {
-            return _r2rHelpers.GetOrAdd(new ReadyToRunHelperKey(id, target, signatureContext));
+            return _r2rHelpers.GetOrAdd(new ReadyToRunHelperKey(id, target));
         }
 
-        private ISymbolNode CreateNewHelper(TypeDesc type, SignatureContext signatureContext)
-        {
-            return new DelayLoadHelperImport(
-                _codegenNodeFactory,
-                _codegenNodeFactory.HelperImports,
-                ReadyToRunHelper.DelayLoad_Helper,
-                new NewObjectFixupSignature(type, signatureContext));
-        }
-
-        private ISymbolNode CreateNewArrayHelper(ArrayType type, SignatureContext signatureContext)
+        private ISymbolNode CreateNewHelper(TypeDesc type)
         {
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
                 ReadyToRunHelper.DelayLoad_Helper,
-                new NewArrayFixupSignature(type, signatureContext));
+                new NewObjectFixupSignature(type));
         }
 
-        private ISymbolNode CreateGCStaticBaseHelper(TypeDesc type, SignatureContext signatureContext)
+        private ISymbolNode CreateNewArrayHelper(ArrayType type)
         {
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
                 ReadyToRunHelper.DelayLoad_Helper,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.StaticBaseGC, type, signatureContext));
+                new NewArrayFixupSignature(type));
         }
 
-        private ISymbolNode CreateNonGCStaticBaseHelper(TypeDesc type, SignatureContext signatureContext)
+        private ISymbolNode CreateGCStaticBaseHelper(TypeDesc type)
         {
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
                 ReadyToRunHelper.DelayLoad_Helper,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.StaticBaseNonGC, type, signatureContext));
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.StaticBaseGC, type));
         }
 
-        private ISymbolNode CreateThreadGcStaticBaseHelper(TypeDesc type, SignatureContext signatureContext)
+        private ISymbolNode CreateNonGCStaticBaseHelper(TypeDesc type)
         {
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
                 ReadyToRunHelper.DelayLoad_Helper,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.ThreadStaticBaseGC, type, signatureContext));
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.StaticBaseNonGC, type));
         }
 
-        private ISymbolNode CreateThreadNonGcStaticBaseHelper(TypeDesc type, SignatureContext signatureContext)
+        private ISymbolNode CreateThreadGcStaticBaseHelper(TypeDesc type)
         {
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
                 ReadyToRunHelper.DelayLoad_Helper,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.ThreadStaticBaseNonGC, type, signatureContext));
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.ThreadStaticBaseGC, type));
         }
 
-        private ISymbolNode CreateIsInstanceOfHelper(TypeDesc type, SignatureContext signatureContext)
+        private ISymbolNode CreateThreadNonGcStaticBaseHelper(TypeDesc type)
         {
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
                 ReadyToRunHelper.DelayLoad_Helper,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.IsInstanceOf, type, signatureContext));
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.ThreadStaticBaseNonGC, type));
         }
 
-        private ISymbolNode CreateCastClassHelper(TypeDesc type, SignatureContext signatureContext)
+        private ISymbolNode CreateIsInstanceOfHelper(TypeDesc type)
         {
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
                 ReadyToRunHelper.DelayLoad_Helper_Obj,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.ChkCast, type, signatureContext));
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.IsInstanceOf, type));
         }
 
-        private ISymbolNode CreateTypeHandleHelper(TypeDesc type, SignatureContext signatureContext)
+        private ISymbolNode CreateCastClassHelper(TypeDesc type)
+        {
+            return new DelayLoadHelperImport(
+                _codegenNodeFactory,
+                _codegenNodeFactory.HelperImports,
+                ReadyToRunHelper.DelayLoad_Helper_Obj,
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.ChkCast, type));
+        }
+
+        private ISymbolNode CreateTypeHandleHelper(TypeDesc type)
         {
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeHandle, type, signatureContext));
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeHandle, type));
         }
 
-        private ISymbolNode CreateMethodHandleHelper(MethodWithToken method, SignatureContext signatureContext)
+        private ISymbolNode CreateMethodHandleHelper(MethodWithToken method)
         {
             bool useUnboxingStub = method.Method.IsUnboxingThunk();
             if (useUnboxingStub)
@@ -363,35 +324,34 @@ namespace ILCompiler.DependencyAnalysis
                     ReadyToRunFixupKind.MethodHandle,
                     method,
                     isUnboxingStub: useUnboxingStub,
-                    isInstantiatingStub: useInstantiatingStub,
-                    signatureContext));
+                    isInstantiatingStub: useInstantiatingStub));
         }
 
-        private ISymbolNode CreateFieldHandleHelper(FieldDesc field, SignatureContext signatureContext)
+        private ISymbolNode CreateFieldHandleHelper(FieldDesc field)
         {
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
-                new FieldFixupSignature(ReadyToRunFixupKind.FieldHandle, field, signatureContext));
+                new FieldFixupSignature(ReadyToRunFixupKind.FieldHandle, field));
         }
 
-        private ISymbolNode CreateCctorTrigger(TypeDesc type, SignatureContext signatureContext)
+        private ISymbolNode CreateCctorTrigger(TypeDesc type)
         {
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
                 ReadyToRunHelper.DelayLoad_Helper,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.CctorTrigger, type, signatureContext));
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.CctorTrigger, type));
         }
 
-        private ISymbolNode CreateTypeDictionary(TypeDesc type, SignatureContext signatureContext)
+        private ISymbolNode CreateTypeDictionary(TypeDesc type)
         {
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeDictionary, type, signatureContext)
+                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeDictionary, type)
             );
         }
 
-        private ISymbolNode CreateMethodDictionary(MethodWithToken method, SignatureContext signatureContext)
+        private ISymbolNode CreateMethodDictionary(MethodWithToken method)
         {
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
@@ -399,106 +359,48 @@ namespace ILCompiler.DependencyAnalysis
                     ReadyToRunFixupKind.MethodDictionary, 
                     method, 
                     isUnboxingStub: false,
-                    isInstantiatingStub: true,
-                    signatureContext));
+                    isInstantiatingStub: true));
         }
 
-        private struct FieldAndSignatureContext : IEquatable<FieldAndSignatureContext>
+        private NodeCache<FieldDesc, ISymbolNode> _fieldAddressCache;
+
+        public ISymbolNode FieldAddress(FieldDesc fieldDesc)
         {
-            public readonly FieldDesc Field;
-            public readonly SignatureContext SignatureContext;
-
-            public FieldAndSignatureContext(FieldDesc fieldDesc, SignatureContext signatureContext)
-            {
-                Field = fieldDesc;
-                SignatureContext = signatureContext;
-            }
-
-            public bool Equals(FieldAndSignatureContext other)
-            {
-                return Field.Equals(other.Field) &&
-                       SignatureContext.Equals(other.SignatureContext);
-            }
-
-            public override bool Equals(object obj)
-            {
-                return obj is FieldAndSignatureContext other && Equals(other);
-            }
-
-            public override int GetHashCode()
-            {
-                return Field.GetHashCode() ^ (SignatureContext.GetHashCode() * 31);
-            }
+            return _fieldAddressCache.GetOrAdd(fieldDesc);
         }
 
-        private NodeCache<FieldAndSignatureContext, ISymbolNode> _fieldAddressCache;
+        private NodeCache<FieldDesc, ISymbolNode> _fieldOffsetCache;
 
-        public ISymbolNode FieldAddress(FieldDesc fieldDesc, SignatureContext signatureContext)
+        public ISymbolNode FieldOffset(FieldDesc fieldDesc)
         {
-            return _fieldAddressCache.GetOrAdd(new FieldAndSignatureContext(fieldDesc, signatureContext));
+            return _fieldOffsetCache.GetOrAdd(fieldDesc);
         }
 
-        private NodeCache<FieldAndSignatureContext, ISymbolNode> _fieldOffsetCache;
+        private NodeCache<TypeDesc, ISymbolNode> _fieldBaseOffsetCache;
 
-        public ISymbolNode FieldOffset(FieldDesc fieldDesc, SignatureContext signatureContext)
+        public ISymbolNode FieldBaseOffset(TypeDesc typeDesc)
         {
-            return _fieldOffsetCache.GetOrAdd(new FieldAndSignatureContext(fieldDesc, signatureContext));
-        }
-
-        private struct TypeAndSignatureContext : IEquatable<TypeAndSignatureContext>
-        {
-            public readonly TypeDesc Type;
-            public readonly SignatureContext SignatureContext;
-
-            public TypeAndSignatureContext(TypeDesc typeDesc, SignatureContext signatureContext)
-            {
-                Type = typeDesc;
-                SignatureContext = signatureContext;
-            }
-
-            public bool Equals(TypeAndSignatureContext other)
-            {
-                return Type.Equals(other.Type) &&
-                       SignatureContext.Equals(other.SignatureContext);
-            }
-
-            public override bool Equals(object obj)
-            {
-                return obj is FieldAndSignatureContext other && Equals(other);
-            }
-
-            public override int GetHashCode()
-            {
-                return Type.GetHashCode() ^ (SignatureContext.GetHashCode() * 31);
-            }
-        }
-
-        private NodeCache<TypeAndSignatureContext, ISymbolNode> _fieldBaseOffsetCache;
-
-        public ISymbolNode FieldBaseOffset(TypeDesc typeDesc, SignatureContext signatureContext)
-        {
-            return _fieldBaseOffsetCache.GetOrAdd(new TypeAndSignatureContext(typeDesc, signatureContext));
+            return _fieldBaseOffsetCache.GetOrAdd(typeDesc);
         }
 
         private NodeCache<MethodAndCallSite, ISymbolNode> _interfaceDispatchCells = new NodeCache<MethodAndCallSite, ISymbolNode>();
 
-        public ISymbolNode InterfaceDispatchCell(MethodWithToken method, SignatureContext signatureContext, bool isUnboxingStub, string callSite)
+        public ISymbolNode InterfaceDispatchCell(MethodWithToken method, bool isUnboxingStub, string callSite)
         {
-            MethodAndCallSite cellKey = new MethodAndCallSite(method, isUnboxingStub, callSite, signatureContext);
+            MethodAndCallSite cellKey = new MethodAndCallSite(method, isUnboxingStub, callSite);
             return _interfaceDispatchCells.GetOrAdd(cellKey);
         }
 
         private NodeCache<TypeAndMethod, ISymbolNode> _delegateCtors = new NodeCache<TypeAndMethod, ISymbolNode>();
 
-        public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodWithToken method, SignatureContext signatureContext)
+        public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodWithToken method)
         {
             TypeAndMethod ctorKey = new TypeAndMethod(
                 delegateType,
                 method,
                 isUnboxingStub: false,
                 isInstantiatingStub: false,
-                isPrecodeImportRequired: false,
-                signatureContext);
+                isPrecodeImportRequired: false);
             return _delegateCtors.GetOrAdd(ctorKey);
         }
 
@@ -507,22 +409,17 @@ namespace ILCompiler.DependencyAnalysis
             public readonly MethodWithToken Method;
             public readonly bool IsUnboxingStub;
             public readonly string CallSite;
-            public readonly SignatureContext SignatureContext;
 
-            public MethodAndCallSite(MethodWithToken method, bool isUnboxingStub, string callSite, SignatureContext signatureContext)
+            public MethodAndCallSite(MethodWithToken method, bool isUnboxingStub, string callSite)
             {
                 CallSite = callSite;
                 IsUnboxingStub = isUnboxingStub;
                 Method = method;
-                SignatureContext = signatureContext;
             }
 
             public bool Equals(MethodAndCallSite other)
             {
-                return CallSite == other.CallSite 
-                    && Method.Equals(other.Method) 
-                    && IsUnboxingStub == other.IsUnboxingStub
-                    && SignatureContext.Equals(other.SignatureContext);
+                return CallSite == other.CallSite && Method.Equals(other.Method) && IsUnboxingStub == other.IsUnboxingStub;
             }
 
             public override bool Equals(object obj)
@@ -532,10 +429,9 @@ namespace ILCompiler.DependencyAnalysis
 
             public override int GetHashCode()
             {
-                return (CallSite != null ? CallSite.GetHashCode() : 0) 
+                return (CallSite != null ? CallSite.GetHashCode() : 0)
                     ^ unchecked(31 * Method.GetHashCode())
-                    ^ (IsUnboxingStub ? -0x80000000 : 0)
-                    ^ (23 * SignatureContext.GetHashCode());
+                    ^ (IsUnboxingStub ? -0x80000000 : 0);
             }
         }
 
@@ -547,7 +443,6 @@ namespace ILCompiler.DependencyAnalysis
             public readonly MethodWithToken MethodArgument;
             public readonly FieldDesc FieldArgument;
             public readonly GenericContext MethodContext;
-            public readonly SignatureContext SignatureContext;
 
             public GenericLookupKey(
                 CORINFO_RUNTIME_LOOKUP_KIND lookupKind,
@@ -555,8 +450,7 @@ namespace ILCompiler.DependencyAnalysis
                 TypeDesc typeArgument,
                 MethodWithToken methodArgument,
                 FieldDesc fieldArgument,
-                GenericContext methodContext,
-                SignatureContext signatureContext)
+                GenericContext methodContext)
             {
                 LookupKind = lookupKind;
                 FixupKind = fixupKind;
@@ -564,7 +458,6 @@ namespace ILCompiler.DependencyAnalysis
                 MethodArgument = methodArgument;
                 FieldArgument = fieldArgument;
                 MethodContext = methodContext;
-                SignatureContext = signatureContext;
             }
 
             public bool Equals(GenericLookupKey other)
@@ -599,8 +492,7 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunHelperId helperId,
             object helperArgument,
-            GenericContext methodContext,
-            SignatureContext signatureContext)
+            GenericContext methodContext)
         {
             switch (helperId)
             {
@@ -609,56 +501,49 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.TypeHandle,
                         helperArgument,
-                        methodContext,
-                        signatureContext);
+                        methodContext);
 
                 case ReadyToRunHelperId.MethodHandle:
                     return GenericLookupMethodHelper(
                         runtimeLookupKind,
                         ReadyToRunFixupKind.MethodHandle,
                         (MethodWithToken)helperArgument,
-                        methodContext,
-                        signatureContext);
+                        methodContext);
 
                 case ReadyToRunHelperId.MethodEntry:
                     return GenericLookupMethodHelper(
                         runtimeLookupKind,
                         ReadyToRunFixupKind.MethodEntry,
                         (MethodWithToken)helperArgument,
-                        methodContext,
-                        signatureContext);
+                        methodContext);
 
                 case ReadyToRunHelperId.MethodDictionary:
                     return GenericLookupMethodHelper(
                         runtimeLookupKind,
                         ReadyToRunFixupKind.MethodHandle,
                         (MethodWithToken)helperArgument,
-                        methodContext,
-                        signatureContext);
+                        methodContext);
 
                 case ReadyToRunHelperId.TypeDictionary:
                     return GenericLookupTypeHelper(
                         runtimeLookupKind,
                         ReadyToRunFixupKind.TypeDictionary,
                         (TypeDesc)helperArgument,
-                        methodContext,
-                        signatureContext);
+                        methodContext);
 
                 case ReadyToRunHelperId.VirtualDispatchCell:
                     return GenericLookupMethodHelper(
                         runtimeLookupKind,
                         ReadyToRunFixupKind.VirtualEntry,
                         (MethodWithToken)helperArgument,
-                        methodContext,
-                        signatureContext);
+                        methodContext);
 
                 case ReadyToRunHelperId.FieldHandle:
                     return GenericLookupFieldHelper(
                         runtimeLookupKind,
                         ReadyToRunFixupKind.FieldHandle,
                         (FieldDesc)helperArgument,
-                        methodContext,
-                        signatureContext);
+                        methodContext);
 
                 default:
                     throw new NotImplementedException(helperId.ToString());
@@ -669,8 +554,7 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             object helperArgument,
-            GenericContext methodContext,
-            SignatureContext signatureContext)
+            GenericContext methodContext)
         {
             TypeDesc typeArgument;
             if (helperArgument is MethodWithToken methodWithToken)
@@ -686,7 +570,7 @@ namespace ILCompiler.DependencyAnalysis
                 typeArgument = (TypeDesc)helperArgument;
             }
 
-            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument, methodArgument: null, fieldArgument: null, methodContext, signatureContext);
+            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument, methodArgument: null, fieldArgument: null, methodContext);
             return _genericLookupHelpers.GetOrAdd(key);
         }
 
@@ -694,10 +578,9 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             FieldDesc fieldArgument,
-            GenericContext methodContext,
-            SignatureContext signatureContext)
+            GenericContext methodContext)
         {
-            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument: null, fieldArgument: fieldArgument, methodContext, signatureContext);
+            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument: null, fieldArgument: fieldArgument, methodContext);
             return _genericLookupHelpers.GetOrAdd(key);
         }
 
@@ -705,46 +588,49 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             MethodWithToken methodArgument,
-            GenericContext methodContext,
-            SignatureContext signatureContext)
+            GenericContext methodContext)
         {
-            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument, fieldArgument: null, methodContext, signatureContext);
+            GenericLookupKey key = new GenericLookupKey(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument, fieldArgument: null, methodContext);
             return _genericLookupHelpers.GetOrAdd(key);
         }
 
-        private struct IndirectPInvokeTargetKey : IEquatable<IndirectPInvokeTargetKey>
+        private struct PInvokeTargetKey : IEquatable<PInvokeTargetKey>
         {
             public readonly MethodWithToken MethodWithToken;
-            public readonly SignatureContext SignatureContext;
+            public readonly bool IsIndirect;
 
-            public IndirectPInvokeTargetKey(MethodWithToken methodWithToken, SignatureContext signatureContext)
+            public PInvokeTargetKey(MethodWithToken methodWithToken, bool isIndirect)
             {
                 MethodWithToken = methodWithToken;
-                SignatureContext = signatureContext;
+                IsIndirect = isIndirect;
             }
 
-            public bool Equals(IndirectPInvokeTargetKey other)
+            public bool Equals(PInvokeTargetKey other)
             {
-                return MethodWithToken.Equals(other.MethodWithToken)
-                    && SignatureContext.Equals(other.SignatureContext);
+                return IsIndirect.Equals(other.IsIndirect) && MethodWithToken.Equals(other.MethodWithToken);
             }
 
             public override bool Equals(object obj)
             {
-                return obj is IndirectPInvokeTargetKey other && Equals(other);
+                return obj is PInvokeTargetKey other && Equals(other);
             }
 
             public override int GetHashCode()
             {
-                return MethodWithToken.GetHashCode() ^ (SignatureContext.GetHashCode() * 31);
+                return IsIndirect.GetHashCode() ^ (MethodWithToken.GetHashCode() * 23);
             }
         }
 
-        private NodeCache<IndirectPInvokeTargetKey, ISymbolNode> _indirectPInvokeTargetNodes = new NodeCache<IndirectPInvokeTargetKey, ISymbolNode>();
+        private NodeCache<PInvokeTargetKey, ISymbolNode> _pInvokeTargetNodes = new NodeCache<PInvokeTargetKey, ISymbolNode>();
 
-        public ISymbolNode GetIndirectPInvokeTargetNode(MethodWithToken methodWithToken, SignatureContext signatureContext)
+        public ISymbolNode GetIndirectPInvokeTargetNode(MethodWithToken methodWithToken)
         {
-            return _indirectPInvokeTargetNodes.GetOrAdd(new IndirectPInvokeTargetKey(methodWithToken, signatureContext));
+            return _pInvokeTargetNodes.GetOrAdd(new PInvokeTargetKey(methodWithToken, isIndirect: true));
+        }
+
+        public ISymbolNode GetPInvokeTargetNode(MethodWithToken methodWithToken)
+        {
+            return _pInvokeTargetNodes.GetOrAdd(new PInvokeTargetKey(methodWithToken, isIndirect: false));
         }
     }
 }

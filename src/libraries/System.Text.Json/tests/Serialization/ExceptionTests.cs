@@ -364,7 +364,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("JsonElement needs to support Path")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32359")]
         public static void ExtensionPropertyRoundTripFails()
         {
             try
@@ -428,6 +428,34 @@ namespace System.Text.Json.Serialization.Tests
             public int[] MyIntArray { get; set; }
             public Dictionary<string, ChildClass> MyDictionary { get; set; }
             public ChildClass[] Children { get; set; }
+        }
+
+        private class ClassWithInvalidArray
+        {
+            public int[,] UnsupportedArray { get; set; }
+        }
+
+        private class ClassWithInvalidDictionary
+        {
+            public Dictionary<string, int[,]> UnsupportedDictionary { get; set; }
+        }
+
+        [Fact]
+        public static void ClassWithUnsupportedCollectionTypes()
+        {
+            Exception ex;
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithInvalidArray>(@"{""UnsupportedArray"":[]}"));
+
+            // The exception should contain the parent type and the property name.
+            Assert.Contains("ClassWithInvalidArray.UnsupportedArray", ex.ToString());
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithInvalidDictionary>(@"{""UnsupportedDictionary"":{}}"));
+            Assert.Contains("System.Int32[,]", ex.ToString());
+
+            // The exception for element types do not contain the parent type and the property name
+            // since the verification occurs later and is no longer bound to the parent type.
+            Assert.DoesNotContain("ClassWithInvalidDictionary.UnsupportedDictionary", ex.ToString());
         }
     }
 }

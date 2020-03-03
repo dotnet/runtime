@@ -51,7 +51,6 @@ namespace Internal.JitInterface
         /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide 
            which is the right helper to use to allocate an object of a given type. */
 
-        CORINFO_HELP_NEW_CROSSCONTEXT,  // cross context new object
         CORINFO_HELP_NEWFAST,
         CORINFO_HELP_NEWSFAST,          // allocator for small, non-finalizer, non-array object
         CORINFO_HELP_NEWSFAST_FINALIZE, // allocator for small, finalizable, non-array object
@@ -61,7 +60,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_NEW_MDARR,         // multi-dim array helper (with or without lower bounds - dimensions passed in as vararg)
         CORINFO_HELP_NEW_MDARR_NONVARARG,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
         CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
-        CORINFO_HELP_NEWARR_1_R2R_DIRECT, // wrapper for R2R direct call, which extracts method table from ArrayTypeDesc
         CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
         CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
         CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
@@ -128,21 +126,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_GETCLASSFROMMETHODPARAM, // Given a generics method handle, returns a class handle
         CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle, returns the sync monitor 
                                               // in its ManagedClassObject
-
-        /* Security callout support */
-
-        CORINFO_HELP_SECURITY_PROLOG,   // Required if CORINFO_FLG_SECURITYCHECK is set, or CORINFO_FLG_NOSECURITYWRAP is not set
-        CORINFO_HELP_SECURITY_PROLOG_FRAMED, // Slow version of CORINFO_HELP_SECURITY_PROLOG. Used for instrumentation.
-
-        CORINFO_HELP_METHOD_ACCESS_CHECK, // Callouts to runtime security access checks
-        CORINFO_HELP_FIELD_ACCESS_CHECK,
-        CORINFO_HELP_CLASS_ACCESS_CHECK,
-
-        CORINFO_HELP_DELEGATE_SECURITY_CHECK, // Callout to delegate security transparency check
-
-        /* Verification runtime callout support */
-
-        CORINFO_HELP_VERIFICATION_RUNTIME_CHECK, // Do a Demand for UnmanagedCode permission at runtime
 
         /* GC support */
 

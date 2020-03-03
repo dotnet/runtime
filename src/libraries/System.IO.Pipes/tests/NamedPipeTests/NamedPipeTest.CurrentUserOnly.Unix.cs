@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.IO.Pipes.Tests
 {
@@ -16,6 +17,13 @@ namespace System.IO.Pipes.Tests
     /// </summary>
     public class NamedPipeTest_CurrentUserOnly_Unix
     {
+        private readonly ITestOutputHelper _output;
+
+        public NamedPipeTest_CurrentUserOnly_Unix(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [ConditionalTheory]
         [OuterLoop("Needs sudo access")]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
@@ -26,15 +34,14 @@ namespace System.IO.Pipes.Tests
         public async Task Connection_UnderDifferentUsers_BehavesAsExpected(
             PipeOptions serverPipeOptions, PipeOptions clientPipeOptions)
         {
-            if (PlatformDetection.IsFedora)
-            {
-                // [ActiveIssue(38834)]
-                throw new SkipTestException("Failing on Fedora by not throwing expected exception");
-            }
 
             // Use an absolute path, otherwise, the test can fail if the remote invoker and test runner have
             // different working and/or temp directories.
             string pipeName = "/tmp/" + Path.GetRandomFileName();
+            bool isRoot = Environment.UserName == "root";
+
+            _output.WriteLine("Starting as {0} on '{1}'", Environment.UserName, pipeName);
+
             using (var server = new NamedPipeServerStream(
                 pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, serverPipeOptions | PipeOptions.Asynchronous))
             {
@@ -43,12 +50,12 @@ namespace System.IO.Pipes.Tests
                 using (RemoteExecutor.Invoke(
                     new Action<string, string>(ConnectClientFromRemoteInvoker),
                     pipeName,
-                    clientPipeOptions == PipeOptions.CurrentUserOnly ? "true" : "false",
+                    clientPipeOptions == PipeOptions.CurrentUserOnly && !isRoot ? "true" : "false",
                     new RemoteInvokeOptions { RunAsSudo = true }))
                 {
                 }
 
-                if (serverPipeOptions == PipeOptions.CurrentUserOnly)
+                if (serverPipeOptions == PipeOptions.CurrentUserOnly && !isRoot)
                     await Assert.ThrowsAsync<UnauthorizedAccessException>(() => serverTask);
                 else
                     await serverTask;

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>Internal.TypeSystem</RootNamespace>
@@ -122,6 +122,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\IAssemblyDesc.cs">
       <Link>TypeSystem\Common\IAssemblyDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\IModuleResolver.cs">
+      <Link>TypeSystem\Common\IModuleResolver.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\Instantiation.cs">
       <Link>TypeSystem\Common\Instantiation.cs</Link>

@@ -315,23 +315,6 @@ namespace System
             private int _length;
             private fixed uint _blocks[MaxBlockCount];
 
-            public BigInteger(uint value)
-            {
-                _blocks[0] = value;
-                _length = (value == 0) ? 0 : 1;
-            }
-
-            public BigInteger(ulong value)
-            {
-                uint lower = (uint)(value);
-                uint upper = (uint)(value >> 32);
-
-                _blocks[0] = lower;
-                _blocks[1] = upper;
-
-                _length = (upper == 0) ? 1 : 2;
-            }
-
             public static void Add(ref BigInteger lhs, ref BigInteger rhs, out BigInteger result)
             {
                 // determine which operand has the smaller length
@@ -342,7 +325,6 @@ namespace System
                 int smallLength = small._length;
 
                 // The output will be at least as long as the largest input
-                result = new BigInteger(0);
                 result._length = largeLength;
 
                 // Add each block and add carry the overflow to the next block
@@ -445,16 +427,15 @@ namespace System
 
             public static void DivRem(ref BigInteger lhs, ref BigInteger rhs, out BigInteger quo, out BigInteger rem)
             {
-                // This is modified from the CoreFX BigIntegerCalculator.DivRem.cs implementation:
-                // https://github.com/dotnet/corefx/blob/0bb106232745aedfc0d0c5a84ff2b244bf190317/src/System.Runtime.Numerics/src/System/Numerics/BigIntegerCalculator.DivRem.cs
+                // This is modified from the libraries BigIntegerCalculator.DivRem.cs implementation:
+                // https://github.com/dotnet/runtime/blob/master/src/libraries/System.Runtime.Numerics/src/System/Numerics/BigIntegerCalculator.DivRem.cs
 
                 Debug.Assert(!rhs.IsZero());
 
-                quo = new BigInteger(0);
-                rem = new BigInteger(0);
-
                 if (lhs.IsZero())
                 {
+                    SetZero(out quo);
+                    SetZero(out rem);
                     return;
                 }
 
@@ -464,8 +445,8 @@ namespace System
                 if ((lhsLength == 1) && (rhsLength == 1))
                 {
                     uint quotient = Math.DivRem(lhs._blocks[0], rhs._blocks[0], out uint remainder);
-                    quo = new BigInteger(quotient);
-                    rem = new BigInteger(remainder);
+                    SetUInt32(out quo, quotient);
+                    SetUInt32(out rem, remainder);
                     return;
                 }
 
@@ -494,20 +475,21 @@ namespace System
                     }
 
                     quo._length = quoLength;
-                    rem.SetUInt32((uint)(carry));
+                    SetUInt32(out rem, (uint)(carry));
 
                     return;
                 }
                 else if (rhsLength > lhsLength)
                 {
                     // Handle the case where we have no quotient
-                    rem.SetValue(ref lhs);
+                    SetZero(out quo);
+                    SetValue(out rem, ref lhs);
                     return;
                 }
                 else
                 {
                     int quoLength = lhsLength - rhsLength + 1;
-                    rem.SetValue(ref lhs);
+                    SetValue(out rem, ref lhs);
                     int remLength = lhsLength;
 
                     // Executes the "grammar-school" algorithm for computing q = a / b.
@@ -703,17 +685,17 @@ namespace System
                 return quotient;
             }
 
-            public static void Multiply(ref BigInteger lhs, uint value, ref BigInteger result)
+            public static void Multiply(ref BigInteger lhs, uint value, out BigInteger result)
             {
                 if (lhs.IsZero() || (value == 1))
                 {
-                    result.SetValue(ref lhs);
+                    SetValue(out result, ref lhs);
                     return;
                 }
 
                 if (value == 0)
                 {
-                    result.SetZero();
+                    SetZero(out result);
                     return;
                 }
 
@@ -742,17 +724,17 @@ namespace System
                 }
             }
 
-            public static void Multiply(ref BigInteger lhs, ref BigInteger rhs, ref BigInteger result)
+            public static void Multiply(ref BigInteger lhs, ref BigInteger rhs, out BigInteger result)
             {
                 if (lhs.IsZero() || rhs.IsOne())
                 {
-                    result.SetValue(ref lhs);
+                    SetValue(out result, ref lhs);
                     return;
                 }
 
                 if (rhs.IsZero())
                 {
-                    result.SetZero();
+                    SetZero(out result);
                     return;
                 }
 
@@ -775,6 +757,7 @@ namespace System
                 Debug.Assert(unchecked((uint)(maxResultLength)) <= MaxBlockCount);
 
                 // Zero out result internal blocks.
+                result._length = maxResultLength;
                 Buffer.ZeroMemory((byte*)result.GetBlocksPointer(), (uint)maxResultLength * sizeof(uint));
 
                 int smallIndex = 0;
@@ -810,11 +793,7 @@ namespace System
 
                 if ((maxResultLength > 0) && (result._blocks[maxResultLength - 1] == 0))
                 {
-                    result._length = (maxResultLength - 1);
-                }
-                else
-                {
-                    result._length = maxResultLength;
+                    result._length--;
                 }
             }
 
@@ -862,10 +841,10 @@ namespace System
                 // We validate here, since this is the only current consumer of the array
                 Debug.Assert((s_Pow10BigNumTableIndices[^1] + MaxBlockCount + 2) == s_Pow10BigNumTable.Length);
 
-                BigInteger temp1 = new BigInteger(s_Pow10UInt32Table[exponent & 0x7]);
+                SetUInt32(out BigInteger temp1, s_Pow10UInt32Table[exponent & 0x7]);
                 ref BigInteger lhs = ref temp1;
 
-                BigInteger temp2 = new BigInteger(0);
+                SetZero(out BigInteger temp2);
                 ref BigInteger product = ref temp2;
 
                 exponent >>= 3;
@@ -880,7 +859,7 @@ namespace System
                         fixed (uint* pBigNumEntry = &s_Pow10BigNumTable[s_Pow10BigNumTableIndices[index]])
                         {
                             ref BigInteger rhs = ref *(BigInteger*)(pBigNumEntry);
-                            Multiply(ref lhs, ref rhs, ref product);
+                            Multiply(ref lhs, ref rhs, out product);
                         }
 
                         // Swap to the next temporary
@@ -894,8 +873,7 @@ namespace System
                     exponent >>= 1;
                 }
 
-                result = new BigInteger(0);
-                result.SetValue(ref lhs);
+                SetValue(out result, ref lhs);
             }
 
             private static uint AddDivisor(ref BigInteger lhs, int lhsStartIndex, ref BigInteger rhs)
@@ -992,7 +970,7 @@ namespace System
                 int length = _length;
                 if (length == 0)
                 {
-                    SetUInt32(value);
+                    SetUInt32(out this, value);
                     return;
                 }
 
@@ -1042,14 +1020,13 @@ namespace System
 
             public void Multiply(uint value)
             {
-                Multiply(ref this, value, ref this);
+                Multiply(ref this, value, out this);
             }
 
             public void Multiply(ref BigInteger value)
             {
-                BigInteger temp = new BigInteger(0);
-                temp.SetValue(ref this);
-                Multiply(ref temp, ref value, ref this);
+                SetValue(out BigInteger temp, ref this);
+                Multiply(ref temp, ref value, out this);
             }
 
             public void Multiply10()
@@ -1100,44 +1077,44 @@ namespace System
                 }
             }
 
-            public void SetUInt32(uint value)
+            public static void SetUInt32(out BigInteger result, uint value)
             {
                 if (value == 0)
                 {
-                    SetZero();
+                    SetZero(out result);
                 }
                 else
                 {
-                    _blocks[0] = value;
-                    _length = 1;
+                    result._blocks[0] = value;
+                    result._length = 1;
                 }
             }
 
-            public void SetUInt64(ulong value)
+            public static void SetUInt64(out BigInteger result, ulong value)
             {
                 if (value <= uint.MaxValue)
                 {
-                    SetUInt32((uint)(value));
+                    SetUInt32(out result, (uint)(value));
                 }
                 else
                 {
-                    _blocks[0] = (uint)(value);
-                    _blocks[1] = (uint)(value >> 32);
+                    result._blocks[0] = (uint)(value);
+                    result._blocks[1] = (uint)(value >> 32);
 
-                    _length = 2;
+                    result._length = 2;
                 }
             }
 
-            public void SetValue(ref BigInteger rhs)
+            public static void SetValue(out BigInteger result, ref BigInteger value)
             {
-                int rhsLength = rhs._length;
-                Buffer.Memcpy((byte*)GetBlocksPointer(), (byte*)rhs.GetBlocksPointer(), rhsLength * sizeof(uint));
-                _length = rhsLength;
+                int rhsLength = value._length;
+                result._length = rhsLength;
+                Buffer.Memcpy((byte*)result.GetBlocksPointer(), (byte*)value.GetBlocksPointer(), rhsLength * sizeof(uint));
             }
 
-            public void SetZero()
+            public static void SetZero(out BigInteger result)
             {
-                _length = 0;
+                result._length = 0;
             }
 
             public void ShiftLeft(uint shift)

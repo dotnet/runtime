@@ -14,12 +14,12 @@ namespace System.Reflection.TypeLoading
     /// </summary>
     internal abstract partial class RoAssembly
     {
-        public sealed override Module GetModule(string name) => GetRoModule(name);
+        public sealed override Module? GetModule(string name) => GetRoModule(name);
         public sealed override Module[] GetModules(bool getResourceModules) => ComputeRoModules(getResourceModules).CloneArray<Module>();
 
-        public sealed override FileStream GetFile(string name)
+        public sealed override FileStream? GetFile(string name)
         {
-            Module m = GetModule(name);
+            Module? m = GetModule(name);
             if (m == null)
                 return null;
             return new FileStream(m.FullyQualifiedName, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -44,16 +44,16 @@ namespace System.Reflection.TypeLoading
             };
             for (int i = 0; i < _loadedModules.Length; i++)
             {
-                RoModule module = Volatile.Read(ref _loadedModules[i]);
+                RoModule? module = Volatile.Read(ref _loadedModules[i]);
                 if (module != null && (getResourceModules || !module.IsResource()))
                     modules.Add(module);
             }
             return modules.ToArray();
         }
 
-        public abstract override event ModuleResolveEventHandler ModuleResolve;
+        public abstract override event ModuleResolveEventHandler? ModuleResolve;
 
-        internal RoModule GetRoModule(string name)
+        internal RoModule? GetRoModule(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -71,7 +71,7 @@ namespace System.Reflection.TypeLoading
 
             int loadedModulesIndex = afi.RowIndex - 1;
             string moduleName = afi.Name;
-            RoModule prior = Volatile.Read(ref _loadedModules[loadedModulesIndex]);
+            RoModule? prior = Volatile.Read(ref _loadedModules[loadedModulesIndex]);
             if (prior != null)
                 return prior;
 
@@ -90,7 +90,7 @@ namespace System.Reflection.TypeLoading
             return modules.ToArray();
         }
 
-        public sealed override Module LoadModule(string moduleName, byte[] rawModule, byte[] rawSymbolStore)
+        public sealed override Module LoadModule(string moduleName, byte[]? rawModule, byte[]? rawSymbolStore)
         {
             if (moduleName == null)
                 throw new ArgumentNullException(nameof(moduleName));

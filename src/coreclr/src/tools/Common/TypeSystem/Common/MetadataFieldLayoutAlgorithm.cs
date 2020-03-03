@@ -17,6 +17,12 @@ namespace Internal.TypeSystem
         public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType defType, InstanceLayoutKind layoutKind)
         {
             MetadataType type = (MetadataType)defType;
+
+            if (type.IsGenericDefinition)
+            {
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+            }
+
             // CLI - Partition 1, section 9.5 - Generic types shall not be marked explicitlayout.  
             if (type.HasInstantiation && type.IsExplicitLayout)
             {
@@ -419,7 +425,7 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset)
+        protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8)
         {
         }
 
@@ -427,8 +433,6 @@ namespace Internal.TypeSystem
         {
             // For types inheriting from another type, field offsets continue on from where they left off
             LayoutInt cumulativeInstanceFieldPos = ComputeBytesUsedInParentType(type);
-
-            AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos);
 
             var layoutMetadata = type.GetClassLayout();
 
@@ -453,6 +457,7 @@ namespace Internal.TypeSystem
                     continue;
 
                 TypeDesc fieldType = field.FieldType;
+
                 if (IsByValueClass(fieldType))
                 {
                     instanceValueClassFieldCount++;
@@ -489,6 +494,7 @@ namespace Internal.TypeSystem
             // Reset the counters to be used later as the index to insert into the array
             instanceGCPointerFieldsCount = 0;
             instanceValueClassFieldCount = 0;
+            LayoutInt largestAlignmentRequired = LayoutInt.One;
 
             // Iterate over all fields and do the following
             //   - Add instance fields to the appropriate array (while maintaining the enumerated order)
@@ -500,6 +506,9 @@ namespace Internal.TypeSystem
 
                 TypeDesc fieldType = field.FieldType;
 
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize);
+                largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
+
                 if (IsByValueClass(fieldType))
                 {
                     instanceValueClassFieldsArr[instanceValueClassFieldCount++] = field;
@@ -510,11 +519,14 @@ namespace Internal.TypeSystem
                 }
                 else
                 {
-                    var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize);
                     int log2size = CalculateLog2(fieldSizeAndAlignment.Size.AsInt);
                     instanceNonGCPointerFieldsArr[log2size][instanceNonGCPointerFieldsCount[log2size]++] = field;
                 }
             }
+
+            largestAlignmentRequired = type.Context.Target.GetObjectAlignment(largestAlignmentRequired);
+            bool requiresAlign8 = !largestAlignmentRequired.IsIndeterminate && largestAlignmentRequired.AsInt > 4;
+            AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos, requiresAlign8);
 
             // We've finished placing the fields into their appropriate arrays
             // The next optimization may place non-GC Pointers, so repurpose our
@@ -643,11 +655,6 @@ namespace Internal.TypeSystem
                 fieldOrdinal++;
             }
 
-            if (type.IsValueType)
-            {
-                cumulativeInstanceFieldPos = LayoutInt.Max(cumulativeInstanceFieldPos, new LayoutInt(layoutMetadata.Size));
-            }
-
             // The JITs like to copy full machine words,
             // so if the size is bigger than a void* round it up to minAlign
             // and if the size is smaller than void* round it up to next power of two
@@ -774,7 +781,7 @@ namespace Internal.TypeSystem
 
         private static int ComputePackingSize(MetadataType type, ClassLayoutMetadata layoutMetadata)
         {
-            // If a type contains pointers then the metadata specified packing size is ignored (On desktop this is disqualification from ManagedSequential)
+            // If a type contains pointers then the metadata specified packing size is ignored (On .NET Framework this is disqualification from ManagedSequential)
             if (layoutMetadata.PackingSize == 0 || type.ContainsGCPointers)
                 return type.Context.Target.DefaultPackingSize;
             else

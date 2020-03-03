@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.IO
@@ -18,6 +18,7 @@ namespace System.IO
         public System.IO.DirectoryInfo RootDirectory { get { throw null; } }
         public long TotalFreeSpace { get { throw null; } }
         public long TotalSize { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public string VolumeLabel { get { throw null; } set { } }
         public static System.IO.DriveInfo[] GetDrives() { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -27,8 +28,8 @@ namespace System.IO
     {
         public DriveNotFoundException() { }
         protected DriveNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public DriveNotFoundException(string message) { }
-        public DriveNotFoundException(string message, System.Exception innerException) { }
+        public DriveNotFoundException(string? message) { }
+        public DriveNotFoundException(string? message, System.Exception? innerException) { }
     }
     public enum DriveType
     {

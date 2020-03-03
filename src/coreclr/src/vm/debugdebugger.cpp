@@ -510,7 +510,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                 // Set the BOOL indicating if the frame represents the last frame from a foreign exception stack trace.
                 U1 *pIsLastFrameFromForeignExceptionStackTraceU1 = (U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace)
                                             ->GetDirectPointerToNonObjectElements();
-                pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (U1) data.pElements[i].fIsLastFrameFromForeignStackTrace;
+                pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (U1)(data.pElements[i].flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE);
             }
 
             MethodDesc *pMethod = data.pElements[i].pFunc;
@@ -939,7 +939,7 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
 
     // Do a 2nd pass outside of any locks.
     // This will compute IL offsets.
-    for(INT32 i = 0; i < pData->cElements; i++)
+    for (INT32 i = 0; i < pData->cElements; i++)
     {
         pData->pElements[i].InitPass2();
     }
@@ -975,11 +975,6 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
     CONTRACTL_END;
 
     GetStackFramesData* pData = (GetStackFramesData*)data;
-
-    if (pData->pDomain != pCf->GetAppDomain())
-    {
-        return SWA_CONTINUE;
-    }
 
     if (pData->skip > 0)
     {
@@ -1026,13 +1021,16 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
         dwNativeOffset = 0;
     }
 
+    // Pass on to InitPass2 that the IP has already been adjusted (decremented by 1)
+    INT flags = pCf->IsIPadjusted() ? STEF_IP_ADJUSTED : 0;
+
     pData->pElements[pData->cElements].InitPass1(
             dwNativeOffset,
             pFunc,
-            ip);
+            ip,
+            flags);
 
     // We'll init the IL offsets outside the TSL lock.
-
 
     ++pData->cElements;
 
@@ -1109,7 +1107,7 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 // If we come across any frame representing foreign exception stack trace,
                 // then set the flag indicating so. This will be used to allocate the
                 // corresponding array in StackFrameHelper.
-                if (cur.fIsLastFrameFromForeignStackTrace)
+                if ((cur.flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE) != 0)
                 {
                     pData->fDoWeHaveAnyFramesFromForeignStackTrace = TRUE;
                 }
@@ -1134,9 +1132,11 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                     dwNativeOffset = 0;
                 }
 
-                pData->pElements[i].InitPass1(dwNativeOffset, pMD, (PCODE) cur.ip
-                    , cur.fIsLastFrameFromForeignStackTrace
-                    );
+                pData->pElements[i].InitPass1(
+                    dwNativeOffset,
+                    pMD,
+                    (PCODE)cur.ip,
+                    cur.flags);
 #ifndef DACCESS_COMPILE
                 pData->pElements[i].InitPass2();
 #endif
@@ -1156,8 +1156,8 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 void DebugStackTrace::DebugStackTraceElement::InitPass1(
     DWORD dwNativeOffset,
     MethodDesc *pFunc,
-    PCODE ip
-    , BOOL fIsLastFrameFromForeignStackTrace /*= FALSE*/
+    PCODE ip,
+    INT flags
 )
 {
     LIMITED_METHOD_CONTRACT;
@@ -1169,7 +1169,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     this->pFunc = pFunc;
     this->dwOffset = dwNativeOffset;
     this->ip = ip;
-    this->fIsLastFrameFromForeignStackTrace = fIsLastFrameFromForeignStackTrace;
+    this->flags = flags;
 }
 
 #ifndef DACCESS_COMPILE
@@ -1188,14 +1188,35 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
 
     _ASSERTE(!ThreadStore::HoldingThreadStore());
 
-    bool bRes = false;
+    bool bRes = false; 
 
 #ifdef DEBUGGING_SUPPORTED
     // Calculate the IL offset using the debugging services
     if ((this->ip != NULL) && g_pDebugInterface)
     {
+        // To get the source line number of the actual code that threw an exception, the dwOffset needs to be
+        // adjusted in certain cases when calculating the IL offset. 
+        //
+        // The dwOffset of the stack frame points to either:
+        //
+        // 1) The instruction that caused a hardware exception (div by zero, null ref, etc).
+        // 2) The instruction after the call to an internal runtime function (FCALL like IL_Throw, IL_Rethrow,
+        //    JIT_OverFlow, etc.) that caused a software exception.
+        // 3) The instruction after the call to a managed function (non-leaf node).
+        //
+        // #2 and #3 are the cases that need to adjust dwOffset because they point after the call instruction
+        // and may point to the next (incorrect) IL instruction/source line. If STEF_IP_ADJUSTED is set,
+        // IP/dwOffset has already be decremented so don't decrement it again.
+        //
+        // When the dwOffset needs to be adjusted it is a lot simpler to decrement instead of trying to figure out
+        // the beginning of the instruction. It is enough for GetILOffsetFromNative to return the IL offset of the
+        // instruction throwing the exception.
+        bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset > 0;
         bRes = g_pDebugInterface->GetILOffsetFromNative(
-            pFunc, (LPCBYTE) this->ip, this->dwOffset, &this->dwILOffset);
+            pFunc,
+            (LPCBYTE)this->ip,
+            fAdjustOffset ? this->dwOffset - 1 : this->dwOffset,
+            &this->dwILOffset);
     }
 
 #endif // !DEBUGGING_SUPPORTED

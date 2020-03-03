@@ -2,17 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.RemoteExecutor;
 using System.IO;
 using System.Linq;
+using System.Net.Test.Common;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public sealed partial class HttpClientTest
+    public sealed class HttpClientTest : HttpClientHandlerTestBase
     {
+        public HttpClientTest(ITestOutputHelper output) : base(output) { }
+
         [Fact]
         public void Dispose_MultipleTimes_Success()
         {
@@ -187,9 +192,16 @@ namespace System.Net.Http.Functional.Tests
                     Content = withResponseContent ? new ByteArrayContent(new byte[1]) : null
                 }))))
             {
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(CreateFakeUri()));
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetByteArrayAsync(CreateFakeUri()));
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync(CreateFakeUri()));
+                HttpRequestException ex;
+
+                ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(CreateFakeUri()));
+                Assert.Equal(HttpStatusCode.BadRequest, ex.StatusCode);
+
+                ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetByteArrayAsync(CreateFakeUri()));
+                Assert.Equal(HttpStatusCode.BadRequest, ex.StatusCode);
+
+                ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync(CreateFakeUri()));
+                Assert.Equal(HttpStatusCode.BadRequest, ex.StatusCode);
             }
         }
 
@@ -347,6 +359,212 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task GetStringAsync_Success()
+        {
+            string content = Guid.NewGuid().ToString();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    string received = await httpClient.GetStringAsync(uri);
+                    Assert.Equal(content, received);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: content);
+                });
+        }
+
+        [Fact]
+        public async Task GetStringAsync_CanBeCanceled_AlreadyCanceledCts()
+        {
+            var onClientFinished = new SemaphoreSlim(0, 1);
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStringAsync(uri, cts.Token));
+                    onClientFinished.Release();
+                },
+                async server =>
+                {
+                    Assert.True(await onClientFinished.WaitAsync(5000), "OnClientFinished timed out");
+                });
+        }
+
+        [Fact]
+        public async Task GetStringAsync_CanBeCanceled()
+        {
+            var cts = new CancellationTokenSource();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStringAsync(uri, cts.Token));
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        cts.Cancel();
+                        try
+                        {
+                            await connection.ReadRequestHeaderAndSendResponseAsync();
+                        }
+                        catch { }
+                    });
+                });
+        }
+
+        [Fact]
+        public async Task GetByteArrayAsync_Success()
+        {
+            string content = Guid.NewGuid().ToString();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    byte[] receivedBytes = await httpClient.GetByteArrayAsync(uri);
+                    string received = Encoding.UTF8.GetString(receivedBytes);
+                    Assert.Equal(content, received);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: content);
+                });
+        }
+
+        [Fact]
+        public async Task GetByteArrayAsync_CanBeCanceled_AlreadyCanceledCts()
+        {
+            var onClientFinished = new SemaphoreSlim(0, 1);
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetByteArrayAsync(uri, cts.Token));
+                    onClientFinished.Release();
+                },
+                async server =>
+                {
+                    Assert.True(await onClientFinished.WaitAsync(5000), "OnClientFinished timed out");
+                });
+        }
+
+        [Fact]
+        public async Task GetByteArrayAsync_CanBeCanceled()
+        {
+            var cts = new CancellationTokenSource();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetByteArrayAsync(uri, cts.Token));
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        cts.Cancel();
+                        try
+                        {
+                            await connection.ReadRequestHeaderAndSendResponseAsync();
+                        }
+                        catch { }
+                    });
+                });
+        }
+
+        [Fact]
+        public async Task GetStreamAsync_Success()
+        {
+            string content = Guid.NewGuid().ToString();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    Stream receivedStream = await httpClient.GetStreamAsync(uri);
+                    using var ms = new MemoryStream();
+                    await receivedStream.CopyToAsync(ms);
+                    byte[] receivedBytes = ms.ToArray();
+                    string received = Encoding.UTF8.GetString(receivedBytes);
+                    Assert.Equal(content, received);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: content);
+                });
+        }
+
+        [Fact]
+        public async Task GetStreamAsync_CanBeCanceled_AlreadyCanceledCts()
+        {
+            var onClientFinished = new SemaphoreSlim(0, 1);
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStreamAsync(uri, cts.Token));
+                    onClientFinished.Release();
+                },
+                async server =>
+                {
+                    Assert.True(await onClientFinished.WaitAsync(5000), "OnClientFinished timed out");
+                });
+        }
+
+        [Fact]
+        public async Task GetStreamAsync_CanBeCanceled()
+        {
+            var cts = new CancellationTokenSource();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => httpClient.GetStreamAsync(uri, cts.Token));
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        cts.Cancel();
+                        try
+                        {
+                            await connection.ReadRequestHeaderAndSendResponseAsync();
+                        }
+                        catch { }
+                    });
+                });
+        }
+
+        [Fact]
         public void Dispose_UseAfterDispose_Throws()
         {
             var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage())));
@@ -382,14 +600,54 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
-        public void Timeout_TooShort_AllPendingOperationsCanceled()
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public void Timeout_TooShort_AllPendingOperationsCanceled(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
             {
                 client.Timeout = TimeSpan.FromMilliseconds(1);
-                Task<HttpResponseMessage>[] tasks = Enumerable.Range(0, 3).Select(_ => client.GetAsync(CreateFakeUri())).ToArray();
-                Assert.All(tasks, task => Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult()));
+                Task<HttpResponseMessage>[] tasks = Enumerable.Range(0, 3).Select(_ => client.GetAsync(CreateFakeUri(), completionOption)).ToArray();
+                Assert.All(tasks, task => {
+                    OperationCanceledException e = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());
+                    TimeoutException timeoutException = (TimeoutException)e.InnerException;
+                    Assert.NotNull(timeoutException);
+                    Assert.NotNull(timeoutException.InnerException);
+                });
+            }
+        }
+
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public async Task Timeout_CallerCanceledTokenAfterTimeout_TimeoutIsNotDetected(HttpCompletionOption completionOption)
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
+            {
+                client.Timeout = TimeSpan.FromMilliseconds(0.01);
+                CancellationTokenSource cts = new CancellationTokenSource();
+                CancellationToken token = cts.Token;
+                cts.Cancel();
+                Task<HttpResponseMessage> task = client.GetAsync(CreateFakeUri(), completionOption, token);
+                OperationCanceledException e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task);
+                Assert.Null(e.InnerException);
+            }
+        }
+
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public void Timeout_CallerCanceledTokenBeforeTimeout_TimeoutIsNotDetected(HttpCompletionOption completionOption)
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
+            {
+                client.Timeout = TimeSpan.FromDays(1);
+                CancellationTokenSource cts = new CancellationTokenSource();
+                Task<HttpResponseMessage> task = client.GetAsync(CreateFakeUri(), completionOption, cts.Token);
+                cts.Cancel();
+                OperationCanceledException e = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());
+                Assert.Null(e.InnerException);
             }
         }
 
@@ -407,6 +665,161 @@ namespace System.Net.Http.Functional.Tests
             {
                 client.Timeout = TimeSpan.FromSeconds(30);
                 await client.GetAsync(CreateFakeUri());
+            }
+        }
+
+        [Fact]
+        public void DefaultProxy_SetNull_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => HttpClient.DefaultProxy = null );
+        }
+
+        [Fact]
+        public void DefaultProxy_Get_ReturnsNotNull()
+        {
+            IWebProxy proxy = HttpClient.DefaultProxy;
+            Assert.NotNull(proxy);
+        }
+
+        [Fact]
+        public void DefaultProxy_SetGet_Roundtrips()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                IWebProxy proxy = new WebProxy("http://localhost:3128/");
+                HttpClient.DefaultProxy = proxy;
+                Assert.True(Object.ReferenceEquals(proxy, HttpClient.DefaultProxy));
+            }).Dispose();
+        }
+
+        [Fact]
+        public void DefaultProxy_Credentials_SetGet_Roundtrips()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                IWebProxy proxy = HttpClient.DefaultProxy;
+                ICredentials nc = proxy.Credentials;
+
+                proxy.Credentials = null;
+                Assert.Null(proxy.Credentials);
+
+                proxy.Credentials = nc;
+                Assert.Same(nc, proxy.Credentials);
+
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
+        public async Task PatchAsync_Canceled_Throws()
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
+            {
+                var content = new ByteArrayContent(new byte[1]);
+                var cts = new CancellationTokenSource();
+
+                Task t1 = client.PatchAsync(CreateFakeUri(), content, cts.Token);
+
+                cts.Cancel();
+
+                await Assert.ThrowsAsync<TaskCanceledException>(() => t1);
+            }
+        }
+
+        [Fact]
+        public async Task PatchAsync_Success()
+        {
+            static void Verify(HttpResponseMessage message)
+            {
+                using (message)
+                {
+                    Assert.Equal(HttpStatusCode.OK, message.StatusCode);
+                }
+            }
+
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
+            {
+                Verify(await client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])));
+                Verify(await client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1]), CancellationToken.None));
+            }
+        }
+
+        [Fact]
+        public void Dispose_UsePatchAfterDispose_Throws()
+        {
+            var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage())));
+            client.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => { client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
+        }
+
+        [Fact]
+        public void DefaultRequestVersion_InitialValueExpected()
+        {
+            using (var client = new HttpClient())
+            {
+                Assert.Equal(HttpVersion.Version11, client.DefaultRequestVersion);
+                Assert.Same(client.DefaultRequestVersion, client.DefaultRequestVersion);
+            }
+        }
+
+        [Fact]
+        public void DefaultRequestVersion_Roundtrips()
+        {
+            using (var client = new HttpClient())
+            {
+                for (int i = 3; i < 5; i++)
+                {
+                    var newVersion = new Version(i, i, i, i);
+                    client.DefaultRequestVersion = newVersion;
+                    Assert.Same(newVersion, client.DefaultRequestVersion);
+                }
+            }
+        }
+
+        [Fact]
+        public void DefaultRequestVersion_InvalidArgument_Throws()
+        {
+            using (var client = new HttpClient())
+            {
+                AssertExtensions.Throws<ArgumentNullException>("value", () => client.DefaultRequestVersion = null);
+                client.DefaultRequestVersion = new Version(1, 0); // still usable after
+                Assert.Equal(new Version(1, 0), client.DefaultRequestVersion);
+            }
+        }
+
+        [Fact]
+        public async Task DefaultRequestVersion_SetAfterUse_Throws()
+        {
+            var handler = new StoreMessageHttpMessageInvoker();
+            using (var client = new HttpClient(handler))
+            {
+                await client.GetAsync("http://doesntmatter", HttpCompletionOption.ResponseHeadersRead);
+                Assert.Throws<InvalidOperationException>(() => client.DefaultRequestVersion = new Version(1, 1));
+            }
+        }
+
+        [Fact]
+        public async Task DefaultRequestVersion_UsedInCreatedMessages()
+        {
+            var handler = new StoreMessageHttpMessageInvoker();
+            using (var client = new HttpClient(handler))
+            {
+                var version = new Version(1, 2, 3, 4);
+                client.DefaultRequestVersion = version;
+                await client.GetAsync("http://doesntmatter", HttpCompletionOption.ResponseHeadersRead);
+                Assert.Same(version, handler.Message.Version);
+            }
+        }
+
+        private sealed class StoreMessageHttpMessageInvoker : HttpMessageHandler
+        {
+            public HttpRequestMessage Message;
+
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                Message = request;
+                return Task.FromResult(new HttpResponseMessage());
             }
         }
 

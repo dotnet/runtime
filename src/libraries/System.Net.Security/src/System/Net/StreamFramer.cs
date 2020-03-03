@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.IO;
 using System.Globalization;
 using System.Runtime.ExceptionServices;
@@ -68,7 +67,7 @@ namespace System.Net
             }
         }
 
-        public byte[] ReadMessage()
+        public byte[]? ReadMessage()
         {
             if (_eof)
             {
@@ -161,7 +160,7 @@ namespace System.Net
                 return;
             }
 
-            WorkerAsyncResult workerResult = (WorkerAsyncResult)transportResult.AsyncState;
+            WorkerAsyncResult workerResult = (WorkerAsyncResult)transportResult.AsyncState!;
 
             try
             {
@@ -199,7 +198,7 @@ namespace System.Net
                     NetEventSource.Fail(this, $"The state expected to be WorkerAsyncResult, received {transportResult}.");
                 }
 
-                WorkerAsyncResult workerResult = (WorkerAsyncResult)transportResult.AsyncState;
+                WorkerAsyncResult workerResult = (WorkerAsyncResult)transportResult.AsyncState!;
 
                 int bytesRead = TaskToApm.End<int>(transportResult);
                 workerResult.Offset += bytesRead;
@@ -213,7 +212,7 @@ namespace System.Net
                 {
                     // (by design) This indicates the stream has receives EOF
                     // If we are in the middle of a Frame - fail, otherwise - produce EOF
-                    object result = null;
+                    object? result = null;
                     if (!workerResult.HeaderDone && workerResult.Offset == 0)
                     {
                         result = (object)-1;
@@ -233,7 +232,7 @@ namespace System.Net
                     {
                         workerResult.HeaderDone = true;
                         // This indicates the header has been read successfully
-                        _curReadHeader.CopyFrom(workerResult.Buffer, 0, _readVerifier);
+                        _curReadHeader.CopyFrom(workerResult.Buffer!, 0, _readVerifier);
                         int payloadSize = _curReadHeader.PayloadSize;
                         if (payloadSize < 0)
                         {
@@ -273,7 +272,7 @@ namespace System.Net
                 }
 
                 // This means we need more data to complete the data block.
-                transportResult = TaskToApm.Begin(_transport.ReadAsync(workerResult.Buffer, workerResult.Offset, workerResult.End - workerResult.Offset),
+                transportResult = TaskToApm.Begin(_transport.ReadAsync(workerResult.Buffer!, workerResult.Offset, workerResult.End - workerResult.Offset),
                                             _readFrameCallback, workerResult);
             } while (transportResult.CompletedSynchronously);
         }
@@ -285,13 +284,13 @@ namespace System.Net
         // The Result property represents either a number of bytes read or an
         // exception put by our async state machine.
         //
-        public byte[] EndReadMessage(IAsyncResult asyncResult)
+        public byte[]? EndReadMessage(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
             {
                 throw new ArgumentNullException(nameof(asyncResult));
             }
-            WorkerAsyncResult workerResult = asyncResult as WorkerAsyncResult;
+            WorkerAsyncResult? workerResult = asyncResult as WorkerAsyncResult;
 
             if (workerResult == null)
             {
@@ -308,7 +307,7 @@ namespace System.Net
                 ExceptionDispatchInfo.Throw(e);
             }
 
-            int size = (int)workerResult.Result;
+            int size = (int)workerResult.Result!;
             if (size == -1)
             {
                 _eof = true;
@@ -386,7 +385,7 @@ namespace System.Net
                 return;
             }
 
-            var workerResult = (WorkerAsyncResult)transportResult.AsyncState;
+            var workerResult = (WorkerAsyncResult)transportResult.AsyncState!;
 
             try
             {
@@ -411,7 +410,7 @@ namespace System.Net
         {
             do
             {
-                WorkerAsyncResult workerResult = (WorkerAsyncResult)transportResult.AsyncState;
+                WorkerAsyncResult workerResult = (WorkerAsyncResult)transportResult.AsyncState!;
 
                 // First, complete the previous portion write.
                 TaskToApm.End(transportResult);
@@ -427,7 +426,7 @@ namespace System.Net
                 workerResult.Offset = workerResult.End;
 
                 // Write next portion (frame body) using Async IO.
-                transportResult = TaskToApm.Begin(_transport.WriteAsync(workerResult.Buffer, 0, workerResult.End),
+                transportResult = TaskToApm.Begin(_transport.WriteAsync(workerResult.Buffer!, 0, workerResult.End),
                                             _beginWriteCallback, workerResult);
             }
             while (transportResult.CompletedSynchronously);
@@ -440,7 +439,7 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(asyncResult));
             }
 
-            WorkerAsyncResult workerResult = asyncResult as WorkerAsyncResult;
+            WorkerAsyncResult? workerResult = asyncResult as WorkerAsyncResult;
 
             if (workerResult != null)
             {
@@ -469,14 +468,14 @@ namespace System.Net
 
     internal class WorkerAsyncResult : LazyAsyncResult
     {
-        public byte[] Buffer;
+        public byte[]? Buffer;
         public int Offset;
         public int End;
         public bool HeaderDone; // This might be reworked so we read both header and frame in one chunk.
 
         public WorkerAsyncResult(object asyncObject, object asyncState,
                                    AsyncCallback savedAsyncCallback,
-                                   byte[] buffer, int offset, int end)
+                                   byte[]? buffer, int offset, int end)
             : base(asyncObject, asyncState, savedAsyncCallback)
         {
             Buffer = buffer;

@@ -1,4 +1,4 @@
-﻿// The .NET Foundation licenses this file to you under the MIT license.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System;
@@ -542,15 +542,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             uint fieldSigFlags = 0;
             TypeDesc canonOwnerType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
             TypeDesc ownerType = null;
-            if (canonOwnerType != field.OwningType)
-            {
-                // Convert field to canonical form as this is what the field - module token lookup stores
-                field = field.Context.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)canonOwnerType);
-            }
             if (canonOwnerType.HasInstantiation)
             {
                 ownerType = field.OwningType;
                 fieldSigFlags |= (uint)ReadyToRunFieldSigFlags.READYTORUN_FIELD_SIG_OwnerType;
+            }
+            if (canonOwnerType != field.OwningType)
+            {
+                // Convert field to canonical form as this is what the field - module token lookup stores
+                field = field.Context.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)canonOwnerType);
             }
 
             ModuleToken fieldToken = context.GetModuleTokenForField(field);
@@ -605,7 +605,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _builder.ToObjectData();
         }
 
-        public SignatureContext EmitFixup(ReadyToRunCodegenNodeFactory factory, ReadyToRunFixupKind fixupKind, EcmaModule targetModule, SignatureContext outerContext)
+        public SignatureContext EmitFixup(NodeFactory factory, ReadyToRunFixupKind fixupKind, EcmaModule targetModule, SignatureContext outerContext)
         {
             if (targetModule == outerContext.LocalContext)
             {

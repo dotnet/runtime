@@ -1868,21 +1868,6 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
     // Sync managed exception state, for the managed thread, based upon any active exception tracker
     pThread->SyncManagedExceptionState(fIsDebuggerHelperThread);
 
-    if (InlinedCallFrame::FrameHasActiveCall(pThread->m_pFrame))
-    {
-        // When unwinding an exception in ReadyToRun, the JIT_PInvokeEnd helper which unlinks the ICF from
-        // the thread will be skipped. This is because unlike jitted code, each pinvoke is wrapped by calls
-        // to the JIT_PInvokeBegin and JIT_PInvokeEnd helpers, which push and pop the ICF on the thread. The
-        // ICF is not linked at the method prolog and unlined at the epilog when running R2R code. Since the
-        // JIT_PInvokeEnd helper will be skipped, we need to unlink the ICF here. If the executing method
-        // has another pinovoke, it will re-link the ICF again when the JIT_PInvokeBegin helper is called
-
-        if (ExecutionManager::IsReadyToRunCode(((InlinedCallFrame*)pThread->m_pFrame)->m_pCallerReturnAddress))
-        {
-            pThread->m_pFrame->Pop(pThread);
-        }
-    }
-
     LOG((LF_EH, LL_INFO1000, "COMPlusPEndCatch: esp=%p\n", esp));
 
     return esp;
@@ -2291,7 +2276,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
     if (!pFunc)
         return SWA_CONTINUE;
 
-    if (pThread->IsRudeAbortInitiated() && !pThread->IsWithinCer(pCf))
+    if (pThread->IsRudeAbortInitiated())
     {
         return SWA_CONTINUE;
     }
@@ -2638,7 +2623,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
 
             pExInfo->m_EHClauseInfo.ResetInfo();
 
-            if (pThread->IsRudeAbortInitiated() && !pThread->IsWithinCer(pCf))
+            if (pThread->IsRudeAbortInitiated())
             {
                 if (fGiveDebuggerAndProfilerNotification)
                     EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFunctionLeave(pFunc);
@@ -2737,7 +2722,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
     Thread *pThread = GetThread();
 
     // If the thread is being RudeAbort, we will not run any finally
-    if (pThread->IsRudeAbortInitiated() && !pThread->IsWithinCer(pCf))
+    if (pThread->IsRudeAbortInitiated())
     {
         return SWA_CONTINUE;
     }
@@ -3138,6 +3123,39 @@ void ResumeAtJitEH(CrawlFrame* pCf,
         *pHandlerEnd = EHClausePtr->HandlerEndPC;
     }
 
+    MethodDesc* pMethodDesc = pCf->GetCodeInfo()->GetMethodDesc();
+    TADDR startAddress = pCf->GetCodeInfo()->GetStartAddress();
+    if (InlinedCallFrame::FrameHasActiveCall(pThread->m_pFrame))
+    {
+        // When unwinding an exception in ReadyToRun, the JIT_PInvokeEnd helper which unlinks the ICF from
+        // the thread will be skipped. This is because unlike jitted code, each pinvoke is wrapped by calls
+        // to the JIT_PInvokeBegin and JIT_PInvokeEnd helpers, which push and pop the ICF on the thread. The
+        // ICF is not linked at the method prolog and unlinked at the epilog when running R2R code. Since the
+        // JIT_PInvokeEnd helper will be skipped, we need to unlink the ICF here. If the executing method
+        // has another pinvoke, it will re-link the ICF again when the JIT_PInvokeBegin helper is called.
+
+        // Check that the InlinedCallFrame is in the method with the exception handler. There can be other
+        // InlinedCallFrame somewhere up the call chain that is not related to the current exception
+        // handling.
+
+#ifdef DEBUG
+        TADDR handlerFrameSP = pCf->GetRegisterSet()->SP;
+#endif // DEBUG
+        // Find the ESP of the caller of the method with the exception handler.
+        bool unwindSuccess = pCf->GetCodeManager()->UnwindStackFrame(pCf->GetRegisterSet(),
+                                                                     pCf->GetCodeInfo(),
+                                                                     pCf->GetCodeManagerFlags(),
+                                                                     pCf->GetCodeManState(),
+                                                                     NULL /* StackwalkCacheUnwindInfo* */);
+        _ASSERTE(unwindSuccess);
+
+        if (((TADDR)pThread->m_pFrame < pCf->GetRegisterSet()->SP) && ExecutionManager::IsReadyToRunCode(((InlinedCallFrame*)pThread->m_pFrame)->m_pCallerReturnAddress))
+        {
+            _ASSERTE((TADDR)pThread->m_pFrame >= handlerFrameSP);
+            pThread->m_pFrame->Pop(pThread);
+        }
+    }
+
     // save esp so that endcatch can restore it (it always restores, so want correct value)
     ExInfo* pExInfo = &(pThread->GetExceptionState()->m_currentExInfo);
     pExInfo->m_dEsp = (LPVOID)context.GetSP();
@@ -3251,7 +3269,7 @@ void ResumeAtJitEH(CrawlFrame* pCf,
     // that the handle for the current ExInfo has been freed has been delivered
     pExInfo->m_EHClauseInfo.SetManagedCodeEntered(TRUE);
 
-    ETW::ExceptionLog::ExceptionCatchBegin(pCf->GetCodeInfo()->GetMethodDesc(), (PVOID)pCf->GetCodeInfo()->GetStartAddress());
+    ETW::ExceptionLog::ExceptionCatchBegin(pMethodDesc, (PVOID)startAddress);
 
     ResumeAtJitEHHelper(&context);
     UNREACHABLE_MSG("Should never return from ResumeAtJitEHHelper!");

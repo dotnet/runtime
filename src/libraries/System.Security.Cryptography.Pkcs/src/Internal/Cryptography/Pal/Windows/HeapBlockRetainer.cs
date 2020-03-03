@@ -76,7 +76,7 @@ namespace Internal.Cryptography.Pal.Windows
                     h.Dispose();
                 }
             }
-            _blocks = null;
+            _blocks = null!;
         }
 
         private readonly List<object> _mustLive;

@@ -16,11 +16,11 @@ set "__ProjectDir=%~dp0"
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
-set "__RootBinDir=%__ProjectDir%\..\artifacts"
+set "__RootBinDir=%~dp0..\..\..\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set __ToolsDir=%__ProjectDir%\..\Tools
-set "DotNetCli=%__ProjectDir%\..\dotnet.cmd"
+set "DotNetCli=%__ProjectDir%\..\..\..\dotnet.cmd"
 
 set __Sequential=
 set __msbuildExtraArgs=
@@ -28,10 +28,8 @@ set __LongGCTests=
 set __GCSimulatorTests=
 set __JitDisasm=
 set __IlasmRoundTrip=
-set __CollectDumps=
 set __DoCrossgen=
 set __CrossgenAltJit=
-set __BuildXUnitWrappers=
 set __PrintLastResultsOnly=
 set RunInUnloadableContext=
 
@@ -71,7 +69,6 @@ if /i "%1" == "jitforcerelocs"                          (set COMPlus_ForceRelocs
 if /i "%1" == "jitdisasm"                               (set __JitDisasm=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
 
-if /i "%1" == "buildxunitwrappers"                      (set __BuildXunitWrappers=1&shift&goto Arg_Loop)
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"                        (set RunCrossGen=true&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=true&shift&goto Arg_Loop)
@@ -87,7 +84,6 @@ if /i "%1" == "altjitarch"                              (set __AltJitArch=%2&shi
 
 REM change it to COMPlus_GCStress when we stop using xunit harness
 if /i "%1" == "gcstresslevel"                           (set COMPlus_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
-if /i "%1" == "collectdumps"                            (set __CollectDumps=true&shift&goto Arg_Loop)
 
 if /i "%1" == "runincontext"                            (set RunInUnloadableContext=1&shift&goto Arg_Loop)
 
@@ -153,10 +149,6 @@ if defined __Sequential (
     set __RuntestPyArgs=%__RuntestPyArgs% --sequential
 )
 
-if defined __BuildXUnitWrappers (
-    set __RuntestPyArgs=%__RuntestPyArgs% --build_xunit_test_wrappers
-)
-
 if defined RunCrossGen (
     set __RuntestPyArgs=%__RuntestPyArgs% --run_crossgen_tests
 )
@@ -185,7 +177,6 @@ if defined RunInUnloadableContext (
     set __RuntestPyArgs=%__RuntestPyArgs% --run_in_context
 )
 
-REM __ProjectDir is poorly named, it is actually <projectDir>/tests
 set NEXTCMD=python "%__ProjectDir%\runtest.py" %__RuntestPyArgs%
 echo !NEXTCMD!
 !NEXTCMD!
@@ -270,22 +261,6 @@ if not exist %XunitTestBinBase% (
     exit /b 1
 )
 
-if "%__CollectDumps%"=="true" (
-    :: Install dumpling
-    set "__DumplingHelperPath=%__ProjectDir%\..\Tools\DumplingHelper.py"
-    python "!__DumplingHelperPath!" install_dumpling
-
-    :: Create the crash dump folder if necessary
-    set "__CrashDumpFolder=%tmp%\CoreCLRTestCrashDumps"
-    if not exist "!__CrashDumpFolder!" (
-        mkdir "!__CrashDumpFolder!"
-    )
-
-    :: Grab the current time before execution begins. This will be used to determine which crash dumps
-    :: will be uploaded.
-    for /f "delims=" %%a in ('python !__DumplingHelperPath! get_timestamp') do @set __StartTime=%%a
-)
-
 echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%
 echo %__MsgPrefix%Starting test run at %TIME%
 
@@ -293,9 +268,6 @@ set __BuildLogRootName=TestRunResults
 call :msbuild "%__ProjectFilesDir%\src\runtest.proj" /p:Runtests=true /clp:showcommandline
 set __errorlevel=%errorlevel%
 
-if "%__CollectDumps%"=="true" (
-    python "%__DumplingHelperPath%" collect_dump %errorlevel% "%__CrashDumpFolder%" %__StartTime% "CoreCLR_Tests"
-)
 
 if %__errorlevel% GEQ 1 (
     echo %__MsgPrefix%Test Run failed. Refer to the following:
@@ -332,7 +304,7 @@ REM Skip mscorlib since it is already precompiled.
 if /I "%3" == "mscorlib.dll" exit /b 0
 if /I "%3" == "mscorlib.ni.dll" exit /b 0
 
-"%1\crossgen.exe" /Platform_Assemblies_Paths "%CORE_ROOT%" "%2" >nul 2>nul
+"%1\crossgen.exe" /nologo /Platform_Assemblies_Paths "%CORE_ROOT%" "%2" >nul 2>nul
 set /a __exitCode = %errorlevel%
 if "%__exitCode%" == "-2146230517" (
     echo %2 is not a managed assembly.

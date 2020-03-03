@@ -3,7 +3,7 @@
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.cs" />
@@ -12,7 +12,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetUnixName.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixName.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetUnixName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUnixVersion.cs">
@@ -47,18 +47,16 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetNativeSystemInfo.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetNativeSystemInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SYSTEM_INFO.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SYSTEM_INFO.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SYSTEM_INFO.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetSystemInfo.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemInfo.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemInfo.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Reflection.Extensions" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />

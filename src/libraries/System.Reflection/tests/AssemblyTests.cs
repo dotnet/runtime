@@ -24,6 +24,8 @@ TypeAttr(typeof(object), name = "TypeAttrSimple")]
 [assembly: CompilationRelaxations(8)]
 [assembly: Debuggable((DebuggableAttribute.DebuggingModes)263)]
 [assembly: CLSCompliant(false)]
+[assembly: TypeForwardedTo(typeof(string))]
+[assembly: TypeForwardedTo(typeof(TypeInForwardedAssembly))]
 
 namespace System.Reflection.Tests
 {
@@ -267,7 +269,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void SecurityRuleSet_Netcore()
+        public void SecurityRuleSetTest()
         {
             Assert.Equal(SecurityRuleSet.None, typeof(AssemblyTests).Assembly.SecurityRuleSet);
         }
@@ -296,14 +298,12 @@ namespace System.Reflection.Tests
             var loadedAssembly1 = Assembly.LoadFile(fullRuntimeTestsPath);
             Assert.NotEqual(currentAssembly, loadedAssembly1);
 
-#if NETCOREAPP
             System.Runtime.Loader.AssemblyLoadContext alc = System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(loadedAssembly1);
             string expectedName = string.Format("Assembly.LoadFile({0})", fullRuntimeTestsPath);
             Assert.Equal(expectedName, alc.Name);
             Assert.Contains(fullRuntimeTestsPath, alc.Name);
             Assert.Contains(expectedName, alc.ToString());
             Assert.Contains("System.Runtime.Loader.IndividualAssemblyLoadContext", alc.ToString());
-#endif
 
             string dir = Path.GetDirectoryName(fullRuntimeTestsPath);
             fullRuntimeTestsPath = Path.Combine(dir, ".", RuntimeTestsDll);
@@ -313,12 +313,13 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void LoadFile_NullPath_Netcore_ThrowsArgumentNullException()
+        public void LoadFile_NullPath_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => Assembly.LoadFile(null));
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31650", TestRuntimes.Mono)]
         public void LoadFile_NoSuchPath_ThrowsFileNotFoundException()
         {
             string rootedPath = Path.GetFullPath(Guid.NewGuid().ToString("N"));
@@ -347,6 +348,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31649", TestRuntimes.Mono)]
         [InlineData(0)]
         [InlineData(5)]
         [InlineData(50)]
@@ -367,7 +369,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void LoadFromUsingHashValue_Netcore()
+        public void LoadFromUsingHashValue()
         {
             Assert.Throws<NotSupportedException>(() => Assembly.LoadFrom("abc", null, System.Configuration.Assemblies.AssemblyHashAlgorithm.SHA1));
         }
@@ -421,13 +423,13 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void LoadFrom_WithHashValue_NetCoreCore_ThrowsNotSupportedException()
+        public void LoadFrom_WithHashValue_ThrowsNotSupportedException()
         {
             Assert.Throws<NotSupportedException>(() => Assembly.LoadFrom(DestTestAssemblyPath, new byte[0], Configuration.Assemblies.AssemblyHashAlgorithm.None));
         }
 
         [Fact]
-        public void LoadModule_Netcore()
+        public void LoadModule()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
             Assert.Throws<NotImplementedException>(() => assembly.LoadModule("abc", null));
@@ -748,6 +750,46 @@ namespace System.Reflection.Tests
         {
             IEnumerable<CustomAttributeData> customAttributesData = typeof(AssemblyTests).Assembly.GetCustomAttributesData().Where(cad => cad.AttributeType == attrType);
             Assert.True(customAttributesData.Count() > 0, $"Did not find custom attribute of type {attrType}");
+        }
+
+        [Fact]
+        public static void AssemblyGetForwardedTypes()
+        {
+            Assembly a = typeof(AssemblyTests).Assembly;
+            Type[] forwardedTypes = a.GetForwardedTypes();
+
+            forwardedTypes = forwardedTypes.OrderBy(t => t.FullName).ToArray();
+
+            Type[] expected = { typeof(string), typeof(TypeInForwardedAssembly), typeof(TypeInForwardedAssembly.PublicInner), typeof(TypeInForwardedAssembly.PublicInner.PublicInnerInner) };
+            expected = expected.OrderBy(t => t.FullName).ToArray();
+
+            Assert.Equal<Type>(expected, forwardedTypes);
+        }
+
+        [Fact]
+        public static void AssemblyGetForwardedTypesLoadFailure()
+        {
+            Assembly a = typeof(TypeInForwardedAssembly).Assembly;
+            ReflectionTypeLoadException rle = Assert.Throws<ReflectionTypeLoadException>(() => a.GetForwardedTypes());
+            Assert.Equal(2, rle.Types.Length);
+            Assert.Equal(2, rle.LoaderExceptions.Length);
+
+            bool foundSystemObject = false;
+            bool foundBifException = false;
+            for (int i = 0; i < rle.Types.Length; i++)
+            {
+                Type type = rle.Types[i];
+                Exception exception = rle.LoaderExceptions[i];
+
+                if (type == typeof(object) && exception == null)
+                    foundSystemObject = true;
+
+                if (type == null && exception is BadImageFormatException)
+                    foundBifException = true;
+            }
+
+            Assert.True(foundSystemObject);
+            Assert.True(foundBifException);
         }
 
         private static Assembly LoadSystemCollectionsAssembly()

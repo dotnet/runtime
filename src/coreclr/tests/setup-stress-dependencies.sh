@@ -90,7 +90,7 @@ fi
 # This script must be located in coreclr/tests.
 scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-dotnet=$"${scriptDir}"/../dotnet.sh
+dotnet=$"${scriptDir}"/../../../dotnet.sh
 csprojPath="${scriptDir}"/stress_dependencies/stress_dependencies.csproj
 
 if [ ! -e $dotnetCmd ]; then
@@ -104,7 +104,7 @@ fi
 
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
-case $OSName in
+case "$OSName" in
     Linux)
         __BuildOS=Linux
         __HostOS=Linux
@@ -144,8 +144,8 @@ esac
 
 isPortable=0
 
-source "${scriptDir}"/../init-distro-rid.sh
-initDistroRidGlobal ${__BuildOS} x64 ${isPortable}
+source "${scriptDir}"/../../../eng/native/init-distro-rid.sh
+initDistroRidGlobal "$__BuildOS" x64 "$isPortable"
 
 # Hack, replace the rid to ubuntu.14.04 which has a valid non-portable
 # package.
@@ -153,22 +153,22 @@ initDistroRidGlobal ${__BuildOS} x64 ${isPortable}
 # The CoreDisTools package is currently manually packaged and we only have
 # 14.04 and 16.04 packages. Use the oldest package which will work on newer
 # platforms.
-if [[ ${__BuildOS} == "Linux" ]]; then
-    if [[ ${__BuildArch} == "x64" ]]; then
+if [ "$__BuildOS" = "Linux" ]; then
+    if [ "$__BuildArch" = "x64" ]; then
         __DistroRid=ubuntu.14.04-x64
-    elif [[ ${__BuildArch} == "x86" ]]; then
+    elif [ "$__BuildArch" = "x86" ]; then
         __DistroRid=ubuntu.14.04-x86
     fi
 fi
 
 # Query runtime Id
-rid=${__DistroRid}
+rid="$__DistroRid"
 
 echo "Rid to be used: ${rid}"
 
 if [ -z "$rid" ]; then
     exit_with_error 1 "Failed to query runtime Id"
-fi    
+fi
 
 # Download the package
 echo Downloading CoreDisTools package

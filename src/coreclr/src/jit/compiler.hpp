@@ -671,14 +671,14 @@ inline var_types genSignedType(var_types type)
 
 inline bool isRegParamType(var_types type)
 {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     return (type <= TYP_INT || type == TYP_REF || type == TYP_BYREF);
-#else  // !_TARGET_X86_
+#else  // !TARGET_X86
     return true;
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 }
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 /*****************************************************************************/
 // Returns true if 'type' is a struct that can be enregistered for call args
 //                         or can be returned by value in multiple registers.
@@ -730,7 +730,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(
 
     return result;
 }
-#endif //_TARGET_AMD64_ || _TARGET_ARM64_
+#endif // TARGET_AMD64 || TARGET_ARM64
 
 /*****************************************************************************/
 
@@ -1188,14 +1188,14 @@ inline GenTree* Compiler::gtNewFieldRef(var_types typ, CORINFO_FIELD_HANDLE fldH
     {
         unsigned lclNum                  = obj->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
         lvaTable[lclNum].lvFieldAccessed = 1;
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         // These structs are passed by reference; we should probably be able to treat these
         // as non-global refs, but downstream logic expects these to be marked this way.
         if (lvaTable[lclNum].lvIsParam)
         {
             tree->gtFlags |= GTF_GLOB_REF;
         }
-#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
     }
     else
     {
@@ -1225,15 +1225,21 @@ inline GenTree* Compiler::gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree
 //    typ      -  Type of the node
 //    arrayOp  -  Array node
 //    lenOffset - Offset of the length field
+//    block     - Basic block that will contain the result
 //
 // Return Value:
 //    New GT_ARR_LENGTH node
 
-inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset)
+inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block)
 {
     GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH) GenTreeArrLen(typ, arrayOp, lenOffset);
     static_assert_no_msg(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
     arrLen->SetIndirExceptionFlags(this);
+    if (block != nullptr)
+    {
+        block->bbFlags |= BBF_HAS_IDX_LEN;
+    }
+    optMethodFlags |= OMF_HAS_ARRAYREF;
     return arrLen;
 }
 
@@ -1252,6 +1258,25 @@ inline GenTree* Compiler::gtNewIndir(var_types typ, GenTree* addr)
     GenTree* indir = gtNewOperNode(GT_IND, typ, addr);
     indir->SetIndirExceptionFlags(this);
     return indir;
+}
+
+//------------------------------------------------------------------------------
+// gtNewNullCheck : Helper to create a null check node.
+//
+// Arguments:
+//    addr        -  Address to null check
+//    basicBlock  -  Basic block of the node
+//
+// Return Value:
+//    New GT_NULLCHECK node
+
+inline GenTree* Compiler::gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock)
+{
+    GenTree* nullCheck = gtNewOperNode(GT_NULLCHECK, TYP_BYTE, addr);
+    nullCheck->gtFlags |= GTF_EXCEPT;
+    basicBlock->bbFlags |= BBF_HAS_NULLCHECK;
+    optMethodFlags |= OMF_HAS_NULLCHECK;
+    return nullCheck;
 }
 
 /*****************************************************************************
@@ -1333,14 +1358,14 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL || GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_LARGE);
     assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL || (gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
-#if defined(_HOST_64BIT_) && !defined(_TARGET_64BIT_)
+#if defined(HOST_64BIT) && !defined(TARGET_64BIT)
     if (gtOper == GT_CNS_LNG && oper == GT_CNS_INT)
     {
         // When casting from LONG to INT, we need to force cast of the value,
         // if the host architecture represents INT and LONG with the same data size.
         AsLngCon()->gtLconVal = (INT64)(INT32)AsLngCon()->gtLconVal;
     }
-#endif // defined(_HOST_64BIT_) && !defined(_TARGET_64BIT_)
+#endif // defined(HOST_64BIT) && !defined(TARGET_64BIT)
 
     SetOperRaw(oper);
 
@@ -1366,7 +1391,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
         AsIntCon()->gtFieldSeq = nullptr;
     }
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     if (oper == GT_MUL_LONG)
     {
         // We sometimes bash GT_MUL to GT_MUL_LONG, which converts it from GenTreeOp to GenTreeMultiRegOp.
@@ -1422,7 +1447,7 @@ inline void GenTree::SetOperResetFlags(genTreeOps oper)
 
 inline void GenTree::ChangeOperConst(genTreeOps oper)
 {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     assert(oper != GT_CNS_LNG); // We should never see a GT_CNS_LNG for a 64-bit target!
 #endif
     assert(OperIsConst(oper)); // use ChangeOper() instead
@@ -1456,13 +1481,13 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
             Compiler*     compiler     = JitTls::GetCompiler();
             bool          isZeroOffset = compiler->GetZeroOffsetFieldMap()->Lookup(this, &zeroFieldSeq);
 
-            AsLclFld()->gtLclOffs  = 0;
-            AsLclFld()->gtFieldSeq = FieldSeqStore::NotAField();
+            AsLclFld()->SetLclOffs(0);
+            AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
 
             if (zeroFieldSeq != nullptr)
             {
                 // Set the zeroFieldSeq in the GT_LCL_FLD node
-                AsLclFld()->gtFieldSeq = zeroFieldSeq;
+                AsLclFld()->SetFieldSeq(zeroFieldSeq);
                 // and remove the annotation from the ZeroOffsetFieldMap
                 compiler->GetZeroOffsetFieldMap()->Remove(this);
             }
@@ -1773,10 +1798,10 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
 
             bool doubleWeight = lvIsTemp;
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
             // and, for the time being, implict byref params
             doubleWeight |= lvIsImplicitByRef;
-#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
             if (doubleWeight && (weight * 2 > weight))
             {
@@ -1980,19 +2005,19 @@ inline int Compiler::lvaCachedGenericContextArgOffset()
 // Arguments:
 //    varNum         - The variable to inquire about. Positive for user variables
 //                     or arguments, negative for spill-temporaries.
-//    mustBeFPBased  - [_TARGET_ARM_ only] True if the base register must be FP.
+//    mustBeFPBased  - [TARGET_ARM only] True if the base register must be FP.
 //                     After FINAL_FRAME_LAYOUT, if false, it also requires SP base register.
-//    pBaseReg       - [_TARGET_ARM_ only] Out arg. *pBaseReg is set to the base
+//    pBaseReg       - [TARGET_ARM only] Out arg. *pBaseReg is set to the base
 //                     register to use.
-//    addrModeOffset - [_TARGET_ARM_ only] The mode offset within the variable that we need to address.
+//    addrModeOffset - [TARGET_ARM only] The mode offset within the variable that we need to address.
 //                     For example, for a large struct local, and a struct field reference, this will be the offset
 //                     of the field. Thus, for V02 + 0x28, if V02 itself is at offset SP + 0x10
 //                     then addrModeOffset is what gets added beyond that, here 0x28.
-//    isFloatUsage   - [_TARGET_ARM_ only] True if the instruction being generated is a floating
+//    isFloatUsage   - [TARGET_ARM only] True if the instruction being generated is a floating
 //                     point instruction. This requires using floating-point offset restrictions.
 //                     Note that a variable can be non-float, e.g., struct, but accessed as a
 //                     float local field.
-//    pFPbased       - [non-_TARGET_ARM_] Out arg. Set *FPbased to true if the
+//    pFPbased       - [non-TARGET_ARM] Out arg. Set *FPbased to true if the
 //                     variable is addressed off of FP, false if it's addressed
 //                     off of SP.
 //
@@ -2000,7 +2025,7 @@ inline int Compiler::lvaCachedGenericContextArgOffset()
 //    Returns the variable offset from the given base register.
 //
 inline
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     int
     Compiler::lvaFrameAddress(
         int varNum, bool mustBeFPBased, regNumber* pBaseReg, int addrModeOffset, bool isFloatUsage)
@@ -2021,7 +2046,7 @@ inline
         assert((unsigned)varNum < lvaCount);
         varDsc               = lvaTable + varNum;
         bool isPrespilledArg = false;
-#if defined(_TARGET_ARM_) && defined(PROFILING_SUPPORTED)
+#if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
         isPrespilledArg = varDsc->lvIsParam && compIsProfilerHookNeeded() &&
                           lvaIsPreSpilled(varNum, codeGen->regSet.rsMaskPreSpillRegs(false));
 #endif
@@ -2030,16 +2055,16 @@ inline
         // check that this has a valid stack location.
         if (lvaDoneFrameLayout > REGALLOC_FRAME_LAYOUT && !varDsc->lvOnFrame)
         {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 #ifndef UNIX_AMD64_ABI
             // On amd64, every param has a stack location, except on Unix-like systems.
             assert(varDsc->lvIsParam);
 #endif // UNIX_AMD64_ABI
-#else  // !_TARGET_AMD64_
+#else  // !TARGET_AMD64
             // For other targets, a stack parameter that is enregistered or prespilled
             // for profiling on ARM will have a stack location.
             assert((varDsc->lvIsParam && !varDsc->lvIsRegArg) || isPrespilledArg);
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
         }
 
         FPbased = varDsc->lvFramePointerBased;
@@ -2056,7 +2081,7 @@ inline
 #if DOUBLE_ALIGN
             assert(FPbased == (isFramePointerUsed() || (genDoubleAlign() && varDsc->lvIsParam && !varDsc->lvIsRegArg)));
 #else
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             assert(FPbased == isFramePointerUsed());
 #endif
 #endif
@@ -2121,7 +2146,7 @@ inline
                 // Worst case FP based offset.
                 CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
                 varOffset = codeGen->genCallerSPtoInitialSPdelta() - codeGen->genCallerSPtoFPdelta();
 #else
                 varOffset                = -(codeGen->genTotalFrameSize());
@@ -2130,7 +2155,7 @@ inline
         }
     }
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     if (FPbased)
     {
         if (mustBeFPBased)
@@ -2327,11 +2352,11 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
 //
 inline var_types Compiler::mangleVarArgsType(var_types type)
 {
-#if defined(_TARGET_ARMARCH_)
+#if defined(TARGET_ARMARCH)
     if (opts.compUseSoftFP
-#if defined(_TARGET_WINDOWS_)
+#if defined(TARGET_WINDOWS)
         || info.compIsVarArgs
-#endif // defined(_TARGET_WINDOWS_)
+#endif // defined(TARGET_WINDOWS)
         )
     {
         switch (type)
@@ -2344,7 +2369,7 @@ inline var_types Compiler::mangleVarArgsType(var_types type)
                 break;
         }
     }
-#endif // defined(_TARGET_ARMARCH_)
+#endif // defined(TARGET_ARMARCH)
     return type;
 }
 
@@ -2352,7 +2377,7 @@ inline var_types Compiler::mangleVarArgsType(var_types type)
 #if FEATURE_VARARG
 inline regNumber Compiler::getCallArgIntRegister(regNumber floatReg)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     switch (floatReg)
     {
         case REG_XMM0:
@@ -2366,16 +2391,16 @@ inline regNumber Compiler::getCallArgIntRegister(regNumber floatReg)
         default:
             unreached();
     }
-#else  // !_TARGET_AMD64_
+#else  // !TARGET_AMD64
     // How will float args be passed for RyuJIT/x86?
     NYI("getCallArgIntRegister for RyuJIT/x86");
     return REG_NA;
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 }
 
 inline regNumber Compiler::getCallArgFloatRegister(regNumber intReg)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     switch (intReg)
     {
         case REG_RCX:
@@ -2389,11 +2414,11 @@ inline regNumber Compiler::getCallArgFloatRegister(regNumber intReg)
         default:
             unreached();
     }
-#else  // !_TARGET_AMD64_
+#else  // !TARGET_AMD64
     // How will float args be passed for RyuJIT/x86?
     NYI("getCallArgFloatRegister for RyuJIT/x86");
     return REG_NA;
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 }
 #endif // FEATURE_VARARG
 
@@ -2729,18 +2754,36 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 */
 inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
 {
-    // If we're converting a BBJ_CALLFINALLY block to a BBJ_THROW block,
+    JITDUMP("Converting " FMT_BB " to BBJ_THROW\n", block->bbNum);
+
+    // Ordering of the following operations matters.
+    // First, note if we are looking at the first block of a call always pair.
+    const bool isCallAlwaysPair = block->isBBCallAlwaysPair();
+
+    // Scrub this block from the pred lists of any successors
+    fgRemoveBlockAsPred(block);
+
+    // Update jump kind after the scrub.
+    block->bbJumpKind = BBJ_THROW;
+
+    // Any block with a throw is rare
+    block->bbSetRunRarely();
+
+    // If we've converted a BBJ_CALLFINALLY block to a BBJ_THROW block,
     // then mark the subsequent BBJ_ALWAYS block as unreferenced.
-    if (block->isBBCallAlwaysPair())
+    //
+    // Must do this after we update bbJumpKind of block.
+    if (isCallAlwaysPair)
     {
         BasicBlock* leaveBlk = block->bbNext;
         noway_assert(leaveBlk->bbJumpKind == BBJ_ALWAYS);
 
+        // leaveBlk is now unreachable, so scrub the pred lists.
         leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
         leaveBlk->bbRefs  = 0;
         leaveBlk->bbPreds = nullptr;
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         // This function (fgConvertBBToThrowBB) can be called before the predecessor lists are created (e.g., in
         // fgMorph). The fgClearFinallyTargetBit() function to update the BBF_FINALLY_TARGET bit depends on these
         // predecessor lists. If there are no predecessor lists, we immediately clear all BBF_FINALLY_TARGET bits
@@ -2755,11 +2798,8 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
             fgClearAllFinallyTargetBits();
             fgNeedToAddFinallyTargetBits = true;
         }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     }
-
-    block->bbJumpKind = BBJ_THROW;
-    block->bbSetRunRarely(); // any block with a throw is rare
 }
 
 /*****************************************************************************
@@ -2871,18 +2911,9 @@ inline bool Compiler::shouldDumpASCIITrees()
  *   2:   Check-all stress. Performance will be REALLY horrible
  */
 
-inline DWORD getJitStressLevel()
+inline int getJitStressLevel()
 {
     return JitConfig.JitStress();
-}
-
-/*****************************************************************************
- *  Should we do the strict check for non-virtual call to the virtual method?
- */
-
-inline DWORD StrictCheckForNonVirtualCallToVirtualMethod()
-{
-    return JitConfig.JitStrictCheckForNonVirtualCallToVirtualMethod() == 1;
 }
 
 #endif // DEBUG
@@ -2912,7 +2943,7 @@ inline regNumber genMapIntRegArgNumToRegNum(unsigned argNum)
 
 inline regNumber genMapFloatRegArgNumToRegNum(unsigned argNum)
 {
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
     assert(argNum < ArrLen(fltArgRegs));
 
     return fltArgRegs[argNum];
@@ -2949,7 +2980,7 @@ inline regMaskTP genMapIntRegArgNumToRegMask(unsigned argNum)
 
 inline regMaskTP genMapFloatRegArgNumToRegMask(unsigned argNum)
 {
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
     assert(argNum < ArrLen(fltArgMasks));
 
     return fltArgMasks[argNum];
@@ -2965,7 +2996,7 @@ __forceinline regMaskTP genMapArgNumToRegMask(unsigned argNum, var_types type)
     if (varTypeUsesFloatArgReg(type))
     {
         result = genMapFloatRegArgNumToRegMask(argNum);
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         if (type == TYP_DOUBLE)
         {
             assert((result & RBM_DBL_REGS) != 0);
@@ -3039,9 +3070,9 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
 {
     assert(genRegMask(regNum) & RBM_FLTARG_REGS);
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     return regNum - REG_F0;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     return regNum - REG_V0;
 #elif defined(UNIX_AMD64_ABI)
     return regNum - REG_FLTARG_0;
@@ -3944,7 +3975,7 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc*
     // We have a parameter that could be enregistered
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
     // The struct parameter is a register candidate
     return PROMOTION_TYPE_INDEPENDENT;
@@ -4042,58 +4073,16 @@ inline bool Compiler::lvaIsGCTracked(const LclVarDsc* varDsc)
     {
         // Stack parameters are always untracked w.r.t. GC reportings
         const bool isStackParam = varDsc->lvIsParam && !varDsc->lvIsRegArg;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         return !isStackParam && !lvaIsFieldOfDependentlyPromotedStruct(varDsc);
-#else  // !_TARGET_AMD64_
+#else  // !TARGET_AMD64
         return !isStackParam;
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
     }
     else
     {
         return false;
     }
-}
-
-inline void Compiler::EndPhase(Phases phase)
-{
-#if defined(FEATURE_JIT_METHOD_PERF)
-    if (pCompJitTimer != nullptr)
-    {
-        pCompJitTimer->EndPhase(this, phase);
-    }
-#endif
-#if DUMP_FLOWGRAPHS
-    fgDumpFlowGraph(phase);
-#endif // DUMP_FLOWGRAPHS
-    previousCompletedPhase = phase;
-#ifdef DEBUG
-    if (dumpIR)
-    {
-        if ((*dumpIRPhase == L'*') || (wcscmp(dumpIRPhase, PhaseShortNames[phase]) == 0))
-        {
-            printf("\n");
-            printf("IR after %s (switch: %ls)\n", PhaseEnums[phase], PhaseShortNames[phase]);
-            printf("\n");
-
-            if (dumpIRLinear)
-            {
-                dFuncIR();
-            }
-            else if (dumpIRTrees)
-            {
-                dTrees();
-            }
-
-            // If we are just dumping a single method and we have a request to exit
-            // after dumping, do so now.
-
-            if (dumpIRExit && ((*dumpIRPhase != L'*') || (phase == PHASE_EMIT_GCEH)))
-            {
-                exit(0);
-            }
-        }
-    }
-#endif
 }
 
 /*****************************************************************************/
@@ -4127,26 +4116,59 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 #endif // MEASURE_CLRAPI_CALLS
 
 //------------------------------------------------------------------------------
-// fgStructTempNeedsExplicitZeroInit : Check whether temp struct needs
-//                                     explicit zero initialization in this basic block.
+// fgVarNeedsExplicitZeroInit : Check whether the variable needs an explicit zero initialization.
 //
 // Arguments:
-//    varDsc -           struct local var description
-//    block  -           basic block to check
+//    varDsc     -       local var description
+//    bbInALoop  -       true if the basic block may be in a loop
+//    bbIsReturn -       true if the basic block always returns
 //
 // Returns:
-//             true if the struct temp needs explicit zero-initialization in this basic block;
+//             true if the var needs explicit zero-initialization in this basic block;
 //             false otherwise
 //
 // Notes:
-//     If compInitMem is true, structs with GC pointer fields and long-lifetime structs
-//     are fully zero-initialized in the prologue. Therefore, we don't need to insert
-//     zero-initialization in this block if it is not in a loop.
+//     If the variable is not being initialized in a loop, we can avoid explicit zero initialization if
+//      - the variable is a gc pointer, or
+//      - the variable is a struct with gc pointer fields and either all fields are gc pointer fields
+//           or the struct is big enough to guarantee block initialization, or
+//      - compInitMem is set and the variable has a long lifetime or has gc fields.
+//     In these cases we will insert zero-initialization in the prolog if necessary.
 
-bool Compiler::fgStructTempNeedsExplicitZeroInit(LclVarDsc* varDsc, BasicBlock* block)
+bool Compiler::fgVarNeedsExplicitZeroInit(LclVarDsc* varDsc, bool bbInALoop, bool bbIsReturn)
 {
-    return !info.compInitMem || ((block->bbFlags & BBF_BACKWARD_JUMP) != 0) ||
-           (!varDsc->HasGCPtr() && varDsc->lvIsTemp);
+    if (bbInALoop && !bbIsReturn)
+    {
+        return true;
+    }
+
+    if (varTypeIsGC(varDsc->lvType))
+    {
+        return false;
+    }
+
+    if ((varDsc->lvType == TYP_STRUCT) && varDsc->HasGCPtr())
+    {
+        ClassLayout* layout = varDsc->GetLayout();
+        if (layout->GetSlotCount() == layout->GetGCPtrCount())
+        {
+            return false;
+        }
+
+// Below conditions guarantee block initialization, which will initialize
+// all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
+// changes, these conditions need to be updated.
+#ifdef TARGET_64BIT
+        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 8)
+#else
+        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 4)
+#endif
+        {
+            return false;
+        }
+    }
+
+    return !info.compInitMem || (varDsc->lvIsTemp && !varDsc->HasGCPtr());
 }
 
 /*****************************************************************************/

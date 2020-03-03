@@ -11,7 +11,6 @@ add_library(System.IO.Ports.Native-Static
     STATIC
     pal_termios.c
     pal_serial.c
-    ${VERSION_FILE_PATH}
 )
 
 # Disable the "lib" prefix and override default name

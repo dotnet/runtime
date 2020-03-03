@@ -15,13 +15,13 @@ Param (
 # Imports:
 . .\setup_common.ps1
 
-$script:COREFX_ROLE_NAME = "COREFX_NET_AD_CLIENT"
+$script:LIBRARIES_ROLE_NAME = "LIBRARIES_NET_AD_CLIENT"
 
 Function ConfigureDNS
 {
     Write-Host -ForegroundColor Cyan "Configuring DNS"
 
-    $dcRole = GetRole "COREFX_NET_AD_DC"
+    $dcRole = GetRole "LIBRARIES_NET_AD_DC"
 
     if (-not (Test-Connection $dcRole.MachineIP))
     {
@@ -48,7 +48,7 @@ Function EnableAD
 
 Function Install
 {
-    Write-Host -ForegroundColor Cyan "Installing prerequisites for test role: $($script:COREFX_ROLE_NAME)"
+    Write-Host -ForegroundColor Cyan "Installing prerequisites for test role: $($script:LIBRARIES_ROLE_NAME)"
 
     CheckPreRebootMachineInfo
     ConfigureDNS
@@ -63,7 +63,7 @@ Function Install
 
 Function Uninstall
 {
-    Write-Host -ForegroundColor Cyan "Removing prerequisites for test role: $($script:COREFX_ROLE_NAME)."
+    Write-Host -ForegroundColor Cyan "Removing prerequisites for test role: $($script:LIBRARIES_ROLE_NAME)."
     
     EnvironmentCheckUninstallRoleStatus
 

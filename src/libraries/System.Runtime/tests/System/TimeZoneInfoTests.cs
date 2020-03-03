@@ -1861,7 +1861,7 @@ namespace System.Tests
         /// <summary>
         /// Ensure Africa/Johannesburg transitions from +3 to +2 at
         /// 1943-02-20T23:00:00Z, and not a tick before that.
-        /// See https://github.com/dotnet/coreclr/issues/2185
+        /// See https://github.com/dotnet/runtime/issues/4728
         /// </summary>
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Linux and Windows rules differ in this case
@@ -2154,7 +2154,7 @@ namespace System.Tests
             }
         }
 
-        [ActiveIssue(14797, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/19794", TestPlatforms.AnyUnix)]
         [Theory]
         [MemberData(nameof(SystemTimeZonesTestData))]
         public static void ToSerializedString_FromSerializedString_RoundTrips(TimeZoneInfo timeZone)

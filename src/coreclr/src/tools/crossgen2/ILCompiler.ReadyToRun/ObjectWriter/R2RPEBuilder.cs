@@ -96,19 +96,7 @@ namespace ILCompiler.PEWriter
         private TargetDetails _target;
 
         /// <summary>
-        /// PE reader representing the input MSIL PE file we're copying to the output composite PE file.
-        /// </summary>
-        private PEReader _peReader;
-        
-        /// <summary>
-        /// Custom sections explicitly injected by the caller.
-        /// </summary>
-        private HashSet<string> _customSections;
-        
-        /// <summary>
-        /// Complete list of section names includes the sections present in the input MSIL file
-        /// (.text, optionally .rsrc and .reloc) and extra questions injected during the R2R PE
-        /// creation.
+        /// Complete list of sections to emit into the output R2R executable.
         /// </summary>
         private ImmutableArray<Section> _sections;
 
@@ -164,16 +152,17 @@ namespace ILCompiler.PEWriter
         /// Constructor initializes the various control structures and combines the section list.
         /// </summary>
         /// <param name="target">Target environment specifier</param>
-        /// <param name="peReader">Input MSIL PE file reader</param>
+        /// <param name="peHeaderBuilder">PE file header builder</param>
         /// <param name="getRuntimeFunctionsTable">Callback to retrieve the runtime functions table</param>
         public R2RPEBuilder(
             TargetDetails target,
-            PEReader peReader,
+            PEHeaderBuilder peHeaderBuilder,
+            ISymbolNode r2rHeaderExportSymbol,
+            string outputFileSimpleName,
             Func<RuntimeFunctionsTableNode> getRuntimeFunctionsTable)
-            : base(PEHeaderCopier.Copy(peReader.PEHeaders, target), deterministicIdProvider: null)
+            : base(peHeaderBuilder, deterministicIdProvider: null)
         {
             _target = target;
-            _peReader = peReader;
             _getRuntimeFunctionsTable = getRuntimeFunctionsTable;
             _sectionRvaDeltas = new List<SectionRVADelta>();
 
@@ -182,10 +171,11 @@ namespace ILCompiler.PEWriter
             _textSectionIndex = _sectionBuilder.AddSection(TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
             _dataSectionIndex = _sectionBuilder.AddSection(DataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
 
-            _customSections = new HashSet<string>();
-            foreach (SectionInfo section in _sectionBuilder.GetSections())
+            if (r2rHeaderExportSymbol != null)
             {
-                _customSections.Add(section.SectionName);
+                _sectionBuilder.AddSection(R2RPEBuilder.ExportDataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 512);
+                _sectionBuilder.AddExportSymbol("RTR_HEADER", 1, r2rHeaderExportSymbol);
+                _sectionBuilder.SetDllNameForExportDirectoryTable(outputFileSimpleName);
             }
 
             if (_sectionBuilder.FindSection(R2RPEBuilder.RelocSectionName) == null)
@@ -196,7 +186,7 @@ namespace ILCompiler.PEWriter
                     SectionCharacteristics.ContainsInitializedData |
                     SectionCharacteristics.MemRead |
                     SectionCharacteristics.MemDiscardable,
-                    peReader.PEHeaders.PEHeader.SectionAlignment);
+                    PEHeaderConstants.SectionAlignment);
             }
 
             ImmutableArray<Section>.Builder sectionListBuilder = ImmutableArray.CreateBuilder<Section>();
@@ -215,6 +205,11 @@ namespace ILCompiler.PEWriter
         public void SetCorHeader(ISymbolNode symbol, int headerSize)
         {
             _sectionBuilder.SetCorHeader(symbol, headerSize);
+        }
+
+        public void SetDebugDirectory(ISymbolNode symbol, int size)
+        {
+            _sectionBuilder.SetDebugDirectory(symbol, size);
         }
 
         public void SetWin32Resources(ISymbolNode symbol, int resourcesSize)
@@ -256,23 +251,27 @@ namespace ILCompiler.PEWriter
             _sectionBuilder.AddObjectData(objectData, targetSectionIndex, name, mapFile);
         }
 
+        public int GetSymbolFilePosition(ISymbolNode symbol)
+        {
+            return _sectionBuilder.GetSymbolFilePosition(symbol);
+        }
+
         /// <summary>
         /// Emit built sections into the R2R PE file.
         /// </summary>
         /// <param name="outputStream">Output stream for the final R2R PE file</param>
-        public void Write(Stream outputStream)
+        /// <param name="timeDateStamp">Timestamp to set in the PE header of the output R2R executable</param>
+        public void Write(Stream outputStream, int timeDateStamp)
         {
             BlobBuilder outputPeFile = new BlobBuilder();
             Serialize(outputPeFile);
 
-            _sectionBuilder.RelocateOutputFile(
-                outputPeFile,
-                _peReader.PEHeaders.PEHeader.ImageBase,
-                outputStream);
+            _sectionBuilder.RelocateOutputFile(outputPeFile, Header.ImageBase, outputStream);
 
             UpdateSectionRVAs(outputStream);
-
             ApplyMachineOSOverride(outputStream);
+
+            SetPEHeaderTimeStamp(outputStream, timeDateStamp);
 
             _written = true;
         }
@@ -391,6 +390,24 @@ namespace ILCompiler.PEWriter
         }
 
         /// <summary>
+        /// Set PE header timestamp in the output R2R image to a given value.
+        /// </summary>
+        /// <param name="outputStream">Output stream representing the R2R PE executable</param>
+        /// <param name="timeDateStamp">Timestamp to set in the R2R PE header</param>
+        private void SetPEHeaderTimeStamp(Stream outputStream, int timeDateStamp)
+        {
+            byte[] patchedTimestamp = BitConverter.GetBytes(timeDateStamp);
+            int seekSize =
+                DosHeaderSize +
+                PESignatureSize +
+                sizeof(short) +     // Machine
+                sizeof(short);      //NumberOfSections
+
+            outputStream.Seek(seekSize, SeekOrigin.Begin);
+            outputStream.Write(patchedTimestamp, 0, patchedTimestamp.Length);
+        }
+
+        /// <summary>
         /// Copy all directory entries and the address of entry point, relocating them along the way.
         /// </summary>
         protected override PEDirectoriesBuilder GetDirectories()
@@ -399,10 +416,13 @@ namespace ILCompiler.PEWriter
 
             _sectionBuilder.UpdateDirectories(builder);
 
-            RuntimeFunctionsTableNode runtimeFunctionsTable = _getRuntimeFunctionsTable();
-            builder.ExceptionTable = new DirectoryEntry(
-                relativeVirtualAddress: _sectionBuilder.GetSymbolRVA(runtimeFunctionsTable),
-                size: runtimeFunctionsTable.TableSize);
+            if (_getRuntimeFunctionsTable != null)
+            {
+                RuntimeFunctionsTableNode runtimeFunctionsTable = _getRuntimeFunctionsTable();
+                builder.ExceptionTable = new DirectoryEntry(
+                    relativeVirtualAddress: _sectionBuilder.GetSymbolRVA(runtimeFunctionsTable),
+                    size: runtimeFunctionsTable.TableSize);
+            }
     
             return builder;
         }
@@ -525,9 +545,11 @@ namespace ILCompiler.PEWriter
     }
     
     /// <summary>
-    /// Simple helper for copying the various global values in the PE header.
+    /// Simple helper for filling in PE header information by either copying over
+    /// data from a pre-existing input PE header (used for single-assembly R2R files)
+    /// or by explicitly specifying the image characteristics (for composite R2R).
     /// </summary>
-    static class PEHeaderCopier
+    static class PEHeaderProvider
     {
         /// <summary>
         /// Copy PE headers into a PEHeaderBuilder used by PEBuilder.
@@ -536,13 +558,33 @@ namespace ILCompiler.PEWriter
         /// <param name="target">Target architecture to set in the header</param>
         public static PEHeaderBuilder Copy(PEHeaders peHeaders, TargetDetails target)
         {
+            return Create(
+                peHeaders.CoffHeader.Characteristics,
+                peHeaders.PEHeader.DllCharacteristics,
+                peHeaders.PEHeader.Subsystem,
+                target);
+        }
+
+        /// <summary>
+        /// Fill in PE header information into a PEHeaderBuilder used by PEBuilder.
+        /// </summary>
+        /// <param name="relocsStripped">Relocs are not present in the PE executable</param>
+        /// <param name="dllCharacteristics">Extra DLL characteristics to apply</param>
+        /// <param name="subsystem">Targeting subsystem</param>
+        /// <param name="target">Target architecture to set in the header</param>
+        public static PEHeaderBuilder Create(Characteristics imageCharacteristics, DllCharacteristics dllCharacteristics, Subsystem subsystem, TargetDetails target)
+        {
             bool is64BitTarget = target.PointerSize == sizeof(long);
 
-            Characteristics imageCharacteristics = peHeaders.CoffHeader.Characteristics;
-            if (is64BitTarget)
+            imageCharacteristics &= ~(Characteristics.Bit32Machine | Characteristics.LargeAddressAware);
+            imageCharacteristics |= (is64BitTarget ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine);
+
+            ulong imageBase = PE32HeaderConstants.ImageBase;
+            if (target.IsWindows && is64BitTarget && (imageBase <= uint.MaxValue))
             {
-                imageCharacteristics &= ~Characteristics.Bit32Machine;
-                imageCharacteristics |= Characteristics.LargeAddressAware;
+                // Base addresses below 4 GiB are reserved for WoW on x64 and disallowed on ARM64.
+                // If the input assembly was compiled for anycpu, its base address is 32-bit and we need to fix it.
+                imageBase = (imageCharacteristics & Characteristics.Dll) != 0 ? PE64HeaderConstants.DllImageBase : PE64HeaderConstants.ExeImageBase;
             }
 
             int fileAlignment = 0x200;
@@ -560,43 +602,39 @@ namespace ILCompiler.PEWriter
                 sectionAlignment = fileAlignment;
             }
 
-            DllCharacteristics dllCharacteristics = DllCharacteristics.DynamicBase | DllCharacteristics.NxCompatible;
+            dllCharacteristics &= (DllCharacteristics.NxCompatible | DllCharacteristics.TerminalServerAware | DllCharacteristics.AppContainer);
 
-            if (!is64BitTarget)
-            {
-                dllCharacteristics |= DllCharacteristics.NoSeh;
-            }
-
-            // Copy over selected DLL characteristics bits from IL image
-            dllCharacteristics |= peHeaders.PEHeader.DllCharacteristics &
-                (DllCharacteristics.TerminalServerAware | DllCharacteristics.AppContainer);
+            // In Crossgen1, this is under a debug-specific condition 'if (0 == CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NoASLRForNgen))'
+            dllCharacteristics |= DllCharacteristics.DynamicBase;
 
             if (is64BitTarget)
             {
                 dllCharacteristics |= DllCharacteristics.HighEntropyVirtualAddressSpace;
+            }
+            else
+            {
+                dllCharacteristics |= DllCharacteristics.NoSeh;
             }
 
             return new PEHeaderBuilder(
                 machine: target.MachineFromTarget(),
                 sectionAlignment: sectionAlignment,
                 fileAlignment: fileAlignment,
-                imageBase: peHeaders.PEHeader.ImageBase,
-                majorLinkerVersion: 11,
-                minorLinkerVersion: 0,
-                majorOperatingSystemVersion: 5,
-                // Win2k = 5.0 for 32-bit images, Win2003 = 5.2 for 64-bit images
-                minorOperatingSystemVersion: is64BitTarget ? (ushort)2 : (ushort)0,
-                majorImageVersion: peHeaders.PEHeader.MajorImageVersion,
-                minorImageVersion: peHeaders.PEHeader.MinorImageVersion,
-                majorSubsystemVersion: peHeaders.PEHeader.MajorSubsystemVersion,
-                minorSubsystemVersion: peHeaders.PEHeader.MinorSubsystemVersion,
-                subsystem: peHeaders.PEHeader.Subsystem,
+                majorLinkerVersion: PEHeaderConstants.MajorLinkerVersion,
+                minorLinkerVersion: PEHeaderConstants.MinorLinkerVersion,
+                majorOperatingSystemVersion: PEHeaderConstants.MajorOperatingSystemVersion,
+                minorOperatingSystemVersion: PEHeaderConstants.MinorOperatingSystemVersion,
+                majorImageVersion: PEHeaderConstants.MajorImageVersion,
+                minorImageVersion: PEHeaderConstants.MinorImageVersion,
+                majorSubsystemVersion: PEHeaderConstants.MajorSubsystemVersion,
+                minorSubsystemVersion: PEHeaderConstants.MinorSubsystemVersion,
+                subsystem: subsystem,
                 dllCharacteristics: dllCharacteristics,
                 imageCharacteristics: imageCharacteristics,
-                sizeOfStackReserve: peHeaders.PEHeader.SizeOfStackReserve,
-                sizeOfStackCommit: peHeaders.PEHeader.SizeOfStackCommit,
-                sizeOfHeapReserve: 0,
-                sizeOfHeapCommit: 0);
+                sizeOfStackReserve: (is64BitTarget ? PE64HeaderConstants.SizeOfStackReserve : PE32HeaderConstants.SizeOfStackReserve),
+                sizeOfStackCommit: (is64BitTarget ? PE64HeaderConstants.SizeOfStackCommit : PE32HeaderConstants.SizeOfStackCommit),
+                sizeOfHeapReserve: (is64BitTarget ? PE64HeaderConstants.SizeOfHeapReserve : PE32HeaderConstants.SizeOfHeapReserve),
+                sizeOfHeapCommit: (is64BitTarget ? PE64HeaderConstants.SizeOfHeapCommit : PE32HeaderConstants.SizeOfHeapCommit));
         }
     }
 }

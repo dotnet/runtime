@@ -22,7 +22,7 @@ namespace System.Composition.Lightweight.UnitTests
         public class Named { public string Name { get; set; } }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void AConcreteTypeWithWritablePropertiesIsAMetadataView()
         {
             var cc = new ContainerConfiguration()
@@ -40,7 +40,7 @@ namespace System.Composition.Lightweight.UnitTests
         public class OptionallyNamed {[DefaultValue("B")] public string Name { get; set; } }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void MetadataViewsCanCarryDefaultValues()
         {
             var cc = new ContainerConfiguration()
@@ -63,7 +63,7 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void AConcreteTypeWithDictionaryConstructorIsAMetadataView()
         {
             var cc = new ContainerConfiguration()
@@ -81,7 +81,7 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void AConcreteTypeWithUnsupportedConstructorsCannotBeUsedAsAMetadataView()
         {
             var cc = new ContainerConfiguration()
@@ -106,7 +106,7 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void UnsupportedMetadataViewMessageIsInformative()
         {
             var cc = new ContainerConfiguration().WithParts(typeof(ImportsWithMetadataInterface), typeof(ExportsWithMetadata)).CreateContainer();
@@ -124,7 +124,7 @@ namespace System.Composition.Lightweight.UnitTests
         public class HasOrder { }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ReadOnlyPropertiesOnMetadataViewsAreIgnored()
         {
             var c = new ContainerConfiguration()

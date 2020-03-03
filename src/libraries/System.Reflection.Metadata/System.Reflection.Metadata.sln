@@ -26,18 +26,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{F3E433C8-352F-4944-BF7F-765CE435370D}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{F3E433C8-352F-4944-BF7F-765CE435370D}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{F3E433C8-352F-4944-BF7F-765CE435370D}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{F3E433C8-352F-4944-BF7F-765CE435370D}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{69B25962-B4C2-4295-8809-5653CD03FC75}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{69B25962-B4C2-4295-8809-5653CD03FC75}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{69B25962-B4C2-4295-8809-5653CD03FC75}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{69B25962-B4C2-4295-8809-5653CD03FC75}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3E433C8-352F-4944-BF7F-765CE435370D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3E433C8-352F-4944-BF7F-765CE435370D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3E433C8-352F-4944-BF7F-765CE435370D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3E433C8-352F-4944-BF7F-765CE435370D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69B25962-B4C2-4295-8809-5653CD03FC75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69B25962-B4C2-4295-8809-5653CD03FC75}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69B25962-B4C2-4295-8809-5653CD03FC75}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69B25962-B4C2-4295-8809-5653CD03FC75}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

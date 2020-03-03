@@ -20,7 +20,7 @@
 #define _max(a, b) (((a) > (b)) ? (a) : (b))
 #define _min(a, b) (((a) < (b)) ? (a) : (b))
 
-#if !defined(_TARGET_X86_)
+#if !defined(TARGET_X86)
 #define USE_GC_INFO_DECODER
 #endif
 
@@ -70,11 +70,11 @@ inline void SetIP(T_CONTEXT* context, PCODE rip)
 
 inline TADDR GetSP(T_CONTEXT* context)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return (TADDR)context->Rsp;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     return (TADDR)context->Sp;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     return (TADDR)context->Sp;
 #else
     _ASSERTE(!"nyi for platform");
@@ -83,11 +83,11 @@ inline TADDR GetSP(T_CONTEXT* context)
 
 inline PCODE GetIP(T_CONTEXT* context)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return (PCODE) context->Rip;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     return (PCODE)context->Pc;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     return (PCODE)context->Pc;
 #else
     _ASSERTE(!"nyi for platform");
@@ -203,9 +203,9 @@ enum GcInfoDecoderFlags
     DECODE_EDIT_AND_CONTINUE     = 0x800,
     DECODE_REVERSE_PINVOKE_VAR   = 0x1000,
     DECODE_RETURN_KIND           = 0x2000,
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
     DECODE_HAS_TAILCALLS         = 0x4000,
-#endif // _TARGET_ARM_ || _TARGET_ARM64_
+#endif // TARGET_ARM || TARGET_ARM64
 };
 
 enum GcInfoHeaderFlags
@@ -220,11 +220,11 @@ enum GcInfoHeaderFlags
     GC_INFO_HAS_GENERICS_INST_CONTEXT_MD     = 0x20,
     GC_INFO_HAS_GENERICS_INST_CONTEXT_THIS   = 0x30,
     GC_INFO_HAS_STACK_BASE_REGISTER     = 0x40,
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     GC_INFO_WANTS_REPORT_ONLY_LEAF      = 0x80,
-#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
     GC_INFO_HAS_TAILCALLS               = 0x80,
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     GC_INFO_HAS_EDIT_AND_CONTINUE_PRESERVED_SLOTS = 0x100,
     GC_INFO_REVERSE_PINVOKE_FRAME = 0x200,
 
@@ -527,9 +527,9 @@ public:
     bool    HasMethodTableGenericsInstContext();
     bool    GetIsVarArg();
     bool    WantsReportOnlyLeaf();
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
     bool    HasTailCalls();
-#endif // _TARGET_ARM_ || _TARGET_ARM64_
+#endif // TARGET_ARM || TARGET_ARM64
     ReturnKind GetReturnKind();
     UINT32  GetCodeLength();
     UINT32  GetStackBaseRegister();
@@ -550,11 +550,11 @@ private:
     bool    m_IsVarArg;
     bool    m_GenericSecretParamIsMD;
     bool    m_GenericSecretParamIsMT;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     bool    m_WantsReportOnlyLeaf;
-#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
     bool    m_HasTailCalls;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     INT32   m_SecurityObjectStackSlot;
     INT32   m_GSCookieStackSlot;
     INT32   m_ReversePInvokeFrameStackSlot;
@@ -590,12 +590,12 @@ private:
                         PREGDISPLAY     pRD
                         );
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     OBJECTREF* GetCapturedRegister(
                         int             regNum,
                         PREGDISPLAY     pRD
                         );
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     OBJECTREF* GetStackSlot(
                         INT32           spOffset,

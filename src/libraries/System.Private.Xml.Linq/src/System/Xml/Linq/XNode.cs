@@ -235,7 +235,6 @@ namespace System.Xml.Linq
         /// <exception cref="InvalidOperationException">
         /// Thrown if the two nodes do not share a common ancestor.
         /// </exception>
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Justification = "Reviewed.")]
         public static int CompareDocumentOrder(XNode n1, XNode n2)
         {
             if (n1 == n2) return 0;
@@ -613,7 +612,6 @@ namespace System.Xml.Linq
         /// Two <see cref="XProcessingInstruction"/> nodes are equal if they have the same
         /// target and data. Two <see cref="XDocumentType"/> nodes are equal if the have the
         /// same name, public id, system id, and internal subset.</remarks>
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", Justification = "Reviewed.")]
         public static bool DeepEquals(XNode n1, XNode n2)
         {
             if (n1 == n2) return true;

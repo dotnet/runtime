@@ -138,22 +138,6 @@ Windows behavoir.
 void FILEGetProperNotFoundError( LPCSTR lpPath, LPDWORD lpErrorCode );
 
 /*++
-PAL__getcwd
-
-Calls getcwd
-
-Input parameters:
-
-char *szBuf = a copy of the absolute pathname of the current working directory
-is copied into szBuf.
-size_t nSize = size, in bytes, of the array referenced by szBuf.
-
-Return value:
-    A pointer to the pathname if successful, otherwise NULL is returned.
---*/
-char * __cdecl PAL__getcwd(char *szBuf, size_t nSize);
-
-/*++
 PAL_fflush
 
 Calls fflush

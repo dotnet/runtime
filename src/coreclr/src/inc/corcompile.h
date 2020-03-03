@@ -54,7 +54,7 @@ typedef DPTR(struct CORCOMPILE_VIRTUAL_SECTION_INFO)
 typedef DPTR(struct CORCOMPILE_IMPORT_SECTION)
     PTR_CORCOMPILE_IMPORT_SECTION;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 
@@ -62,7 +62,7 @@ typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 // Chained unwind info. Used for cold methods.
 #define RUNTIME_FUNCTION_INDIRECT 0x80000000
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 // The stride is choosen as maximum value that still gives good page locality of RUNTIME_FUNCTION table touches (only one page of
 // RUNTIME_FUNCTION table is going to be touched during most IP2MD lookups).
@@ -138,7 +138,7 @@ enum CorCompileImportFlags
 #define CORCOMPILE_TAG_TOKEN(token)             ((SIZE_T)(((token)<<1)|CORCOMPILE_TOKEN_TAG))
 #define CORCOMPILE_UNTAG_TOKEN(token)           ((((SIZE_T)(token))&~CORCOMPILE_TOKEN_TAG)>>1)
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 // Tagging of code pointers on ARM uses inverse logic because of the thumb bit.
 #define CORCOMPILE_IS_PCODE_TAGGED(token)       ((((SIZE_T)(token)) & 0x00000001) == 0x00000000)
 #define CORCOMPILE_TAG_PCODE(token)             ((SIZE_T)(((token)<<1)|0x80000000))
@@ -149,7 +149,7 @@ enum CorCompileImportFlags
 
 inline BOOL CORCOMPILE_IS_FIXUP_TAGGED(SIZE_T fixup, PTR_CORCOMPILE_IMPORT_SECTION pSection)
 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     // Tagging of code pointers on ARM has to use inverse logic because of the thumb bit
     if (pSection->Flags & CORCOMPILE_IMPORT_FLAGS_PCODE)
     {
@@ -528,7 +528,7 @@ struct CORCOMPILE_CODE_MANAGER_ENTRY
     ULONG ColdUntrainedMethodOffset;
 };
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #define _PRECODE_EXTERNAL_METHOD_THUNK      0x41
 #define _PRECODE_VIRTUAL_IMPORT_THUNK       0x42
@@ -547,7 +547,7 @@ struct CORCOMPILE_CODE_MANAGER_ENTRY
         WORD                padding;
     };
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
     struct  CORCOMPILE_VIRTUAL_IMPORT_THUNK
     {
@@ -582,7 +582,7 @@ struct CORCOMPILE_CODE_MANAGER_ENTRY
         PCODE               m_pTarget;
     };
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     struct  CORCOMPILE_VIRTUAL_IMPORT_THUNK
     {
         // Array of words to do the following:
@@ -871,11 +871,11 @@ struct CORCOMPILE_DEPENDENCY
 
 /*********************************************************************************/
 // Flags used to encode HelperTable
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 #define HELPER_TABLE_ENTRY_LEN      16
 #else
 #define HELPER_TABLE_ENTRY_LEN      8
-#endif //defined(_TARGET_ARM64_)
+#endif //defined(TARGET_ARM64)
 
 #define HELPER_TABLE_ALIGN          8
 #define CORCOMPILE_HELPER_PTR       0x80000000 // The entry is pointer to the helper (jump thunk otherwise)
@@ -1756,23 +1756,6 @@ class ICorCompileInfo
 
     virtual BOOL HasCustomAttribute(CORINFO_METHOD_HANDLE method, LPCSTR customAttributeName) = 0;
 };
-
-/*****************************************************************************/
-// This function determines the compile flags to use for a generic intatiation
-// since only the open instantiation can be verified.
-// See the comment associated with CORJIT_FLAG_SKIP_VERIFICATION for details.
-//
-// On return:
-// if *raiseVerificationException=TRUE, the caller should raise a VerificationException.
-// if *unverifiableGenericCode=TRUE, the method is a generic instantiation with
-// unverifiable code
-
-CORJIT_FLAGS GetCompileFlagsIfGenericInstantiation(
-        CORINFO_METHOD_HANDLE method,
-        CORJIT_FLAGS compileFlags,
-        ICorJitInfo * pCorJitInfo,
-        BOOL * raiseVerificationException,
-        BOOL * unverifiableGenericCode);
 
 // Returns the global instance of JIT->EE interface for NGen
 

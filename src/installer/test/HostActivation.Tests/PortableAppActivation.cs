@@ -406,6 +406,49 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        public void AppHost_GUI_NoCustomErrorWriter_FrameworkMissing_ErrorReportedInDialog()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return;
+            }
+
+            var fixture = sharedTestState.PortableAppFixture_Built
+                .Copy();
+
+            string appExe = fixture.TestProject.AppExe;
+            File.Copy(sharedTestState.BuiltAppHost, appExe, overwrite: true);
+            AppHostExtensions.BindAppHost(appExe);
+            AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appExe);
+
+            string dotnetWithMockHostFxr = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
+            using (new TestArtifact(dotnetWithMockHostFxr))
+            {
+                Directory.CreateDirectory(dotnetWithMockHostFxr);
+                string expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure.ToString("x");
+
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "hostfxrFrameworkMissingFailure")
+                    .RemoveHostFxr()
+                    .AddMockHostFxr(new Version(2, 2, 0));
+                var dotnet = dotnetBuilder.Build();
+
+                Command command = Command.Create(appExe)
+                    .EnableTracingAndCaptureOutputs()
+                    .DotNetRoot(dotnet.BinPath)
+                    .MultilevelLookup(false)
+                    .Start();
+
+                WaitForPopupFromProcess(command.Process);
+                command.Process.Kill();
+
+                command.WaitForExit(true)
+                    .Should().Fail()
+                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
+                    .And.HaveStdErrContaining("To run this application, you need to install a newer version of .NET Core");
+            }
+        }
+
+        [Fact]
         public void AppHost_GUI_FrameworkDependent_DisabledGUIErrors_DialogNotShown()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

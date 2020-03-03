@@ -19,8 +19,8 @@ namespace System.IO
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
 
             int fAccess =
-                ((_access & FileAccess.Read) == FileAccess.Read ? GENERIC_READ : 0) |
-                ((_access & FileAccess.Write) == FileAccess.Write ? GENERIC_WRITE : 0);
+                ((_access & FileAccess.Read) == FileAccess.Read ? Interop.Kernel32.GenericOperations.GENERIC_READ : 0) |
+                ((_access & FileAccess.Write) == FileAccess.Write ? Interop.Kernel32.GenericOperations.GENERIC_WRITE : 0);
 
             // Our Inheritable bit was stolen from Windows, but should be set in
             // the security attributes class.  Don't leave this bit set.
@@ -42,7 +42,7 @@ namespace System.IO
             {
                 Debug.Assert(_path != null);
                 return ValidateFileHandle(
-                    Interop.Kernel32.CreateFile(_path, fAccess, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero));
+                    Interop.Kernel32.CreateFile(_path, fAccess, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero));
             }
         }
 

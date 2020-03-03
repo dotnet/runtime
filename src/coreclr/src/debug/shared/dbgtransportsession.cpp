@@ -418,9 +418,9 @@ void MarshalDCBTransportToDCB(DebuggerIPCControlBlockTransport* pIn, DebuggerIPC
     pOut->m_errorHR =                         pIn->m_errorHR;
     pOut->m_errorCode =                       pIn->m_errorCode;
 
-#if defined(DBG_TARGET_64BIT)
+#if defined(TARGET_64BIT)
     pOut->padding4 =                          pIn->padding4;
-#endif // DBG_TARGET_64BIT
+#endif // TARGET_64BIT
 
 
     //
@@ -472,9 +472,9 @@ void MarshalDCBToDCBTransport(DebuggerIPCControlBlock* pIn, DebuggerIPCControlBl
     pOut->m_errorHR =                         pIn->m_errorHR;
     pOut->m_errorCode =                       pIn->m_errorCode;
 
-#if defined(DBG_TARGET_64BIT)
+#if defined(TARGET_64BIT)
     pOut->padding4 =                          pIn->padding4;
-#endif // DBG_TARGET_64BIT
+#endif // TARGET_64BIT
 
     pOut->m_realHelperThreadId =             pIn->m_realHelperThreadId;
     pOut->m_helperThreadId =                 pIn->m_helperThreadId;
@@ -1152,7 +1152,7 @@ HRESULT DbgTransportSession::CheckBufferAccess(__in_ecount(cbBuffer) PBYTE pbBuf
 
     // VirtualQuery doesn't know much about memory allocated outside of PAL's VirtualAlloc
     // that's why on Unix we can't rely on in to detect invalid memory reads
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     do
     {
         // Find the attributes of the largest set of pages with common attributes starting from our base address.
@@ -1664,11 +1664,13 @@ void DbgTransportSession::TransportWorker()
         // We now loop receiving messages and processing them until the state changes.
         while (m_eState == SS_Open)
         {
+#ifndef RIGHT_SIDE_COMPILE
             // temporary data block used in DCB messages
             DebuggerIPCControlBlockTransport dcbt;
 
             // temporary virtual stack unwind context buffer
             CONTEXT frameContext;
+#endif
 
             // Read a message header block.
             if (!ReceiveBlock((PBYTE)&sReceiveHeader, sizeof(MessageHeader)))

@@ -16,12 +16,7 @@ namespace System.Net.Security
         private static readonly IdnMapping s_idnMapping = CreateIdnMapping();
         private static readonly Encoding s_encoding = CreateEncoding();
 
-        public static string GetServerName(byte[] clientHello)
-        {
-            return GetSniFromSslPlainText(clientHello);
-        }
-
-        private static string GetSniFromSslPlainText(ReadOnlySpan<byte> sslPlainText)
+        public static string? GetServerName(ReadOnlySpan<byte> sslPlainText)
         {
             // https://tools.ietf.org/html/rfc6101#section-5.2.1
             // struct {
@@ -54,7 +49,7 @@ namespace System.Net.Security
             return GetSniFromSslHandshake(sslHandshake);
         }
 
-        private static string GetSniFromSslHandshake(ReadOnlySpan<byte> sslHandshake)
+        private static string? GetSniFromSslHandshake(ReadOnlySpan<byte> sslHandshake)
         {
             // https://tools.ietf.org/html/rfc6101#section-5.6
             // struct {
@@ -86,7 +81,7 @@ namespace System.Net.Security
             return GetSniFromClientHello(clientHello);
         }
 
-        private static string GetSniFromClientHello(ReadOnlySpan<byte> clientHello)
+        private static string? GetSniFromClientHello(ReadOnlySpan<byte> clientHello)
         {
             // Basic structure: https://tools.ietf.org/html/rfc6101#section-5.6.1.2
             // Extended structure: https://tools.ietf.org/html/rfc3546#section-2.1
@@ -124,11 +119,11 @@ namespace System.Net.Security
                 return null;
             }
 
-            string ret = null;
+            string? ret = null;
             while (!p.IsEmpty)
             {
                 bool invalid;
-                string sni = GetSniFromExtension(p, out p, out invalid);
+                string? sni = GetSniFromExtension(p, out p, out invalid);
                 if (invalid)
                 {
                     return null;
@@ -148,7 +143,7 @@ namespace System.Net.Security
             return ret;
         }
 
-        private static string GetSniFromExtension(ReadOnlySpan<byte> extension, out ReadOnlySpan<byte> remainingBytes, out bool invalid)
+        private static string? GetSniFromExtension(ReadOnlySpan<byte> extension, out ReadOnlySpan<byte> remainingBytes, out bool invalid)
         {
             // https://tools.ietf.org/html/rfc3546#section-2.3
             // struct {
@@ -178,7 +173,7 @@ namespace System.Net.Security
             }
         }
 
-        private static string GetSniFromServerNameList(ReadOnlySpan<byte> serverNameListExtension, out ReadOnlySpan<byte> remainingBytes, out bool invalid)
+        private static string? GetSniFromServerNameList(ReadOnlySpan<byte> serverNameListExtension, out ReadOnlySpan<byte> remainingBytes, out bool invalid)
         {
             // https://tools.ietf.org/html/rfc3546#section-3.1
             // struct {
@@ -210,7 +205,7 @@ namespace System.Net.Security
             return GetSniFromServerName(serverName, out invalid);
         }
 
-        private static string GetSniFromServerName(ReadOnlySpan<byte> serverName, out bool invalid)
+        private static string? GetSniFromServerName(ReadOnlySpan<byte> serverName, out bool invalid)
         {
             // https://tools.ietf.org/html/rfc3546#section-3.1
             // struct {
@@ -244,7 +239,7 @@ namespace System.Net.Security
             return GetSniFromHostNameStruct(hostNameStruct, out invalid);
         }
 
-        private static string GetSniFromHostNameStruct(ReadOnlySpan<byte> hostNameStruct, out bool invalid)
+        private static string? GetSniFromHostNameStruct(ReadOnlySpan<byte> hostNameStruct, out bool invalid)
         {
             // https://tools.ietf.org/html/rfc3546#section-3.1
             // HostName is an opaque type (length of sufficient size for max data length is prepended)
@@ -263,7 +258,7 @@ namespace System.Net.Security
             return DecodeString(hostName);
         }
 
-        private static string DecodeString(ReadOnlySpan<byte> bytes)
+        private static string? DecodeString(ReadOnlySpan<byte> bytes)
         {
             // https://tools.ietf.org/html/rfc3546#section-3.1
             // Per spec:

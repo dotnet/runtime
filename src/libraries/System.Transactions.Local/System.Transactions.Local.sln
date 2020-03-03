@@ -26,18 +26,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{1C397868-9644-48CB-94BF-35805C4AE024}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{1C397868-9644-48CB-94BF-35805C4AE024}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{1C397868-9644-48CB-94BF-35805C4AE024}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{1C397868-9644-48CB-94BF-35805C4AE024}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{E97557E3-7DB1-4828-ACA5-44D8C68B6698}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{E97557E3-7DB1-4828-ACA5-44D8C68B6698}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{E97557E3-7DB1-4828-ACA5-44D8C68B6698}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{E97557E3-7DB1-4828-ACA5-44D8C68B6698}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{A0C4383D-B0B0-492F-AEEE-CA1BC6E5B6D4}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{A0C4383D-B0B0-492F-AEEE-CA1BC6E5B6D4}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{A0C4383D-B0B0-492F-AEEE-CA1BC6E5B6D4}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{A0C4383D-B0B0-492F-AEEE-CA1BC6E5B6D4}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{1C397868-9644-48CB-94BF-35805C4AE024}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C397868-9644-48CB-94BF-35805C4AE024}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C397868-9644-48CB-94BF-35805C4AE024}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C397868-9644-48CB-94BF-35805C4AE024}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E97557E3-7DB1-4828-ACA5-44D8C68B6698}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E97557E3-7DB1-4828-ACA5-44D8C68B6698}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E97557E3-7DB1-4828-ACA5-44D8C68B6698}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E97557E3-7DB1-4828-ACA5-44D8C68B6698}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0C4383D-B0B0-492F-AEEE-CA1BC6E5B6D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0C4383D-B0B0-492F-AEEE-CA1BC6E5B6D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0C4383D-B0B0-492F-AEEE-CA1BC6E5B6D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0C4383D-B0B0-492F-AEEE-CA1BC6E5B6D4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

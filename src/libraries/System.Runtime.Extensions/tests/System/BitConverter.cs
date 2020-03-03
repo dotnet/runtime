@@ -32,7 +32,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToUInt64(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToString(null));
             AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToString(null, 0));
-            AssertExtensions.Throws<ArgumentNullException>("value", null /* param name varies in NETFX */, () => BitConverter.ToString(null, 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("value", null /* param name varies in .NET Framework */, () => BitConverter.ToString(null, 0, 0));
         }
 
         [Fact]

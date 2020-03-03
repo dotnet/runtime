@@ -1,22 +1,23 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx' or '$(TargetGroup)' == 'net46'">true</IsPartialFacadeAssembly>
-    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.3'">$(DefineConstants);netcoreapp</DefineConstants>
-    <Configurations>net46-Debug;net46-Release;netfx-Debug;netfx-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.3'">$(DefineConstants);netcoreapp</DefineConstants>
+    <TargetFrameworks>netstandard2.0;netstandard1.3;net46;$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Packaging.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard1.3'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.3'">
     <Compile Include="System.IO.Packaging.Serialization.cs" />
     <Compile Include="System.IO.Packaging.PackUriScheme.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx' or '$(TargetGroup)' == 'net46'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)' or '$(TargetFramework)' == 'net46'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <Reference Include="System.Collections" />
     <Reference Include="System.IO" />
     <Reference Include="System.IO.FileSystem.Primitives" />

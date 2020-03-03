@@ -97,19 +97,16 @@ namespace System.Xml
             }
         }
 
-        // NOTE: This method will not be inlined (because it uses byte* charProperties)
         public bool IsWhiteSpace(char ch)
         {
             return (charProperties[ch] & fWhitespace) != 0;
         }
 
-        // NOTE: This method will not be inlined (because it uses byte* charProperties)
         public bool IsNCNameSingleChar(char ch)
         {
             return (charProperties[ch] & fNCNameSC) != 0;
         }
 
-        // NOTE: This method will not be inlined (because it uses byte* charProperties)
         public bool IsStartNCNameSingleChar(char ch)
         {
             return (charProperties[ch] & fNCStartNameSC) != 0;
@@ -120,7 +117,6 @@ namespace System.Xml
             return IsNCNameSingleChar(ch) || ch == ':';
         }
 
-        // NOTE: This method will not be inlined (because it uses byte* charProperties)
         public bool IsCharData(char ch)
         {
             return (charProperties[ch] & fCharData) != 0;
@@ -137,28 +133,23 @@ namespace System.Xml
         }
 
         // TextChar = CharData - { 0xA, 0xD, '<', '&', ']' }
-        // NOTE: This method will not be inlined (because it uses byte* charProperties)
         internal bool IsTextChar(char ch)
         {
             return (charProperties[ch] & fText) != 0;
         }
 
         // AttrValueChar = CharData - { 0xA, 0xD, 0x9, '<', '>', '&', '\'', '"' }
-        // NOTE: This method will not be inlined (because it uses byte* charProperties)
         internal bool IsAttributeValueChar(char ch)
         {
             return (charProperties[ch] & fAttrValue) != 0;
         }
 
         // XML 1.0 Fourth Edition definitions
-        //
-        // NOTE: This method will not be inlined (because it uses byte* charProperties)
         public bool IsLetter(char ch)
         {
             return (charProperties[ch] & fLetter) != 0;
         }
 
-        // NOTE: This method will not be inlined (because it uses byte* charProperties)
         // This method uses the XML 4th edition name character ranges
         public bool IsNCNameCharXml4e(char ch)
         {

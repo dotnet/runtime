@@ -26,7 +26,6 @@ set(MDCOMPILER_HEADERS
   ../../inc/mdcommon.h
   ../../inc/metadata.h
   ../../inc/posterror.h
-  ../../inc/strongname.h
   ../../inc/sstring.h
   ../../inc/switches.h
   ../inc/cahlprinternal.h
@@ -51,7 +50,7 @@ set(MDCOMPILER_HEADERS
 convert_to_absolute_path(MDCOMPILER_SOURCES ${MDCOMPILER_SOURCES})
 convert_to_absolute_path(MDCOMPILER_HEADERS ${MDCOMPILER_HEADERS})
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND MDCOMPILER_SOURCES ${MDCOMPILER_HEADERS})
 endif()
 

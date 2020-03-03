@@ -10,6 +10,14 @@
     if '$(<StageName>)' == 'true' and points Arcade to the correct files.
   -->
   <Target Name="RunArcadeSigning">
+    <PropertyGroup>
+      <SignStartTime>$([System.DateTime]::UtcNow)</SignStartTime>
+    </PropertyGroup>
+
+    <!--
+      Run the Arcade signing project. Carry over some specific properties for Signing.props: the
+      signing project project doesn't import the heavyweight Directory.Build.props/targets.
+    -->
     <MSBuild
       Projects="$(ArcadeSdkSignProject)"
       Targets="Sign"
@@ -18,10 +26,19 @@
         BaseOutputRootPath=$(BaseOutputRootPath);
         CrossGenRootPath=$(CrossGenRootPath);
         ArtifactsBinDir=$(ArtifactsBinDir);
-        ArtifactsPackagesDir=$(ArtifactsPackagesDir)" />
+        ArtifactsPackagesDir=$(ArtifactsPackagesDir);
+        OSGroup=$(OSGroup);
+        TargetArchitecture=$(TargetArchitecture);
+        NetCoreAppCurrent=$(NetCoreAppCurrent)" />
+
+    <PropertyGroup>
+      <SignDuration>$([System.DateTime]::UtcNow.Subtract($([System.DateTime]::Parse('$(SignStartTime)'))))</SignDuration>
+    </PropertyGroup>
+
+    <Message Importance="High" Text="$(MSBuildProjectName) -> completed in $(SignDuration)" />
   </Target>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 
   <!-- If signing is enabled, wait until all projects in this stage are done and sign them. -->
   <Target Name="Build"

@@ -2,32 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
-namespace System.Text.Json
+namespace System.Text.Json.Serialization
 {
     internal sealed class ReflectionMemberAccessor : MemberAccessor
     {
-        private delegate TProperty GetProperty<TClass, TProperty>(TClass obj);
-        private delegate TProperty GetPropertyByRef<TClass, TProperty>(ref TClass obj);
-
-        private delegate void SetProperty<TClass, TProperty>(TClass obj, TProperty value);
-        private delegate void SetPropertyByRef<TClass, TProperty>(ref TClass obj, TProperty value);
-
-        private delegate Func<object, TProperty> GetPropertyByRefFactory<TClass, TProperty>(GetPropertyByRef<TClass, TProperty> set);
-        private delegate Action<object, TProperty> SetPropertyByRefFactory<TClass, TProperty>(SetPropertyByRef<TClass, TProperty> set);
-
-        private static readonly MethodInfo s_createStructPropertyGetterMethod = new GetPropertyByRefFactory<int, int>(CreateStructPropertyGetter)
-            .Method.GetGenericMethodDefinition();
-
-        private static readonly MethodInfo s_createStructPropertySetterMethod = new SetPropertyByRefFactory<int, int>(CreateStructPropertySetter)
-            .Method.GetGenericMethodDefinition();
-        public override JsonClassInfo.ConstructorDelegate CreateConstructor(Type type)
+        public override JsonClassInfo.ConstructorDelegate? CreateConstructor(Type type)
         {
             Debug.Assert(type != null);
-            ConstructorInfo realMethod = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
+            ConstructorInfo? realMethod = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
 
             if (type.IsAbstract)
             {
@@ -42,129 +28,51 @@ namespace System.Text.Json
             return () => Activator.CreateInstance(type);
         }
 
-        public override Action<TProperty> CreateAddDelegate<TProperty>(MethodInfo addMethod, object target)
+        public override Action<TCollection, object?> CreateAddMethodDelegate<TCollection>()
         {
-            Debug.Assert(addMethod != null && target != null);
-            return (Action<TProperty>)addMethod.CreateDelegate(typeof(Action<TProperty>), target);
-        }
+            Type collectionType = typeof(TCollection);
+            Type elementType = typeof(object);
 
-        [PreserveDependency(".ctor()", "System.Text.Json.ImmutableEnumerableCreator`2")]
-        public override ImmutableCollectionCreator ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType)
-        {
-            MethodInfo createRange = ImmutableCollectionCreateRangeMethod(constructingType, elementType);
+            // We verified this won't be null when we created the converter for the collection type.
+            MethodInfo addMethod = (collectionType.GetMethod("Push") ?? collectionType.GetMethod("Enqueue"))!;
 
-            if (createRange == null)
+            return delegate (TCollection collection, object? element)
             {
-                return null;
-            }
-
-            Type creatorType = typeof(ImmutableEnumerableCreator<,>).MakeGenericType(elementType, collectionType);
-            ConstructorInfo constructor = creatorType.GetConstructor(
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.Instance, binder: null,
-                Type.EmptyTypes,
-                modifiers: null);
-
-            ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor.Invoke(Array.Empty<object>());
-            creator.RegisterCreatorDelegateFromMethod(createRange);
-            return creator;
-        }
-
-        [PreserveDependency(".ctor()", "System.Text.Json.ImmutableDictionaryCreator`2")]
-        public override ImmutableCollectionCreator ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType)
-        {
-            Debug.Assert(collectionType.IsGenericType);
-
-            // Only string keys are allowed.
-            if (collectionType.GetGenericArguments()[0] != typeof(string))
-            {
-                throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(collectionType, parentType: null, memberInfo: null);
-            }
-
-            MethodInfo createRange = ImmutableDictionaryCreateRangeMethod(constructingType, elementType);
-
-            if (createRange == null)
-            {
-                return null;
-            }
-
-            Type creatorType = typeof(ImmutableDictionaryCreator<,>).MakeGenericType(elementType, collectionType);
-            ConstructorInfo constructor = creatorType.GetConstructor(
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.Instance, binder: null,
-                Type.EmptyTypes,
-                modifiers: null);
-
-            ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor.Invoke(Array.Empty<object>());
-            creator.RegisterCreatorDelegateFromMethod(createRange);
-            return creator;
-        }
-
-        public override Func<object, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo)
-        {
-            MethodInfo getMethodInfo = propertyInfo.GetGetMethod();
-
-            if (typeof(TClass).IsValueType)
-            {
-                var factory = CreateDelegate<GetPropertyByRefFactory<TClass, TProperty>>(s_createStructPropertyGetterMethod.MakeGenericMethod(typeof(TClass), typeof(TProperty)));
-                var propertyGetter = CreateDelegate<GetPropertyByRef<TClass, TProperty>>(getMethodInfo);
-
-                return factory(propertyGetter);
-            }
-            else
-            {
-                var propertyGetter = CreateDelegate<GetProperty<TClass, TProperty>>(getMethodInfo);
-                return delegate (object obj)
-                {
-                    return propertyGetter((TClass)obj);
-                };
-            }
-        }
-
-        public override Action<object, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo)
-        {
-            MethodInfo setMethodInfo = propertyInfo.GetSetMethod();
-
-            if (typeof(TClass).IsValueType)
-            {
-                var factory = CreateDelegate<SetPropertyByRefFactory<TClass, TProperty>>(s_createStructPropertySetterMethod.MakeGenericMethod(typeof(TClass), typeof(TProperty)));
-                var propertySetter = CreateDelegate<SetPropertyByRef<TClass, TProperty>>(setMethodInfo);
-
-                return factory(propertySetter);
-            }
-            else
-            {
-                var propertySetter = CreateDelegate<SetProperty<TClass, TProperty>>(setMethodInfo);
-                return delegate (object obj, TProperty value)
-                {
-                    propertySetter((TClass)obj, value);
-                };
-            }
-        }
-
-        private static TDelegate CreateDelegate<TDelegate>(MethodInfo methodInfo)
-            where TDelegate : Delegate
-        {
-            return (TDelegate)Delegate.CreateDelegate(typeof(TDelegate), methodInfo);
-        }
-
-        private static Func<object, TProperty> CreateStructPropertyGetter<TClass, TProperty>(GetPropertyByRef<TClass, TProperty> get)
-            where TClass : struct
-        {
-            return delegate (object obj)
-            {
-                return get(ref Unsafe.Unbox<TClass>(obj));
+                addMethod.Invoke(collection, new object[] { element! });
             };
         }
 
-        private static Action<object, TProperty> CreateStructPropertySetter<TClass, TProperty>(SetPropertyByRef<TClass, TProperty> set)
-            where TClass : struct
+        public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TElement, TCollection>()
         {
+            MethodInfo createRange = typeof(TCollection).GetImmutableEnumerableCreateRangeMethod(typeof(TElement));
+            return (Func<IEnumerable<TElement>, TCollection>)createRange.CreateDelegate(
+                typeof(Func<IEnumerable<TElement>, TCollection>));
+        }
+
+        public override Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TElement, TCollection>()
+        {
+            MethodInfo createRange = typeof(TCollection).GetImmutableDictionaryCreateRangeMethod(typeof(TElement));
+            return (Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection>)createRange.CreateDelegate(
+                typeof(Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection>));
+        }
+
+        public override Func<object, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo)
+        {
+            MethodInfo getMethodInfo = propertyInfo.GetGetMethod()!;
+
+            return delegate (object obj)
+            {
+                return (TProperty)getMethodInfo.Invoke(obj, null)!;
+            };
+        }
+
+        public override Action<object, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo)
+        {
+            MethodInfo setMethodInfo = propertyInfo.GetSetMethod()!;
+
             return delegate (object obj, TProperty value)
             {
-                set(ref Unsafe.Unbox<TClass>(obj), value);
+                setMethodInfo.Invoke(obj, new object[] { value! });
             };
         }
     }

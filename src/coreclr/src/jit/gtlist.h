@@ -62,7 +62,7 @@ GTNODE(MEMORYBARRIER    , GenTree            ,0,(GTK_LEAF|GTK_NOVALUE))
 GTNODE(KEEPALIVE        , GenTree            ,0,(GTK_UNOP|GTK_NOVALUE)) // keep operand alive, generate no code, produce no result
 
 GTNODE(CAST             , GenTreeCast        ,0,(GTK_UNOP|GTK_EXOP))      // conversion to another type
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 GTNODE(BITCAST          , GenTreeMultiRegOp  ,0,GTK_UNOP)               // reinterpretation of bits as another type
 #else
 GTNODE(BITCAST          , GenTreeOp          ,0,GTK_UNOP)               // reinterpretation of bits as another type
@@ -167,7 +167,7 @@ GTNODE(MKREFANY         , GenTreeOp          ,0,GTK_BINOP|GTK_NOTLIR)
 
 GTNODE(LEA              , GenTreeAddrMode    ,0,(GTK_BINOP|GTK_EXOP))
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
 // A GT_LONG node simply represents the long value produced by the concatenation
 // of its two (lower and upper half) operands.  Some GT_LONG nodes are transient,
 // during the decomposing of longs; others are handled by codegen as operands of
@@ -189,7 +189,7 @@ GTNODE(SUB_HI           , GenTreeOp          ,0,GTK_BINOP)
 // with long results are morphed into helper calls. It is similar to GT_MULHI,
 // the difference being that GT_MULHI drops the lo part of the result, whereas
 // GT_MUL_LONG keeps both parts of the result.
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
 GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,GTK_BINOP)
 #endif
 
@@ -202,7 +202,7 @@ GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,GTK_BINOP)
 // RSH_LO represents the lo operation of a 64-bit right shift by a constant int.
 GTNODE(LSH_HI           , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(RSH_LO           , GenTreeOp          ,0,GTK_BINOP)
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
 
 #ifdef FEATURE_SIMD
 GTNODE(SIMD             , GenTreeSIMD        ,0,(GTK_BINOP|GTK_EXOP))     // SIMD functions/operators/intrinsics
@@ -223,7 +223,7 @@ GTNODE(JCC              , GenTreeCC          ,0,(GTK_LEAF|GTK_NOVALUE))   // Che
                                                                         // by GenTreeCC::gtCondition is true.
 GTNODE(SETCC            , GenTreeCC          ,0,GTK_LEAF)               // Checks the condition flags and produces 1 if the condition specified
                                                                         // by GenTreeCC::gtCondition is true and 0 otherwise.
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
 GTNODE(BT               , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE))  // The XARCH BT instruction. Like CMP, this sets the condition flags (CF
                                                                         // to be precise) and does not produce a value.
 #endif
@@ -288,7 +288,7 @@ GTNODE(PHYSREG          , GenTreePhysReg     ,0,GTK_LEAF)                       
 GTNODE(EMITNOP          , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)            // emitter-placed nop
 GTNODE(PINVOKE_PROLOG   , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)            // pinvoke prolog seq
 GTNODE(PINVOKE_EPILOG   , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)            // pinvoke epilog seq
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 GTNODE(PUTARG_REG       , GenTreeMultiRegOp  ,0,GTK_UNOP)                        // operator that places outgoing arg in register
 #else
 GTNODE(PUTARG_REG       , GenTreeOp          ,0,GTK_UNOP)                        // operator that places outgoing arg in register

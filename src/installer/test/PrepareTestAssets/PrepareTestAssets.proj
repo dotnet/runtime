@@ -49,6 +49,16 @@
     <ItemGroup>
       <RestoreTestSource Include="$(ArtifactsShippingPackagesDir)" Key="artifacts-shipping-packages" />
       <RestoreTestSource Include="$(ArtifactsNonShippingPackagesDir)" Key="artifacts-nonshipping-packages" />
+      <RestoreTestSource Include="$(LibrariesShippingPackagesDir)" Condition="Exists('$(LibrariesShippingPackagesDir)')" Key="libraries-shipping-packages" />
+      <RestoreTestSource Include="$(LibrariesNonShippingPackagesDir)" Condition="Exists('$(LibrariesNonShippingPackagesDir)')" Key="libraries-nonshipping-packages" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(LibrariesPackagesDir)' != '$(LibrariesAllConfigPackagesDir)'">
+      <RestoreTestSource Include="$(LibrariesAllConfigShippingPackagesDir)" Condition="Exists('$(LibrariesAllConfigShippingPackagesDir)')" Key="libraries-allconfig-shipping-packages" />
+      <RestoreTestSource Include="$(LibrariesAllConfigNonShippingPackagesDir)" Condition="Exists('$(LibrariesAllConfigNonShippingPackagesDir)')" Key="libraries-allconfig-nonshipping-packages" />
+    </ItemGroup>
+
+    <ItemGroup>
       <RestoreTestSource Include="$(TestStabilizedLegacyPackagesDir)" Key="stabilized-legacy-packages" />
 
       <RestoreTestSource

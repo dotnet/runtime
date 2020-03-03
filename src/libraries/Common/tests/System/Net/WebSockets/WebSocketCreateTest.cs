@@ -45,7 +45,7 @@ namespace System.Net.WebSockets.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                // https://github.com/dotnet/corefx/issues/42339
+                // https://github.com/dotnet/runtime/issues/31382
                 return;
             }
 
@@ -98,6 +98,51 @@ namespace System.Net.WebSockets.Tests
                 Assert.True(result.EndOfMessage);
                 Assert.Equal(1, result.Count);
                 Assert.Equal(0xa6, recvBuffer[0]);
+            }
+        }
+
+        [Theory]
+        [InlineData(0b_1000_0001, 0b_0_000_0001, false)] // fin + text, no mask + length == 1
+        [InlineData(0b_1100_0001, 0b_0_000_0001, true)] // fin + rsv1 + text, no mask + length == 1
+        [InlineData(0b_1010_0001, 0b_0_000_0001, true)] // fin + rsv2 + text, no mask + length == 1
+        [InlineData(0b_1001_0001, 0b_0_000_0001, true)] // fin + rsv3 + text, no mask + length == 1
+        [InlineData(0b_1111_0001, 0b_0_000_0001, true)] // fin + rsv1 + rsv2 + rsv3 + text, no mask + length == 1
+        [InlineData(0b_1000_0001, 0b_1_000_0001, true)] // fin + text, mask + length == 1
+        [InlineData(0b_1000_0011, 0b_0_000_0001, true)] // fin + opcode==3, no mask + length == 1
+        [InlineData(0b_1000_0100, 0b_0_000_0001, true)] // fin + opcode==4, no mask + length == 1
+        [InlineData(0b_1000_0101, 0b_0_000_0001, true)] // fin + opcode==5, no mask + length == 1
+        [InlineData(0b_1000_0110, 0b_0_000_0001, true)] // fin + opcode==6, no mask + length == 1
+        [InlineData(0b_1000_0111, 0b_0_000_0001, true)] // fin + opcode==7, no mask + length == 1
+        public async Task ReceiveAsync_InvalidFrameHeader_AbortsAndThrowsException(byte firstByte, byte secondByte, bool shouldFail)
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                await client.ConnectAsync(listener.LocalEndPoint);
+                using (Socket server = await listener.AcceptAsync())
+                {
+                    WebSocket websocket = CreateFromStream(new NetworkStream(client, ownsSocket: false), isServer: false, null, Timeout.InfiniteTimeSpan);
+
+                    await server.SendAsync(new ArraySegment<byte>(new byte[3] { firstByte, secondByte, (byte)'a' }), SocketFlags.None);
+
+                    var buffer = new byte[1];
+                    Task<WebSocketReceiveResult> t = websocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    if (shouldFail)
+                    {
+                        await Assert.ThrowsAsync<WebSocketException>(() => t);
+                        Assert.Equal(WebSocketState.Aborted, websocket.State);
+                    }
+                    else
+                    {
+                        WebSocketReceiveResult result = await t;
+                        Assert.True(result.EndOfMessage);
+                        Assert.Equal(1, result.Count);
+                        Assert.Equal('a', (char)buffer[0]);
+                    }
+                }
             }
         }
 
@@ -159,7 +204,7 @@ namespace System.Net.WebSockets.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                // https://github.com/dotnet/corefx/issues/42339
+                // https://github.com/dotnet/runtime/issues/31382
                 return;
             }
 
@@ -192,7 +237,7 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
-        [ActiveIssue(36016)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28957")]
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServersAndBoolean))]

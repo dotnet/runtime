@@ -195,10 +195,7 @@ namespace System.Net.Mail
 
         internal void ReleaseConnection()
         {
-            if (_connection != null)
-            {
-                _connection.ReleaseConnection();
-            }
+            _connection?.ReleaseConnection();
         }
 
         internal void Abort()

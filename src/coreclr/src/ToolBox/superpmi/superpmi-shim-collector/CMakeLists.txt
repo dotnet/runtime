@@ -6,21 +6,18 @@ remove_definitions(-D_UNICODE)
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
   #use static crt
   add_definitions(-MT)
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 include_directories(.)
 include_directories(../superpmi-shared)
 
 set(SUPERPMI_SHIM_COLLECTOR_SOURCES
-    coreclrcallbacks.cpp
     jithost.cpp
     icorjitcompiler.cpp
     icorjitinfo.cpp
-    ieememorymanager.cpp
-    iexecutionengine.cpp
     superpmi-shim-collector.cpp
     ../superpmi-shared/callutils.cpp
     ../superpmi-shared/compileresult.cpp
@@ -35,11 +32,11 @@ set(SUPERPMI_SHIM_COLLECTOR_SOURCES
     ../superpmi-shared/typeutils.cpp
     ../superpmi-shared/spmidumphelper.cpp
 )
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     preprocess_file(${CMAKE_CURRENT_SOURCE_DIR}/superpmi-shim-collector.def ${CMAKE_CURRENT_BINARY_DIR}/superpmi-shim-collector.def)
 
     list(APPEND SUPERPMI_SHIM_COLLECTOR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/superpmi-shim-collector.def)
-endif (WIN32)
+endif (CLR_CMAKE_TARGET_WIN32)
 
 _add_library(superpmi-shim-collector
     SHARED
@@ -48,7 +45,7 @@ _add_library(superpmi-shim-collector
 
 target_precompile_header(TARGET superpmi-shim-collector HEADER standardpch.h)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-collector
         utilcodestaticnohost
         mscorrc_debug
@@ -63,6 +60,6 @@ else()
     )
 
     _install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/superpmi-shim-collector.pdb DESTINATION PDB)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 _install (TARGETS superpmi-shim-collector DESTINATION .)

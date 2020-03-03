@@ -10,10 +10,10 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public class X509Chain : IDisposable
     {
-        private X509ChainPolicy _chainPolicy;
-        private volatile X509ChainStatus[] _lazyChainStatus;
-        private X509ChainElementCollection _chainElements;
-        private IChainPal _pal;
+        private X509ChainPolicy? _chainPolicy;
+        private volatile X509ChainStatus[]? _lazyChainStatus;
+        private X509ChainElementCollection? _chainElements;
+        private IChainPal? _pal;
         private bool _useMachineContext;
         private readonly object _syncRoot = new object();
 
@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             _pal = ChainPal.FromHandle(chainContext);
             Debug.Assert(_pal != null);
-            _chainElements = new X509ChainElementCollection(_pal.ChainElements);
+            _chainElements = new X509ChainElementCollection(_pal.ChainElements!);
         }
 
         public static X509Chain Create()
@@ -67,9 +67,9 @@ namespace System.Security.Cryptography.X509Certificates
             get
             {
                 // We give the user a reference to the array since we'll never access it.
-                X509ChainStatus[] chainStatus = _lazyChainStatus;
+                X509ChainStatus[]? chainStatus = _lazyChainStatus;
                 if (chainStatus == null)
-                    chainStatus = _lazyChainStatus = (_pal == null ? Array.Empty<X509ChainStatus>() : _pal.ChainStatus);
+                    chainStatus = _lazyChainStatus = (_pal == null ? Array.Empty<X509ChainStatus>() : _pal.ChainStatus!);
                 return chainStatus;
             }
         }
@@ -78,19 +78,19 @@ namespace System.Security.Cryptography.X509Certificates
         {
             get
             {
-                SafeX509ChainHandle handle = SafeHandle;
+                SafeX509ChainHandle? handle = SafeHandle;
                 if (handle == null)
                 {
                     // This case will only exist for Unix
                     return IntPtr.Zero;
                 }
 
-                // For desktop compat, we may return an invalid handle here (IntPtr.Zero)
+                // For .NET Framework compat, we may return an invalid handle here (IntPtr.Zero)
                 return handle.DangerousGetHandle();
             }
         }
 
-        public SafeX509ChainHandle SafeHandle
+        public SafeX509ChainHandle? SafeHandle
         {
             get
             {
@@ -134,8 +134,8 @@ namespace System.Security.Cryptography.X509Certificates
                     _useMachineContext,
                     certificate.Pal,
                     chainPolicy._extraStore,
-                    chainPolicy._applicationPolicy,
-                    chainPolicy._certificatePolicy,
+                    chainPolicy._applicationPolicy!,
+                    chainPolicy._certificatePolicy!,
                     chainPolicy.RevocationMode,
                     chainPolicy.RevocationFlag,
                     chainPolicy.CustomTrustStore,
@@ -146,15 +146,15 @@ namespace System.Security.Cryptography.X509Certificates
                 if (_pal == null)
                     return false;
 
-                _chainElements = new X509ChainElementCollection(_pal.ChainElements);
+                _chainElements = new X509ChainElementCollection(_pal.ChainElements!);
 
-                Exception verificationException;
+                Exception? verificationException;
                 bool? verified = _pal.Verify(chainPolicy.VerificationFlags, out verificationException);
                 if (!verified.HasValue)
                 {
                     if (throwOnException)
                     {
-                        throw verificationException;
+                        throw verificationException!;
                     }
                     else
                     {
@@ -182,12 +182,12 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Reset()
         {
-            // _chainPolicy is not reset for desktop compat
+            // _chainPolicy is not reset for .NET Framework compat
             _lazyChainStatus = null;
             _chainElements = null;
             _useMachineContext = false;
 
-            IChainPal pal = _pal;
+            IChainPal? pal = _pal;
             _pal = null;
             if (pal != null)
                 pal.Dispose();

@@ -7,10 +7,6 @@
 #include "pal/dbgmsg.h"
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
-#if defined(_ARM64_)
-#define _TARGET_ARM64_
-#endif
-
 #include "../../../inc/corjitflags.h"
 
 #if HAVE_AUXV_HWCAP_H
@@ -25,7 +21,7 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 {
     _ASSERTE(flags);
 
-#if defined(_ARM64_)
+#if defined(HOST_ARM64)
 #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
 
@@ -128,5 +124,5 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
     CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD);
     CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_FP);
 #endif // HAVE_AUXV_HWCAP_H
-#endif // defined(_ARM64_)
+#endif // defined(HOST_ARM64)
 }

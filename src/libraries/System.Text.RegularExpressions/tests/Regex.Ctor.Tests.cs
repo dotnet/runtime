@@ -51,6 +51,22 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(matchTimeout, regex3.MatchTimeout);
         }
 
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.Compiled)]
+        public void CtorDebugInvoke(RegexOptions options)
+        {
+            Regex r;
+
+            r = new Regex("[abc]def(ghi|jkl)", options | (RegexOptions)0x80 /*RegexOptions.Debug*/);
+            Assert.False(r.Match("a").Success);
+            Assert.True(r.Match("adefghi").Success);
+
+            r = new Regex("(ghi|jkl)*ghi", options | (RegexOptions)0x80 /*RegexOptions.Debug*/);
+            Assert.False(r.Match("jkl").Success);
+            Assert.True(r.Match("ghi").Success);
+        }
+
         [Fact]
         public static void Ctor_Invalid()
         {
@@ -95,6 +111,19 @@ namespace System.Text.RegularExpressions.Tests
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.Zero);
                 Assert.Throws<TypeInitializationException>(() => Regex.InfiniteMatchTimeout);
             }).Dispose();
+        }
+
+        [Fact]
+        public void InitializeReferences_OnlyInvokedOnce()
+        {
+            var r = new DerivedRegex();
+            r.InitializeReferences();
+            Assert.Throws<NotSupportedException>(() => r.InitializeReferences());
+        }
+
+        private sealed class DerivedRegex : Regex
+        {
+            public new void InitializeReferences() => base.InitializeReferences();
         }
     }
 }

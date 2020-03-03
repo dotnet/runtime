@@ -106,16 +106,13 @@
     <value>The collections argument contains at least one disposed element.</value>
   </data>
   <data name="BlockingCollection_ValidateCollectionsArray_LargeSize" xml:space="preserve">
-    <value>The collections length is greater than the supported range for 32 bit machine.</value>
+    <value>The collections length is greater than the supported range.</value>
   </data>
   <data name="BlockingCollection_ValidateCollectionsArray_NullElems" xml:space="preserve">
     <value>The collections argument contains at least one null element.</value>
   </data>
   <data name="BlockingCollection_ValidateCollectionsArray_ZeroSize" xml:space="preserve">
     <value>The collections argument is a zero-length array.</value>
-  </data>
-  <data name="Common_OperationCanceled" xml:space="preserve">
-    <value>The operation was canceled.</value>
   </data>
   <data name="ConcurrentBag_Ctor_ArgumentNullException" xml:space="preserve">
     <value>The collection argument is null.</value>

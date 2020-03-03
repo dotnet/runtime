@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludePartialFacadeTests>true</IncludePartialFacadeTests>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.Byte.cs" />
@@ -15,10 +15,10 @@
     <Compile Include="MemoryMarshal\AsReadOnlyRef.cs" />
     <Compile Include="MemoryMarshal\CreateSpan.cs" />
     <Compile Include="MemoryMarshal\CreateReadOnlySpan.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.netcoreapp.cs" Link="ParsersAndFormatters\Formatter\RealFormatterTestsBase.netcoreapp.cs" />
-    <Compile Include="ParsersAndFormatters\Formatter\RealFormatterTests.netcoreapp.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.netcoreapp.cs" Link="ParsersAndFormatters\Parser\RealParserTestsBase.netcoreapp.cs" />
-    <Compile Include="ParsersAndFormatters\Parser\RealParserTests.netcoreapp.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs" Link="ParsersAndFormatters\Formatter\RealFormatterTestsBase.cs" />
+    <Compile Include="ParsersAndFormatters\Formatter\RealFormatterTests.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs" Link="ParsersAndFormatters\Parser\RealParserTestsBase.cs" />
+    <Compile Include="ParsersAndFormatters\Parser\RealParserTests.cs" />
     <Compile Include="ReadOnlySpan\Contains.byte.cs" />
     <Compile Include="ReadOnlySpan\Contains.T.cs" />
     <Compile Include="Span\Reflection.cs" />
@@ -200,6 +200,7 @@
     <Compile Include="MemoryMarshal\CastReadOnlySpan.cs" />
     <Compile Include="MemoryMarshal\CastSpan.cs" />
     <Compile Include="MemoryMarshal\CreateFromPinnedArray.cs" />
+    <Compile Include="MemoryMarshal\GetArrayDataReference.cs" />
     <Compile Include="MemoryMarshal\GetReference.cs" />
     <Compile Include="MemoryMarshal\TryGetArray.cs" />
     <Compile Include="MemoryMarshal\TryGetMemoryManager.cs" />

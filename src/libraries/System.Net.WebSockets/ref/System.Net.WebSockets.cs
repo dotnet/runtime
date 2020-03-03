@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Net.WebSockets
@@ -19,17 +19,17 @@ namespace System.Net.WebSockets
     {
         protected WebSocket() { }
         public abstract System.Net.WebSockets.WebSocketCloseStatus? CloseStatus { get; }
-        public abstract string CloseStatusDescription { get; }
+        public abstract string? CloseStatusDescription { get; }
         public static System.TimeSpan DefaultKeepAliveInterval { get { throw null; } }
         public abstract System.Net.WebSockets.WebSocketState State { get; }
-        public abstract string SubProtocol { get; }
+        public abstract string? SubProtocol { get; }
         public abstract void Abort();
-        public abstract System.Threading.Tasks.Task CloseAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string statusDescription, System.Threading.CancellationToken cancellationToken);
-        public abstract System.Threading.Tasks.Task CloseOutputAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string statusDescription, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task CloseAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string? statusDescription, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task CloseOutputAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string? statusDescription, System.Threading.CancellationToken cancellationToken);
         public static System.ArraySegment<byte> CreateClientBuffer(int receiveBufferSize, int sendBufferSize) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.Net.WebSockets.WebSocket CreateClientWebSocket(System.IO.Stream innerStream, string subProtocol, int receiveBufferSize, int sendBufferSize, System.TimeSpan keepAliveInterval, bool useZeroMaskingKey, System.ArraySegment<byte> internalBuffer) { throw null; }
-        public static System.Net.WebSockets.WebSocket CreateFromStream(System.IO.Stream stream, bool isServer, string subProtocol, System.TimeSpan keepAliveInterval) { throw null; }
+        public static System.Net.WebSockets.WebSocket CreateFromStream(System.IO.Stream stream, bool isServer, string? subProtocol, System.TimeSpan keepAliveInterval) { throw null; }
         public static System.ArraySegment<byte> CreateServerBuffer(int receiveBufferSize) { throw null; }
         public abstract void Dispose();
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -70,7 +70,7 @@ namespace System.Net.WebSockets
         public abstract string SecWebSocketKey { get; }
         public abstract System.Collections.Generic.IEnumerable<string> SecWebSocketProtocols { get; }
         public abstract string SecWebSocketVersion { get; }
-        public abstract System.Security.Principal.IPrincipal User { get; }
+        public abstract System.Security.Principal.IPrincipal? User { get; }
         public abstract System.Net.WebSockets.WebSocket WebSocket { get; }
     }
     public enum WebSocketError
@@ -90,18 +90,18 @@ namespace System.Net.WebSockets
     {
         public WebSocketException() { }
         public WebSocketException(int nativeError) { }
-        public WebSocketException(int nativeError, System.Exception innerException) { }
-        public WebSocketException(int nativeError, string message) { }
+        public WebSocketException(int nativeError, System.Exception? innerException) { }
+        public WebSocketException(int nativeError, string? message) { }
         public WebSocketException(System.Net.WebSockets.WebSocketError error) { }
-        public WebSocketException(System.Net.WebSockets.WebSocketError error, System.Exception innerException) { }
+        public WebSocketException(System.Net.WebSockets.WebSocketError error, System.Exception? innerException) { }
         public WebSocketException(System.Net.WebSockets.WebSocketError error, int nativeError) { }
-        public WebSocketException(System.Net.WebSockets.WebSocketError error, int nativeError, System.Exception innerException) { }
-        public WebSocketException(System.Net.WebSockets.WebSocketError error, int nativeError, string message) { }
-        public WebSocketException(System.Net.WebSockets.WebSocketError error, int nativeError, string message, System.Exception innerException) { }
-        public WebSocketException(System.Net.WebSockets.WebSocketError error, string message) { }
-        public WebSocketException(System.Net.WebSockets.WebSocketError error, string message, System.Exception innerException) { }
-        public WebSocketException(string message) { }
-        public WebSocketException(string message, System.Exception innerException) { }
+        public WebSocketException(System.Net.WebSockets.WebSocketError error, int nativeError, System.Exception? innerException) { }
+        public WebSocketException(System.Net.WebSockets.WebSocketError error, int nativeError, string? message) { }
+        public WebSocketException(System.Net.WebSockets.WebSocketError error, int nativeError, string? message, System.Exception? innerException) { }
+        public WebSocketException(System.Net.WebSockets.WebSocketError error, string? message) { }
+        public WebSocketException(System.Net.WebSockets.WebSocketError error, string? message, System.Exception? innerException) { }
+        public WebSocketException(string? message) { }
+        public WebSocketException(string? message, System.Exception? innerException) { }
         public override int ErrorCode { get { throw null; } }
         public System.Net.WebSockets.WebSocketError WebSocketErrorCode { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -117,7 +117,7 @@ namespace System.Net.WebSockets
         public WebSocketReceiveResult(int count, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage) { }
         public WebSocketReceiveResult(int count, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage, System.Net.WebSockets.WebSocketCloseStatus? closeStatus, string closeStatusDescription) { }
         public System.Net.WebSockets.WebSocketCloseStatus? CloseStatus { get { throw null; } }
-        public string CloseStatusDescription { get { throw null; } }
+        public string? CloseStatusDescription { get { throw null; } }
         public int Count { get { throw null; } }
         public bool EndOfMessage { get { throw null; } }
         public System.Net.WebSockets.WebSocketMessageType MessageType { get { throw null; } }

@@ -3,9 +3,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OSGroup)' == 'AnyOS' and '$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_OleDb</GeneratePlatformNotSupportedAssemblyMessage>
-    <NoWarn Condition="'$(OSGroup)' == 'AnyOS' and '$(TargetsNetStandard)' == 'true'">$(NoWarn);CS0618</NoWarn>
-    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true' and '$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_OleDb</GeneratePlatformNotSupportedAssemblyMessage>
+    <NoWarn Condition="'$(TargetsAnyOS)' == 'true' and '$(TargetsNetStandard)' == 'true'">$(NoWarn);CS0618</NoWarn>
+    <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetsWindows)' == 'true'">
@@ -102,7 +103,6 @@
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Data.SqlClient" />
     <Reference Include="System.Configuration.ConfigurationManager" />
     <Reference Include="System.Diagnostics.PerformanceCounter" />
     <Reference Include="System.Security.Principal.Windows" />

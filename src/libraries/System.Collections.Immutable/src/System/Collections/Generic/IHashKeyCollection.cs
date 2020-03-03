@@ -8,7 +8,6 @@ namespace System.Collections.Generic
     /// Defined on a generic collection that hashes its contents using an <see cref="IEqualityComparer{TKey}"/>.
     /// </summary>
     /// <typeparam name="TKey">The type of element hashed in the collection.</typeparam>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     internal interface IHashKeyCollection<in TKey>
     {
         /// <summary>

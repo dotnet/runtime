@@ -8,7 +8,9 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Tests
 {
@@ -1317,25 +1319,6 @@ namespace System.Tests
             Array destinationArrayClone = sourceArray == destinationArray ? sourceArrayClone : (Array)destinationArray.Clone();
             Array.ConstrainedCopy(sourceArrayClone, sourceIndex, destinationArrayClone, destinationIndex, length);
             Assert.Equal(expected, destinationArrayClone);
-        }
-
-        [OuterLoop] // Allocates large array
-        [Fact]
-        public static void Copy_LargeMultiDimensionalArray()
-        {
-            // If this test is run in a 32-bit process, the large allocation will fail.
-            if (IntPtr.Size != sizeof(long))
-            {
-                return;
-            }
-
-            short[,] a = new short[2, 2_000_000_000];
-            a[0, 1] = 42;
-            Array.Copy(a, 1, a, Int32.MaxValue, 2);
-            Assert.Equal(42, a[1, Int32.MaxValue - 2_000_000_000]);
-
-            Array.Clear(a, Int32.MaxValue - 1, 3);
-            Assert.Equal(0, a[1, Int32.MaxValue - 2_000_000_000]);
         }
 
         [Fact]
@@ -2962,7 +2945,8 @@ namespace System.Tests
         [Fact]
         public static void IStructuralComparable_NullComparer_ThrowsNullReferenceException()
         {
-            // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
+            // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
+            // See https://github.com/dotnet/runtime/issues/19265
             IStructuralComparable comparable = new int[] { 1, 2, 3 };
             Assert.Throws<NullReferenceException>(() => comparable.CompareTo(new int[] { 1, 2, 3 }, null));
         }
@@ -3005,7 +2989,8 @@ namespace System.Tests
         [Fact]
         public static void IStructuralEquatable_Equals_NullComparer_ThrowsNullReferenceException()
         {
-            // This was not fixed in order to be compatible with the full .NET framework and Xamarin. See #13410
+            // This was not fixed in order to be compatible with the .NET Framework and Xamarin.
+            // See https://github.com/dotnet/runtime/issues/19265
             IStructuralEquatable equatable = new int[] { 1, 2, 3 };
             Assert.Throws<NullReferenceException>(() => equatable.Equals(new int[] { 1, 2, 3 }, null));
         }
@@ -4578,5 +4563,35 @@ namespace System.Tests
         }
 
         public enum Int64Enum : long { }
+    }
+
+    [Collection("NoParallelTests")]
+    public class DangerousArrayTests
+    {
+        [OuterLoop] // Allocates large array
+        [ConditionalFact]
+        public static void Copy_LargeMultiDimensionalArray()
+        {
+            // If this test is run in a 32-bit process, the large allocation will fail.
+            if (IntPtr.Size != sizeof(long))
+            {
+                return;
+            }
+
+            try
+            {
+                short[,] a = new short[2, 2_000_000_000];
+                a[0, 1] = 42;
+                Array.Copy(a, 1, a, Int32.MaxValue, 2);
+                Assert.Equal(42, a[1, Int32.MaxValue - 2_000_000_000]);
+
+                Array.Clear(a, Int32.MaxValue - 1, 3);
+                Assert.Equal(0, a[1, Int32.MaxValue - 2_000_000_000]);
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Unable to allocate enough memory");
+            }
+        }
     }
 }

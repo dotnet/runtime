@@ -17,7 +17,7 @@ namespace Internal.Cryptography
     {
         private readonly string _disposedName;
         public CngAlgorithm DefaultKeyType;
-        private CngKey _lazyKey;
+        private CngKey? _lazyKey;
         private bool _disposed;
 
         public CngAlgorithmCore(string disposedName) : this()

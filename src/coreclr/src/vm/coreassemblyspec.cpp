@@ -20,6 +20,9 @@
 #include "holder.h"
 #include "../binder/inc/assemblybinder.hpp"
 
+#include "strongnameinternal.h"
+#include "strongnameholders.h"
+
 #ifdef FEATURE_PREJIT
 #include "compile.h"
 #endif
@@ -240,14 +243,14 @@ STDAPI BinderHasNativeHeader(PEImage *pPEImage, BOOL* result)
     {
         *result = false;
 
-#if defined(FEATURE_PAL)
+#if defined(TARGET_UNIX)
         // PAL_LOADLoadPEFile may fail while loading IL masquerading as NI.
         // This will result in a ThrowHR(E_FAIL).  Suppress the error.
         if(hr == E_FAIL)
         {
             hr = S_OK;
         }
-#endif // defined(FEATURE_PAL)
+#endif // defined(TARGET_UNIX)
     }
 
     return hr;
@@ -526,14 +529,10 @@ VOID BaseAssemblySpec::GetDisplayNameInternal(DWORD flags, SString &result) cons
                 StrongNameBufferHolder<BYTE> pbToken;
 
                 // Try to get the strong name
-                if (!StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
-                                                  m_cbPublicKeyOrToken,
-                                                  &pbToken,
-                                                  &cbToken))
-                {
-                    // Throw an exception with details on what went wrong
-                    COMPlusThrowHR(StrongNameErrorInfo());
-                }
+                IfFailThrow(StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
+                    m_cbPublicKeyOrToken,
+                    &pbToken,
+                    &cbToken));
 
                 assemblyIdentity.m_publicKeyOrTokenBLOB.Set(pbToken, cbToken);
             }

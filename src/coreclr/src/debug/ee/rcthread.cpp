@@ -12,7 +12,7 @@
 
 #include "stdafx.h"
 #include "threadsuspend.h"
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 #include "securitywrapper.h"
 #endif
@@ -1459,7 +1459,7 @@ HRESULT DebuggerRCThread::AsyncStop(void)
         NOTHROW;
         GC_NOTRIGGER;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         PRECONDITION(!ThisIsHelperThreadWorker());
 #else
         PRECONDITION(!ThisIsHelperThreadWorker());
@@ -1653,7 +1653,7 @@ HRESULT DebuggerRCThread::ReDaclEvents(PSECURITY_DESCRIPTOR pSecurityDescriptor)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     if (m_pDCB != NULL)
     {
         if (m_pDCB->m_rightSideEventAvailable)
@@ -1677,7 +1677,7 @@ HRESULT DebuggerRCThread::ReDaclEvents(PSECURITY_DESCRIPTOR pSecurityDescriptor)
             }
         }
     }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     return S_OK;
 }

@@ -23,10 +23,10 @@ enum UMThunkStubFlags
     umtmlThisCall           = 0x0002,
     umtmlThisCallHiddenArg  = 0x0004,
     umtmlFpu                = 0x0008,
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // the signature is trivial so stub need not be generated and the target can be called directly
     umtmlSkipStub           = 0x0080,
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 };
 
 #include <pshpack1.h>
@@ -109,7 +109,7 @@ public:
         return m_pMD;
     }
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
     PCODE GetExecStubEntryPoint()
     {
         WRAPPER_NO_CONTRACT;
@@ -198,13 +198,13 @@ public:
         return (UINT32)offsetof(UMThunkMarshInfo, m_pILStub);
     }
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
     // Compiles an unmanaged to managed thunk for the given signature. The thunk
     // will call the stub or, if fNoStub == TRUE, directly the managed target.
     Stub *CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStaticSigInfo* pSigInfo, MetaSig *pMetaSig, BOOL fNoStub);
-#endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
+#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
-#if defined(_TARGET_X86_) && defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && defined(FEATURE_STUBS_AS_IL)
     struct ArgumentRegisters
     {
         UINT32 Ecx;
@@ -212,7 +212,7 @@ public:
     };
 
     VOID SetupArguments(char *pSrc, ArgumentRegisters *pArgRegs, char *pDst);
-#endif // _TARGET_X86_ && FEATURE_STUBS_AS_IL
+#endif // TARGET_X86 && FEATURE_STUBS_AS_IL
 
 private:
     PCODE             m_pILStub;            // IL stub for marshaling
@@ -220,7 +220,7 @@ private:
                                             // On non-x86, the managed entrypoint for no-delegate no-marshal signatures
     UINT32            m_cbActualArgSize;    // caches m_pSig.SizeOfFrameArgumentArray()
                                             // On x86/Linux we have to augment with numRegistersUsed * STACK_ELEM_SIZE
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     UINT16            m_cbRetPop;           // stack bytes popped by callee (for UpdateRegDisplay)
 #if defined(FEATURE_STUBS_AS_IL)
     UINT32            m_cbStackArgSize;     // stack bytes pushed for managed code
@@ -228,7 +228,7 @@ private:
     Stub*             m_pExecStub;          // UMEntryThunk jumps directly here
     UINT16            m_callConv;           // unmanaged calling convention and flags (CorPinvokeMap)
 #endif // FEATURE_STUBS_AS_IL
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     MethodDesc *      m_pMD;                // maybe null
     Module *          m_pModule;
@@ -264,7 +264,7 @@ public:
     static UMEntryThunk* CreateUMEntryThunk();
     static VOID FreeUMEntryThunk(UMEntryThunk* p);
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
     // Compiles an unmanaged to managed thunk with the given calling convention adaptation.
     // - psrcofsregs are stack offsets that should be loaded to argument registers (ECX, EDX)
     // - psrcofs are stack offsets that should be repushed for the managed target
@@ -279,7 +279,7 @@ public:
                                      UINT *psrcofsregs,
                                      UINT *psrcofs,
                                      UINT retbufofs);
-#endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
+#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
 #ifndef DACCESS_COMPILE
     VOID LoadTimeInit(PCODE                   pManagedTarget,
@@ -308,22 +308,6 @@ public:
 #ifdef _DEBUG
         m_state = kLoadTimeInited;
 #endif
-    }
-
-    ~UMEntryThunk()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        if (GetObjectHandle())
-        {
-            DestroyLongWeakHandle(GetObjectHandle());
-        }
     }
 
     void Terminate();
@@ -554,20 +538,20 @@ private:
     AppDomain *m_pDomain;
 };
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
 //-------------------------------------------------------------------------
 // One-time creation of special prestub to initialize UMEntryThunks.
 //-------------------------------------------------------------------------
 Stub *GenerateUMThunkPrestub();
-#endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
+#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
 //-------------------------------------------------------------------------
 // NExport stub
 //-------------------------------------------------------------------------
-#if  !defined(BIT64) && !defined(DACCESS_COMPILE) && !defined(CROSS_COMPILE)
+#if  !defined(HOST_64BIT) && !defined(DACCESS_COMPILE) && !defined(CROSS_COMPILE)
 EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
 EXCEPTION_HANDLER_DECL(UMThunkPrestubHandler);
-#endif // BIT64
+#endif // HOST_64BIT
 
 extern "C" void TheUMEntryPrestub(void);
 extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk);

@@ -1892,24 +1892,6 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
-        public void MeasureString_MultlineString_Width()
-        {
-            using (Bitmap bitmap = new Bitmap(20, 20))
-            using (Graphics g = Graphics.FromImage(bitmap))
-            using (StringFormat string_format = new StringFormat())
-            {
-                string text1 = "Test\nTest123\nTest 456\nTest 1,2,3,4,5...";
-                string text2 = "Test 1,2,3,4,5...";
-
-                SizeF size1 = g.MeasureString(text1, font, SizeF.Empty, string_format);
-                SizeF size2 = g.MeasureString(text2, font, SizeF.Empty, string_format);
-
-                Assert.Equal((int)size1.Width, (int)size2.Width);
-            }
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void MeasureString_CharactersFitted()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
@@ -2325,7 +2307,7 @@ namespace MonoTests.System.Drawing
         {
             if (PlatformDetection.IsArmOrArm64Process)
             {
-                //ActiveIssue: 35744
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]
                 throw new SkipTestException("Precision on float numbers");
             }
 
@@ -2810,38 +2792,10 @@ namespace MonoTests.System.Drawing
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844, TestPlatforms.Any)]
-        public void DrawImage_ImageRectangleRectangleGraphicsUnit_Document()
-        {
-            Assert.Throws<NotImplementedException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Document));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
-        public void DrawImage_ImageRectangleRectangleGraphicsUnit_Inch()
-        {
-            Assert.Throws<NotImplementedException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Inch));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844, TestPlatforms.Any)]
-        public void DrawImage_ImageRectangleRectangleGraphicsUnit_Millimeter()
-        {
-            Assert.Throws<NotImplementedException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Millimeter));
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawImage_ImageRectangleRectangleGraphicsUnit_Pixel()
         {
             // this unit works
             DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Pixel);
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844, TestPlatforms.Any)]
-        public void DrawImage_ImageRectangleRectangleGraphicsUnit_Point()
-        {
-            Assert.Throws<NotImplementedException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Point));
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -3208,7 +3162,7 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TransformPoints()
         {

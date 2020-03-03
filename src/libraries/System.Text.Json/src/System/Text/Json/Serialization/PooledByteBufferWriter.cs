@@ -86,7 +86,7 @@ namespace System.Text.Json
 
             ClearHelper();
             ArrayPool<byte>.Shared.Return(_rentedBuffer);
-            _rentedBuffer = null;
+            _rentedBuffer = null!;
         }
 
         public void Advance(int count)
@@ -136,9 +136,19 @@ namespace System.Text.Json
 
             if (sizeHint > availableSpace)
             {
-                int growBy = Math.Max(sizeHint, _rentedBuffer.Length);
+                int currentLength = _rentedBuffer.Length;
+                int growBy = Math.Max(sizeHint, currentLength);
 
-                int newSize = checked(_rentedBuffer.Length + growBy);
+                int newSize = currentLength + growBy;
+
+                if ((uint)newSize > int.MaxValue)
+                {
+                    newSize = currentLength + sizeHint;
+                    if ((uint)newSize > int.MaxValue)
+                    {
+                        newSize = int.MaxValue;
+                    }
+                }
 
                 byte[] oldBuffer = _rentedBuffer;
 

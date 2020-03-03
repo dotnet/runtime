@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Security;
 
 namespace System.IO
@@ -104,6 +105,7 @@ namespace System.IO
             }
         }
 
+        [AllowNull]
         public string VolumeLabel
         {
             get

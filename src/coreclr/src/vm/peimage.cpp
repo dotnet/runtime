@@ -348,7 +348,7 @@ BOOL PEImage::PathEquals(const SString &p1, const SString &p2)
 #endif
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 /* static */
 void PEImage::GetPathFromDll(HINSTANCE hMod, SString &result)
 {
@@ -367,7 +367,7 @@ void PEImage::GetPathFromDll(HINSTANCE hMod, SString &result)
     WszGetModuleFileName(hMod, result);
 
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 /* static */
 BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
@@ -702,22 +702,18 @@ LoaderHeap *PEImage::IJWFixupData::GetThunkHeap()
     }
     CONTRACT_END
 
-        if (!m_DllThunkHeap)
+    if (!m_DllThunkHeap)
+    {
+        LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
+            0,                                 // DWORD dwCommitBlockSize
+            ThunkHeapStubManager::g_pManager->GetRangeList(),
+            TRUE);                             // BOOL fMakeExecutable
+
+        if (FastInterlockCompareExchangePointer((PVOID*)&m_DllThunkHeap, (VOID*)pNewHeap, (VOID*)0) != 0)
         {
-            size_t * pPrivatePCLBytes = NULL;
-            size_t * pGlobalPCLBytes = NULL;
-
-            LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
-                0,                                 // DWORD dwCommitBlockSize
-                pPrivatePCLBytes,
-                ThunkHeapStubManager::g_pManager->GetRangeList(),
-                TRUE);                             // BOOL fMakeExecutable
-
-            if (FastInterlockCompareExchangePointer((PVOID*)&m_DllThunkHeap, (VOID*)pNewHeap, (VOID*)0) != 0)
-            {
-                delete pNewHeap;
-            }
+            delete pNewHeap;
         }
+    }
 
     RETURN m_DllThunkHeap;
 }
@@ -1000,12 +996,12 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
         BOOL bIsMappedLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_MAPPED) != 0);
         BOOL bIsFlatLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_FLAT) != 0);
 
-#if !defined(PLATFORM_UNIX)
+#if !defined(TARGET_UNIX)
         if (bIsMappedLayoutSuitable)
         {
             bIsFlatLayoutSuitable = FALSE;
         }
-#endif // !PLATFORM_UNIX
+#endif // !TARGET_UNIX
 
         _ASSERTE(bIsMappedLayoutSuitable || bIsFlatLayoutSuitable);
 
@@ -1157,7 +1153,7 @@ PTR_PEImage PEImage::LoadFlat(const void *flat, COUNT_T size)
     RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 /* static */
 PTR_PEImage PEImage::LoadImage(HMODULE hMod)
 {
@@ -1188,7 +1184,7 @@ PTR_PEImage PEImage::LoadImage(HMODULE hMod)
 
     RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 void PEImage::Load()
 {
@@ -1210,7 +1206,7 @@ void PEImage::Load()
         return;
     }
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
     if (m_pLayouts[IMAGE_FLAT] != NULL
         && m_pLayouts[IMAGE_FLAT]->CheckILOnlyFormat()
         && !m_pLayouts[IMAGE_FLAT]->HasWriteableSections())
@@ -1228,7 +1224,7 @@ void PEImage::Load()
         SetLayout(IMAGE_LOADED, m_pLayouts[IMAGE_FLAT]);
     }
     else
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
     {
         if(!IsFile())
         {

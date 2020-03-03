@@ -4,7 +4,7 @@
 // GIF Codec class testing unit
 //
 // Authors:
-//  Jordi Mas i Hernàndez (jordi@ximian.com)
+//  Jordi Mas i Hern?ndez (jordi@ximian.com)
 //  Sebastien Pouliot  <sebastien@ximian.com>
 //
 // Copyright (C) 2006, 2007 Novell, Inc (http://www.novell.com)
@@ -109,7 +109,7 @@ namespace MonoTests.System.Drawing.Imaging
             Bitmap8bitsPixels(Helpers.GetTestBitmapPath("nature24bits87.gif"));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(35744)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]
         public void Bitmap8bitsData()
         {
             string sInFile = Helpers.GetTestBitmapPath("nature24bits.gif");

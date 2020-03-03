@@ -26,7 +26,7 @@ static InstructionSet Arm64VersionOfIsa(InstructionSet isa)
         case InstructionSet_Crc32:
             return InstructionSet_Crc32_Arm64;
         default:
-            unreached();
+            return InstructionSet_NONE;
     }
 }
 
@@ -175,7 +175,7 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
 
         default:
         {
-            unreached();
+            return false;
         }
     }
 }
@@ -220,7 +220,7 @@ bool HWIntrinsicInfo::isScalarIsa(InstructionSet isa)
 //
 GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType)
 {
-    unreached();
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -400,8 +400,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         default:
         {
-            unreached();
-            break;
+            return nullptr;
         }
     }
 

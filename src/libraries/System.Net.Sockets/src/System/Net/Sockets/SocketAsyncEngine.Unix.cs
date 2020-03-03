@@ -18,7 +18,7 @@ namespace System.Net.Sockets
         //
         public readonly struct Token
         {
-            private readonly SocketAsyncEngine _engine;
+            private readonly SocketAsyncEngine? _engine;
             private readonly IntPtr _handle;
 
             public Token(SocketAsyncContext context)
@@ -35,14 +35,14 @@ namespace System.Net.Sockets
             {
                 if (WasAllocated)
                 {
-                    _engine.FreeHandle(_handle);
+                    _engine!.FreeHandle(_handle);
                 }
             }
 
             public bool TryRegister(SafeSocketHandle socket, out Interop.Error error)
             {
                 Debug.Assert(WasAllocated, "Expected WasAllocated to be true");
-                return _engine.TryRegister(socket, _handle, out error);
+                return _engine!.TryRegister(socket, _handle, out error);
             }
         }
 
@@ -70,7 +70,7 @@ namespace System.Net.Sockets
         // The current engines. We replace an engine when it runs out of "handle" values.
         // Must be accessed under s_lock.
         //
-        private static readonly SocketAsyncEngine[] s_currentEngines = new SocketAsyncEngine[s_engineCount];
+        private static readonly SocketAsyncEngine?[] s_currentEngines = new SocketAsyncEngine?[s_engineCount];
         private static int s_allocateFromEngine = 0;
 
         private readonly IntPtr _port;
@@ -105,7 +105,7 @@ namespace System.Net.Sockets
         //
         private static readonly IntPtr MaxHandles = IntPtr.Size == 4 ? (IntPtr)int.MaxValue : (IntPtr)long.MaxValue;
 #endif
-        private static readonly IntPtr MinHandlesForAdditionalEngine = s_engineCount == 1 ? MaxHandles : (IntPtr)32;
+        private static readonly IntPtr MinHandlesForAdditionalEngine = s_engineCount == 1 ? MaxHandles : (IntPtr)EventBufferCount;
 
         //
         // Sentinel handle value to identify events from the "shutdown pipe," used to signal an event loop to stop
@@ -149,7 +149,7 @@ namespace System.Net.Sockets
         //
         // Allocates a new {SocketAsyncEngine, handle} pair.
         //
-        private static void AllocateToken(SocketAsyncContext context, out SocketAsyncEngine engine, out IntPtr handle)
+        private static void AllocateToken(SocketAsyncContext context, out SocketAsyncEngine? engine, out IntPtr handle)
         {
             lock (s_lock)
             {
@@ -285,7 +285,7 @@ namespace System.Net.Sockets
                 {
                     if (suppressFlow) ExecutionContext.SuppressFlow();
                     Task.Factory.StartNew(
-                        s => ((SocketAsyncEngine)s).EventLoop(),
+                        s => ((SocketAsyncEngine)s!).EventLoop(),
                         this,
                         CancellationToken.None,
                         TaskCreationOptions.LongRunning,
@@ -330,7 +330,7 @@ namespace System.Net.Sockets
                         else
                         {
                             Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
-                            _handleToContextMap.TryGetValue(handle, out SocketAsyncContext context);
+                            _handleToContextMap.TryGetValue(handle, out SocketAsyncContext? context);
                             if (context != null)
                             {
                                 context.HandleEvents(_buffer[i].Events);

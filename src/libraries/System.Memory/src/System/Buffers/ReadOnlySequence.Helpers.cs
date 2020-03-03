@@ -649,11 +649,11 @@ namespace System.Buffers
                     {
                         // Positive start and end index == ReadOnlySequenceSegment<T>
                         ReadOnlySequenceSegment<T> segment = (ReadOnlySequenceSegment<T>)startObject;
-                        next = new SequencePosition(segment.Next, 0);
                         first = segment.Memory.Span;
                         if (hasMultipleSegments)
                         {
                             first = first.Slice(startIndex);
+                            next = new SequencePosition(segment.Next, 0);
                         }
                         else
                         {

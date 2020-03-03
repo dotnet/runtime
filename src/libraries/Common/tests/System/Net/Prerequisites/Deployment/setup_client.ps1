@@ -10,7 +10,7 @@ Param (
 . .\setup_common.ps1
 . .\setup_certificates.ps1
 
-$script:COREFX_ROLE_NAME = "COREFX_NET_CLIENT"
+$script:LIBRARIES_ROLE_NAME = "LIBRARIES_NET_CLIENT"
 
 Function InstallClientEnvironmentConfiguration
 {
@@ -34,7 +34,7 @@ Function UninstallClientEnvironmentConfiguration
 
 Function Install
 {
-    Write-Host -ForegroundColor Cyan "Installing prerequisites for test role: $($script:COREFX_ROLE_NAME)."
+    Write-Host -ForegroundColor Cyan "Installing prerequisites for test role: $($script:LIBRARIES_ROLE_NAME)."
     CheckMachineInfo
 
     InstallClientCertificates
@@ -45,7 +45,7 @@ Function Install
 
 Function Uninstall
 {
-    Write-Host -ForegroundColor Cyan "Removing prerequisites for test role: $($script:COREFX_ROLE_NAME)."
+    Write-Host -ForegroundColor Cyan "Removing prerequisites for test role: $($script:LIBRARIES_ROLE_NAME)."
     EnvironmentCheckUninstallRoleStatus
 
     RemoveClientCertificates

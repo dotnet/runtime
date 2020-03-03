@@ -1,7 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <BuildConfigurations>
-      netfx;
-    </BuildConfigurations>
-  </PropertyGroup>
-</Project>

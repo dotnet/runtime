@@ -13,16 +13,16 @@ namespace System.Text.RegularExpressions
         /// by <paramref name="pattern"/>.
         /// </summary>
         public static string[] Split(string input, string pattern) =>
-            new Regex(pattern, addToCache: true).Split(input);
+            RegexCache.GetOrAdd(pattern).Split(input);
 
         /// <summary>
         /// Splits the <paramref name="input "/>string at the position defined by <paramref name="pattern"/>.
         /// </summary>
         public static string[] Split(string input, string pattern, RegexOptions options) =>
-            Split(input, pattern, options, s_defaultMatchTimeout);
+            RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).Split(input);
 
         public static string[] Split(string input, string pattern, RegexOptions options, TimeSpan matchTimeout) =>
-            new Regex(pattern, options, matchTimeout, addToCache: true).Split(input);
+            RegexCache.GetOrAdd(pattern, options, matchTimeout).Split(input);
 
         /// <summary>
         /// Splits the <paramref name="input"/> string at the position defined by a
@@ -30,10 +30,12 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string[] Split(string input)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
 
-            return Split(input, 0, UseOptionR() ? input.Length : 0);
+            return Split(this, input, 0, UseOptionR() ? input.Length : 0);
         }
 
         /// <summary>
@@ -42,8 +44,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string[] Split(string input, int count)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
 
             return Split(this, input, count, UseOptionR() ? input.Length : 0);
         }
@@ -53,8 +57,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string[] Split(string input, int count, int startat)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
+            if (input is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            }
 
             return Split(this, input, count, startat);
         }
@@ -66,94 +72,79 @@ namespace System.Text.RegularExpressions
         private static string[] Split(Regex regex, string input, int count, int startat)
         {
             if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.CountTooSmall);
-            if (startat < 0 || startat > input.Length)
-                throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
-
-            string[] result;
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.CountTooSmall);
+            }
+            if ((uint)startat > (uint)input.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startat, ExceptionResource.BeginIndexNotNegative);
+            }
 
             if (count == 1)
             {
-                result = new string[1];
-                result[0] = input;
-                return result;
+                return new[] { input };
             }
 
-            count -= 1;
+            count--;
+            var state = (results: new List<string>(), prevat: 0, input, count);
 
-            Match match = regex.Match(input, startat);
-
-            if (!match.Success)
+            if (!regex.RightToLeft)
             {
-                result = new string[1];
-                result[0] = input;
-                return result;
+                regex.Run(input, startat, ref state, (ref (List<string> results, int prevat, string input, int count) state, Match match) =>
+                {
+                    state.results.Add(state.input.Substring(state.prevat, match.Index - state.prevat));
+                    state.prevat = match.Index + match.Length;
+
+                    // add all matched capture groups to the list.
+                    for (int i = 1; i < match.Groups.Count; i++)
+                    {
+                        if (match.IsMatched(i))
+                        {
+                            state.results.Add(match.Groups[i].ToString());
+                        }
+                    }
+
+                    return --state.count != 0;
+                });
+
+                if (state.results.Count == 0)
+                {
+                    return new[] { input };
+                }
+
+                state.results.Add(input.Substring(state.prevat, input.Length - state.prevat));
             }
             else
             {
-                List<string> al = new List<string>();
+                state.prevat = input.Length;
 
-                if (!regex.RightToLeft)
+                regex.Run(input, startat, ref state, (ref (List<string> results, int prevat, string input, int count) state, Match match) =>
                 {
-                    int prevat = 0;
+                    state.results.Add(state.input.Substring(match.Index + match.Length, state.prevat - match.Index - match.Length));
+                    state.prevat = match.Index;
 
-                    while (true)
+                    // add all matched capture groups to the list.
+                    for (int i = 1; i < match.Groups.Count; i++)
                     {
-                        al.Add(input.Substring(prevat, match.Index - prevat));
-
-                        prevat = match.Index + match.Length;
-
-                        // add all matched capture groups to the list.
-                        for (int i = 1; i < match.Groups.Count; i++)
+                        if (match.IsMatched(i))
                         {
-                            if (match.IsMatched(i))
-                                al.Add(match.Groups[i].ToString());
+                            state.results.Add(match.Groups[i].ToString());
                         }
-
-                        if (--count == 0)
-                            break;
-
-                        match = match.NextMatch();
-
-                        if (!match.Success)
-                            break;
                     }
 
-                    al.Add(input.Substring(prevat, input.Length - prevat));
-                }
-                else
+                    return --state.count != 0;
+                });
+
+                if (state.results.Count == 0)
                 {
-                    int prevat = input.Length;
-
-                    while (true)
-                    {
-                        al.Add(input.Substring(match.Index + match.Length, prevat - match.Index - match.Length));
-
-                        prevat = match.Index;
-
-                        // add all matched capture groups to the list.
-                        for (int i = 1; i < match.Groups.Count; i++)
-                        {
-                            if (match.IsMatched(i))
-                                al.Add(match.Groups[i].ToString());
-                        }
-
-                        if (--count == 0)
-                            break;
-
-                        match = match.NextMatch();
-
-                        if (!match.Success)
-                            break;
-                    }
-
-                    al.Add(input.Substring(0, prevat));
-
-                    al.Reverse(0, al.Count);
+                    return new[] { input };
                 }
 
-                return al.ToArray();
+                state.results.Add(input.Substring(0, state.prevat));
+                state.results.Reverse(0, state.results.Count);
             }
+
+            return state.results.ToArray();
         }
     }
 }

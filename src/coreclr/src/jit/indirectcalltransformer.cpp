@@ -8,8 +8,8 @@
 #endif
 
 // The IndirectCallTransformer transforms indirect calls that involve fat function
-// pointers or guarded devirtualization candidates. These transformations introduce
-// control flow and so can't easily be done in the importer.
+// pointers, guarded devirtualization candidates, or runtime lookup with dynamic dictionary expansion.
+// These transformations introduce control flow and so can't easily be done in the importer.
 //
 // A fat function pointer is a pointer with the second least significant bit
 // (aka FAT_POINTER_MASK) set. If the bit is set, the pointer (after clearing the bit)
@@ -103,16 +103,22 @@ private:
 
         for (Statement* stmt : block->Statements())
         {
-            if (ContainsFatCalli(stmt))
+            if (compiler->doesMethodHaveFatPointer() && ContainsFatCalli(stmt))
             {
                 FatPointerCallTransformer transformer(compiler, block, stmt);
                 transformer.Run();
                 count++;
             }
-
-            if (ContainsGuardedDevirtualizationCandidate(stmt))
+            else if (compiler->doesMethodHaveGuardedDevirtualization() &&
+                     ContainsGuardedDevirtualizationCandidate(stmt))
             {
                 GuardedDevirtualizationTransformer transformer(compiler, block, stmt);
+                transformer.Run();
+                count++;
+            }
+            else if (compiler->doesMethodHaveExpRuntimeLookup() && ContainsExpRuntimeLookup(stmt))
+            {
+                ExpRuntimeLookupTransformer transformer(compiler, block, stmt);
                 transformer.Run();
                 count++;
             }
@@ -152,6 +158,28 @@ private:
     {
         GenTree* candidate = stmt->GetRootNode();
         return candidate->IsCall() && candidate->AsCall()->IsGuardedDevirtualizationCandidate();
+    }
+
+    //------------------------------------------------------------------------
+    // ContainsExpRuntimeLookup: check if this statement contains a dictionary
+    // with dynamic dictionary expansion that we want to transform in CFG.
+    //
+    // Return Value:
+    //    true if contains, false otherwise.
+    //
+    bool ContainsExpRuntimeLookup(Statement* stmt)
+    {
+        GenTree* candidate = stmt->GetRootNode();
+        if (candidate->OperIs(GT_ASG))
+        {
+            candidate = candidate->gtGetOp2();
+        }
+        if (candidate->OperIs(GT_CALL))
+        {
+            GenTreeCall* call = candidate->AsCall();
+            return call->IsExpRuntimeLookup();
+        }
+        return false;
     }
 
     class Transformer
@@ -243,7 +271,7 @@ private:
         //------------------------------------------------------------------------
         // SetWeights: set weights for new blocks.
         //
-        void SetWeights()
+        virtual void SetWeights()
         {
             remainderBlock->inheritWeight(currBlock);
             checkBlock->inheritWeight(currBlock);
@@ -254,7 +282,7 @@ private:
         //------------------------------------------------------------------------
         // ChainFlow: link new blocks into correct cfg.
         //
-        void ChainFlow()
+        virtual void ChainFlow()
         {
             assert(!compiler->fgComputePredsDone);
             checkBlock->bbJumpDest = elseBlock;
@@ -439,7 +467,14 @@ private:
                 fatCall->gtCallArgs = compiler->gtPrependNewCallArg(hiddenArgument, fatCall->gtCallArgs);
             }
 #else
-            AddArgumentToTail(fatCall->gtCallArgs, hiddenArgument);
+            if (fatCall->gtCallArgs == nullptr)
+            {
+                fatCall->gtCallArgs = compiler->gtNewCallArgs(hiddenArgument);
+            }
+            else
+            {
+                AddArgumentToTail(fatCall->gtCallArgs, hiddenArgument);
+            }
 #endif
         }
 
@@ -760,6 +795,178 @@ private:
         unsigned returnTemp;
     };
 
+    // Runtime lookup with dynamic dictionary expansion transformer,
+    // it expects helper runtime lookup call with additional arguments that are:
+    // result handle, nullCheck tree, sizeCheck tree.
+    // before:
+    //   current block
+    //   {
+    //     previous statements
+    //     transforming statement
+    //     {
+    //       ASG lclVar, call with GTF_CALL_M_EXP_RUNTIME_LOOKUP flag set and additional arguments.
+    //     }
+    //     subsequent statements
+    //   }
+    //
+    // after:
+    //   current block
+    //   {
+    //     previous statements
+    //   } BBJ_NONE check block
+    //   check block
+    //   {
+    //     jump to else if the handle fails size check
+    //   } BBJ_COND check block2, else block
+    //   check block2
+    //   {
+    //     jump to else if the handle fails null check
+    //   } BBJ_COND then block, else block
+    //   then block
+    //   {
+    //     return handle
+    //   } BBJ_ALWAYS remainder block
+    //   else block
+    //   {
+    //     do a helper call
+    //   } BBJ_NONE remainder block
+    //   remainder block
+    //   {
+    //     subsequent statements
+    //   }
+    //
+    class ExpRuntimeLookupTransformer final : public Transformer
+    {
+    public:
+        ExpRuntimeLookupTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
+            : Transformer(compiler, block, stmt)
+        {
+            GenTreeOp* asg = stmt->GetRootNode()->AsOp();
+            resultLclNum   = asg->gtOp1->AsLclVar()->GetLclNum();
+            origCall       = GetCall(stmt);
+            checkBlock2    = nullptr;
+        }
+
+    protected:
+        virtual const char* Name() override
+        {
+            return "ExpRuntimeLookup";
+        }
+
+        //------------------------------------------------------------------------
+        // GetCall: find a call in a statement.
+        //
+        // Arguments:
+        //    callStmt - the statement with the call inside.
+        //
+        // Return Value:
+        //    call tree node pointer.
+        virtual GenTreeCall* GetCall(Statement* callStmt) override
+        {
+            GenTree* tree = callStmt->GetRootNode();
+            assert(tree->OperIs(GT_ASG));
+            GenTreeOp*   asg  = tree->AsOp();
+            GenTreeCall* call = tree->gtGetOp2()->AsCall();
+            return call;
+        }
+
+        //------------------------------------------------------------------------
+        // ClearFlag: clear runtime exp lookup flag from the original call.
+        //
+        virtual void ClearFlag() override
+        {
+            origCall->ClearExpRuntimeLookup();
+        }
+
+        // FixupRetExpr: no action needed.
+        virtual void FixupRetExpr() override
+        {
+        }
+
+        //------------------------------------------------------------------------
+        // CreateCheck: create check blocks, that checks dictionary size and does null test.
+        //
+        virtual void CreateCheck() override
+        {
+            GenTreeCall::UseIterator argsIter  = origCall->Args().begin();
+            GenTree*                 nullCheck = argsIter.GetUse()->GetNode();
+            ++argsIter;
+            GenTree* sizeCheck = argsIter.GetUse()->GetNode();
+            ++argsIter;
+            origCall->gtCallArgs = argsIter.GetUse();
+            // The first argument is the handle now.
+            checkBlock = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
+
+            assert(sizeCheck->OperIs(GT_LE));
+            GenTree*   sizeJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck);
+            Statement* sizeJmpStmt = compiler->fgNewStmtFromTree(sizeJmpTree, stmt->GetILOffsetX());
+            compiler->fgInsertStmtAtEnd(checkBlock, sizeJmpStmt);
+
+            checkBlock2 = CreateAndInsertBasicBlock(BBJ_COND, checkBlock);
+            assert(nullCheck->OperIs(GT_EQ));
+            GenTree*   nullJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, nullCheck);
+            Statement* nullJmpStmt = compiler->fgNewStmtFromTree(nullJmpTree, stmt->GetILOffsetX());
+            compiler->fgInsertStmtAtEnd(checkBlock2, nullJmpStmt);
+        }
+
+        //------------------------------------------------------------------------
+        // CreateThen: create then block, that is executed if the checks succeed.
+        // This simply returns the handle.
+        //
+        virtual void CreateThen() override
+        {
+            thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock2);
+
+            GenTreeCall::UseIterator argsIter     = origCall->Args().begin();
+            GenTree*                 resultHandle = argsIter.GetUse()->GetNode();
+            ++argsIter;
+            // The first argument is the real first argument for the call now.
+            origCall->gtCallArgs = argsIter.GetUse();
+
+            GenTree*   asg     = compiler->gtNewTempAssign(resultLclNum, resultHandle);
+            Statement* asgStmt = compiler->gtNewStmt(asg, stmt->GetILOffsetX());
+            compiler->fgInsertStmtAtEnd(thenBlock, asgStmt);
+        }
+
+        //------------------------------------------------------------------------
+        // CreateElse: create else block, that is executed if the checks fail.
+        //
+        virtual void CreateElse() override
+        {
+            elseBlock          = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
+            GenTree*   asg     = compiler->gtNewTempAssign(resultLclNum, origCall);
+            Statement* asgStmt = compiler->gtNewStmt(asg, stmt->GetILOffsetX());
+            compiler->fgInsertStmtAtEnd(elseBlock, asgStmt);
+        }
+
+        //------------------------------------------------------------------------
+        // SetWeights: set weights for new blocks.
+        //
+        virtual void SetWeights() override
+        {
+            remainderBlock->inheritWeight(currBlock);
+            checkBlock->inheritWeight(currBlock);
+            checkBlock2->inheritWeightPercentage(checkBlock, HIGH_PROBABILITY);
+            thenBlock->inheritWeightPercentage(currBlock, HIGH_PROBABILITY);
+            elseBlock->inheritWeightPercentage(currBlock, 100 - HIGH_PROBABILITY);
+        }
+
+        //------------------------------------------------------------------------
+        // ChainFlow: link new blocks into correct cfg.
+        //
+        virtual void ChainFlow() override
+        {
+            assert(!compiler->fgComputePredsDone);
+            checkBlock->bbJumpDest  = elseBlock;
+            checkBlock2->bbJumpDest = elseBlock;
+            thenBlock->bbJumpDest   = remainderBlock;
+        }
+
+    private:
+        BasicBlock* checkBlock2;
+        unsigned    resultLclNum;
+    };
+
     Compiler* compiler;
 };
 
@@ -775,8 +982,10 @@ Compiler::fgWalkResult Compiler::fgDebugCheckForTransformableIndirectCalls(GenTr
     GenTree* tree = *pTree;
     if (tree->IsCall())
     {
-        assert(!tree->AsCall()->IsFatPointerCandidate());
-        assert(!tree->AsCall()->IsGuardedDevirtualizationCandidate());
+        GenTreeCall* call = tree->AsCall();
+        assert(!call->IsFatPointerCandidate());
+        assert(!call->IsGuardedDevirtualizationCandidate());
+        assert(!call->IsExpRuntimeLookup());
     }
     return WALK_CONTINUE;
 }
@@ -789,6 +998,7 @@ void Compiler::CheckNoTransformableIndirectCallsRemain()
 {
     assert(!doesMethodHaveFatPointer());
     assert(!doesMethodHaveGuardedDevirtualization());
+    assert(!doesMethodHaveExpRuntimeLookup());
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
@@ -810,7 +1020,7 @@ void Compiler::fgTransformIndirectCalls()
 {
     JITDUMP("\n*************** in fgTransformIndirectCalls(%s)\n", compIsForInlining() ? "inlinee" : "root");
 
-    if (doesMethodHaveFatPointer() || doesMethodHaveGuardedDevirtualization())
+    if (doesMethodHaveFatPointer() || doesMethodHaveGuardedDevirtualization() || doesMethodHaveExpRuntimeLookup())
     {
         IndirectCallTransformer indirectCallTransformer(this);
         int                     count = indirectCallTransformer.Run();
@@ -827,6 +1037,7 @@ void Compiler::fgTransformIndirectCalls()
 
         clearMethodHasFatPointer();
         clearMethodHasGuardedDevirtualization();
+        clearMethodHasExpRuntimeLookup();
     }
     else
     {

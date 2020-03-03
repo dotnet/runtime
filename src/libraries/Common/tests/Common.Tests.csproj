@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CoverageSupported>false</CoverageSupported>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs">
@@ -54,44 +54,149 @@
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\IHttpHeadersHandler.cs">
-      <Link>Common\System\Net\Http\Http2\IHttpHeadersHandler.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpHeadersHandler.cs">
+      <Link>Common\System\Net\Http\aspnetcore\IHttpHeadersHandler.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\DynamicTable.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\DynamicTable.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HeaderField.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\HeaderField.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HPackDecoder.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\HPackDecoder.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackDecoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HPackDecodingException.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\HPackDecodingException.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackDecodingException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecodingException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HPackEncoder.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\HPackEncoder.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackEncoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HPackEncodingException.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\HPackEncodingException.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackEncodingException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncodingException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\Huffman.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\Huffman.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HuffmanDecodingException.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\HuffmanDecodingException.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\IntegerDecoder.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\IntegerDecoder.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\IntegerDecoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerDecoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\IntegerEncoder.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\IntegerEncoder.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\StaticTable.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\StaticTable.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\StatusCodes.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\StatusCodes.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicAddressHelpers.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicAddressHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicApi.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicParameterHelpers.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicParameterHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSecurityConfig.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSecurityConfig.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSession.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\MsQuicSession.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\QuicExceptionHelpers.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\QuicExceptionHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\ResettableCompletionSource.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\Internal\ResettableCompletionSource.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicConnection.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicConnection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicImplementationProvider.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicImplementationProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicListener.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicListener.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicStream.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\MsQuic\MsQuicStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicImplementationProvider.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicImplementationProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicListenerProvider.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicListenerProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicConnectionProvider.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicConnectionProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\QuicStreamProvider.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\QuicStreamProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockImplementationProvider.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockImplementationProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockListener.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockListener.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockConnection.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockConnection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockStream.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Mock\MockStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\NetEventSource.Quic.cs" >
+      <Link>Common\System\Net\Http\aspnetcore\Quic\NetEventSource.Quic.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicClientConnectionOptions.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicClientConnectionOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicImplementationProviders.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicImplementationProviders.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicConnection.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicConnection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicListener.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicListener.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicListenerOptions.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicListenerOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicOperationAbortedException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicOperationAbortedException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicStream.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicConnectionAbortedException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicConnectionAbortedException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\QuicStreamAbortedException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\QuicStreamAbortedException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\Interop.MsQuic.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\Interop.MsQuic.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicEnums.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicEnums.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicNativeMethods.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicNativeMethods.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusCodes.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusCodes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusHelper.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\MsQuicStatusHelper.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Text\ReusableTextReader.cs">
       <Link>Common\System\Text\ReusableTextReader.cs</Link>
@@ -99,8 +204,8 @@
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs">
       <Link>Common\System\Text\SimpleRegex.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
-      <Link>System\Text\ValueStringBuilder.cs</Link>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
@@ -124,10 +229,10 @@
     <Compile Include="Tests\System\Collections\Generic\LargeArrayBuilderTests.cs" />
     <Compile Include="Tests\System\IO\RowConfigReaderTests.cs" />
     <Compile Include="Tests\System\Net\HttpKnownHeaderNamesTests.cs" />
-    <Compile Include="Tests\System\Net\Http2\DynamicTableTest.cs" />
-    <Compile Include="Tests\System\Net\Http2\HPackDecoderTest.cs" />
-    <Compile Include="Tests\System\Net\Http2\HPackIntegerTest.cs" />
-    <Compile Include="Tests\System\Net\Http2\HuffmanDecodingTests.cs" />
+    <Compile Include="Tests\System\Net\aspnetcore\Http2\DynamicTableTest.cs" />
+    <Compile Include="Tests\System\Net\aspnetcore\Http2\HPackDecoderTest.cs" />
+    <Compile Include="Tests\System\Net\aspnetcore\Http2\HPackIntegerTest.cs" />
+    <Compile Include="Tests\System\Net\aspnetcore\Http2\HuffmanDecodingTests.cs" />
     <Compile Include="System\Net\Sockets\Fletcher32.cs">
       <Link>System\Net\Sockets\Fletcher32.cs</Link>
     </Compile>
@@ -139,8 +244,11 @@
     </Compile>
     <Compile Include="Tests\System\Net\VirtualNetworkTest.cs" />
     <Compile Include="Tests\System\Net\VirtualNetworkStreamTest.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
+      <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.cs">
       <Link>System\IO\PathInternal.cs</Link>
@@ -154,14 +262,14 @@
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="Tests\System\IO\PathInternal.Windows.Tests.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs">
-      <Link>System\IO\Win32Marshal.cs</Link>
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
+      <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
     <Compile Include="Tests\System\IO\Win32Marshal.Tests.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Windows.cs">
@@ -173,7 +281,7 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Unix.cs">
       <Link>System\IO\PathInternal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.PathConf.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs">
       <Link>Common\Interop\Unix\Interop.PathConf.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
@@ -181,6 +289,18 @@
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Unix.cs">
       <Link>System\PasteArguments.Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Linux specific files -->
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' ">
+    <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs">
+      <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- OSX specific files -->
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

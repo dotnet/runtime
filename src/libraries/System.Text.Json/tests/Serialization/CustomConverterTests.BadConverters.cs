@@ -132,11 +132,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(expectedSubStr, ex.Message.Substring(pos + expectedSubStr.Length));
         }
 
-        private class ConverterThatReturnsNull : JsonConverterFactory
+        private class ConverterFactoryThatReturnsNull : JsonConverterFactory
         {
             public override bool CanConvert(Type typeToConvert)
             {
-                return true;
+                // To verify the nullable converter, don't convert Nullable.
+                return Nullable.GetUnderlyingType(typeToConvert) == null;
             }
 
             public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
@@ -149,10 +150,18 @@ namespace System.Text.Json.Serialization.Tests
         public static void ConverterThatReturnsNullFail()
         {
             var options = new JsonSerializerOptions();
-            options.Converters.Add(new ConverterThatReturnsNull());
+            options.Converters.Add(new ConverterFactoryThatReturnsNull());
 
-            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(0, options));
-            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize<int>("0", options));
+            // A null return value from CreateConverter() will generate a NotSupportedException with the type name.
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(0, options));
+            Assert.Contains(typeof(int).ToString(), ex.Message);
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int>("0", options));
+            Assert.Contains(typeof(int).ToString(), ex.Message);
+
+            // This will invoke the Nullable converter which should detect a null converter.
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int?>("0", options));
+            Assert.Contains(typeof(int).ToString(), ex.Message);
         }
 
         private class Level1
@@ -232,8 +241,8 @@ namespace System.Text.Json.Serialization.Tests
             }
             catch (JsonException ex)
             {
-                Assert.Contains("$.Level2.Level3s[1]", ex.ToString());
-                Assert.Equal("$.Level2.Level3s[1]", ex.Path);
+                Assert.Contains("$.Level2.Level3s[0]", ex.ToString());
+                Assert.Equal("$.Level2.Level3s[0]", ex.Path);
             }
         }
 
@@ -252,8 +261,8 @@ namespace System.Text.Json.Serialization.Tests
             }
             catch (JsonException ex)
             {
-                Assert.Contains("$.Level2.Level3s[1]", ex.ToString());
-                Assert.Equal("$.Level2.Level3s[1]", ex.Path);
+                Assert.Contains("$.Level2.Level3s[0]", ex.ToString());
+                Assert.Equal("$.Level2.Level3s[0]", ex.Path);
             }
         }
 
@@ -331,6 +340,38 @@ namespace System.Text.Json.Serialization.Tests
             ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PocoWithTwoConverters>("{}"));
             Assert.Contains("'System.Text.Json.Serialization.JsonConverterAttribute'", ex.Message);
             Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+PocoWithTwoConverters'", ex.Message);
+        }
+
+        [Fact]
+        public static void ConverterWithoutDefaultCtor()
+        {
+            string json = @"{""MyType"":""ABC""}";
+
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithConverterWithoutPublicEmptyCtor>(json));
+            Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+ClassWithConverterWithoutPublicEmptyCtor'", ex.Message);
+        }
+
+        [JsonConverter(typeof(ConverterWithoutPublicEmptyCtor))]
+        public class ClassWithConverterWithoutPublicEmptyCtor
+        {
+            public string MyType { get; set; }
+        }
+
+        internal class ConverterWithoutPublicEmptyCtor : JsonConverter<ClassWithConverterWithoutPublicEmptyCtor>
+        {
+            public ConverterWithoutPublicEmptyCtor(int x)
+            {
+            }
+
+            public override ClassWithConverterWithoutPublicEmptyCtor Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Write(Utf8JsonWriter writer, ClassWithConverterWithoutPublicEmptyCtor value, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

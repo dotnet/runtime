@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <NoWarn>0168,0169,0414,0219,0649</NoWarn>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Data\Common\DataColumnMappingTest.cs" />
@@ -76,6 +76,7 @@
     <Compile Include="System\Data\DeletedRowInaccessibleExceptionTest.cs" />
     <Compile Include="System\Data\DuplicateNameExceptionTest.cs" />
     <Compile Include="System\Data\EvaluateExceptionTest.cs" />
+    <Compile Include="System\Data\FacadeTest.cs" />
     <Compile Include="System\Data\ForeignKeyConstraintTest.cs" />
     <Compile Include="System\Data\ForeignKeyConstraintTest2.cs" />
     <Compile Include="System\Data\InRowChangingEventExceptionTest.cs" />

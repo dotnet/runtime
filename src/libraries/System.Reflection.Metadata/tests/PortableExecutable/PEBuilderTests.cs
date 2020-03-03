@@ -147,7 +147,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 // The expected checksum can be determined by saving the PE stream to a file,
                 // running "sn -R test.dll KeyPair.snk" and inspecting the resulting binary.
                 // The re-signed binary should be the same as the original one.
-                // See https://github.com/dotnet/corefx/issues/25829.
+                // See https://github.com/dotnet/runtime/issues/24407.
                 peStream.Position = 0;
                 var actualChecksum = new PEHeaders(peStream).PEHeader.CheckSum;
                 Assert.Equal(0x0000319cU, actualChecksum);

@@ -414,7 +414,7 @@ namespace System.Runtime.Serialization
                     }
 
 #if FEATURE_LEGACYNETCF
-                    // The DataContractSerializer in the full framework doesn't support unordered elements:
+                    // The DataContractSerializer in the .NET Framework doesn't support unordered elements:
                     // deserialization will fail if the data members in the XML are not sorted alphabetically.
                     // But the NetCF DataContractSerializer does support unordered element. To maintain compatibility
                     // with Mango we always search for the member from the beginning of the member list.

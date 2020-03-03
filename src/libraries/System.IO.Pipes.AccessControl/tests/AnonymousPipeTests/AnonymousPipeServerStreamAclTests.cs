@@ -8,10 +8,6 @@ namespace System.IO.Pipes.Tests
 {
     public class AnonymousPipeServerStreamAclTests : PipeServerStreamAclTestBase
     {
-        private const PipeDirection DefaultPipeDirection = PipeDirection.In;
-        private const HandleInheritability DefaultInheritability = HandleInheritability.None;
-        private const int DefaultBufferSize = 1;
-
         [Fact]
         public void Create_NullSecurity()
         {
@@ -28,10 +24,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Theory]
-        [InlineData((PipeDirection)(int.MinValue))]
-        [InlineData((PipeDirection)0)]
-        [InlineData((PipeDirection)4)]
-        [InlineData((PipeDirection)(int.MaxValue))]
+        [MemberData(nameof(Create_InvalidPipeDirection_MemberData))]
         public void Create_InvalidPipeDirection(PipeDirection direction)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -41,10 +34,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Theory]
-        [InlineData((HandleInheritability)(int.MinValue))]
-        [InlineData((HandleInheritability)(-1))]
-        [InlineData((HandleInheritability)2)]
-        [InlineData((HandleInheritability)(int.MaxValue))]
+        [MemberData(nameof(Create_InvalidInheritability_MemberData))]
         public void Create_InvalidInheritability(HandleInheritability inheritability)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -54,8 +44,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Theory]
-        [InlineData(int.MinValue)]
-        [InlineData(-1)]
+        [MemberData(nameof(Create_InvalidBufferSize_MemberData))]
         public void Create_InvalidBufferSize(int bufferSize)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -66,7 +55,7 @@ namespace System.IO.Pipes.Tests
 
         public static IEnumerable<object[]> Create_ValidParameters_MemberData() =>
             from direction in new[] { PipeDirection.In, PipeDirection.Out }
-            from inheritability in Enum.GetValues(typeof(HandleInheritability)).Cast<HandleInheritability>()
+            from inheritability in new[] { HandleInheritability.None, HandleInheritability.Inheritable }
             from bufferSize in new[] { 0, 1 }
             select new object[] { direction, inheritability, bufferSize };
 
@@ -78,31 +67,22 @@ namespace System.IO.Pipes.Tests
         }
 
         public static IEnumerable<object[]> Create_CombineRightsAndAccessControl_MemberData() =>
-            from rights in Enum.GetValues(typeof(PipeAccessRights)).Cast<PipeAccessRights>()
+            from rights in s_combinedPipeAccessRights
             from accessControl in new[] { AccessControlType.Allow, AccessControlType.Deny }
             select new object[] { rights, accessControl };
 
-        // These tests match NetFX behavior
+        // These tests match .NET Framework behavior
         [Theory]
         [MemberData(nameof(Create_CombineRightsAndAccessControl_MemberData))]
         public void Create_CombineRightsAndAccessControl(PipeAccessRights rights, AccessControlType accessControl)
         {
-            // These are the two cases that create a valid pipe when using Allow
-            if ((rights == PipeAccessRights.FullControl || rights == PipeAccessRights.ReadWrite) &&
-                accessControl == AccessControlType.Allow)
+            // These are the only two rights that allow creating a pipe when using Allow
+            if (accessControl == AccessControlType.Allow &&
+                (rights == PipeAccessRights.FullControl || rights == PipeAccessRights.ReadWrite))
             {
                 VerifyValidSecurity(rights, accessControl);
             }
-            // When creating the PipeAccessRule for the PipeSecurity, the PipeAccessRule constructor calls AccessMaskFromRights, which explicilty removes the Synchronize bit from rights when AccessControlType is Deny
-            // and rights is not FullControl, so using Synchronize with Deny is not allowed
-            else  if (rights == PipeAccessRights.Synchronize && accessControl == AccessControlType.Deny)
-            {
-                Assert.Throws<ArgumentException>("accessMask", () =>
-                {
-                    PipeSecurity security = GetPipeSecurity(WellKnownSidType.BuiltinUsersSid, PipeAccessRights.Synchronize, AccessControlType.Deny);
-                });
-            }
-            // Any other case is not authorized
+            // Any other combination is not authorized
             else
             {
                 PipeSecurity security = GetPipeSecurity(WellKnownSidType.BuiltinUsersSid, rights, accessControl);
@@ -113,11 +93,12 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [Theory]
-        [InlineData(PipeAccessRights.ReadWrite | PipeAccessRights.Synchronize, AccessControlType.Allow)]
-        public void Create_ValidBitwiseRightsSecurity(PipeAccessRights rights, AccessControlType accessControl)
+        [Fact]
+        public void Create_ValidBitwiseRightsSecurity()
         {
-            VerifyValidSecurity(rights, accessControl);
+            // Synchronize gets removed from the bitwise combination,
+            // but ReadWrite (an allowed right) should remain untouched
+            VerifyValidSecurity(PipeAccessRights.ReadWrite | PipeAccessRights.Synchronize, AccessControlType.Allow);
         }
 
         private void VerifyValidSecurity(PipeAccessRights rights, AccessControlType accessControl)

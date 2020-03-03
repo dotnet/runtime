@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 
 /*****************************************************************************/
 /*****************************************************************************/
@@ -214,7 +214,6 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
     return false;
 }
 
-#ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
 // IsDstSrcImmAvxInstruction: Checks if the instruction has a "reg, reg/mem, imm" or
 //                            "reg/mem, reg, imm" form for the legacy, VEX, and EVEX
@@ -250,7 +249,6 @@ static bool IsDstSrcImmAvxInstruction(instruction ins)
             return false;
     }
 }
-#endif // FEATURE_HW_INTRINSICS
 
 // -------------------------------------------------------------------
 // Is4ByteSSEInstruction: Returns true if the SSE instruction is a 4-byte opcode.
@@ -398,7 +396,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
             break;
     }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // movsx should always sign extend out to 8 bytes just because we don't track
     // whether the dest should be 4 bytes or 8 bytes (attr indicates the size
     // of the source, not the dest).
@@ -458,9 +456,9 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
     {
         return false;
     }
-#else  //!_TARGET_AMD64 = _TARGET_X86_
+#else  //! TARGET_AMD64 = TARGET_X86
     return false;
-#endif //!_TARGET_AMD64_
+#endif //! TARGET_AMD64
 }
 
 // Returns true if using this register will require a REX.* prefix.
@@ -469,7 +467,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
 // instruction in question is AVX.
 bool IsExtendedReg(regNumber reg)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return ((reg >= REG_R8) && (reg <= REG_R15)) || ((reg >= REG_XMM8) && (reg <= REG_XMM15));
 #else
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
@@ -480,7 +478,7 @@ bool IsExtendedReg(regNumber reg)
 // Returns true if using this register, for the given EA_SIZE(attr), will require a REX.* prefix
 bool IsExtendedReg(regNumber reg, emitAttr attr)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Not a register, so doesn't need a prefix
     if (reg > REG_XMM15)
     {
@@ -522,11 +520,11 @@ bool IsExtendedReg(regNumber reg, emitAttr attr)
 // can also used to know whether a YMM register in case of AVX instructions.
 bool IsXMMReg(regNumber reg)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return (reg >= REG_XMM0) && (reg <= REG_XMM15);
-#else  // !_TARGET_AMD64_
+#else  // !TARGET_AMD64
     return (reg >= REG_XMM0) && (reg <= REG_XMM7);
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 }
 
 // Returns bits to be encoded in instruction for the given register.
@@ -552,7 +550,7 @@ emitter::code_t emitter::AddRexWPrefix(instruction ins, code_t code)
             return emitter::code_t(code | 0x00008000000000ULL);
         }
     }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return emitter::code_t(code | 0x4800000000ULL);
 #else
     assert(!"UNREACHED");
@@ -560,7 +558,7 @@ emitter::code_t emitter::AddRexWPrefix(instruction ins, code_t code)
 #endif
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
 emitter::code_t emitter::AddRexRPrefix(instruction ins, code_t code)
 {
@@ -620,7 +618,7 @@ emitter::code_t emitter::AddRexPrefix(instruction ins, code_t code)
     return code | 0x4000000000ULL;
 }
 
-#endif //_TARGET_AMD64_
+#endif // TARGET_AMD64
 
 bool isPrefix(BYTE b)
 {
@@ -797,7 +795,7 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
         return 3;
     }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (code > 0x00FFFFFFFFLL)
     {
         BYTE prefix = (code >> 32) & 0xFF;
@@ -851,12 +849,12 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
 
         return emitOutputByte(dst, prefix);
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     return 0;
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 /*****************************************************************************
  * Is the last instruction emitted a call instruction?
  */
@@ -882,7 +880,7 @@ void emitter::emitOutputPreEpilogNOP()
     }
 }
 
-#endif //_TARGET_AMD64_
+#endif // TARGET_AMD64
 
 // Size of rex prefix in bytes
 unsigned emitter::emitGetRexPrefixSize(instruction ins)
@@ -1008,7 +1006,7 @@ unsigned emitter::emitGetPrefixSize(code_t code)
     return 0;
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 /*****************************************************************************
  *
  *  Record a non-empty stack
@@ -1428,7 +1426,7 @@ inline unsigned emitter::insEncodeReg012(instruction ins, regNumber reg, emitAtt
 {
     assert(reg < REG_STK);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Either code is not NULL or reg is not an extended reg.
     // If reg is an extended reg, instruction needs to be prefixed with 'REX'
     // which would require code != NULL.
@@ -1444,7 +1442,7 @@ inline unsigned emitter::insEncodeReg012(instruction ins, regNumber reg, emitAtt
         // not the corresponding AH, CH, DH, or BH
         *code = AddRexPrefix(ins, *code); // REX
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     unsigned regBits = RegEncoding(reg);
 
@@ -1462,7 +1460,7 @@ inline unsigned emitter::insEncodeReg345(instruction ins, regNumber reg, emitAtt
 {
     assert(reg < REG_STK);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Either code is not NULL or reg is not an extended reg.
     // If reg is an extended reg, instruction needs to be prefixed with 'REX'
     // which would require code != NULL.
@@ -1478,7 +1476,7 @@ inline unsigned emitter::insEncodeReg345(instruction ins, regNumber reg, emitAtt
         // not the corresponding AH, CH, DH, or BH
         *code = AddRexPrefix(ins, *code); // REX
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     unsigned regBits = RegEncoding(reg);
 
@@ -1524,7 +1522,7 @@ inline unsigned emitter::insEncodeRegSIB(instruction ins, regNumber reg, code_t*
 {
     assert(reg < REG_STK);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Either code is not NULL or reg is not an extended reg.
     // If reg is an extended reg, instruction needs to be prefixed with 'REX'
     // which would require code != NULL.
@@ -1535,9 +1533,9 @@ inline unsigned emitter::insEncodeRegSIB(instruction ins, regNumber reg, code_t*
         *code = AddRexXPrefix(ins, *code); // REX.X
     }
     unsigned regBits = RegEncoding(reg);
-#else  // !_TARGET_AMD64_
+#else  // !TARGET_AMD64
     unsigned regBits = reg;
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 
     assert(regBits < 8);
     return regBits;
@@ -1768,7 +1766,7 @@ bool emitter::emitVerifyEncodable(instruction ins, emitAttr size, regNumber reg1
 inline UNATIVE_OFFSET emitter::emitInsSize(code_t code)
 {
     UNATIVE_OFFSET size = (code & 0xFF000000) ? 4 : (code & 0x00FF0000) ? 3 : 2;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     size += emitGetPrefixSize(code);
 #endif
     return size;
@@ -1815,11 +1813,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id, code_t code, int val
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(valSize <= sizeof(INT32) || !id->idIsCnsReloc());
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     if (valSize > sizeof(INT32))
     {
@@ -1940,9 +1938,9 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
         /* Is this a stack parameter reference? */
 
         if ((emitComp->lvaIsParameter(var)
-#if !defined(_TARGET_AMD64_) || defined(UNIX_AMD64_ABI)
+#if !defined(TARGET_AMD64) || defined(UNIX_AMD64_ABI)
              && !emitComp->lvaIsRegArgument(var)
-#endif // !_TARGET_AMD64_ || UNIX_AMD64_ABI
+#endif // !TARGET_AMD64 || UNIX_AMD64_ABI
                  ) ||
             (static_cast<unsigned>(var) == emitComp->lvaRetAddrVar))
         {
@@ -1962,7 +1960,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
 
             if (EBPbased)
             {
-#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
+#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
                 // If localloc is not used, then ebp chaining is done and hence
                 // offset of locals will be at negative offsets, Otherwise offsets
                 // will be positive.  In future, when RBP gets positioned in the
@@ -2004,7 +2002,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
                     // offset is negative
                     return size + ((int(offs) >= SCHAR_MIN) ? sizeof(char) : sizeof(int));
                 }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                 // This case arises for localloc frames
                 else
                 {
@@ -2043,7 +2041,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
 //  printf("lcl = %04X, tmp = %04X, stk = %04X, offs = %04X\n",
 //         emitLclSize, emitMaxTmpSize, emitCurStackLvl, offs);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     bool useSmallEncoding = (SCHAR_MIN <= (int)offs) && ((int)offs <= SCHAR_MAX);
 #else
     bool useSmallEncoding = (offs <= size_t(SCHAR_MAX));
@@ -2086,11 +2084,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     UNATIVE_OFFSET prefix    = emitGetAdjustedSize(ins, attrSize, code);
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(valSize <= sizeof(int) || !id->idIsCnsReloc());
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     if (valSize > sizeof(int))
     {
@@ -2126,7 +2124,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
 
 static bool baseRegisterRequiresSibByte(regNumber base)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return base == REG_ESP || base == REG_R12;
 #else
     return base == REG_ESP;
@@ -2135,7 +2133,7 @@ static bool baseRegisterRequiresSibByte(regNumber base)
 
 static bool baseRegisterRequiresDisplacement(regNumber base)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return base == REG_EBP || base == REG_R13;
 #else
     return base == REG_EBP;
@@ -2238,7 +2236,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
 
             size += sizeof(INT32);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // If id is not marked for reloc, add 1 additional byte for SIB that follows disp32
             if (!id->idIsDspReloc())
             {
@@ -2368,11 +2366,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code, int val
     // Let's not complicate things until this is needed.
     assert(ins != INS_bt);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(valSize <= sizeof(INT32) || !id->idIsCnsReloc());
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     if (valSize > sizeof(INT32))
     {
@@ -2426,11 +2424,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code, int val
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(id->idOpSize());
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
     // occasionally longs get here on x86
     if (valSize > sizeof(INT32))
         valSize = sizeof(INT32);
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 
     if (id->idIsCnsReloc())
     {
@@ -2836,9 +2834,16 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         // Absolute addresses marked as contained should fit within the base of addr mode.
         assert(memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
 
-        // Either not generating relocatable code, or addr must be an icon handle, or the
-        // constant is zero (which we won't generate a relocation for).
-        assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0));
+        // If we reach here, either:
+        // - we are not generating relocatable code, (typically the non-AOT JIT case)
+        // - the base address is a handle represented by an integer constant,
+        // - the base address is a constant zero, or
+        // - the base address is a constant that fits into the memory instruction (this can happen on x86).
+        //   This last case is captured in the FitsInAddrBase method which is used by Lowering to determine that it can
+        //   be contained.
+        //
+        assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0) ||
+               memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
 
         if (memBase->AsIntConCommon()->AddrNeedsReloc(emitComp))
         {
@@ -3361,12 +3366,9 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
             {
                 case GT_LCL_FLD:
                 case GT_STORE_LCL_FLD:
-                {
-                    GenTreeLclFld* lclField = memOp->AsLclFld();
-                    varNum                  = lclField->GetLclNum();
-                    offset                  = lclField->gtLclOffs;
+                    varNum = memOp->AsLclFld()->GetLclNum();
+                    offset = memOp->AsLclFld()->GetLclOffs();
                     break;
-                }
 
                 case GT_LCL_VAR:
                 {
@@ -3616,18 +3618,18 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     {
         case INS_inc:
         case INS_dec:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
             sz = 2; // x64 has no 1-byte opcode (it is the same encoding as the REX prefix)
 
-#else // !_TARGET_AMD64_
+#else // !TARGET_AMD64
 
             if (size == EA_1BYTE)
                 sz = 2; // Use the long form as the small one has no 'w' bit
             else
                 sz = 1; // Use short form
 
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 
             break;
 
@@ -3709,7 +3711,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
 
     noway_assert(emitVerifyEncodable(ins, size, reg));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(size < EA_8BYTE || ins == INS_mov || ((int)val == val && !EA_IS_CNS_RELOC(attr)));
@@ -3728,7 +3730,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     switch (ins)
     {
         case INS_mov:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // mov reg, imm64 is equivalent to mov reg, imm32 if the high order bits are all 0
             // and this isn't a reloc constant.
             if (((size > EA_4BYTE) && (0 == (val & 0xFFFFFFFF00000000LL))) && !EA_IS_CNS_RELOC(attr))
@@ -3741,7 +3743,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
                 sz = 9; // Really it is 10, but we'll add one more later
                 break;
             }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
             sz = 5;
             break;
 
@@ -3795,14 +3797,14 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
                     sz = 2;
                 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                 if (size > EA_4BYTE)
                 {
                     // We special-case anything that takes a full 8-byte constant.
                     sz += 4;
                 }
                 else
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
                 {
                     sz += EA_SIZE_IN_BYTES(attr);
                 }
@@ -3847,7 +3849,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, int val)
     instrDesc*     id;
     bool           valInByte = ((signed char)val == val);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -3991,13 +3993,13 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     /* We don't want to generate any useless mov instructions! */
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Same-reg 4-byte mov can be useful because it performs a
     // zero-extension to 8 bytes.
     assert(ins != INS_mov || reg1 != reg2 || size == EA_4BYTE);
 #else
     assert(ins != INS_mov || reg1 != reg2);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     assert(size <= EA_32BYTE);
     noway_assert(emitVerifyEncodable(ins, size, reg1, reg2));
@@ -4025,7 +4027,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
 
 void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -4835,7 +4837,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
         id->idInsFmt(fmt);
         id->idReg1(reg);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         // Special case: "mov eax, [addr]" is smaller.
         // This case is not enabled for amd64 as it always uses RIP relative addressing
         // and it results in smaller instruction size than encoding 64-bit addr in the
@@ -4847,7 +4849,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
                 sz += 1;
         }
         else
-#endif //_TARGET_X86_
+#endif // TARGET_X86
         {
             sz = emitInsSizeCV(id, insCodeRM(ins));
         }
@@ -4882,7 +4884,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
 
     emitAttr size = EA_SIZE(attr);
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     // For x86 it is valid to storeind a double sized operand in an xmm reg to memory
     assert(size <= EA_8BYTE);
 #else
@@ -4900,7 +4902,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
 
     UNATIVE_OFFSET sz;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // Special case: "mov [addr], EAX" is smaller.
     // This case is not enable for amd64 as it always uses RIP relative addressing
     // and it will result in smaller instruction size than encoding 64-bit addr in
@@ -4919,7 +4921,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
         }
     }
     else
-#endif //_TARGET_X86_
+#endif // TARGET_X86
     {
         sz = emitInsSizeCV(id, insCodeMR(ins));
     }
@@ -5022,7 +5024,7 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
     emitTotalIGjmps++;
 #endif
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
     // Storing the address of a basicBlock will need a reloc
     // as the instruction uses the absolute address,
     // not a relative address.
@@ -5107,7 +5109,7 @@ void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber re
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -5163,7 +5165,7 @@ void emitter::emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -5341,7 +5343,7 @@ void emitter::emitIns_I_ARR(instruction ins, emitAttr attr, int val, regNumber r
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -5401,7 +5403,7 @@ void emitter::emitIns_I_ARX(
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -5525,7 +5527,7 @@ void emitter::emitIns_I_AX(instruction ins, emitAttr attr, int val, regNumber re
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -5633,7 +5635,6 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
     emitAdjustStackDepthPushPop(ins);
 }
 
-#ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
 // emitIns_SIMD_R_R_I: emits the code for an instruction that takes a register operand, an immediate operand
 //                     and that returns a value in register
@@ -5814,6 +5815,7 @@ void emitter::emitIns_SIMD_R_R_S(
     }
 }
 
+#ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
 // emitIns_SIMD_R_R_A_I: emits the code for a SIMD instruction that takes a register operand, a GenTreeIndir address,
 //                       an immediate operand, and that returns a value in register
@@ -6504,7 +6506,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int va
 
     sz = emitInsSizeSV(id, insCodeMR(ins), varx, offs);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (attr == EA_1BYTE)
     {
         assert(isByteReg(ireg));
@@ -6544,7 +6546,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
 
 void emitter::emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
     noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
@@ -7022,7 +7024,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                     {
                         id->idSetIsDspReloc();
                     }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                     else
                     {
                         // An absolute indir address that doesn't need reloc should fit within 32-bits
@@ -7031,7 +7033,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                         noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
                         sz++;
                     }
-#endif //_TARGET_AMD64_
+#endif // TARGET_AMD64
                 }
 
                 break;
@@ -7058,7 +7060,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         {
             id->idSetIsDspReloc();
         }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         else
         {
             // An absolute indir address that doesn't need reloc should fit within 32-bits
@@ -7067,7 +7069,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
             sz++;
         }
-#endif //_TARGET_AMD64_
+#endif // TARGET_AMD64
     }
     else
     {
@@ -7271,7 +7273,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
 
     const char* rn = emitComp->compRegVarName(reg, varName);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     char suffix = '\0';
 
     switch (EA_SIZE(attr))
@@ -7366,9 +7368,9 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
         default:
             break;
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     assert(strlen(rn) >= 3);
 
     switch (EA_SIZE(attr))
@@ -7409,7 +7411,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
         default:
             break;
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #if 0
     // The following is useful if you want register names to be tagged with * or ^ representing gcref or byref, respectively,
@@ -7745,7 +7747,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             {
                 printf("reloc ");
             }
-            printf("J_M%03u_DS%02u", Compiler::s_compMethodsCount, id->idDebugOnlyInfo()->idMemCookie);
+            printf("J_M%03u_DS%02u", emitComp->compMethodID, id->idDebugOnlyInfo()->idMemCookie);
 
             disp -= id->idDebugOnlyInfo()->idMemCookie;
         }
@@ -7878,12 +7880,12 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
         unsigned     cnt = (jdsc->dsSize - 1) / TARGET_POINTER_SIZE;
         BasicBlock** bbp = (BasicBlock**)jdsc->dsCont;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 #define SIZE_LETTER "Q"
 #else
 #define SIZE_LETTER "D"
 #endif
-        printf("\n\n    J_M%03u_DS%02u LABEL   " SIZE_LETTER "WORD", Compiler::s_compMethodsCount, jtno);
+        printf("\n\n    J_M%03u_DS%02u LABEL   " SIZE_LETTER "WORD", emitComp->compMethodID, jtno);
 
         /* Display the label table (it's stored as "BasicBlock*" values) */
 
@@ -7896,7 +7898,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             lab = (insGroup*)emitCodeGetCookie(*bbp++);
             assert(lab);
 
-            printf("\n            D" SIZE_LETTER "      G_M%03u_IG%02u", Compiler::s_compMethodsCount, lab->igNum);
+            printf("\n            D" SIZE_LETTER "      G_M%03u_IG%02u", emitComp->compMethodID, lab->igNum);
         } while (--cnt);
     }
 }
@@ -7955,10 +7957,10 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     // We do not display the instruction hex if we want diff-able disassembly
     if (!emitComp->opts.disDiffable)
     {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // how many bytes per instruction we format for
         const size_t digits = 10;
-#else // _TARGET_X86
+#else // TARGET_X86
         const size_t digits = 6;
 #endif
         printf(" ");
@@ -8132,11 +8134,11 @@ void emitter::emitDispIns(
     {
         printf(" %-9s", sstr);
     }
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     if (strnlen_s(sstr, 10) >= 8)
-#else  // FEATURE_PAL
+#else  // TARGET_UNIX
     if (strnlen(sstr, 10) >= 8)
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
     {
         printf(" ");
     }
@@ -8164,7 +8166,7 @@ void emitter::emitDispIns(
 
         if (ins == INS_lea)
         {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             assert((attr == EA_4BYTE) || (attr == EA_8BYTE));
 #else
             assert(attr == EA_4BYTE);
@@ -8195,7 +8197,7 @@ void emitter::emitDispIns(
 
         case IF_CNS:
             val = emitGetInsSC(id);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // no 8-byte immediates allowed here!
             assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
@@ -8267,7 +8269,7 @@ void emitter::emitDispIns(
         case IF_RRD_ARD:
         case IF_RWR_ARD:
         case IF_RRW_ARD:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             if (ins == INS_movsxd)
             {
                 attr = EA_8BYTE;
@@ -8412,7 +8414,7 @@ void emitter::emitDispIns(
             emitDispAddrMode(id);
             emitGetInsAmdCns(id, &cnsVal);
             val = cnsVal.cnsVal;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // no 8-byte immediates allowed here!
             assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
@@ -8480,7 +8482,7 @@ void emitter::emitDispIns(
 
             emitGetInsCns(id, &cnsVal);
             val = cnsVal.cnsVal;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // no 8-byte immediates allowed here!
             assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
@@ -8530,7 +8532,7 @@ void emitter::emitDispIns(
         case IF_RRD_SRD:
         case IF_RWR_SRD:
         case IF_RRW_SRD:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             if (ins == INS_movsxd)
             {
                 attr = EA_8BYTE;
@@ -8639,12 +8641,12 @@ void emitter::emitDispIns(
             {
                 printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
             }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             else if (ins == INS_movsxd)
             {
                 printf("%s, %s", emitRegName(id->idReg1(), EA_8BYTE), emitRegName(id->idReg2(), EA_4BYTE));
             }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
             else if (ins == INS_movsx || ins == INS_movzx)
             {
                 printf("%s, %s", emitRegName(id->idReg1(), EA_PTRSIZE), emitRegName(id->idReg2(), attr));
@@ -8715,7 +8717,7 @@ void emitter::emitDispIns(
             printf("%s,", emitRegName(id->idReg1(), attr));
             printf(" %s", emitRegName(id->idReg2(), attr));
             val = emitGetInsSC(id);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // no 8-byte immediates allowed here!
             assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
@@ -8750,7 +8752,7 @@ void emitter::emitDispIns(
             {
                 attr = EA_PTRSIZE;
             }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             else if (ins == INS_movsxd)
             {
                 attr = EA_PTRSIZE;
@@ -8883,7 +8885,7 @@ void emitter::emitDispIns(
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             emitGetInsDcmCns(id, &cnsVal);
             val = cnsVal.cnsVal;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // no 8-byte immediates allowed here!
             assert((val >= (ssize_t)0xFFFFFFFF80000000LL) && (val <= 0x000000007FFFFFFFLL));
 #endif
@@ -8960,11 +8962,11 @@ void emitter::emitDispIns(
 
             if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", Compiler::s_compMethodsCount, id->idAddr()->iiaIGlabel->igNum);
+                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
             }
             else
             {
-                printf("L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, id->idAddr()->iiaBBlabel->bbNum);
+                printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
             break;
 
@@ -9036,7 +9038,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
 {
     assert(nBytes <= 15);
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
     // TODO-X86-CQ: when VIA C3 CPU's are out of circulation, switch to the
     // more efficient real NOP: 0x0F 0x1F +modR/M
     // Also can't use AMD recommended, multiple size prefixes (i.e. 0x66 0x66 0x90 for 3 byte NOP)
@@ -9093,7 +9095,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
         case 0:
             break;
     }
-#else  // _TARGET_AMD64_
+#else  // TARGET_AMD64
     switch (nBytes)
     {
         case 2:
@@ -9170,7 +9172,7 @@ static BYTE* emitOutputNOP(BYTE* dst, size_t nBytes)
             *dst++ = 0x00;
             break;
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     return dst;
 }
@@ -9212,7 +9214,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // The displacement field is in an unusual place for calls
         dsp = emitGetInsCIdisp(id);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
         // Compute the REX prefix if it exists
         if (IsExtendedReg(reg, EA_PTRSIZE))
@@ -9232,7 +9234,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // And emit the REX prefix
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
         goto GOT_DSP;
     }
@@ -9434,7 +9436,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 __fallthrough;
 
             case EA_4BYTE:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             case EA_8BYTE:
 #endif
 
@@ -9443,7 +9445,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 code |= 0x1;
                 break;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             case EA_8BYTE:
 
                 /* Double operand - set the appropriate bit */
@@ -9451,7 +9453,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 code |= 0x04;
                 break;
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
             default:
                 NO_WAY("unexpected size");
@@ -9507,12 +9509,12 @@ GOT_DSP:
 
                         ssize_t cval = addc->cnsVal;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                         // all these opcodes only take a sign-extended 4-byte immediate
                         noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
-#else  //_TARGET_X86_
+#else  // TARGET_X86
                         noway_assert(opsz <= 4);
-#endif //_TARGET_X86_
+#endif // TARGET_X86
 
                         switch (opsz)
                         {
@@ -9534,7 +9536,7 @@ GOT_DSP:
                         }
                     }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                     // We emit zero on Amd64, to avoid the assert in emitOutputLong()
                     dst += emitOutputLong(dst, 0);
 #else
@@ -9545,7 +9547,7 @@ GOT_DSP:
                 }
                 else
                 {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                     if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
                     {
                         dst += emitOutputByte(dst, code | 0x05);
@@ -9554,7 +9556,7 @@ GOT_DSP:
                     {
                         dst += emitOutputWord(dst, code | 0x0500);
                     }
-#else  //_TARGET_AMD64_
+#else  // TARGET_AMD64
                     // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
                     // This addr mode should never be used while generating relocatable ngen code nor if
                     // the addr can be encoded as pc-relative address.
@@ -9572,7 +9574,7 @@ GOT_DSP:
                         dst += emitOutputWord(dst, code | 0x0400);
                     }
                     dst += emitOutputByte(dst, 0x25);
-#endif //_TARGET_AMD64_
+#endif // TARGET_AMD64
                     dst += emitOutputLong(dst, dsp);
                 }
                 break;
@@ -9922,7 +9924,7 @@ GOT_DSP:
     {
         ssize_t cval = addc->cnsVal;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // all these opcodes only take a sign-extended 4-byte immediate
         noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
 #endif
@@ -10198,9 +10200,9 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 __fallthrough;
 
             case EA_4BYTE:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             case EA_8BYTE:
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
                 /* Set the 'w' size bit to indicate 32-bit operation
                  * Note that incrementing "code" for INS_call (0xFF) would
@@ -10210,7 +10212,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 code |= 0x01;
                 break;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             case EA_8BYTE:
 
                 // Double operand - set the appropriate bit.
@@ -10221,7 +10223,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 code |= 0x04;
                 NO_WAY("bad 8 byte op");
                 break;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
             default:
                 NO_WAY("unexpected size");
@@ -10339,7 +10341,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     {
         ssize_t cval = addc->cnsVal;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // all these opcodes only take a sign-extended 4-byte immediate
         noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
 #endif
@@ -10524,7 +10526,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             opsz = 1;
         }
     }
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     else
     {
         // Special case: "mov eax, [addr]" and "mov [addr], eax"
@@ -10558,7 +10560,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             }
         }
     }
-#endif //_TARGET_X86_
+#endif // TARGET_X86
 
     // Special case emitting AVX instructions
     if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
@@ -10664,19 +10666,19 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 __fallthrough;
 
             case EA_4BYTE:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             case EA_8BYTE:
 #endif
                 // Set the 'w' bit to get the large version
                 code |= 0x1;
                 break;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             case EA_8BYTE:
                 // Double operand - set the appropriate bit
                 code |= 0x04;
                 break;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
             default:
                 assert(!"unexpected size");
@@ -10751,12 +10753,12 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
             ssize_t cval = addc->cnsVal;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // all these opcodes only take a sign-extended 4-byte immediate
             noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
-#else  //_TARGET_X86_
+#else  // TARGET_X86
             noway_assert(opsz <= 4);
-#endif //_TARGET_X86_
+#endif // TARGET_X86
 
             switch (opsz)
             {
@@ -10778,13 +10780,13 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             }
         }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // All static field and data section constant accesses should be marked as relocatable
         noway_assert(id->idIsDspReloc());
         dst += emitOutputLong(dst, 0);
-#else  //_TARGET_X86_
+#else  // TARGET_X86
         dst += emitOutputLong(dst, (int)target);
-#endif //_TARGET_X86_
+#endif // TARGET_X86
 
         if (id->idIsDspReloc())
         {
@@ -10793,12 +10795,12 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else
     {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // This code path should never be hit on amd64 since it always uses RIP relative addressing.
         // In future if ever there is a need to enable this special case, also enable the logic
         // that sets isMoffset to true on amd64.
         unreached();
-#else //_TARGET_X86_
+#else // TARGET_X86
 
         dst += emitOutputSizeT(dst, (ssize_t)target);
 
@@ -10807,7 +10809,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), target, IMAGE_REL_BASED_MOFFSET);
         }
 
-#endif //_TARGET_X86_
+#endif // TARGET_X86
     }
 
     // Now generate the constant value, if present
@@ -10815,7 +10817,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     {
         ssize_t cval = addc->cnsVal;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // all these opcodes only take a sign-extended 4-byte immediate
         noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
 #endif
@@ -10945,7 +10947,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
         case INS_inc:
         case INS_dec:
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             if (true)
 #else
             if (size == EA_1BYTE)
@@ -11188,7 +11190,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     else if ((ins == INS_movsx) || (ins == INS_movzx) || (insIsCMOV(ins)))
     {
         code = insEncodeRMreg(ins, code) | (int)(size == EA_2BYTE);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
         assert((size < EA_4BYTE) || (insIsCMOV(ins)));
         if ((size == EA_8BYTE) || (ins == INS_movsx))
@@ -11200,7 +11202,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     {
         code = insEncodeRMreg(ins, code);
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     }
 #ifdef FEATURE_HW_INTRINSICS
     else if ((ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt) || (ins == INS_tzcnt))
@@ -11248,7 +11250,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 code |= 0x1;
                 break;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             case EA_8BYTE:
                 // TODO-AMD64-CQ: Better way to not emit REX.W when we don't need it
                 // Don't need to zero out the high bits explicitly
@@ -11261,7 +11263,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 code |= 0x1;
                 break;
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
             default:
                 assert(!"unexpected size");
@@ -11581,6 +11583,21 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
     noway_assert(!id->idGCref());
 
+    if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
+    {
+        switch (id->idInsFmt())
+        {
+            case IF_RWR_RRD_RRD:
+            case IF_RWR_RRD_RRD_CNS:
+            case IF_RWR_RRD_RRD_RRD:
+                emitGCregDeadUpd(id->idReg1(), dst);
+                break;
+
+            default:
+                break;
+        }
+    }
+
     return dst;
 }
 
@@ -11677,7 +11694,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         {
             dst += emitOutputLong(dst, val);
         }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         else
         {
             assert(size == EA_PTRSIZE);
@@ -11784,7 +11801,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
             code |= 0x1;
             break;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         case EA_8BYTE:
             /* Set the 'w' bit to get the large version */
             /* and the REX.W bit to get the really large version */
@@ -11836,11 +11853,11 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
             case EA_4BYTE:
                 dst += emitOutputLong(dst, val);
                 break;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             case EA_8BYTE:
                 dst += emitOutputLong(dst, val);
                 break;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
             default:
                 break;
         }
@@ -11953,7 +11970,7 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
     assert(!IsSSEInstruction(ins));
     assert(!IsAVXInstruction(ins));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // all these opcodes take a sign-extended 4-byte immediate, max
     noway_assert(size < EA_8BYTE || ((int)val == val && !id->idIsCnsReloc()));
 #endif
@@ -12326,7 +12343,7 @@ BYTE* emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
 
         dst += emitOutputLong(dst, distVal);
 
-#ifndef _TARGET_AMD64_ // all REL32 on AMD have to go through recordRelocation
+#ifndef TARGET_AMD64 // all REL32 on AMD have to go through recordRelocation
         if (emitComp->opts.compReloc)
 #endif
         {
@@ -12429,7 +12446,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             code = insCodeMR(ins);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // Support only scalar AVX instructions and hence size is hard coded to 4-byte.
             code = AddVexPrefixIfNeeded(ins, code, EA_4BYTE);
 
@@ -12538,7 +12555,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 if (id->idIsDspReloc())
                 {
                     dst += emitOutputWord(dst, code | 0x0500);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                     dst += emitOutputLong(dst, 0);
 #else
                     dst += emitOutputLong(dst, (int)addr);
@@ -12547,9 +12564,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
                 else
                 {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                     dst += emitOutputWord(dst, code | 0x0500);
-#else  //_TARGET_AMD64_
+#else  // TARGET_AMD64
                     // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
                     // This addr mode should never be used while generating relocatable ngen code nor if
                     // the addr can be encoded as pc-relative address.
@@ -12560,7 +12577,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     // This requires, specifying a SIB byte after ModRM byte.
                     dst += emitOutputWord(dst, code | 0x0400);
                     dst += emitOutputByte(dst, 0x25);
-#endif //_TARGET_AMD64_
+#endif // TARGET_AMD64
                     dst += emitOutputLong(dst, static_cast<int>(reinterpret_cast<intptr_t>(addr)));
                 }
                 goto DONE_CALL;
@@ -12575,7 +12592,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += (ins == INS_l_jmp) ? emitOutputByte(dst, insCode(ins)) : emitOutputByte(dst, insCodeMI(ins));
 
             ssize_t offset;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // All REL32 on Amd64 go through recordRelocation.  Here we will output zero to advance dst.
             offset = 0;
             assert(id->idIsDspReloc());
@@ -13715,6 +13732,10 @@ emitter::insFormat emitter::getMemoryOperation(instrDesc* id)
 //    A struct containing the current instruction execution characteristics
 //
 // Notes:
+//    The instruction latencies and throughput values returned by this function
+//    are for the Intel Skylake-X processor and are from either:
+//      1.  Agner.org - https://www.agner.org/optimize/instruction_tables.pdf
+//      2.  uops.info - https://uops.info/table.html
 //
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
@@ -13841,7 +13862,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         case INS_movsxd:
 #endif
         case INS_mov:
@@ -13866,17 +13887,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_adc:
         case INS_sbb:
-            result.insLatency = max(PERFSCORE_LATENCY_1C, result.insLatency);
-            if (memAccessKind == PERFSCORE_MEMORY_READ_WRITE)
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            }
-            else
-            {
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            }
-            break;
-
         case INS_add:
         case INS_sub:
         case INS_and:
@@ -13899,8 +13909,46 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_lea:
             // uops.info
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X; // one or two components
             result.insLatency    = PERFSCORE_LATENCY_1C;
+
+            if (id->idInsFmt() == IF_RWR_LABEL)
+            {
+                // RIP relative addressing
+                //
+                // - throughput is only 1 per cycle
+                //
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            else if (id->idInsFmt() != IF_RWR_SRD)
+            {
+                if (id->idAddr()->iiaAddrMode.amIndxReg != REG_NA)
+                {
+                    regNumber baseReg = id->idAddr()->iiaAddrMode.amBaseReg;
+                    if (baseReg != REG_NA)
+                    {
+                        ssize_t dsp = emitGetInsAmdAny(id);
+
+                        if ((dsp != 0) || baseRegisterRequiresDisplacement(baseReg))
+                        {
+                            // three components
+                            //
+                            // - throughput is only 1 per cycle
+                            //
+                            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+
+                            if (baseRegisterRequiresDisplacement(baseReg) || id->idIsDspReloc())
+                            {
+                                // Increased Latency for these cases
+                                //  - see https://reviews.llvm.org/D32277
+                                //
+                                result.insLatency = PERFSCORE_LATENCY_3C;
+                            }
+                        }
+                    }
+                }
+            }
+
             break;
 
         case INS_imul_AX:
@@ -13910,7 +13958,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_imul_BP:
         case INS_imul_SI:
         case INS_imul_DI:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         case INS_imul_08:
         case INS_imul_09:
         case INS_imul_10:
@@ -13919,7 +13967,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_imul_13:
         case INS_imul_14:
         case INS_imul_15:
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
         case INS_mulEAX:
         case INS_imulEAX:
         case INS_imul:
@@ -13997,10 +14045,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
 
                 default:
-                    // all others
-                    assert(!"unreached");
-                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
-                    result.insLatency    = PERFSCORE_LATENCY_DEFAULT;
+                    // unhandled instruction insFmt combination
+                    perfScoreUnhandledInstruction(id, &result);
                     break;
             }
             break;
@@ -14024,9 +14070,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
 
                 default:
-                    // all others
-                    assert(!"unreached");
-                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+                    // unhandled instruction insFmt combination
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
             }
             break;
 
@@ -14057,9 +14103,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
 
                 default:
-                    // all others
-                    assert(!"unreached");
-                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+                    // unhandled instruction insFmt combination
+                    perfScoreUnhandledInstruction(id, &result);
                     break;
             }
             break;
@@ -14158,9 +14203,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_BRANCH_DIRECT;
             break;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         case INS_rex_jmp:
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
         case INS_i_jmp:
             // branch to register
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
@@ -14193,8 +14238,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
 
                 default:
-                    assert(!"Unhandled insFmt for INS_call");
-                    result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
+                    // unhandled instruction, insFmt combination
+                    perfScoreUnhandledInstruction(id, &result);
                     break;
             }
             break;
@@ -14237,7 +14282,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         case INS_fld:
         case INS_fstp:
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -14246,22 +14291,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency = PERFSCORE_LATENCY_1C;
             }
             break;
-#endif // _TARGET_X86
+#endif // TARGET_X86
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         case INS_movsq:
         case INS_stosq:
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
         case INS_movsd:
         case INS_stosd:
             // uops.info
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         case INS_r_movsq:
         case INS_r_stosq:
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
         case INS_r_movsd:
         case INS_r_movsb:
         case INS_r_stosd:
@@ -14283,6 +14328,28 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_1C;
             break;
 
+        case INS_movd:
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                // movd   r32, xmm   or  xmm, r32
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency    = PERFSCORE_LATENCY_3C;
+            }
+            else if (memAccessKind == PERFSCORE_MEMORY_READ)
+            {
+                // movd   xmm, m32
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                // insLatency is set above (see -  Model the memory latency)
+            }
+            else
+            {
+                // movd   m32, xmm
+                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                // insLatency is set above (see -  Model the memory latency)
+            }
+            break;
+
         case INS_movq:
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
@@ -14294,12 +14361,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             {
                 // movq   reg, mem
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                // insLatency is set above (see -  Model the memory latency)
             }
             else
             {
                 // movq   mem, reg
                 assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                // insLatency is set above (see -  Model the memory latency)
             }
             break;
 
@@ -14315,12 +14384,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             {
                 // ins   reg, mem
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                // insLatency is set above (see -  Model the memory latency)
             }
             else
             {
                 // ins   mem, reg
                 assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                // insLatency is set above (see -  Model the memory latency)
             }
             break;
 
@@ -14346,14 +14417,29 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_1C;
             break;
 
-        case INS_xorps:
-            // uops.info
-            result.insThroughput = PERFSCORE_THROUGHPUT_3X;
-            result.insLatency    = PERFSCORE_LATENCY_ZERO;
+        case INS_movntdq:
+        case INS_movnti:
+        case INS_movntps:
+        case INS_movntpd:
+            assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_400C; // Intel microcode issue with these instuctions
+            break;
+
+        case INS_maskmovdqu:
+            result.insThroughput = PERFSCORE_THROUGHPUT_6C;
+            result.insLatency    = PERFSCORE_LATENCY_400C; // Intel microcode issue with these instuctions
+            break;
+
+        case INS_movntdqa:
+            assert(memAccessKind == PERFSCORE_MEMORY_READ);
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_3C;
             break;
 
         case INS_vzeroupper:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            // insLatency is zero and is set when we Model the memory latency
             break;
 
         case INS_movss:
@@ -14371,44 +14457,86 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
+        case INS_lddqu:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = max(PERFSCORE_LATENCY_3C, result.insLatency);
+            break;
+
+        case INS_comiss:
+        case INS_comisd:
         case INS_ucomiss:
         case INS_ucomisd:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = max(PERFSCORE_LATENCY_2C, result.insLatency);
             break;
 
-        case INS_addss:
         case INS_addsd:
-        case INS_subss:
+        case INS_addss:
+        case INS_addpd:
+        case INS_addps:
         case INS_subsd:
+        case INS_subss:
+        case INS_subpd:
+        case INS_subps:
+        case INS_cvttps2dq:
+        case INS_cvtps2dq:
+        case INS_cvtdq2ps:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency += PERFSCORE_LATENCY_4C;
+            break;
+
+        case INS_haddps:
+        case INS_haddpd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency += PERFSCORE_LATENCY_6C;
+            break;
+
         case INS_mulss:
         case INS_mulsd:
+        case INS_mulps:
+        case INS_mulpd:
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency    = PERFSCORE_LATENCY_4C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
             break;
 
         case INS_divss:
+        case INS_divps:
             result.insThroughput = PERFSCORE_THROUGHPUT_3C;
-            result.insLatency    = PERFSCORE_LATENCY_11C;
+            result.insLatency += PERFSCORE_LATENCY_11C;
             break;
 
         case INS_divsd:
+        case INS_divpd:
             result.insThroughput = PERFSCORE_THROUGHPUT_4C;
-            result.insLatency    = PERFSCORE_LATENCY_13C;
+            result.insLatency += PERFSCORE_LATENCY_13C;
             break;
 
         case INS_sqrtss:
+        case INS_sqrtps:
             result.insThroughput = PERFSCORE_THROUGHPUT_3C;
-            result.insLatency    = PERFSCORE_LATENCY_12C;
+            result.insLatency += PERFSCORE_LATENCY_12C;
             break;
 
         case INS_sqrtsd:
-            result.insThroughput = PERFSCORE_THROUGHPUT_6C;
-            result.insLatency    = PERFSCORE_LATENCY_16C;
+        case INS_sqrtpd:
+        case INS_rcpps:
+        case INS_rcpss:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
             break;
 
+        case INS_rsqrtss:
+        case INS_rsqrtps:
+            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+            result.insLatency += PERFSCORE_LATENCY_12C;
+            break;
+
+        case INS_roundpd:
+        case INS_roundps:
         case INS_roundsd:
+        case INS_roundss:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_8C;
+            result.insLatency += PERFSCORE_LATENCY_8C;
             break;
 
         case INS_cvttsd2si:
@@ -14416,24 +14544,18 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_cvttss2si:
         case INS_cvtss2si:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_6C;
-            break;
-
-        case INS_cvtsd2ss:
-        case INS_cvtps2pd:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_5C;
+            result.insLatency += PERFSCORE_LATENCY_6C;
             break;
 
         case INS_cvtsi2sd:
         case INS_cvtsi2ss:
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency    = PERFSCORE_LATENCY_6C;
+            result.insLatency += PERFSCORE_LATENCY_6C;
             break;
 
         case INS_cvtss2sd:
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-            result.insLatency    = PERFSCORE_LATENCY_5C;
+            result.insLatency += PERFSCORE_LATENCY_5C;
             break;
 
         case INS_movaps:
@@ -14448,21 +14570,51 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             else if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency    = max(PERFSCORE_LATENCY_2C, result.insLatency);
+                result.insLatency += PERFSCORE_LATENCY_2C;
             }
             else
             {
                 assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency    = max(PERFSCORE_LATENCY_3C, result.insLatency);
+                result.insLatency += PERFSCORE_LATENCY_3C;
             }
             break;
 
+        case INS_paddb:
+        case INS_psubb:
+        case INS_paddw:
+        case INS_psubw:
+        case INS_paddd:
+        case INS_psubd:
+        case INS_paddq:
+        case INS_psubq:
+        case INS_paddsb:
+        case INS_psubsb:
+        case INS_paddsw:
+        case INS_psubsw:
+        case INS_paddusb:
+        case INS_psubusb:
+        case INS_paddusw:
+        case INS_psubusw:
+        case INS_pand:
+        case INS_pandn:
+        case INS_por:
+        case INS_pxor:
+        case INS_andpd:
         case INS_andps:
+        case INS_andnpd:
+        case INS_andnps:
+        case INS_orpd:
+        case INS_orps:
+        case INS_xorpd:
+        case INS_xorps:
+        case INS_blendps:
+        case INS_blendpd:
+        case INS_vpblendd:
+            result.insLatency += PERFSCORE_LATENCY_1C;
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_3X;
-                result.insLatency    = PERFSCORE_LATENCY_1C;
             }
             else
             {
@@ -14470,26 +14622,65 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case INS_lzcnt:
-        case INS_tzcnt:
-        case INS_popcnt:
-        case INS_crc32:
-        case INS_pdep:
-        case INS_pext:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_3C;
-            break;
-
-        case INS_pmovmskb:
-        case INS_movmskpd:
-        case INS_movmskps:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_2C;
-            break;
-
         case INS_andn:
+        case INS_pcmpeqb:
+        case INS_pcmpeqw:
+        case INS_pcmpeqd:
+        case INS_pcmpeqq:
+        case INS_pcmpgtb:
+        case INS_pcmpgtw:
+        case INS_pcmpgtd:
+        case INS_pavgb:
+        case INS_pavgw:
+        case INS_pminub:
+        case INS_pminsb:
+        case INS_pminuw:
+        case INS_pminsw:
+        case INS_pminud:
+        case INS_pminsd:
+        case INS_pmaxub:
+        case INS_pmaxsb:
+        case INS_pmaxuw:
+        case INS_pmaxsw:
+        case INS_pmaxsd:
+        case INS_pmaxud:
+        case INS_pabsb:
+        case INS_pabsw:
+        case INS_pabsd:
+        case INS_psignb:
+        case INS_psignw:
+        case INS_psignd:
+        case INS_vpsravd:
+        case INS_blendvps:
+        case INS_blendvpd:
+        case INS_pblendvb:
+        case INS_vpsllvd:
+        case INS_vpsllvq:
+        case INS_vpsrlvd:
+        case INS_vpsrlvq:
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insLatency += PERFSCORE_LATENCY_1C;
+            break;
+
+        case INS_pslldq:
+        case INS_pslld:
+        case INS_psllw:
+        case INS_psllq:
+        case INS_psrlw:
+        case INS_psrld:
+        case INS_psrlq:
+        case INS_psrldq:
+        case INS_psrad:
+        case INS_psraw:
+            result.insLatency += PERFSCORE_LATENCY_1C;
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            }
             break;
 
         case INS_blsi:
@@ -14497,10 +14688,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_blsr:
         case INS_bextr:
         case INS_bzhi:
+            result.insLatency += PERFSCORE_LATENCY_2C;
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency    = PERFSCORE_LATENCY_2C;
             }
             else
             {
@@ -14508,47 +14699,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case INS_extractps:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
-            {
-                result.insLatency = PERFSCORE_LATENCY_3C;
-            }
-            else
-            {
-                result.insLatency = max(PERFSCORE_LATENCY_5C, result.insLatency);
-            }
-            break;
-
-        case INS_mulx:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_4C;
-            break;
-
-        case INS_pextrb:
-        case INS_pextrd:
-        case INS_pextrq:
-        case INS_pextrw:
-        case INS_pextrw_sse41:
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
-            break;
-
-        case INS_minps:
-        case INS_minpd:
-        case INS_ptest:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_3C;
-            break;
-
-        case INS_pminub:
-        case INS_pminsb:
-        case INS_pminuw:
-        case INS_pminsw:
-        case INS_pmaxub:
-        case INS_pmaxsb:
-        case INS_pmaxuw:
-        case INS_pmaxsw:
         case INS_packuswb:
         case INS_packusdw:
         case INS_packsswb:
@@ -14557,34 +14707,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_unpckhps:
         case INS_unpcklpd:
         case INS_unpckhpd:
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
-            break;
-
-        case INS_pand:
-        case INS_pandn:
-        case INS_por:
-        case INS_pxor:
-            result.insThroughput = PERFSCORE_THROUGHPUT_3X;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
-            break;
-
-        case INS_pcmpeqb:
-        case INS_pcmpeqw:
-        case INS_pcmpeqd:
-        case INS_pcmpeqq:
-        case INS_pcmpgtb:
-        case INS_pcmpgtw:
-        case INS_pcmpgtd:
-        case INS_pcmpgtq:
-        case INS_cmpps:
-        case INS_cmppd:
-        case INS_cmpss:
-        case INS_cmpsd:
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
-            break;
-
         case INS_punpckldq:
         case INS_punpcklwd:
         case INS_punpcklbw:
@@ -14592,12 +14714,175 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_punpckhwd:
         case INS_punpckhbw:
         case INS_punpcklqdq:
+        case INS_punpckhqdq:
         case INS_pshufb:
         case INS_pshufd:
         case INS_pshuflw:
         case INS_pshufhw:
+        case INS_shufps:
+        case INS_shufpd:
+        case INS_pblendw:
+        case INS_movsldup:
+        case INS_movshdup:
+        case INS_insertps:
+        case INS_palignr:
+        case INS_vpermilps:
+        case INS_vpermilpd:
+        case INS_vpermilpsvar:
+        case INS_vpermilpdvar:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            result.insLatency    = PERFSCORE_LATENCY_1C;
+            result.insLatency += PERFSCORE_LATENCY_1C;
+            break;
+
+        case INS_vblendvps:
+        case INS_vblendvpd:
+        case INS_vpblendvb:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+            {
+                result.insLatency = PERFSCORE_LATENCY_2C;
+            }
+            break;
+
+        case INS_bswap:
+            if ((id->idOpSize() == EA_8BYTE))
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency    = PERFSCORE_LATENCY_2C;
+            }
+            else
+            {
+                assert(id->idOpSize() == EA_4BYTE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+            }
+            break;
+
+        case INS_pmovmskb:
+        case INS_movmskpd:
+        case INS_movmskps:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_2C;
+            break;
+
+        case INS_pextrb:
+        case INS_pextrd:
+        case INS_pextrw:
+        case INS_pextrq:
+        case INS_pextrw_sse41:
+        case INS_lzcnt:
+        case INS_tzcnt:
+        case INS_popcnt:
+        case INS_crc32:
+        case INS_pdep:
+        case INS_pext:
+        case INS_addsubps:
+        case INS_addsubpd:
+        case INS_pcmpgtq:
+        case INS_psadbw:
+        case INS_vpermps:
+        case INS_vpermpd:
+        case INS_vpermd:
+        case INS_vpermq:
+        case INS_vperm2i128:
+        case INS_vperm2f128:
+        case INS_pmovsxbw:
+        case INS_pmovsxbd:
+        case INS_pmovsxbq:
+        case INS_pmovsxwd:
+        case INS_pmovsxwq:
+        case INS_pmovsxdq:
+        case INS_pmovzxbw:
+        case INS_pmovzxbd:
+        case INS_pmovzxbq:
+        case INS_pmovzxwd:
+        case INS_pmovzxwq:
+        case INS_pmovzxdq:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_3C;
+            break;
+
+        case INS_phaddw:
+        case INS_phaddd:
+        case INS_phaddsw:
+        case INS_phsubw:
+        case INS_phsubsw:
+        case INS_phsubd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency += PERFSCORE_LATENCY_3C;
+            break;
+
+        case INS_cmpps:
+        case INS_cmppd:
+        case INS_cmpss:
+        case INS_cmpsd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_4C;
+            break;
+
+        case INS_mulx:
+        case INS_maxps:
+        case INS_maxpd:
+        case INS_maxss:
+        case INS_maxsd:
+        case INS_minps:
+        case INS_minpd:
+        case INS_minss:
+        case INS_minsd:
+        case INS_ptest:
+        case INS_phminposuw:
+        case INS_extractps:
+        case INS_vextractf128:
+        case INS_vextracti128:
+        case INS_vinsertf128:
+        case INS_vinserti128:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
+            break;
+
+        case INS_mpsadbw:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
+            break;
+
+        case INS_pmullw:
+        case INS_pmulhw:
+        case INS_pmulhuw:
+        case INS_pmulhrsw:
+        case INS_pmuldq:
+        case INS_pmuludq:
+        case INS_pmaddwd:
+        case INS_pmaddubsw:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency += PERFSCORE_LATENCY_5C;
+            break;
+
+        case INS_cvtsd2ss:
+        case INS_cvtps2pd:
+        case INS_cvtpd2dq:
+        case INS_cvtdq2pd:
+        case INS_cvtpd2ps:
+        case INS_cvttpd2dq:
+        case INS_vtestps:
+        case INS_vtestpd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_5C;
+            break;
+
+        case INS_hsubps:
+        case INS_hsubpd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency += PERFSCORE_LATENCY_6C;
+            break;
+
+        case INS_pclmulqdq:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_7C;
+            break;
+
+        case INS_pmulld:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_10C;
             break;
 
         case INS_vpbroadcastb:
@@ -14610,31 +14895,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             else
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency    = max(PERFSCORE_LATENCY_7C, result.insLatency);
+                result.insLatency    = max(PERFSCORE_LATENCY_3C, result.insLatency);
             }
             break;
 
         case INS_vpbroadcastd:
         case INS_vpbroadcastq:
+        case INS_vbroadcasti128:
+        case INS_vbroadcastf128:
+        case INS_vbroadcastss:
+        case INS_vbroadcastsd:
+            result.insLatency += PERFSCORE_LATENCY_3C;
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency    = PERFSCORE_LATENCY_3C;
             }
             else
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency    = max(PERFSCORE_LATENCY_4C, result.insLatency);
-            }
-            break;
-
-        case INS_shufps:
-        case INS_shufpd:
-            // uops.info
-            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-            if (memFmt == IF_NONE)
-            {
-                result.insLatency = PERFSCORE_LATENCY_1C;
             }
             break;
 
@@ -14653,39 +14931,158 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case INS_insertps:
-            if (memAccessKind == PERFSCORE_MEMORY_NONE)
+        case INS_dppd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_9C;
+            break;
+
+        case INS_dpps:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = PERFSCORE_LATENCY_13C;
+            break;
+
+        case INS_vfmadd132pd:
+        case INS_vfmadd213pd:
+        case INS_vfmadd231pd:
+        case INS_vfmadd132ps:
+        case INS_vfmadd213ps:
+        case INS_vfmadd231ps:
+        case INS_vfmadd132sd:
+        case INS_vfmadd213sd:
+        case INS_vfmadd231sd:
+        case INS_vfmadd132ss:
+        case INS_vfmadd213ss:
+        case INS_vfmadd231ss:
+        case INS_vfmaddsub132pd:
+        case INS_vfmaddsub213pd:
+        case INS_vfmaddsub231pd:
+        case INS_vfmaddsub132ps:
+        case INS_vfmaddsub213ps:
+        case INS_vfmaddsub231ps:
+        case INS_vfmsubadd132pd:
+        case INS_vfmsubadd213pd:
+        case INS_vfmsubadd231pd:
+        case INS_vfmsubadd132ps:
+        case INS_vfmsubadd213ps:
+        case INS_vfmsubadd231ps:
+        case INS_vfmsub132pd:
+        case INS_vfmsub213pd:
+        case INS_vfmsub231pd:
+        case INS_vfmsub132ps:
+        case INS_vfmsub213ps:
+        case INS_vfmsub231ps:
+        case INS_vfmsub132sd:
+        case INS_vfmsub213sd:
+        case INS_vfmsub231sd:
+        case INS_vfmsub132ss:
+        case INS_vfmsub213ss:
+        case INS_vfmsub231ss:
+        case INS_vfnmadd132pd:
+        case INS_vfnmadd213pd:
+        case INS_vfnmadd231pd:
+        case INS_vfnmadd132ps:
+        case INS_vfnmadd213ps:
+        case INS_vfnmadd231ps:
+        case INS_vfnmadd132sd:
+        case INS_vfnmadd213sd:
+        case INS_vfnmadd231sd:
+        case INS_vfnmadd132ss:
+        case INS_vfnmadd213ss:
+        case INS_vfnmadd231ss:
+        case INS_vfnmsub132pd:
+        case INS_vfnmsub213pd:
+        case INS_vfnmsub231pd:
+        case INS_vfnmsub132ps:
+        case INS_vfnmsub213ps:
+        case INS_vfnmsub231ps:
+        case INS_vfnmsub132sd:
+        case INS_vfnmsub213sd:
+        case INS_vfnmsub231sd:
+        case INS_vfnmsub132ss:
+        case INS_vfnmsub213ss:
+        case INS_vfnmsub231ss:
+            // uops.info
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency += PERFSCORE_LATENCY_4C;
+            break;
+
+        case INS_vmaskmovpd:
+        case INS_vmaskmovps:
+
+            if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency    = PERFSCORE_LATENCY_1C;
+                result.insLatency += PERFSCORE_LATENCY_1C;
             }
             else
             {
+                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency    = max(PERFSCORE_LATENCY_4C, result.insLatency);
+                result.insLatency    = max(PERFSCORE_LATENCY_10C, result.insLatency);
             }
             break;
 
-        case INS_bswap:
-            if ((id->idOpSize() == EA_8BYTE))
+        case INS_vpmaskmovd:
+        case INS_vpmaskmovq:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = max(PERFSCORE_LATENCY_4C, result.insLatency);
+            break;
+
+        case INS_vpgatherdd:
+        case INS_vpgatherdq:
+        case INS_vpgatherqd:
+        case INS_vpgatherqq:
+        case INS_vgatherdps:
+        case INS_vgatherdpd:
+        case INS_vgatherqps:
+        case INS_vgatherqpd:
+            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            result.insLatency    = max(PERFSCORE_LATENCY_4C, result.insLatency);
+            break;
+
+        case INS_aesdec:
+        case INS_aesdeclast:
+        case INS_aesenc:
+        case INS_aesenclast:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency    = PERFSCORE_LATENCY_2C;
+                result.insLatency = PERFSCORE_LATENCY_4C;
             }
-            else
-            {
-                assert(id->idOpSize() == EA_4BYTE);
-                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency    = PERFSCORE_LATENCY_1C;
-            }
+            break;
+
+        case INS_aesimc:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency += PERFSCORE_LATENCY_8C;
+            break;
+
+        case INS_aeskeygenassist:
+            result.insThroughput = PERFSCORE_THROUGHPUT_13C;
+            result.insLatency += PERFSCORE_LATENCY_7C;
+            break;
+
+        case INS_lfence:
+            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            break;
+
+        case INS_sfence:
+            result.insThroughput = PERFSCORE_THROUGHPUT_6C;
+            break;
+
+        case INS_mfence:
+            result.insThroughput = PERFSCORE_THROUGHPUT_33C;
+            break;
+
+        case INS_prefetcht0:
+        case INS_prefetcht1:
+        case INS_prefetcht2:
+        case INS_prefetchnta:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             break;
 
         default:
-            // ins = ins;
-            // assert(!"Unhandled ins for getInsExecutionCharacteristics");
-            // all other ins
-            result.insThroughput = PERFSCORE_THROUGHPUT_DEFAULT;
-            result.insLatency    = PERFSCORE_LATENCY_DEFAULT;
+            // unhandled instruction insFmt combination
+            perfScoreUnhandledInstruction(id, &result);
             break;
     }
 
@@ -14697,4 +15094,4 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 /*****************************************************************************/
 /*****************************************************************************/
 
-#endif // defined(_TARGET_XARCH_)
+#endif // defined(TARGET_XARCH)

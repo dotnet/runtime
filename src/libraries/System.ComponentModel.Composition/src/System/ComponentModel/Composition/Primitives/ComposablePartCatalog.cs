@@ -23,7 +23,7 @@ namespace System.ComponentModel.Composition.Primitives
     public abstract class ComposablePartCatalog : IEnumerable<ComposablePartDefinition>, IDisposable
     {
         private bool _isDisposed;
-        private volatile IQueryable<ComposablePartDefinition> _queryableParts = null;
+        private volatile IQueryable<ComposablePartDefinition>? _queryableParts = null;
 
         internal static readonly List<Tuple<ComposablePartDefinition, ExportDefinition>> _EmptyExportsList = new List<Tuple<ComposablePartDefinition, ExportDefinition>>();
 
@@ -95,23 +95,19 @@ namespace System.ComponentModel.Composition.Primitives
         ///         <paramref name="definition"/>, return an empty <see cref="IEnumerable{T}"/>.
         ///     </note>
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public virtual IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> GetExports(ImportDefinition definition)
         {
             ThrowIfDisposed();
 
             Requires.NotNull(definition, nameof(definition));
 
-            List<Tuple<ComposablePartDefinition, ExportDefinition>> exports = null;
+            List<Tuple<ComposablePartDefinition, ExportDefinition>>? exports = null;
             var candidateParts = GetCandidateParts(definition);
             if (candidateParts != null)
             {
                 foreach (var part in candidateParts)
                 {
-                    Tuple<ComposablePartDefinition, ExportDefinition> singleMatch;
-                    IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> multipleMatches;
-
-                    if (part.TryGetExports(definition, out singleMatch, out multipleMatches))
+                    if (part.TryGetExports(definition, out Tuple<ComposablePartDefinition, ExportDefinition>? singleMatch, out IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>>? multipleMatches))
                     {
                         exports = exports.FastAppendToListAllowNulls(singleMatch, multipleMatches);
                     }
@@ -122,7 +118,7 @@ namespace System.ComponentModel.Composition.Primitives
             return exports ?? _EmptyExportsList;
         }
 
-        internal virtual IEnumerable<ComposablePartDefinition> GetCandidateParts(ImportDefinition definition)
+        internal virtual IEnumerable<ComposablePartDefinition>? GetCandidateParts(ImportDefinition definition)
         {
             return this;
         }

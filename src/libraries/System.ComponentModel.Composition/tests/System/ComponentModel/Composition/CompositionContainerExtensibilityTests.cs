@@ -45,7 +45,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void CanBeCollectedAfterDispose()
         {
             AggregateExportProvider exportProvider = new AggregateExportProvider();

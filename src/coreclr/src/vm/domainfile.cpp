@@ -825,14 +825,6 @@ void DomainFile::ClearNativeImageStress()
     if (g_pConfig->RequireZaps() != EEConfig::REQUIRE_ZAPS_NONE)
         return;
 
-    // Its OK to ClearNativeImage even for a shared assembly, as the current PEFile will
-    // be discarded if we decide to share the assembly. However, we always use the same
-    // PEFile for the system assembly. So discarding the native image in the current
-    // AppDomain will actually affect the system assembly in the shared domain, and other
-    // appdomains may have already committed to using its ngen image.
-    if (GetFile()->IsSystem() && !this->GetAppDomain()->IsDefaultDomain())
-        return;
-
     if (g_IBCLogger.InstrEnabled())
         return;
 
@@ -891,8 +883,6 @@ void DomainFile::LoadLibrary()
     }
     CONTRACTL_END;
 
-    Thread::LoadingFileHolder holder(GetThread());
-    GetThread()->SetLoadingFile(this);
     GetFile()->LoadLibrary();
 }
 
@@ -1643,7 +1633,7 @@ void GetNGenCpuInfo(CORINFO_CPU * cpuInfo)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
     static CORINFO_CPU ngenCpuInfo =
         {
@@ -1655,11 +1645,11 @@ void GetNGenCpuInfo(CORINFO_CPU * cpuInfo)
     // We always generate P3-compatible code on CoreCLR
     *cpuInfo = ngenCpuInfo;
 
-#else // _TARGET_X86_
+#else // TARGET_X86
     cpuInfo->dwCPUType = 0;
     cpuInfo->dwFeatures = 0;
     cpuInfo->dwExtendedFeatures = 0;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 }
 
 // --------------------------------------------------------------------------------
@@ -1683,7 +1673,7 @@ void DomainAssembly::GetCurrentVersionInfo(CORCOMPILE_VERSION_INFO *pNativeVersi
                                           &fForceProfiling,
                                           &fForceInstrument);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     pNativeVersionInfo->wOSPlatformID = VER_PLATFORM_WIN32_NT;
 #else
     pNativeVersionInfo->wOSPlatformID = VER_PLATFORM_UNIX;

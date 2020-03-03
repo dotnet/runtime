@@ -50,7 +50,7 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(
     const MethodContext::Agnostic_CORINFO_CONST_LOOKUP& constLookup)
 {
     char buffer[MAX_BUFFER_SIZE];
-    sprintf_s(buffer, MAX_BUFFER_SIZE, "at - %u handle/address-%016llX", constLookup.accessType, constLookup.handle);
+    sprintf_s(buffer, MAX_BUFFER_SIZE, "at-%u handle/address-%016llX", constLookup.accessType, constLookup.handle);
     return std::string(buffer);
 }
 
@@ -93,4 +93,58 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(const MethodContext::A
               sigInfo.sigInst_methInstCount, sigInfo.sigInst_methInst_Index, sigInfo.args, sigInfo.scope,
               sigInfo.token);
     return std::string(buffer);
+}
+
+std::string SpmiDumpHelper::DumpCorInfoFlag(CorInfoFlag flags)
+{
+    std::string s("");
+
+#define AddFlag(__name)\
+    if (flags & __name) { s += std::string(" ") + std::string(#__name); flags = (CorInfoFlag)((DWORD)flags & ~(DWORD)__name); }
+
+    AddFlag(CORINFO_FLG_PROTECTED);
+    AddFlag(CORINFO_FLG_STATIC);
+    AddFlag(CORINFO_FLG_FINAL);
+    AddFlag(CORINFO_FLG_SYNCH);
+    AddFlag(CORINFO_FLG_VIRTUAL);
+    AddFlag(CORINFO_FLG_NATIVE);
+    AddFlag(CORINFO_FLG_INTRINSIC_TYPE);
+    AddFlag(CORINFO_FLG_ABSTRACT);
+    AddFlag(CORINFO_FLG_EnC);
+    AddFlag(CORINFO_FLG_FORCEINLINE);
+    AddFlag(CORINFO_FLG_SHAREDINST);
+    AddFlag(CORINFO_FLG_DELEGATE_INVOKE);
+    AddFlag(CORINFO_FLG_PINVOKE);
+    AddFlag(CORINFO_FLG_NOGCCHECK);
+    AddFlag(CORINFO_FLG_INTRINSIC);
+    AddFlag(CORINFO_FLG_CONSTRUCTOR);
+    AddFlag(CORINFO_FLG_AGGRESSIVE_OPT);
+    AddFlag(CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS);
+    AddFlag(CORINFO_FLG_DONT_INLINE);
+    AddFlag(CORINFO_FLG_DONT_INLINE_CALLER);
+    AddFlag(CORINFO_FLG_JIT_INTRINSIC);
+    AddFlag(CORINFO_FLG_VALUECLASS);
+    AddFlag(CORINFO_FLG_VAROBJSIZE);
+    AddFlag(CORINFO_FLG_ARRAY);
+    AddFlag(CORINFO_FLG_OVERLAPPING_FIELDS);
+    AddFlag(CORINFO_FLG_INTERFACE);
+    AddFlag(CORINFO_FLG_CUSTOMLAYOUT);
+    AddFlag(CORINFO_FLG_CONTAINS_GC_PTR);
+    AddFlag(CORINFO_FLG_DELEGATE);
+    AddFlag(CORINFO_FLG_CONTAINS_STACK_PTR);
+    AddFlag(CORINFO_FLG_VARIANCE);
+    AddFlag(CORINFO_FLG_BEFOREFIELDINIT);
+    AddFlag(CORINFO_FLG_GENERIC_TYPE_VARIABLE);
+    AddFlag(CORINFO_FLG_UNSAFE_VALUECLASS);
+
+#undef AddFlag
+
+    if (flags != 0)
+    {
+        char buffer[MAX_BUFFER_SIZE];
+        sprintf_s(buffer, MAX_BUFFER_SIZE, " Unknown flags-%08X", flags);
+        s += std::string(buffer);
+    }
+
+    return s;
 }

@@ -8,7 +8,7 @@
 [CmdletBinding(PositionalBinding=$false)]
 Param(
   [string][Alias('f')]$framework = "netcoreapp",
-  [string][Alias('c')]$configuration = "Debug",
+  [string][Alias('c')]$configuration = "Release",
   [string][Alias('a')]$arch = "x64",
   [string][Alias('o')]$os = "",
   [switch][Alias('b')]$copyAspNetBits
@@ -24,7 +24,7 @@ if ($MyInvocation.InvocationName -ne ".")
 
 # find corefx root, assuming script lives in the git repo
 $SOURCE_DIR="$(split-path -Parent $MyInvocation.MyCommand.Definition)"
-$COREFX_ROOT_DIR=$(git -C "$SOURCE_DIR" rev-parse --show-toplevel)
+$DOTNET_TEST_ROOT_DIR=$(git -C "$SOURCE_DIR" rev-parse --show-toplevel)
 
 function Find-Os()
 {
@@ -54,9 +54,9 @@ function Copy-Aspnetcore-Bits([string] $testhost_path)
 {
     function find-bootstrap-sdk()
     {
-        if (test-path -PathType container "$COREFX_ROOT_DIR/.dotnet")
+        if (test-path -PathType container "$DOTNET_TEST_ROOT_DIR/.dotnet")
         {
-            "$COREFX_ROOT_DIR/.dotnet"
+            "$DOTNET_TEST_ROOT_DIR/.dotnet"
         }
         else
         {
@@ -88,7 +88,6 @@ function Copy-Aspnetcore-Bits([string] $testhost_path)
             (Get-ChildItem -Directory "$path" `
             | Select-Object -ExpandProperty Fullname `
             | Split-Path -Leaf `
-            | ForEach-Object{[System.Version]$_} `
             | Sort-Object -Descending `
             | Select-Object -First 1).ToString()
         }
@@ -120,7 +119,7 @@ function Copy-Aspnetcore-Bits([string] $testhost_path)
 
 function Set-Sdk-Environment()
 {
-    $candidate_path=$([IO.Path]::Combine($COREFX_ROOT_DIR, 'artifacts', 'bin', 'testhost', "$FRAMEWORK-$OS-$CONFIGURATION-$ARCH"))
+    $candidate_path=$([IO.Path]::Combine($DOTNET_TEST_ROOT_DIR, 'artifacts', 'bin', 'testhost', $FRAMEWORK + "5.0-$OS-$CONFIGURATION-$ARCH"))
 
     if (!$(test-path -PathType container $candidate_path))
     {

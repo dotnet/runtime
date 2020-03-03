@@ -153,6 +153,7 @@ private:
         char *hierarchy_mount = nullptr;
         char *hierarchy_root = nullptr;
         char *cgroup_path_relative_to_mount = nullptr;
+        size_t common_path_prefix_len;
 
         FindHierarchyMount(is_subsystem, &hierarchy_mount, &hierarchy_root);
         if (hierarchy_mount == nullptr || hierarchy_root == nullptr)
@@ -168,9 +169,30 @@ private:
 
         strcpy(cgroup_path, hierarchy_mount);
         // For a host cgroup, we need to append the relative path.
-        // In a docker container, the root and relative path are the same and we don't need to append.
-        if (strcmp(hierarchy_root, cgroup_path_relative_to_mount) != 0)
-            strcat(cgroup_path, cgroup_path_relative_to_mount);
+        // The root and cgroup path can share a common prefix of the path that should not be appended.
+        // Example 1 (docker):
+        // hierarchy_mount:               /sys/fs/cgroup/cpu
+        // hierarchy_root:                /docker/87ee2de57e51bc75175a4d2e81b71d162811b179d549d6601ed70b58cad83578
+        // cgroup_path_relative_to_mount: /docker/87ee2de57e51bc75175a4d2e81b71d162811b179d549d6601ed70b58cad83578/my_named_cgroup
+        // append do the cgroup_path:     /my_named_cgroup
+        // final cgroup_path:             /sys/fs/cgroup/cpu/my_named_cgroup
+        //
+        // Example 2 (out of docker)
+        // hierarchy_mount:               /sys/fs/cgroup/cpu
+        // hierarchy_root:                /
+        // cgroup_path_relative_to_mount: /my_named_cgroup
+        // append do the cgroup_path:     /my_named_cgroup
+        // final cgroup_path:             /sys/fs/cgroup/cpu/my_named_cgroup
+        common_path_prefix_len = strlen(hierarchy_root);
+        if ((common_path_prefix_len == 1) || strncmp(hierarchy_root, cgroup_path_relative_to_mount, common_path_prefix_len) != 0)
+        {
+            common_path_prefix_len = 0;
+        }
+
+        assert(cgroup_path_relative_to_mount[common_path_prefix_len] == '/');
+
+        strcat(cgroup_path, cgroup_path_relative_to_mount + common_path_prefix_len);
+
 
     done:
         free(hierarchy_mount);

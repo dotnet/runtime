@@ -11,7 +11,7 @@ namespace System.Text.Json
     /// </summary>
     public sealed class JsonNumber : JsonNode, IEquatable<JsonNumber>
     {
-        private string _value;
+        private string _value = null!;
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonNumber"/> class representing the value 0.
@@ -557,7 +557,7 @@ namespace System.Text.Json
         ///   <see langword="true"/> if the value of this instance matches <paramref name="obj"/> exactly (is equal and has the same format),
         ///   <see langword="false"/> otherwise.
         /// </returns>
-        public override bool Equals(object obj) => obj is JsonNumber jsonNumber && Equals(jsonNumber);
+        public override bool Equals(object? obj) => obj is JsonNumber jsonNumber && Equals(jsonNumber);
 
         /// <summary>
         ///   Calculates a hash code of this instance.
@@ -573,7 +573,7 @@ namespace System.Text.Json
         ///   <see langword="true"/> if the value of this instance matches <paramref name="other"/> exactly (is equal and has the same format),
         ///   <see langword="false"/> otherwise.
         /// </returns>
-        public bool Equals(JsonNumber other) => !(other is null) && _value == other._value;
+        public bool Equals(JsonNumber? other) => !(other is null) && _value == other._value;
 
         /// <summary>
         ///   Compares values of two JSON numbers.
@@ -584,13 +584,13 @@ namespace System.Text.Json
         ///   <see langword="true"/> if values of instances match exactly (are equal and have the same format),
         ///   <see langword="false"/> otherwise.
         /// </returns>
-        public static bool operator ==(JsonNumber left, JsonNumber right)
+        public static bool operator ==(JsonNumber? left, JsonNumber? right)
         {
             // Test "right" first to allow branch elimination when inlined for null checks (== null)
             // so it can become a simple test
             if (right is null)
             {
-                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
                 return (left is null) ? true : false;
             }
 
@@ -606,7 +606,7 @@ namespace System.Text.Json
         ///   <see langword="true"/> if values of instances do not match exactly (are not equal or have different format),
         ///   <see langword="false"/> otherwise.
         /// </returns>
-        public static bool operator !=(JsonNumber left, JsonNumber right) => !(left == right);
+        public static bool operator !=(JsonNumber? left, JsonNumber? right) => !(left == right);
 
         /// <summary>
         ///   Creates a new JSON number that is a copy of the current instance.

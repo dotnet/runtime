@@ -1,17 +1,16 @@
 <Project DefaultTargets="Build">
-  <PropertyGroup>
-    <BuildConfigurations>
-      netcoreapp;
-      netstandard2.0;
-      netfx;
-    </BuildConfigurations>
-  </PropertyGroup>
+
   <Import Project="..\Directory.Build.props" />
   <Target Name="Build" DependsOnTargets="BinPlace" />
   <Target Name="Clean" />
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+  </PropertyGroup>
 
   <Target Name="GetBinPlaceItems">
     <ItemGroup>

@@ -458,7 +458,7 @@ namespace System.Text.Json
         ///     if required. The look up text is matched as is, without any modifications to it.
         ///   </para>
         /// </remarks>
-        public bool ValueTextEquals(string text)
+        public bool ValueTextEquals(string? text)
         {
             return ValueTextEquals(text.AsSpan());
         }
@@ -511,7 +511,7 @@ namespace System.Text.Json
                 return false;
             }
 
-            byte[] otherUtf8TextArray = null;
+            byte[]? otherUtf8TextArray = null;
 
             Span<byte> otherUtf8Text;
 
@@ -1413,7 +1413,7 @@ namespace System.Text.Json
         // https://tools.ietf.org/html/rfc7159#section-6
         private bool TryGetNumber(ReadOnlySpan<byte> data, out int consumed)
         {
-            // TODO: https://github.com/dotnet/corefx/issues/33294
+            // TODO: https://github.com/dotnet/runtime/issues/27837
             Debug.Assert(data.Length > 0);
 
             _numberFormat = default;

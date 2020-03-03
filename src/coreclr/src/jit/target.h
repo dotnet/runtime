@@ -3,24 +3,24 @@
 // See the LICENSE file in the project root for more information.
 
 /*****************************************************************************/
-#ifndef _TARGET_H_
-#define _TARGET_H_
+#ifndef TARGET_H_
+#define TARGET_H_
 
-#if defined(FEATURE_CORECLR) && defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
 #define FEATURE_VARARG 0
-#else // !(defined(FEATURE_CORECLR) && defined(_TARGET_UNIX_))
+#else
 #define FEATURE_VARARG 1
-#endif // !(defined(FEATURE_CORECLR) && defined(_TARGET_UNIX_))
+#endif
 
 /*****************************************************************************/
 // The following are human readable names for the target architectures
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 #define TARGET_READABLE_NAME "X86"
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
 #define TARGET_READABLE_NAME "AMD64"
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 #define TARGET_READABLE_NAME "ARM"
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 #define TARGET_READABLE_NAME "ARM64"
 #else
 #error Unsupported or unset target architecture
@@ -29,13 +29,13 @@
 /*****************************************************************************/
 // The following are intended to capture only those #defines that cannot be replaced
 // with static const members of Target
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 #define REGMASK_BITS 32
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 #define REGMASK_BITS 64
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 #define REGMASK_BITS 64
 
 #else
@@ -53,7 +53,7 @@
 //                       be assigned during register allocation.
 //    REG_NA           - Used to indicate that a register is either not yet assigned or not required.
 //
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
@@ -73,7 +73,7 @@ enum _regMask_enum : unsigned __int64
 #include "register.h"
 };
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
 enum _regNumber_enum : unsigned
 {
@@ -94,7 +94,7 @@ enum _regMask_enum : unsigned __int64
 #include "register.h"
 };
 
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
 
 enum _regNumber_enum : unsigned
 {
@@ -116,7 +116,7 @@ enum _regMask_enum : unsigned
 #include "register.h"
 };
 
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 
 enum _regNumber_enum : unsigned
 {
@@ -153,7 +153,7 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
 typedef unsigned __int64 regMaskTP;
 #else
 typedef unsigned       regMaskTP;
@@ -196,15 +196,13 @@ typedef unsigned char   regNumberSmall;
 
 /*****************************************************************************/
 
-// The pseudorandom nop insertion is not necessary for current CoreCLR scenarios
-// #if defined(FEATURE_CORECLR) && !defined(_TARGET_ARM_)
+// The pseudorandom nop insertion is not necessary for current scenarios
 // #define PSEUDORANDOM_NOP_INSERTION
-// #endif
 
 /*****************************************************************************/
 
 // clang-format off
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
   #define CPU_LOAD_STORE_ARCH      0
   #define CPU_HAS_FP_SUPPORT       1
@@ -336,8 +334,6 @@ typedef unsigned char   regNumberSmall;
   #define CNT_CALLEE_TRASH_FLOAT  (6)
 
   #define CALLEE_SAVED_REG_MAXSZ  (CNT_CALLEE_SAVED*REGSIZE_BYTES)  // EBX,ESI,EDI,EBP
-
-  #define REG_TMP_0                REG_EAX
 
   #define REG_LNGARG_LO             REG_EAX
   #define RBM_LNGARG_LO             RBM_EAX
@@ -484,7 +480,7 @@ typedef unsigned char   regNumberSmall;
 
   #define RBM_STACK_PROBE_HELPER_TRASH RBM_NONE
 
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
   // TODO-AMD64-CQ: Fine tune the following xxBlk threshold values:
 
   #define CPU_LOAD_STORE_ARCH      0
@@ -659,8 +655,6 @@ typedef unsigned char   regNumberSmall;
 
   #define CALLEE_SAVED_REG_MAXSZ   (CNT_CALLEE_SAVED*REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ (CNT_CALLEE_SAVED_FLOAT*16)
-
-  #define REG_TMP_0                REG_EAX
 
   // register to hold shift amount
   #define REG_SHIFT                REG_ECX
@@ -839,7 +833,6 @@ typedef unsigned char   regNumberSmall;
   // The registers trashed by profiler enter/leave/tailcall hook
   // See vm\amd64\asmhelpers.asm for more details.
   #define RBM_PROFILER_ENTER_TRASH     RBM_CALLEE_TRASH
-  #define RBM_PROFILER_LEAVE_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
   #define RBM_PROFILER_TAILCALL_TRASH  RBM_PROFILER_LEAVE_TRASH
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper.
@@ -850,9 +843,11 @@ typedef unsigned char   regNumberSmall;
   // The return registers could be any two from the set { RAX, RDX, XMM0, XMM1 }.
   // STOP_FOR_GC helper preserves all the 4 possible return registers.
   #define RBM_STOP_FOR_GC_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
+  #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
 #else
   // See vm\amd64\asmhelpers.asm for more details.
   #define RBM_STOP_FOR_GC_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+  #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
 #endif
 
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
@@ -876,13 +871,13 @@ typedef unsigned char   regNumberSmall;
   #define REG_STACK_PROBE_HELPER_ARG   REG_R11
   #define RBM_STACK_PROBE_HELPER_ARG   RBM_R11
 
-#ifdef _TARGET_UNIX_
+#ifdef TARGET_UNIX
   #define RBM_STACK_PROBE_HELPER_TRASH RBM_NONE
-#else // !_TARGET_UNIX_
+#else // !TARGET_UNIX
   #define RBM_STACK_PROBE_HELPER_TRASH RBM_RAX
-#endif // !_TARGET_UNIX_
+#endif // !TARGET_UNIX
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
   // TODO-ARM-CQ: Use shift for division by power of 2
   // TODO-ARM-CQ: Check for sdiv/udiv at runtime and generate it if available
@@ -979,8 +974,6 @@ typedef unsigned char   regNumberSmall;
 
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED*REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT*sizeof(float))
-
-  #define REG_TMP_0                REG_R3
 
   // Temporary registers used for the GS cookie check.
   #define REG_GSCOOKIE_TMP_0       REG_R12
@@ -1193,7 +1186,7 @@ typedef unsigned char   regNumberSmall;
   #define RBM_STACK_PROBE_HELPER_CALL_TARGET RBM_R5
   #define RBM_STACK_PROBE_HELPER_TRASH       (RBM_R5 | RBM_LR)
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
   #define CPU_LOAD_STORE_ARCH      1
   #define CPU_HAS_FP_SUPPORT       1
@@ -1296,8 +1289,6 @@ typedef unsigned char   regNumberSmall;
 
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)
-
-  #define REG_TMP_0                REG_R9
 
   // Temporary registers used for the GS cookie check.
   #define REG_GSCOOKIE_TMP_0       REG_R9
@@ -1543,7 +1534,7 @@ typedef unsigned char   regNumberSmall;
   #error Unsupported or unset target architecture
 #endif
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
 
   #define JMP_DIST_SMALL_MAX_NEG  (-128)
   #define JMP_DIST_SMALL_MAX_POS  (+127)
@@ -1560,7 +1551,7 @@ typedef unsigned char   regNumberSmall;
   #define PUSH_INST_SIZE          (5)
   #define CALL_INST_SIZE          (5)
 
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 
 C_ASSERT(REG_FIRST == 0);
 C_ASSERT(REG_INT_FIRST < REG_INT_LAST);
@@ -1655,7 +1646,7 @@ inline bool genIsValidFloatReg(regNumber reg)
     return reg >= REG_FP_FIRST && reg <= REG_FP_LAST;
 }
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 
 /*****************************************************************************
  * Return true if the register is a valid floating point double register
@@ -1665,7 +1656,7 @@ inline bool genIsValidDoubleReg(regNumber reg)
     return genIsValidFloatReg(reg) && (((reg - REG_FP_FIRST) & 0x1) == 0);
 }
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
 //-------------------------------------------------------------------------------------------
 // hasFixedRetBuffReg:
@@ -1673,7 +1664,7 @@ inline bool genIsValidDoubleReg(regNumber reg)
 //
 inline bool hasFixedRetBuffReg()
 {
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     return true;
 #else
     return false;
@@ -1687,7 +1678,7 @@ inline bool hasFixedRetBuffReg()
 inline regNumber theFixedRetBuffReg()
 {
     assert(hasFixedRetBuffReg()); // This predicate should be checked before calling this method
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     return REG_ARG_RET_BUFF;
 #else
     return REG_NA;
@@ -1701,7 +1692,7 @@ inline regNumber theFixedRetBuffReg()
 inline regMaskTP theFixedRetBuffMask()
 {
     assert(hasFixedRetBuffReg()); // This predicate should be checked before calling this method
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     return RBM_ARG_RET_BUFF;
 #else
     return 0;
@@ -1715,7 +1706,7 @@ inline regMaskTP theFixedRetBuffMask()
 inline unsigned theFixedRetBuffArgNum()
 {
     assert(hasFixedRetBuffReg()); // This predicate should be checked before calling this method
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     return RET_BUFF_ARGNUM;
 #else
     return BAD_VAR_NUM;
@@ -1777,7 +1768,7 @@ inline bool isValidFloatArgReg(regNumber reg)
  *  Can the register hold the argument type?
  */
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 inline bool floatRegCanHoldType(regNumber reg, var_types type)
 {
     assert(genIsValidFloatReg(reg));
@@ -1815,7 +1806,7 @@ extern const regMaskSmall regMasks[REG_COUNT];
 inline regMaskTP genRegMask(regNumber reg)
 {
     assert((unsigned)reg < ArrLen(regMasks));
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // shift is faster than a L1 hit on modern x86
     // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
     // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
@@ -1835,11 +1826,11 @@ inline regMaskTP genRegMask(regNumber reg)
 
 inline regMaskTP genRegMaskFloat(regNumber reg, var_types type /* = TYP_DOUBLE */)
 {
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86)
     assert(genIsValidFloatReg(reg));
     assert((unsigned)reg < ArrLen(regMasks));
     return regMasks[reg];
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     assert(floatRegCanHoldType(reg, type));
     assert(reg >= REG_F0 && reg <= REG_F31);
 
@@ -1877,7 +1868,7 @@ inline regMaskTP genRegMaskFloat(regNumber reg, var_types type /* = TYP_DOUBLE *
 //
 inline regMaskTP genRegMask(regNumber regNum, var_types type)
 {
-#ifndef _TARGET_ARM_
+#ifndef TARGET_ARM
     return genRegMask(regNum);
 #else
     regMaskTP regMask = RBM_NONE;
@@ -1915,7 +1906,7 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
 {
     regNumber regReturn;
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     if (type == TYP_DOUBLE)
     {
         // Skip odd FP registers for double-precision types
@@ -1926,7 +1917,7 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
     {
         regReturn = REG_NEXT(reg);
     }
-#else // _TARGET_ARM_
+#else // TARGET_ARM
     regReturn = REG_NEXT(reg);
 #endif
 
@@ -1962,10 +1953,10 @@ inline bool isFloatRegType(var_types type)
 #endif
 }
 
-// If the WINDOWS_AMD64_ABI is defined make sure that _TARGET_AMD64_ is also defined.
+// If the WINDOWS_AMD64_ABI is defined make sure that TARGET_AMD64 is also defined.
 #if defined(WINDOWS_AMD64_ABI)
-#if !defined(_TARGET_AMD64_)
-#error When WINDOWS_AMD64_ABI is defined you must define _TARGET_AMD64_ defined as well.
+#if !defined(TARGET_AMD64)
+#error When WINDOWS_AMD64_ABI is defined you must define TARGET_AMD64 defined as well.
 #endif
 #endif
 
@@ -1982,17 +1973,17 @@ C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
 #endif
 /*****************************************************************************/
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 typedef unsigned __int64 target_size_t;
 typedef __int64          target_ssize_t;
-#else  // !_TARGET_64BIT_
+#else  // !TARGET_64BIT
 typedef unsigned int target_size_t;
 typedef int          target_ssize_t;
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
 
 C_ASSERT(sizeof(target_size_t) == TARGET_POINTER_SIZE);
 C_ASSERT(sizeof(target_ssize_t) == TARGET_POINTER_SIZE);
 
 /*****************************************************************************/
-#endif // _TARGET_H_
+#endif // TARGET_H_
 /*****************************************************************************/

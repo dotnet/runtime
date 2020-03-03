@@ -28,8 +28,8 @@ namespace System.Reflection.Tests
             ReflectionTypeLoadException rtle = new ReflectionTypeLoadException(null, null, "Null arguments");
             Assert.NotNull(rtle.ToString());
             Assert.NotNull(rtle.Message);
-            Assert.Null(rtle.LoaderExceptions);
-            Assert.Null(rtle.Types);
+            Assert.Empty(rtle.LoaderExceptions);
+            Assert.Empty(rtle.Types);
         }
     }
 }

@@ -5,7 +5,10 @@
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetFramework)' == 'net461'">true</GenFacadesIgnoreMissingTypes>
-    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;net462-Windows_NT-Debug;net462-Windows_NT-Release;net47-Windows_NT-Debug;net47-Windows_NT-Release;netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;net461-Windows_NT;netcoreapp3.0-Windows_NT;netcoreapp3.0;net462-Windows_NT;net47-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsWindows)' != 'true'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_CryptographyCng</GeneratePlatformNotSupportedAssemblyMessage>
@@ -68,49 +71,55 @@
     <Compile Include="Internal\Cryptography\SymmetricImportExportExtensions.cs" />
     <Compile Include="Internal\Cryptography\CngSymmetricAlgorithmCore.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\AesBCryptModes.cs">
-      <Link>Interop\Windows\BCrypt\AesBCryptModes.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\AesBCryptModes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Cng.cs">
-      <Link>Interop\Windows\BCrypt\Cng.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Cng.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
-      <Link>Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptImportKey.cs">
+      <Link>Interop\Windows\BCrypt\Interop.BCryptImportKey.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.cs">
+      <Link>Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.NTSTATUS.cs">
+      <Link>Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs">
-      <Link>Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.Blobs.cs">
-      <Link>Interop\Windows\BCrypt\Interop.Blobs.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.Blobs.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs">
-      <Link>Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptHashData.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptHashData.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptHashData.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptFinishHash.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGetProperty.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptGetProperty.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptGetProperty.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs">
-      <Link>Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\BCryptAlgorithmCache.cs">
       <Link>Internal\Windows\BCrypt\BCryptAlgorithmCache.cs</Link>
@@ -122,7 +131,7 @@
       <Link>Internal\Windows\BCrypt\Interop.BCryptKeyDataBlob.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\TripleDesBCryptModes.cs">
-      <Link>Interop\Windows\BCrypt\TripleDesBCryptModes.cs</Link>
+      <Link>Common\Interop\Windows\BCrypt\TripleDesBCryptModes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.FindOidInfo.cs">
       <Link>Internal\Windows\Crypt32\Interop.FindOidInfo.cs</Link>
@@ -175,7 +184,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.UiPolicy.cs">
       <Link>Internal\Windows\NCrypt\Interop.UiPolicy.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Internal\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs">

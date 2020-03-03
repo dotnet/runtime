@@ -1,6 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <!-- Disable 8610 (Nullability of reference type doesn't match overridden member) warning so it doesn't turn into an error -->
     <NoWarn>$(NoWarn);8610</NoWarn>

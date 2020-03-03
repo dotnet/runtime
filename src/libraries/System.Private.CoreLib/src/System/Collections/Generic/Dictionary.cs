@@ -51,7 +51,7 @@ namespace System.Collections.Generic
 
         private int[]? _buckets;
         private Entry[]? _entries;
-#if BIT64
+#if TARGET_64BIT
         private ulong _fastModMultiplier;
 #endif
         private int _count;
@@ -79,7 +79,7 @@ namespace System.Collections.Generic
         {
             if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
             if (capacity > 0) Initialize(capacity);
-            if (comparer != EqualityComparer<TKey>.Default)
+            if (comparer != null && comparer != EqualityComparer<TKey>.Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
             {
                 _comparer = comparer;
             }
@@ -250,7 +250,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                if (default(TValue)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                if (typeof(TValue).IsValueType)
                 {
                     // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                     for (int i = 0; i < _count; i++)
@@ -261,7 +261,7 @@ namespace System.Collections.Generic
                 else
                 {
                     // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                    // https://github.com/dotnet/coreclr/issues/17273
+                    // https://github.com/dotnet/runtime/issues/10050
                     // So cache in a local rather than get EqualityComparer per loop iteration
                     EqualityComparer<TValue> defaultComparer = EqualityComparer<TValue>.Default;
                     for (int i = 0; i < _count; i++)
@@ -344,7 +344,7 @@ namespace System.Collections.Generic
                     int i = GetBucket(hashCode);
                     Entry[]? entries = _entries;
                     uint collisionCount = 0;
-                    if (default(TKey)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                    if (typeof(TKey).IsValueType)
                     {
                         // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
 
@@ -352,7 +352,7 @@ namespace System.Collections.Generic
                         i--;
                         do
                         {
-                            // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                            // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                             // Test in if to drop range check for following array access
                             if ((uint)i >= (uint)entries.Length)
                             {
@@ -376,7 +376,7 @@ namespace System.Collections.Generic
                     else
                     {
                         // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                        // https://github.com/dotnet/coreclr/issues/17273
+                        // https://github.com/dotnet/runtime/issues/10050
                         // So cache in a local rather than get EqualityComparer per loop iteration
                         EqualityComparer<TKey> defaultComparer = EqualityComparer<TKey>.Default;
 
@@ -384,7 +384,7 @@ namespace System.Collections.Generic
                         i--;
                         do
                         {
-                            // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                            // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                             // Test in if to drop range check for following array access
                             if ((uint)i >= (uint)entries.Length)
                             {
@@ -416,7 +416,7 @@ namespace System.Collections.Generic
                     i--;
                     do
                     {
-                        // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                         // Test in if to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length)
                         {
@@ -460,7 +460,7 @@ namespace System.Collections.Generic
 
             // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
             _freeList = -1;
-#if BIT64
+#if TARGET_64BIT
             _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)size);
 #endif
             _buckets = buckets;
@@ -495,12 +495,12 @@ namespace System.Collections.Generic
 
             if (comparer == null)
             {
-                if (default(TKey)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                if (typeof(TKey).IsValueType)
                 {
                     // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                     while (true)
                     {
-                        // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                         // Test uint in if rather than loop condition to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length)
                         {
@@ -538,12 +538,12 @@ namespace System.Collections.Generic
                 else
                 {
                     // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
-                    // https://github.com/dotnet/coreclr/issues/17273
+                    // https://github.com/dotnet/runtime/issues/10050
                     // So cache in a local rather than get EqualityComparer per loop iteration
                     EqualityComparer<TKey> defaultComparer = EqualityComparer<TKey>.Default;
                     while (true)
                     {
-                        // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                         // Test uint in if rather than loop condition to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length)
                         {
@@ -583,7 +583,7 @@ namespace System.Collections.Generic
             {
                 while (true)
                 {
-                    // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                     // Test uint in if rather than loop condition to drop range check for following array access
                     if ((uint)i >= (uint)entries.Length)
                     {
@@ -658,7 +658,7 @@ namespace System.Collections.Generic
             _version++;
 
             // Value types never rehash
-            if (default(TKey)! == null && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
             {
                 // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
                 // i.e. EqualityComparer<string>.Default.
@@ -720,7 +720,7 @@ namespace System.Collections.Generic
         private void Resize(int newSize, bool forceNewHashCodes)
         {
             // Value types never rehash
-            Debug.Assert(!forceNewHashCodes || default(TKey)! == null); // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            Debug.Assert(!forceNewHashCodes || !typeof(TKey).IsValueType);
             Debug.Assert(_entries != null, "_entries should be non-null");
             Debug.Assert(newSize >= _entries.Length);
 
@@ -729,7 +729,7 @@ namespace System.Collections.Generic
             int count = _count;
             Array.Copy(_entries, entries, count);
 
-            if (default(TKey)! == null && forceNewHashCodes) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (!typeof(TKey).IsValueType && forceNewHashCodes)
             {
                 for (int i = 0; i < count; i++)
                 {
@@ -743,7 +743,7 @@ namespace System.Collections.Generic
 
             // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
             _buckets = new int[newSize];
-#if BIT64
+#if TARGET_64BIT
             _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newSize);
 #endif
             for (int i = 0; i < count; i++)
@@ -1166,7 +1166,7 @@ namespace System.Collections.Generic
         private ref int GetBucket(uint hashCode)
         {
             int[] buckets = _buckets!;
-#if BIT64
+#if TARGET_64BIT
             return ref buckets[HashHelpers.FastMod(hashCode, (uint)buckets.Length, _fastModMultiplier)];
 #else
             return ref buckets[hashCode % (uint)buckets.Length];

@@ -5,7 +5,8 @@
     <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.1'">4.0.1.0</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup>
-    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netstandard1.1;netstandard2.0;netcoreapp3.0-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\HResults.cs" />
@@ -30,7 +31,6 @@
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Globalization" />
     <Reference Include="System.Runtime.WindowsRuntime" />
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>

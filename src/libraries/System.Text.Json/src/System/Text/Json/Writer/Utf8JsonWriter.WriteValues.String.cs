@@ -47,7 +47,7 @@ namespace System.Text.Json
         /// as if <see cref="WriteNullValue"/> was called.
         /// </para>
         /// </remarks>
-        public void WriteStringValue(string value)
+        public void WriteStringValue(string? value)
         {
             if (value == null)
             {
@@ -111,7 +111,7 @@ namespace System.Text.Json
             }
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteStringMinimized(ReadOnlySpan<char> escapedValue)
         {
             Debug.Assert(escapedValue.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - 3);
@@ -138,7 +138,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Quote;
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteStringIndented(ReadOnlySpan<char> escapedValue)
         {
             int indent = Indentation;
@@ -184,7 +184,7 @@ namespace System.Text.Json
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= value.Length);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < value.Length);
 
-            char[] valueArray = null;
+            char[]? valueArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(value.Length, firstEscapeIndexVal);
 
@@ -254,7 +254,7 @@ namespace System.Text.Json
             }
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteStringMinimized(ReadOnlySpan<byte> escapedValue)
         {
             Debug.Assert(escapedValue.Length < int.MaxValue - 3);
@@ -281,7 +281,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Quote;
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteStringIndented(ReadOnlySpan<byte> escapedValue)
         {
             int indent = Indentation;
@@ -327,7 +327,7 @@ namespace System.Text.Json
             Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8Value.Length);
             Debug.Assert(firstEscapeIndexVal >= 0 && firstEscapeIndexVal < utf8Value.Length);
 
-            byte[] valueArray = null;
+            byte[]? valueArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(utf8Value.Length, firstEscapeIndexVal);
 

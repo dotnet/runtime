@@ -25,8 +25,8 @@ namespace Microsoft.Win32.SystemEventsTests
         {
             var changing = new AutoResetEvent(false);
             var changed = new AutoResetEvent(false);
-            EventHandler changedHandler = (o, e) => changed.Set();
-            EventHandler changingHandler = (o, e) => changing.Set();
+            EventHandler changedHandler = (o, e) => { Assert.NotNull(o); changed.Set(); };
+            EventHandler changingHandler = (o, e) => { Assert.NotNull(o); changing.Set(); };
 
             SystemEvents.DisplaySettingsChanged += changedHandler;
             SystemEvents.DisplaySettingsChanging += changingHandler;
@@ -50,8 +50,8 @@ namespace Microsoft.Win32.SystemEventsTests
         public void SignalsDisplayEventsSynchronouslyOnREFLECTDISPLAYCHANGE()
         {
             bool changing = false, changed = false;
-            EventHandler changedHandler = (o, e) => changed = true;
-            EventHandler changingHandler = (o, e) => changing = true;
+            EventHandler changedHandler = (o, e) => { Assert.NotNull(o); changed = true; };
+            EventHandler changingHandler = (o, e) => { Assert.NotNull(o); changing = true; };
 
             SystemEvents.DisplaySettingsChanged += changedHandler;
             SystemEvents.DisplaySettingsChanging += changingHandler;

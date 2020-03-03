@@ -23,10 +23,18 @@ namespace System.Net.Security.Tests
         [OuterLoop] // Test hits external azure server.
         public async Task SslStream_AllowRenegotiation_True_Succeeds()
         {
+            int validationCount = 0;
+
+            var validationCallback = new RemoteCertificateValidationCallback((object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
+            {
+                validationCount++;
+                return true;
+            });
+
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             await s.ConnectAsync(Configuration.Security.TlsRenegotiationServer, 443);
             using (NetworkStream ns = new NetworkStream(s))
-            using (SslStream ssl = new SslStream(ns, true))
+            using (SslStream ssl = new SslStream(ns, true, validationCallback))
             {
                 X509CertificateCollection certBundle = new X509CertificateCollection();
                 certBundle.Add(Configuration.Certificates.GetClientCertificate());
@@ -52,8 +60,8 @@ namespace System.Net.Security.Tests
                 // Initiate Read operation, that results in starting renegotiation as per server response to the above request.
                 int bytesRead = await ssl.ReadAsync(message, 0, message.Length);
 
-                // There's no good way to ensure renegotiation happened in the test.
-                // Under the debugger, we can see this test hits the renegotiation codepath.
+                // Renegotiation will trigger another validation callback/
+                Assert.InRange(validationCount, 2, int.MaxValue);
                 Assert.InRange(bytesRead, 1, message.Length);
                 Assert.Contains("HTTP/1.1 200 OK", Encoding.UTF8.GetString(message));
             }

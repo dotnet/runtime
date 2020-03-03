@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 2.6)
 project (UTF8TestNative)
 set(SOURCES UTF8TestNative.cpp )
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")

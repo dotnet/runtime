@@ -116,7 +116,7 @@ namespace System.Drawing
                 status = Gdip.GdipGetPropertyItem(nativeImage, propid, propSize, property);
                 Gdip.CheckStatus(status);
                 gdipProperty = (GdipPropertyItem)Marshal.PtrToStructure(property,
-                                    typeof(GdipPropertyItem));
+                                    typeof(GdipPropertyItem))!;
                 GdipPropertyItem.MarshalTo(gdipProperty, item);
             }
             finally
@@ -126,7 +126,7 @@ namespace System.Drawing
             return item;
         }
 
-        public Image GetThumbnailImage(int thumbWidth, int thumbHeight, Image.GetThumbnailImageAbort callback, IntPtr callbackData)
+        public Image GetThumbnailImage(int thumbWidth, int thumbHeight, Image.GetThumbnailImageAbort? callback, IntPtr callbackData)
         {
             if ((thumbWidth <= 0) || (thumbHeight <= 0))
                 throw new OutOfMemoryException(SR.InvalidThumbnailSize);
@@ -150,10 +150,10 @@ namespace System.Drawing
             return ThumbNail;
         }
 
-        internal ImageCodecInfo FindEncoderForFormat(ImageFormat format)
+        internal ImageCodecInfo? FindEncoderForFormat(ImageFormat format)
         {
             ImageCodecInfo[] encoders = ImageCodecInfo.GetImageEncoders();
-            ImageCodecInfo encoder = null;
+            ImageCodecInfo? encoder = null;
 
             if (format.Guid.Equals(ImageFormat.MemoryBmp.Guid))
                 format = ImageFormat.Png;
@@ -173,7 +173,7 @@ namespace System.Drawing
 
         public void Save(string filename, ImageFormat format)
         {
-            ImageCodecInfo encoder = FindEncoderForFormat(format);
+            ImageCodecInfo? encoder = FindEncoderForFormat(format);
             if (encoder == null)
             {
                 // second chance
@@ -187,7 +187,7 @@ namespace System.Drawing
             Save(filename, encoder, null);
         }
 
-        public void Save(string filename, ImageCodecInfo encoder, EncoderParameters encoderParams)
+        public void Save(string filename, ImageCodecInfo encoder, EncoderParameters? encoderParams)
         {
             int st;
             Guid guid = encoder.Clsid;
@@ -214,14 +214,14 @@ namespace System.Drawing
                 dest = ImageFormat.Png;
 
             // If we don't find an Encoder (for things like Icon), we just switch back to PNG...
-            ImageCodecInfo codec = FindEncoderForFormat(dest) ?? FindEncoderForFormat(ImageFormat.Png);
+            ImageCodecInfo codec = FindEncoderForFormat(dest) ?? FindEncoderForFormat(ImageFormat.Png)!;
 
             Save(stream, codec, null);
         }
 
         public void Save(Stream stream, ImageFormat format)
         {
-            ImageCodecInfo encoder = FindEncoderForFormat(format);
+            ImageCodecInfo? encoder = FindEncoderForFormat(format);
 
             if (encoder == null)
                 throw new ArgumentException(SR.Format(SR.NoCodecAvailableForFormat, format.Guid));
@@ -229,7 +229,7 @@ namespace System.Drawing
             Save(stream, encoder, null);
         }
 
-        public void Save(Stream stream, ImageCodecInfo encoder, EncoderParameters encoderParams)
+        public void Save(Stream stream, ImageCodecInfo encoder, EncoderParameters? encoderParams)
         {
             int st;
             IntPtr nativeEncoderParams;
@@ -284,7 +284,7 @@ namespace System.Drawing
             if (propitem == null)
                 throw new ArgumentNullException(nameof(propitem));
 
-            int nItemSize = Marshal.SizeOf(propitem.Value[0]);
+            int nItemSize = Marshal.SizeOf(propitem.Value![0]);
             int size = nItemSize * propitem.Value.Length;
             IntPtr dest = Marshal.AllocHGlobal(size);
             try
@@ -422,7 +422,7 @@ namespace System.Drawing
                     for (int i = 0; i < propNums; i++, propPtr = new IntPtr(propPtr.ToInt64() + propSize))
                     {
                         gdipProperty = (GdipPropertyItem)Marshal.PtrToStructure
-                            (propPtr, typeof(GdipPropertyItem));
+                            (propPtr, typeof(GdipPropertyItem))!;
                         items[i] = new PropertyItem();
                         GdipPropertyItem.MarshalTo(gdipProperty, items[i]);
                     }

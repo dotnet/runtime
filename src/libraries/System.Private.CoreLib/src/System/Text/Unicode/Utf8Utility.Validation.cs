@@ -8,13 +8,13 @@ using System.Runtime.Intrinsics.X86;
 using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nint = System.Int64;
 using nuint = System.UInt64;
-#else // BIT64
+#else // TARGET_64BIT
 using nint = System.Int32;
 using nuint = System.UInt32;
-#endif // BIT64
+#endif // TARGET_64BIT
 
 namespace System.Text.Unicode
 {

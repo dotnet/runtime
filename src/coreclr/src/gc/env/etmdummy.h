@@ -47,7 +47,7 @@
 #define FireEtwGCMarkHandles(HeapNum, ClrInstanceID) 0
 #define FireEtwGCMarkOlderGenerationRoots(HeapNum, ClrInstanceID) 0
 #define FireEtwFinalizeObject(TypeID, ObjectID, ClrInstanceID) 0
-#define FireEtwSetGCHandle(HandleID, ObjectID, Kind, Generation, ClrInstanceID) 0
+#define FireEtwSetGCHandle(HandleID, ObjectID, Kind, Generation, DomainAddr, ClrInstanceID) 0
 #define FireEtwDestroyGCHandle(HandleID, ClrInstanceID) 0
 #define FireEtwGCSampledObjectAllocationLow(Address, TypeID, ObjectCountForTypeSample, TotalSizeForTypeSample, ClrInstanceID) 0
 #define FireEtwPinObjectAtGCTime(HandleID, ObjectID, ObjectSize, TypeName, ClrInstanceID) 0
@@ -163,7 +163,7 @@
 #define FireEtwGCMarkWithType(HeapNum, ClrInstanceID, Type, Bytes) 0
 #define FireEtwGCJoin_V2(Heap, JoinTime, JoinType, ClrInstanceID, JoinID) 0
 #define FireEtwGCPerHeapHistory_V3(ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values) 0
-#define FireEtwGCGlobalHeapHistory_V2(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure) 0
+#define FireEtwGCGlobalHeapHistory_V3(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure, CondemnReasons0, CondemnReasons1) 0
 #define FireEtwDebugIPCEventStart() 0
 #define FireEtwDebugIPCEventEnd() 0
 #define FireEtwDebugExceptionProcessingStart() 0
@@ -376,7 +376,7 @@
 #define FireEtwFailFast(FailFastUserMessage, FailedEIP, OSExitCode, ClrExitCode, ClrInstanceID) 0
 #define FireEtwPrvFinalizeObject(TypeID, ObjectID, ClrInstanceID, TypeName) 0
 #define FireEtwCCWRefCountChange(HandleID, ObjectID, COMInterfacePointer, NewRefCount, AppDomainID, ClassName, NameSpace, Operation, ClrInstanceID) 0
-#define FireEtwPrvSetGCHandle(HandleID, ObjectID, Kind, Generation, ClrInstanceID) 0
+#define FireEtwPrvSetGCHandle(HandleID, ObjectID, Kind, Generation, DomainAddr, ClrInstanceId) 0
 #define FireEtwPrvDestroyGCHandle(HandleID, ClrInstanceID) 0
 #define FireEtwFusionMessageEvent(ClrInstanceID, Prepend, Message) 0
 #define FireEtwFusionErrorCodeEvent(ClrInstanceID, Category, ErrorCode) 0
@@ -398,3 +398,13 @@
 #define FireEtwBeginCreateManagedReference(ClrInstanceID) 0
 #define FireEtwEndCreateManagedReference(ClrInstanceID) 0
 #define FireEtwObjectVariantMarshallingToManaged(TypeName, Int1, ClrInstanceID) 0
+#define FireEtwGCDynamicEvent(EventName, PayloadSize, Payload, ClrInstanceId) 0
+#define FireEtwBGC1stSweepEnd(GenNumber, ClrInstanceId) 0
+#define FireEtwResolutionAttempted(ClrInstanceId, asmName, stage, assemblyLoadContextName, result, resultAsmName, resultAsmPath, errMsg) 0
+#define FireEtwResolutionAttempted(ClrInstanceId, asmName, event, alcName, result, resultAsmName, resultAsmPath, errMsg) 0
+#define FireEtwKnownPathProbed(ClrInstanceId, path, source, hr) 0
+#define FireEtwContentionStop_V1(managedContention, ClrInstanceId, elapsedTimeInNanosecond) 0
+#define FireEtwAssemblyLoadContextResolvingHandlerInvoked(ClrInstanceId, assemblyName, handlerName, alcName, resultAssemblyName, resultAssemblyPath) 0
+#define FireEtwAppDomainAssemblyResolveHandlerInvoked(ClrInstanceId, assemblyName, handlerName, resultAssemblyName, resultAssemblyPath) 0
+#define FireEtwAssemblyLoadFromResolveHandlerInvoked(ClrInstanceId, assemblyName, isTrackedAssembly, requestingAssemblyPath, requestedAssemblyPath) 0
+#define FireEtwEventSource(eventID, eventName, eventSourceName, payload) 0

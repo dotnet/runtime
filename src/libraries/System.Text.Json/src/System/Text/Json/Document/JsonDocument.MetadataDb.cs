@@ -149,7 +149,7 @@ namespace System.Text.Json
 
             public void Dispose()
             {
-                byte[] data = Interlocked.Exchange(ref _data, null);
+                byte[]? data = Interlocked.Exchange(ref _data, null!);
                 if (data == null)
                 {
                     return;

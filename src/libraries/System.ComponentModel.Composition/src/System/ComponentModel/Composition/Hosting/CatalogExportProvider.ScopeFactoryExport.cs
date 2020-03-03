@@ -4,6 +4,7 @@
 
 using System.ComponentModel.Composition.Primitives;
 using System.Threading;
+using System.Diagnostics;
 
 namespace System.ComponentModel.Composition.Hosting
 {
@@ -29,8 +30,8 @@ namespace System.ComponentModel.Composition.Hosting
             private sealed class ScopeCatalogExport : Export, IDisposable
             {
                 private readonly ScopeFactoryExport _scopeFactoryExport;
-                private CompositionContainer _childContainer;
-                private Export _export;
+                private CompositionContainer? _childContainer;
+                private Export? _export;
                 private readonly object _lock = new object();
 
                 public ScopeCatalogExport(ScopeFactoryExport scopeFactoryExport)
@@ -46,13 +47,14 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                 }
 
-                protected override object GetExportedValueCore()
+                protected override object? GetExportedValueCore()
                 {
                     if (_export == null)
                     {
-                        var childContainer = _scopeFactoryExport._scopeManager.CreateChildContainer(_scopeFactoryExport._catalog);
+                        CompositionContainer? childContainer = _scopeFactoryExport._scopeManager.CreateChildContainer(_scopeFactoryExport._catalog);
 
-                        var export = childContainer.CatalogExportProvider.CreateExport(_scopeFactoryExport.UnderlyingPartDefinition, _scopeFactoryExport.UnderlyingExportDefinition, false, CreationPolicy.Any);
+                        Debug.Assert(childContainer.CatalogExportProvider != null);
+                        Export? export = childContainer.CatalogExportProvider.CreateExport(_scopeFactoryExport.UnderlyingPartDefinition, _scopeFactoryExport.UnderlyingExportDefinition, false, CreationPolicy.Any);
                         lock (_lock)
                         {
                             if (_export == null)
@@ -76,8 +78,8 @@ namespace System.ComponentModel.Composition.Hosting
 
                 public void Dispose()
                 {
-                    CompositionContainer childContainer = null;
-                    Export export = null;
+                    CompositionContainer? childContainer = null;
+                    Export? export = null;
 
                     if (_export != null)
                     {

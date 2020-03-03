@@ -31,7 +31,7 @@ const unsigned        OFFSET_MASK  = 0x3;  // mask to access the low 2 bits
 //
 const unsigned  byref_OFFSET_FLAG  = 0x1;  // the offset is an interior ptr
 const unsigned pinned_OFFSET_FLAG  = 0x2;  // the offset is a pinned ptr
-#if !defined(_TARGET_X86_) || !defined(FEATURE_EH_FUNCLETS)
+#if !defined(TARGET_X86) || !defined(FEATURE_EH_FUNCLETS)
 const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 #endif
 

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,8 +19,11 @@ namespace System.Text.Json
         /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
-        public static Task SerializeAsync<TValue>(Stream utf8Json, TValue value, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+        public static Task SerializeAsync<TValue>(Stream utf8Json, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
+            if (utf8Json == null)
+                throw new ArgumentNullException(nameof(utf8Json));
+
             return WriteAsyncCore(utf8Json, value, typeof(TValue), options, cancellationToken);
         }
 
@@ -32,7 +36,7 @@ namespace System.Text.Json
         /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
-        public static Task SerializeAsync(Stream utf8Json, object value, Type inputType, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+        public static Task SerializeAsync(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
                 throw new ArgumentNullException(nameof(utf8Json));
@@ -42,7 +46,7 @@ namespace System.Text.Json
             return WriteAsyncCore(utf8Json, value, inputType, options, cancellationToken);
         }
 
-        private static async Task WriteAsyncCore(Stream utf8Json, object value, Type inputType, JsonSerializerOptions options, CancellationToken cancellationToken)
+        private static async Task WriteAsyncCore(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
             if (options == null)
             {
@@ -64,23 +68,23 @@ namespace System.Text.Json
                     return;
                 }
 
-                if (inputType == null)
-                {
-                    inputType = value.GetType();
-                }
-
                 WriteStack state = default;
-                state.Current.Initialize(inputType, options);
-                state.Current.CurrentValue = value;
+                state.InitializeRoot(inputType, options, supportContinuation: true);
 
                 bool isFinalBlock;
-                int flushThreshold;
 
                 do
                 {
-                    flushThreshold = (int)(bufferWriter.Capacity * .9); //todo: determine best value here
+                    // todo: determine best value here
+                    // https://github.com/dotnet/runtime/issues/32356
+                    state.FlushThreshold = (int)(bufferWriter.Capacity * .9);
+                    isFinalBlock = WriteCore(
+                        writer,
+                        value,
+                        options,
+                        ref state,
+                        state.Current.JsonClassInfo!.PolicyProperty!.ConverterBase);
 
-                    isFinalBlock = Write(writer, originalWriterDepth: 0, flushThreshold, options, ref state);
                     writer.Flush();
 
                     await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);

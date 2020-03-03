@@ -321,14 +321,14 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void CurrentCultureTest_DifferentThread()
         {
             CultureInfo culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
             CultureInfo uiCulture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
 
             ExceptionDispatchInfo exceptionFromThread = null;
-            var t = new Thread(() => {
+            var t = new Thread(() =>
+            {
                 try
                 {
                     Assert.Same(culture, Thread.CurrentThread.CurrentCulture);
@@ -404,7 +404,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void CurrentPrincipalTest_SkipOnDesktopFramework()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() => Assert.Null(Thread.CurrentPrincipal));
@@ -434,11 +433,12 @@ namespace System.Threading.Threads.Tests
             {
                 Thread.CurrentPrincipal = new ClaimsPrincipal();
 
-                await Task.Run(async() => {
+                await Task.Run(async () =>
+                {
 
                     Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
 
-                    await Task.Run(async() =>
+                    await Task.Run(async () =>
                     {
                         Assert.IsType<ClaimsPrincipal>(Thread.CurrentPrincipal);
 
@@ -460,7 +460,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void CurrentPrincipalContextFlowTest_NotFlow()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(async () =>
@@ -468,7 +467,7 @@ namespace System.Threading.Threads.Tests
                 Thread.CurrentPrincipal = new ClaimsPrincipal();
 
                 Task task;
-                using(ExecutionContext.SuppressFlow())
+                using (ExecutionContext.SuppressFlow())
                 {
                     Assert.True(ExecutionContext.IsFlowSuppressed());
 
@@ -489,7 +488,7 @@ namespace System.Threading.Threads.Tests
         public static void CurrentPrincipal_SetNull()
         {
             // We run test on remote process because we need to set same principal policy
-            // On netfx default principal policy is PrincipalPolicy.UnauthenticatedPrincipal
+            // On .NET Framework default principal policy is PrincipalPolicy.UnauthenticatedPrincipal
             RemoteExecutor.Invoke(() =>
             {
                 AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.NoPrincipal);
@@ -527,7 +526,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void ExecutionContextTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(
@@ -705,7 +703,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void AbortSuspendTest()
         {
             var e = new ManualResetEvent(false);
@@ -947,7 +944,7 @@ namespace System.Threading.Threads.Tests
         [Fact]
         public static void InterruptInFinallyBlockTest_SkipOnDesktopFramework()
         {
-            // A wait in a finally block can be interrupted. The desktop framework applies the same rules as thread abort, and
+            // A wait in a finally block can be interrupted. The .NET Framework applies the same rules as thread abort, and
             // does not allow thread interrupt in a finally block. There is nothing special about thread interrupt that requires
             // not allowing it in finally blocks, so this behavior has changed in .NET Core.
             var continueThread = new AutoResetEvent(false);
@@ -1079,7 +1076,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void MiscellaneousTest()
         {
             Thread.BeginCriticalRegion();
@@ -1115,6 +1111,85 @@ namespace System.Threading.Threads.Tests
                 AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
                 Assert.Equal(Environment.UserDomainName + @"\" + Environment.UserName, Thread.CurrentPrincipal.Identity.Name);
             }).Dispose();
+        }
+
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void WindowsPrincipalPolicyTest_Windows_NewThreads()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
+
+                IPrincipal currentPrincipal = Thread.CurrentPrincipal;
+
+                Assert.NotNull(currentPrincipal);
+                Assert.True(currentPrincipal.Identity.IsAuthenticated);
+
+                var first = new Thread(CheckPrincipal);
+                first.Start(currentPrincipal);
+                first.Join();
+
+                var second = new Thread(CheckPrincipal);
+                second.Start(currentPrincipal);
+                second.Join();
+            }).Dispose();
+
+            static void CheckPrincipal(object principal)
+            {
+                Assert.True(Thread.CurrentPrincipal.Identity.IsAuthenticated);
+                Assert.NotNull(Thread.CurrentPrincipal);
+                Assert.Equal((IPrincipal)principal, Thread.CurrentPrincipal);
+            }
+        }
+
+        [Fact]
+        public static void NoPrincipalPolicyTest_NewThreads()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.NoPrincipal);
+
+                Assert.Null(Thread.CurrentPrincipal);
+
+                var first = new Thread(() => Assert.Null(Thread.CurrentPrincipal));
+                first.Start();
+                first.Join();
+
+                var second = new Thread(() => Assert.Null(Thread.CurrentPrincipal));
+                second.Start();
+                second.Join();
+            }).Dispose();
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void NoPrincipalToWindowsPrincipalPolicyTest_Windows_NewThreads()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.NoPrincipal);
+
+                Assert.Null(Thread.CurrentPrincipal);
+
+                var first = new Thread(() => Assert.Null(Thread.CurrentPrincipal));
+                first.Start();
+                first.Join();
+
+                AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
+
+                var second = new Thread(CheckPrincipal);
+                second.Start(Thread.CurrentPrincipal);
+                second.Join();
+            }).Dispose();
+
+            static void CheckPrincipal(object principal)
+            {
+                Assert.True(Thread.CurrentPrincipal.Identity.IsAuthenticated);
+                Assert.NotNull(Thread.CurrentPrincipal);
+                Assert.Equal((IPrincipal)principal, Thread.CurrentPrincipal);
+            }
         }
 
         [Fact]

@@ -4,17 +4,17 @@
 
 namespace System.ComponentModel
 {
-    public delegate void DoWorkEventHandler(object sender, DoWorkEventArgs e);
+    public delegate void DoWorkEventHandler(object? sender, DoWorkEventArgs e);
 
     public class DoWorkEventArgs : CancelEventArgs
     {
-        public DoWorkEventArgs(object argument)
+        public DoWorkEventArgs(object? argument)
         {
             Argument = argument;
         }
 
-        public object Argument { get; }
+        public object? Argument { get; }
 
-        public object Result { get; set; }
+        public object? Result { get; set; }
     }
 }

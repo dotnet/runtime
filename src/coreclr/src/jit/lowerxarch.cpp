@@ -21,7 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifdef _TARGET_XARCH_ // This file is only used for xarch
+#ifdef TARGET_XARCH // This file is only used for xarch
 
 #include "jit.h"
 #include "sideeffects.h"
@@ -192,7 +192,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                         src->SetContained();
                     }
                 }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                 else if (size >= REGSIZE_BYTES)
                 {
                     fill *= 0x0101010101010101LL;
@@ -211,7 +211,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         else
         {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
 #else
             // TODO-X86-CQ: Investigate whether a helper call would be beneficial on x86
@@ -314,7 +314,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
 #else
             // TODO-X86-CQ: Investigate whether a helper call would be beneficial on x86
@@ -386,7 +386,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 
     if (src->OperIs(GT_FIELD_LIST))
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Invalid;
 
         GenTreeFieldList* fieldList = src->AsFieldList();
@@ -463,7 +463,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         {
             putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
         }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
         return;
     }
 
@@ -488,9 +488,9 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         //      push rdx
 
         if (IsContainableImmed(putArgStk, src)
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
             && !src->IsIntegralConst(0)
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
                 )
         {
             MakeSrcContained(putArgStk, src);
@@ -528,25 +528,25 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 
     if (size <= CPBLK_UNROLL_LIMIT && !layout->HasGCPtr())
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         if (size < XMM_REGSIZE_BYTES)
         {
             putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
         }
         else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
         {
             putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Unroll;
         }
     }
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     else if (layout->HasGCPtr())
     {
         // On x86, we must use `push` to store GC references to the stack in order for the emitter to properly update
         // the function's GC info. These `putargstk` nodes will generate a sequence of `push` instructions.
         putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::Push;
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
     else
     {
         putArgStk->gtPutArgStkKind = GenTreePutArgStk::Kind::RepInstr;
@@ -724,7 +724,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
         }
     }
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     if ((simdNode->gtSIMDIntrinsicID == SIMDIntrinsicGetItem) && (simdNode->gtGetOp1()->OperGet() == GT_IND))
     {
         // If SIMD vector is already in memory, we force its
@@ -1523,11 +1523,11 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         assert(call->gtCallAddr != nullptr);
         ctrlExpr = call->gtCallAddr;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         // Fast tail calls aren't currently supported on x86, but if they ever are, the code
         // below that handles indirect VSD calls will need to be fixed.
         assert(!call->IsFastTailCall() || !call->IsVirtualStub());
-#endif // _TARGET_X86_
+#endif // TARGET_X86
     }
 
     // set reg requirements on call target represented as control sequence.
@@ -1540,7 +1540,7 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         // computed into a register.
         if (!call->IsFastTailCall())
         {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             // On x86, we need to generate a very specific pattern for indirect VSD calls:
             //
             //    3-byte nop
@@ -1554,7 +1554,7 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
                 MakeSrcContained(call, ctrlExpr);
             }
             else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
                 if (ctrlExpr->isIndir())
             {
                 // We may have cases where we have set a register target on the ctrlExpr, but if it
@@ -1687,7 +1687,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeIndir* node)
 //
 void Lowering::ContainCheckMul(GenTreeOp* node)
 {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     assert(node->OperIs(GT_MUL, GT_MULHI, GT_MUL_LONG));
 #else
     assert(node->OperIs(GT_MUL, GT_MULHI));
@@ -1729,7 +1729,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     {
         hasImpliedFirstOperand = true;
     }
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     else if (node->OperGet() == GT_MUL_LONG)
     {
         hasImpliedFirstOperand = true;
@@ -1866,7 +1866,7 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
     GenTree* divisor = node->gtGetOp2();
 
     bool divisorCanBeRegOptional = true;
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     GenTree* dividend = node->gtGetOp1();
     if (dividend->OperGet() == GT_LONG)
     {
@@ -1897,14 +1897,14 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 {
     assert(node->OperIsShiftOrRotate());
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     GenTree* source = node->gtOp1;
     if (node->OperIsShiftLong())
     {
         assert(source->OperGet() == GT_LONG);
         MakeSrcContained(node, source);
     }
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 
     GenTree* shiftBy = node->gtOp2;
     if (IsContainableImmed(node, shiftBy) && (shiftBy->AsIntConCommon()->IconValue() <= 255) &&
@@ -1925,6 +1925,18 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
+    if (op1->OperIs(GT_BITCAST))
+    {
+        // If we know that the source of the bitcast will be in a register, then we can make
+        // the bitcast itself contained. This will allow us to store directly from the other
+        // type if this node doesn't get a register.
+        GenTree* bitCastSrc = op1->gtGetOp1();
+        if (!bitCastSrc->isContained() && !bitCastSrc->IsRegOptional())
+        {
+            op1->SetContained();
+            return;
+        }
+    }
 #ifdef FEATURE_SIMD
     if (varTypeIsSIMD(storeLoc))
     {
@@ -1941,16 +1953,18 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
     // If the source is a containable immediate, make it contained, unless it is
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
-    if (IsContainableImmed(storeLoc, op1) && (!op1->IsIntegralConst(0) || varTypeIsSmall(storeLoc)))
+    const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
+    var_types        type   = varDsc->GetRegisterType(storeLoc);
+    if (IsContainableImmed(storeLoc, op1) && (!op1->IsIntegralConst(0) || varTypeIsSmall(type)))
     {
         MakeSrcContained(storeLoc, op1);
     }
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     else if (op1->OperGet() == GT_LONG)
     {
         MakeSrcContained(storeLoc, op1);
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 }
 
 //------------------------------------------------------------------------
@@ -1997,13 +2011,13 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
             }
         }
     }
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
     if (varTypeIsLong(srcType))
     {
         noway_assert(castOp->OperGet() == GT_LONG);
         castOp->SetContained();
     }
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
 }
 
 //------------------------------------------------------------------------
@@ -2441,7 +2455,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
         case SIMDIntrinsicInit:
         {
             op1 = simdNode->AsOp()->gtOp1;
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
             if (op1->OperGet() == GT_LONG)
             {
                 MakeSrcContained(simdNode, op1);
@@ -2456,7 +2470,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
                 }
             }
             else
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
                 if (op1->IsFPZero() || op1->IsIntegralConst(0) ||
                     (varTypeIsIntegral(simdNode->gtSIMDBaseType) && op1->IsIntegralConst(-1)))
             {
@@ -2555,11 +2569,13 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 
     // containingNode supports nodes that read from an aligned memory address
     //
-    // This will generally be an explicit LoadAligned instruction and is generally
-    // false for machines with VEX support. This is because there is currently no way
-    // to guarantee that the address read from will always be aligned and we could silently
-    // change the behavior of the program in the case where an Access Violation would have
-    // otherwise occurred.
+    // This will generally be an explicit LoadAligned instruction and is false for
+    // machines with VEX support when minOpts is enabled. This is because there is
+    // currently no way to guarantee that the address read from will always be
+    // aligned and we want to assert that the address is aligned when optimizations
+    // aren't enabled. However, when optimizations are enabled, we want to allow
+    // folding of memory operands as it produces better codegen and allows simpler
+    // coding patterns on the managed side.
     bool supportsAlignedSIMDLoads = false;
 
     // containingNode supports nodes that read from general memory
@@ -2609,10 +2625,23 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                 {
                     // These intrinsics only expect 16 or 32-byte nodes for containment
                     assert((genTypeSize(node->TypeGet()) == 16) || (genTypeSize(node->TypeGet()) == 32));
-                    supportsAlignedSIMDLoads =
-                        !comp->canUseVexEncoding() && (containingIntrinsicId != NI_SSE2_ConvertToVector128Double);
-                    supportsUnalignedSIMDLoads = !supportsAlignedSIMDLoads;
-                    supportsGeneralLoads       = supportsUnalignedSIMDLoads;
+
+                    if (!comp->canUseVexEncoding())
+                    {
+                        // Most instructions under the non-VEX encoding require aligned operands.
+                        // Those used for Sse2.ConvertToVector128Double (CVTDQ2PD and CVTPS2PD)
+                        // are exceptions and don't fail for unaligned inputs.
+
+                        supportsAlignedSIMDLoads   = (containingIntrinsicId != NI_SSE2_ConvertToVector128Double);
+                        supportsUnalignedSIMDLoads = !supportsAlignedSIMDLoads;
+                    }
+                    else
+                    {
+                        supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
+                        supportsUnalignedSIMDLoads = true;
+                    }
+
+                    supportsGeneralLoads = supportsUnalignedSIMDLoads;
                     break;
                 }
             }
@@ -2660,8 +2689,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                     assert((genTypeSize(node->TypeGet()) == 16) || (genTypeSize(node->TypeGet()) == 32));
                     assert(supportsSIMDScalarLoads == false);
 
-                    supportsAlignedSIMDLoads   = !comp->canUseVexEncoding();
-                    supportsUnalignedSIMDLoads = !supportsAlignedSIMDLoads;
+                    supportsAlignedSIMDLoads   = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
+                    supportsUnalignedSIMDLoads = comp->canUseVexEncoding();
                     supportsGeneralLoads       = supportsUnalignedSIMDLoads;
 
                     break;
@@ -2893,7 +2922,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
             return supportsSIMDScalarLoads;
         }
 
-        // VEX encoding supports unaligned memory ops, so we can fold them
         case NI_SSE_LoadVector128:
         case NI_SSE2_LoadVector128:
         case NI_AVX_LoadVector256:
@@ -3520,4 +3548,4 @@ void Lowering::ContainCheckFloatBinary(GenTreeOp* node)
     }
 }
 
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH

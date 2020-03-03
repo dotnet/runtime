@@ -11,7 +11,7 @@ using Xunit;
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 {
     [OuterLoop("These tests run serially at about 1 second each, and the code shouldn't change that often.")]
-    [ActiveIssue(41974, TestPlatforms.OSX)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/31249", TestPlatforms.OSX)]
     public static class DynamicRevocationTests
     {
         // The CI machines are doing an awful lot of things at once, be generous with the timeout;
@@ -21,11 +21,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
         private static readonly X509ChainStatusFlags ThisOsRevocationStatusUnknown =
                 X509ChainStatusFlags.RevocationStatusUnknown | X509ChainStatusFlags.OfflineRevocation;
-
-        // RHEL6 uses a version of OpenSSL that (empirically) doesn't support designated responders.
-        // (There's a chance that we should be passing in extra stuff, but RHEL6 is the only platform
-        // still on OpenSSL 1.0.0/1.0.1 in 2019, so it seems OpenSSL-related)
-        private static readonly bool s_supportsDesignatedResponder = PlatformDetection.IsNotRedHatFamily6;
 
         [Flags]
         public enum PkiOptions
@@ -57,9 +52,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             get
             {
-                int designationLimit = s_supportsDesignatedResponder ? 4 : 1;
-
-                for (int designation = 0; designation < designationLimit; designation++)
+                for (int designation = 0; designation < 4; designation++)
                 {
                     PkiOptions designationOptions = (PkiOptions)(designation << 16);
 
@@ -529,7 +522,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         chain.ChainPolicy.ApplicationPolicy.Add(s_tlsServerOid);
                         leafProblems |= X509ChainStatusFlags.NotValidForUsage;
 
-                        // [ActiveIssue(41969)]
+                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/31246")]
                         // Linux reports this code at more levels than Windows does.
                         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                         {
@@ -612,7 +605,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         chain.ChainPolicy.ApplicationPolicy.Add(s_tlsServerOid);
                         leafProblems |= X509ChainStatusFlags.NotValidForUsage;
 
-                        // [ActiveIssue(41969)]
+                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/31246")]
                         // Linux reports this code at more levels than Windows does.
                         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                         {

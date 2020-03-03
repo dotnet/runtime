@@ -1142,12 +1142,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadPrimitiveStringCollection_Throws()
-        {
-            Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<StringCollection>(@"[""1"", ""2""]"));
-        }
-
-        [Fact]
         public static void ReadReadOnlyCollections_Throws()
         {
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyWrapperForIList>(@"[""1"", ""2""]"));

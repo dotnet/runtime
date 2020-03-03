@@ -28,7 +28,7 @@ RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
 //*****************************************************************************
 void InitRunningOnVersionStatus ()
 {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
@@ -85,18 +85,18 @@ CHECK_SUPPORTED:
         // The current platform isn't supported. Display a message box to this effect and exit.
         // Note that this should never happen since the .NET Fx setup should not install on
         // non supported platforms (which is why the message box text isn't localized).
-        UtilMessageBoxCatastrophicNonLocalized(NON_SUPPORTED_PLATFORM_MSGBOX_TITLE, NON_SUPPORTED_PLATFORM_MSGBOX_TEXT, MB_OK | MB_ICONERROR, TRUE);
+        UtilMessageBoxCatastrophicNonLocalized(NON_SUPPORTED_PLATFORM_MSGBOX_TEXT, NON_SUPPORTED_PLATFORM_MSGBOX_TITLE, MB_OK | MB_ICONERROR, TRUE);
         TerminateProcess(GetCurrentProcess(), NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE);
     }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 } // InitRunningOnVersionStatus
 
-#ifndef BIT64
+#ifndef HOST_64BIT
 //------------------------------------------------------------------------------
 // Returns TRUE if we are running on a 64-bit OS in WoW, FALSE otherwise.
 BOOL RunningInWow64()
 {
-    #ifdef PLATFORM_UNIX
+    #ifdef TARGET_UNIX
     return FALSE;
     #else
     static int s_Wow64Process;
@@ -116,7 +116,7 @@ BOOL RunningInWow64()
 }
 #endif
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 //------------------------------------------------------------------------------
 //
 // GetRegistryLongValue - Reads a configuration LONG value from the registry.
@@ -470,7 +470,7 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
 
     return S_OK;
 } // GetDebuggerSettingInfoWorker
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #endif //!defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(_DEBUG)
 

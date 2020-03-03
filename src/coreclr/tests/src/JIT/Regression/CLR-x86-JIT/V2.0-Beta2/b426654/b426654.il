@@ -120,9 +120,10 @@
     IL_0068:  nop
     IL_0069:  ldloc.0
     IL_006a:  ldc.i4.1
-    IL_006b:  add
+    IL_006b:  xor
     IL_006c:  stloc.0
-    IL_006d:  ldsfld     bool cs1::s_timeUp
+    IL_006d:  volatile.
+              ldsfld     bool cs1::s_timeUp
     IL_0072:  ldc.i4.0
     IL_0073:  ceq
     IL_0075:  stloc.2
@@ -180,12 +181,13 @@
     IL_004c:  nop
     IL_004d:  ldloc.0
     IL_004e:  ldc.i4.1
-    IL_004f:  add
+    IL_004f:  xor
 
 
 
     IL_0050:  stloc.0
-    IL_0051:  ldsfld     bool cs1::s_timeUp
+    IL_0051:  volatile.
+              ldsfld     bool cs1::s_timeUp
     IL_0056:  ldc.i4.0
     IL_0057:  ceq
     IL_0059:  stloc.2
@@ -200,7 +202,8 @@
     .maxstack  8
     IL_0000:  nop
     IL_0001:  ldc.i4.1
-    IL_0002:  stsfld     bool cs1::s_timeUp
+    IL_0002:  volatile.
+              stsfld     bool cs1::s_timeUp
     IL_0007:  ret
   }
 
@@ -246,7 +249,7 @@
     IL_0035:  newobj     instance void [mscorlib]System.Threading.TimerCallback::.ctor(object,
                                                                                        native int)
     IL_003a:  ldnull
-    IL_003b:  ldc.i4     0x2710
+    IL_003b:  ldc.i4     0x1388
     IL_0040:  ldc.i4.m1
     IL_0041:  newobj     instance void [mscorlib]System.Threading.Timer::.ctor(class [mscorlib]System.Threading.TimerCallback,
                                                                                object,
@@ -264,6 +267,9 @@
     IL_004e:  ldstr      "Test SUCCESS"
     IL_0053:  call       void [System.Console]System.Console::WriteLine(string)
 
+    ldloc.2
+    callvirt   instance void [mscorlib]System.IDisposable::Dispose()
+
     ldc.i4 100
     IL_0059:  ret
   }
@@ -279,7 +285,8 @@
     IL_000c:  newobj     instance void cs1::.ctor()
     IL_0011:  stsfld     class cs1 cs1::s_obj
     IL_0016:  ldc.i4.0
-    IL_0017:  stsfld     bool cs1::s_timeUp
+    IL_0017:  volatile.
+              stsfld     bool cs1::s_timeUp
     IL_001c:  ret
   }
 

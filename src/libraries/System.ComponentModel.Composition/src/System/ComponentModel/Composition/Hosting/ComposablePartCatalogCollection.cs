@@ -21,17 +21,17 @@ namespace System.ComponentModel.Composition.Hosting
     internal class ComposablePartCatalogCollection : ICollection<ComposablePartCatalog>, INotifyComposablePartCatalogChanged, IDisposable
     {
         private readonly Lock _lock = new Lock();
-        private readonly Action<ComposablePartCatalogChangeEventArgs> _onChanged;
-        private readonly Action<ComposablePartCatalogChangeEventArgs> _onChanging;
+        private readonly Action<ComposablePartCatalogChangeEventArgs>? _onChanged;
+        private readonly Action<ComposablePartCatalogChangeEventArgs>? _onChanging;
         private List<ComposablePartCatalog> _catalogs = new List<ComposablePartCatalog>();
         private volatile bool _isCopyNeeded = false;
         private volatile bool _isDisposed = false;
         private bool _hasChanged = false;
 
         public ComposablePartCatalogCollection(
-            IEnumerable<ComposablePartCatalog> catalogs,
-            Action<ComposablePartCatalogChangeEventArgs> onChanged,
-            Action<ComposablePartCatalogChangeEventArgs> onChanging)
+            IEnumerable<ComposablePartCatalog>? catalogs,
+            Action<ComposablePartCatalogChangeEventArgs>? onChanged,
+            Action<ComposablePartCatalogChangeEventArgs>? onChanging)
         {
             catalogs = catalogs ?? Enumerable.Empty<ComposablePartCatalog>();
             _catalogs = new List<ComposablePartCatalog>(catalogs);
@@ -76,19 +76,19 @@ namespace System.ComponentModel.Composition.Hosting
         /// <summary>
         /// Notify when the contents of the Catalog has changed.
         /// </summary>
-        public event EventHandler<ComposablePartCatalogChangeEventArgs> Changed;
+        public event EventHandler<ComposablePartCatalogChangeEventArgs>? Changed;
 
         /// <summary>
         /// Notify when the contents of the Catalog has changing.
         /// </summary>
-        public event EventHandler<ComposablePartCatalogChangeEventArgs> Changing;
+        public event EventHandler<ComposablePartCatalogChangeEventArgs>? Changing;
 
         public void Clear()
         {
             ThrowIfDisposed();
 
             // No action is required if we are already empty
-            ComposablePartCatalog[] catalogs = null;
+            ComposablePartCatalog[]? catalogs = null;
             using (new ReadLock(_lock))
             {
                 if (_catalogs.Count == 0)
@@ -259,7 +259,7 @@ namespace System.ComponentModel.Composition.Hosting
                 if (!_isDisposed)
                 {
                     bool disposeLock = false;
-                    IEnumerable<ComposablePartCatalog> catalogs = null;
+                    IEnumerable<ComposablePartCatalog>? catalogs = null;
                     try
                     {
                         using (new WriteLock(_lock))
@@ -269,7 +269,7 @@ namespace System.ComponentModel.Composition.Hosting
                                 disposeLock = true;
 
                                 catalogs = _catalogs;
-                                _catalogs = null;
+                                _catalogs = null!;
 
                                 _isDisposed = true;
                             }
@@ -293,8 +293,8 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         private void RaiseChangedEvent(
-            Lazy<IEnumerable<ComposablePartDefinition>> addedDefinitions,
-            Lazy<IEnumerable<ComposablePartDefinition>> removedDefinitions)
+            Lazy<IEnumerable<ComposablePartDefinition>>? addedDefinitions,
+            Lazy<IEnumerable<ComposablePartDefinition>>? removedDefinitions)
         {
             if (_onChanged == null || Changed == null)
             {
@@ -317,9 +317,9 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         private void RaiseChangingEvent(
-           Lazy<IEnumerable<ComposablePartDefinition>> addedDefinitions,
-           Lazy<IEnumerable<ComposablePartDefinition>> removedDefinitions,
-           AtomicComposition atomicComposition)
+           Lazy<IEnumerable<ComposablePartDefinition>>? addedDefinitions,
+           Lazy<IEnumerable<ComposablePartDefinition>>? removedDefinitions,
+           AtomicComposition? atomicComposition)
         {
             if (_onChanging == null || Changing == null)
             {
@@ -340,7 +340,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private void OnContainedCatalogChanged(object sender, ComposablePartCatalogChangeEventArgs e)
+        private void OnContainedCatalogChanged(object? sender, ComposablePartCatalogChangeEventArgs e)
         {
             if (_onChanged == null || Changed == null)
             {
@@ -350,7 +350,7 @@ namespace System.ComponentModel.Composition.Hosting
             _onChanged.Invoke(e);
         }
 
-        private void OnContainedCatalogChanging(object sender, ComposablePartCatalogChangeEventArgs e)
+        private void OnContainedCatalogChanging(object? sender, ComposablePartCatalogChangeEventArgs e)
         {
             if (_onChanging == null || Changing == null)
             {
@@ -362,8 +362,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void SubscribeToCatalogNotifications(ComposablePartCatalog catalog)
         {
-            INotifyComposablePartCatalogChanged notifyCatalog = catalog as INotifyComposablePartCatalogChanged;
-            if (notifyCatalog != null)
+            if (catalog is INotifyComposablePartCatalogChanged notifyCatalog)
             {
                 notifyCatalog.Changed += OnContainedCatalogChanged;
                 notifyCatalog.Changing += OnContainedCatalogChanging;
@@ -380,8 +379,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void UnsubscribeFromCatalogNotifications(ComposablePartCatalog catalog)
         {
-            INotifyComposablePartCatalogChanged notifyCatalog = catalog as INotifyComposablePartCatalogChanged;
-            if (notifyCatalog != null)
+            if (catalog is INotifyComposablePartCatalogChanged notifyCatalog)
             {
                 notifyCatalog.Changed -= OnContainedCatalogChanged;
                 notifyCatalog.Changing -= OnContainedCatalogChanging;

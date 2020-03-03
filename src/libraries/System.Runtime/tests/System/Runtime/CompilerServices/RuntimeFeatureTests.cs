@@ -5,7 +5,6 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
-using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.Runtime.CompilerServices.Tests
 {

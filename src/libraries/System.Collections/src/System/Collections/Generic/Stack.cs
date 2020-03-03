@@ -311,7 +311,6 @@ namespace System.Collections.Generic
             throw new InvalidOperationException(SR.InvalidOperation_EmptyStack);
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
         public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
         {
             private readonly Stack<T> _stack;

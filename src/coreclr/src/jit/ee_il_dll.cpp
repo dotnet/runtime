@@ -20,7 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "corexcep.h"
 
-#if !defined(_HOST_UNIX_)
+#if !defined(HOST_UNIX)
 #include <io.h>    // For _dup, _setmode
 #include <fcntl.h> // For _O_TEXT
 #include <errno.h> // For EINVAL
@@ -64,7 +64,7 @@ extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* jitHost)
         return;
     }
 
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
     int err = PAL_InitializeDLL();
     if (err != 0)
     {
@@ -86,7 +86,7 @@ extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* jitHost)
     }
 #endif // DEBUG
 
-#if !defined(_HOST_UNIX_)
+#if !defined(HOST_UNIX)
     if (jitstdout == nullptr)
     {
         int stdoutFd = _fileno(procstdout());
@@ -110,7 +110,7 @@ extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* jitHost)
             }
         }
     }
-#endif // !_HOST_UNIX_
+#endif // !HOST_UNIX
 
     // If jitstdout is still null, fallback to whatever procstdout() was
     // initially set to.
@@ -179,15 +179,6 @@ HINSTANCE GetModuleInst()
     return (g_hInst);
 }
 
-#ifndef FEATURE_CORECLR
-extern "C" DLLEXPORT void __stdcall sxsJitStartup(CoreClrCallbacks const& cccallbacks)
-{
-#ifndef SELF_NO_HOST
-    InitUtilcode(cccallbacks);
-#endif
-}
-#endif // FEATURE_CORECLR
-
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
 
 /*****************************************************************************/
@@ -203,8 +194,6 @@ void* __cdecl operator new(size_t, const CILJitSingletonAllocator&)
     static char CILJitBuff[sizeof(CILJit)];
     return CILJitBuff;
 }
-
-ICorJitCompiler* g_realJitCompiler = nullptr;
 
 DLLEXPORT ICorJitCompiler* __stdcall getJit()
 {
@@ -226,11 +215,7 @@ DLLEXPORT ICorJitCompiler* __stdcall getJit()
 // If you are using it more broadly in retail code, you would need to understand the
 // performance implications of accessing TLS.
 
-#ifndef __GNUC__
-__declspec(thread) void* gJitTls = nullptr;
-#else  // !__GNUC__
 thread_local void* gJitTls = nullptr;
-#endif // !__GNUC__
 
 static void* GetJitTls()
 {
@@ -300,11 +285,6 @@ void JitTls::SetCompiler(Compiler* compiler)
 CorJitResult CILJit::compileMethod(
     ICorJitInfo* compHnd, CORINFO_METHOD_INFO* methodInfo, unsigned flags, BYTE** entryAddress, ULONG* nativeSizeOfCode)
 {
-    if (g_realJitCompiler != nullptr)
-    {
-        return g_realJitCompiler->compileMethod(compHnd, methodInfo, flags, entryAddress, nativeSizeOfCode);
-    }
-
     JitFlags jitFlags;
 
     assert(flags == CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS);
@@ -332,45 +312,8 @@ CorJitResult CILJit::compileMethod(
     return CorJitResult(result);
 }
 
-/*****************************************************************************
- * Notification from VM to clear any caches
- */
-void CILJit::clearCache(void)
-{
-    if (g_realJitCompiler != nullptr)
-    {
-        g_realJitCompiler->clearCache();
-        // Continue...
-    }
-
-    return;
-}
-
-/*****************************************************************************
- * Notify vm that we have something to clean up
- */
-BOOL CILJit::isCacheCleanupRequired(void)
-{
-    if (g_realJitCompiler != nullptr)
-    {
-        if (g_realJitCompiler->isCacheCleanupRequired())
-        {
-            return TRUE;
-        }
-        // Continue...
-    }
-
-    return FALSE;
-}
-
 void CILJit::ProcessShutdownWork(ICorStaticInfo* statInfo)
 {
-    if (g_realJitCompiler != nullptr)
-    {
-        g_realJitCompiler->ProcessShutdownWork(statInfo);
-        // Continue, by shutting down this JIT as well.
-    }
-
     jitShutdown(false);
 
     Compiler::ProcessShutdownWork(statInfo);
@@ -381,12 +324,6 @@ void CILJit::ProcessShutdownWork(ICorStaticInfo* statInfo)
  */
 void CILJit::getVersionIdentifier(GUID* versionIdentifier)
 {
-    if (g_realJitCompiler != nullptr)
-    {
-        g_realJitCompiler->getVersionIdentifier(versionIdentifier);
-        return;
-    }
-
     assert(versionIdentifier != nullptr);
     memcpy(versionIdentifier, &JITEEVersionIdentifier, sizeof(GUID));
 }
@@ -397,16 +334,11 @@ void CILJit::getVersionIdentifier(GUID* versionIdentifier)
 
 unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
 {
-    if (g_realJitCompiler != nullptr)
-    {
-        return g_realJitCompiler->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
-    }
-
     JitFlags jitFlags;
     jitFlags.SetFromFlags(cpuCompileFlags);
 
 #ifdef FEATURE_SIMD
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_FEATURE_SIMD) &&
         jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
     {
@@ -424,7 +356,7 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
             return 32;
         }
     }
-#endif // defined(_TARGET_XARCH_)
+#endif // defined(TARGET_XARCH)
     if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
     {
         JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 16\n");
@@ -439,18 +371,13 @@ unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
 #endif // !FEATURE_SIMD
 }
 
-void CILJit::setRealJit(ICorJitCompiler* realJitCompiler)
-{
-    g_realJitCompiler = realJitCompiler;
-}
-
 /*****************************************************************************
  * Returns the number of bytes required for the given type argument
  */
 
 unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig)
 {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 
     // Everything fits into a single 'slot' size
     // to accommodate irregular sized structs, they are passed byref
@@ -468,7 +395,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 #endif // UNIX_AMD64_ABI
     return TARGET_POINTER_SIZE;
 
-#else // !_TARGET_AMD64_
+#else // !TARGET_AMD64
 
     CORINFO_CLASS_HANDLE argClass;
     CorInfoType          argTypeJit = strip(info.compCompHnd->getArgType(sig, list, &argClass));
@@ -486,7 +413,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if FEATURE_MULTIREG_ARGS
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
         // Any structs that are larger than MAX_PASS_MULTIREG_BYTES are always passed by reference
         if (structSize > MAX_PASS_MULTIREG_BYTES)
         {
@@ -500,7 +427,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
             {
                 var_types hfaType = GetHfaType(argClass); // set to float or double if it is an HFA, otherwise TYP_UNDEF
                 bool      isHfa   = (hfaType != TYP_UNDEF);
-#ifndef _TARGET_UNIX_
+#ifndef TARGET_UNIX
                 if (info.compIsVarArgs)
                 {
                     // Arm64 Varargs ABI requires passing in general purpose
@@ -508,7 +435,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
                     // to false to correctly pass as if it was not an HFA.
                     isHfa = false;
                 }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
                 if (!isHfa)
                 {
                     // This struct is passed by reference using a single 'slot'
@@ -517,11 +444,11 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
             }
             // otherwise will we pass this struct by value in multiple registers
         }
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 //  otherwise will we pass this struct by value in multiple registers
 #else
         NYI("unknown target");
-#endif // defined(_TARGET_XXX_)
+#endif // defined(TARGET_XXX)
 #endif // FEATURE_MULTIREG_ARGS
 
         // we pass this struct by value in multiple registers
@@ -558,7 +485,7 @@ GenTree* Compiler::eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig)
 
 unsigned Compiler::eeGetArrayDataOffset(var_types type)
 {
-    return varTypeIsGC(type) ? eeGetEEInfo()->offsetOfObjArrayData : OFFSETOF__CORINFO_Array__data;
+    return OFFSETOF__CORINFO_Array__data;
 }
 
 //------------------------------------------------------------------------
@@ -857,7 +784,7 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
             }
             break;
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
         case CodeGenInterface::VLT_REG_REG:
             printf("%s-%s", getRegName(var->loc.vlRegReg.vlrrReg1), getRegName(var->loc.vlRegReg.vlrrReg2));
             break;
@@ -896,7 +823,7 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
         case CodeGenInterface::VLT_FIXED_VA:
             printf("fxd_va[%d]", var->loc.vlFixedVarArg.vlfvOffset);
             break;
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 
         default:
             unreached(); // unexpected
@@ -1420,7 +1347,7 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 
 const WCHAR* Compiler::eeGetCPString(size_t strHandle)
 {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     return nullptr;
 #else
     char buff[512 + sizeof(CORINFO_String)];
@@ -1444,7 +1371,7 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
     }
 
     return (asString->chars);
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 }
 
 #endif // DEBUG

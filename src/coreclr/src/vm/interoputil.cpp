@@ -2094,11 +2094,11 @@ HRESULT LoadRegTypeLib(_In_ REFGUID guid,
         hr = QueryPathOfRegTypeLib(guid, wVerMajor, wVerMinor, LOCALE_USER_DEFAULT, &wzPath);
         if (SUCCEEDED(hr))
         {
-#ifdef BIT64
+#ifdef HOST_64BIT
             REGKIND rk = (REGKIND)(REGKIND_NONE | LOAD_TLB_AS_64BIT);
 #else
             REGKIND rk = (REGKIND)(REGKIND_NONE | LOAD_TLB_AS_32BIT);
-#endif // BIT64
+#endif // HOST_64BIT
             hr = LoadTypeLibEx(wzPath, rk, pptlib);
         }
     }
@@ -2427,7 +2427,7 @@ void SafeReleaseStream(IStream *pStream)
         LogInterop(logStr);
         if (hr != S_OK)
         {
-            // Reset the stream to the begining
+            // Reset the stream to the beginning
             LARGE_INTEGER li;
             LISet32(li, 0);
             ULARGE_INTEGER li2;
@@ -4944,7 +4944,7 @@ void InitializeComInterop()
 
     InitializeSListHead(&RCW::s_RCWStandbyList);
     ComCall::Init();
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     ComPlusCall::Init();
 #endif
 #ifndef CROSSGEN_COMPILE

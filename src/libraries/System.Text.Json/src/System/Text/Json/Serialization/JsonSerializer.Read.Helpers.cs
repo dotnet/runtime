@@ -6,13 +6,13 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        private static object ReadCore(
+        private static object? ReadCore(
             Type returnType,
             JsonSerializerOptions options,
             ref Utf8JsonReader reader)
         {
             ReadStack state = default;
-            state.Current.Initialize(returnType, options);
+            state.InitializeRoot(returnType, options);
 
             ReadCore(options, ref reader, ref state);
 

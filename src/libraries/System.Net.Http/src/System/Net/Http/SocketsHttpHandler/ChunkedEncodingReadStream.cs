@@ -344,7 +344,6 @@ namespace System.Net.Http
 
                             while (true)
                             {
-                                // TODO: Consider adding folded trailing header support #35769.
                                 _connection._allowedReadLineBytes = MaxTrailingHeaderLength;
                                 if (!_connection.TryReadNextLine(out currentLine))
                                 {

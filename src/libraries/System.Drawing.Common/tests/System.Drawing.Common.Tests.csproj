@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BitmapTests.cs" />
@@ -21,6 +21,7 @@
     <Compile Include="DrawingTest.cs" />
     <Compile Include="FontTests.cs" />
     <Compile Include="FontFamilyTests.cs" />
+    <Compile Include="GdiplusTests.cs" />
     <Compile Include="GraphicsTests.cs" />
     <Compile Include="Graphics_DrawBezierTests.cs" />
     <Compile Include="Graphics_DrawLineTests.cs" />

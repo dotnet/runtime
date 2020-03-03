@@ -366,13 +366,13 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
 //
 void LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (compiler->opts.compDbgEnC)
     {
         // We only use RSI and RDI for EnC code, so we don't want to favor callee-save regs.
         return;
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     Interval* theInterval = rp->getInterval();
 
@@ -606,7 +606,7 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
     // Spill info
     newRP->isFixedRegRef = isFixedRegister;
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
     // We don't need this for AMD because the PInvoke method epilog code is explicit
     // at register allocation time.
     if (theInterval != nullptr && theInterval->isLocalVar && compiler->compMethodRequiresPInvokeFrame() &&
@@ -615,7 +615,7 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
         mask &= ~(RBM_PINVOKE_TCB | RBM_PINVOKE_FRAME);
         noway_assert(mask != RBM_NONE);
     }
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
     newRP->registerAssignment = mask;
 
     newRP->setMultiRegIdx(multiRegIdx);
@@ -778,14 +778,14 @@ regMaskTP LinearScan::getKillSetForStoreInd(GenTreeStoreInd* tree)
 regMaskTP LinearScan::getKillSetForShiftRotate(GenTreeOp* shiftNode)
 {
     regMaskTP killMask = RBM_NONE;
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     assert(shiftNode->OperIsShiftOrRotate());
     GenTree* shiftBy = shiftNode->gtGetOp2();
     if (!shiftBy->isContained())
     {
         killMask = RBM_RCX;
     }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
     return killMask;
 }
 
@@ -800,13 +800,13 @@ regMaskTP LinearScan::getKillSetForShiftRotate(GenTreeOp* shiftNode)
 regMaskTP LinearScan::getKillSetForMul(GenTreeOp* mulNode)
 {
     regMaskTP killMask = RBM_NONE;
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     assert(mulNode->OperIsMul());
     if (!mulNode->OperIs(GT_MUL) || (((mulNode->gtFlags & GTF_UNSIGNED) != 0) && mulNode->gtOverflowEx()))
     {
         killMask = RBM_RAX | RBM_RDX;
     }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
     return killMask;
 }
 
@@ -821,14 +821,14 @@ regMaskTP LinearScan::getKillSetForMul(GenTreeOp* mulNode)
 regMaskTP LinearScan::getKillSetForModDiv(GenTreeOp* node)
 {
     regMaskTP killMask = RBM_NONE;
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     assert(node->OperIs(GT_MOD, GT_DIV, GT_UMOD, GT_UDIV));
     if (!varTypeIsFloating(node->TypeGet()))
     {
         // Both RAX and RDX are killed by the operation
         killMask = RBM_RAX | RBM_RDX;
     }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
     return killMask;
 }
 
@@ -843,7 +843,7 @@ regMaskTP LinearScan::getKillSetForModDiv(GenTreeOp* node)
 regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 {
     regMaskTP killMask = RBM_NONE;
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (compiler->compFloatingPointUsed)
     {
         if (call->TypeGet() == TYP_DOUBLE)
@@ -855,15 +855,15 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
             needFloatTmpForFPCall = true;
         }
     }
-#endif // _TARGET_X86_
-#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+#endif // TARGET_X86
+#if defined(TARGET_X86) || defined(TARGET_ARM)
     if (call->IsHelperCall())
     {
         CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
         killMask                 = compiler->compHelperCallKillSet(helpFunc);
     }
     else
-#endif // defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+#endif // defined(TARGET_X86) || defined(TARGET_ARM)
     {
         // if there is no FP used, we can ignore the FP kills
         if (compiler->compFloatingPointUsed)
@@ -874,19 +874,19 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
         {
             killMask = RBM_INT_CALLEE_TRASH;
         }
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         if (call->IsVirtualStub())
         {
             killMask |= compiler->virtualStubParamInfo->GetRegMask();
         }
-#else  // !_TARGET_ARM_
+#else  // !TARGET_ARM
         // Verify that the special virtual stub call registers are in the kill mask.
         // We don't just add them unconditionally to the killMask because for most architectures
         // they are already in the RBM_CALLEE_TRASH set,
         // and we don't want to introduce extra checks and calls in this hot function.
         assert(!call->IsVirtualStub() || ((killMask & compiler->virtualStubParamInfo->GetRegMask()) ==
                                           compiler->virtualStubParamInfo->GetRegMask()));
-#endif // !_TARGET_ARM_
+#endif // !TARGET_ARM
     }
     return killMask;
 }
@@ -914,7 +914,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
         bool isCopyBlk = varTypeIsStruct(blkNode->Data());
         switch (blkNode->gtBlkOpKind)
         {
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
             case GenTreeBlk::BlkOpKindHelper:
                 if (isCopyBlk)
                 {
@@ -926,7 +926,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
                 }
                 break;
 #endif
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
             case GenTreeBlk::BlkOpKindRepInstr:
                 if (isCopyBlk)
                 {
@@ -967,7 +967,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
 regMaskTP LinearScan::getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     regMaskTP killMask = RBM_NONE;
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     switch (node->gtHWIntrinsicId)
     {
         case NI_SSE2_MaskMove:
@@ -985,7 +985,7 @@ regMaskTP LinearScan::getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node)
             // Leave killMask as RBM_NONE
             break;
     }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
     return killMask;
 }
 #endif // FEATURE_HW_INTRINSICS
@@ -1037,7 +1037,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
         case GT_RSZ:
         case GT_ROL:
         case GT_ROR:
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         case GT_LSH_HI:
         case GT_RSH_LO:
 #endif
@@ -1046,7 +1046,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
 
         case GT_MUL:
         case GT_MULHI:
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
         case GT_MUL_LONG:
 #endif
             killMask = getKillSetForMul(tree->AsOp());
@@ -1181,18 +1181,26 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                 {
                     interval->preferCalleeSave = true;
                 }
-                regMaskTP newPreferences = allRegs(interval->registerType) & (~killMask);
 
-                if (newPreferences != RBM_NONE)
+                // We are more conservative about allocating callee-saves registers to write-thru vars, since
+                // a call only requires reloading after (not spilling before). So we record (above) the fact
+                // that we'd prefer a callee-save register, but we don't update the preferences at this point.
+                // See the "heuristics for writeThru intervals" in 'buildIntervals()'.
+                if (!interval->isWriteThru || !isCallKill)
                 {
-                    interval->updateRegisterPreferences(newPreferences);
-                }
-                else
-                {
-                    // If there are no callee-saved registers, the call could kill all the registers.
-                    // This is a valid state, so in that case assert should not trigger. The RA will spill in order to
-                    // free a register later.
-                    assert(compiler->opts.compDbgEnC || (calleeSaveRegs(varDsc->lvType)) == RBM_NONE);
+                    regMaskTP newPreferences = allRegs(interval->registerType) & (~killMask);
+
+                    if (newPreferences != RBM_NONE)
+                    {
+                        interval->updateRegisterPreferences(newPreferences);
+                    }
+                    else
+                    {
+                        // If there are no callee-saved registers, the call could kill all the registers.
+                        // This is a valid state, so in that case assert should not trigger. The RA will spill in order
+                        // to free a register later.
+                        assert(compiler->opts.compDbgEnC || (calleeSaveRegs(varDsc->lvType)) == RBM_NONE);
+                    }
                 }
             }
         }
@@ -1371,7 +1379,10 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
 {
     if (enregisterLocalVars && !VarSetOps::IsEmpty(compiler, largeVectorVars))
     {
+        // We assume that the kill set includes at least some callee-trash registers, but
+        // that it doesn't include any callee-save registers.
         assert((fpCalleeKillSet & RBM_FLT_CALLEE_TRASH) != RBM_NONE);
+        assert((fpCalleeKillSet & RBM_FLT_CALLEE_SAVED) == RBM_NONE);
 
         // We only need to save the upper half of any large vector vars that are currently live.
         VARSET_TP       liveLargeVectors(VarSetOps::Intersection(compiler, currentLiveVars, largeVectorVars));
@@ -1386,7 +1397,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
                 RefPosition* pos =
                     newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorSave, tree, RBM_FLT_CALLEE_SAVED);
                 varInterval->isPartiallySpilled = true;
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
                 pos->regOptional = true;
 #endif
             }
@@ -1430,7 +1441,7 @@ void LinearScan::buildUpperVectorRestoreRefPosition(Interval* lclVarInterval, Ls
         Interval*    upperVectorInterval = getUpperVectorInterval(varIndex);
         RefPosition* pos = newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorRestore, node, RBM_NONE);
         lclVarInterval->isPartiallySpilled = false;
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
         pos->regOptional = true;
 #endif
     }
@@ -1559,7 +1570,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, Lsra
 
     if (tree->isContained())
     {
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
         // On XArch we can have contained candidate lclVars if they are part of a RMW
         // address computation. In this case we need to check whether it is a last use.
         if (tree->IsLocal() && ((tree->gtFlags & GTF_VAR_DEATH) != 0))
@@ -1572,9 +1583,9 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, Lsra
                 VarSetOps::RemoveElemD(compiler, currentLiveVars, varIndex);
             }
         }
-#else  // _TARGET_XARCH_
+#else  // TARGET_XARCH
         assert(!isCandidateLocalRef(tree));
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
         JITDUMP("Contained\n");
         return;
     }
@@ -1594,10 +1605,10 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, Lsra
     int produce         = newDefListCount - oldDefListCount;
     assert((consume == 0) || (ComputeAvailableSrcCount(tree) == consume));
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     // Multi-reg call node is the only node that could produce multi-reg value
     assert(produce <= 1 || (tree->IsMultiRegCall() && produce == MAX_RET_REG_COUNT));
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 #endif // DEBUG
 
@@ -1624,6 +1635,12 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, Lsra
                 {
                     minRegCount++;
                 }
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+                else if (newRefPosition->refType == RefTypeUpperVectorSave)
+                {
+                    minRegCount++;
+                }
+#endif
                 if (newRefPosition->getInterval()->isSpecialPutArg)
                 {
                     minRegCount++;
@@ -1779,6 +1796,31 @@ void LinearScan::insertZeroInitRefPositions()
             {
                 setIntervalAsSpilled(interval);
                 JITDUMP(" marking as spilled\n");
+            }
+        }
+    }
+
+    // We must also insert zero-inits for any finallyVars if they are refs or if compInitMem is true.
+    if (compiler->lvaEnregEHVars)
+    {
+        VarSetOps::Iter iter(compiler, finallyVars);
+        unsigned        varIndex = 0;
+        while (iter.NextElem(&varIndex))
+        {
+            LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
+            if (!varDsc->lvIsParam && isCandidateVar(varDsc))
+            {
+                JITDUMP("V%02u is a finally var:", compiler->lvaTrackedIndexToLclNum(varIndex));
+                Interval* interval = getIntervalForLocalVar(varIndex);
+                if (compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet()))
+                {
+                    JITDUMP(" creating ZeroInit\n");
+                    GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
+                    RefPosition* pos       = newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode,
+                                                      allRegs(interval->registerType));
+                    pos->setRegOptional(true);
+                    varDsc->lvMustInit = true;
+                }
             }
         }
     }
@@ -2071,7 +2113,7 @@ void LinearScan::buildIntervals()
 
         bool predBlockIsAllocated = false;
         predBlock                 = findPredBlockForLiveIn(block, prevBlock DEBUGARG(&predBlockIsAllocated));
-        if (predBlock)
+        if (predBlock != nullptr)
         {
             JITDUMP("\n\nSetting " FMT_BB " as the predecessor for determining incoming variable registers of " FMT_BB
                     "\n",
@@ -2092,10 +2134,10 @@ void LinearScan::buildIntervals()
                 currentLoc = 1;
             }
 
-            // Any lclVars live-in to a block are resolution candidates.
-            VarSetOps::UnionD(compiler, resolutionCandidateVars, currentLiveVars);
-
-            // Determine if we need any DummyDefs.
+            // Handle special cases for live-in.
+            // If this block hasEHBoundaryIn, then we will mark the recentRefPosition of each EH Var preemptively as
+            // spillAfter, since we don't want them to remain in registers.
+            // Otherwise, determine if we need any DummyDefs.
             // We need DummyDefs for cases where "predBlock" isn't really a predecessor.
             // Note that it's possible to have uses of unitialized variables, in which case even the first
             // block may require DummyDefs, which we are not currently adding - this means that these variables
@@ -2103,38 +2145,62 @@ void LinearScan::buildIntervals()
             // TODO-CQ: Consider how best to tune this.  Currently, if we create DummyDefs for uninitialized
             // variables (which may actually be initialized along the dynamically executed paths, but not
             // on all static paths), we wind up with excessive liveranges for some of these variables.
-            VARSET_TP newLiveIn(VarSetOps::MakeCopy(compiler, currentLiveVars));
-            if (predBlock)
+
+            if (blockInfo[block->bbNum].hasEHBoundaryIn)
             {
-                // Compute set difference: newLiveIn = currentLiveVars - predBlock->bbLiveOut
-                VarSetOps::DiffD(compiler, newLiveIn, predBlock->bbLiveOut);
-            }
-            bool needsDummyDefs = (!VarSetOps::IsEmpty(compiler, newLiveIn) && block != compiler->fgFirstBB);
-
-            // Create dummy def RefPositions
-
-            if (needsDummyDefs)
-            {
-                // If we are using locations from a predecessor, we should never require DummyDefs.
-                assert(!predBlockIsAllocated);
-
-                JITDUMP("Creating dummy definitions\n");
-                VarSetOps::Iter iter(compiler, newLiveIn);
+                VARSET_TP       liveInEHVars(VarSetOps::Intersection(compiler, currentLiveVars, exceptVars));
+                VarSetOps::Iter iter(compiler, liveInEHVars);
                 unsigned        varIndex = 0;
                 while (iter.NextElem(&varIndex))
                 {
-                    LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
-                    // Add a dummyDef for any candidate vars that are in the "newLiveIn" set.
-                    // If this is the entry block, don't add any incoming parameters (they're handled with ParamDefs).
-                    if (isCandidateVar(varDsc) && (predBlock != nullptr || !varDsc->lvIsParam))
+                    Interval* interval = getIntervalForLocalVar(varIndex);
+                    if (interval->recentRefPosition != nullptr)
                     {
-                        Interval*    interval = getIntervalForLocalVar(varIndex);
-                        RefPosition* pos      = newRefPosition(interval, currentLoc, RefTypeDummyDef, nullptr,
-                                                          allRegs(interval->registerType));
-                        pos->setRegOptional(true);
+                        JITDUMP("  Marking RP #%d of V%02u as spillAfter\n", interval->recentRefPosition->rpNum,
+                                interval->varNum);
+                        interval->recentRefPosition->spillAfter;
                     }
                 }
-                JITDUMP("Finished creating dummy definitions\n\n");
+            }
+            else
+            {
+                // Any lclVars live-in on a non-EH boundary edge are resolution candidates.
+                VarSetOps::UnionD(compiler, resolutionCandidateVars, currentLiveVars);
+
+                if (block != compiler->fgFirstBB)
+                {
+                    VARSET_TP newLiveIn(VarSetOps::MakeCopy(compiler, currentLiveVars));
+                    if (predBlock != nullptr)
+                    {
+                        // Compute set difference: newLiveIn = currentLiveVars - predBlock->bbLiveOut
+                        VarSetOps::DiffD(compiler, newLiveIn, predBlock->bbLiveOut);
+                    }
+                    // Don't create dummy defs for EH vars; we'll load them from the stack as/when needed.
+                    VarSetOps::DiffD(compiler, newLiveIn, exceptVars);
+
+                    // Create dummy def RefPositions
+
+                    if (!VarSetOps::IsEmpty(compiler, newLiveIn))
+                    {
+                        // If we are using locations from a predecessor, we should never require DummyDefs.
+                        assert(!predBlockIsAllocated);
+
+                        JITDUMP("Creating dummy definitions\n");
+                        VarSetOps::Iter iter(compiler, newLiveIn);
+                        unsigned        varIndex = 0;
+                        while (iter.NextElem(&varIndex))
+                        {
+                            // Add a dummyDef for any candidate vars that are in the "newLiveIn" set.
+                            LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
+                            assert(isCandidateVar(varDsc));
+                            Interval*    interval = getIntervalForLocalVar(varIndex);
+                            RefPosition* pos      = newRefPosition(interval, currentLoc, RefTypeDummyDef, nullptr,
+                                                              allRegs(interval->registerType));
+                            pos->setRegOptional(true);
+                        }
+                        JITDUMP("Finished creating dummy definitions\n\n");
+                    }
+                }
             }
         }
 
@@ -2146,6 +2212,23 @@ void LinearScan::buildIntervals()
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
         currentLoc += 2;
         JITDUMP("\n");
+
+        if (firstColdLoc == MaxLocation)
+        {
+            if (block->isRunRarely())
+            {
+                firstColdLoc = currentLoc;
+                JITDUMP("firstColdLoc = %d\n", firstColdLoc);
+            }
+        }
+        else
+        {
+            // TODO: We'd like to assert the following but we don't currently ensure that only
+            // "RunRarely" blocks are contiguous.
+            // (The funclets will generally be last, but we don't follow layout order, so we
+            // don't have to preserve that in the block sequence.)
+            // assert(block->isRunRarely());
+        }
 
         LIR::Range& blockRange = LIR::AsRange(block);
         for (GenTree* node : blockRange.NonPhiNodes())
@@ -2201,85 +2284,80 @@ void LinearScan::buildIntervals()
 
         if (enregisterLocalVars)
         {
-            // We don't need exposed uses for an EH edge, because no lclVars will be kept in
-            // registers across such edges.
-            if (!blockInfo[block->bbNum].hasEHBoundaryOut)
+            // Insert exposed uses for a lclVar that is live-out of 'block' but not live-in to the
+            // next block, or any unvisited successors.
+            // This will address lclVars that are live on a backedge, as well as those that are kept
+            // live at a GT_JMP.
+            //
+            // Blocks ending with "jmp method" are marked as BBJ_HAS_JMP,
+            // and jmp call is represented using GT_JMP node which is a leaf node.
+            // Liveness phase keeps all the arguments of the method live till the end of
+            // block by adding them to liveout set of the block containing GT_JMP.
+            //
+            // The target of a GT_JMP implicitly uses all the current method arguments, however
+            // there are no actual references to them.  This can cause LSRA to assert, because
+            // the variables are live but it sees no references.  In order to correctly model the
+            // liveness of these arguments, we add dummy exposed uses, in the same manner as for
+            // backward branches.  This will happen automatically via expUseSet.
+            //
+            // Note that a block ending with GT_JMP has no successors and hence the variables
+            // for which dummy use ref positions are added are arguments of the method.
+
+            VARSET_TP expUseSet(VarSetOps::MakeCopy(compiler, block->bbLiveOut));
+            VarSetOps::IntersectionD(compiler, expUseSet, registerCandidateVars);
+            BasicBlock* nextBlock = getNextBlock();
+            if (nextBlock != nullptr)
             {
-                // Insert exposed uses for a lclVar that is live-out of 'block' but not live-in to the
-                // next block, or any unvisited successors.
-                // This will address lclVars that are live on a backedge, as well as those that are kept
-                // live at a GT_JMP.
-                //
-                // Blocks ending with "jmp method" are marked as BBJ_HAS_JMP,
-                // and jmp call is represented using GT_JMP node which is a leaf node.
-                // Liveness phase keeps all the arguments of the method live till the end of
-                // block by adding them to liveout set of the block containing GT_JMP.
-                //
-                // The target of a GT_JMP implicitly uses all the current method arguments, however
-                // there are no actual references to them.  This can cause LSRA to assert, because
-                // the variables are live but it sees no references.  In order to correctly model the
-                // liveness of these arguments, we add dummy exposed uses, in the same manner as for
-                // backward branches.  This will happen automatically via expUseSet.
-                //
-                // Note that a block ending with GT_JMP has no successors and hence the variables
-                // for which dummy use ref positions are added are arguments of the method.
-
-                VARSET_TP expUseSet(VarSetOps::MakeCopy(compiler, block->bbLiveOut));
-                VarSetOps::IntersectionD(compiler, expUseSet, registerCandidateVars);
-                BasicBlock* nextBlock = getNextBlock();
-                if (nextBlock != nullptr)
+                VarSetOps::DiffD(compiler, expUseSet, nextBlock->bbLiveIn);
+            }
+            for (BasicBlock* succ : block->GetAllSuccs(compiler))
+            {
+                if (VarSetOps::IsEmpty(compiler, expUseSet))
                 {
-                    VarSetOps::DiffD(compiler, expUseSet, nextBlock->bbLiveIn);
-                }
-                for (BasicBlock* succ : block->GetAllSuccs(compiler))
-                {
-                    if (VarSetOps::IsEmpty(compiler, expUseSet))
-                    {
-                        break;
-                    }
-
-                    if (isBlockVisited(succ))
-                    {
-                        continue;
-                    }
-                    VarSetOps::DiffD(compiler, expUseSet, succ->bbLiveIn);
+                    break;
                 }
 
-                if (!VarSetOps::IsEmpty(compiler, expUseSet))
+                if (isBlockVisited(succ))
                 {
-                    JITDUMP("Exposed uses:");
-                    VarSetOps::Iter iter(compiler, expUseSet);
-                    unsigned        varIndex = 0;
-                    while (iter.NextElem(&varIndex))
-                    {
-                        LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
-                        assert(isCandidateVar(varDsc));
-                        Interval*    interval = getIntervalForLocalVar(varIndex);
-                        regMaskTP    regMask  = allRegs(interval->registerType);
-                        RefPosition* pos      = newRefPosition(interval, currentLoc, RefTypeExpUse, nullptr, regMask);
-                        pos->setRegOptional(true);
-                        JITDUMP(" V%02u", compiler->lvaTrackedIndexToLclNum(varIndex));
-                    }
-                    JITDUMP("\n");
+                    continue;
                 }
+                VarSetOps::DiffD(compiler, expUseSet, succ->bbLiveIn);
             }
 
-            // Clear the "last use" flag on any vars that are live-out from this block.
+            if (!VarSetOps::IsEmpty(compiler, expUseSet))
             {
-                VARSET_TP       bbLiveDefs(VarSetOps::Intersection(compiler, registerCandidateVars, block->bbLiveOut));
-                VarSetOps::Iter iter(compiler, bbLiveDefs);
+                JITDUMP("Exposed uses:");
+                VarSetOps::Iter iter(compiler, expUseSet);
                 unsigned        varIndex = 0;
                 while (iter.NextElem(&varIndex))
                 {
-                    LclVarDsc* const varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
+                    unsigned   varNum = compiler->lvaTrackedToVarNum[varIndex];
+                    LclVarDsc* varDsc = compiler->lvaTable + varNum;
                     assert(isCandidateVar(varDsc));
-                    RefPosition* const lastRP = getIntervalForLocalVar(varIndex)->lastRefPosition;
-                    // We should be able to assert that lastRP is non-null if it is live-out, but sometimes liveness
-                    // lies.
-                    if ((lastRP != nullptr) && (lastRP->bbNum == block->bbNum))
-                    {
-                        lastRP->lastUse = false;
-                    }
+                    Interval*    interval = getIntervalForLocalVar(varIndex);
+                    RefPosition* pos =
+                        newRefPosition(interval, currentLoc, RefTypeExpUse, nullptr, allRegs(interval->registerType));
+                    pos->setRegOptional(true);
+                    JITDUMP(" V%02u", varNum);
+                }
+                JITDUMP("\n");
+            }
+
+            // Clear the "last use" flag on any vars that are live-out from this block.
+            VARSET_TP       bbLiveDefs(VarSetOps::Intersection(compiler, registerCandidateVars, block->bbLiveOut));
+            VarSetOps::Iter iter(compiler, bbLiveDefs);
+            unsigned        varIndex = 0;
+            while (iter.NextElem(&varIndex))
+            {
+                unsigned         varNum = compiler->lvaTrackedToVarNum[varIndex];
+                LclVarDsc* const varDsc = &compiler->lvaTable[varNum];
+                assert(isCandidateVar(varDsc));
+                RefPosition* const lastRP = getIntervalForLocalVar(varIndex)->lastRefPosition;
+                // We should be able to assert that lastRP is non-null if it is live-out, but sometimes liveness
+                // lies.
+                if ((lastRP != nullptr) && (lastRP->bbNum == block->bbNum))
+                {
+                    lastRP->lastUse = false;
                 }
             }
 
@@ -2315,6 +2393,62 @@ void LinearScan::buildIntervals()
                 RefPosition* pos =
                     newRefPosition(interval, currentLoc, RefTypeExpUse, nullptr, allRegs(interval->registerType));
                 pos->setRegOptional(true);
+            }
+        }
+        // Adjust heuristics for writeThru intervals.
+        if (compiler->compHndBBtabCount > 0)
+        {
+            VarSetOps::Iter iter(compiler, exceptVars);
+            unsigned        varIndex = 0;
+            while (iter.NextElem(&varIndex))
+            {
+                unsigned   varNum   = compiler->lvaTrackedToVarNum[varIndex];
+                LclVarDsc* varDsc   = compiler->lvaTable + varNum;
+                Interval*  interval = getIntervalForLocalVar(varIndex);
+                assert(interval->isWriteThru);
+                BasicBlock::weight_t weight = varDsc->lvRefCntWtd();
+
+                // We'd like to only allocate registers for EH vars that have enough uses
+                // to compensate for the additional registers being live (and for the possibility
+                // that we may have to insert an additional copy).
+                // However, we don't currently have that information available. Instead, we'll
+                // aggressively assume that these vars are defined once, at their first RefPosition.
+                //
+                RefPosition* firstRefPosition = interval->firstRefPosition;
+
+                // Incoming reg args are given an initial weight of 2 * BB_UNITY_WEIGHT
+                // (see lvaComputeRefCounts(); this may be reviewed/changed in future).
+                //
+                BasicBlock::weight_t initialWeight = (firstRefPosition->refType == RefTypeParamDef)
+                                                         ? (2 * BB_UNITY_WEIGHT)
+                                                         : blockInfo[firstRefPosition->bbNum].weight;
+                weight -= initialWeight;
+
+                // If the remaining weight is less than the initial weight, we'd like to allocate it only
+                // opportunistically, but we don't currently have a mechanism to do so.
+                // For now, we'll just avoid using callee-save registers if the weight is too low.
+                if (interval->preferCalleeSave)
+                {
+                    // The benefit of a callee-save register isn't as high as it would be for a normal arg.
+                    // We'll have at least the cost of saving & restoring the callee-save register,
+                    // so we won't break even until we have at least 4 * BB_UNITY_WEIGHT.
+                    // Given that we also don't have a good way to tell whether the variable is live
+                    // across a call in the non-EH code, we'll be extra conservative about this.
+                    // Note that for writeThru intervals we don't update the preferences to be only callee-save.
+                    unsigned calleeSaveCount =
+                        (varTypeIsFloating(interval->registerType)) ? CNT_CALLEE_SAVED_FLOAT : CNT_CALLEE_ENREG;
+                    if ((weight <= (BB_UNITY_WEIGHT * 7)) || varDsc->lvVarIndex >= calleeSaveCount)
+                    {
+                        // If this is relatively low weight, don't prefer callee-save at all.
+                        interval->preferCalleeSave = false;
+                    }
+                    else
+                    {
+                        // In other cases, we'll add in the callee-save regs to the preferences, but not clear
+                        // the non-callee-save regs . We also handle this case specially in tryAllocateFreeReg().
+                        interval->registerPreferences |= calleeSaveRegs(interval->registerType);
+                    }
+                }
             }
         }
 
@@ -2413,7 +2547,7 @@ void LinearScan::validateIntervals()
 }
 #endif // DEBUG
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
 //------------------------------------------------------------------------
 // setTgtPref: Set a  preference relationship between the given Interval
 //             and a Use RefPosition.
@@ -2444,7 +2578,7 @@ void setTgtPref(Interval* interval, RefPosition* tgtPrefUse)
         }
     }
 }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 //------------------------------------------------------------------------
 // BuildDef: Build a RefTypeDef RefPosition for the given node
 //
@@ -2463,16 +2597,25 @@ void setTgtPref(Interval* interval, RefPosition* tgtPrefUse)
 RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int multiRegIdx)
 {
     assert(!tree->isContained());
-    RegisterType type = getDefType(tree);
 
     if (dstCandidates != RBM_NONE)
     {
         assert((tree->GetRegNum() == REG_NA) || (dstCandidates == genRegMask(tree->GetRegByIndex(multiRegIdx))));
     }
 
-    if (tree->IsMultiRegNode())
+    RegisterType type;
+    if (!tree->IsMultiRegNode())
+    {
+        type = getDefType(tree);
+    }
+    else
     {
         type = tree->GetRegTypeByIndex(multiRegIdx);
+    }
+
+    if (varTypeIsFloating(type) || varTypeIsSIMD(type))
+    {
+        compiler->compFloatingPointUsed = true;
     }
 
     Interval* interval = newInterval(type);
@@ -2488,7 +2631,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
             assert(isSingleRegister(dstCandidates));
         }
     }
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     else if (varTypeIsByte(tree))
     {
         if (dstCandidates == RBM_NONE)
@@ -2498,7 +2641,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
         dstCandidates &= ~RBM_NON_BYTE_REGS;
         assert(dstCandidates != RBM_NONE);
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
     if (pendingDelayFree)
     {
         interval->hasInterferingUses = true;
@@ -2516,10 +2659,10 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
         RefInfoListNode* refInfo = listNodePool.GetNode(defRefPosition, tree);
         defList.Append(refInfo);
     }
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     setTgtPref(interval, tgtPrefUse);
     setTgtPref(interval, tgtPrefUse2);
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     assert(!interval->isPartiallySpilled);
 #endif
@@ -2743,12 +2886,12 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         return 1;
     }
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
     if (node->OperIs(GT_LONG))
     {
         return BuildBinaryUses(node->AsOp(), candidates);
     }
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
     if (node->OperIsIndir())
     {
         return BuildIndirUses(node->AsIndir(), candidates);
@@ -2860,12 +3003,12 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, regMaskTP candidates)
 //
 int LinearScan::BuildBinaryUses(GenTreeOp* node, regMaskTP candidates)
 {
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     if (node->OperIsBinary() && isRMWRegOper(node))
     {
         return BuildRMWUses(node, candidates);
     }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
     int      srcCount = 0;
     GenTree* op1      = node->gtOp1;
     GenTree* op2      = node->gtGetOp2IfPresent();
@@ -2897,7 +3040,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     GenTree*     op1 = storeLoc->gtGetOp1();
     int          srcCount;
     RefPosition* singleUseRef = nullptr;
-    LclVarDsc*   varDsc       = &compiler->lvaTable[storeLoc->GetLclNum()];
+    LclVarDsc*   varDsc       = compiler->lvaGetDesc(storeLoc->GetLclNum());
 
 // First, define internal registers.
 #ifdef FEATURE_SIMD
@@ -2921,7 +3064,6 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         // srcCount = number of registers in which the value is returned by call
         GenTreeCall*    call        = op1->AsCall();
         ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        unsigned        regCount    = retTypeDesc->GetReturnRegCount();
         srcCount                    = retTypeDesc->GetReturnRegCount();
 
         for (int i = 0; i < srcCount; ++i)
@@ -2929,7 +3071,17 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
             BuildUse(op1, RBM_NONE, i);
         }
     }
-#ifndef _TARGET_64BIT_
+    else if (op1->isContained() && op1->OperIs(GT_BITCAST))
+    {
+        GenTree*     bitCastSrc   = op1->gtGetOp1();
+        RegisterType registerType = bitCastSrc->TypeGet();
+        singleUseRef              = BuildUse(bitCastSrc, allRegs(registerType));
+
+        Interval* srcInterval = singleUseRef->getInterval();
+        assert(srcInterval->registerType == registerType);
+        srcCount = 1;
+    }
+#ifndef TARGET_64BIT
     else if (varTypeIsLong(op1))
     {
         if (op1->OperIs(GT_MUL_LONG))
@@ -2946,7 +3098,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
             assert(srcCount == 2);
         }
     }
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
     else if (op1->isContained())
     {
         srcCount = 0;
@@ -2955,12 +3107,13 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     {
         srcCount                = 1;
         regMaskTP srcCandidates = RBM_NONE;
-#ifdef _TARGET_X86_
-        if (varTypeIsByte(storeLoc))
+#ifdef TARGET_X86
+        var_types type = varDsc->GetRegisterType(storeLoc);
+        if (varTypeIsByte(type))
         {
             srcCandidates = allByteRegs();
         }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
         singleUseRef = BuildUse(op1, srcCandidates);
     }
 
@@ -3000,27 +3153,20 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
                 srcInterval->assignRelatedInterval(varDefInterval);
             }
         }
-        newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, allRegs(storeLoc->TypeGet()));
-    }
-    else
-    {
-        if (storeLoc->gtOp1->OperIs(GT_BITCAST))
+        RefPosition* def =
+            newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, allRegs(storeLoc->TypeGet()));
+        if (varDefInterval->isWriteThru)
         {
-            storeLoc->gtType = storeLoc->gtOp1->gtType = storeLoc->gtOp1->AsUnOp()->gtOp1->TypeGet();
-            RegisterType registerType                  = regType(storeLoc->TypeGet());
-            noway_assert(singleUseRef != nullptr);
-
-            Interval* srcInterval     = singleUseRef->getInterval();
-            srcInterval->registerType = registerType;
-
-            RefPosition* srcDefPosition = srcInterval->firstRefPosition;
-            assert(srcDefPosition != nullptr);
-            assert(srcDefPosition->refType == RefTypeDef);
-            assert(srcDefPosition->treeNode == storeLoc->gtOp1);
-
-            srcDefPosition->registerAssignment = allRegs(registerType);
-            singleUseRef->registerAssignment   = allRegs(registerType);
+            // We always make write-thru defs reg-optional, as we can store them if they don't
+            // get a register.
+            def->regOptional = true;
         }
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        if (varTypeNeedsPartialCalleeSave(varDefInterval->registerType))
+        {
+            varDefInterval->isPartiallySpilled = false;
+        }
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     }
 
     return srcCount;
@@ -3064,7 +3210,7 @@ int LinearScan::BuildReturn(GenTree* tree)
 {
     GenTree* op1 = tree->gtGetOp1();
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
     if (tree->TypeGet() == TYP_LONG)
     {
         assert((op1->OperGet() == GT_LONG) && op1->isContained());
@@ -3075,20 +3221,20 @@ int LinearScan::BuildReturn(GenTree* tree)
         return 2;
     }
     else
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
         if ((tree->TypeGet() != TYP_VOID) && !op1->isContained())
     {
         regMaskTP useCandidates = RBM_NONE;
 
 #if FEATURE_MULTIREG_RET
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
         if (varTypeIsSIMD(tree))
         {
             useCandidates = allSIMDRegs();
             BuildUse(op1, useCandidates);
             return 1;
         }
-#endif // !_TARGET_ARM64_
+#endif // !TARGET_ARM64
 
         if (varTypeIsStruct(tree))
         {
@@ -3155,7 +3301,7 @@ int LinearScan::BuildReturn(GenTree* tree)
 
 bool LinearScan::supportsSpecialPutArg()
 {
-#if defined(DEBUG) && defined(_TARGET_X86_)
+#if defined(DEBUG) && defined(TARGET_X86)
     // On x86, `LSRA_LIMIT_CALLER` is too restrictive to allow the use of special put args: this stress mode
     // leaves only three registers allocatable--eax, ecx, and edx--of which the latter two are also used for the
     // first two integral arguments to a call. This can leave us with too few registers to succesfully allocate in
@@ -3265,7 +3411,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
         isSpecialPutArg = true;
     }
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     // If type of node is `long` then it is actually `double`.
     // The actual `long` types must have been transformed as a field list with two fields.
     if (node->TypeGet() == TYP_LONG)
@@ -3278,7 +3424,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
         BuildDef(node, argMaskHi, 1);
     }
     else
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
     {
         RefPosition* def = BuildDef(node, argMask);
         if (isSpecialPutArg)
@@ -3342,7 +3488,7 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
     regMaskTP addrCandidates = RBM_ARG_0;
     regMaskTP srcCandidates  = RBM_ARG_1;
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 
     // the 'addr' goes into x14 (REG_WRITE_BARRIER_DST)
     // the 'src'  goes into x15 (REG_WRITE_BARRIER_SRC)
@@ -3350,7 +3496,7 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
     addrCandidates = RBM_WRITE_BARRIER_DST;
     srcCandidates  = RBM_WRITE_BARRIER_SRC;
 
-#elif defined(_TARGET_X86_) && NOGC_WRITE_BARRIERS
+#elif defined(TARGET_X86) && NOGC_WRITE_BARRIERS
 
     bool useOptimizedWriteBarrierHelper = compiler->codeGen->genUseOptimizedWriteBarriers(tree, src);
     if (useOptimizedWriteBarrierHelper)
@@ -3362,7 +3508,7 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
         srcCandidates  = RBM_WRITE_BARRIER_SRC;
     }
 
-#endif // defined(_TARGET_X86_) && NOGC_WRITE_BARRIERS
+#endif // defined(TARGET_X86) && NOGC_WRITE_BARRIERS
 
     BuildUse(addr, addrCandidates);
     BuildUse(src, srcCandidates);
@@ -3390,7 +3536,7 @@ int LinearScan::BuildCmp(GenTree* tree)
     GenTree*  op1           = tree->gtGetOp1();
     GenTree*  op2           = tree->gtGetOp2();
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // If the compare is used by a jump, we just need to set the condition codes. If not, then we need
     // to store the result into the low byte of a register, which requires the dst be a byteable register.
     if (tree->TypeGet() != TYP_VOID)
@@ -3439,7 +3585,7 @@ int LinearScan::BuildCmp(GenTree* tree)
             op2Candidates = allByteRegs();
         }
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     int srcCount = BuildOperandUses(op1, op1Candidates);
     srcCount += BuildOperandUses(op2, op2Candidates);

@@ -4,7 +4,7 @@
 
 using System.Buffers;
 using System.Globalization;
-using System.Text.Unicode.Tests;
+using System.Text.Unicode;
 using Xunit;
 using Xunit.Sdk;
 
@@ -350,11 +350,11 @@ namespace System.Text.Tests
 
             foreach (Rune rune in AllRunes())
             {
-                if (UnicodeData.GetUnicodeCategory((uint)rune.Value) != Rune.GetUnicodeCategory(rune))
+                if (UnicodeData.GetUnicodeCategory(rune.Value) != Rune.GetUnicodeCategory(rune))
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
                     throw new AssertActualExpectedException(
-                        expected: UnicodeData.GetUnicodeCategory((uint)rune.Value),
+                        expected: UnicodeData.GetUnicodeCategory(rune.Value),
                         actual: Rune.GetUnicodeCategory(rune),
                         userMessage: FormattableString.Invariant($@"Rune.GetUnicodeCategory(U+{rune.Value:X4}) returned wrong value."));
                 }
@@ -455,7 +455,7 @@ namespace System.Text.Tests
 
             foreach (Rune rune in AllRunes())
             {
-                Assert.Equal(UnicodeData.IsWhiteSpace((uint)rune.Value), Rune.IsWhiteSpace(rune));
+                Assert.Equal(UnicodeData.IsWhiteSpace(rune.Value), Rune.IsWhiteSpace(rune));
             }
         }
 

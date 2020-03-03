@@ -13,7 +13,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
-    // TODO: Replace the escaping logic with publicly shipping APIs from https://github.com/dotnet/corefx/issues/33509
+    // TODO: Replace the escaping logic with publicly shipping APIs from https://github.com/dotnet/runtime/issues/27919
     internal static partial class JsonWriterHelper
     {
         // Only allow ASCII characters between ' ' (0x20) and '~' (0x7E), inclusively,
@@ -54,12 +54,12 @@ namespace System.Text.Json
 
         private static bool NeedsEscapingNoBoundsCheck(char value) => AllowList[value] == 0;
 
-        public static int NeedsEscaping(ReadOnlySpan<byte> value, JavaScriptEncoder encoder)
+        public static int NeedsEscaping(ReadOnlySpan<byte> value, JavaScriptEncoder? encoder)
         {
             return (encoder ?? JavaScriptEncoder.Default).FindFirstCharacterToEncodeUtf8(value);
         }
 
-        public static unsafe int NeedsEscaping(ReadOnlySpan<char> value, JavaScriptEncoder encoder)
+        public static unsafe int NeedsEscaping(ReadOnlySpan<char> value, JavaScriptEncoder? encoder)
         {
             // Some implementations of JavaScriptEncoder.FindFirstCharacterToEncode may not accept
             // null pointers and guard against that. Hence, check up-front to return -1.
@@ -100,7 +100,7 @@ namespace System.Text.Json
             written += encoderBytesWritten;
         }
 
-        public static void EscapeString(ReadOnlySpan<byte> value, Span<byte> destination, int indexOfFirstByteToEscape, JavaScriptEncoder encoder, out int written)
+        public static void EscapeString(ReadOnlySpan<byte> value, Span<byte> destination, int indexOfFirstByteToEscape, JavaScriptEncoder? encoder, out int written)
         {
             Debug.Assert(indexOfFirstByteToEscape >= 0 && indexOfFirstByteToEscape < value.Length);
 
@@ -211,7 +211,7 @@ namespace System.Text.Json
             written += encoderCharsWritten;
         }
 
-        public static void EscapeString(ReadOnlySpan<char> value, Span<char> destination, int indexOfFirstByteToEscape, JavaScriptEncoder encoder, out int written)
+        public static void EscapeString(ReadOnlySpan<char> value, Span<char> destination, int indexOfFirstByteToEscape, JavaScriptEncoder? encoder, out int written)
         {
             Debug.Assert(indexOfFirstByteToEscape >= 0 && indexOfFirstByteToEscape < value.Length);
 
@@ -307,21 +307,11 @@ namespace System.Text.Json
 #if !BUILDING_INBOX_LIBRARY
         private static int WriteHex(int value, Span<char> destination, int written)
         {
-            destination[written++] = (char)Int32LsbToHexDigit(value >> 12);
-            destination[written++] = (char)Int32LsbToHexDigit((int)((value >> 8) & 0xFU));
-            destination[written++] = (char)Int32LsbToHexDigit((int)((value >> 4) & 0xFU));
-            destination[written++] = (char)Int32LsbToHexDigit((int)(value & 0xFU));
+            destination[written++] = HexConverter.ToCharUpper(value >> 12);
+            destination[written++] = HexConverter.ToCharUpper(value >> 8);
+            destination[written++] = HexConverter.ToCharUpper(value >> 4);
+            destination[written++] = HexConverter.ToCharUpper(value);
             return written;
-        }
-
-        /// <summary>
-        /// Converts a number 0 - 15 to its associated hex character '0' - 'F' as byte.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static byte Int32LsbToHexDigit(int value)
-        {
-            Debug.Assert(value < 16);
-            return (byte)((value < 10) ? ('0' + value) : ('A' + (value - 10)));
         }
 #endif
     }

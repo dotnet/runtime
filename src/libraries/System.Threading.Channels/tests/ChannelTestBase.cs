@@ -130,6 +130,16 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
+        public void Count_ThrowsIfUnsupported()
+        {
+            Channel<int> c = CreateChannel();
+            if (!c.Reader.CanCount)
+            {
+                Assert.Throws<NotSupportedException>(() => c.Reader.Count);
+            }
+        }
+
+        [Fact]
         public void SingleProducerConsumer_ConcurrentReadWrite_Success()
         {
             Channel<int> c = CreateChannel();

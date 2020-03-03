@@ -21,7 +21,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// An empty immutable list.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly ImmutableList<T> Empty = new ImmutableList<T>();
 
         /// <summary>
@@ -89,7 +88,7 @@ namespace System.Collections.Immutable
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
         /// or the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
         /// </exception>
-        public int BinarySearch(T item, IComparer<T> comparer) => this.BinarySearch(0, this.Count, item, comparer);
+        public int BinarySearch(T item, IComparer<T>? comparer) => this.BinarySearch(0, this.Count, item, comparer);
 
         /// <summary>
         /// Searches a range of elements in the sorted <see cref="ImmutableList{T}"/>
@@ -120,7 +119,7 @@ namespace System.Collections.Immutable
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
         /// or the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
         /// </exception>
-        public int BinarySearch(int index, int count, T item, IComparer<T> comparer) => _root.BinarySearch(index, count, item, comparer);
+        public int BinarySearch(int index, int count, T item, IComparer<T>? comparer) => _root.BinarySearch(index, count, item, comparer);
 
         #region IImmutableList<T> Properties
 
@@ -279,7 +278,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [Pure]
-        public ImmutableList<T> Remove(T value, IEqualityComparer<T> equalityComparer)
+        public ImmutableList<T> Remove(T value, IEqualityComparer<T>? equalityComparer)
         {
             int index = this.IndexOf(value, equalityComparer);
             return index < 0 ? this : this.RemoveAt(index);
@@ -329,7 +328,7 @@ namespace System.Collections.Immutable
         /// A new list with the elements removed.
         /// </returns>
         [Pure]
-        public ImmutableList<T> RemoveRange(IEnumerable<T> items, IEqualityComparer<T> equalityComparer)
+        public ImmutableList<T> RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer)
         {
             Requires.NotNull(items, nameof(items));
 
@@ -400,7 +399,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [Pure]
-        public ImmutableList<T> Replace(T oldValue, T newValue, IEqualityComparer<T> equalityComparer)
+        public ImmutableList<T> Replace(T oldValue, T newValue, IEqualityComparer<T>? equalityComparer)
         {
             int index = this.IndexOf(oldValue, equalityComparer);
             if (index < 0)
@@ -460,7 +459,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>The sorted list.</returns>
         [Pure]
-        public ImmutableList<T> Sort(IComparer<T> comparer) => this.Wrap(_root.Sort(comparer));
+        public ImmutableList<T> Sort(IComparer<T>? comparer) => this.Wrap(_root.Sort(comparer));
 
         /// <summary>
         /// Sorts the elements in a range of elements in <see cref="ImmutableList{T}"/>
@@ -478,7 +477,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>The sorted list.</returns>
         [Pure]
-        public ImmutableList<T> Sort(int index, int count, IComparer<T> comparer)
+        public ImmutableList<T> Sort(int index, int count, IComparer<T>? comparer)
         {
             Requires.Range(index >= 0, nameof(index));
             Requires.Range(count >= 0, nameof(count));
@@ -617,6 +616,7 @@ namespace System.Collections.Immutable
         /// The first element that matches the conditions defined by the specified predicate,
         /// if found; otherwise, the default value for type <typeparamref name="T"/>.
         /// </returns>
+        [return: MaybeNull]
         public T Find(Predicate<T> match) => _root.Find(match);
 
         /// <summary>
@@ -690,6 +690,7 @@ namespace System.Collections.Immutable
         /// The last element that matches the conditions defined by the specified predicate,
         /// if found; otherwise, the default value for type <typeparamref name="T"/>.
         /// </returns>
+        [return: MaybeNull]
         public T FindLast(Predicate<T> match) => _root.FindLast(match);
 
         /// <summary>
@@ -765,7 +766,7 @@ namespace System.Collections.Immutable
         /// contains <paramref name="count"/> number of elements, if found; otherwise, -1.
         /// </returns>
         [Pure]
-        public int IndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer) => _root.IndexOf(item, index, count, equalityComparer);
+        public int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer) => _root.IndexOf(item, index, count, equalityComparer);
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
@@ -788,7 +789,7 @@ namespace System.Collections.Immutable
         /// and ends at <paramref name="index"/>, if found; otherwise, -1.
         /// </returns>
         [Pure]
-        public int LastIndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer) => _root.LastIndexOf(item, index, count, equalityComparer);
+        public int LastIndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer) => _root.LastIndexOf(item, index, count, equalityComparer);
 
         /// <summary>
         /// Determines whether every element in the <see cref="ImmutableList{T}"/>
@@ -856,7 +857,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
-        IImmutableList<T> IImmutableList<T>.Remove(T value, IEqualityComparer<T> equalityComparer) => this.Remove(value, equalityComparer);
+        IImmutableList<T> IImmutableList<T>.Remove(T value, IEqualityComparer<T>? equalityComparer) => this.Remove(value, equalityComparer);
 
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
@@ -868,7 +869,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
-        IImmutableList<T> IImmutableList<T>.RemoveRange(IEnumerable<T> items, IEqualityComparer<T> equalityComparer) => this.RemoveRange(items, equalityComparer);
+        IImmutableList<T> IImmutableList<T>.RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer) => this.RemoveRange(items, equalityComparer);
 
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
@@ -904,7 +905,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>The new list.</returns>
         /// <exception cref="ArgumentException">Thrown when the old value does not exist in the list.</exception>
-        IImmutableList<T> IImmutableList<T>.Replace(T oldValue, T newValue, IEqualityComparer<T> equalityComparer) => this.Replace(oldValue, newValue, equalityComparer);
+        IImmutableList<T> IImmutableList<T>.Replace(T oldValue, T newValue, IEqualityComparer<T>? equalityComparer) => this.Replace(oldValue, newValue, equalityComparer);
 
         #endregion
 
@@ -1018,7 +1019,7 @@ namespace System.Collections.Immutable
         /// Nothing. An exception is always thrown.
         /// </returns>
         /// <exception cref="NotSupportedException">Always thrown.</exception>
-        int IList.Add(object value) => throw new NotSupportedException();
+        int IList.Add(object? value) => throw new NotSupportedException();
 
         /// <summary>
         /// Removes the <see cref="IList"/> item at the specified index.
@@ -1040,7 +1041,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// true if the <see cref="object"/> is found in the <see cref="IList"/>; otherwise, false.
         /// </returns>
-        bool IList.Contains(object value) => IsCompatibleObject(value) && this.Contains((T)value);
+        bool IList.Contains(object? value) => IsCompatibleObject(value) && this.Contains((T)value!);
 
         /// <summary>
         /// Determines the index of a specific item in the <see cref="IList"/>.
@@ -1049,7 +1050,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The index of <paramref name="value"/> if found in the list; otherwise, -1.
         /// </returns>
-        int IList.IndexOf(object value) => IsCompatibleObject(value) ? this.IndexOf((T)value) : -1;
+        int IList.IndexOf(object? value) => IsCompatibleObject(value) ? this.IndexOf((T)value!) : -1;
 
         /// <summary>
         /// Inserts an item to the <see cref="IList"/> at the specified index.
@@ -1057,7 +1058,7 @@ namespace System.Collections.Immutable
         /// <param name="index">The zero-based index at which <paramref name="value"/> should be inserted.</param>
         /// <param name="value">The object to insert into the <see cref="IList"/>.</param>
         /// <exception cref="NotSupportedException">Always thrown.</exception>
-        void IList.Insert(int index, object value) => throw new NotSupportedException();
+        void IList.Insert(int index, object? value) => throw new NotSupportedException();
 
         /// <summary>
         /// Gets a value indicating whether the <see cref="IList"/> has a fixed size.
@@ -1077,7 +1078,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="value">The object to remove from the <see cref="IList"/>.</param>
         /// <exception cref="NotSupportedException">Always thrown.</exception>
-        void IList.Remove(object value) => throw new NotSupportedException();
+        void IList.Remove(object? value) => throw new NotSupportedException();
 
         /// <summary>
         /// Gets or sets the <see cref="object"/> at the specified index.
@@ -1089,7 +1090,7 @@ namespace System.Collections.Immutable
         /// <returns>The value at the specified index.</returns>
         /// <exception cref="IndexOutOfRangeException">Thrown from getter when <paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
         /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get => this[index];
             set => throw new NotSupportedException();
@@ -1137,7 +1138,7 @@ namespace System.Collections.Immutable
         /// <param name="sequence">The sequence that may have come from an immutable list.</param>
         /// <param name="other">Receives the concrete <see cref="ImmutableList{T}"/> typed value if one can be found.</param>
         /// <returns><c>true</c> if the cast was successful; <c>false</c> otherwise.</returns>
-        private static bool TryCastToImmutableList(IEnumerable<T> sequence, out ImmutableList<T> other)
+        private static bool TryCastToImmutableList(IEnumerable<T> sequence, [NotNullWhen(true)] out ImmutableList<T>? other)
         {
             other = sequence as ImmutableList<T>;
             if (other != null)
@@ -1163,7 +1164,7 @@ namespace System.Collections.Immutable
         /// <devremarks>
         /// This implementation comes from <see cref="List{T}"/>.
         /// </devremarks>
-        private static bool IsCompatibleObject(object value)
+        private static bool IsCompatibleObject(object? value)
         {
             // Non-null values are fine.  Only accept nulls if T is a class or Nullable<U>.
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
@@ -1197,7 +1198,7 @@ namespace System.Collections.Immutable
         {
             // If the items being added actually come from an ImmutableList<T>
             // then there is no value in reconstructing it.
-            if (TryCastToImmutableList(items, out ImmutableList<T> other))
+            if (TryCastToImmutableList(items, out ImmutableList<T>? other))
             {
                 return other;
             }

@@ -3,7 +3,7 @@
     <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true'">$(DefineConstants);FEATURE_ETLEVENTS;FEATURE_EVENTCOUNTER_DISPOSE</DefineConstants>
     <DefineConstants>$(DefineConstants);USE_MDT_EVENTSOURCE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netfx-Debug;netfx-Release</Configurations>
+    <TargetFrameworks>$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
     <SDTTestDir>..\..\System.Diagnostics.Tracing\tests</SDTTestDir>

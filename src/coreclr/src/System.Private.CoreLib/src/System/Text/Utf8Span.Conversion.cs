@@ -5,7 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.Unicode;
 
 namespace System.Text
@@ -81,12 +81,12 @@ namespace System.Text
                 Debug.Assert(pbUtf8Invalid == pbUtf8 + this.Length, "Invalid UTF-8 data seen in buffer.");
 
                 char[] asUtf16 = new char[this.Length + utf16CodeUnitCountAdjustment];
-                fixed (byte* pbUtf16 = &asUtf16.GetRawSzArrayData())
+                fixed (char* pbUtf16 = &MemoryMarshal.GetArrayDataReference(asUtf16))
                 {
-                    OperationStatus status = Utf8Utility.TranscodeToUtf16(pbUtf8, this.Length, (char*)pbUtf16, asUtf16.Length, out byte* pbUtf8End, out char* pchUtf16End);
+                    OperationStatus status = Utf8Utility.TranscodeToUtf16(pbUtf8, this.Length, pbUtf16, asUtf16.Length, out byte* pbUtf8End, out char* pchUtf16End);
                     Debug.Assert(status == OperationStatus.Done, "The buffer changed out from under us unexpectedly?");
                     Debug.Assert(pbUtf8End == pbUtf8 + this.Length, "The buffer changed out from under us unexpectedly?");
-                    Debug.Assert(pchUtf16End == ((char*)pbUtf16) + asUtf16.Length, "The buffer changed out from under us unexpectedly?");
+                    Debug.Assert(pchUtf16End == pbUtf16 + asUtf16.Length, "The buffer changed out from under us unexpectedly?");
 
                     return asUtf16;
                 }

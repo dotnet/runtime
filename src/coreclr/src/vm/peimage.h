@@ -96,10 +96,10 @@ public:
     static PTR_PEImage LoadFlat(
         const void *flat,
         COUNT_T size);
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     static PTR_PEImage LoadImage(
         HMODULE hMod);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     static PTR_PEImage OpenImage(
         LPCWSTR pPath,
         MDInternalImportFlags flags = MDInternalImport_Default);
@@ -176,9 +176,9 @@ public:
     static CHECK CheckStartup();
     PTR_CVOID GetMetadata(COUNT_T *pSize = NULL);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     static void GetPathFromDll(HINSTANCE hMod, SString &result);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     static BOOL PathEquals(const SString &p1, const SString &p2);
     BOOL IsTrustedNativeImage(){LIMITED_METHOD_CONTRACT; return m_bIsTrustedNativeImage;};
     void SetIsTrustedNativeImage(){LIMITED_METHOD_CONTRACT; m_bIsTrustedNativeImage=TRUE;};

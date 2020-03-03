@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- Test expects an un-signed assembly -->
     <SignAssembly>false</SignAssembly>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TestClass.cs" />

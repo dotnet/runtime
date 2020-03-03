@@ -1,7 +1,0 @@
-﻿<Project>
-  <PropertyGroup>
-    <BuildConfigurations>
-      netcoreapp-Windows_NT;
-    </BuildConfigurations>
-  </PropertyGroup>
-</Project>

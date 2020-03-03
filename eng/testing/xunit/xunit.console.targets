@@ -3,7 +3,7 @@
     <RunArguments>$(TargetFileName)</RunArguments>
     <RunArguments>$(RunArguments) -xml $(TestResultsName)</RunArguments>
     <RunArguments>$(RunArguments) -nologo</RunArguments>
-    <RunArguments Condition="'$(ArchiveTest)' == 'true'">$(RunArguments) -nocolor</RunArguments>
+    <RunArguments Condition="'$(ArchiveTests)' == 'true'">$(RunArguments) -nocolor</RunArguments>
 
     <!-- Add local and global options to the argument stack. -->
     <RunArguments Condition="'$(TestDisableParallelization)' == 'true'">$(RunArguments) -maxthreads 1</RunArguments>
@@ -64,7 +64,7 @@
             CopyToOutputDirectory="PreserveNewest"
             Visible="false" />
 
-      <_xunitConsoleNetCoreExclude Condition="'$(GenerateDependencyFile)' != 'true'" Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsoleNetCore21AppPath)'))\xunit.console.deps.json" />
+      <_xunitConsoleNetCoreExclude Condition="'$(GenerateDependencyFile)' != 'true' and '$(XunitConsoleNetCore21AppPath)' != ''" Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsoleNetCore21AppPath)'))\xunit.console.deps.json" />
       <None Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsoleNetCore21AppPath)'))\*"
             Exclude="@(_xunitConsoleNetCoreExclude)"
             Condition="'$(TargetsNetCoreApp)' == 'true' and '$(XunitConsoleNetCore21AppPath)' != ''"

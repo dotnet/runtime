@@ -88,7 +88,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         Private Shared Function GetNoValidOperatorException(ByVal op As UserDefinedOperator, ByVal operand As Object) As Exception
-            Return New InvalidCastException(GetResourceString(SR.UnaryOperand2, OperatorNames(op), VBFriendlyName(operand)))
+            Return New InvalidCastException(SR.Format(SR.UnaryOperand2, OperatorNames(op), VBFriendlyName(operand)))
         End Function
 
         Private Shared Function GetNoValidOperatorException(ByVal op As UserDefinedOperator, ByVal left As Object, ByVal right As Object) As Exception
@@ -104,9 +104,9 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                 If leftString IsNot Nothing Then
                     substitution1 =
-                        GetResourceString(SR.NoValidOperator_StringType1, Strings.Left(leftString, maxInsertionSize))
+                        SR.Format(SR.NoValidOperator_StringType1, Strings.Left(leftString, maxInsertionSize))
                 Else
-                    substitution1 = GetResourceString(SR.NoValidOperator_NonStringType1, VBFriendlyName(left))
+                    substitution1 = SR.Format(SR.NoValidOperator_NonStringType1, VBFriendlyName(left))
                 End If
             End If
 
@@ -117,13 +117,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
                 If rightString IsNot Nothing Then
                     substitution2 =
-                        GetResourceString(SR.NoValidOperator_StringType1, Strings.Left(rightString, maxInsertionSize))
+                        SR.Format(SR.NoValidOperator_StringType1, Strings.Left(rightString, maxInsertionSize))
                 Else
-                    substitution2 = GetResourceString(SR.NoValidOperator_NonStringType1, VBFriendlyName(right))
+                    substitution2 = SR.Format(SR.NoValidOperator_NonStringType1, VBFriendlyName(right))
                 End If
             End If
 
-            Return New InvalidCastException(GetResourceString(SR.BinaryOperands3, OperatorNames(op), substitution1, substitution2))
+            Return New InvalidCastException(SR.Format(SR.BinaryOperands3, OperatorNames(op), substitution1, substitution2))
         End Function
 
 #Region " Comparison Operators = <> < <= > >= "

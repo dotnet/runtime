@@ -81,7 +81,7 @@ namespace ReadyToRun.SuperIlc
                     }
 
                     // This is not a reliable way of building the publish folder
-                    string publishFolder = Path.Combine(appFolder, @"artifacts\Debug\netcoreapp3.0\publish");
+                    string publishFolder = Path.Combine(appFolder, @"artifacts\Debug\netcoreapp5.0\publish");
                     if (!Directory.Exists(publishFolder))
                     {
                         nugetLog.WriteLine($"Could not find folder {publishFolder} containing the published app.");

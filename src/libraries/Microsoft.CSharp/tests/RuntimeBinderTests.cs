@@ -14,7 +14,7 @@ using Xunit;
 
 namespace Microsoft.CSharp.RuntimeBinder.Tests
 {
-    [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/26798", TargetFrameworkMonikers.NetFramework)]
     public class RuntimeBinderTests
     {
         [Fact]
@@ -75,7 +75,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             }
         }
 
-        // https://github.com/dotnet/coreclr/issues/7103
+        // https://github.com/dotnet/runtime/issues/6625
         [Fact]
         public void InternalsVisibleToTest()
         {

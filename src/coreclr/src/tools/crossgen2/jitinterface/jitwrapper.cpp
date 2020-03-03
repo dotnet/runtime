@@ -44,14 +44,12 @@ public:
         void* entryAddress,
         void* nativeSizeOfCode) = 0;
 
-    virtual void clearCache() = 0;
-    virtual unsigned isCacheCleanupRequired() = 0;
     virtual void ProcessShutdownWork(void* info) = 0;
 
     // The EE asks the JIT for a "version identifier". This represents the version of the JIT/EE interface.
     // If the JIT doesn't implement the same JIT/EE interface expected by the EE (because the JIT doesn't
     // return the version identifier that the EE expects), then the EE fails to load the JIT.
-    // 
+    //
     virtual void getVersionIdentifier(GUID* versionIdentifier) = 0;
 
     // When the EE loads the System.Numerics.Vectors assembly, it asks the JIT what length (in bytes) of
@@ -62,8 +60,8 @@ public:
 
 DLL_EXPORT int JitCompileMethod(
     CorInfoException **ppException,
-    Jit * pJit, 
-    void * thisHandle, 
+    Jit * pJit,
+    void * thisHandle,
     void ** callbacks,
     void* methodInfo,
     unsigned flags,

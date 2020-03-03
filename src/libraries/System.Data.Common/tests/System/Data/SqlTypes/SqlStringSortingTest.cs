@@ -27,14 +27,17 @@ namespace System.Data.SqlTypes.Tests
 
         private static readonly string[,] s_specialMatchingString = new string[4, 2] {{"Lorem ipsum dolor sit amet", "\uFF2C\uFF4F\uFF52\uFF45\uFF4D\u3000\uFF49\uFF50\uFF53\uFF55\uFF4D\u3000\uFF44\uFF4F\uFF4C\uFF4F\uFF52\u3000\uFF53\uFF49\uFF54\u3000\uFF41\uFF4D\uFF45\uFF54"},
                                                                          {"\u304B\u305F\u304B\u306A", "\u30AB\u30BF\u30AB\u30CA"},
-                                                                         {"\uFF8C\uFF67\uFF7D\uFF9E\uFF65\uFF77\uFF9E\uFF80\uFF70", "\u30D5\u30A1\u30BA\u30FB\u30AE\u30BF\u30FC"},
-                                                                         {"engine", "eNGine"}};
+                                                                         {"engine", "eNGine"},
+
+                                                                         // Keep the following item at the end of the array as some tests need to exclude it.
+                                                                         {"\uFF8C\uFF67\uFF7D\uFF9E\uFF65\uFF77\uFF9E\uFF80\uFF70", "\u30D5\u30A1\u30BA\u30FB\u30AE\u30BF\u30FC"}
+                                                                         };
 
         private static readonly int s_sampleStringCount = s_sampleString.Length - 1;
 
         private static readonly UnicodeEncoding s_unicodeEncoding = new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: true);
 
-        [ActiveIssue(12518, TestPlatforms.AnyUnix)] // TODO: Add this to the theory below when the issue is addressed on Unix
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18912", TestPlatforms.AnyUnix)] // TODO: Add this to the theory below when the issue is addressed on Unix
         [Theory]
         [InlineData("ja-JP", 0x0411)] // Japanese - Japan
         public static void SqlStringValidComparisonTest_Windows(string cultureName, int localeId) => SqlStringValidComparisonTest(cultureName, localeId);
@@ -86,7 +89,16 @@ namespace System.Data.SqlTypes.Tests
             SqlString str1;
             SqlString str2;
 
-            for (int i = 0; i < s_specialMatchingString.GetLength(0); ++i)
+            int count = s_specialMatchingString.GetLength(0);
+
+            // Some of Windows versions have a regression, so ignore last entry in the s_specialMatchingString if this is the case.
+            if (PlatformDetection.IsWindows10Version1903OrGreater &&
+                CultureInfo.InvariantCulture.CompareInfo.Compare("\u3060", "\uFF80\uFF9E", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase) != 0)
+            {
+                count--;
+            }
+
+            for (int i = 0; i < count; ++i)
             {
                 // SqlString(string) creates instance with the default comparison options
                 str1 = new SqlString(s_specialMatchingString[i, 0], localeID);

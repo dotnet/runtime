@@ -44,8 +44,8 @@
       </PropertyGroup>
     </When>
   </Choose>
-  
-  <PropertyGroup> 
+
+  <PropertyGroup>
     <_CLRTestNeedsProjectToRun>false</_CLRTestNeedsProjectToRun>
     <_CLRTestNeedsProjectToRun Condition=" '$(_CLRTestNeedsToRun)' and '!$(_CLRTestBuildsExecutable)' ">true</_CLRTestNeedsProjectToRun>
   </PropertyGroup>
@@ -80,10 +80,10 @@
     <_CopyNativeProjectBinaries Condition="'$(_WillCLRTestProjectBuild)' != 'true'">false</_CopyNativeProjectBinaries>
     <_CopyNativeProjectBinaries Condition="'$(_CopyNativeProjectBinaries)' == ''">true</_CopyNativeProjectBinaries>
   </PropertyGroup>
-    
+
   <!-- if we have determined that there is nothing to build, overwrite the build targets so that nothing happens -->
   <Import Project="nobuild.targets" Condition="'$(_WillCLRTestProjectBuild)' == 'false'" />
- 
+
   <!-- RunOnly projects have a special build for dependent projects -->
   <Import Project="runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
 
@@ -105,7 +105,7 @@
   </PropertyGroup>
 
   <Import Project="CLRTest.Execute.targets" />
-  <Target Name="CreateExecuteScript" 
+  <Target Name="CreateExecuteScript"
           AfterTargets="Build"
           Condition="'$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"
           DependsOnTargets="GenerateExecutionScriptsInternal" />
@@ -183,8 +183,8 @@
           Condition="'$(_CopyNativeProjectBinaries)' == 'true'"
           BeforeTargets="Build" >
      <ItemGroup Condition="'@(NativeProjectReferenceNormalized)' != ''">
-        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))" Condition="'$(RunningOnUnix)' == 'true'" />
-        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))$(Configuration)\" Condition="'$(RunningOnUnix)' != 'true'" />
+        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(__NativeTestIntermediatesDir)\src\))" Condition="'$(RunningOnUnix)' == 'true'" />
+        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(__NativeTestIntermediatesDir)\src\))$(Configuration)\" Condition="'$(RunningOnUnix)' != 'true'" />
      </ItemGroup>
 
     <Message Text= "Full native project references are :%(NativeProjectReferenceNormalized.Identity)" />
@@ -199,12 +199,25 @@
   <Target Name="UpdateReferenceItems"
           BeforeTargets="BeforeResolveReferences"
   >
+   <MSBuild Projects="$(MSBuildProjectFullPath)"
+            Targets="GetLiveRefAssemblies"
+            Condition="'$(ReferenceSystemPrivateCoreLib)' != 'true'">
+    <Output TaskParameter="TargetOutputs" ItemName="Reference" />
+   </MSBuild>
+
     <ItemGroup>
       <Reference Include="$(TargetingPackPath)/*.dll" >
         <Private>false</Private>
       </Reference>
     </ItemGroup>
 
+  </Target>
+
+  <Target Name="GetLiveRefAssemblies" Returns="@(LibrariesRefAssembliesDlls)"
+          DependsOnTargets="ResolveLibrariesFromLocalBuild">
+    <ItemGroup>
+      <LibrariesRefAssembliesDlls Include="@(LibrariesRefAssemblies)" Condition="'%(Extension)' == '.dll'" Private="false" />
+    </ItemGroup>
   </Target>
 
   <Target Name="AfterBuild">
@@ -214,16 +227,24 @@
   </Target>
 
   <PropertyGroup>
-    <ProjectAssetsFile>$(SourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
+    <ProjectAssetsFile>$(TestSourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true' and '$(UsingMicrosoftNETSdk)' != 'true'">
     <ProjectAssetsFile></ProjectAssetsFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true' and '$(UsingMicrosoftNETSdk)' == 'true'">
+  <PropertyGroup>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <IncludeOOBLibraries>true</IncludeOOBLibraries>
+    <TargetArchitecture>$(BuildArch)</TargetArchitecture>
+    <LibrariesConfiguration>Release</LibrariesConfiguration>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets"/>
 
   <Import Project="../../clr.featuredefines.props" />
 </Project>

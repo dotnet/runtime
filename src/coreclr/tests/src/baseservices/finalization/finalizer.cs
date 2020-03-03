@@ -15,7 +15,7 @@ public class Finalize : IFinalize
 }
 */
 //Test cases:
-//  Finalizers can not have a protection level (i.e Pubic, Protected, internal, protected internal, private)
+//  Finalizers can not have a protection level (i.e public, protected, internal, protected internal, private)
 //  Types in namespace can only be public or internal
 // Negative:
 //  Must do checks with reflection as types are scanned at assembly load time resulting in AssemblyLoad failures
@@ -120,7 +120,6 @@ public class Gen<T>
     public Gen() { }
 }
 
-#if STATIC
 public class Test
 {
     public static int Main()
@@ -190,4 +189,3 @@ public class Test
         Gen<Finalizer> gen = new Gen<Finalizer>();        
     }
 }
-#endif

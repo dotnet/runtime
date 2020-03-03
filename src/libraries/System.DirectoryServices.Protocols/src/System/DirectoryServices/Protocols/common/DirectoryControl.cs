@@ -950,9 +950,9 @@ namespace System.DirectoryServices.Protocols
             // encode Target if it is not null
             if (Target.Length != 0)
             {
-                seq.Append("t");
+                seq.Append('t');
                 objList.Add(0x80 | 0x1);
-                seq.Append("o");
+                seq.Append('o');
                 objList.Add(Target);
             }
             else
@@ -962,17 +962,17 @@ namespace System.DirectoryServices.Protocols
                 seq.Append("ii");
                 objList.Add(Offset);
                 objList.Add(EstimateCount);
-                seq.Append("}");
+                seq.Append('}');
             }
 
             // encode the contextID if present
             if (ContextId.Length != 0)
             {
-                seq.Append("o");
+                seq.Append('o');
                 objList.Add(ContextId);
             }
 
-            seq.Append("}");
+            seq.Append('}');
             object[] values = new object[objList.Count];
             for (int i = 0; i < objList.Count; i++)
             {

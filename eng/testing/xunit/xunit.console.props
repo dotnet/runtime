@@ -8,14 +8,14 @@
     <PackageReference Condition="'$(TargetsNetFx)' == 'true'" Include="xunit.runner.console" Version="$(XUnitVersion)" />
 
     <!-- Microsoft.Net.Test.Sdk brings a lot of assemblies with it. To reduce helix payload submission size we disable it on CI. -->
-    <PackageReference Condition="'$(ArchiveTest)' != 'true'" Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkVersion)" />
-    <PackageReference Condition="'$(ArchiveTest)' != 'true'" Include="xunit.runner.visualstudio" Version="$(XUnitVersion)" />
+    <PackageReference Condition="'$(ArchiveTests)' != 'true'" Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkVersion)" />
+    <PackageReference Condition="'$(ArchiveTests)' != 'true'" Include="xunit.runner.visualstudio" Version="$(XUnitVersion)" />
     <!--
       Microsoft.Net.Test.Sdk has a dependency on Newtonsoft.Json v9.0.1. We upgrade the dependency version
       with the one used in corefx to have a consistent set of dependency versions. Additionally this works
       around a dupliate type between System.Runtime.Serialization.Formatters and Newtonsoft.Json.
     -->
-    <PackageReference Condition="'$(ArchiveTest)' != 'true'" Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+    <PackageReference Condition="'$(ArchiveTests)' != 'true'" Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
 
   </ItemGroup>
 </Project>

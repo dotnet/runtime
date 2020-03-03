@@ -33,7 +33,7 @@ namespace StaticTestGenerator
             }
 
             // Set up an assembly resolving event handler to help locate helper assemblies that are needed
-            // to process the test assembly, such as xunit assemblies and corefx test helpers.
+            // to process the test assembly, such as xunit assemblies and .NET Core test helpers.
             string[] probingPaths = new[] { Path.GetDirectoryName(testAssemblyPath), runtimeAssembliesPath, outputPath, AppContext.BaseDirectory };
             AppDomain.CurrentDomain.AssemblyResolve += (object sender, ResolveEventArgs args) =>
             {
@@ -212,7 +212,7 @@ namespace StaticTestGenerator
         /// <summary>Parse the command-line.</summary>
         /// <param name="args">The arguments passed to Main.</param>
         /// <param name="testAssemblyPath">The location of the xunit test assembly to be analyzed. The resulting .cs file will call into this assembly.</param>
-        /// <param name="runtimeAssembliesPath">The directory containing all of the helper assemblies needed, e.g. xunit's assemblies, corefx utility assemblies, etc.</param>
+        /// <param name="runtimeAssembliesPath">The directory containing all of the helper assemblies needed, e.g. xunit's assemblies, .NET Core utility assemblies, etc.</param>
         /// <param name="outputPath">The directory into which the resulting project should be written.</param>
         /// <param name="xunitCommandLine">The xunit command-line object to pass to xunit test discovery.</param>
         /// <returns></returns>
@@ -274,7 +274,7 @@ namespace StaticTestGenerator
             // Invalid command line arguments.
             Console.WriteLine("Usage: <output_directory> <helper_assemblies_directory> <test_assembly_path> <xunit_console_options>");
             Console.WriteLine("    Example:");
-            Console.WriteLine(@"   dotnet run d:\tmpoutput d:\repos\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\$(ProductVersion) d:\repos\corefx\artifacts\bin\System.Runtime.Tests\netcoreapp-Windows_NT-Debug\System.Runtime.Tests.dll");
+            Console.WriteLine(@"   dotnet run d:\tmpoutput d:\repos\runtime\artifacts\bin\testhost\netcoreapp5.0-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\$(ProductVersion) d:\repos\runtime\artifacts\bin\System.Runtime.Tests\netcoreapp5.0-Windows_NT-Debug\System.Runtime.Tests.dll");
             testAssemblyPath = string.Empty;
             runtimeAssembliesPath = string.Empty;
             outputPath = string.Empty;

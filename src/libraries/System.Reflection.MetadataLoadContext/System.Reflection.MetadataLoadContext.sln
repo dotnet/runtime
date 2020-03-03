@@ -26,18 +26,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{443B7659-B3FA-4B32-88BA-3A0517E21018}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{443B7659-B3FA-4B32-88BA-3A0517E21018}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{443B7659-B3FA-4B32-88BA-3A0517E21018}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{443B7659-B3FA-4B32-88BA-3A0517E21018}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{DBB18588-DD89-4F41-9852-484FD4726F0F}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{DBB18588-DD89-4F41-9852-484FD4726F0F}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{DBB18588-DD89-4F41-9852-484FD4726F0F}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{DBB18588-DD89-4F41-9852-484FD4726F0F}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{EC84D608-71BC-4FE4-86C8-CA30F3B0CC7D}.Debug|Any CPU.ActiveCfg = netstandard2.0-Debug|Any CPU
-		{EC84D608-71BC-4FE4-86C8-CA30F3B0CC7D}.Debug|Any CPU.Build.0 = netstandard2.0-Debug|Any CPU
-		{EC84D608-71BC-4FE4-86C8-CA30F3B0CC7D}.Release|Any CPU.ActiveCfg = netstandard2.0-Release|Any CPU
-		{EC84D608-71BC-4FE4-86C8-CA30F3B0CC7D}.Release|Any CPU.Build.0 = netstandard2.0-Release|Any CPU
+		{443B7659-B3FA-4B32-88BA-3A0517E21018}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{443B7659-B3FA-4B32-88BA-3A0517E21018}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{443B7659-B3FA-4B32-88BA-3A0517E21018}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{443B7659-B3FA-4B32-88BA-3A0517E21018}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DBB18588-DD89-4F41-9852-484FD4726F0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DBB18588-DD89-4F41-9852-484FD4726F0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DBB18588-DD89-4F41-9852-484FD4726F0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DBB18588-DD89-4F41-9852-484FD4726F0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC84D608-71BC-4FE4-86C8-CA30F3B0CC7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC84D608-71BC-4FE4-86C8-CA30F3B0CC7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC84D608-71BC-4FE4-86C8-CA30F3B0CC7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC84D608-71BC-4FE4-86C8-CA30F3B0CC7D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -12,8 +12,7 @@ namespace System.Collections.Immutable
     /// <content>
     /// Contains the inner <see cref="ImmutableSortedDictionary{TKey, TValue}.Builder"/> class.
     /// </content>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
-    public sealed partial class ImmutableSortedDictionary<TKey, TValue>
+    public sealed partial class ImmutableSortedDictionary<TKey, TValue> where TKey : notnull
     {
         /// <summary>
         /// A sorted dictionary that mutates with little or no memory allocations,
@@ -27,8 +26,6 @@ namespace System.Collections.Immutable
         /// Instance members of this class are <em>not</em> thread-safe.
         /// </para>
         /// </remarks>
-        [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
-        [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Justification = "Ignored")]
         [DebuggerDisplay("Count = {Count}")]
         [DebuggerTypeProxy(typeof(ImmutableSortedDictionaryBuilderDebuggerProxy<,>))]
         public sealed class Builder : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
@@ -57,7 +54,7 @@ namespace System.Collections.Immutable
             /// Caches an immutable instance that represents the current state of the collection.
             /// </summary>
             /// <value>Null if no immutable view has been created for the current version.</value>
-            private ImmutableSortedDictionary<TKey, TValue> _immutable;
+            private ImmutableSortedDictionary<TKey, TValue>? _immutable;
 
             /// <summary>
             /// A number that increments every time the builder changes its contents.
@@ -67,7 +64,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The object callers may use to synchronize access to this collection.
             /// </summary>
-            private object _syncRoot;
+            private object? _syncRoot;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Builder"/> class.
@@ -183,7 +180,7 @@ namespace System.Collections.Immutable
                 get
                 {
                     TValue value;
-                    if (this.TryGetValue(key, out value))
+                    if (this.TryGetValue(key, out value!))
                     {
                         return value;
                     }
@@ -275,7 +272,7 @@ namespace System.Collections.Immutable
                 {
                     if (_syncRoot == null)
                     {
-                        Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
+                        Threading.Interlocked.CompareExchange<object?>(ref _syncRoot, new object(), null);
                     }
 
                     return _syncRoot;
@@ -365,9 +362,9 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="key">The <see cref="object"/> to use as the key of the element to add.</param>
             /// <param name="value">The <see cref="object"/> to use as the value of the element to add.</param>
-            void IDictionary.Add(object key, object value)
+            void IDictionary.Add(object key, object? value)
             {
-                this.Add((TKey)key, (TValue)value);
+                this.Add((TKey)key, (TValue)value!);
             }
 
             /// <summary>
@@ -407,10 +404,10 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="key">The key.</param>
             /// <returns></returns>
-            object IDictionary.this[object key]
+            object? IDictionary.this[object key]
             {
                 get { return this[(TKey)key]; }
-                set { this[(TKey)key] = (TValue)value; }
+                set { this[(TKey)key] = (TValue)value!; }
             }
 
             #endregion
@@ -470,9 +467,9 @@ namespace System.Collections.Immutable
             /// <summary>
             /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
-            public bool TryGetValue(TKey key, out TValue value)
+            public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
             {
-                return this.Root.TryGetValue(key, _keyComparer, out value);
+                return this.Root.TryGetValue(key, _keyComparer, out value!);
             }
 
             /// <summary>
@@ -580,7 +577,6 @@ namespace System.Collections.Immutable
             /// Removes any entries from the dictionaries with keys that match those found in the specified sequence.
             /// </summary>
             /// <param name="items">The keys for entries to remove from the dictionary.</param>
-            [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
             public void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> items)
             {
                 Requires.NotNull(items, nameof(items));
@@ -611,9 +607,10 @@ namespace System.Collections.Immutable
             /// <param name="key">The key to search for.</param>
             /// <returns>The value for the key, or the default value for type <typeparamref name="TValue"/> if no matching key was found.</returns>
             [Pure]
+            [return: MaybeNull]
             public TValue GetValueOrDefault(TKey key)
             {
-                return this.GetValueOrDefault(key, default(TValue));
+                return this.GetValueOrDefault(key, default(TValue)!);
             }
 
             /// <summary>
@@ -630,7 +627,7 @@ namespace System.Collections.Immutable
                 Requires.NotNullAllowStructs(key, nameof(key));
 
                 TValue value;
-                if (this.TryGetValue(key, out value))
+                if (this.TryGetValue(key, out value!))
                 {
                     return value;
                 }
@@ -664,7 +661,7 @@ namespace System.Collections.Immutable
     /// <summary>
     /// A simple view of the immutable collection that the debugger can show to the developer.
     /// </summary>
-    internal class ImmutableSortedDictionaryBuilderDebuggerProxy<TKey, TValue>
+    internal class ImmutableSortedDictionaryBuilderDebuggerProxy<TKey, TValue> where TKey : notnull
     {
         /// <summary>
         /// The collection to be enumerated.
@@ -674,7 +671,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The simple view of the collection.
         /// </summary>
-        private KeyValuePair<TKey, TValue>[] _contents;
+        private KeyValuePair<TKey, TValue>[]? _contents;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableSortedDictionaryBuilderDebuggerProxy{TKey, TValue}"/> class.

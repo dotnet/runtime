@@ -2,18 +2,17 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
     <DefaultReferenceExclusions Include="System.Net.NameResolution" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup>
     <Compile Include="..\..\src\System\Net\IPHostEntry.cs">
       <Link>ProductionCode\System\Net\IPHostEntry.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Fakes\FakeContextAwareResult.cs" />
     <Compile Include="NameResolutionPalTests.cs" />
     <Compile Include="Fakes\DebugThreadTracking.cs" />
@@ -22,10 +21,10 @@
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs" Condition="'$(OSGroup)' == 'Windows_NT'">
+    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs" Condition="'$(TargetsWindows)' == 'true'">
       <Link>Common\System\Net\Sockets\ProtocolType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs" Condition="'$(OSGroup)' == 'Windows_NT'">
+    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs" Condition="'$(TargetsWindows)' == 'true'">
       <Link>Common\System\Net\Sockets\SocketType.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\IPEndPointStatics.cs">
@@ -66,52 +65,40 @@
     </Compile>
     <!-- Interop -->
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
-      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\AddressInfoHints.cs">
-      <Link>Interop\Windows\WinSock\AddressInfoHints.cs</Link>
+      <Link>Common\Interop\Windows\WinSock\AddressInfoHints.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\hostent.cs">
-      <Link>Interop\Windows\WinSock\hostent.cs</Link>
+      <Link>Common\Interop\Windows\WinSock\hostent.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.closesocket.cs">
-      <Link>Interop\Windows\WinSock\Interop.closesocket.cs</Link>
+      <Link>Common\Interop\Windows\WinSock\Interop.closesocket.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.gethostname.cs">
-      <Link>Interop\Windows\WinSock\Interop.gethostname.cs</Link>
+      <Link>Common\Interop\Windows\WinSock\Interop.gethostname.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.GetNameInfoW.cs">
-      <Link>Interop\Windows\WinSock\Interop.GetNameInfoW.cs</Link>
+      <Link>Common\Interop\Windows\WinSock\Interop.GetNameInfoW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.GetAddrInfoW.cs">
-      <Link>Interop\Windows\WinSock\Interop.GetAddrInfoW.cs</Link>
+      <Link>Common\Interop\Windows\WinSock\Interop.GetAddrInfoW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAStartup.cs">
-      <Link>Interop\Windows\WinSock\Interop.WSAStartup.cs</Link>
+      <Link>Common\Interop\Windows\WinSock\Interop.WSAStartup.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSASocketW.cs">
-      <Link>Interop\Windows\WinSock\Interop.WSASocketW.cs</Link>
+      <Link>Common\Interop\Windows\WinSock\Interop.WSASocketW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs">
-      <Link>Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs</Link>
+      <Link>Common\Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolFamily.cs">
       <Link>Common\System\Net\Sockets\ProtocolFamily.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs">
-      <Link>Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
-      <Link>Common\CoreLi\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcAddress.cs">
-      <Link>Interop\Windows\Kernel32\Interop.GetProcAddress.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
-      <Link>Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
-      <Link>Interop\Windows\Kernel32\Interop.FreeLibrary.cs</Link>
+      <Link>Common\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
@@ -136,32 +123,32 @@
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Unix.cs">
       <Link>System\Net\SocketProtocolSupportPal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
-      <Link>Interop\CoreLib\Unix\Interop.Errors.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\CoreLib\Unix\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
-      <Link>Interop\Unix\Interop.Libraries.cs</Link>
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Close.cs">
-      <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetNameInfo.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetNameInfo.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.GetNameInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.HostEntry.cs">
-      <Link>Interop\Unix\System.Native\Interop.HostEntry.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.HostEntry.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IPAddress.cs">
-      <Link>Interop\Unix\System.Native\Interop.IPAddress.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.IPAddress.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Socket.cs">
-      <Link>Interop\Unix\System.Native\Interop.Socket.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.Socket.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs">
-      <Link>Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

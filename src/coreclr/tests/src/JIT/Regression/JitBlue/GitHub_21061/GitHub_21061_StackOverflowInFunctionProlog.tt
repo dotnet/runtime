@@ -14,7 +14,7 @@
 // This test is designed to be run manually under debugger to validate different stack probing mechanisms implemented in CodeGen::genAllocLclFrame().
 // For example, this can be used to check whether a debugger can unwind and show stack trace when StackOverflow occurs in a function prolog while doing stack probing.
 
-.assembly extern System.Private.CoreLib
+.assembly extern System.Runtime
 {
 }
 
@@ -36,7 +36,7 @@
 #>
 
 .class private explicit ansi sealed beforefieldinit GitHub_21061.<#= structName #>
-  extends [System.Private.CoreLib]System.ValueType
+  extends [System.Runtime]System.ValueType
 {
   .field [0] private int32 _0
   .field [<#= structSizeInBytes #>] private int32 <#= structName #>
@@ -61,7 +61,7 @@
 #>
 
 .class private auto ansi beforefieldinit GitHub_21061.Program
-       extends [System.Private.CoreLib]System.Object
+       extends [System.Runtime]System.Object
 {
   .method public hidebysig static void  Keep(int32 i) cil managed noinlining
   {

@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public static bool operator ==(CngKeyBlobFormat left, CngKeyBlobFormat right)
+        public static bool operator ==(CngKeyBlobFormat? left, CngKeyBlobFormat? right)
         {
             if (object.ReferenceEquals(left, null))
             {
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography
             return left.Equals(right);
         }
 
-        public static bool operator !=(CngKeyBlobFormat left, CngKeyBlobFormat right)
+        public static bool operator !=(CngKeyBlobFormat? left, CngKeyBlobFormat? right)
         {
             if (object.ReferenceEquals(left, null))
             {
@@ -57,14 +57,14 @@ namespace System.Security.Cryptography
             return !left.Equals(right);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             Debug.Assert(_format != null);
 
             return Equals(obj as CngKeyBlobFormat);
         }
 
-        public bool Equals(CngKeyBlobFormat other)
+        public bool Equals(CngKeyBlobFormat? other)
         {
             if (object.ReferenceEquals(other, null))
             {
@@ -155,14 +155,14 @@ namespace System.Security.Cryptography
         }
 
 
-        private static CngKeyBlobFormat s_eccPrivate;
-        private static CngKeyBlobFormat s_eccPublic;
-        private static CngKeyBlobFormat s_eccFullPrivate;
-        private static CngKeyBlobFormat s_eccFullPublic;
-        private static CngKeyBlobFormat s_genericPrivate;
-        private static CngKeyBlobFormat s_genericPublic;
-        private static CngKeyBlobFormat s_opaqueTransport;
-        private static CngKeyBlobFormat s_pkcs8Private;
+        private static CngKeyBlobFormat? s_eccPrivate;
+        private static CngKeyBlobFormat? s_eccPublic;
+        private static CngKeyBlobFormat? s_eccFullPrivate;
+        private static CngKeyBlobFormat? s_eccFullPublic;
+        private static CngKeyBlobFormat? s_genericPrivate;
+        private static CngKeyBlobFormat? s_genericPublic;
+        private static CngKeyBlobFormat? s_opaqueTransport;
+        private static CngKeyBlobFormat? s_pkcs8Private;
 
         private readonly string _format;
     }

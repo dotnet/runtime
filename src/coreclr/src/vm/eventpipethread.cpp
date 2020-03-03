@@ -102,12 +102,7 @@ void AcquireEventPipeThreadRef(EventPipeThread *pThread)
     pThread->AddRef();
 }
 
-#ifndef __GNUC__
-__declspec(thread)
-#else // !__GNUC__
-thread_local
-#endif // !__GNUC__
-EventPipeThreadHolder EventPipeThread::gCurrentEventPipeThreadHolder;
+thread_local EventPipeThreadHolder EventPipeThread::gCurrentEventPipeThreadHolder;
 
 EventPipeThread::EventPipeThread()
 {
@@ -122,7 +117,7 @@ EventPipeThread::EventPipeThread()
     m_lock.Init(LOCK_TYPE_DEFAULT);
     m_refCount = 0;
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     m_osThreadId = ::PAL_GetCurrentOSThreadId();
 #else
     m_osThreadId = ::GetCurrentThreadId();

@@ -609,9 +609,9 @@ namespace System.Text.Json.Tests
             {
                 if (json.TokenType == JsonTokenType.Number)
                 {
-                    if (PlatformDetection.IsFullFramework)
+                    if (PlatformDetection.IsNetFramework)
                     {
-                        // Full framework throws for overflow rather than returning Infinity
+                        // .NET Framework throws for overflow rather than returning Infinity
                         // This was fixed for .NET Core 3.0 in order to be IEEE 754 compliant
 
                         Assert.False(json.TryGetSingle(out float _));
@@ -655,9 +655,9 @@ namespace System.Text.Json.Tests
             {
                 if (json.TokenType == JsonTokenType.Number)
                 {
-                    if (PlatformDetection.IsFullFramework)
+                    if (PlatformDetection.IsNetFramework)
                     {
-                        // Full framework throws for overflow rather than returning Infinity
+                        // .NET Framework throws for overflow rather than returning Infinity
                         // This was fixed for .NET Core 3.0 in order to be IEEE 754 compliant
 
                         Assert.False(json.TryGetDouble(out double _));

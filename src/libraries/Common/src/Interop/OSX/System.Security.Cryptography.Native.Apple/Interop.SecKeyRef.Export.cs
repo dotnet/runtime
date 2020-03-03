@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -17,14 +18,14 @@ internal static partial class Interop
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_SecKeyExport(
-            SafeSecKeyRefHandle key,
+            SafeSecKeyRefHandle? key,
             int exportPrivate,
             SafeCreateHandle cfExportPassphrase,
             out SafeCFDataHandle cfDataOut,
             out int pOSStatus);
 
         internal static SafeCFDataHandle SecKeyExportData(
-            SafeSecKeyRefHandle key,
+            SafeSecKeyRefHandle? key,
             bool exportPrivate,
             ReadOnlySpan<char> password)
         {
@@ -70,7 +71,7 @@ internal static partial class Interop
         }
 
         internal static byte[] SecKeyExport(
-            SafeSecKeyRefHandle key,
+            SafeSecKeyRefHandle? key,
             bool exportPrivate,
             string password)
         {

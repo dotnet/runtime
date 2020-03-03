@@ -24,7 +24,7 @@ namespace System.IO
         {
         }
 
-        internal FileInfo(string originalPath, string fullPath = null, string fileName = null, bool isNormalized = false)
+        internal FileInfo(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
             // Want to throw the original argument name
             OriginalPath = originalPath ?? throw new ArgumentNullException(nameof(fileName));
@@ -48,13 +48,13 @@ namespace System.IO
             }
         }
 
-        public string DirectoryName => Path.GetDirectoryName(FullPath);
+        public string? DirectoryName => Path.GetDirectoryName(FullPath);
 
-        public DirectoryInfo Directory
+        public DirectoryInfo? Directory
         {
             get
             {
-                string dirName = DirectoryName;
+                string? dirName = DirectoryName;
                 if (dirName == null)
                     return null;
                 return new DirectoryInfo(dirName);
@@ -138,9 +138,10 @@ namespace System.IO
             string fullDestFileName = Path.GetFullPath(destFileName);
 
             // These checks are in place to ensure Unix error throwing happens the same way
-            // as it does on Windows.These checks can be removed if a solution to #2460 is
-            // found that doesn't require validity checks before making an API call.
-            if (!new DirectoryInfo(Path.GetDirectoryName(FullName)).Exists)
+            // as it does on Windows.These checks can be removed if a solution to
+            // https://github.com/dotnet/runtime/issues/14885 is found that doesn't require
+            // validity checks before making an API call.
+            if (!new DirectoryInfo(Path.GetDirectoryName(FullName)!).Exists)
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, FullName));
 
             if (!Exists)
@@ -156,10 +157,10 @@ namespace System.IO
             Invalidate();
         }
 
-        public FileInfo Replace(string destinationFileName, string destinationBackupFileName)
+        public FileInfo Replace(string destinationFileName, string? destinationBackupFileName)
             => Replace(destinationFileName, destinationBackupFileName, ignoreMetadataErrors: false);
 
-        public FileInfo Replace(string destinationFileName, string destinationBackupFileName, bool ignoreMetadataErrors)
+        public FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
             if (destinationFileName == null)
                 throw new ArgumentNullException(nameof(destinationFileName));

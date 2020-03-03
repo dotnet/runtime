@@ -56,6 +56,9 @@ See the LICENSE file in the project root for more information.
     <CopyNuGetImplementations>true</CopyNuGetImplementations>
   </PropertyGroup>
 
+  <!-- This file results in importing the Build Target. -->
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+
   <Target Name="RemoveImplicitPackageReferences">
     <ItemGroup>
       <!-- Remove all implicit framework packages, depprojs are meant to be wholly explicit -->
@@ -68,7 +71,7 @@ See the LICENSE file in the project root for more information.
           BeforeTargets="ResolvePackageAssets"
           Condition="'$(VSDesignTimeBuild)' != 'true'" />
 
-  <Target Name="CoreCompile" Condition="'@(PackageReference)' != '' Or '@(PackageDownload)' == ''">
+  <Target Name="CoreCompile">
 
     <Error Condition="'$(NuGetDeploySourceItem)' != 'ReferenceCopyLocalPaths' and
                       '$(NuGetDeploySourceItem)' != 'Reference' and
@@ -98,8 +101,12 @@ See the LICENSE file in the project root for more information.
       </ContentWithTargetPath>
     </ItemGroup>
 
-    <Error Condition="'@(NuGetDeploy)' == ''" Text="Error no assets were resolved from NuGet packages." />
-    <Message Importance="High" Text="%(FullPath) (%(NuGetPackageId).%(NuGetPackageVersion)) -&gt; @(NuGetDeploy->'$(TargetDir)%(SubFolder)%(FileName)%(Extension)')" />
+    <Message Importance="High"
+             Condition="'@(NuGetDeploy)' == ''"
+             Text="$(MSBuildProjectFile): No assets were resolved from NuGet packages." />
+    <Message Importance="High"
+             Condition="'@(NuGetDeploy)' != ''"
+             Text="%(FullPath) (%(NuGetPackageId).%(NuGetPackageVersion)) -&gt; @(NuGetDeploy->'$(TargetDir)%(SubFolder)%(FileName)%(Extension)')" />
 
     <!-- Include marker files if an extension has been provided -->
     <!-- internal builds use this to distinguish files which have already been signed -->

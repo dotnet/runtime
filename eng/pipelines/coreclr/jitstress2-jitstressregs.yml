@@ -18,9 +18,19 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
-    platformGroup: all
+    platforms:
+    # Linux tests are built on the OSX machines.
+    - OSX_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    # Currently no Windows arm32, Windows arm64 hardware in Helix. https://github.com/dotnet/runtime/issues/1097
+    #- Windows_NT_arm
+    #- Windows_NT_arm64
     jobParameters:
       testGroup: jitstress2-jitstressregs
 
@@ -28,8 +38,19 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/test-job.yml
     buildConfig: checked
-    platformGroup: all
+    platforms:
+    # Linux tests are built on the OSX machines.
+    - OSX_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    # Currently no Windows arm32, Windows arm64 hardware in Helix. https://github.com/dotnet/runtime/issues/1097
+    #- Windows_NT_arm
+    #- Windows_NT_arm64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: jitstress2-jitstressregs
+      liveLibrariesBuildConfig: Release

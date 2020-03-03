@@ -97,7 +97,7 @@ class ExactSpellingTest
         Console.WriteLine("Method Auto.Marshal_Int_InOut: ExactSpelling = false. Verify CharSet.Auto behavior per-platform.");
         int int9 = intManaged;
         int intRet9 = Auto.Marshal_Int_InOut2(int9);
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
         failures += Verify(intReturnUnicode, intManaged, intRet9, int9);
 #else
         failures += Verify(intReturnAnsi, intManaged, intRet9, int9);

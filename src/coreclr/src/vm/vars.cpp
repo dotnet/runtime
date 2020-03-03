@@ -53,7 +53,7 @@ GPTR_IMPL(IdDispenser,       g_pModuleIndexDispenser);
 IBCLogger                    g_IBCLogger;
 
 // For [<I1, etc. up to and including [Object
-GARY_IMPL(PTR_ArrayTypeDesc, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
+GARY_IMPL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 GPTR_IMPL(EEConfig, g_pConfig);     // configuration data (from the registry)
 
@@ -197,19 +197,16 @@ GVAL_IMPL(bool, g_fProcessDetach);
 
 GVAL_IMPL_INIT(DWORD, g_fEEShutDown, 0);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 GVAL_IMPL(SIZE_T, g_runtimeLoadedBaseAddress);
 GVAL_IMPL(SIZE_T, g_runtimeVirtualSize);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifndef DACCESS_COMPILE
 
 Volatile<LONG> g_fForbidEnterEE = false;
 bool g_fManagedAttach = false;
 bool g_fNoExceptions = false;
-#ifdef FEATURE_COMINTEROP
-bool g_fShutDownCOM = false;
-#endif //FEATURE_COMINTEROP
 
 DWORD g_FinalizerWaiterStatus = 0;
 

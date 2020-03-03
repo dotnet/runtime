@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Mime;
-using System.Collections.Generic;
 
 namespace System.Net.Mail
 {
@@ -22,18 +22,18 @@ namespace System.Net.Mail
     {
         // Parse a single MailAddress from the given string.
         //
-        // Throws a FormatException if any part of the MailAddress is invalid.
-        internal static MailAddress ParseAddress(string data)
+        // Throws a FormatException or returns false if any part of the MailAddress is invalid.
+        internal static bool TryParseAddress(string data, out ParseAddressInfo parsedAddress, bool throwExceptionIfFail)
         {
             int index = data.Length - 1;
-            MailAddress parsedAddress = MailAddressParser.ParseAddress(data, false, ref index);
-            Debug.Assert(index == -1, "The index indicates that part of the address was not parsed: " + index);
-            return parsedAddress;
+            bool parseSuccess = TryParseAddress(data, false, ref index, out parsedAddress, throwExceptionIfFail);
+            Debug.Assert(!parseSuccess || index == -1, "The index indicates that part of the address was not parsed: " + index);
+            return parseSuccess;
         }
 
         // Parse a comma separated list of MailAddress's
         //
-        // Throws a FormatException if any MailAddress is invalid.
+        // Throws a FormatException or false is returned if any MailAddress is invalid.
         internal static List<MailAddress> ParseMultipleAddresses(string data)
         {
             List<MailAddress> results = new List<MailAddress>();
@@ -41,7 +41,8 @@ namespace System.Net.Mail
             while (index >= 0)
             {
                 // Because we're parsing in reverse, we must make an effort to preserve the order of the addresses.
-                results.Insert(0, MailAddressParser.ParseAddress(data, true, ref index));
+                TryParseAddress(data, true, ref index, out ParseAddressInfo parsedAddress, throwExceptionIfFail: true);
+                results.Insert(0, new MailAddress(parsedAddress.DisplayName, parsedAddress.User, parsedAddress.Host, null));
                 Debug.Assert(index == -1 || data[index] == MailBnfHelper.Comma,
                     "separator not found while parsing multiple addresses");
                 index--;
@@ -61,19 +62,21 @@ namespace System.Net.Mail
         // - For a single MailAddress index is set to -1
         // - For a list data[index] is the comma separator or -1 if the end of the data string was reached.
         //
-        // Throws a FormatException if any part of the MailAddress is invalid.
-        private static MailAddress ParseAddress(string data, bool expectMultipleAddresses, ref int index)
+        // Throws a FormatException or false is returned if any part of the MailAddress is invalid.
+        private static bool TryParseAddress(string data, bool expectMultipleAddresses, ref int index, out ParseAddressInfo parseAddressInfo, bool throwExceptionIfFail)
         {
             Debug.Assert(!string.IsNullOrEmpty(data));
             Debug.Assert(index >= 0 && index < data.Length, "Index out of range: " + index + ", " + data.Length);
 
             // Parsed components to be assembled as a MailAddress later
-            string domain = null;
-            string localPart = null;
-            string displayName = null;
+            string displayName;
 
             // Skip comments and whitespace
-            index = ReadCfwsAndThrowIfIncomplete(data, index);
+            if (!TryReadCfwsAndThrowIfIncomplete(data, index, out index, throwExceptionIfFail))
+            {
+                parseAddressInfo = default;
+                return false;
+            }
 
             // Do we expect angle brackets around the address?
             // e.g. ("display name" <user@domain>)
@@ -84,18 +87,34 @@ namespace System.Net.Mail
                 index--;
             }
 
-            domain = ParseDomain(data, ref index);
+            if (!TryParseDomain(data, ref index, out string domain, throwExceptionIfFail))
+            {
+                parseAddressInfo = default;
+                return false;
+            }
 
             // The next character after the domain must be the '@' symbol
             if (data[index] != MailBnfHelper.At)
             {
-                throw new FormatException(SR.MailAddressInvalidFormat);
+                if (throwExceptionIfFail)
+                {
+                    throw new FormatException(SR.MailAddressInvalidFormat);
+                }
+                else
+                {
+                    parseAddressInfo = default;
+                    return false;
+                }
             }
 
             // Skip the '@' symbol
             index--;
 
-            localPart = ParseLocalPart(data, ref index, expectAngleBracket, expectMultipleAddresses);
+            if (!TryParseLocalPart(data, ref index, expectAngleBracket, expectMultipleAddresses, out string localPart, throwExceptionIfFail))
+            {
+                parseAddressInfo = default;
+                return false;
+            }
 
             // Check for a matching angle bracket around the address
             if (expectAngleBracket)
@@ -104,13 +123,25 @@ namespace System.Net.Mail
                 {
                     index--; // Skip the angle bracket
                     // Skip whitespace, but leave comments, as they may be part of the display name.
-                    index = WhitespaceReader.ReadFwsReverse(data, index);
+                    if (!WhitespaceReader.TryReadFwsReverse(data, index, out index, throwExceptionIfFail))
+                    {
+                        parseAddressInfo = default;
+                        return false;
+                    }
                 }
                 else
                 {
-                    // Mismatched angle brackets, throw
-                    throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter,
-                        (index >= 0 ? data[index] : MailBnfHelper.EndAngleBracket)));
+                    // Mismatched angle brackets
+                    if (throwExceptionIfFail)
+                    {
+                        throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter,
+                            (index >= 0 ? data[index] : MailBnfHelper.EndAngleBracket)));
+                    }
+                    else
+                    {
+                        parseAddressInfo = default;
+                        return false;
+                    }
                 }
             }
 
@@ -118,27 +149,47 @@ namespace System.Net.Mail
             // There could still be a display name or another address
             if (index >= 0 && !(expectMultipleAddresses && data[index] == MailBnfHelper.Comma))
             {
-                displayName = ParseDisplayName(data, ref index, expectMultipleAddresses);
+                if (!TryParseDisplayName(data, ref index, expectMultipleAddresses, out displayName, throwExceptionIfFail))
+                {
+                    parseAddressInfo = default;
+                    return false;
+                }
             }
             else
             {
                 displayName = string.Empty;
             }
 
-            return new MailAddress(displayName, localPart, domain);
+            parseAddressInfo = new ParseAddressInfo(displayName, localPart, domain);
+            return true;
         }
 
         // Read through a section of CFWS.  If we reach the end of the data string then throw because not enough of the
         // MailAddress components were found.
-        private static int ReadCfwsAndThrowIfIncomplete(string data, int index)
+        private static bool TryReadCfwsAndThrowIfIncomplete(string data, int index, out int outIndex, bool throwExceptionIfFail)
         {
-            index = WhitespaceReader.ReadCfwsReverse(data, index);
+            if (!WhitespaceReader.TryReadCfwsReverse(data, index, out index, throwExceptionIfFail))
+            {
+                outIndex = default;
+                return false;
+            }
+
             if (index < 0)
             {
                 // More components were expected.  Incomplete address, invalid
-                throw new FormatException(SR.MailAddressInvalidFormat);
+                if (throwExceptionIfFail)
+                {
+                    throw new FormatException(SR.MailAddressInvalidFormat);
+                }
+                else
+                {
+                    outIndex = default;
+                    return false;
+                }
             }
-            return index;
+
+            outIndex = index;
+            return true;
         }
 
         // Parses the domain section of an address.  The domain may be in dot-atom format or surrounded by square
@@ -152,13 +203,17 @@ namespace System.Net.Mail
         // - data[index] should refer to the '@' symbol
         // - returns the parsed domain, including any square brackets for domain-literals
         //
-        // Throws a FormatException:
+        // Throws a FormatException or returns false:
         // - For invalid un-escaped chars, including Unicode
         // - If the start of the data string is reached
-        private static string ParseDomain(string data, ref int index)
+        private static bool TryParseDomain(string data, ref int index, out string domain, bool throwExceptionIfFail)
         {
             // Skip comments and whitespace
-            index = ReadCfwsAndThrowIfIncomplete(data, index);
+            if (!TryReadCfwsAndThrowIfIncomplete(data, index, out index, throwExceptionIfFail))
+            {
+                domain = default;
+                return false;
+            }
 
             // Mark one end of the domain component
             int startingIndex = index;
@@ -166,19 +221,35 @@ namespace System.Net.Mail
             // Is the domain component in domain-literal format or dot-atom format?
             if (data[index] == MailBnfHelper.EndSquareBracket)
             {
-                index = DomainLiteralReader.ReadReverse(data, index);
+                if (!DomainLiteralReader.TryReadReverse(data, index, out index, throwExceptionIfFail))
+                {
+                    domain = default;
+                    return false;
+                }
             }
             else
             {
-                index = DotAtomReader.ReadReverse(data, index);
+                if (!DotAtomReader.TryReadReverse(data, index, out index, throwExceptionIfFail))
+                {
+                    domain = default;
+                    return false;
+                }
             }
 
-            string domain = data.Substring(index + 1, startingIndex - index);
+            domain = data.Substring(index + 1, startingIndex - index);
 
             // Skip comments and whitespace
-            index = ReadCfwsAndThrowIfIncomplete(data, index);
+            if (!TryReadCfwsAndThrowIfIncomplete(data, index, out index, throwExceptionIfFail))
+            {
+                return false;
+            }
 
-            return NormalizeOrThrow(domain);
+            if (!TryNormalizeOrThrow(domain, out domain, throwExceptionIfFail))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         // Parses the local-part section of an address.  The local-part may be in dot-atom format or
@@ -193,14 +264,18 @@ namespace System.Net.Mail
         // - index == -1 if the beginning of the data string has been reached.
         // - returns the parsed local-part, including any bounding quotes around quoted-strings
         //
-        // Throws a FormatException:
+        // Throws a FormatException or false is returned:
         // - For invalid un-escaped chars, including Unicode
         // - If the final value of data[index] is not a valid character to precede the local-part
-        private static string ParseLocalPart(string data, ref int index, bool expectAngleBracket,
-            bool expectMultipleAddresses)
+        private static bool TryParseLocalPart(string data, ref int index, bool expectAngleBracket,
+            bool expectMultipleAddresses, out string localPart, bool throwExceptionIfFail)
         {
             // Skip comments and whitespace
-            index = ReadCfwsAndThrowIfIncomplete(data, index);
+            if (!TryReadCfwsAndThrowIfIncomplete(data, index, out index, throwExceptionIfFail))
+            {
+                localPart = default;
+                return false;
+            }
 
             // Mark the start of the local-part
             int startingIndex = index;
@@ -208,11 +283,19 @@ namespace System.Net.Mail
             // Is the local-part component in quoted-string format or dot-atom format?
             if (data[index] == MailBnfHelper.Quote)
             {
-                index = QuotedStringFormatReader.ReadReverseQuoted(data, index, true);
+                if (!QuotedStringFormatReader.TryReadReverseQuoted(data, index, true, out index, throwExceptionIfFail))
+                {
+                    localPart = default;
+                    return false;
+                }
             }
             else
             {
-                index = DotAtomReader.ReadReverse(data, index);
+                if (!DotAtomReader.TryReadReverse(data, index, out index, throwExceptionIfFail))
+                {
+                    localPart = default;
+                    return false;
+                }
 
                 // Check that the local-part is properly separated from the next component. It may be separated by a
                 // comment, whitespace, an expected angle bracket, a quote for the display-name, or an expected comma
@@ -229,15 +312,31 @@ namespace System.Net.Mail
                         )
                     )
                 {
-                    throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                    if (throwExceptionIfFail)
+                    {
+                        throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                    }
+                    else
+                    {
+                        localPart = default;
+                        return false;
+                    }
                 }
             }
 
-            string localPart = data.Substring(index + 1, startingIndex - index);
+            localPart = data.Substring(index + 1, startingIndex - index);
 
-            index = WhitespaceReader.ReadCfwsReverse(data, index);
+            if (!WhitespaceReader.TryReadCfwsReverse(data, index, out index, throwExceptionIfFail))
+            {
+                return false;
+            }
 
-            return NormalizeOrThrow(localPart);
+            if (!TryNormalizeOrThrow(localPart, out localPart, throwExceptionIfFail))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         // Parses the display-name section of an address.  In departure from the RFC, we attempt to read data in the
@@ -252,26 +351,32 @@ namespace System.Net.Mail
         // - index == -1 if the beginning of the data string has been reached.
         // - returns the parsed display-name, excluding any bounding quotes around quoted-strings
         //
-        // Throws a FormatException:
+        // Throws a FormatException or false is returned:
         // - For invalid un-escaped chars, except Unicode
         // - If the postconditions cannot be met.
-        private static string ParseDisplayName(string data, ref int index, bool expectMultipleAddresses)
+        private static bool TryParseDisplayName(string data, ref int index, bool expectMultipleAddresses, out string displayName, bool throwExceptionIfFail)
         {
-            string displayName;
-
             // Whatever is left over must be the display name. The display name should be a single word/atom or a
             // quoted string, but for robustness we allow the quotes to be omitted, so long as we can find the comma
             // separator before the next address.
 
             // Read the comment (if any).  If the display name is contained in quotes, the surrounding comments are
             // omitted. Otherwise, mark this end of the comment so we can include it as part of the display name.
-            int firstNonCommentIndex = WhitespaceReader.ReadCfwsReverse(data, index);
+            if (!WhitespaceReader.TryReadCfwsReverse(data, index, out int firstNonCommentIndex, throwExceptionIfFail))
+            {
+                displayName = default;
+                return false;
+            }
 
             // Check to see if there's a quoted-string display name
             if (firstNonCommentIndex >= 0 && data[firstNonCommentIndex] == MailBnfHelper.Quote)
             {
                 // The preceding comment was not part of the display name.  Read just the quoted string.
-                index = QuotedStringFormatReader.ReadReverseQuoted(data, firstNonCommentIndex, true);
+                if (!QuotedStringFormatReader.TryReadReverseQuoted(data, firstNonCommentIndex, true, out index, throwExceptionIfFail))
+                {
+                    displayName = default;
+                    return false;
+                }
 
                 Debug.Assert(data[index + 1] == MailBnfHelper.Quote, "Mis-aligned index: " + index);
 
@@ -280,14 +385,24 @@ namespace System.Net.Mail
                 displayName = data.Substring(leftIndex, firstNonCommentIndex - leftIndex);
 
                 // Skip any CFWS after the display name
-                index = WhitespaceReader.ReadCfwsReverse(data, index);
+                if (!WhitespaceReader.TryReadCfwsReverse(data, index, out index, throwExceptionIfFail))
+                {
+                    return false;
+                }
 
                 // Check for completion. We are valid if we hit the end of the data string or if the rest of the data
                 // belongs to another address.
                 if (index >= 0 && !(expectMultipleAddresses && data[index] == MailBnfHelper.Comma))
                 {
                     // If there was still data, only a comma could have been the next valid character
-                    throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                    if (throwExceptionIfFail)
+                    {
+                        throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
             }
             else
@@ -296,7 +411,11 @@ namespace System.Net.Mail
                 int startingIndex = index;
 
                 // Read until the dividing comma or the end of the line.
-                index = QuotedStringFormatReader.ReadReverseUnQuoted(data, index, true, expectMultipleAddresses);
+                if (!QuotedStringFormatReader.TryReadReverseUnQuoted(data, index, true, expectMultipleAddresses, out index, throwExceptionIfFail))
+                {
+                    displayName = default;
+                    return false;
+                }
 
                 Debug.Assert(index < 0 || data[index] == MailBnfHelper.Comma, "Mis-aligned index: " + index);
 
@@ -304,19 +423,42 @@ namespace System.Net.Mail
                 // trim extra whitespace.
                 displayName = data.SubstringTrim(index + 1, startingIndex - index);
             }
-            return NormalizeOrThrow(displayName);
+
+            if (!TryNormalizeOrThrow(displayName, out displayName, throwExceptionIfFail))
+            {
+                return false;
+            }
+
+            return true;
         }
 
-        internal static string NormalizeOrThrow(string input)
+        internal static bool TryNormalizeOrThrow(string input, out string normalizedString, bool throwExceptionIfFail)
         {
             try
             {
-                return input.Normalize(Text.NormalizationForm.FormC);
+                normalizedString = input.Normalize(Text.NormalizationForm.FormC);
+                return true;
             }
             catch (ArgumentException e)
             {
-                throw new FormatException(SR.MailAddressInvalidFormat, e);
+                if (throwExceptionIfFail)
+                {
+                    throw new FormatException(SR.MailAddressInvalidFormat, e);
+                }
+                else
+                {
+                    normalizedString = default;
+                    return false;
+                }
             }
         }
+    }
+
+    internal readonly struct ParseAddressInfo
+    {
+        public readonly string DisplayName { get; }
+        public readonly string User { get; }
+        public readonly string Host { get; }
+        public ParseAddressInfo(string displayName, string userName, string domain) => (DisplayName, User, Host) = (displayName, userName, domain);
     }
 }

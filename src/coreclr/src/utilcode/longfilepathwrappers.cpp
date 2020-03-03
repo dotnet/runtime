@@ -11,14 +11,14 @@
 class LongFile
 {
 private:
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
         static const WCHAR* ExtendedPrefix;
         static const WCHAR* DevicePathPrefix;
         static const WCHAR* UNCPathPrefix;
         static const WCHAR* UNCExtendedPathPrefix;
         static const WCHAR VolumeSeparatorChar;
 		#define UNCPATHPREFIX W("\\\\")
-#endif //FEATURE_PAL
+#endif //HOST_WINDOWS
         static const WCHAR DirectorySeparatorChar;
         static const WCHAR AltDirectorySeparatorChar;
 public:
@@ -31,7 +31,7 @@ public:
 
         static HRESULT NormalizePath(SString& path);
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
         static void NormalizeDirectorySeparators(SString& path);
 #endif
 };
@@ -60,11 +60,11 @@ LoadLibraryExWrapper(
 
         if (LongFile::IsPathNotFullyQualified(path) || SUCCEEDED(LongFile::NormalizePath(path)))
         {
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
             //Adding the assert to ensure relative paths which are not just filenames are not used for LoadLibrary Calls
             _ASSERTE(!LongFile::IsPathNotFullyQualified(path) || !LongFile::ContainsDirectorySeparator(path));
             LongFile::NormalizeDirectorySeparators(path);
-#endif //FEATURE_PAL
+#endif //HOST_WINDOWS
 
             ret = LoadLibraryExW(path.GetUnicode(), hFile, dwFlags);
         }
@@ -411,50 +411,6 @@ SearchPathWrapper(
 
 }
 
-BOOL
-CreateDirectoryWrapper(
-        _In_ LPCWSTR lpPathName,
-        _In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes
-        )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    BOOL ret   = FALSE;
-    DWORD lastError;
-
-    EX_TRY
-    {
-        LongPathString path(LongPathString::Literal, lpPathName);
-
-        if (SUCCEEDED(LongFile::NormalizePath(path)))
-        {
-            ret = CreateDirectoryW(
-                    path.GetUnicode(),
-                    lpSecurityAttributes
-                    );
-        }
-
-        lastError = GetLastError();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK )
-    {
-        SetLastError(hr);
-    }
-    else if(ret == FALSE)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-}
-
 DWORD
 GetModuleFileNameWrapper(
     _In_opt_ HMODULE hModule,
@@ -701,7 +657,7 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
 }
 
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
 
 BOOL
 CopyFileExWrapper(
@@ -808,10 +764,10 @@ FindFirstFileExWrapper(
 
     return ret;
 }
-#endif //!FEATURE_PAL
+#endif // HOST_WINDOWS
 
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
 
 #if ! defined(DACCESS_COMPILE) && !defined(SELF_NO_HOST)
 extern HINSTANCE            g_pMSCorEE;
@@ -866,13 +822,13 @@ BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
     return retval;
 }
 
-#endif // FEATURE_PAL
+#endif // HOST_WINDOWS
 
 
 //Implementation of LongFile Helpers
 const WCHAR LongFile::DirectorySeparatorChar = W('\\');
 const WCHAR LongFile::AltDirectorySeparatorChar = W('/');
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
 const WCHAR LongFile::VolumeSeparatorChar = W(':');
 const WCHAR* LongFile::ExtendedPrefix = W("\\\\?\\");
 const WCHAR* LongFile::DevicePathPrefix = W("\\\\.\\");
@@ -1047,7 +1003,7 @@ HRESULT LongFile::NormalizePath(SString & path)
 {
     return S_OK;
 }
-#endif //FEATURE_PAL
+#endif //HOST_WINDOWS
 
 BOOL LongFile::ContainsDirectorySeparator(SString & path)
 {

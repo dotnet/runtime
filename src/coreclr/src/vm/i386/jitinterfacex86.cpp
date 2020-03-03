@@ -95,7 +95,7 @@ extern "C" void STDCALL WriteBarrierAssert(BYTE* ptr, Object* obj)
 
 #endif // _DEBUG
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 /****************************************************************************/
 /* assigns 'val to 'array[idx], after doing all the proper checks */
 
@@ -195,138 +195,6 @@ Epilog:
     }
 }
 
-extern "C" __declspec(naked) Object* F_CALL_CONV JIT_IsInstanceOfClass(MethodTable *pMT, Object *pObject)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-#if defined(FEATURE_TYPEEQUIVALENCE)
-    enum
-    {
-        MTEquivalenceFlags = MethodTable::public_enum_flag_HasTypeEquivalence,
-    };
-#endif
-
-    __asm
-    {
-        // Check if the instance is NULL
-        test            ARGUMENT_REG2, ARGUMENT_REG2
-        je              ReturnInst
-
-        // Get the method table for the instance.
-        mov             eax, dword ptr [ARGUMENT_REG2]
-
-        // Check if they are the same.
-        cmp             eax, ARGUMENT_REG1
-        jne             CheckParent
-
-    ReturnInst:
-        // We matched the class.
-        mov             eax, ARGUMENT_REG2
-        ret
-
-    // Check if the parent class matches.
-    CheckParent:
-        mov             eax, dword ptr [eax]MethodTable.m_pParentMethodTable
-        cmp             eax, ARGUMENT_REG1
-        je              ReturnInst
-
-    // Check if we hit the top of the hierarchy.
-        test            eax, eax
-        jne             CheckParent
-
-    // Check if the instance is a proxy.
-#if defined(FEATURE_TYPEEQUIVALENCE)
-        mov             eax, [ARGUMENT_REG2]
-        test            dword ptr [eax]MethodTable.m_dwFlags, MTEquivalenceFlags
-        jne             SlowPath
-#endif
-    // It didn't match and it isn't a proxy and it doesn't have type equivalence
-        xor             eax, eax
-        ret
-
-    // Cast didn't match, so try the worker to check for the proxy/equivalence case.
-#if defined(FEATURE_TYPEEQUIVALENCE)
-    SlowPath:
-        jmp             JITutil_IsInstanceOfAny
-#endif
-    }
-}
-
-extern "C" __declspec(naked) Object* F_CALL_CONV JIT_ChkCastClass(MethodTable *pMT, Object *pObject)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    __asm
-    {
-        // Check if the instance is NULL
-        test            ARGUMENT_REG2, ARGUMENT_REG2
-        je              ReturnInst
-
-        // Get the method table for the instance.
-        mov             eax, dword ptr [ARGUMENT_REG2]
-
-        // Check if they are the same.
-        cmp             eax, ARGUMENT_REG1
-        jne             CheckParent
-
-    ReturnInst:
-        // We matched the class.
-        mov             eax, ARGUMENT_REG2
-        ret
-
-    // Check if the parent class matches.
-    CheckParent:
-        mov             eax, dword ptr [eax]MethodTable.m_pParentMethodTable
-        cmp             eax, ARGUMENT_REG1
-        je              ReturnInst
-
-    // Check if we hit the top of the hierarchy.
-        test            eax, eax
-        jne             CheckParent
-
-    // Call out to JITutil_ChkCastAny to handle the proxy case and throw a rich
-    // InvalidCastException in case of failure.
-        jmp             JITutil_ChkCastAny
-    }
-}
-
-extern "C" __declspec(naked) Object* F_CALL_CONV JIT_ChkCastClassSpecial(MethodTable *pMT, Object *pObject)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    // Assumes that the check for the trivial cases has been inlined by the JIT.
-
-    __asm
-    {
-        // Get the method table for the instance.
-        mov             eax, dword ptr [ARGUMENT_REG2]
-
-    // Check if the parent class matches.
-    CheckParent:
-        mov             eax, dword ptr [eax]MethodTable.m_pParentMethodTable
-        cmp             eax, ARGUMENT_REG1
-        jne             CheckNull
-
-    // We matched the class.
-        mov             eax, ARGUMENT_REG2
-        ret
-
-    CheckNull:
-    // Check if we hit the top of the hierarchy.
-        test            eax, eax
-        jne             CheckParent
-
-    // Call out to JITutil_ChkCastAny to handle the proxy case and throw a rich
-    // InvalidCastException in case of failure.
-        jmp             JITutil_ChkCastAny
-    }
-}
-#endif // FEATURE_PAL
-
-#ifndef FEATURE_PAL
 HCIMPL1_V(INT32, JIT_Dbl2IntOvf, double val)
 {
     FCALL_CONTRACT;
@@ -342,7 +210,7 @@ THROW:
     FCThrow(kOverflowException);
 }
 HCIMPLEND
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 
 FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);

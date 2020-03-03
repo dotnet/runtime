@@ -2788,7 +2788,6 @@ IMetaDataImport2 * NativeImageDumper::TypeToString(PTR_CCOR_SIGNATURE &sig,
         buf.Append( W("System.__Canon") );
         break;
 
-    case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
     case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
         {
             buf.Append( W("native ") );
@@ -3052,13 +3051,13 @@ void NativeImageDumper::DumpCompleteMethod(PTR_Module module, MethodIterator& mi
         g_holdStringOutData.Clear();
         GCDump gcDump(gcInfoToken.Version);
         gcDump.gcPrintf = stringOutFn;
-#if !defined(_TARGET_X86_) && defined(USE_GC_INFO_DECODER)
+#if !defined(TARGET_X86) && defined(USE_GC_INFO_DECODER)
         GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_CODE_LENGTH);
         methodSize = gcInfoDecoder.GetCodeLength();
 #endif
 
         //dump the data to a string first so we can get the gcinfo size.
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         InfoHdr hdr;
         stringOutFn( "method info Block:\n" );
         curGCInfoPtr += gcDump.DumpInfoHdr(curGCInfoPtr, &hdr, &methodSize, 0);
@@ -3067,7 +3066,7 @@ void NativeImageDumper::DumpCompleteMethod(PTR_Module module, MethodIterator& mi
 
         IF_OPT(METHODS)
         {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             stringOutFn( "PointerTable:\n" );
             curGCInfoPtr += gcDump.DumpGCTable( curGCInfoPtr,
                                                 hdr,
@@ -3351,7 +3350,7 @@ SIZE_T NativeImageDumper::TranslateFixupCallback(IXCLRDisassemblySupport *dis,
     case sizeof(void*):
         targetOffset = *PTR_SIZE_T(taddr);
         break;
-#ifdef BIT64
+#ifdef HOST_64BIT
     case sizeof(INT32):
         targetOffset = *PTR_INT32(taddr);
         break;
@@ -6108,51 +6107,17 @@ void NativeImageDumper::TypeDescToString( PTR_TypeDesc td, SString& buf )
         PTR_FnPtrTypeDesc fptd( PTR_TO_TADDR(td) );
         buf.Append( W("(fnptr)") );
     }
-    else if( td->HasTypeParam() || td->IsArray() )
+    else if(td->HasTypeParam())
     {
-        //either a Parameter or an Array.
         PTR_ParamTypeDesc ptd(PTR_TO_TADDR(td));
-        TypeHandle elemType;
-        /* REVISIT_TODO Thu 10/5/2006
-         * Do I need to find a rank somewhere in the TypeDesc?
-         */
-        unsigned rank;
-        if( td->IsArray()  )
-        {
-            //td->HasTypeParam() may also be true.
-            PTR_MethodTable mt = ptd->GetTemplateMethodTableInternal();
-            _ASSERTE( PTR_TO_TADDR(mt) );
-            if( CORCOMPILE_IS_POINTER_TAGGED(PTR_TO_TADDR(mt)) )
-            {
-                if (!isSelf(GetDependencyForPointer(PTR_TO_TADDR(ptd))))
-                {
-                    //this is an RVA from another hardbound dependency.  We cannot decode it
-                    buf.Append(W("OUT_OF_MODULE_FIXUP"));
-                }
-                else
-                {
-                    RVA rva = CORCOMPILE_UNTAG_TOKEN(PTR_TO_TADDR(mt));
-                    FixupBlobToString(rva, buf);
-                }
-                return;
-            }
-            else
-            {
-                _ASSERTE( !CORCOMPILE_IS_POINTER_TAGGED(PTR_TO_TADDR(mt)) );
-                MethodTableToString( mt, buf );
-                rank = PTR_ArrayTypeDesc(PTR_TO_TADDR(ptd))->GetRank();
-            }
-        }
-        else
-        {
-            _ASSERTE(td->HasTypeParam());
-            TypeHandle th(ptd->GetTypeParam());
-            _ASSERTE( !CORCOMPILE_IS_POINTER_TAGGED(th.AsTAddr()) );
-            _ASSERTE( th.AsTAddr() );
-            TypeHandleToString(th, buf);
-            rank = 0;
-        }
-        AppendTypeQualifier( td->GetInternalCorElementType(), rank, buf );
+
+        _ASSERTE(td->HasTypeParam());
+        TypeHandle th(ptd->GetTypeParam());
+        _ASSERTE( !CORCOMPILE_IS_POINTER_TAGGED(th.AsTAddr()) );
+        _ASSERTE( th.AsTAddr() );
+        TypeHandleToString(th, buf);
+
+        AppendTypeQualifier( td->GetInternalCorElementType(), /*rank*/ 0, buf );
     }
     else
     {
@@ -6269,7 +6234,7 @@ void NativeImageDumper::DoDumpComPlusCallInfo( PTR_ComPlusCallInfo compluscall )
                           compluscall->m_pStubMD.GetValueMaybeNull(PTR_HOST_MEMBER_TADDR(ComPlusCallInfo, compluscall, m_pStubMD)),
                           ComPlusCallInfo, ALWAYS );
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     DisplayWriteFieldInt( m_cbStackArgumentSize, compluscall->m_cbStackArgumentSize,
                           ComPlusCallInfo, ALWAYS );
 
@@ -6992,7 +6957,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
                                    //if there is a layout, use it to compute
                                    //the size, otherwise there is just the one
                                    //entry.
-                                   DictionaryLayout::GetFirstDictionaryBucketSize(mt->GetNumGenericArgs(), layout),
+                                   DictionaryLayout::GetDictionarySizeFromLayout(mt->GetNumGenericArgs(), layout),
                                    METHODTABLES );
 
             DisplayStartArrayWithOffset( m_pEntries, NULL, Dictionary,
@@ -7758,7 +7723,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
         CoverageRead(TO_TADDR(ssmd->GetSigRVA()), ssmd->m_cSig);
         DisplayWriteFieldInt( m_cSig, ssmd->m_cSig,
                               StoredSigMethodDesc, METHODDESCS );
-#ifdef BIT64
+#ifdef HOST_64BIT
         DisplayWriteFieldEnumerated( m_dwExtendedFlags,
                                      ssmd->m_dwExtendedFlags,
                                      StoredSigMethodDesc,
@@ -7778,7 +7743,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
         DisplayWriteFieldPointer( m_pResolver,
                                   DPtrToPreferredAddr(dmd->m_pResolver),
                                   DynamicMethodDesc, METHODDESCS );
-#ifndef BIT64
+#ifndef HOST_64BIT
         DisplayWriteFieldEnumerated( m_dwExtendedFlags,
                                      dmd->m_dwExtendedFlags,
                                      DynamicMethodDesc,
@@ -7901,7 +7866,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
         }
 #endif
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         DisplayWriteFieldInt( m_cbStackArgumentSize,
                               nd->m_cbStackArgumentSize,
                               NDirectMethodDesc::temp1, METHODDESCS );
@@ -8018,7 +7983,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
             {
                 PTR_DictionaryLayout layout(wrapped->IsSharedByGenericMethodInstantiations()
                                             ? dac_cast<TADDR>(wrapped->GetDictLayoutRaw()) : NULL );
-                dictSize = DictionaryLayout::GetFirstDictionaryBucketSize(imd->GetNumGenericMethodArgs(),
+                dictSize = DictionaryLayout::GetDictionarySizeFromLayout(imd->GetNumGenericMethodArgs(), 
                                                                           layout);
             }
         }
@@ -8638,7 +8603,6 @@ enum TypeDescType
 {
     TDT_IsTypeDesc,
     TDT_IsParamTypeDesc,
-    TDT_IsArrayTypeDesc,
     TDT_IsTypeVarTypeDesc,
     TDT_IsFnPtrTypeDesc
 };
@@ -8646,7 +8610,6 @@ const char * const g_typeDescTypeNames[] =
 {
     "TypeDesc",
     "ParamTypeDesc",
-    "ArrayTypeDesc",
     "TypeVarTypeDesc",
     "FnPtrTypeDesc"
 };
@@ -8654,15 +8617,12 @@ int g_typeDescSizes[] =
 {
     sizeof(TypeDesc),
     sizeof(ParamTypeDesc),
-    sizeof(ArrayTypeDesc),
     sizeof(TypeVarTypeDesc),
     -1//sizeof(FnPtrTypeDesc) -- variable size
 };
 TypeDescType getTypeDescType( PTR_TypeDesc td )
 {
     _ASSERTE(td != NULL);
-    if( td->IsArray() )
-        return TDT_IsArrayTypeDesc;
     if( td->HasTypeParam() )
         return TDT_IsParamTypeDesc;
     if( td->IsGenericVariable() )
@@ -8722,7 +8682,7 @@ void NativeImageDumper::DumpTypeDesc( PTR_TypeDesc td )
                               TypeDesc, TYPEDESCS );
     DisplayWriteFieldEnumerated( m_typeAndFlags, td->m_typeAndFlags, TypeDesc,
                                  s_TDFlags, W(", "), TYPEDESCS );
-    if( tdt == TDT_IsParamTypeDesc || tdt == TDT_IsArrayTypeDesc )
+    if( tdt == TDT_IsParamTypeDesc )
     {
         PTR_ParamTypeDesc ptd(td);
         DisplayStartVStructure( "ParamTypeDesc", TYPEDESCS );
@@ -8868,7 +8828,7 @@ StandardEntryDisplay:
 }
 
 #ifdef FEATURE_READYTORUN
-IMAGE_DATA_DIRECTORY * NativeImageDumper::FindReadyToRunSection(DWORD type)
+IMAGE_DATA_DIRECTORY * NativeImageDumper::FindReadyToRunSection(ReadyToRunSectionType type)
 {
     PTR_READYTORUN_SECTION pSections = dac_cast<PTR_READYTORUN_SECTION>(dac_cast<TADDR>(m_pReadyToRunHeader) + sizeof(READYTORUN_HEADER));
     for (DWORD i = 0; i < m_pReadyToRunHeader->NumberOfSections; i++)
@@ -8892,7 +8852,7 @@ void NativeImageDumper::DumpReadyToRun()
 
     m_nativeReader = NativeFormat::NativeReader(dac_cast<PTR_BYTE>(m_decoder.GetBase()), m_decoder.GetVirtualSize());
 
-    IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = FindReadyToRunSection(READYTORUN_SECTION_RUNTIME_FUNCTIONS);
+    IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = FindReadyToRunSection(ReadyToRunSectionType::RuntimeFunctions);
     if (pRuntimeFunctionsDir != NULL)
     {
         m_pRuntimeFunctions = dac_cast<PTR_RUNTIME_FUNCTION>(m_decoder.GetDirectoryData(pRuntimeFunctionsDir));
@@ -8903,7 +8863,7 @@ void NativeImageDumper::DumpReadyToRun()
         m_nRuntimeFunctions = 0;
     }
 
-    IMAGE_DATA_DIRECTORY * pEntryPointsDir = FindReadyToRunSection(READYTORUN_SECTION_METHODDEF_ENTRYPOINTS);
+    IMAGE_DATA_DIRECTORY * pEntryPointsDir = FindReadyToRunSection(ReadyToRunSectionType::MethodDefEntryPoints);
     if (pEntryPointsDir != NULL)
         m_methodDefEntryPoints = NativeFormat::NativeArray((TADDR)&m_nativeReader, pEntryPointsDir->VirtualAddress);
 
@@ -9025,13 +8985,13 @@ void NativeImageDumper::DumpReadyToRunMethod(PCODE pEntryPoint, PTR_RUNTIME_FUNC
         UINT32 gcInfoVersion = GCInfoToken::ReadyToRunVersionToGcInfoVersion(r2rversion);
         GCInfoToken gcInfoToken = { curGCInfoPtr, gcInfoVersion };
 
-#if !defined(_TARGET_X86_) && defined(USE_GC_INFO_DECODER)
+#if !defined(TARGET_X86) && defined(USE_GC_INFO_DECODER)
         GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_CODE_LENGTH);
         methodSize = gcInfoDecoder.GetCodeLength();
 #endif
 
         //dump the data to a string first so we can get the gcinfo size.
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         InfoHdr hdr;
         stringOutFn("method info Block:\n");
         curGCInfoPtr += gcDump.DumpInfoHdr(curGCInfoPtr, &hdr, &methodSize, 0);
@@ -9040,7 +9000,7 @@ void NativeImageDumper::DumpReadyToRunMethod(PCODE pEntryPoint, PTR_RUNTIME_FUNC
 
         IF_OPT(METHODS)
         {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             stringOutFn("PointerTable:\n");
             curGCInfoPtr += gcDump.DumpGCTable(curGCInfoPtr,
                 hdr,
@@ -9135,7 +9095,7 @@ HRESULT ClrDataAccess::DumpNativeImage(CLRDATA_ADDRESS loadedBase,
 #undef NOTHROW
 #undef GC_NOTRIGGER
 
-#if defined _DEBUG && defined _TARGET_X86_
+#if defined _DEBUG && defined TARGET_X86
 #ifdef _MSC_VER
 // disable FPO for checked build
 #pragma optimize("y", off)
@@ -9144,18 +9104,18 @@ HRESULT ClrDataAccess::DumpNativeImage(CLRDATA_ADDRESS loadedBase,
 
 #undef _ASSERTE
 #define _ASSERTE(a) do {} while (0)
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 #include <gcdump.cpp>
 #endif
 
 #undef LIMITED_METHOD_CONTRACT
 #undef WRAPPER_NO_CONTRACT
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 #include <i386/gcdumpx86.cpp>
-#else // !_TARGET_X86_
+#else // !TARGET_X86
 #undef PREGDISPLAY
 #include <gcdumpnonx86.cpp>
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 
 #ifdef __MSC_VER
 #pragma warning(default:4244)

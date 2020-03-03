@@ -17,6 +17,7 @@
 #ifndef __PALSUITE_H__
 #define __PALSUITE_H__
 
+#include <uchar.h>
 #include <pal_assert.h>
 #include <pal.h>
 #include <palprivate.h>

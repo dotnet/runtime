@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Cng.Tests
 
         private static readonly CngAlgorithm s_cngAlgorithm = new CngAlgorithm("3DES");
 
-        [ActiveIssue(41610)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31092")]
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
         [ConditionalTheory(nameof(SupportsPersistedSymmetricKeys))]
         // 3DES192-ECB-NoPadding 2 blocks.
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Cng.Tests
                 keyName => new TripleDESCng(keyName));
         }
 
-        [ActiveIssue(41610)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31092")]
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
         [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
         public static void SetKey_DetachesFromPersistedKey()
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-        [ActiveIssue(41610)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31092")]
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
         [ConditionalFact(nameof(SupportsPersistedSymmetricKeys), nameof(IsAdministrator))]
         public static void VerifyMachineKey()

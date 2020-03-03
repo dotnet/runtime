@@ -11,7 +11,7 @@
 #pragma hdrstop
 #endif
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
 #include "decomposelongs.h"
 #endif
 #include "lower.h" // for LowerRange()
@@ -1006,10 +1006,10 @@ void Compiler::fgExtendDbgLifetimes()
                     LIR::Range initRange = LIR::EmptyRange();
                     initRange.InsertBefore(nullptr, zero, store);
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
                     unsigned blockWeight = block->getBBWeight(this);
                     DecomposeLongs::DecomposeRange(this, blockWeight, initRange);
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
                     m_pLowering->LowerRange(block, initRange);
 
                     // Naively inserting the initializer at the end of the block may add code after the block's
@@ -1639,9 +1639,9 @@ void Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
 
     for (unsigned i = varDsc.lvFieldLclStart; i < varDsc.lvFieldLclStart + varDsc.lvFieldCnt; ++i)
     {
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
         if (!varTypeIsLong(lvaTable[i].lvType) || !lvaTable[i].lvPromoted)
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
         {
             noway_assert(lvaTable[i].lvIsStructField);
         }
@@ -2399,49 +2399,35 @@ void Compiler::fgInterBlockLocalVarLiveness()
         return;
     }
 
-    /*-------------------------------------------------------------------------
-     * Variables involved in exception-handlers and finally blocks need
-     * to be specially marked
-     */
+    //-------------------------------------------------------------------------
+    // Variables involved in exception-handlers and finally blocks need
+    // to be specially marked
+    //
     BasicBlock* block;
 
     VARSET_TP exceptVars(VarSetOps::MakeEmpty(this));  // vars live on entry to a handler
     VARSET_TP finallyVars(VarSetOps::MakeEmpty(this)); // vars live on exit of a 'finally' block
-    VARSET_TP filterVars(VarSetOps::MakeEmpty(this));  // vars live on exit from a 'filter'
 
     for (block = fgFirstBB; block; block = block->bbNext)
     {
-        if (block->bbCatchTyp != BBCT_NONE)
+        if (block->hasEHBoundaryIn())
         {
-            /* Note the set of variables live on entry to exception handler */
+            // Note the set of variables live on entry to exception handler.
             VarSetOps::UnionD(this, exceptVars, block->bbLiveIn);
         }
 
-        if (block->bbJumpKind == BBJ_EHFILTERRET)
+        if (block->hasEHBoundaryOut())
         {
-            /* Get the set of live variables on exit from a 'filter' */
-            VarSetOps::UnionD(this, filterVars, block->bbLiveOut);
-        }
-        else if (block->bbJumpKind == BBJ_EHFINALLYRET)
-        {
-            /* Get the set of live variables on exit from a 'finally' block */
-
-            VarSetOps::UnionD(this, finallyVars, block->bbLiveOut);
-        }
-#if defined(FEATURE_EH_FUNCLETS)
-        // Funclets are called and returned from, as such we can only count on the frame
-        // pointer being restored, and thus everything live in or live out must be on the
-        // stack
-        if (block->bbFlags & BBF_FUNCLET_BEG)
-        {
-            VarSetOps::UnionD(this, exceptVars, block->bbLiveIn);
-        }
-        if ((block->bbJumpKind == BBJ_EHFINALLYRET) || (block->bbJumpKind == BBJ_EHFILTERRET) ||
-            (block->bbJumpKind == BBJ_EHCATCHRET))
-        {
+            // Get the set of live variables on exit from an exception region.
             VarSetOps::UnionD(this, exceptVars, block->bbLiveOut);
+            if (block->bbJumpKind == BBJ_EHFINALLYRET)
+            {
+                // Live on exit from finally.
+                // We track these separately because, in addition to having EH live-out semantics,
+                // they are must-init.
+                VarSetOps::UnionD(this, finallyVars, block->bbLiveOut);
+            }
         }
-#endif // FEATURE_EH_FUNCLETS
     }
 
     LclVarDsc* varDsc;
@@ -2472,37 +2458,25 @@ void Compiler::fgInterBlockLocalVarLiveness()
         }
 
         // Mark all variables that are live on entry to an exception handler
-        // or on exit from a filter handler or finally as DoNotEnregister */
+        // or on exit from a filter handler or finally.
 
-        if (VarSetOps::IsMember(this, exceptVars, varDsc->lvVarIndex) ||
-            VarSetOps::IsMember(this, filterVars, varDsc->lvVarIndex))
+        bool isFinallyVar = VarSetOps::IsMember(this, finallyVars, varDsc->lvVarIndex);
+        if (isFinallyVar || VarSetOps::IsMember(this, exceptVars, varDsc->lvVarIndex))
         {
-            /* Mark the variable appropriately */
-            lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
-        }
+            // Mark the variable appropriately.
+            lvaSetVarLiveInOutOfHandler(varNum);
 
-        /* Mark all pointer variables live on exit from a 'finally'
-           block as either volatile for non-GC ref types or as
-           'explicitly initialized' (volatile and must-init) for GC-ref types */
+            // Mark all pointer variables live on exit from a 'finally' block as
+            // 'explicitly initialized' (must-init) for GC-ref types.
 
-        if (VarSetOps::IsMember(this, finallyVars, varDsc->lvVarIndex))
-        {
-            lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
-
-            /* Don't set lvMustInit unless we have a non-arg, GC pointer */
-
-            if (varDsc->lvIsParam)
+            if (isFinallyVar)
             {
-                continue;
+                // Set lvMustInit only if we have a non-arg, GC pointer.
+                if (!varDsc->lvIsParam && varTypeIsGC(varDsc->TypeGet()))
+                {
+                    varDsc->lvMustInit = true;
+                }
             }
-
-            if (!varTypeIsGC(varDsc->TypeGet()))
-            {
-                continue;
-            }
-
-            /* Mark it */
-            varDsc->lvMustInit = true;
         }
     }
 

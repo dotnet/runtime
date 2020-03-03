@@ -47,7 +47,7 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyDecimal"" : [3.3]," +
                 @"""MyDateTime"" : [""2019-01-30T12:01:02.0000000Z""]," +
                 @"""MyGuid"" : [""97E9F02C-337E-4615-B26C-0020F5DC28C9""]," +
-                @"""MyUri"" : [""https://github.com/dotnet/corefx""]," +
+                @"""MyUri"" : [""https://github.com/dotnet/runtime""]," +
                 @"""MyEnum"" : [2]" + // int by default
             @"}";
 
@@ -76,7 +76,7 @@ namespace System.Text.Json.Serialization.Tests
             MyDecimal = new object[] { 3.3m };
             MyDateTime = new object[] { new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc) };
             MyGuid = new object[] { new Guid("97E9F02C-337E-4615-B26C-0020F5DC28C9") };
-            MyUri = new object[] { new Uri("https://github.com/dotnet/corefx") };
+            MyUri = new object[] { new Uri("https://github.com/dotnet/runtime") };
             MyEnum = new object[] { SampleEnum.Two };
         }
 
@@ -142,8 +142,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(new Guid("97E9F02C-337E-4615-B26C-0020F5DC28C9"), ((JsonElement)MyGuid[0]).GetGuid());
             Assert.IsType<JsonElement>(MyUri[0]);
             Assert.Equal(JsonValueKind.String, ((JsonElement)MyUri[0]).ValueKind);
-            // TODO: Use JsonElement.GetUri() when https://github.com/dotnet/corefx/issues/38647 is implemented.
-            Assert.Equal(new Uri("https://github.com/dotnet/corefx"), new Uri(((JsonElement)MyUri[0]).GetString()));
+            Assert.Equal(new Uri("https://github.com/dotnet/runtime"), new Uri(((JsonElement)MyUri[0]).GetString()));
             Assert.IsType<JsonElement>(MyEnum[0]);
             Assert.Equal(JsonValueKind.Number, ((JsonElement)MyEnum[0]).ValueKind);
             Assert.Equal(SampleEnum.Two, (SampleEnum)((JsonElement)MyEnum[0]).GetUInt32());

@@ -21,7 +21,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// An empty immutable hash set with the default comparer for <typeparamref name="T"/>.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly ImmutableHashSet<T> Empty = new ImmutableHashSet<T>(SortedInt32KeyNode<HashBucket>.EmptyNode, EqualityComparer<T>.Default, 0);
 
         /// <summary>
@@ -221,7 +220,7 @@ namespace System.Collections.Immutable
         [Pure]
         public bool TryGetValue(T equalValue, out T actualValue)
         {
-            int hashCode = _equalityComparer.GetHashCode(equalValue);
+            int hashCode = equalValue != null ? _equalityComparer.GetHashCode(equalValue) : 0;
             HashBucket bucket;
             if (_root.TryGetValue(hashCode, out bucket))
             {
@@ -435,7 +434,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
-        public ImmutableHashSet<T> WithComparer(IEqualityComparer<T> equalityComparer)
+        public ImmutableHashSet<T> WithComparer(IEqualityComparer<T>? equalityComparer)
         {
             if (equalityComparer == null)
             {
@@ -639,7 +638,7 @@ namespace System.Collections.Immutable
         private static MutationResult Add(T item, MutationInput origin)
         {
             OperationResult result;
-            int hashCode = origin.EqualityComparer.GetHashCode(item);
+            int hashCode = item != null ? origin.EqualityComparer.GetHashCode(item) : 0;
             HashBucket bucket = origin.Root.GetValueOrDefault(hashCode);
             var newBucket = bucket.Add(item, origin.EqualityComparer, out result);
             if (result == OperationResult.NoChangeRequired)
@@ -658,7 +657,7 @@ namespace System.Collections.Immutable
         private static MutationResult Remove(T item, MutationInput origin)
         {
             var result = OperationResult.NoChangeRequired;
-            int hashCode = origin.EqualityComparer.GetHashCode(item);
+            int hashCode = item != null ? origin.EqualityComparer.GetHashCode(item) : 0;
             HashBucket bucket;
             var newRoot = origin.Root;
             if (origin.Root.TryGetValue(hashCode, out bucket))
@@ -680,7 +679,7 @@ namespace System.Collections.Immutable
         /// </summary>
         private static bool Contains(T item, MutationInput origin)
         {
-            int hashCode = origin.EqualityComparer.GetHashCode(item);
+            int hashCode = item != null ? origin.EqualityComparer.GetHashCode(item) : 0;
             HashBucket bucket;
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
@@ -701,7 +700,7 @@ namespace System.Collections.Immutable
             var newRoot = origin.Root;
             foreach (var item in other.GetEnumerableDisposable<T, Enumerator>())
             {
-                int hashCode = origin.EqualityComparer.GetHashCode(item);
+                int hashCode = item != null ? origin.EqualityComparer.GetHashCode(item) : 0;
                 HashBucket bucket = newRoot.GetValueOrDefault(hashCode);
                 OperationResult result;
                 var newBucket = bucket.Add(item, origin.EqualityComparer, out result);
@@ -812,7 +811,7 @@ namespace System.Collections.Immutable
             var newRoot = root;
             foreach (var item in other.GetEnumerableDisposable<T, Enumerator>())
             {
-                int hashCode = equalityComparer.GetHashCode(item);
+                int hashCode = item != null ? equalityComparer.GetHashCode(item) : 0;
                 HashBucket bucket;
                 if (newRoot.TryGetValue(hashCode, out bucket))
                 {

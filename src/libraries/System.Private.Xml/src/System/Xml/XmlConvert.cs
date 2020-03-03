@@ -380,7 +380,7 @@ namespace System.Xml
             return null;
         }
 
-        internal static unsafe string VerifyQName(string name, ExceptionType exceptionType)
+        internal static string VerifyQName(string name, ExceptionType exceptionType)
         {
             if (name == null || name.Length == 0)
             {
@@ -579,7 +579,7 @@ namespace System.Xml
 
         // Start name character types - as defined in Namespaces XML 1.0 spec (second edition) production [6] NCNameStartChar
         //                              combined with the production [4] NameStartChar of XML 1.0 spec
-        public static unsafe bool IsStartNCNameChar(char ch)
+        public static bool IsStartNCNameChar(char ch)
         {
             return s_xmlCharType.IsStartNCNameSingleChar(ch);
         }
@@ -593,7 +593,7 @@ namespace System.Xml
 
         // Name character types - as defined in Namespaces XML 1.0 spec (second edition) production [6] NCNameStartChar
         //                        combined with the production [4] NameChar of XML 1.0 spec
-        public static unsafe bool IsNCNameChar(char ch)
+        public static bool IsNCNameChar(char ch)
         {
             return s_xmlCharType.IsNCNameSingleChar(ch);
         }
@@ -606,7 +606,7 @@ namespace System.Xml
 #endif
 
         // Valid XML character - as defined in XML 1.0 spec (fifth edition) production [2] Char
-        public static unsafe bool IsXmlChar(char ch)
+        public static bool IsXmlChar(char ch)
         {
             return s_xmlCharType.IsCharData(ch);
         }
@@ -623,7 +623,7 @@ namespace System.Xml
         }
 
         // Valid Xml whitespace - as defined in XML 1.0 spec (fifth edition) production [3] S
-        public static unsafe bool IsWhitespaceChar(char ch)
+        public static bool IsWhitespaceChar(char ch)
         {
             return s_xmlCharType.IsWhiteSpace(ch);
         }
@@ -1435,7 +1435,7 @@ namespace System.Xml
             VerifyCharData(data, exceptionType, exceptionType);
         }
 
-        internal static unsafe void VerifyCharData(string data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
+        internal static void VerifyCharData(string data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
         {
             if (data == null || data.Length == 0)
             {
@@ -1477,7 +1477,7 @@ namespace System.Xml
             }
         }
 
-        internal static unsafe void VerifyCharData(char[] data, int offset, int len, ExceptionType exceptionType)
+        internal static void VerifyCharData(char[] data, int offset, int len, ExceptionType exceptionType)
         {
             if (data == null || len == 0)
             {

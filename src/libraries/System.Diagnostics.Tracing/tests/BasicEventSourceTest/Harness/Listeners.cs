@@ -109,7 +109,6 @@ namespace BasicEventSourceTests
         }
         public abstract IList<string> PayloadNames { get; }
 
-#if DEBUG
         /// <summary>
         /// This is a convenience function for the debugger.   It is not used typically
         /// </summary>
@@ -123,7 +122,6 @@ namespace BasicEventSourceTests
                 return ret;
             }
         }
-#endif
 
         public override string ToString()
         {
@@ -259,7 +257,7 @@ namespace BasicEventSourceTests
 
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
-                // OnEventWritten is abstract in netfx <= 461
+                // OnEventWritten is abstract in .NET Framework <= 461
                 base.OnEventWritten(eventData);
                 _forwardTo?.OnEvent?.Invoke(new EventListenerEvent(eventData));
             }
@@ -270,32 +268,29 @@ namespace BasicEventSourceTests
         /// </summary>
         internal class EventListenerEvent : Event
         {
-            private readonly EventWrittenEventArgs _data;
+            internal EventWrittenEventArgs Data { get; }
+
+            internal EventListenerEvent(EventWrittenEventArgs data) => Data = data;
 
             public override bool IsEventListener { get { return true; } }
 
-            public override string ProviderName { get { return _data.EventSource.Name; } }
+            public override string ProviderName { get { return Data.EventSource.Name; } }
 
-            public override string EventName { get { return _data.EventName; } }
+            public override string EventName { get { return Data.EventName; } }
 
-            public override IList<string> PayloadNames { get { return _data.PayloadNames; } }
+            public override IList<string> PayloadNames { get { return Data.PayloadNames; } }
 
             public override int PayloadCount
             {
-                get { return _data.Payload?.Count ?? 0; }
-            }
-
-            internal EventListenerEvent(EventWrittenEventArgs data)
-            {
-                _data = data;
+                get { return Data.Payload?.Count ?? 0; }
             }
 
             public override object PayloadValue(int propertyIndex, string propertyName)
             {
                 if (propertyName != null)
-                    Assert.Equal(propertyName, _data.PayloadNames[propertyIndex]);
+                    Assert.Equal(propertyName, Data.PayloadNames[propertyIndex]);
 
-                return _data.Payload[propertyIndex];
+                return Data.Payload[propertyIndex];
             }
         }
 

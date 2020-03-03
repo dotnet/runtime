@@ -225,5 +225,7 @@ internal partial class Interop
 
         public const int UOI_FLAGS = 1;
 
+        public const int HWND_BROADCAST = 0xffff;
+
     }
 }

@@ -39,7 +39,6 @@ function print_usage {
     echo '  --tieredcompilation              : Runs the tests with COMPlus_TieredCompilation=1'
     echo '  --link <ILlink>                  : Runs the tests after linking via ILlink'
     echo '  --xunitOutputPath=<path>         : Create xUnit XML report at the specifed path (default: <test root>/coreclrtests.xml)'
-    echo '  --buildXUnitWrappers             : Force creating the xunit wrappers, this is useful if there have been changes to issues.targets'
     echo '  --printLastResultsOnly           : Print the results of the last run'
     echo '  --runincontext                   : Run each tests in an unloadable AssemblyLoadContext'
     echo ''
@@ -59,7 +58,7 @@ function create_testhost
     fi
 
     # Initialize test variables
-    local dotnetExe=$coreClrSrc/dotnet.sh
+    local dotnetExe=$coreClrSrc/../../dotnet.sh
     local coreClrSrcTestDir=$coreClrSrc/tests
     
     if [ -z $coreClrBinDir ]; then
@@ -218,7 +217,6 @@ verbose=0
 doCrossgen=0
 jitdisasm=0
 ilasmroundtrip=
-buildXUnitWrappers=
 printLastResultsOnly=
 runSequential=0
 runincontext=0
@@ -253,9 +251,6 @@ do
             ;;
         release|Release)
             buildConfiguration="Release"
-            ;;
-        --buildXUnitWrappers)
-            buildXUnitWrappers=1
             ;;
         --printLastResultsOnly)
             printLastResultsOnly=1
@@ -502,13 +497,6 @@ fi
 if [ ! -z "$ilasmroundtrip" ]; then
     echo "Running Ilasm round trip"
     runtestPyArguments+=("--ilasmroundtrip")
-fi
-
-if [ ! -z "$buildXUnitWrappers" ]; then
-    runtestPyArguments+=("--build_xunit_test_wrappers")
-else
-    echo "Skipping xunit wrapper build. If build-test was called on a different"
-    echo "host_os or arch the test run will most likely have failures."
 fi
 
 if (($verbose!=0)); then

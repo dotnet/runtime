@@ -25,13 +25,13 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            IStrongBox[] closure;
+            IStrongBox[]? closure;
             if (ConsumedStack > 0)
             {
                 closure = new IStrongBox[ConsumedStack];
                 for (int i = closure.Length - 1; i >= 0; i--)
                 {
-                    closure[i] = (IStrongBox)frame.Pop();
+                    closure[i] = (IStrongBox?)frame.Pop()!;
                 }
             }
             else
@@ -83,7 +83,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object value = frame.Pop();
+            object? value = frame.Pop();
             frame.Push(_type.IsInstanceOfType(value) ? value : null);
             return 1;
         }
@@ -103,16 +103,16 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object type = frame.Pop();
-            object obj = frame.Pop();
-            frame.Push((object)obj?.GetType() == type);
+            object? type = frame.Pop();
+            object? obj = frame.Pop();
+            frame.Push((object?)obj?.GetType() == type);
             return 1;
         }
     }
 
     internal abstract class NullableMethodCallInstruction : Instruction
     {
-        private static NullableMethodCallInstruction s_hasValue, s_value, s_equals, s_getHashCode, s_getValueOrDefault1, s_toString;
+        private static NullableMethodCallInstruction? s_hasValue, s_value, s_equals, s_getHashCode, s_getValueOrDefault1, s_toString;
 
         public override int ConsumedStack => 1;
         public override int ProducedStack => 1;
@@ -124,7 +124,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object obj = frame.Pop();
+                object? obj = frame.Pop();
                 frame.Push(obj != null);
                 return 1;
             }
@@ -137,7 +137,7 @@ namespace System.Linq.Expressions.Interpreter
                 if (frame.Peek() == null)
                 {
                     // Trigger InvalidOperationException with same localized method as if we'd called the Value getter.
-                    return (int)default(int?);
+                    return (int)default(int?)!;
                 }
 
                 return 1;
@@ -170,8 +170,8 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                object dflt = frame.Pop();
-                object obj = frame.Pop();
+                object? dflt = frame.Pop();
+                object? obj = frame.Pop();
                 frame.Push(obj ?? dflt);
                 return 1;
             }
@@ -183,8 +183,8 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                object other = frame.Pop();
-                object obj = frame.Pop();
+                object? other = frame.Pop();
+                object? obj = frame.Pop();
                 if (obj == null)
                 {
                     frame.Push(other == null);
@@ -205,7 +205,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object obj = frame.Pop();
+                object? obj = frame.Pop();
                 frame.Push(obj == null ? "" : obj.ToString());
                 return 1;
             }
@@ -215,7 +215,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object obj = frame.Pop();
+                object? obj = frame.Pop();
                 frame.Push(obj?.GetHashCode() ?? 0);
                 return 1;
             }
@@ -253,7 +253,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal abstract class CastInstruction : Instruction
     {
-        private static CastInstruction s_Boolean, s_Byte, s_Char, s_DateTime, s_Decimal, s_Double, s_Int16, s_Int32, s_Int64, s_SByte, s_Single, s_String, s_UInt16, s_UInt32, s_UInt64;
+        private static CastInstruction? s_Boolean, s_Byte, s_Char, s_DateTime, s_Decimal, s_Double, s_Int16, s_Int32, s_Int64, s_SByte, s_Single, s_String, s_UInt16, s_UInt32, s_UInt64;
 
         public override int ConsumedStack => 1;
         public override int ProducedStack => 1;
@@ -263,8 +263,8 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object value = frame.Pop();
-                frame.Push((T)value);
+                object? value = frame.Pop();
+                frame.Push((T)value!);
                 return 1;
             }
         }
@@ -292,7 +292,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                object value = frame.Pop();
+                object? value = frame.Pop();
                 if (value != null)
                 {
                     Type valueType = value.GetType();
@@ -384,7 +384,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object from = frame.Pop();
+            object? from = frame.Pop();
             Debug.Assert(
                 new[]
                 {
@@ -408,7 +408,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object from = frame.Pop();
+            object? from = frame.Pop();
             Debug.Assert(from != null);
 
             // If from is neither a T nor a type assignable to T (viz. an T-backed enum)
@@ -460,9 +460,9 @@ namespace System.Linq.Expressions.Interpreter
     internal sealed class QuoteInstruction : Instruction
     {
         private readonly Expression _operand;
-        private readonly Dictionary<ParameterExpression, LocalVariable> _hoistedVariables;
+        private readonly Dictionary<ParameterExpression, LocalVariable>? _hoistedVariables;
 
-        public QuoteInstruction(Expression operand, Dictionary<ParameterExpression, LocalVariable> hoistedVariables)
+        public QuoteInstruction(Expression operand, Dictionary<ParameterExpression, LocalVariable>? hoistedVariables)
         {
             _operand = operand;
             _hoistedVariables = hoistedVariables;
@@ -474,7 +474,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            Expression operand = _operand;
+            Expression? operand = _operand;
             if (_hoistedVariables != null)
             {
                 operand = new ExpressionQuoter(_hoistedVariables, frame).Visit(operand);
@@ -518,7 +518,7 @@ namespace System.Linq.Expressions.Interpreter
 
                     _shadowedVars.Push(parameters);
                 }
-                Expression b = Visit(node.Body);
+                Expression? b = Visit(node.Body);
                 if (node.ParameterCount > 0)
                 {
                     _shadowedVars.Pop();
@@ -536,7 +536,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     _shadowedVars.Push(new HashSet<ParameterExpression>(node.Variables));
                 }
-                Expression[] b = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
+                Expression[]? b = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
                 if (node.Variables.Count > 0)
                 {
                     _shadowedVars.Pop();
@@ -554,8 +554,8 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     _shadowedVars.Push(new HashSet<ParameterExpression> { node.Variable });
                 }
-                Expression b = Visit(node.Body);
-                Expression f = Visit(node.Filter);
+                Expression? b = Visit(node.Body);
+                Expression? f = Visit(node.Filter);
                 if (node.Variable != null)
                 {
                     _shadowedVars.Pop();
@@ -575,7 +575,7 @@ namespace System.Linq.Expressions.Interpreter
                 var indexes = new int[count];
                 for (int i = 0; i < indexes.Length; i++)
                 {
-                    IStrongBox box = GetBox(node.Variables[i]);
+                    IStrongBox? box = GetBox(node.Variables[i]);
                     if (box == null)
                     {
                         indexes[i] = vars.Count;
@@ -617,7 +617,7 @@ namespace System.Linq.Expressions.Interpreter
 
             protected internal override Expression VisitParameter(ParameterExpression node)
             {
-                IStrongBox box = GetBox(node);
+                IStrongBox? box = GetBox(node);
                 if (box == null)
                 {
                     return node;
@@ -625,18 +625,17 @@ namespace System.Linq.Expressions.Interpreter
                 return Expression.Convert(Expression.Field(Expression.Constant(box), "Value"), node.Type);
             }
 
-            private IStrongBox GetBox(ParameterExpression variable)
+            private IStrongBox? GetBox(ParameterExpression variable)
             {
-                LocalVariable var;
-                if (_variables.TryGetValue(variable, out var))
+                if (_variables.TryGetValue(variable, out LocalVariable? var))
                 {
                     if (var.InClosure)
                     {
-                        return _frame.Closure[var.Index];
+                        return _frame.Closure![var.Index];
                     }
                     else
                     {
-                        return (IStrongBox)_frame.Data[var.Index];
+                        return (IStrongBox?)_frame.Data[var.Index];
                     }
                 }
 

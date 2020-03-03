@@ -1581,7 +1581,7 @@ namespace System.Text.Json.Tests
 
                 Assert.Equal(JsonValueKind.Number, root.ValueKind);
 
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     Assert.False(root.TryGetSingle(out float floatVal));
                     Assert.Equal(0f, floatVal);
@@ -1625,7 +1625,7 @@ namespace System.Text.Json.Tests
                 Assert.False(root.TryGetUInt64(out ulong ulongVal));
                 Assert.Equal(0UL, ulongVal);
 
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     Assert.Throws<FormatException>(() => root.GetSingle());
                     Assert.Throws<FormatException>(() => root.GetDouble());

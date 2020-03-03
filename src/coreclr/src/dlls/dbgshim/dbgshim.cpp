@@ -15,7 +15,7 @@
 #include <tlhelp32.h>
 #include <cor.h>
 #include <sstring.h>
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include <securityutil.h>
 #endif
 
@@ -26,7 +26,7 @@
 #include <dbgenginemetrics.h>
 #include <arrayholder.h>
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #define PSAPI_VERSION 2
 #include <psapi.h>
 #endif
@@ -55,7 +55,7 @@ Notes:
 
 */
 
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
 #define INITIALIZE_SHIM { if (PAL_InitializeDLL() != 0) return E_FAIL; }
 #else
 #define INITIALIZE_SHIM
@@ -170,7 +170,7 @@ CloseResumeHandle(
     return S_OK;
 }
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 
 static
 void
@@ -179,7 +179,7 @@ RuntimeStartupHandler(
     HMODULE hModule,
     PVOID parameter);
 
-#else // FEATURE_PAL
+#else // TARGET_UNIX
 
 static
 DWORD
@@ -193,7 +193,7 @@ GetContinueStartupEvent(
     LPCWSTR szTelestoFullPath,
     __out HANDLE *phContinueStartupEvent);
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 // Functions that we'll look for in the loaded Mscordbi module.
 typedef HRESULT (STDAPICALLTYPE *FPCoreCLRCreateCordbObject)(
@@ -261,7 +261,7 @@ class RuntimeStartupHelper
     DWORD m_processId;
     PSTARTUP_CALLBACK m_callback;
     PVOID m_parameter;
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     PVOID m_unregisterToken;
     LPWSTR m_applicationGroupId;
 #else
@@ -269,7 +269,7 @@ class RuntimeStartupHelper
     HANDLE m_startupEvent;
     DWORD m_threadId;
     HANDLE m_threadHandle;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 public:
     RuntimeStartupHelper(DWORD dwProcessId, PSTARTUP_CALLBACK pfnCallback, PVOID parameter) :
@@ -277,7 +277,7 @@ public:
         m_processId(dwProcessId),
         m_callback(pfnCallback),
         m_parameter(parameter),
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         m_unregisterToken(NULL),
         m_applicationGroupId(NULL)
 #else
@@ -285,18 +285,18 @@ public:
         m_startupEvent(NULL),
         m_threadId(0),
         m_threadHandle(NULL)
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
     {
     }
 
     ~RuntimeStartupHelper()
     {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         if (m_applicationGroupId != NULL)
         {
             delete m_applicationGroupId;
         }
-#else // FEATURE_PAL
+#else // TARGET_UNIX
         if (m_startupEvent != NULL)
         {
             CloseHandle(m_startupEvent);
@@ -305,7 +305,7 @@ public:
         {
             CloseHandle(m_threadHandle);
         }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
     }
 
     LONG AddRef()
@@ -324,7 +324,7 @@ public:
         return ref;
     }
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 
     HRESULT Register(LPCWSTR lpApplicationGroupId)
     {
@@ -419,7 +419,7 @@ public:
         }
     }
 
-#else // FEATURE_PAL
+#else // TARGET_UNIX
 
     HRESULT Register(LPCWSTR lpApplicationGroupId)
     {
@@ -656,10 +656,10 @@ public:
         }
     }
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 };
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 
 static
 void
@@ -669,7 +669,7 @@ RuntimeStartupHandler(char *pszModulePath, HMODULE hModule, PVOID parameter)
     helper->InvokeStartupCallback(pszModulePath, hModule);
 }
 
-#else // FEATURE_PAL
+#else // TARGET_UNIX
 
 static
 DWORD
@@ -681,7 +681,7 @@ StartupHelperThread(LPVOID p)
     return 0;
 }
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 //-----------------------------------------------------------------------------
 // Public API.
@@ -833,7 +833,7 @@ GetStartupNotificationEvent(
     if (phStartupEvent == NULL)
         return E_INVALIDARG;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     HRESULT hr;
     DWORD currentSessionId = 0, debuggeeSessionId = 0;
     if (!ProcessIdToSessionId(GetCurrentProcessId(), &currentSessionId))
@@ -901,7 +901,7 @@ GetStartupNotificationEvent(
 #else
     *phStartupEvent = NULL;
     return E_NOTIMPL;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 }
 // Refer to clr\src\mscoree\mscorwks_ntdef.src.
 const WORD kOrdinalForMetrics = 2;
@@ -942,7 +942,7 @@ GetTargetCLRMetrics(
     CONSISTENCY_CHECK(szTelestoFullPath != NULL);
     CONSISTENCY_CHECK(pEngineMetricsOut != NULL);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     HRESULT hr = S_OK;
 
     HandleHolder hCoreClrFile = WszCreateFile(szTelestoFullPath,
@@ -1084,7 +1084,7 @@ GetTargetCLRMetrics(
     {
         *pdwRVAContinueStartupEvent = NULL;
     }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 }
 
 // Returns true iff the module represents CoreClr.
@@ -1301,7 +1301,7 @@ EnumerateCLRs(
             pStringArray[idx] = &pStringData[idx * MAX_LONGPATH];
             GetModuleFileNameEx(hProcess, modules[i], pStringArray[idx], MAX_LONGPATH);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
             // fill in event handle -- if GetContinueStartupEvent fails, it will still return
             // INVALID_HANDLE_VALUE in hContinueStartupEvent, which is what we want.  we don't
             // want to bail out of the enumeration altogether if we can't get an event from
@@ -1312,7 +1312,7 @@ EnumerateCLRs(
             pEventArray[idx] = hContinueStartupEvent;
 #else
             pEventArray[idx] = NULL;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
             idx++;
         }
@@ -1373,7 +1373,7 @@ CloseCLREnumeration(
     if ((pHandleArray + dwArrayLength) != (HANDLE*)pStringArray)
         return E_INVALIDARG;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     for (DWORD i = 0; i < dwArrayLength; i++)
     {
         HANDLE hTemp = pHandleArray[i];
@@ -1383,7 +1383,7 @@ CloseCLREnumeration(
             CloseHandle(hTemp);
         }
     }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     delete[] pHandleArray;
     return S_OK;
@@ -1677,7 +1677,7 @@ CheckDbiAndRuntimeVersion(
     SString & szFullDbiPath,
     SString & szFullCoreClrPath)
 {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     DWORD dwDbiVersionMS = 0;
     DWORD dwDbiVersionLS = 0;
     DWORD dwCoreClrVersionMS = 0;
@@ -1698,7 +1698,7 @@ CheckDbiAndRuntimeVersion(
     }
 #else
     return true;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 }
 
 //-----------------------------------------------------------------------------
@@ -1806,7 +1806,7 @@ CreateDebuggingInterfaceFromVersion2(
         // Issue:951525: coreclr mscordbi load fails on downlevel OS since LoadLibraryEx can't find
         // dependent forwarder DLLs. Force LoadLibrary to look for dependencies in szFullDbiPath plus the default
         // search paths.
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         hMod = WszLoadLibraryEx(szFullDbiPath, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
 #else
         hMod = LoadLibraryExW(szFullDbiPath, NULL, 0);
@@ -1890,7 +1890,7 @@ CreateDebuggingInterfaceFromVersion(
     return CreateDebuggingInterfaceFromVersionEx(CorDebugVersion_2_0, szDebuggeeVersion, ppCordb);
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 //------------------------------------------------------------------------------
 // Manually retrieves the "continue startup" event from the correct CLR instance
@@ -1955,7 +1955,7 @@ GetContinueStartupEvent(
     return hr;
 }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #if defined(FEATURE_CORESYSTEM)
 #include "debugshim.h"

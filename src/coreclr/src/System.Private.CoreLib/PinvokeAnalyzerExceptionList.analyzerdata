@@ -1,3 +1,7 @@
 <!-- Not a bug, these APIs are in the allowed list but under kernel32 and we need it under normaliz.dll -->
 normaliz.dll!IsNormalizedString
 normaliz.dll!NormalizeString
+
+<!-- On Nano these are stubs that return failure -->
+user32.dll!GetProcessWindowStation
+user32.dll!GetUserObjectInformationW

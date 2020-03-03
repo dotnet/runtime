@@ -323,7 +323,7 @@ public:
 private:
     ThreadLocalIBCInfo* m_pInfo;
     bool                m_fDisabled;  // true if this holder actually disable the logging
-                                      // false when this is a nested occurance and logging was already disabled
+                                      // false when this is a nested occurrence and logging was already disabled
 };
 
 //
@@ -558,10 +558,6 @@ public:                                                 \
     // Log read access to the MTs dispatch implementation table
     // Implemented by : code:IBCLogger.LogDispatchTableAccessHelper
     LOGACCESS_PTR(DispatchTableSlot,DispatchSlot)
-
-    // Log an update to the field marshalers
-    // Implemented by : code:IBCLogger.LogFieldMarshalersReadAccessHelper
-    LOGACCESS_PTR(FieldMarshalersRead,MethodTable)
 
     // Log a lookup  in the cctor info table
     // Implemented by : code:IBCLogger.LogCCtorInfoReadAccessHelper

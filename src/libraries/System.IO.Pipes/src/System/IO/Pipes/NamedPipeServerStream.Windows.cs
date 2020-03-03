@@ -19,6 +19,29 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class NamedPipeServerStream : PipeStream
     {
+        internal NamedPipeServerStream(
+            string pipeName,
+            PipeDirection direction,
+            int maxNumberOfServerInstances,
+            PipeTransmissionMode transmissionMode,
+            PipeOptions options,
+            int inBufferSize,
+            int outBufferSize,
+            PipeSecurity? pipeSecurity,
+            HandleInheritability inheritability = HandleInheritability.None,
+            PipeAccessRights additionalAccessRights = default)
+            : base(direction, transmissionMode, outBufferSize)
+        {
+            ValidateParameters(pipeName, direction, maxNumberOfServerInstances, transmissionMode, options, inBufferSize, outBufferSize, inheritability);
+
+            if (pipeSecurity != null && IsCurrentUserOnly)
+            {
+                throw new ArgumentException(SR.NotSupported_PipeSecurityIsCurrentUserOnly, nameof(pipeSecurity));
+            }
+
+            Create(pipeName, direction, maxNumberOfServerInstances, transmissionMode, options, inBufferSize, outBufferSize, pipeSecurity, inheritability, additionalAccessRights);
+        }
+
         private void Create(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
                 HandleInheritability inheritability)
@@ -30,7 +53,7 @@ namespace System.IO.Pipes
         // This overload is used in Mono to implement public constructors.
         private void Create(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
-                PipeSecurity pipeSecurity, HandleInheritability inheritability, PipeAccessRights additionalAccessRights)
+                PipeSecurity? pipeSecurity, HandleInheritability inheritability, PipeAccessRights additionalAccessRights)
         {
             Debug.Assert(pipeName != null && pipeName.Length != 0, "fullPipeName is null or empty");
             Debug.Assert(direction >= PipeDirection.In && direction <= PipeDirection.InOut, "invalid pipe direction");
@@ -53,7 +76,7 @@ namespace System.IO.Pipes
 
                 using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
                 {
-                    SecurityIdentifier identifier = currentIdentity.Owner;
+                    SecurityIdentifier identifier = currentIdentity.Owner!;
 
                     // Grant full control to the owner so multiple servers can be opened.
                     // Full control is the default per MSDN docs for CreateNamedPipe.
@@ -87,7 +110,7 @@ namespace System.IO.Pipes
             GCHandle pinningHandle = default;
             try
             {
-                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(inheritability, pipeSecurity, ref pinningHandle);
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability, pipeSecurity, ref pinningHandle);
                 SafePipeHandle handle = Interop.Kernel32.CreateNamedPipe(fullPipeName, openMode, pipeModes,
                     maxNumberOfServerInstances, outBufferSize, inBufferSize, 0, ref secAttrs);
 
@@ -112,7 +135,6 @@ namespace System.IO.Pipes
         // was called (but not before this server is been created, or, if we were servicing another client,
         // not before we called Disconnect), in which case, there may be some buffer already in the pipe waiting
         // for us to read.  See NamedPipeClientStream.Connect for more information.
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
         public void WaitForConnection()
         {
             CheckConnectOperationsServerWithHandle();
@@ -123,7 +145,7 @@ namespace System.IO.Pipes
             }
             else
             {
-                if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle, IntPtr.Zero))
+                if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle!, IntPtr.Zero))
                 {
                     int errorCode = Marshal.GetLastWin32Error();
 
@@ -155,7 +177,7 @@ namespace System.IO.Pipes
 
             if (!IsAsync)
             {
-                return Task.Factory.StartNew(s => ((NamedPipeServerStream)s).WaitForConnection(),
+                return Task.Factory.StartNew(s => ((NamedPipeServerStream)s!).WaitForConnection(),
                     this, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
 
@@ -167,7 +189,7 @@ namespace System.IO.Pipes
             CheckDisconnectOperations();
 
             // Disconnect the pipe.
-            if (!Interop.Kernel32.DisconnectNamedPipe(InternalHandle))
+            if (!Interop.Kernel32.DisconnectNamedPipe(InternalHandle!))
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
@@ -185,7 +207,7 @@ namespace System.IO.Pipes
             const uint UserNameMaxLength = Interop.Kernel32.CREDUI_MAX_USERNAME_LENGTH + 1;
             char* userName = stackalloc char[(int)UserNameMaxLength]; // ~1K
 
-            if (Interop.Kernel32.GetNamedPipeHandleStateW(InternalHandle, null, null, null, null, userName, UserNameMaxLength))
+            if (Interop.Kernel32.GetNamedPipeHandleStateW(InternalHandle!, null, null, null, null, userName, UserNameMaxLength))
             {
                 return new string(userName);
             }
@@ -222,11 +244,11 @@ namespace System.IO.Pipes
         private static readonly RuntimeHelpers.TryCode tryCode = new RuntimeHelpers.TryCode(ImpersonateAndTryCode);
         private static readonly RuntimeHelpers.CleanupCode cleanupCode = new RuntimeHelpers.CleanupCode(RevertImpersonationOnBackout);
 
-        private static void ImpersonateAndTryCode(object helper)
+        private static void ImpersonateAndTryCode(object? helper)
         {
-            ExecuteHelper execHelper = (ExecuteHelper)helper;
+            ExecuteHelper execHelper = (ExecuteHelper)helper!;
 
-            if (Interop.Advapi32.ImpersonateNamedPipeClient(execHelper._handle))
+            if (Interop.Advapi32.ImpersonateNamedPipeClient(execHelper._handle!))
             {
                 execHelper._mustRevert = true;
             }
@@ -242,9 +264,9 @@ namespace System.IO.Pipes
             }
         }
 
-        private static void RevertImpersonationOnBackout(object helper, bool exceptionThrown)
+        private static void RevertImpersonationOnBackout(object? helper, bool exceptionThrown)
         {
-            ExecuteHelper execHelper = (ExecuteHelper)helper;
+            ExecuteHelper execHelper = (ExecuteHelper)helper!;
 
             if (execHelper._mustRevert)
             {
@@ -258,12 +280,12 @@ namespace System.IO.Pipes
         internal class ExecuteHelper
         {
             internal PipeStreamImpersonationWorker _userCode;
-            internal SafePipeHandle _handle;
+            internal SafePipeHandle? _handle;
             internal bool _mustRevert;
             internal int _impersonateErrorCode;
             internal int _revertImpersonateErrorCode;
 
-            internal ExecuteHelper(PipeStreamImpersonationWorker userCode, SafePipeHandle handle)
+            internal ExecuteHelper(PipeStreamImpersonationWorker userCode, SafePipeHandle? handle)
             {
                 _userCode = userCode;
                 _handle = handle;
@@ -282,7 +304,7 @@ namespace System.IO.Pipes
 
             var completionSource = new ConnectionCompletionSource(this);
 
-            if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle, completionSource.Overlapped))
+            if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle!, completionSource.Overlapped))
             {
                 int errorCode = Marshal.GetLastWin32Error();
 

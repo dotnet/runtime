@@ -41,7 +41,7 @@ namespace System.IO
             if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED)
             {
                 // Check to see if the file system support the Encrypted File System (EFS)
-                string name = DriveInfoInternal.NormalizeDriveName(Path.GetPathRoot(fullPath));
+                string name = DriveInfoInternal.NormalizeDriveName(Path.GetPathRoot(fullPath)!);
 
                 using (DisableMediaInsertionPrompt.Create())
                 {

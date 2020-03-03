@@ -21,12 +21,12 @@ namespace Internal.Cryptography
         //
         // Attempts to map a friendly name to an OID. Returns null if not a known name.
         //
-        public static string ToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
+        public static string? ToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
         {
             if (oid == null)
                 throw new ArgumentNullException(nameof(oid));
 
-            string mappedName;
+            string? mappedName;
             bool shouldUseCache = ShouldUseCache(oidGroup);
 
             // On Unix shouldUseCache is always true, so no matter what OidGroup is passed in the Windows
@@ -60,14 +60,14 @@ namespace Internal.Cryptography
         //
         // Attempts to retrieve the friendly name for an OID. Returns null if not a known or valid OID.
         //
-        public static string ToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
+        public static string? ToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
         {
             if (friendlyName == null)
                 throw new ArgumentNullException(nameof(friendlyName));
             if (friendlyName.Length == 0)
                 return null;
 
-            string mappedOid;
+            string? mappedOid;
             bool shouldUseCache = ShouldUseCache(oidGroup);
 
             if (shouldUseCache)
@@ -108,7 +108,7 @@ namespace Internal.Cryptography
         // doesn't roundtrip (new Oid(new Oid(value).FriendlyName).Value) are contained in s_compatOids.
         //
         // X-Plat: The names (and casing) in this table come from Windows. Part of the intent of this table
-        // is to prevent issues wherein an identifier is different between CoreFX\Windows and CoreFX\Unix;
+        // is to prevent issues wherein an identifier is different between Windows and Unix;
         // since any existing code would be using the Windows identifier, it is the de facto standard.
         private static readonly Dictionary<string, string> s_friendlyNameToOid =
             new Dictionary<string, string>(FriendlyNameToOidCount, StringComparer.OrdinalIgnoreCase)

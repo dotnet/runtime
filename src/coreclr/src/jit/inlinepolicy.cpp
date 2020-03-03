@@ -2395,7 +2395,7 @@ bool ReplayPolicy::FindMethod()
 
         // See if token matches
         unsigned token = 0;
-        int      count = sscanf_s(buffer, " <Token>%u</Token> ", &token);
+        int      count = sscanf_s(buffer, " <Token>%08x</Token> ", &token);
         if ((count != 1) || (token != methodToken))
         {
             continue;
@@ -2409,7 +2409,7 @@ bool ReplayPolicy::FindMethod()
 
         // See if hash matches
         unsigned hash = 0;
-        count         = sscanf_s(buffer, " <Hash>%u</Hash> ", &hash);
+        count         = sscanf_s(buffer, " <Hash>%08x</Hash> ", &hash);
         if ((count != 1) || (hash != methodHash))
         {
             continue;
@@ -2568,7 +2568,7 @@ bool ReplayPolicy::FindInline(unsigned token, unsigned hash, unsigned offset)
 
         // Match token
         unsigned inlineToken = 0;
-        int      count       = sscanf_s(buffer, " <Token>%u</Token> ", &inlineToken);
+        int      count       = sscanf_s(buffer, " <Token>%08x</Token> ", &inlineToken);
 
         if ((count != 1) || (inlineToken != token))
         {
@@ -2583,7 +2583,7 @@ bool ReplayPolicy::FindInline(unsigned token, unsigned hash, unsigned offset)
 
         // Match hash
         unsigned inlineHash = 0;
-        count               = sscanf_s(buffer, " <Hash>%u</Hash> ", &inlineHash);
+        count               = sscanf_s(buffer, " <Hash>%08x</Hash> ", &inlineHash);
 
         if ((count != 1) || (inlineHash != hash))
         {

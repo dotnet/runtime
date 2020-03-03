@@ -86,8 +86,9 @@ namespace System.Text.RegularExpressions
             parser.CountCaptures();
             parser.Reset(options);
             RegexNode root = parser.ScanRegex();
+            int minRequiredLength = root.ComputeMinLength();
             string[]? capnamelist = parser._capnamelist?.ToArray();
-            var tree = new RegexTree(root, parser._caps, parser._capnumlist!, parser._captop, parser._capnames!, capnamelist!, options);
+            var tree = new RegexTree(root, parser._caps, parser._capnumlist!, parser._captop, parser._capnames!, capnamelist!, options, minRequiredLength);
             parser.Dispose();
 
             return tree;
@@ -499,7 +500,7 @@ namespace System.Text.RegularExpressions
 
             AddGroup();
 
-            return Unit()!;
+            return Unit()!.FinalOptimize();
         }
 
         /*
@@ -561,6 +562,10 @@ namespace System.Text.RegularExpressions
                 if (!scanOnly)
                 {
                     charClass!.Negate = true;
+                }
+                if ((_options & RegexOptions.ECMAScript) != 0 && CharAt(_currentPos) == ']')
+                {
+                    firstChar = false;
                 }
             }
 
@@ -637,7 +642,21 @@ namespace System.Text.RegularExpressions
                         case '-':
                             if (!scanOnly)
                             {
-                                charClass!.AddRange(ch, ch);
+                                if (inRange)
+                                {
+                                    if (chPrev > ch)
+                                    {
+                                        throw MakeException(RegexParseError.ReversedCharRange, SR.ReversedCharRange);
+                                    }
+
+                                    charClass!.AddRange(chPrev, ch);
+                                    inRange = false;
+                                    chPrev = '\0';
+                                }
+                                else
+                                {
+                                    charClass!.AddRange(ch, ch);
+                                }
                             }
                             continue;
 
@@ -798,8 +817,8 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '>':
-                        // greedy subexpression
-                        nodeType = RegexNode.Greedy;
+                        // atomic subexpression
+                        nodeType = RegexNode.Atomic;
                         break;
 
                     case '\'':
@@ -1016,7 +1035,7 @@ namespace System.Text.RegularExpressions
 
                         nodeType = RegexNode.Group;
                         // Disallow options in the children of a testgroup node
-                        if (_group!.NType != RegexNode.Testgroup)
+                        if (_group!.Type != RegexNode.Testgroup)
                         {
                             ScanOptions();
                         }
@@ -1731,7 +1750,7 @@ namespace System.Text.RegularExpressions
             ch switch
             {
                 'b' => UseOptionE() ? RegexNode.ECMABoundary : RegexNode.Boundary,
-                'B' => UseOptionE() ? RegexNode.NonECMABoundary : RegexNode.Nonboundary,
+                'B' => UseOptionE() ? RegexNode.NonECMABoundary : RegexNode.NonBoundary,
                 'A' => RegexNode.Beginning,
                 'G' => RegexNode.Start,
                 'Z' => RegexNode.EndZ,
@@ -1869,7 +1888,7 @@ namespace System.Text.RegularExpressions
                             else
                             {
                                 // Simple (unnamed) capture group.
-                                // Add unnamend parentheses if ExplicitCapture is not set
+                                // Add unnamed parentheses if ExplicitCapture is not set
                                 // and the next parentheses is not ignored.
                                 if (!UseOptionN() && !_ignoreNextParen)
                                 {
@@ -2151,7 +2170,7 @@ namespace System.Text.RegularExpressions
             _stack = _group!.Next;
 
             // The first () inside a Testgroup group goes directly to the group
-            if (_group.Type() == RegexNode.Testgroup && _group.ChildCount() == 0)
+            if (_group.Type == RegexNode.Testgroup && _group.ChildCount() == 0)
             {
                 if (_unit == null)
                 {
@@ -2179,7 +2198,7 @@ namespace System.Text.RegularExpressions
         {
             // The | parts inside a Testgroup group go directly to the group
 
-            if (_group!.Type() == RegexNode.Testgroup || _group.Type() == RegexNode.Testref)
+            if (_group!.Type == RegexNode.Testgroup || _group.Type == RegexNode.Testref)
             {
                 _group.AddChild(_concatenation!.ReverseLeft());
             }
@@ -2253,11 +2272,11 @@ namespace System.Text.RegularExpressions
         /// <summary>Finish the current group (in response to a ')' or end)</summary>
         private void AddGroup()
         {
-            if (_group!.Type() == RegexNode.Testgroup || _group.Type() == RegexNode.Testref)
+            if (_group!.Type == RegexNode.Testgroup || _group.Type == RegexNode.Testref)
             {
                 _group.AddChild(_concatenation!.ReverseLeft());
 
-                if (_group.Type() == RegexNode.Testref && _group.ChildCount() > 2 || _group.ChildCount() > 3)
+                if (_group.Type == RegexNode.Testref && _group.ChildCount() > 2 || _group.ChildCount() > 3)
                 {
                     throw MakeException(RegexParseError.TooManyAlternates, SR.TooManyAlternates);
                 }
@@ -2308,7 +2327,7 @@ namespace System.Text.RegularExpressions
         private char CharAt(int i) => _pattern[i];
 
         /// <summary>Returns the char right of the current parsing position.</summary>
-        internal char RightChar() => _pattern[_currentPos];
+        private char RightChar() => _pattern[_currentPos];
 
         /// <summary>Returns the char i chars right of the current parsing position.</summary>
         private char RightChar(int i) => _pattern[_currentPos + i];

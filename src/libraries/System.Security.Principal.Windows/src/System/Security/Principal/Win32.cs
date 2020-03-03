@@ -37,13 +37,12 @@ namespace System.Security.Principal
 
 
         internal static SafeLsaPolicyHandle LsaOpenPolicy(
-            string systemName,
+            string? systemName,
             PolicyRights rights)
         {
-            SafeLsaPolicyHandle policyHandle;
 
             Interop.OBJECT_ATTRIBUTES attributes = default;
-            uint error = Interop.Advapi32.LsaOpenPolicy(systemName, ref attributes, (int)rights, out policyHandle);
+            uint error = Interop.Advapi32.LsaOpenPolicy(systemName, ref attributes, (int)rights, out SafeLsaPolicyHandle policyHandle);
             if (error == 0)
             {
                 return policyHandle;
@@ -116,7 +115,7 @@ namespace System.Security.Principal
 
         internal static int CreateSidFromString(
             string stringSid,
-            out byte[] resultSid
+            out byte[]? resultSid
             )
         {
             int ErrorCode;
@@ -138,7 +137,7 @@ namespace System.Security.Principal
                 // Now is a good time to get rid of the returned pointer
                 //
 
-                Interop.Kernel32.LocalFree(ByteArray);
+                Marshal.FreeHGlobal(ByteArray);
             }
 
             //
@@ -160,8 +159,8 @@ namespace System.Security.Principal
 
         internal static int CreateWellKnownSid(
             WellKnownSidType sidType,
-            SecurityIdentifier domainSid,
-            out byte[] resultSid
+            SecurityIdentifier? domainSid,
+            out byte[]? resultSid
             )
         {
             //
@@ -172,7 +171,7 @@ namespace System.Security.Principal
             uint length = (uint)SecurityIdentifier.MaxBinaryLength;
             resultSid = new byte[length];
 
-            if (FALSE != Interop.Advapi32.CreateWellKnownSid((int)sidType, domainSid == null ? null : domainSid.BinaryForm, resultSid, ref length))
+            if (FALSE != Interop.Advapi32.CreateWellKnownSid((int)sidType, domainSid?.BinaryForm, resultSid, ref length))
             {
                 return Interop.Errors.ERROR_SUCCESS;
             }
@@ -197,15 +196,13 @@ namespace System.Security.Principal
             }
             else
             {
-                bool result;
-
                 byte[] BinaryForm1 = new byte[sid1.BinaryLength];
                 sid1.GetBinaryForm(BinaryForm1, 0);
 
                 byte[] BinaryForm2 = new byte[sid2.BinaryLength];
                 sid2.GetBinaryForm(BinaryForm2, 0);
 
-                return (Interop.Advapi32.IsEqualDomainSid(BinaryForm1, BinaryForm2, out result) == FALSE ? false : result);
+                return (Interop.Advapi32.IsEqualDomainSid(BinaryForm1, BinaryForm2, out bool result) == FALSE ? false : result);
             }
         }
 
@@ -220,7 +217,7 @@ namespace System.Security.Principal
             // We don't know the real size of the referenced domains yet, so we need to set an initial
             // size based on the LSA_REFERENCED_DOMAIN_LIST structure, then resize it to include all of
             // the domains.
-            referencedDomains.Initialize((uint)Marshal.SizeOf<Interop.LSA_REFERENCED_DOMAIN_LIST>());
+            referencedDomains!.Initialize((uint)Marshal.SizeOf<Interop.LSA_REFERENCED_DOMAIN_LIST>());
             Interop.LSA_REFERENCED_DOMAIN_LIST domainList = referencedDomains.Read<Interop.LSA_REFERENCED_DOMAIN_LIST>(0);
 
             unsafe
@@ -256,7 +253,7 @@ namespace System.Security.Principal
         //
         internal static int GetWindowsAccountDomainSid(
             SecurityIdentifier sid,
-            out SecurityIdentifier resultSid
+            out SecurityIdentifier? resultSid
             )
         {
             //

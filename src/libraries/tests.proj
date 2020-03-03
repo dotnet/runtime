@@ -7,18 +7,23 @@
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
     <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>netcoreapp5.0</TargetFramework> 
+  </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We currently only test with C# projects. -->
-    <Project Condition="'$(DirectoryToBuild)' == ''" Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" Exclude="@(ProjectExclusions)" />
     <Project Condition="'$(DirectoryToBuild)' != ''" Include="$(DirectoryToBuild)\**\*.Tests.csproj" />
+    <Project Condition="'$(SkipTestRestore)' != 'true' and '$(DirectoryToBuild)' == ''" Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" Exclude="@(ProjectExclusions)" />
+    <Project Condition="'$(SkipTestRestore)' == 'true' and '$(DirectoryToBuild)' == ''" Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
+    <Project Remove="$(CommonTestPath)System\Net\Prerequisites\**\*.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
     <Project Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj" />
   </ItemGroup>
 
-  <Target Name="IncludeProjectReferences" DependsOnTargets="FilterProjects">
+  <Target Name="IncludeProjectReferences">
     <ItemGroup>
       <ProjectReference Include="@(Project)" />
     </ItemGroup>
@@ -36,10 +41,10 @@
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
   
   <Target Name="Build" DependsOnTargets="BuildAllProjects" />
-  <Target Name="BuildAllProjects" DependsOnTargets="FilterProjects">
+  <Target Name="BuildAllProjects">
     <MSBuild Targets="Build"
              Projects="@(Project)"
-             Properties="BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration);%(Project.AdditionalProperties)"
+             Properties="BuildAllProjects=true;%(Project.AdditionalProperties)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
 
@@ -48,19 +53,19 @@
   </Target>
 
   <Target Name="Test" DependsOnTargets="TestAllProjects" />
-  <Target Name="TestAllProjects" DependsOnTargets="FilterProjects">
+  <Target Name="TestAllProjects">
     <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity
          however since the project names are unique it will essentially force each to run in its own batch -->
     <MSBuild Targets="Test"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)' == 'true' and '%(Identity)' != ''"
-             Properties="TestAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
+             Properties="TestAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="Test"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)' != 'true'"
-             Properties="TestAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
+             Properties="TestAllProjects=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 

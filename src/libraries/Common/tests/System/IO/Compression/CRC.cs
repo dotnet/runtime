@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 public class CRC
 {
     // Table of CRCs of all 8-bit messages.
@@ -32,27 +34,23 @@ public class CRC
         s_crc_table_computed = true;
     }
 
-    // Update a running CRC with the bytes buf[0..len-1]--the CRC
+    // Update a running CRC with the bytes --the CRC
     // should be initialized to all 1's, and the transmitted value
     // is the 1's complement of the final running CRC (see the
     // crc() routine below)).
-    private static ulong update_crc(ulong crc, byte[] buf, int len)
+    public static ulong UpdateCRC(ulong crc, ReadOnlySpan<byte> buf)
     {
         ulong c = crc;
         int n;
 
         if (!s_crc_table_computed)
             make_crc_table();
-        for (n = 0; n < len; n++)
+        for (n = 0; n < buf.Length; n++)
         {
             c = s_crc_table[(c ^ buf[n]) & 0xff] ^ (c >> 8);
         }
         return c;
     }
 
-    internal static string CalculateCRC(byte[] buf) => CalculateCRC(buf, buf.Length);
-
-    // Return the CRC of the bytes buf[0..len-1].
-    internal static string CalculateCRC(byte[] buf, int len) =>
-        (update_crc(0xffffffffL, buf, len) ^ 0xffffffffL).ToString();
+    public static ulong CalculateCRC(ReadOnlySpan<byte> buf) => (UpdateCRC(0xffffffffL, buf) ^ 0xffffffffL);
 }

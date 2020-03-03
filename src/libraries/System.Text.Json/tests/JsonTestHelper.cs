@@ -719,7 +719,7 @@ namespace System.Text.Json
                     );
 
             // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
-            // Todo: create new AssertContentsAgainJsonNet to avoid calling NormalizeToJsonNetFormat when not necessary.
+            // Todo: https://github.com/dotnet/runtime/issues/32351
             Assert.Equal(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
         }
 
@@ -741,7 +741,7 @@ namespace System.Text.Json
                     );
 
             // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
-            // Todo: create new AssertContentsNotEqualAgainJsonNet to avoid calling NormalizeToJsonNetFormat when not necessary.
+            // Todo: https://github.com/dotnet/runtime/issues/32351
             Assert.NotEqual(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
         }
 

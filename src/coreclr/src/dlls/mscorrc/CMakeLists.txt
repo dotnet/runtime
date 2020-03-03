@@ -1,5 +1,5 @@
 include_directories("../../pal/prebuilt/corerror")
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NOENTRY")
     # remove /ltcg from resource-only libraries
     string(REPLACE "/LTCG" "" CMAKE_SHARED_LINKER_FLAGS_RELEASE ${CMAKE_SHARED_LINKER_FLAGS_RELEASE})
@@ -7,12 +7,12 @@ if(WIN32)
 
     # remove /guard:cf from resource-only libraries
     string(REPLACE "/guard:cf" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 add_subdirectory(full)
 
 # Only add the small version of the resources if the platform is Windows.
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     add_subdirectory(small)
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 

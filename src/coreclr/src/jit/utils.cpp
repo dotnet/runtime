@@ -29,13 +29,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // same code for all platforms, hence it is here instead of in the targetXXX.cpp
 // files.
 
-#ifdef _TARGET_UNIX_
+#ifdef TARGET_UNIX
 // Should we distinguish Mac? Can we?
 // Should we distinguish flavors of Unix? Can we?
 const char* Target::g_tgtPlatformName = "Unix";
-#else  // !_TARGET_UNIX_
+#else  // !TARGET_UNIX
 const char* Target::g_tgtPlatformName = "Windows";
-#endif // !_TARGET_UNIX_
+#endif // !TARGET_UNIX
 
 /*****************************************************************************/
 
@@ -143,7 +143,7 @@ const char* getRegName(regNumber reg, bool isFloat)
         return "NA";
     }
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, xname, wname) xname,
 #include "register.h"
@@ -171,7 +171,7 @@ const char* getRegName(unsigned reg,
 
 const char* getRegNameFloat(regNumber reg, var_types type)
 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     assert(genIsValidFloatReg(reg));
     if (type == TYP_FLOAT)
         return getRegName(reg);
@@ -237,7 +237,7 @@ const char* getRegNameFloat(regNumber reg, var_types type)
         return regName;
     }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
     static const char* regNamesFloat[] = {
 #define REGDEF(name, rnum, mask, xname, wname) xname,
@@ -311,7 +311,7 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                 // What kind of separator should we use for this range (if it is indeed going to be a range)?
                 CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
                 // For AMD64, create ranges for int registers R8 through R15, but not the "old" registers.
                 if (regNum >= REG_R8)
                 {
@@ -319,7 +319,7 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                     inRegRange = true;
                     sep        = "-";
                 }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
                 // R17 and R28 can't be the start of a range, since the range would include TEB or FP
                 if ((regNum < REG_R17) || ((REG_R19 <= regNum) && (regNum < REG_R28)))
                 {
@@ -327,28 +327,28 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                     inRegRange = true;
                     sep        = "-";
                 }
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
                 if (regNum < REG_R12)
                 {
                     regHead    = regNum;
                     inRegRange = true;
                     sep        = "-";
                 }
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 // No register ranges
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
             }
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
             // We've already printed a register. Is this the end of a range?
             else if ((regNum == REG_INT_LAST) || (regNum == REG_R17) // last register before TEB
                      || (regNum == REG_R28))                         // last register before FP
-#else                                                                // _TARGET_ARM64_
+#else                                                                // TARGET_ARM64
             // We've already printed a register. Is this the end of a range?
             else if (regNum == REG_INT_LAST)
-#endif                                                               // _TARGET_ARM64_
+#endif                                                               // TARGET_ARM64
             {
                 const char* nam = getRegName(regNum);
                 printf("%s%s", sep, nam);
@@ -684,13 +684,12 @@ const char* refCntWtd2str(unsigned refCntWtd)
 #if defined(DEBUG) || defined(INLINE_DATA)
 
 //------------------------------------------------------------------------
-// Contains: check if the range includes a particular method
+// Contains: check if the range includes a particular hash
 //
 // Arguments:
-//    info   -- jit interface pointer
-//    method -- method handle for the method of interest
+//    hash -- hash value to check
 
-bool ConfigMethodRange::Contains(ICorJitInfo* info, CORINFO_METHOD_HANDLE method)
+bool ConfigMethodRange::Contains(unsigned hash)
 {
     _ASSERT(m_inited == 1);
 
@@ -699,10 +698,6 @@ bool ConfigMethodRange::Contains(ICorJitInfo* info, CORINFO_METHOD_HANDLE method
     {
         return true;
     }
-
-    // Check the hash. Note we can't use the cached hash here since
-    // we may not be asking about the method currently being jitted.
-    const unsigned hash = info->getMethodHash(method);
 
     for (unsigned i = 0; i < m_lastRange; i++)
     {
@@ -756,16 +751,31 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
 
     while ((*p != 0) && (lastRange < m_entries))
     {
-        while (*p == L' ')
+        while ((*p == L' ') || (*p == L','))
         {
             p++;
         }
 
         int i = 0;
 
-        while (L'0' <= *p && *p <= L'9')
+        while (((L'0' <= *p) && (*p <= L'9')) || ((L'A' <= *p) && (*p <= L'F')) || ((L'a' <= *p) && (*p <= L'f')))
         {
-            int j = 10 * i + ((*p++) - L'0');
+            int n = 0;
+
+            if ((L'0' <= *p) && (*p <= L'9'))
+            {
+                n = (*p++) - L'0';
+            }
+            else if ((L'A' <= *p) && (*p <= L'F'))
+            {
+                n = (*p++) - L'A';
+            }
+            else if ((L'a' <= *p) && (*p <= L'f'))
+            {
+                n = (*p++) - L'a';
+            }
+
+            int j = 16 * i + n;
 
             // Check for overflow
             if ((m_badChar != 0) && (j <= i))
@@ -832,6 +842,33 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
     assert(lastRange <= m_entries);
     m_lastRange = lastRange;
     m_inited    = 1;
+}
+
+//------------------------------------------------------------------------
+// Dump: dump hash ranges to stdout
+//
+// Arguments:
+//    hash -- hash value to check
+
+void ConfigMethodRange::Dump()
+{
+    if (m_inited != 1)
+    {
+        printf("<uninitialized method range>\n");
+        return;
+    }
+
+    if (m_lastRange == 0)
+    {
+        printf("<empty method range>\n");
+        return;
+    }
+
+    printf("<method range with %d entries>\n", m_lastRange);
+    for (unsigned i = 0; i < m_lastRange; i++)
+    {
+        printf("%i [%u-%u]\n", i, m_ranges[i].m_low, m_ranges[i].m_high);
+    }
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
@@ -1227,7 +1264,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEWSFAST:
             case CORINFO_HELP_NEWSFAST_ALIGN8:
             case CORINFO_HELP_NEWSFAST_ALIGN8_VC:
-            case CORINFO_HELP_NEW_CROSSCONTEXT:
             case CORINFO_HELP_NEWFAST:
             case CORINFO_HELP_NEWSFAST_FINALIZE:
             case CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
@@ -1246,7 +1282,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEW_MDARR:
             case CORINFO_HELP_NEWARR_1_DIRECT:
             case CORINFO_HELP_NEWARR_1_OBJ:
-            case CORINFO_HELP_NEWARR_1_R2R_DIRECT:
             case CORINFO_HELP_READYTORUN_NEWARR_1:
 
                 isAllocator   = true;
@@ -1412,10 +1447,6 @@ void HelperCallProperties::init()
                 break;
 
             // These helper calls may throw an exception
-            case CORINFO_HELP_METHOD_ACCESS_CHECK:
-            case CORINFO_HELP_FIELD_ACCESS_CHECK:
-            case CORINFO_HELP_CLASS_ACCESS_CHECK:
-            case CORINFO_HELP_DELEGATE_SECURITY_CHECK:
             case CORINFO_HELP_MON_EXIT_STATIC:
 
                 break;
@@ -1434,9 +1465,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_MON_ENTER_STATIC:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
-            case CORINFO_HELP_SECURITY_PROLOG:
-            case CORINFO_HELP_SECURITY_PROLOG_FRAMED:
-            case CORINFO_HELP_VERIFICATION_RUNTIME_CHECK:
             case CORINFO_HELP_GETFIELDADDR:
             case CORINFO_HELP_INIT_PINVOKE_FRAME:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
@@ -1813,7 +1841,7 @@ double FloatingPointUtils::convertUInt64ToDouble(unsigned __int64 uIntVal)
     double  d;
     if (s64 < 0)
     {
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
         // RyuJIT codegen and clang (or gcc) may produce different results for casting uint64 to
         // double, and the clang result is more accurate. For example,
         //    1) (double)0x84595161401484A0UL --> 43e08b2a2c280290  (RyuJIT codegen or VC++)
@@ -1863,7 +1891,7 @@ unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
         return u64;
     }
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
 
     // While the Ecma spec does not specifically call this out,
     // the case of conversion from negative double to unsigned integer is
@@ -1877,7 +1905,7 @@ unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
     u64 = UINT64(INT64(d));
 #else
     u64                               = UINT64(d);
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 
     return u64;
 }
@@ -1956,7 +1984,7 @@ double FloatingPointUtils::round(double x)
 // We will redirect the macro to this other functions if the macro is not defined for the platform.
 // This has the side effect of a possible implicit upcasting for arguments passed in and an explicit
 // downcasting for the _copysign() call.
-#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)) && !defined(FEATURE_PAL)
+#if (defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64)) && !defined(TARGET_UNIX)
 
 #if !defined(_copysignf)
 #define _copysignf (float)_copysign
@@ -2201,7 +2229,7 @@ T GetUnsignedMagic(T d, bool* add /*out*/, int* shift /*out*/)
         return magic->magic;
     }
 
-    typedef typename jitstd::make_signed<T>::type ST;
+    typedef typename std::make_signed<T>::type ST;
 
     const unsigned bits       = sizeof(T) * 8;
     const unsigned bitsMinus1 = bits - 1;
@@ -2265,7 +2293,7 @@ uint32_t GetUnsigned32Magic(uint32_t d, bool* add /*out*/, int* shift /*out*/)
     return GetUnsignedMagic<uint32_t>(d, add, shift);
 }
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 uint64_t GetUnsigned64Magic(uint64_t d, bool* add /*out*/, int* shift /*out*/)
 {
     return GetUnsignedMagic<uint64_t>(d, add, shift);
@@ -2356,7 +2384,7 @@ T GetSignedMagic(T denom, int* shift /*out*/)
     const int bits         = sizeof(T) * 8;
     const int bits_minus_1 = bits - 1;
 
-    typedef typename jitstd::make_unsigned<T>::type UT;
+    typedef typename std::make_unsigned<T>::type UT;
 
     const UT two_nminus1 = UT(1) << bits_minus_1;
 
@@ -2421,7 +2449,7 @@ int32_t GetSigned32Magic(int32_t d, int* shift /*out*/)
     return GetSignedMagic<int32_t>(d, shift);
 }
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 int64_t GetSigned64Magic(int64_t d, int* shift /*out*/)
 {
     return GetSignedMagic<int64_t>(d, shift);

@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ActiveIssue(29779)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26213")]
         [ConditionalFact]
         [OuterLoop("May require using the network, to download CRLs and intermediates")]
         public void TestVerify()
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
 
             // High Sierra fails to build a chain for a self-signed certificate with revocation enabled.
-            // https://github.com/dotnet/corefx/issues/21875
+            // https://github.com/dotnet/runtime/issues/22625
             if (!PlatformDetection.IsMacOsHighSierraOrHigher)
             {
                 using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))

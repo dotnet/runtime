@@ -138,8 +138,6 @@ namespace System
             }
         }
 
-        public static bool UserInteractive => true;
-
         public static Version Version
         {
             get
@@ -152,7 +150,7 @@ namespace System
                 ReadOnlySpan<char> versionSpan = versionString.AsSpan();
 
                 // Strip optional suffixes
-                int separatorIndex = versionSpan.IndexOfAny("-+ ");
+                int separatorIndex = versionSpan.IndexOfAny('-', '+', ' ');
                 if (separatorIndex != -1)
                     versionSpan = versionSpan.Slice(0, separatorIndex);
 

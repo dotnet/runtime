@@ -15,6 +15,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         // Use a MAC count of 1 because we're not persisting things, and the password
         // is with the test... just save some CPU cycles.
         private const int MacCount = 1;
+        protected const int ErrorInvalidPasswordHResult = unchecked((int)0x80070056);
 
         // Use SHA-1 for Windows 7-8.1 support.
         private static readonly HashAlgorithmName s_digestAlgorithm = HashAlgorithmName.SHA1;
@@ -764,7 +765,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 cert2.Attributes.Add(id2);
                 key1.Attributes.Add(id3);
                 key2.Attributes.Add(id4);
-                
+
                 AddContents(keyContents, builder, pw, encrypt: false);
                 AddContents(certContents, builder, pw, encrypt: true);
                 builder.SealWithMac(pw, s_digestAlgorithm, MacCount);
@@ -815,7 +816,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     -2146893819);
             }
         }
-        
+
         [Theory]
         [InlineData(false, false)]
         [InlineData(false, true)]

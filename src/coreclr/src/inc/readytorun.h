@@ -18,8 +18,8 @@
 #define READYTORUN_MAJOR_VERSION 0x0004
 #define READYTORUN_MINOR_VERSION 0x0001
 #define MINIMUM_READYTORUN_MAJOR_VERSION 0x003
-// R2R Version 2.1 adds the READYTORUN_SECTION_INLINING_INFO section
-// R2R Version 2.2 adds the READYTORUN_SECTION_PROFILEDATA_INFO section
+// R2R Version 2.1 adds the InliningInfo section
+// R2R Version 2.2 adds the ProfileDataInfo section
 // R2R Version 3.0 changes calling conventions to correctly handle explicit structures to spec.
 //     R2R 3.0 is not backward compatible with 2.x.
 
@@ -37,12 +37,6 @@ struct READYTORUN_HEADER
     // READYTORUN_SECTION   Sections[];
 };
 
-struct READYTORUN_SECTION
-{
-    DWORD                   Type;           // READYTORUN_SECTION_XXX
-    IMAGE_DATA_DIRECTORY    Section;
-};
-
 enum ReadyToRunFlag
 {
     READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE     = 0x00000001,   // Set if the original IL assembly was platform-neutral
@@ -51,28 +45,35 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS     = 0x00000008    // PInvoke stubs compiled into image are non-shareable (no secret parameter)
 };
 
-enum ReadyToRunSectionType
+enum class ReadyToRunSectionType : uint32_t
 {
-    READYTORUN_SECTION_COMPILER_IDENTIFIER          = 100,
-    READYTORUN_SECTION_IMPORT_SECTIONS              = 101,
-    READYTORUN_SECTION_RUNTIME_FUNCTIONS            = 102,
-    READYTORUN_SECTION_METHODDEF_ENTRYPOINTS        = 103,
-    READYTORUN_SECTION_EXCEPTION_INFO               = 104,
-    READYTORUN_SECTION_DEBUG_INFO                   = 105,
-    READYTORUN_SECTION_DELAYLOAD_METHODCALL_THUNKS  = 106,
-    // 107 used by an older format of READYTORUN_SECTION_AVAILABLE_TYPES
-    READYTORUN_SECTION_AVAILABLE_TYPES              = 108,
-    READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS  = 109,
-    READYTORUN_SECTION_INLINING_INFO                = 110, // Added in V2.1
-    READYTORUN_SECTION_PROFILEDATA_INFO             = 111, // Added in V2.2
-    READYTORUN_SECTION_MANIFEST_METADATA            = 112, // Added in V2.3
-    READYTORUN_SECTION_ATTRIBUTEPRESENCE            = 113, // Added in V3.1
+    CompilerIdentifier          = 100,
+    ImportSections              = 101,
+    RuntimeFunctions            = 102,
+    MethodDefEntryPoints        = 103,
+    ExceptionInfo               = 104,
+    DebugInfo                   = 105,
+    DelayLoadMethodCallThunks   = 106,
+    // 107 used by an older format of AvailableTypes
+    AvailableTypes              = 108,
+    InstanceMethodEntryPoints   = 109,
+    InliningInfo                = 110, // Added in V2.1, deprecated in 4.1
+    ProfileDataInfo             = 111, // Added in V2.2
+    ManifestMetadata            = 112, // Added in V2.3
+    AttributePresence           = 113, // Added in V3.1
+    InliningInfo2               = 114, // Added in V4.1
 
-	// If you add a new section consider whether it is a breaking or non-breaking change.
-	// Usually it is non-breaking, but if it is preferable to have older runtimes fail
-	// to load the image vs. ignoring the new section it could be marked breaking.
-	// Increment the READYTORUN_MINOR_VERSION (non-breaking) or READYTORUN_MAJOR_VERSION
-	// (breaking) as appropriate.
+    // If you add a new section consider whether it is a breaking or non-breaking change.
+    // Usually it is non-breaking, but if it is preferable to have older runtimes fail
+    // to load the image vs. ignoring the new section it could be marked breaking.
+    // Increment the READYTORUN_MINOR_VERSION (non-breaking) or READYTORUN_MAJOR_VERSION
+    // (breaking) as appropriate.
+};
+
+struct READYTORUN_SECTION
+{
+    ReadyToRunSectionType   Type;           // READYTORUN_SECTION_XXX
+    IMAGE_DATA_DIRECTORY    Section;
 };
 
 //

@@ -471,6 +471,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15028", TestRuntimes.Mono)]
         public void IsEnumDefined_Invalid()
         {
             AssertExtensions.Throws<ArgumentException>("", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().IsEnumDefined(10));
@@ -709,6 +710,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         public static void FindMembers()
         {
             MemberInfo[] members = typeof(MembersClass).GetTypeInfo().FindMembers(MemberTypes.All, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, (MemberInfo memberInfo, object c) => true, "notused");
@@ -792,6 +794,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         public void GetMethod()
         {
             MethodInfo[] methods = typeof(MembersClass).GetTypeInfo().GetMethods();
@@ -810,6 +813,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         [InlineData(BindingFlags.Default, 9)]
         [InlineData(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, 16)]
         public void GetMethods(BindingFlags bindingAttributes, int length)
@@ -876,6 +880,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15029", TestRuntimes.Mono)]
         [InlineData(BindingFlags.Default, 15)]
         [InlineData(BindingFlags.NonPublic | BindingFlags.Instance, 13)]
         [InlineData(BindingFlags.Public | BindingFlags.Instance, 15)]
@@ -1186,17 +1191,40 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, type.GetTypeInfo().ContainsGenericParameters);
         }
 
-        [Theory]
-        [InlineData(typeof(int), "System.Int32")]
-        public void FullName(Type type, string expected)
+        [Fact]
+        public void FullName()
         {
-            Assert.Equal(expected, type.GetTypeInfo().FullName);
+            Assert.Equal("System.Int32", typeof(int).GetTypeInfo().FullName);
+
+            Type t = typeof(TI_FullNameTest<>);
+
+            // a generic type parameter
+            Assert.Null(t.GetMethod("TypeParam").ReturnType.GetTypeInfo().FullName);
+
+            // an array type, pointer type, or byref type based on a type parameter
+            Assert.Null(t.GetMethod("ArrayTypeParam").ReturnType.GetTypeInfo().FullName);
+            Assert.Null(t.GetMethod("PointerTypeParam").ReturnType.GetTypeInfo().FullName);
+            Assert.Null(t.GetMethod("ByRefTypeParam").ReturnType.GetTypeInfo().FullName);
+
+            // a generic type that is not a generic type definition but contains unresolved type parameters
+            Assert.Null(t.GetMethod("ListTypeParam").ReturnType.GetTypeInfo().FullName);
+
+            t = typeof(TI_FullNameTest<int>);
+
+            Assert.Equal("System.Int32", t.GetMethod("TypeParam").ReturnType.GetTypeInfo().FullName);
+
+            Assert.Equal("System.Int32[]", t.GetMethod("ArrayTypeParam").ReturnType.GetTypeInfo().FullName);
+            Assert.Equal("System.Int32*", t.GetMethod("PointerTypeParam").ReturnType.GetTypeInfo().FullName);
+            Assert.Equal("System.Int32&", t.GetMethod("ByRefTypeParam").ReturnType.GetTypeInfo().FullName);
+
+            Assert.NotNull(t.GetMethod("ListTypeParam").ReturnType.GetTypeInfo().FullName);
         }
 
         [Fact]
         public void Guid()
         {
             Assert.Equal(new Guid("FD80F123-BEDD-4492-B50A-5D46AE94DD4E"), typeof(TypeInfoTests).GetTypeInfo().GUID);
+            Assert.Equal(System.Guid.Empty, typeof(int[]).GetTypeInfo().GUID);
         }
 
         [Theory]
@@ -1477,6 +1505,44 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, type.GetTypeInfo().UnderlyingSystemType);
         }
 
+        public static IEnumerable<object[]> SZArrayOrNotTypes()
+        {
+            yield return new object[] { typeof(int[]), true };
+            yield return new object[] { typeof(string[]), true };
+            yield return new object[] { typeof(void), false };
+            yield return new object[] { typeof(int), false };
+            yield return new object[] { typeof(int[]).MakeByRefType(), false };
+            yield return new object[] { typeof(int[,]), false };
+            yield return new object[] { typeof(TypeInfoTests), false };
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                yield return new object[] { Array.CreateInstance(typeof(int), new[] { 2 }, new[] { -1 }).GetType(), false };
+                yield return new object[] { Array.CreateInstance(typeof(int), new[] { 2 }, new[] { 1 }).GetType(), false };
+            }
+            yield return new object[] { Array.CreateInstance(typeof(int), new[] { 2 }, new[] { 0 }).GetType(), true };
+            yield return new object[] { typeof(int[][]), true };
+            yield return new object[] { Type.GetType("System.Int32[]"), true };
+            yield return new object[] { Type.GetType("System.Int32[*]"), false };
+            yield return new object[] { Type.GetType("System.Int32"), false };
+            yield return new object[] { typeof(int).MakeArrayType(), true };
+            yield return new object[] { typeof(int).MakeArrayType(1), false };
+            yield return new object[] { typeof(int).MakeArrayType().MakeArrayType(), true };
+            yield return new object[] { typeof(int).MakeArrayType(2), false };
+            yield return new object[] { typeof(OutsideTypeInfoTests<int>.InsideTypeInfoTests<string>), false };
+            yield return new object[] { typeof(OutsideTypeInfoTests<int>.InsideTypeInfoTests<string>[]), true };
+            yield return new object[] { typeof(OutsideTypeInfoTests<int>.InsideTypeInfoTests<string>[,]), false };
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                yield return new object[] { Array.CreateInstance(typeof(OutsideTypeInfoTests<int>.InsideTypeInfoTests<string>), new[] { 2 }, new[] { -1 }).GetType(), false };
+            }
+        }
+
+        [Theory, MemberData(nameof(SZArrayOrNotTypes))]
+        public void IsSZArray(Type type, bool expected)
+        {
+            Assert.Equal(expected, type.GetTypeInfo().IsSZArray);
+        }
+
 #pragma warning disable 0067, 0169
         public static class ClassWithStaticConstructor
         {
@@ -1728,4 +1794,23 @@ namespace System.Reflection.Tests
         public class AbstractSubSubClass : AbstractSubClass { }
     }
 #pragma warning restore 0067, 0169
+
+    public class OutsideTypeInfoTests
+    {
+        public class InsideTypeInfoTests { }
+    }
+
+    public class OutsideTypeInfoTests<T>
+    {
+        public class InsideTypeInfoTests<U> { }
+    }
+
+    public class TI_FullNameTest<T> where T : unmanaged
+    {
+        public static T TypeParam() => throw new Exception();
+        public static T[] ArrayTypeParam() => throw new Exception();
+        public static unsafe T* PointerTypeParam() => throw new Exception();
+        public static ref T ByRefTypeParam() => throw new Exception();
+        public static List<T> ListTypeParam() => throw new Exception();
+    }
 }

@@ -595,7 +595,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
-        [ActiveIssue(20893)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22225")]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         public void DualModeConnectAsync_Static_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
@@ -721,7 +721,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/corefx/issues/5832
+        [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/runtime/issues/16265
         public void AcceptV6BoundToSpecificV4_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -731,7 +731,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/corefx/issues/5832
+        [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/runtime/issues/16265
         public void AcceptV4BoundToSpecificV6_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -741,7 +741,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/corefx/issues/5832
+        [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/runtime/issues/16265
         public void AcceptV6BoundToAnyV4_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -1013,7 +1013,7 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [OuterLoop] // https://github.com/dotnet/corefx/issues/17681
+    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessSendTo : DualModeBase
@@ -1113,7 +1113,7 @@ namespace System.Net.Sockets.Tests
         #endregion SendTo Sync
     }
 
-    [OuterLoop] // https://github.com/dotnet/corefx/issues/17681
+    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessBeginSendTo : DualModeBase
@@ -1214,7 +1214,7 @@ namespace System.Net.Sockets.Tests
         #endregion SendTo Begin/End
     }
 
-    [OuterLoop] // https://github.com/dotnet/corefx/issues/17681
+    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessSendToAsync : DualModeBase
@@ -1352,7 +1352,7 @@ namespace System.Net.Sockets.Tests
         #endregion SendTo Async/Event
     }
 
-    [OuterLoop] // https://github.com/dotnet/corefx/issues/17681
+    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessReceiveFrom : DualModeBase
@@ -1483,7 +1483,7 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [OuterLoop] // https://github.com/dotnet/corefx/issues/17681
+    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessBeginReceiveFrom : DualModeBase
@@ -1632,7 +1632,7 @@ namespace System.Net.Sockets.Tests
         #endregion ReceiveFrom Begin/End
     }
 
-    [OuterLoop] // https://github.com/dotnet/corefx/issues/17681
+    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessReceiveFromAsync : DualModeBase
@@ -1795,7 +1795,7 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [OuterLoop] // https://github.com/dotnet/corefx/issues/17681
+    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessReceiveMessageFrom : DualModeBase

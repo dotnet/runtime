@@ -9,11 +9,11 @@
 
 static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 #define HARDWARE_INTRINSIC(id, name, isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     {NI_##id, name, InstructionSet_##isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
 #include "hwintrinsiclistxarch.h"
-#elif defined (_TARGET_ARM64_)
+#elif defined (TARGET_ARM64)
 #define HARDWARE_INTRINSIC(isa, name, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     {NI_##isa##_##name, #name, InstructionSet_##isa, ival, static_cast<unsigned>(size), numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
 #include "hwintrinsiclistarm64.h"
@@ -115,7 +115,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
                 assert(!"Didn't find a class handle for simdType");
         }
     }
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     else if (simdType == TYP_SIMD32)
     {
         switch (simdBaseType)
@@ -144,8 +144,8 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
                 assert(!"Didn't find a class handle for simdType");
         }
     }
-#endif // _TARGET_XARCH_
-#ifdef _TARGET_ARM64_
+#endif // TARGET_XARCH
+#ifdef TARGET_ARM64
     else if (simdType == TYP_SIMD8)
     {
         switch (simdBaseType)
@@ -168,10 +168,73 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
                 assert(!"Didn't find a class handle for simdType");
         }
     }
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
 
     return NO_CLASS_HANDLE;
 }
+
+#ifdef FEATURE_HW_INTRINSICS
+//------------------------------------------------------------------------
+// vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID):
+//
+// Arguments:
+//    hwIntrinsicID -- The id for the HW intrinsic
+//
+// Return Value:
+//   Returns true if this intrinsic requires value numbering to add an
+//   extra SimdType argument that encodes the resulting type.
+//   If we don't do this overloaded versions can return the same VN
+//   leading to incorrect CSE subsitutions.
+//
+/* static */ bool Compiler::vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID)
+{
+    int numArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicID);
+
+    // HW Instrinsic's with -1 for numArgs have a varying number of args, so we currently
+    // give themm a unique value number them, and don't add an extra argument.
+    //
+    if (numArgs == -1)
+    {
+        return false;
+    }
+
+    // We iterate over all of the different baseType's for this instrinsic in the HWIntrinsicInfo table
+    // We set  diffInsCount to the number of instructions that can execute differently.
+    //
+    unsigned diffInsCount = 0;
+#ifdef TARGET_XARCH
+    instruction lastIns = INS_invalid;
+#endif
+    for (var_types baseType = TYP_BYTE; (baseType <= TYP_DOUBLE); baseType = (var_types)(baseType + 1))
+    {
+        instruction curIns = HWIntrinsicInfo::lookupIns(hwIntrinsicID, baseType);
+        if (curIns != INS_invalid)
+        {
+#ifdef TARGET_XARCH
+            if (curIns != lastIns)
+            {
+                diffInsCount++;
+                // remember the last valid instruction that we saw
+                lastIns = curIns;
+            }
+#elif defined(TARGET_ARM64)
+            // On ARM64 we use the same instruction and specify an insOpt arrangement
+            // so we always consider the instruction operation to be different
+            //
+            diffInsCount++;
+#endif // TARGET
+            if (diffInsCount >= 2)
+            {
+                // We can  early exit the loop now
+                break;
+            }
+        }
+    }
+
+    // If we see two (or more) different instructions we need the extra VNF_SimdType arg
+    return (diffInsCount >= 2);
+}
+#endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
@@ -247,19 +310,19 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
 
     CORINFO_CLASS_HANDLE typeHnd = nullptr;
 
-    if (JITtype2varType(sig->retType) == TYP_STRUCT)
-    {
-        typeHnd = sig->retTypeSigClass;
-    }
-    else if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
+    if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
     {
         typeHnd = comp->info.compCompHnd->getArgClass(sig, sig->args);
     }
-    else
+    else if (HWIntrinsicInfo::BaseTypeFromSecondArg(id))
     {
-        assert(HWIntrinsicInfo::BaseTypeFromSecondArg(id));
         CORINFO_ARG_LIST_HANDLE secondArg = comp->info.compCompHnd->getArgNext(sig->args);
         typeHnd                           = comp->info.compCompHnd->getArgClass(sig, secondArg);
+    }
+    else
+    {
+        assert(JITtype2varType(sig->retType) == TYP_STRUCT);
+        typeHnd = sig->retTypeSigClass;
     }
 
     unsigned  simdSize = 0;
@@ -436,7 +499,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* immO
     // AVX2 Gather intrinsics no not need the range-check
     // because their imm-parameter have discrete valid values that are handle by managed code
     if (mustExpand && !HWIntrinsicInfo::HasFullRangeImm(intrinsic) && HWIntrinsicInfo::isImmOp(intrinsic, immOp)
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
         && !HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsic)
 #endif
             )
@@ -677,7 +740,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, baseType, simdSize);
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
                 if (intrinsic == NI_AVX2_GatherVector128 || intrinsic == NI_AVX2_GatherVector256)
                 {
                     assert(varTypeIsSIMD(op2->TypeGet()));
@@ -688,7 +751,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             default:
-                unreached();
+                return nullptr;
         }
 
         bool isMemoryStore = retNode->OperIsMemoryStore();

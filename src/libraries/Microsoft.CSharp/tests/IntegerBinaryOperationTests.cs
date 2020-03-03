@@ -498,7 +498,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [MemberData(nameof(UInt64TestMultiplications))]
         [MemberData(nameof(UInt64TestNotEquals))]
         [MemberData(nameof(UInt64TestSubtractions))]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26798", TargetFrameworkMonikers.NetFramework)]
         public void ConstantExpressions(object x, object y, ExpressionType type, object result, bool shouldSucceedChecked)
         {
             var callsite = GetBinaryOperationCallSite(type, false, true, true);
@@ -533,7 +533,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [MemberData(nameof(UInt32DivisionByZero))]
         [MemberData(nameof(Int64DivisionByZero))]
         [MemberData(nameof(UInt64DivisionByZero))]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26798", TargetFrameworkMonikers.NetFramework)]
         public void ConstantDivideByZero(ExpressionType type, object x)
         {
             var callsite = GetBinaryOperationCallSite(type, false, true, true);
@@ -609,7 +609,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26798", TargetFrameworkMonikers.NetFramework)]
         public void NullDMO()
         {
             BinaryOperationBinder binder = Binder.BinaryOperation(

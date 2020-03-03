@@ -44,6 +44,9 @@ namespace System.Runtime.Loader
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern bool TraceAssemblyLoadFromResolveHandlerInvoked(string assemblyName, bool isTrackedAssembly, string requestingAssemblyPath, string? requestedAssemblyPath);
 
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        internal static extern bool TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult);
+
         private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
             RuntimeAssembly? loadedAssembly = null;
@@ -64,7 +67,7 @@ namespace System.Runtime.Loader
             return loadedAssembly!;
         }
 
-#if !FEATURE_PAL
+#if TARGET_WINDOWS
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern IntPtr LoadFromInMemoryModuleInternal(IntPtr ptrNativeAssemblyLoadContext, IntPtr hModule, ObjectHandleOnStack retAssembly);
 
@@ -151,8 +154,7 @@ namespace System.Runtime.Loader
                 if (ptrAssemblyLoadContext == IntPtr.Zero)
                 {
                     // If the load context is returned null, then the assembly was bound using the TPA binder
-                    // and we shall return reference to the active "Default" binder - which could be the TPA binder
-                    // or an overridden CLRPrivBinderAssemblyLoadContext instance.
+                    // and we shall return reference to the "Default" binder.
                     loadContextForAssembly = AssemblyLoadContext.Default;
                 }
                 else
@@ -207,6 +209,14 @@ namespace System.Runtime.Loader
         {
             // Don't use trace to TPL event source in ActivityTracker - that event source is a singleton and its instantiation may have triggered the load.
             ActivityTracker.Instance.OnStop(NativeRuntimeEventSource.Log.Name, AssemblyLoadName, 0, ref activityId, useTplSource: false);
+        }
+
+        /// <summary>
+        /// Called by the runtime to make sure the default ALC is initialized
+        /// </summary>
+        private static void InitializeDefaultContext()
+        {
+            _ = AssemblyLoadContext.Default;
         }
     }
 }

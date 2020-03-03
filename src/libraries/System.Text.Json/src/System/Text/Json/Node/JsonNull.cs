@@ -30,7 +30,7 @@ namespace System.Text.Json
         ///   <see langword="true"/> if the <paramref name="obj"/> is <see cref="JsonNull"/>,
         ///   <see langword="false"/> otherwise.
         /// </returns>
-        public override bool Equals(object obj) => obj is JsonNull;
+        public override bool Equals(object? obj) => obj is JsonNull;
 
         /// <summary>
         ///   Calculates a hash code of this instance.
@@ -42,24 +42,44 @@ namespace System.Text.Json
         ///   Compares other JSON null to the value of this instance.
         /// </summary>
         /// <param name="other">The JSON null to compare against.</param>
-        /// <returns><see langword="true"/></returns>
-        public bool Equals(JsonNull other) => true;
+        /// <returns>
+        ///    <see langword="true"/> if <paramref name="other"/> is not null,
+        ///    <see langword="false"/> otherwise.
+        /// </returns>
+        public bool Equals(JsonNull? other) => !(other is null);
 
         /// <summary>
         ///   Compares values of two JSON nulls.
         /// </summary>
         /// <param name="left">The JSON null to compare.</param>
         /// <param name="right">The JSON null to compare.</param>
-        /// <returns><see langword="true"/></returns>
-        public static bool operator ==(JsonNull left, JsonNull right) => true;
+        /// <returns>
+        ///    <see langword="true"/> if both instances match,
+        ///    <see langword="false"/> otherwise.
+        /// </returns>
+        public static bool operator ==(JsonNull? left, JsonNull? right)
+        {
+            // Test "right" first to allow branch elimination when inlined for null checks (== null)
+            // so it can become a simple test
+            if (right is null)
+            {
+                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
+                return (left is null) ? true : false;
+            }
+
+            return right.Equals(left);
+        }
 
         /// <summary>
         ///   Compares values of two JSON nulls.
         /// </summary>
         /// <param name="left">The JSON null to compare.</param>
         /// <param name="right">The JSON null to compare.</param>
-        /// <returns><see langword="false"/></returns>
-        public static bool operator !=(JsonNull left, JsonNull right) => false;
+        /// <returns>
+        ///    <see langword="true"/> if both instances do not match,
+        ///    <see langword="false"/> otherwise.
+        /// </returns>
+        public static bool operator !=(JsonNull? left, JsonNull? right) => !(left == right);
 
         /// <summary>
         ///   Creates a new JSON null that is a copy of the current instance.

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Threading.Tasks;
@@ -11,7 +10,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public partial class CreateSocket
+    public class CreateSocket
     {
         public static object[][] DualModeSuccessInputs = {
             new object[] { SocketType.Stream, ProtocolType.Tcp },
@@ -33,7 +32,7 @@ namespace System.Net.Sockets.Tests
         private static bool SupportsRawSockets => AdminHelpers.IsProcessElevated();
         private static bool NotSupportsRawSockets => !SupportsRawSockets;
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory, MemberData(nameof(DualModeSuccessInputs))]
         public void DualMode_Success(SocketType socketType, ProtocolType protocolType)
         {
@@ -42,7 +41,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory, MemberData(nameof(DualModeFailureInputs))]
         public void DualMode_Failure(SocketType socketType, ProtocolType protocolType)
         {
@@ -56,7 +55,7 @@ namespace System.Net.Sockets.Tests
             new object[] { AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp },
         };
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory, MemberData(nameof(CtorSuccessInputs))]
         public void Ctor_Success(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
@@ -78,7 +77,7 @@ namespace System.Net.Sockets.Tests
             new object[] { AddressFamily.InterNetwork, SocketType.Unknown, ProtocolType.Udp },
         };
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory, MemberData(nameof(CtorFailureInputs))]
         public void Ctor_Failure(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
@@ -123,6 +122,9 @@ namespace System.Net.Sockets.Tests
         [InlineData(false, 2)]
         public void CtorAndAccept_SocketNotKeptAliveViaInheritance(bool validateClientOuter, int acceptApiOuter)
         {
+            // 300 ms should be long enough to connect if the socket is actually present & listening.
+            const int ConnectionTimeoutMs = 300;
+
             // Run the test in another process so as to not have trouble with other tests
             // launching child processes that might impact inheritance.
             RemoteExecutor.Invoke((validateClientString, acceptApiString) =>
@@ -187,16 +189,49 @@ namespace System.Net.Sockets.Tests
                                 listener.Dispose();
                                 using (var tmpClient = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                                 {
-                                    Assert.ThrowsAny<SocketException>(() => tmpClient.Connect(ep));
-                                }
+                                    bool connected = tmpClient.TryConnect(ep, ConnectionTimeoutMs);
 
-                                // Let the child process terminate.
-                                serverPipe.WriteByte(42);
+                                    // Let the child process terminate.
+                                    serverPipe.WriteByte(42);
+
+                                    Assert.False(connected);
+                                }
                             }
                         }
                     }
                 }
             }, validateClientOuter.ToString(), acceptApiOuter.ToString()).Dispose();
+        }
+
+        [Theory]
+        [InlineData(AddressFamily.Packet)]
+        [InlineData(AddressFamily.ControllerAreaNetwork)]
+        [PlatformSpecific(~TestPlatforms.Linux)]
+        public void Ctor_Netcoreapp_Throws(AddressFamily addressFamily)
+        {
+            // All protocols are Linux specific and throw on other platforms
+            Assert.Throws<SocketException>(() => new Socket(addressFamily, SocketType.Raw, 0));
+        }
+
+        [Theory]
+        [InlineData(AddressFamily.Packet)]
+        [InlineData(AddressFamily.ControllerAreaNetwork)]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void Ctor_Netcoreapp_Success(AddressFamily addressFamily)
+        {
+            Socket s = null;
+            try
+            {
+                s = new Socket(addressFamily, SocketType.Raw, ProtocolType.Raw);
+            }
+            catch (SocketException e) when (e.SocketErrorCode == SocketError.AccessDenied ||
+                                            e.SocketErrorCode == SocketError.ProtocolNotSupported ||
+                                            e.SocketErrorCode == SocketError.AddressFamilyNotSupported)
+            {
+                // Ignore. We may not have privilege or protocol modules are not loaded.
+                return;
+            }
+            s.Close();
         }
     }
 }

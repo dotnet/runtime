@@ -206,14 +206,7 @@ namespace System
         //
         internal static bool IriParsingStatic(UriParser? syntax)
         {
-            return (IriParsing && (((syntax != null) && syntax.InFact(UriSyntaxFlags.AllowIriParsing)) ||
-                   (syntax == null)));
-        }
-
-        private bool IsIntranet(string schemeHost)
-        {
-            // .NET Native/CoreCLR behavior difference: all URI/IRIs will be treated as Internet.
-            return false;
+            return syntax is null || syntax.InFact(UriSyntaxFlags.AllowIriParsing);
         }
 
         internal bool UserDrivenParsing
@@ -402,7 +395,6 @@ namespace System
         // ISerializable method
         //
         /// <internalonly/>
-        [SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Justification = "System.dll is still using pre-v4 security model and needs this demand")]
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             GetObjectData(serializationInfo, streamingContext);
@@ -893,10 +885,6 @@ namespace System
             return syntax.InFact(UriSyntaxFlags.FileLikeUri);
         }
 
-        // Value from config Uri section
-        // On by default in .NET 4.5+ and cannot be disabled by config.
-        private const bool IriParsing = true; // IRI Parsing is always enabled in .NET Native and CoreCLR
-
         private string GetLocalPath()
         {
             EnsureParseRemaining();
@@ -1370,11 +1358,10 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(character));
             }
 
-            return string.Create(3, character, (Span<char> chars, char c) =>
+            return string.Create(3, (byte)character, (Span<char> chars, byte b) =>
             {
                 chars[0] = '%';
-                chars[1] = (char)UriHelper.HexUpperChars[(c & 0xf0) >> 4];
-                chars[2] = (char)UriHelper.HexUpperChars[c & 0xf];
+                HexConverter.ToCharsBuffer(b, chars, 1, HexConverter.Casing.Upper);
             });
         }
 
@@ -3236,7 +3223,7 @@ namespace System
             ushort idx = _info.Offset.Scheme;
             ushort length = (ushort)_string.Length;
             Check result = Check.None;
-            UriSyntaxFlags syntaxFlags = _syntax.Flags;    // perf
+            UriSyntaxFlags syntaxFlags = _syntax.Flags;
 
             // m_Info.Offset values may be parsed twice but we lock only on m_Flags update.
 
@@ -3977,11 +3964,14 @@ namespace System
             }
 
             // Then look up the syntax in a string-based table.
-            string str = new string('\0', span.Length);
-            fixed (char* ptr = str)
+            string str;
+            fixed (char* pSpan = span)
             {
-                int charsWritten = span.ToLowerInvariant(new Span<char>(ptr, str.Length));
-                Debug.Assert(charsWritten == str.Length);
+                str = string.Create(span.Length, (ip: (IntPtr)pSpan, length: span.Length), (buffer, state) =>
+                {
+                    int charsWritten = new ReadOnlySpan<char>((char*)state.ip, state.length).ToLowerInvariant(buffer);
+                    Debug.Assert(charsWritten == buffer.Length);
+                });
             }
             syntax = UriParser.FindOrFetchAsUnknownV1Syntax(str);
             return ParsingError.None;
@@ -4003,9 +3993,9 @@ namespace System
             ushort start = idx;
             newHost = null;
             bool justNormalized = false;
-            bool iriParsing = (IriParsing && IriParsingStatic(syntax)); // perf
-            bool hasUnicode = ((flags & Flags.HasUnicode) != 0); // perf
-            bool hostNotUnicodeNormalized = ((flags & Flags.HostUnicodeNormalized) == 0); // perf
+            bool iriParsing = IriParsingStatic(syntax);
+            bool hasUnicode = ((flags & Flags.HasUnicode) != 0);
+            bool hostNotUnicodeNormalized = ((flags & Flags.HostUnicodeNormalized) == 0);
             UriSyntaxFlags syntaxFlags = syntax.Flags;
 
             //Special case is an empty authority
@@ -4089,7 +4079,7 @@ namespace System
             {
                 flags |= Flags.IPv6HostType;
 
-                _iriParsing = (IriParsing && IriParsingStatic(syntax));
+                _iriParsing = IriParsingStatic(syntax);
 
                 if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
                 {
@@ -4127,8 +4117,8 @@ namespace System
                     && DomainNameHelper.IsValidByIri(pString, start, ref end, ref dnsNotCanonical,
                                             StaticNotAny(flags, Flags.ImplicitFile)))
             {
-                CheckAuthorityHelperHandleDnsIri(pString, start, end, startInput, iriParsing, hasUnicode, syntax,
-                    userInfoString, ref flags, ref justNormalized, ref newHost, ref err);
+                CheckAuthorityHelperHandleDnsIri(pString, start, end, hasUnicode,
+                    ref flags, ref justNormalized, ref newHost, ref err);
             }
             else if ((syntaxFlags & UriSyntaxFlags.AllowUncHost) != 0)
             {
@@ -4243,7 +4233,7 @@ namespace System
                             break;
                         }
                     }
-                    CheckAuthorityHelperHandleAnyHostIri(pString, startInput, end, iriParsing, hasUnicode, syntax,
+                    CheckAuthorityHelperHandleAnyHostIri(pString, startInput, end, iriParsing, hasUnicode,
                                                             ref flags, ref newHost, ref err);
                 }
                 else
@@ -4307,8 +4297,8 @@ namespace System
             return (ushort)end;
         }
 
-        private unsafe void CheckAuthorityHelperHandleDnsIri(char* pString, ushort start, int end, int startInput,
-            bool iriParsing, bool hasUnicode, UriParser syntax, string? userInfoString, ref Flags flags,
+        private unsafe void CheckAuthorityHelperHandleDnsIri(char* pString, ushort start, int end,
+            bool hasUnicode, ref Flags flags,
             ref bool justNormalized, ref string? newHost, ref ParsingError err)
         {
             // comes here only if host has unicode chars and iri is on or idn is allowed
@@ -4332,7 +4322,7 @@ namespace System
         }
 
         private unsafe void CheckAuthorityHelperHandleAnyHostIri(char* pString, int startInput, int end,
-                                            bool iriParsing, bool hasUnicode, UriParser syntax,
+                                            bool iriParsing, bool hasUnicode,
                                             ref Flags flags, ref string? newHost, ref ParsingError err)
         {
             if (StaticNotAny(flags, Flags.HostUnicodeNormalized) && (iriParsing && hasUnicode))
@@ -4445,8 +4435,7 @@ namespace System
                         {
                             if ((i + 1) < end)
                             {
-                                bool surrPair = false;
-                                valid = IriHelper.CheckIriUnicodeRange(c, str[i + 1], ref surrPair, true);
+                                valid = IriHelper.CheckIriUnicodeRange(c, str[i + 1], out _, true);
                             }
                         }
                         else

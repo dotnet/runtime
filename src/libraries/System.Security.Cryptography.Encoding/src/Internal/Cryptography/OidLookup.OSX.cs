@@ -16,11 +16,9 @@ namespace Internal.Cryptography
             return true;
         }
 
-        private static string NativeOidToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
+        private static string? NativeOidToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
         {
-            string friendlyName;
-
-            if (s_extraOidToFriendlyName.TryGetValue(oid, out friendlyName))
+            if (s_extraOidToFriendlyName.TryGetValue(oid, out string? friendlyName))
             {
                 return friendlyName;
             }
@@ -28,11 +26,9 @@ namespace Internal.Cryptography
             return null;
         }
 
-        private static string NativeFriendlyNameToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
+        private static string? NativeFriendlyNameToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
         {
-            string oid;
-
-            if (s_extraFriendlyNameToOid.TryGetValue(friendlyName, out oid))
+            if (s_extraFriendlyNameToOid.TryGetValue(friendlyName, out string? oid))
             {
                 return oid;
             }

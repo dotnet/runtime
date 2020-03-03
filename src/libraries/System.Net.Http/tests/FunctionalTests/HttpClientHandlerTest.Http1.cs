@@ -15,8 +15,6 @@ namespace System.Net.Http.Functional.Tests
     // This class is dedicated to SocketHttpHandler tests specific to HTTP/1.x.
     public class HttpClientHandlerTest_Http1 : HttpClientHandlerTestBase
     {
-        protected override bool UseSocketsHttpHandler => true;
-
         public HttpClientHandlerTest_Http1(ITestOutputHelper output) : base(output) { }
 
         [Fact]

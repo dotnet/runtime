@@ -1,9 +1,5 @@
 project(System.Security.Cryptography.Native.Apple C)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-add_definitions(-DPIC=1)
-
 find_library(COREFOUNDATION_LIBRARY CoreFoundation)
 find_library(SECURITY_LIBRARY Security)
 
@@ -34,7 +30,6 @@ add_library(System.Security.Cryptography.Native.Apple
 add_library(System.Security.Cryptography.Native.Apple-Static
     STATIC
     ${NATIVECRYPTO_SOURCES}
-    ${VERSION_FILE_PATH}
 )
 
 # Disable the "lib" prefix.

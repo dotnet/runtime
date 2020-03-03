@@ -1,0 +1,135 @@
+parameters:
+  buildConfig: ''
+  osGroup: ''
+  archType: ''
+  osSubgroup: ''
+  crossrootfsDir: ''
+  framework: ''
+  isOfficialBuild: false
+  isOfficialAllConfigurations: false
+  liveRuntimeBuildConfig: ''
+  runtimeFlavor: 'coreclr'
+  timeoutInMinutes: 150
+  condition: true
+  container: ''
+  steps: []
+  dependsOn: []
+  variables: {}
+  name: ''
+  displayName: ''
+  testScope: ''
+  pool: ''
+
+jobs:
+  - template: /eng/common/templates/job/job.yml
+    parameters:
+      ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
+        displayName: ${{ format('Libraries {0} {1}{2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        name: ${{ format('libraries_{0}_{1}{2}_{3}_{4}', parameters.name, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      ${{ if in(parameters.framework, 'allConfigurations', 'net472') }}:
+        displayName: ${{ format('Libraries {0} {1} {2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
+        name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.name, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+      enableTelemetry: ${{ parameters.isOfficialBuild }} # TODO: figure out if it's needed
+      container: ${{ parameters.container }}
+      condition: and(succeeded(), ${{ parameters.condition }})
+      helixRepo: dotnet/runtime
+      pool: ${{ parameters.pool }}
+      variables:
+        - _buildScriptFileName: libraries
+        - _BuildConfig: ${{ parameters.buildConfig }}
+
+        - _msbuildCommonParameters: ''
+        - _stripSymbolsArg: ''
+        - _runtimeOSArg: ''
+        - _finalFrameworkArg: ''
+        - _buildScript: $(_buildScriptFileName)$(scriptExt)
+        - _warnAsErrorArg: ''
+        - _testScopeArg: ''
+        - _extraHelixArguments: ''
+        - _crossBuildPropertyArg: ''
+        - _testRunNamePrefixSuffix: ''
+
+        - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+        - ${{ if ne(parameters.testScope, '') }}:
+          - _testScopeArg: -testscope ${{ parameters.testScope }}
+
+        - ${{ if eq(parameters.osGroup, 'Linux') }}:
+          - _crossBuildPropertyArg: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
+
+        - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
+          - _runtimeOSArg: /p:RuntimeOS=linux-musl
+
+        - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, ''), eq(parameters.archType, 'arm')) }}:
+          - _runtimeOSArg: /p:RuntimeOS=ubuntu.16.04
+
+        - ${{ if and(or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'WebAssembly')), ne(parameters.container, '')) }}:
+          - _warnAsErrorArg: '-warnAsError false'
+
+        - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+          - _runtimeOSArg: -os ${{ parameters.osGroup }}
+
+        - ${{ if ne(parameters.framework, '') }}:
+          - _finalFrameworkArg: -framework ${{ parameters.framework }}
+          - _extraHelixArguments: /p:BuildTargetFramework=${{ parameters.framework }}
+
+        - ${{ if eq(parameters.framework, 'allConfigurations') }}:
+          - _finalFrameworkArg: -allConfigurations
+          - _extraHelixArguments: /p:BuildAllConfigurations=true
+
+        - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
+          - _skipTestHostCopy: true
+          - librariesBuildArtifactName: 'libraries_bin_official_allconfigurations'
+
+        - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+          - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
+
+        - _runtimeArtifactName: ''
+        - _runtimeDownloadPath: ''
+        - _runtimeArtifactsPathArg: ''
+
+        - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+          - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
+          - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
+          - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
+          - _testRunNamePrefixSuffix: $(runtimeFlavorName)_${{ parameters.liveRuntimeBuildConfig }}
+
+          # WebAssembly uses linux implementation detail
+          - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+            - _runtimeArtifactName: '$(runtimeFlavorName)Product_Linux_x64_${{ parameters.liveRuntimeBuildConfig }}'
+
+        # Windows variables
+        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          - _runtimeOSArg: /p:RuntimeOS=win10
+
+        # Non-Windows variables
+        - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+          - _buildScript: ./$(_buildScriptFileName)$(scriptExt)
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - _stripSymbolsArg: -stripSymbols
+
+        - _buildArguments: -configuration ${{ parameters.buildConfig }} -ci -arch ${{ parameters.archType }} $(_finalFrameworkArg) $(_stripSymbolsArg) $(_testScopeArg) $(_warnAsErrorArg) $(_runtimeOSArg) $(_msbuildCommonParameters) $(_runtimeArtifactsPathArg) $(_crossBuildPropertyArg)
+        - ${{ parameters.variables }}
+
+      dependsOn:
+      - checkout
+      - ${{ parameters.dependsOn }}
+      workspace:
+        clean: all
+
+      enablePublishBuildArtifacts: true
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+      steps:
+      - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+
+      - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            unpackFolder: $(_runtimeDownloadPath)
+            artifactFileName: '$(_runtimeArtifactName)$(archiveExtension)'
+            artifactName: '$(_runtimeArtifactName)'
+            displayName: '$(runtimeFlavorName) build drop'
+
+      - ${{ parameters.steps }}

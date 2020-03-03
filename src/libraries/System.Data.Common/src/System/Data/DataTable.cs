@@ -489,7 +489,7 @@ namespace System.Data
             }
         }
 
-        // Serialize constraints availabe on the table - note this function is marked internal because it is called by the DataSet deserializer.
+        // Serialize constraints available on the table - note this function is marked internal because it is called by the DataSet deserializer.
         // ***Schema for Serializing ArrayList of Constraints***
         // Unique Constraint - ["U"]->[constraintName]->[columnIndexes]->[IsPrimaryKey]->[extendedProperties]
         // Foriegn Key Constraint - ["F"]->[constraintName]->[parentTableIndex, parentcolumnIndexes]->[childTableIndex, childColumnIndexes]->[AcceptRejectRule, UpdateRule, DeleteRule]->[extendedProperties]
@@ -3690,7 +3690,7 @@ namespace System.Data
             IndexField[] indexDesc = Array.Empty<IndexField>();
             if ((null != sortString) && (0 < sortString.Length))
             {
-                string[] split = sortString.Split(new char[] { ',' });
+                string[] split = sortString.Split(',');
                 indexDesc = new IndexField[split.Length];
 
                 for (int i = 0; i < split.Length; i++)
@@ -3702,18 +3702,18 @@ namespace System.Data
                     bool descending = false;
                     if (length >= 5 && string.Compare(current, length - 4, " ASC", 0, 4, StringComparison.OrdinalIgnoreCase) == 0)
                     {
-                        current = current.Substring(0, length - 4).Trim();
+                        current = current.AsSpan(0, length - 4).Trim().ToString();
                     }
                     else if (length >= 6 && string.Compare(current, length - 5, " DESC", 0, 5, StringComparison.OrdinalIgnoreCase) == 0)
                     {
                         descending = true;
-                        current = current.Substring(0, length - 5).Trim();
+                        current = current.AsSpan(0, length - 5).Trim().ToString();
                     }
 
                     // handle brackets.
-                    if (current.StartsWith("[", StringComparison.Ordinal))
+                    if (current.StartsWith('['))
                     {
-                        if (current.EndsWith("]", StringComparison.Ordinal))
+                        if (current.EndsWith(']'))
                         {
                             current = current.Substring(1, current.Length - 2);
                         }

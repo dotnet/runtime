@@ -1,19 +1,21 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.14.2)
 
 cmake_policy(SET CMP0042 NEW)
 project(Tests)
 
+include(${CLR_ENG_NATIVE_DIR}/configureplatform.cmake)
+
 set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Platform)
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DWINDOWS)
 endif()
 
 # Include global configure settings
 include(${CMAKE_CURRENT_SOURCE_DIR}/../configurecompiler.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../configuretools.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 # Compile options
 
-if (WIN32)
+if (CLR_CMAKE_HOST_WIN32)
     # 4100 - unreferenced formal parameter
     # 4514 - unreferenced inline function has been removed
     # 4625 - copy constructor was implicitly defined as deleted because a base class copy constructor is inaccessible or deleted

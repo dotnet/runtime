@@ -3,7 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using Xunit;
+using Xunit.Sdk;
+using System.Threading.Tasks;
+using System.IO;
 
 namespace System.Text.Json.Serialization.Tests
 {
@@ -150,6 +154,42 @@ namespace System.Text.Json.Serialization.Tests
             {
                 object obj = JsonSerializer.Deserialize<object>(" null\t");
                 Assert.Null(obj);
+            }
+        }
+
+        [Fact]
+        public static void NullReadTestChar()
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("null"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("\"\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>(""));   // Empty JSON is invalid
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("1234")); // Can't convert a JSON number to JSON string/char
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("\"stringTooLong\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("\"\u0059B\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("\"\uD800\uDC00\""));
+            Assert.Equal('a', JsonSerializer.Deserialize<char>("\"a\""));
+            Assert.Equal('Y', JsonSerializer.Deserialize<char>("\"\u0059\""));
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1037")]
+        [Fact]
+        public static void ParseNullStringToStructShouldThrowJsonException()
+        {
+            string nullString = "null";
+            Utf8JsonReader reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(nullString));
+
+            JsonTestHelper.AssertThrows<JsonException>(reader, (reader) => JsonSerializer.Deserialize<SimpleStruct>(ref reader));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleStruct>(Encoding.UTF8.GetBytes(nullString)));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleStruct>(nullString));
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1037")]
+        [Fact]
+        public static async Task ParseNullStringShouldThrowJsonExceptionAsync()
+        {
+            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes("null")))
+            { 
+                await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync<SimpleStruct>(stream));
             }
         }
     }

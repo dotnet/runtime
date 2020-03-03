@@ -354,11 +354,11 @@
   <data name="SerializationDuplicateTypeAttribute" xml:space="preserve">
     <value>The type '{0}' cannot have more than one property that has the attribute '{1}'.</value>
   </data>
-  <data name="SerializationNotSupportedCollectionType" xml:space="preserve">
-    <value>The collection type '{0}' is not supported.</value>
+  <data name="SerializationNotSupportedType" xml:space="preserve">
+    <value>The type '{0}' is not supported.</value>
   </data>
-  <data name="SerializationNotSupportedCollection" xml:space="preserve">
-    <value>The collection type '{0}' on '{1}' is not supported.</value>
+  <data name="SerializationNotSupported" xml:space="preserve">
+    <value>The type '{0}' on '{1}' is not supported.</value>
   </data>
   <data name="InvalidCharacterAtStartOfComment" xml:space="preserve">
     <value>'{0}' is invalid after '/' at the beginning of the comment. Expected either '/' or '*'.</value>
@@ -421,7 +421,7 @@
     <value>Either the JSON value is not in a supported format, or is out of bounds for a UInt16.</value>
   </data>
   <data name="SerializerCycleDetected" xml:space="preserve">
-    <value>A possible object cycle was detected which is not supported. This can either be due to a cycle or if the object depth is larger than the maximum allowed depth of {0}.</value>
+    <value>A possible object cycle was detected. This can either be due to a cycle or if the object depth is larger than the maximum allowed depth of {0}. Consider using ReferenceHanlding.Preserve on JsonSerializerOptions to support cycles.</value>
   </data>
   <data name="EmptyStringToInitializeNumber" xml:space="preserve">
     <value>Expected a number, but instead got empty string.</value>
@@ -446,5 +446,43 @@
   </data>
   <data name="NotNodeJsonElementParent" xml:space="preserve">
     <value>This JsonElement instance was not built from a JsonNode and is immutable.</value>
+  </data>
+  <data name="MetadataCannotParsePreservedObjectToImmutable" xml:space="preserve">
+    <value>Cannot parse a JSON object containing metadata properties like '$id' into an array or immutable collection type. Type '{0}'.</value>
+  </data>
+  <data name="MetadataDuplicateIdFound" xml:space="preserve">
+    <value>The value of the '$id' metadata property '{0}' conflicts with an existing identifier.</value>
+  </data>
+  <data name="MetadataIdIsNotFirstProperty" xml:space="preserve">
+    <value>The metadata property '$id' must be the first property in the JSON object.</value>
+  </data>
+  <data name="MetadataInvalidReferenceToValueType" xml:space="preserve">
+    <value>Invalid reference to value type '{0}'.</value>
+  </data>
+  <data name="MetadataInvalidTokenAfterValues" xml:space="preserve">
+    <value>The '$values' metadata property must be a JSON array. Current token type is '{0}'.</value>
+  </data>
+  <data name="MetadataPreservedArrayFailed" xml:space="preserve">
+    <value>Deserialization failed for one of these reasons:
+1. {0}
+2. {1}</value>
+  </data>
+  <data name="MetadataPreservedArrayInvalidProperty" xml:space="preserve">
+    <value>Invalid property '{0}' found within a JSON object that must only contain metadata properties and the nested JSON array to be preserved.</value>
+  </data>
+  <data name="MetadataPreservedArrayPropertyNotFound" xml:space="preserve">
+    <value>One or more metadata properties, such as '$id' and '$values', were not found within a JSON object that must only contain metadata properties and the nested JSON array to be preserved.</value>
+  </data>
+  <data name="MetadataReferenceCannotContainOtherProperties" xml:space="preserve">
+    <value>A JSON object that contains a '$ref' metadata property must not contain any other properties.</value>
+  </data>
+  <data name="MetadataReferenceNotFound" xml:space="preserve">
+    <value>Reference '{0}' not found.</value>
+  </data>
+  <data name="MetadataValueWasNotString" xml:space="preserve">
+    <value>The '$id' and '$ref' metadata properties must be JSON strings. Current token type is '{0}'.</value>
+  </data>
+  <data name="MetadataInvalidPropertyWithLeadingDollarSign" xml:space="preserve">
+    <value>Properties that start with '$' are not allowed on preserve mode, either escape the character or turn off preserve references by setting ReferenceHandling to ReferenceHandling.Default.</value>
   </data>
 </root>

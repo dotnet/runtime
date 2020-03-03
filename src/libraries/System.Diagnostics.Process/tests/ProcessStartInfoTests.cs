@@ -20,7 +20,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public partial class ProcessStartInfoTests : ProcessTestBase
+    public class ProcessStartInfoTests : ProcessTestBase
     {
         [Fact]
         public void TestEnvironmentProperty()
@@ -350,7 +350,7 @@ namespace System.Diagnostics.Tests
             }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [ActiveIssue(12696)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18978")]
         [Fact, PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
         public void TestUserCredentialsPropertiesOnWindows()
         {
@@ -956,13 +956,13 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), // Nano does not support UseShellExecute
-                                                    nameof(PlatformDetection.IsNotWindows8x))] // https://github.com/dotnet/corefx/issues/20388
+                                                    nameof(PlatformDetection.IsNotWindows8x))] // https://github.com/dotnet/runtime/issues/22007
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_TextFile_ShellExecute()
         {
             if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
-                return; // [ActiveIssue(https://github.com/dotnet/corefx/issues/28953)]
+                return; // [ActiveIssue(https://github.com/dotnet/runtime/issues/25823)]
 
             string tempFile = GetTestFilePath() + ".txt";
             File.WriteAllText(tempFile, $"StartInfo_TextFile_ShellExecute");
@@ -1068,7 +1068,7 @@ namespace System.Diagnostics.Tests
             {
                 TheoryData<bool> data = new TheoryData<bool> { false };
 
-                if (   !PlatformDetection.IsInAppContainer // https://github.com/dotnet/corefx/issues/20204
+                if (   !PlatformDetection.IsInAppContainer // https://github.com/dotnet/runtime/issues/21919
                     && !PlatformDetection.IsWindowsNanoServer // By design
                     && !PlatformDetection.IsWindowsIoTCore)
                     data.Add(true);
@@ -1111,11 +1111,71 @@ namespace System.Diagnostics.Tests
 
             int expected = ERROR_BAD_EXE_FORMAT;
 
-            // Windows Nano bug see #10290
+            // Windows Nano bug see https://github.com/dotnet/runtime/issues/17919
             if (PlatformDetection.IsWindowsNanoServer)
                 expected = ERROR_SUCCESS;
 
             Assert.Equal(expected, Assert.Throws<Win32Exception>(() => Process.Start(info)).NativeErrorCode);
+        }
+
+        [Fact]
+        public void UnintializedArgumentList()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo();
+            Assert.Equal(0, psi.ArgumentList.Count);
+
+            psi = new ProcessStartInfo("filename", "-arg1 -arg2");
+            Assert.Equal(0, psi.ArgumentList.Count);
+        }
+
+        [Fact]
+        public void InitializeWithArgumentList()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo("filename");
+            psi.ArgumentList.Add("arg1");
+            psi.ArgumentList.Add("arg2");
+
+            Assert.Equal(2, psi.ArgumentList.Count);
+            Assert.Equal("arg1", psi.ArgumentList[0]);
+            Assert.Equal("arg2", psi.ArgumentList[1]);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // No Notepad on Nano
+        [MemberData(nameof(UseShellExecute))]
+        [OuterLoop("Launches notepad")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void StartInfo_NotepadWithContent_withArgumentList(bool useShellExecute)
+        {
+            string tempFile = GetTestFilePath() + ".txt";
+            File.WriteAllText(tempFile, $"StartInfo_NotepadWithContent({useShellExecute})");
+
+            ProcessStartInfo info = new ProcessStartInfo
+            {
+                UseShellExecute = useShellExecute,
+                FileName = @"notepad.exe",
+                Arguments = null,
+                WindowStyle = ProcessWindowStyle.Minimized
+            };
+
+            info.ArgumentList.Add(tempFile);
+
+            using (var process = Process.Start(info))
+            {
+                Assert.True(process != null, $"Could not start {info.FileName} {info.Arguments} UseShellExecute={info.UseShellExecute}");
+
+                try
+                {
+                    process.WaitForInputIdle(); // Give the file a chance to load
+                    Assert.Equal("notepad", process.ProcessName);
+
+                    // On some Windows versions, the file extension is not included in the title
+                    Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
+                }
+                finally
+                {
+                    process?.Kill();
+                }
+            }
         }
     }
 }

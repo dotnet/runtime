@@ -92,7 +92,7 @@ namespace System.Data.OleDb.Tests
                 command.CommandText = @"SELECT * FROM " + tableName;
                 using (var builder = (OleDbCommandBuilder)OleDbFactory.Instance.CreateCommandBuilder())
                 {
-                    if (PlatformDetection.IsFullFramework)
+                    if (PlatformDetection.IsNetFramework)
                     {
                         AssertExtensions.Throws<ArgumentNullException>(
                             () => builder.QuoteIdentifier(null, command.Connection),

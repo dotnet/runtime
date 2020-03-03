@@ -1,4 +1,5 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
     <SfxIdentity>Microsoft.NETCore.App</SfxIdentity>
@@ -42,4 +43,19 @@
     </PropertyGroup>
   </Target>
 
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <!--
+    Since the libraries configuration might be different than the installer configuration, we need to add additional restore sources
+    to be able to find packages produced in the libraries phase and consumed in the installer phase.
+  -->
+  <PropertyGroup>
+    <RestoreSources Condition="Exists('$(LibrariesShippingPackagesDir)')">$(RestoreSources);$(LibrariesShippingPackagesDir)</RestoreSources>
+    <RestoreSources Condition="Exists('$(LibrariesNonShippingPackagesDir)')">$(RestoreSources);$(LibrariesNonShippingPackagesDir)</RestoreSources>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(LibrariesPackagesDir)' != '$(LibrariesAllConfigPackagesDir)'">
+    <RestoreSources Condition="Exists('$(LibrariesAllConfigShippingPackagesDir)')">$(RestoreSources);$(LibrariesAllConfigShippingPackagesDir)</RestoreSources>
+    <RestoreSources Condition="Exists('$(LibrariesAllConfigNonShippingPackagesDir)')">$(RestoreSources);$(LibrariesAllConfigNonShippingPackagesDir)</RestoreSources>
+  </PropertyGroup>
 </Project>

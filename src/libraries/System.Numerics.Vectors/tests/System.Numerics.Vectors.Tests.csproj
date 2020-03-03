@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
@@ -26,13 +26,6 @@
     <Compile Include="QuaternionTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GenericVectorTests.netcoreapp.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>GenericVectorTests.netcoreapp.tt</DependentUpon>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="$(CoreLibSharedDir)System\Numerics\ConstantHelper.tt">
       <Link>ConstantHelper.tt</Link>
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -45,11 +38,5 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>GenericVectorTests.cs</LastGenOutput>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="GenericVectorTests.netcoreapp.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>GenericVectorTests.netcoreapp.cs</LastGenOutput>
-    </Content>
   </ItemGroup>
 </Project>

@@ -1,10 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -144,7 +143,7 @@ namespace ILCompiler
         /// <summary>
         /// Dictionary given a mangled name for a given <see cref="TypeDesc"/>
         /// </summary>
-        private ImmutableDictionary<TypeDesc, string> _mangledTypeNames = ImmutableDictionary<TypeDesc, string>.Empty;
+        private Dictionary<TypeDesc, string> _mangledTypeNames = new Dictionary<TypeDesc, string>();
 
         /// <summary>
         /// Given a set of names <param name="set"/> check if <param name="origName"/>
@@ -166,11 +165,14 @@ namespace ILCompiler
 
         public override string GetMangledTypeName(TypeDesc type)
         {
-            string mangledName;
-            if (_mangledTypeNames.TryGetValue(type, out mangledName))
-                return mangledName;
+            lock (this)
+            {
+                string mangledName;
+                if (_mangledTypeNames.TryGetValue(type, out mangledName))
+                    return mangledName;
 
-            return ComputeMangledTypeName(type);
+                return ComputeMangledTypeName(type);
+            }
         }
 
         private string EnterNameScopeSequence => _mangleForCplusPlus ? "_A_" : "<";
@@ -273,12 +275,11 @@ namespace ILCompiler
                             // Ensure that name is unique and update our tables accordingly.
                             name = DisambiguateName(name, deduplicator);
                             deduplicator.Add(name);
-                            _mangledTypeNames = _mangledTypeNames.Add(t, name);
+                            _mangledTypeNames.Add(t, name);
                         }
                     }
+                    return _mangledTypeNames[type];
                 }
-
-                return _mangledTypeNames[type];
             }
 
             string mangledName;
@@ -351,14 +352,14 @@ namespace ILCompiler
             {
                 // Ensure that name is unique and update our tables accordingly.
                 if (!_mangledTypeNames.ContainsKey(type))
-                    _mangledTypeNames = _mangledTypeNames.Add(type, mangledName);
+                    _mangledTypeNames.Add(type, mangledName);
             }
 
             return mangledName;
         }
 
-        private ImmutableDictionary<MethodDesc, Utf8String> _mangledMethodNames = ImmutableDictionary<MethodDesc, Utf8String>.Empty;
-        private ImmutableDictionary<MethodDesc, Utf8String> _unqualifiedMangledMethodNames = ImmutableDictionary<MethodDesc, Utf8String>.Empty;
+        private Dictionary<MethodDesc, Utf8String> _mangledMethodNames = new Dictionary<MethodDesc, Utf8String>();
+        private Dictionary<MethodDesc, Utf8String> _unqualifiedMangledMethodNames = new Dictionary<MethodDesc, Utf8String>();
 
         public override Utf8String GetMangledMethodName(MethodDesc method)
         {
@@ -381,7 +382,7 @@ namespace ILCompiler
                 lock (this)
                 {
                     if (!_mangledMethodNames.ContainsKey(method))
-                        _mangledMethodNames = _mangledMethodNames.Add(method, utf8MangledName);
+                        _mangledMethodNames.Add(method, utf8MangledName);
                 }
 
                 return utf8MangledName;
@@ -390,11 +391,14 @@ namespace ILCompiler
 
         private Utf8String GetUnqualifiedMangledMethodName(MethodDesc method)
         {
-            Utf8String mangledName;
-            if (_unqualifiedMangledMethodNames.TryGetValue(method, out mangledName))
-                return mangledName;
+            lock (this)
+            {
+                Utf8String mangledName;
+                if (_unqualifiedMangledMethodNames.TryGetValue(method, out mangledName))
+                    return mangledName;
 
-            return ComputeUnqualifiedMangledMethodName(method);
+                return ComputeUnqualifiedMangledMethodName(method);
+            }
         }
 
         private Utf8String GetPrefixMangledTypeName(IPrefixMangledType prefixMangledType)
@@ -481,12 +485,11 @@ namespace ILCompiler
                             name = DisambiguateName(name, deduplicator);
                             deduplicator.Add(name);
 
-                            _unqualifiedMangledMethodNames = _unqualifiedMangledMethodNames.Add(m, name);
+                            _unqualifiedMangledMethodNames.Add(m, name);
                         }
                     }
+                    return _unqualifiedMangledMethodNames[method];
                 }
-
-                return _unqualifiedMangledMethodNames[method];
             }
 
             Utf8String utf8MangledName;
@@ -550,22 +553,25 @@ namespace ILCompiler
                 lock (this)
                 {
                     if (!_unqualifiedMangledMethodNames.ContainsKey(method))
-                        _unqualifiedMangledMethodNames = _unqualifiedMangledMethodNames.Add(method, utf8MangledName);
+                        _unqualifiedMangledMethodNames.Add(method, utf8MangledName);
                 }
             }
 
             return utf8MangledName;
         }
 
-        private ImmutableDictionary<FieldDesc, Utf8String> _mangledFieldNames = ImmutableDictionary<FieldDesc, Utf8String>.Empty;
+        private Dictionary<FieldDesc, Utf8String> _mangledFieldNames = new Dictionary<FieldDesc, Utf8String>();
 
         public override Utf8String GetMangledFieldName(FieldDesc field)
         {
-            Utf8String mangledName;
-            if (_mangledFieldNames.TryGetValue(field, out mangledName))
-                return mangledName;
+            lock (this)
+            {
+                Utf8String mangledName;
+                if (_mangledFieldNames.TryGetValue(field, out mangledName))
+                    return mangledName;
 
-            return ComputeMangledFieldName(field);
+                return ComputeMangledFieldName(field);
+            }
         }
 
         private Utf8String ComputeMangledFieldName(FieldDesc field)
@@ -594,12 +600,11 @@ namespace ILCompiler
                             if (prependTypeName != null)
                                 name = prependTypeName + "__" + name;
 
-                            _mangledFieldNames = _mangledFieldNames.Add(f, name);
+                            _mangledFieldNames.Add(f, name);
                         }
                     }
+                    return _mangledFieldNames[field];
                 }
-
-                return _mangledFieldNames[field];
             }
 
 
@@ -613,26 +618,29 @@ namespace ILCompiler
             lock (this)
             {
                 if (!_mangledFieldNames.ContainsKey(field))
-                    _mangledFieldNames = _mangledFieldNames.Add(field, utf8MangledName);
+                    _mangledFieldNames.Add(field, utf8MangledName);
             }
 
             return utf8MangledName;
         }
 
-        private ImmutableDictionary<string, string> _mangledStringLiterals = ImmutableDictionary<string, string>.Empty;
+        private Dictionary<string, string> _mangledStringLiterals = new Dictionary<string, string>();
 
         public override string GetMangledStringName(string literal)
         {
             string mangledName;
-            if (_mangledStringLiterals.TryGetValue(literal, out mangledName))
-                return mangledName;
+            lock (this)
+            {
+                if (_mangledStringLiterals.TryGetValue(literal, out mangledName))
+                    return mangledName;
+            }
 
             mangledName = SanitizeNameWithHash(literal);
 
             lock (this)
             {
                 if (!_mangledStringLiterals.ContainsKey(literal))
-                    _mangledStringLiterals = _mangledStringLiterals.Add(literal, mangledName);
+                    _mangledStringLiterals.Add(literal, mangledName);
             }
 
             return mangledName;

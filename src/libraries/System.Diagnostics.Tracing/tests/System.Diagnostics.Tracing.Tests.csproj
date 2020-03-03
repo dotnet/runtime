@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <!--Windows only files -->
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' and '$(TargetsWindows)' == 'true'">
@@ -13,6 +14,7 @@
     <Compile Include="BasicEventSourceTest\TestsWriteEvent.Etw.cs" />
     <Compile Include="BasicEventSourceTest\FuzzyTests.Etw.cs" />
     <Compile Include="BasicEventSourceTest\TestsWriteEventToListener.Etw.cs" />
+    <Compile Include="BasicEventSourceTest\TestsManifestGeneration.Etw.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BasicEventSourceTest\Harness\EventTestHarness.cs" />

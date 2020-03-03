@@ -63,7 +63,6 @@ CONFIG_INTEGER(JitGCChecks, W("JitGCChecks"), 0)
 CONFIG_INTEGER(JitGCInfoLogging, W("JitGCInfoLogging"), 0) // If true, prints GCInfo-related output to standard output.
 CONFIG_INTEGER(JitHashBreak, W("JitHashBreak"), -1)        // Same as JitBreak, but for a method hash
 CONFIG_INTEGER(JitHashDump, W("JitHashDump"), -1)          // Same as JitDump, but for a method hash
-CONFIG_INTEGER(JitHashDumpIR, W("JitHashDumpIR"), -1)      // Same as JitDumpIR, but for a method hash
 CONFIG_INTEGER(JitHashHalt, W("JitHashHalt"), -1)          // Same as JitHalt, but for a method hash
 CONFIG_INTEGER(JitInlineAdditionalMultiplier, W("JitInlineAdditionalMultiplier"), 0)
 CONFIG_INTEGER(JitInlinePrintStats, W("JitInlinePrintStats"), 0)
@@ -99,8 +98,8 @@ CONFIG_INTEGER(JitQueryCurrentStaticFieldClass, W("JitQueryCurrentStaticFieldCla
 CONFIG_INTEGER(JitReportFastTailCallDecisions, W("JitReportFastTailCallDecisions"), 0)
 CONFIG_INTEGER(JitPInvokeCheckEnabled, W("JITPInvokeCheckEnabled"), 0)
 CONFIG_INTEGER(JitPInvokeEnabled, W("JITPInvokeEnabled"), 1)
-CONFIG_INTEGER(JitPrintInlinedMethods, W("JitPrintInlinedMethods"), 0)
-CONFIG_INTEGER(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"), 0)
+CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
+CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"))
 CONFIG_INTEGER(JitRequired, W("JITRequired"), -1)
 CONFIG_INTEGER(JitRoundFloat, W("JITRoundFloat"), DEFAULT_ROUND_LEVEL)
 CONFIG_INTEGER(JitStackAllocToLocalSize, W("JitStackAllocToLocalSize"), DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)
@@ -124,11 +123,9 @@ CONFIG_INTEGER(JitStressFP, W("JitStressFP"), 0)                       // Intern
 CONFIG_INTEGER(JitStressModeNamesOnly, W("JitStressModeNamesOnly"), 0) // Internal Jit stress: if nonzero, only enable
                                                                        // stress modes listed in JitStressModeNames
 CONFIG_INTEGER(JitStressRegs, W("JitStressRegs"), 0)
-CONFIG_INTEGER(JitStrictCheckForNonVirtualCallToVirtualMethod, W("JitStrictCheckForNonVirtualCallToVirtualMethod"), 1)
 CONFIG_INTEGER(JitVNMapSelLimit, W("JitVNMapSelLimit"), 0) // If non-zero, assert if # of VNF_MapSelect applications
                                                            // considered reaches this
 CONFIG_INTEGER(NgenHashDump, W("NgenHashDump"), -1)        // same as JitHashDump, but for ngen
-CONFIG_INTEGER(NgenHashDumpIR, W("NgenHashDumpIR"), -1)    // same as JitHashDumpIR, but for ngen
 CONFIG_INTEGER(NgenOrder, W("NgenOrder"), 0)
 CONFIG_INTEGER(RunAltJitCode, W("RunAltJitCode"), 1) // If non-zero, and the compilation succeeds for an AltJit, then
                                                      // use the code. If zero, then we always throw away the generated
@@ -138,13 +135,13 @@ CONFIG_INTEGER(ShouldInjectFault, W("InjectFault"), 0)
 CONFIG_INTEGER(StressCOMCall, W("StressCOMCall"), 0)
 CONFIG_INTEGER(TailcallStress, W("TailcallStress"), 0)
 CONFIG_INTEGER(TreesBeforeAfterMorph, W("JitDumpBeforeAfterMorph"), 0) // If 1, display each tree before/after morphing
+
 CONFIG_METHODSET(JitBreak, W("JitBreak")) // Stops in the importer when compiling a specified method
 CONFIG_METHODSET(JitDebugBreak, W("JitDebugBreak"))
 CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Dumps disassembly for specified method
 CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies")) // Only show JitDisasm and related info for methods
                                                              // from this semicolon-delimited list of assemblies.
 CONFIG_METHODSET(JitDump, W("JitDump"))                      // Dumps trees for specified method
-CONFIG_METHODSET(JitDumpIR, W("JitDumpIR"))                  // Dumps trees (in linear IR form) for specified method
 CONFIG_METHODSET(JitEHDump, W("JitEHDump"))                  // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
 CONFIG_METHODSET(JitForceProcedureSplitting, W("JitForceProcedureSplitting"))
@@ -167,7 +164,6 @@ CONFIG_METHODSET(JitUnwindDump, W("JitUnwindDump")) // Dump the unwind codes for
 ///
 CONFIG_METHODSET(NgenDisasm, W("NgenDisasm")) // Same as JitDisasm, but for ngen
 CONFIG_METHODSET(NgenDump, W("NgenDump"))     // Same as JitDump, but for ngen
-CONFIG_METHODSET(NgenDumpIR, W("NgenDumpIR")) // Same as JitDumpIR, but for ngen
 CONFIG_METHODSET(NgenEHDump, W("NgenEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(NgenGCDump, W("NgenGCDump"))
 CONFIG_METHODSET(NgenDebugDump, W("NgenDebugDump"))
@@ -182,10 +178,6 @@ CONFIG_STRING(JitDumpFgPhase, W("JitDumpFgPhase")) // Phase-based Xml/Dot flowgr
                                                    // phase to see the flowgraph after that phase. Leave unset to dump
                                                    // after COLD-BLK (determine first cold block) or set to * for all
                                                    // phases
-CONFIG_STRING(JitDumpIRFormat, W("JitDumpIRFormat")) // Comma separated format control for JitDumpIR, values = {types |
-                                                     // locals | ssa | valnums | kinds | flags | nodes | nolists |
-                                                     // nostmts | noleafs | trees | dataflow}
-CONFIG_STRING(JitDumpIRPhase, W("JitDumpIRPhase"))   // Phase control for JitDumpIR, values = {* | phasename}
 CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))
 CONFIG_STRING(JitStressModeNames, W("JitStressModeNames")) // Internal Jit stress mode: stress using the given set of
@@ -197,11 +189,9 @@ CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit
 ///
 /// NGEN
 ///
-CONFIG_STRING(NgenDumpFg, W("NgenDumpFg"))             // Ngen Xml Flowgraph support
-CONFIG_STRING(NgenDumpFgDir, W("NgenDumpFgDir"))       // Ngen Xml Flowgraph support
-CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile"))     // Ngen Xml Flowgraph support
-CONFIG_STRING(NgenDumpIRFormat, W("NgenDumpIRFormat")) // Same as JitDumpIRFormat, but for ngen
-CONFIG_STRING(NgenDumpIRPhase, W("NgenDumpIRPhase"))   // Same as JitDumpIRPhase, but for ngen
+CONFIG_STRING(NgenDumpFg, W("NgenDumpFg"))         // Ngen Xml Flowgraph support
+CONFIG_STRING(NgenDumpFgDir, W("NgenDumpFgDir"))   // Ngen Xml Flowgraph support
+CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile")) // Ngen Xml Flowgraph support
 ///
 /// JIT Hardware Intrinsics
 ///
@@ -218,19 +208,19 @@ CONFIG_INTEGER(JitNoRangeChks, W("JitNoRngChks"), 0) // If 1, don't generate ran
 
 // AltJitAssertOnNYI should be 0 on targets where JIT is under development or bring up stage, so as to facilitate
 // fallback to main JIT on hitting a NYI.
-#if defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
+#if defined(TARGET_ARM64) || defined(TARGET_X86)
 CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 0) // Controls the AltJit behavior of NYI stuff
-#else                                                        // !defined(_TARGET_ARM64_) && !defined(_TARGET_X86_)
+#else                                                        // !defined(TARGET_ARM64) && !defined(TARGET_X86)
 CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 1) // Controls the AltJit behavior of NYI stuff
-#endif                                                       // defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
+#endif                                                       // defined(TARGET_ARM64) || defined(TARGET_X86)
 ///
 /// JIT Hardware Intrinsics
 ///
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 CONFIG_INTEGER(EnableSSE3_4, W("EnableSSE3_4"), 1) // Enable SSE3, SSSE3, SSE 4.1 and 4.2 instruction set as default
 #endif
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 // Enable AVX instruction set for wide operations as default. When both AVX and SSE3_4 are set, we will use the most
 // capable instruction set available which will prefer AVX over SSE3/4.
 CONFIG_INTEGER(EnableHWIntrinsic, W("EnableHWIntrinsic"), 1) // Enable Base
@@ -249,14 +239,17 @@ CONFIG_INTEGER(EnableBMI2, W("EnableBMI2"), 1)               // Enable BMI2
 CONFIG_INTEGER(EnableLZCNT, W("EnableLZCNT"), 1)             // Enable AES
 CONFIG_INTEGER(EnablePCLMULQDQ, W("EnablePCLMULQDQ"), 1)     // Enable PCLMULQDQ
 CONFIG_INTEGER(EnablePOPCNT, W("EnablePOPCNT"), 1)           // Enable POPCNT
-#else                                                        // !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_)
+#else                                                        // !defined(TARGET_AMD64) && !defined(TARGET_X86)
 // Enable AVX instruction set for wide operations as default
 CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 0)
-#endif                                                       // !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_)
+#endif                                                       // !defined(TARGET_AMD64) && !defined(TARGET_X86)
+
+CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 0) // Enable the register allocator to support EH-write thru:
+                                                             // partial enregistration of vars exposed on EH boundaries
 
 // clang-format off
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 CONFIG_INTEGER(EnableHWIntrinsic,       W("EnableHWIntrinsic"), 1)
 CONFIG_INTEGER(EnableArm64Aes,          W("EnableArm64Aes"), 1)
 CONFIG_INTEGER(EnableArm64Atomics,      W("EnableArm64Atomics"), 1)
@@ -279,9 +272,17 @@ CONFIG_INTEGER(EnableArm64AdvSimd_Fp16, W("EnableArm64AdvSimd_Fp16"), 1)
 CONFIG_INTEGER(EnableArm64Sm3,          W("EnableArm64Sm3"), 1)
 CONFIG_INTEGER(EnableArm64Sm4,          W("EnableArm64Sm4"), 1)
 CONFIG_INTEGER(EnableArm64Sve,          W("EnableArm64Sve"), 1)
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
 
 // clang-format on
+
+#ifdef FEATURE_SIMD
+CONFIG_INTEGER(JitDisableSimdVN, W("JitDisableSimdVN"), 0) // Default 0, ValueNumbering of SIMD nodes and HW Intrinsic
+                                                           // nodes enabled
+                                                           // If 1, then disable ValueNumbering of SIMD nodes
+                                                           // If 2, then disable ValueNumbering of HW Intrinsic nodes
+                                                           // If 3, disable both SIMD and HW Intrinsic nodes
+#endif                                                     // FEATURE_SIMD
 
 ///
 /// JIT
@@ -292,10 +293,7 @@ CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 0)
 CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 1)
 #endif // !defined(DEBUG) && !defined(_DEBUG)
 
-// It was originally intended that JitMinOptsTrackGCrefs only be enabled for amd64 on CoreCLR. A mistake was
-// made, and it was enabled for x86 as well. Whether it should continue to be enabled for x86 should be investigated.
-// This is tracked by issue https://github.com/dotnet/coreclr/issues/12415.
-#if (defined(_TARGET_AMD64_) && defined(FEATURE_CORECLR)) || defined(_TARGET_X86_)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 #define JitMinOptsTrackGCrefs_Default 0 // Not tracking GC refs in MinOpts is new behavior
 #else
 #define JitMinOptsTrackGCrefs_Default 1
@@ -383,13 +381,8 @@ CONFIG_INTEGER(JitObjectStackAllocation, W("JitObjectStackAllocation"), 0)
 CONFIG_INTEGER(JitEECallTimingInfo, W("JitEECallTimingInfo"), 0)
 
 #if defined(DEBUG)
-#if defined(FEATURE_CORECLR)
 CONFIG_INTEGER(JitEnableFinallyCloning, W("JitEnableFinallyCloning"), 1)
 CONFIG_INTEGER(JitEnableRemoveEmptyTry, W("JitEnableRemoveEmptyTry"), 1)
-#else
-CONFIG_INTEGER(JitEnableFinallyCloning, W("JitEnableFinallyCloning"), 0)
-CONFIG_INTEGER(JitEnableRemoveEmptyTry, W("JitEnableRemoveEmptyTry"), 0)
-#endif // defined(FEATURE_CORECLR)
 #endif // DEBUG
 
 // Overall master enable for Guarded Devirtualization. Currently not enabled by default.
@@ -422,14 +415,14 @@ CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
 #endif // DEBUG
 
 #if defined(DEBUG)
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 // JitSaveFpLrWithCalleeSavedRegisters:
 //    0: use default frame type decision
 //    1: disable frames that save FP/LR registers with the callee-saved registers (at the top of the frame)
 //    2: force all frames to use the frame types that save FP/LR registers with the callee-saved registers (at the top
 //    of the frame)
 CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSavedRegisters"), 0)
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
 #endif // DEBUG
 
 #undef CONFIG_INTEGER

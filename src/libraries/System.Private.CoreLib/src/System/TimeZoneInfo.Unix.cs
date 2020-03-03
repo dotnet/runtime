@@ -981,21 +981,11 @@ namespace System
                 // NOTE: index == dts.Length
                 DateTime startTransitionDate = dts[index - 1];
 
-                if (!string.IsNullOrEmpty(futureTransitionsPosixFormat))
-                {
-                    AdjustmentRule? r = TZif_CreateAdjustmentRuleForPosixFormat(futureTransitionsPosixFormat, startTransitionDate, timeZoneBaseUtcOffset);
+                AdjustmentRule? r = !string.IsNullOrEmpty(futureTransitionsPosixFormat) ?
+                    TZif_CreateAdjustmentRuleForPosixFormat(futureTransitionsPosixFormat, startTransitionDate, timeZoneBaseUtcOffset) :
+                    null;
 
-                    if (r != null)
-                    {
-                        if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
-                        {
-                            NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
-                        }
-
-                        rulesList.Add(r);
-                    }
-                }
-                else
+                if (r == null)
                 {
                     // just use the last transition as the rule which will be used until the end of time
 
@@ -1004,22 +994,22 @@ namespace System
                     TimeSpan daylightDelta = transitionType.IsDst ? transitionOffset : TimeSpan.Zero;
                     TimeSpan baseUtcDelta = transitionType.IsDst ? TimeSpan.Zero : transitionOffset;
 
-                    AdjustmentRule r = AdjustmentRule.CreateAdjustmentRule(
+                    r = AdjustmentRule.CreateAdjustmentRule(
                         startTransitionDate,
                         DateTime.MaxValue,
                         daylightDelta,
-                        default(TransitionTime),
-                        default(TransitionTime),
+                        default,
+                        default,
                         baseUtcDelta,
                         noDaylightTransitions: true);
-
-                    if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
-                    {
-                        NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
-                    }
-
-                    rulesList.Add(r);
                 }
+
+                if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
+                {
+                    NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
+                }
+
+                rulesList.Add(r);
             }
 
             index++;
@@ -1111,15 +1101,20 @@ namespace System
                             daylightSavingsTimeSpan = TZif_CalculateTransitionOffsetFromBase(daylightSavingsTimeSpan, baseOffset);
                         }
 
-                        TransitionTime dstStart = TZif_CreateTransitionTimeFromPosixRule(start, startTime);
-                        TransitionTime dstEnd = TZif_CreateTransitionTimeFromPosixRule(end, endTime);
+                        TransitionTime? dstStart = TZif_CreateTransitionTimeFromPosixRule(start, startTime);
+                        TransitionTime? dstEnd = TZif_CreateTransitionTimeFromPosixRule(end, endTime);
+
+                        if (dstStart == null || dstEnd == null)
+                        {
+                            return null;
+                        }
 
                         return AdjustmentRule.CreateAdjustmentRule(
                             startTransitionDate,
                             DateTime.MaxValue,
                             daylightSavingsTimeSpan,
-                            dstStart,
-                            dstEnd,
+                            dstStart.GetValueOrDefault(),
+                            dstEnd.GetValueOrDefault(),
                             baseOffset,
                             noDaylightTransitions: false);
                     }
@@ -1185,7 +1180,7 @@ namespace System
             TimeSpan? timeOffset = TZif_ParseOffsetString(time);
             if (timeOffset.HasValue)
             {
-                // This logic isn't correct and can't be corrected until https://github.com/dotnet/corefx/issues/2618 is fixed.
+                // This logic isn't correct and can't be corrected until https://github.com/dotnet/runtime/issues/14966 is fixed.
                 // Some time zones use time values like, "26", "144", or "-2".
                 // This allows the week to sometimes be week 4 and sometimes week 5 in the month.
                 // For now, strip off any 'days' in the offset, and just get the time of day correct
@@ -1210,11 +1205,11 @@ namespace System
             return timeOfDay;
         }
 
-        private static TransitionTime TZif_CreateTransitionTimeFromPosixRule(ReadOnlySpan<char> date, ReadOnlySpan<char> time)
+        private static TransitionTime? TZif_CreateTransitionTimeFromPosixRule(ReadOnlySpan<char> date, ReadOnlySpan<char> time)
         {
             if (date.IsEmpty)
             {
-                return default;
+                return null;
             }
 
             if (date[0] == 'M')
@@ -1241,7 +1236,7 @@ namespace System
                     //
                     // This specifies the Julian day, with n between 0 and 365. February 29 is counted in leap years.
                     //
-                    // n would be a relative number from the begining of the year. which should handle if the
+                    // n would be a relative number from the beginning of the year. which should handle if the
                     // the year is a leap year or not.
                     //
                     // In leap year, n would be counted as:
@@ -1260,7 +1255,8 @@ namespace System
                     //
                     // If we need to support n format, we'll have to have a floating adjustment rule support this case.
 
-                    throw new InvalidTimeZoneException(SR.InvalidTimeZone_NJulianDayNotSupported);
+                    // Since we can't support this rule, return null to indicate to skip the POSIX rule.
+                    return null;
                 }
 
                 // Julian day

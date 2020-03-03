@@ -30,11 +30,11 @@ namespace Internal.Cryptography.Pal
         private static readonly TimeSpan s_lastWriteRecheckInterval = TimeSpan.FromSeconds(5);
         private static readonly TimeSpan s_assumeInvalidInterval = TimeSpan.FromMinutes(5);
         private static readonly Stopwatch s_recheckStopwatch = new Stopwatch();
-        private static readonly DirectoryInfo s_rootStoreDirectoryInfo = SafeOpenRootDirectoryInfo();
-        private static readonly FileInfo s_rootStoreFileInfo = SafeOpenRootFileInfo();
+        private static readonly DirectoryInfo? s_rootStoreDirectoryInfo = SafeOpenRootDirectoryInfo();
+        private static readonly FileInfo? s_rootStoreFileInfo = SafeOpenRootFileInfo();
 
         // Use non-Value-Tuple so that it's an atomic update.
-        private static Tuple<SafeX509StackHandle, SafeX509StackHandle> s_nativeCollections;
+        private static Tuple<SafeX509StackHandle, SafeX509StackHandle>? s_nativeCollections;
         private static DateTime s_directoryCertsLastWrite;
         private static DateTime s_fileCertsLastWrite;
 
@@ -90,19 +90,19 @@ namespace Internal.Cryptography.Pal
             throw new InvalidOperationException();
         }
 
-        public SafeHandle SafeHandle => null;
+        public SafeHandle? SafeHandle => null;
 
         private static Tuple<SafeX509StackHandle, SafeX509StackHandle> GetCollections()
         {
             TimeSpan elapsed = s_recheckStopwatch.Elapsed;
-            Tuple<SafeX509StackHandle, SafeX509StackHandle> ret = s_nativeCollections;
+            Tuple<SafeX509StackHandle, SafeX509StackHandle>? ret = s_nativeCollections;
 
             if (ret == null || elapsed > s_lastWriteRecheckInterval)
             {
                 lock (s_recheckStopwatch)
                 {
-                    FileInfo fileInfo = s_rootStoreFileInfo;
-                    DirectoryInfo dirInfo = s_rootStoreDirectoryInfo;
+                    FileInfo? fileInfo = s_rootStoreFileInfo;
+                    DirectoryInfo? dirInfo = s_rootStoreDirectoryInfo;
 
                     fileInfo?.Refresh();
                     dirInfo?.Refresh();
@@ -122,8 +122,8 @@ namespace Internal.Cryptography.Pal
         }
 
         private static Tuple<SafeX509StackHandle, SafeX509StackHandle> LoadMachineStores(
-            DirectoryInfo rootStorePath,
-            FileInfo rootStoreFile)
+            DirectoryInfo? rootStorePath,
+            FileInfo? rootStoreFile)
         {
             Debug.Assert(
                 Monitor.IsEntered(s_recheckStopwatch),
@@ -170,9 +170,9 @@ namespace Internal.Cryptography.Pal
                     // One is the regular format ('BEGIN CERTIFICATE') and the other
                     // contains additional AUX-data ('BEGIN TRUSTED CERTIFICATE').
                     // The additional data contains the appropriate usage (e.g. emailProtection, serverAuth, ...).
-                    // Because corefx doesn't validate for a specific usage, derived certificates are rejected.
+                    // Because we don't validate for a specific usage, derived certificates are rejected.
                     // For now, we skip the certificates with AUX data and use the regular certificates.
-                    ICertificatePal pal;
+                    ICertificatePal? pal;
                     while (OpenSslX509CertificateReader.TryReadX509PemNoAux(fileBio, out pal) ||
                         OpenSslX509CertificateReader.TryReadX509Der(fileBio, out pal))
                     {
@@ -254,9 +254,9 @@ namespace Internal.Cryptography.Pal
             return newCollections;
         }
 
-        private static FileInfo SafeOpenRootFileInfo()
+        private static FileInfo? SafeOpenRootFileInfo()
         {
-            string rootFile = Interop.Crypto.GetX509RootStoreFile();
+            string? rootFile = Interop.Crypto.GetX509RootStoreFile();
 
             if (!string.IsNullOrEmpty(rootFile))
             {
@@ -274,9 +274,9 @@ namespace Internal.Cryptography.Pal
             return null;
         }
 
-        private static DirectoryInfo SafeOpenRootDirectoryInfo()
+        private static DirectoryInfo? SafeOpenRootDirectoryInfo()
         {
-            string rootDirectory = Interop.Crypto.GetX509RootStorePath();
+            string? rootDirectory = Interop.Crypto.GetX509RootStorePath();
 
             if (!string.IsNullOrEmpty(rootDirectory))
             {

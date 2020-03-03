@@ -171,13 +171,13 @@ inline void CheckObjectSize(size_t alloc_size)
     } CONTRACTL_END;
 
     size_t max_object_size;
-#ifdef BIT64
+#ifdef HOST_64BIT
     if (g_pConfig->GetGCAllowVeryLargeObjects())
     {
         max_object_size = (INT64_MAX - 7 - min_obj_size);
     }
     else
-#endif // BIT64
+#endif // HOST_64BIT
     {
         max_object_size = (INT32_MAX - 7 - min_obj_size);
     }
@@ -415,8 +415,7 @@ OBJECTREF AllocateSzArray(TypeHandle arrayType, INT32 cElements, GC_ALLOC_FLAGS 
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
 
-    ArrayTypeDesc* arrayDesc = arrayType.AsArray();
-    MethodTable* pArrayMT = arrayDesc->GetMethodTable();
+    MethodTable* pArrayMT = arrayType.AsMethodTable();
 
     return AllocateSzArray(pArrayMT, cElements, flags, bAllocateInLargeHeap);
 }
@@ -451,7 +450,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
         ThrowOutOfMemoryDimensionsExceeded();
 
     // Allocate the space from the GC heap
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     // POSITIVE_INT32 * UINT16 + SMALL_CONST
     // this cannot overflow on 64bit
     size_t totalSize = cElements * componentSize + pArrayMT->GetBaseSize();
@@ -560,18 +559,6 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     LogAlloc(totalSize, pArrayMT, orArray);
 #endif // _LOGALLOC
 
-#ifdef _DEBUG
-    // Ensure the typehandle has been interned prior to allocation.
-    // This is important for OOM reliability.
-    OBJECTREF objref = ObjectToOBJECTREF((Object *) orArray);
-    GCPROTECT_BEGIN(objref);
-
-    orArray->GetTypeHandle();
-
-    GCPROTECT_END();
-    orArray = (ArrayBase *) OBJECTREFToObject(objref);
-#endif
-
     // Notify the profiler of the allocation
     // do this after initializing bounds so callback has size information
     if (TrackAllocations() || bProfilerNotifyLargeAllocation)
@@ -596,7 +583,7 @@ void ThrowOutOfMemoryDimensionsExceeded()
         THROWS;
     } CONTRACTL_END;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     EX_THROW(EEMessageException, (kOutOfMemoryException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
 #else
     ThrowOutOfMemory();
@@ -615,8 +602,7 @@ OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, G
         WRAPPER_NO_CONTRACT;
     } CONTRACTL_END;
 
-    ArrayTypeDesc* arrayDesc = arrayType.AsArray();
-    MethodTable* pArrayMT = arrayDesc->GetMethodTable();
+    MethodTable* pArrayMT = arrayType.AsMethodTable();
 
     return AllocateArrayEx(pArrayMT, pArgs, dwNumArgs, flags, bAllocateInLargeHeap);
 }
@@ -722,7 +708,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         ThrowOutOfMemoryDimensionsExceeded();
 
     // Allocate the space from the GC heap
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     // POSITIVE_INT32 * UINT16 + SMALL_CONST
     // this cannot overflow on 64bit
     size_t totalSize = cElements * componentSize + pArrayMT->GetBaseSize();
@@ -792,18 +778,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
 #ifdef  _LOGALLOC
     LogAlloc(totalSize, pArrayMT, orArray);
 #endif // _LOGALLOC
-
-#ifdef _DEBUG
-    // Ensure the typehandle has been interned prior to allocation.
-    // This is important for OOM reliability.
-    OBJECTREF objref = ObjectToOBJECTREF((Object *) orArray);
-    GCPROTECT_BEGIN(objref);
-
-    orArray->GetTypeHandle();
-
-    GCPROTECT_END();
-    orArray = (ArrayBase *) OBJECTREFToObject(objref);
-#endif
 
     if (kind == ELEMENT_TYPE_ARRAY)
     {
@@ -897,9 +871,9 @@ OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements)
     {
         TypeHandle elemType = TypeHandle(MscorlibBinder::GetElementType(type));
         TypeHandle typHnd = ClassLoader::LoadArrayTypeThrowing(elemType, ELEMENT_TYPE_SZARRAY, 0);
-        g_pPredefinedArrayTypes[type] = typHnd.AsArray();
+        g_pPredefinedArrayTypes[type] = typHnd;
     }
-    return AllocateSzArray(g_pPredefinedArrayTypes[type]->GetMethodTable(), cElements);
+    return AllocateSzArray(g_pPredefinedArrayTypes[type].AsMethodTable(), cElements);
 }
 
 //
@@ -957,7 +931,7 @@ OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle elementType, BOOL bAll
     TypeHandle arrayType = ClassLoader::LoadArrayTypeThrowing(elementType);
 
 #ifdef _DEBUG
-    _ASSERTE(arrayType.AsArray()->GetRank() == 1);
+    _ASSERTE(arrayType.GetRank() == 1);
     _ASSERTE(arrayType.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
 #endif //_DEBUG
 
@@ -1614,9 +1588,9 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
 //
 // We could use the pointer maps and do this more accurately if necessary
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("y", on)        // Small critical routines, don't put in EBP frame
-#endif //_MSC_VER && _TARGET_X86_
+#endif //_MSC_VER && TARGET_X86
 
 void
 SetCardsAfterBulkCopy(Object **start, size_t len)
@@ -1628,6 +1602,6 @@ SetCardsAfterBulkCopy(Object **start, size_t len)
     }
 }
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("", on)        // Go back to command line default optimizations
-#endif //_MSC_VER && _TARGET_X86_
+#endif //_MSC_VER && TARGET_X86

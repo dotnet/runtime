@@ -12,7 +12,7 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class AnonymousPipeServerStream : PipeStream
     {
-        private SafePipeHandle _clientHandle;
+        private SafePipeHandle _clientHandle = null!;
         private bool _clientHandleExposed;
 
         public AnonymousPipeServerStream()
@@ -88,7 +88,6 @@ namespace System.IO.Pipes
 
         // This method should exist until we add a first class way of passing handles between parent and child
         // processes. For now, people do it via command line arguments.
-        [SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Runtime.InteropServices.SafeHandle.DangerousGetHandle", Justification = "By design")]
         public string GetClientHandleAsString()
         {
             _clientHandleExposed = true;

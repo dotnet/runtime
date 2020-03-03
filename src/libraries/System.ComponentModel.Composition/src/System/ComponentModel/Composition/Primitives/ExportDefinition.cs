@@ -15,8 +15,8 @@ namespace System.ComponentModel.Composition.Primitives
     {
         // Unlike contract name, metadata has a sensible default; set it to an empty bag,
         // so that derived definitions only need to override ContractName by default.
-        private readonly IDictionary<string, object> _metadata = MetadataServices.EmptyMetadata;
-        private readonly string _contractName;
+        private readonly IDictionary<string, object?> _metadata = MetadataServices.EmptyMetadata;
+        private readonly string? _contractName;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ExportDefinition"/> class.
@@ -52,7 +52,7 @@ namespace System.ComponentModel.Composition.Primitives
         /// <exception cref="ArgumentException">
         ///     <paramref name="contractName"/> is an empty string ("").
         /// </exception>
-        public ExportDefinition(string contractName, IDictionary<string, object> metadata)
+        public ExportDefinition(string contractName, IDictionary<string, object?>? metadata)
         {
             Requires.NotNullOrEmpty(contractName, nameof(contractName));
 
@@ -113,7 +113,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///         </note>
         ///     </para>
         /// </remarks>
-        public virtual IDictionary<string, object> Metadata
+        public virtual IDictionary<string, object?> Metadata
         {
             get
             {

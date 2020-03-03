@@ -12,18 +12,18 @@ namespace System.ComponentModel
     public class BackgroundWorker : Component
     {
         // Private instance members
-        private bool _canCancelWorker = false;
-        private bool _workerReportsProgress = false;
-        private bool _cancellationPending = false;
-        private bool _isRunning = false;
-        private AsyncOperation _asyncOperation = null;
+        private bool _canCancelWorker;
+        private bool _workerReportsProgress;
+        private bool _cancellationPending;
+        private bool _isRunning;
+        private AsyncOperation? _asyncOperation;
         private readonly SendOrPostCallback _operationCompleted;
         private readonly SendOrPostCallback _progressReporter;
 
         public BackgroundWorker()
         {
-            _operationCompleted = new SendOrPostCallback(AsyncOperationCompleted);
-            _progressReporter = new SendOrPostCallback(ProgressReporter);
+            _operationCompleted = new SendOrPostCallback(AsyncOperationCompleted!);
+            _progressReporter = new SendOrPostCallback(ProgressReporter!);
         }
 
         private void AsyncOperationCompleted(object arg)
@@ -51,7 +51,7 @@ namespace System.ComponentModel
             _cancellationPending = true;
         }
 
-        public event DoWorkEventHandler DoWork;
+        public event DoWorkEventHandler? DoWork;
 
         public bool IsBusy
         {
@@ -63,32 +63,20 @@ namespace System.ComponentModel
 
         protected virtual void OnDoWork(DoWorkEventArgs e)
         {
-            DoWorkEventHandler handler = DoWork;
-            if (handler != null)
-            {
-                handler(this, e);
-            }
+            DoWork?.Invoke(this, e);
         }
 
         protected virtual void OnRunWorkerCompleted(RunWorkerCompletedEventArgs e)
         {
-            RunWorkerCompletedEventHandler handler = RunWorkerCompleted;
-            if (handler != null)
-            {
-                handler(this, e);
-            }
+            RunWorkerCompleted?.Invoke(this, e);
         }
 
         protected virtual void OnProgressChanged(ProgressChangedEventArgs e)
         {
-            ProgressChangedEventHandler handler = ProgressChanged;
-            if (handler != null)
-            {
-                handler(this, e);
-            }
+            ProgressChanged?.Invoke(this, e);
         }
 
-        public event ProgressChangedEventHandler ProgressChanged;
+        public event ProgressChangedEventHandler? ProgressChanged;
 
         // Gets invoked through the AsyncOperation on the proper thread.
         private void ProgressReporter(object arg)
@@ -103,7 +91,7 @@ namespace System.ComponentModel
         }
 
         // Cause progress update to be posted through current AsyncOperation.
-        public void ReportProgress(int percentProgress, object userState)
+        public void ReportProgress(int percentProgress, object? userState)
         {
             if (!WorkerReportsProgress)
             {
@@ -127,7 +115,7 @@ namespace System.ComponentModel
             RunWorkerAsync(null);
         }
 
-        public void RunWorkerAsync(object argument)
+        public void RunWorkerAsync(object? argument)
         {
             if (_isRunning)
             {
@@ -139,7 +127,7 @@ namespace System.ComponentModel
 
             _asyncOperation = AsyncOperationManager.CreateOperation(null);
             Task.Factory.StartNew(
-                        (arg) => WorkerThreadStart(arg),
+                        arg => WorkerThreadStart(arg),
                         argument,
                         CancellationToken.None,
                         TaskCreationOptions.DenyChildAttach,
@@ -147,7 +135,7 @@ namespace System.ComponentModel
                     );
         }
 
-        public event RunWorkerCompletedEventHandler RunWorkerCompleted;
+        public event RunWorkerCompletedEventHandler? RunWorkerCompleted;
 
         public bool WorkerReportsProgress
         {
@@ -175,12 +163,12 @@ namespace System.ComponentModel
             }
         }
 
-        private void WorkerThreadStart(object argument)
+        private void WorkerThreadStart(object? argument)
         {
             Debug.Assert(_asyncOperation != null, "_asyncOperation not initialized");
 
-            object workerResult = null;
-            Exception error = null;
+            object? workerResult = null;
+            Exception? error = null;
             bool cancelled = false;
 
             try

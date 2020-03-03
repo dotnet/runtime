@@ -1,9 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -36,14 +37,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly Dictionary<string, int> _assemblyRefToModuleIdMap;
 
         /// <summary>
-        /// Assembly references to store in the manifest metadata.
+        /// Map from module index to the AssemblyName for the module. This only contains modules
+        /// that were actually loaded and is populated by ModuleToIndex.
         /// </summary>
-        private readonly List<AssemblyName> _manifestAssemblies;
+        private readonly Dictionary<int, AssemblyName> _moduleIdToAssemblyNameMap;
 
         /// <summary>
         /// Registered signature emitters.
         /// </summary>
         private readonly List<ISignatureEmitter> _signatureEmitters;
+
+        /// <summary>
+        /// Number of assembly references in the input module
+        /// </summary>
+        private int _assemblyRefCount;
 
         /// <summary>
         /// ID corresponding to the next manifest metadata assemblyref entry.
@@ -56,36 +63,48 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private bool _emissionCompleted;
 
         /// <summary>
-        /// Name of the input assembly.
-        /// </summary>
-        private string _inputModuleName;
-
-        /// <summary>
         /// Node factory for the compilation
         /// </summary>
         private readonly NodeFactory _nodeFactory;
 
-        public ManifestMetadataTableNode(EcmaModule inputModule, NodeFactory nodeFactory)
-            : base(inputModule.Context.Target)
+        public ManifestMetadataTableNode(NodeFactory nodeFactory)
+            : base(nodeFactory.Target)
         {
             _assemblyRefToModuleIdMap = new Dictionary<string, int>();
-            _manifestAssemblies = new List<AssemblyName>();
+            _moduleIdToAssemblyNameMap = new Dictionary<int, AssemblyName>();
             _signatureEmitters = new List<ISignatureEmitter>();
             _nodeFactory = nodeFactory;
 
-            _inputModuleName = inputModule.Assembly.GetName().Name;
-
-            int assemblyRefCount = inputModule.MetadataReader.GetTableRowCount(TableIndex.AssemblyRef);
-            for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
+            if (!_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
             {
-                AssemblyReferenceHandle assemblyRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
-                AssemblyReference assemblyRef = inputModule.MetadataReader.GetAssemblyReference(assemblyRefHandle);
-                string assemblyName = inputModule.MetadataReader.GetString(assemblyRef.Name);
-                _assemblyRefToModuleIdMap[assemblyName] = assemblyRefIndex;
+                MetadataReader mdReader = _nodeFactory.CompilationModuleGroup.CompilationModuleSet.Single().MetadataReader;
+                _assemblyRefCount = mdReader.GetTableRowCount(TableIndex.AssemblyRef);
+                for (int assemblyRefIndex = 1; assemblyRefIndex <= _assemblyRefCount; assemblyRefIndex++)
+                {
+                    AssemblyReferenceHandle assemblyRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
+                    AssemblyReference assemblyRef = mdReader.GetAssemblyReference(assemblyRefHandle);
+                    string assemblyName = mdReader.GetString(assemblyRef.Name);
+                    _assemblyRefToModuleIdMap[assemblyName] = assemblyRefIndex;
+                }
             }
 
             // AssemblyRefCount + 1 corresponds to ROWID 0 in the manifest metadata
-            _nextModuleId = assemblyRefCount + 2;
+            _nextModuleId = _assemblyRefCount + 2;
+
+            if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
+            {
+                // Fill in entries for all input modules right away to make sure they have parallel indices
+                int nextExpectedId = 2;
+                foreach (EcmaModule inputModule in _nodeFactory.CompilationModuleGroup.CompilationModuleSet)
+                {
+                    int acquiredId = ModuleToIndexInternal(inputModule);
+                    if (acquiredId != nextExpectedId)
+                    {
+                        throw new InternalCompilerErrorException($"Manifest metadata consistency error - acquired ID {acquiredId}, expected {nextExpectedId}");
+                    }
+                    nextExpectedId++;
+                }
+            }
         }
 
         public void RegisterEmitter(ISignatureEmitter emitter)
@@ -95,9 +114,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int ModuleToIndex(EcmaModule module)
         {
-            AssemblyName assemblyName = module.Assembly.GetName();
+            if (!_nodeFactory.MarkingComplete)
+            {
+                // If we call this function before sorting is complete, we might have a determinism bug caused by
+                // compiling two functions in an arbitrary order and hence getting different module IDs.
+                throw new InvalidOperationException("Cannot get ModuleToIndex mapping until marking is complete.");
+            }
 
-            if (!_manifestAssemblies.Contains(assemblyName))
+            return ModuleToIndexInternal(module);
+        }
+
+        private int ModuleToIndexInternal(EcmaModule module)
+        {
+            AssemblyName assemblyName = module.Assembly.GetName();
+            int assemblyRefIndex;
+            if (!_assemblyRefToModuleIdMap.TryGetValue(assemblyName.Name, out assemblyRefIndex))
+            {
+                assemblyRefIndex = _nextModuleId++;
+                _assemblyRefToModuleIdMap.Add(assemblyName.Name, assemblyRefIndex);
+            }
+
+            if ((assemblyRefIndex >= _assemblyRefCount + 2) && !_moduleIdToAssemblyNameMap.ContainsKey(assemblyRefIndex))
             {
                 if (_emissionCompleted)
                 {
@@ -108,14 +145,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // the verification logic would be broken at runtime.
                 Debug.Assert(_nodeFactory.CompilationModuleGroup.VersionsWithModule(module));
 
-                _manifestAssemblies.Add(assemblyName);
-                if (!_assemblyRefToModuleIdMap.ContainsKey(assemblyName.Name))
-                    _assemblyRefToModuleIdMap.Add(assemblyName.Name, _nextModuleId);
-
-                _nextModuleId++;
+                _moduleIdToAssemblyNameMap.Add(assemblyRefIndex, assemblyName);
             }
-
-            return _assemblyRefToModuleIdMap[assemblyName.Name];
+            return assemblyRefIndex;
         }
 
         public override int ClassCode => 791828335;
@@ -144,8 +176,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             MetadataBuilder metadataBuilder = new MetadataBuilder();
 
+            string manifestMetadataAssemblyName = "ManifestMetadata";
             metadataBuilder.AddAssembly(
-                metadataBuilder.GetOrAddString(_inputModuleName),
+                metadataBuilder.GetOrAddString(manifestMetadataAssemblyName),
                 new Version(0, 0, 0, 0),
                 culture: default(StringHandle),
                 publicKey: default(BlobHandle),
@@ -154,20 +187,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             metadataBuilder.AddModule(
                 0,
-                metadataBuilder.GetOrAddString(_inputModuleName),
+                metadataBuilder.GetOrAddString(manifestMetadataAssemblyName),
                 default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
             // Module type
             metadataBuilder.AddTypeDefinition(
-               default(TypeAttributes),
-               default(StringHandle),
-               metadataBuilder.GetOrAddString("<Module>"),
-               baseType: default(EntityHandle),
-               fieldList: MetadataTokens.FieldDefinitionHandle(1),
-               methodList: MetadataTokens.MethodDefinitionHandle(1));
+                default(TypeAttributes),
+                default(StringHandle),
+                metadataBuilder.GetOrAddString("<Module>"),
+                baseType: default(EntityHandle),
+                fieldList: MetadataTokens.FieldDefinitionHandle(1),
+                methodList: MetadataTokens.MethodDefinitionHandle(1));
 
-            foreach (AssemblyName assemblyName in _manifestAssemblies)
+            foreach (var idAndAssemblyName in _moduleIdToAssemblyNameMap.OrderBy(x => x.Key))
             {
+                AssemblyName assemblyName = idAndAssemblyName.Value;
                 AssemblyFlags assemblyFlags = 0;
                 byte[] publicKeyOrToken;
                 if ((assemblyName.Flags & AssemblyNameFlags.PublicKey) != 0)

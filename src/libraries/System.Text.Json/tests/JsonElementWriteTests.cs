@@ -342,7 +342,7 @@ namespace System.Text.Json.Tests
             using (MemoryStream stream = new MemoryStream(Array.Empty<byte>()))
             using (Utf8JsonWriter writer = new Utf8JsonWriter(stream))
             {
-                // Use fixed and the older version of GetBytes-in-place because of the NetFX build.
+                // Use fixed and the older version of GetBytes-in-place because of the .NET Framework build.
                 unsafe
                 {
                     fixed (byte* dataPtr = utf8Data)

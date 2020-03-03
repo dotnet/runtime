@@ -5,7 +5,7 @@ set(CLR_DAC_SOURCES
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=mscordaccore.dll)
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     list(APPEND CLR_DAC_SOURCES
         Native.rc
     )
@@ -24,25 +24,25 @@ if(WIN32)
     # No library groups for Win32
     set(START_LIBRARY_GROUP)
     set(END_LIBRARY_GROUP)
-else(WIN32)
+else(CLR_CMAKE_HOST_WIN32)
     set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/mscordac_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/mscordac.exports)
 
     # Add dependency on export file
     add_custom_target(mscordaccore_exports DEPENDS ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_PLATFORM_DARWIN OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
+    if(CLR_CMAKE_HOST_DARWIN OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
         generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
-    endif(CLR_CMAKE_PLATFORM_DARWIN OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
+    endif(CLR_CMAKE_HOST_DARWIN OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
 
-    if(CLR_CMAKE_PLATFORM_LINUX)
+    if(CLR_CMAKE_HOST_LINUX)
 
         # Generate DAC export file with the DAC_ prefix
         generate_exports_file_prefix(${DEF_SOURCES} ${EXPORTS_FILE} DAC_)
 
         set(REDEFINES_FILE_AWK_SCRIPT ${CMAKE_SOURCE_DIR}/generateredefinesfile.awk)
 
-        if (CLR_CMAKE_PLATFORM_ARCH_ARM OR CLR_CMAKE_PLATFORM_ARCH_ARM64)
+        if (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64)
             set(JUMP_INSTRUCTION b)
         else()
             set(JUMP_INSTRUCTION jmp)
@@ -70,10 +70,10 @@ else(WIN32)
 
         # Add lib redefines file to DAC
         list(APPEND CLR_DAC_SOURCES libredefines.S)
-    endif(CLR_CMAKE_PLATFORM_LINUX)
-endif(WIN32)
+    endif(CLR_CMAKE_HOST_LINUX)
+endif(CLR_CMAKE_HOST_WIN32)
 
-if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
+if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
@@ -89,12 +89,12 @@ if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_
 
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
-endif(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
+endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
 
-if(CLR_CMAKE_PLATFORM_DARWIN)
+if(CLR_CMAKE_HOST_DARWIN)
     # Add linker exports file option
     set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-endif(CLR_CMAKE_PLATFORM_DARWIN)
+endif(CLR_CMAKE_HOST_DARWIN)
 
 # Create object library to enable creation of proper dependency of mscordaccore.exp on mscordac.obj and
 # mscordaccore on both the mscordaccore.exp and mscordac.obj.
@@ -104,15 +104,15 @@ add_library_clr(mscordaccore SHARED ${CLR_DAC_SOURCES} $<TARGET_OBJECTS:mscordac
 
 set_target_properties(mscordacobj mscordaccore PROPERTIES DAC_COMPONENT TRUE)
 
-if(CLR_CMAKE_PLATFORM_LINUX)
+if(CLR_CMAKE_HOST_LINUX)
     add_dependencies(mscordaccore lib_redefines_inc)
-endif(CLR_CMAKE_PLATFORM_LINUX)
+endif(CLR_CMAKE_HOST_LINUX)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     add_dependencies(mscordaccore mscordaccore_exports)
     set_property(TARGET mscordaccore APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
     set_property(TARGET mscordaccore APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared
@@ -130,13 +130,18 @@ set(COREDAC_LIBRARIES
     mdhotdata_dac
     mdruntime_dac
     mdruntimerw_dac
-    strongname_dac
     utilcode_dac
     unwinder_dac
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
+    list(APPEND COREDAC_LIBRARIES
+        mdwinmd_dac
+    )
+endif(CLR_CMAKE_TARGET_WIN32)
+
+if(CLR_CMAKE_HOST_WIN32)
     # mscordac.def should be generated before mscordaccore.dll is built
     add_dependencies(mscordaccore mscordaccore_def)
 
@@ -161,7 +166,6 @@ if(WIN32)
     set(COREDAC_LIBRARIES
         ${CMAKE_CURRENT_BINARY_DIR}/mscordaccore.exp # export file
         ${COREDAC_LIBRARIES}
-        mdwinmd_dac
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -171,7 +175,7 @@ if(WIN32)
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
     )
-else(WIN32)
+else(CLR_CMAKE_HOST_WIN32)
     list(APPEND COREDAC_LIBRARIES
         mscorrc_debug
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
@@ -179,18 +183,21 @@ else(WIN32)
         palrt
         ${END_WHOLE_ARCHIVE}
     )
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
 # add the install targets
 install_clr(TARGETS mscordaccore)
 install_clr(TARGETS mscordaccore DESTINATION sharedFramework SKIP_STRIP)
-if(WIN32)
+
+if(CLR_CMAKE_HOST_WIN32)
     set(LONG_NAME_HOST_ARCH ${CLR_CMAKE_HOST_ARCH})
     set(LONG_NAME_TARGET_ARCH ${CLR_CMAKE_TARGET_ARCH})
-    if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
+    if (LONG_NAME_HOST_ARCH STREQUAL x64)
         set(LONG_NAME_HOST_ARCH "amd64")
+    endif()
+    if (LONG_NAME_TARGET_ARCH STREQUAL x64)
         set(LONG_NAME_TARGET_ARCH "amd64")
     endif()
     set(NATIVE_VERSION_HEADER_FILE "${CLR_DIR}/../../artifacts/obj/coreclr/_version.h")

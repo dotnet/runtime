@@ -157,7 +157,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 End If
             End If
 
-            Throw New InvalidCastException(GetResourceString(SR.InvalidCast_FromTo, VBFriendlyName(Value), "String"))
+            Throw New InvalidCastException(SR.Format(SR.InvalidCast_FromTo, VBFriendlyName(Value), "String"))
 
         End Function
 
@@ -372,7 +372,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 If SourceEndIndex = 0 Then
                     Return False
                 Else
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Pattern"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Pattern"))
                 End If
             Else
                 Return (PatternIndex = PatternEndIndex) AndAlso (SourceIndex = SourceEndIndex)
@@ -583,7 +583,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 If SourceEndIndex = 0 Then
                     Return False
                 Else
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Pattern"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Pattern"))
                 End If
             Else
                 Return (PatternIndex = PatternEndIndex) AndAlso (SourceIndex = SourceEndIndex)
@@ -777,11 +777,11 @@ Namespace Microsoft.VisualBasic.CompilerServices
             StartPosition -= 1
 
             If StartPosition < 0 OrElse StartPosition >= DestLength Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Start"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Start"))
             End If
 
             If MaxInsertLength < 0 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Length"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Length"))
             End If
 
             '  first, limit the length of the source string

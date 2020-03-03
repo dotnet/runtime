@@ -42,55 +42,7 @@ struct InterfaceMapData
 
 #include <poppack.h>
 
-class ReflectMethodList;
 class ArgDestination;
-
-// Structure used to track security access checks efficiently when applied
-// across a range of methods, fields etc.
-//
-class RefSecContext : public AccessCheckContext
-{
-public:
-    RefSecContext(AccessCheckOptions::AccessCheckType accessCheckType)
-        : m_fCheckedCaller(false),
-          m_fCheckedPerm(false),
-          m_fCallerHasPerm(false),
-          m_pCaller(NULL),
-          m_pCallerDomain(NULL),
-          m_accessCheckType(accessCheckType)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    virtual MethodTable* GetCallerMT();
-    virtual MethodDesc* GetCallerMethod();
-    virtual Assembly* GetCallerAssembly();
-    virtual bool IsCalledFromInterop();
-
-    AccessCheckOptions::AccessCheckType GetAccessCheckType() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_accessCheckType;
-    }
-
-    AppDomain* GetCallerDomain();
-
-private:
-    bool            m_fCheckedCaller;
-    bool            m_fCheckedPerm;
-    bool            m_fCallerHasPerm;
-
-
-    // @review GENERICS:
-    // These method descriptors may be shared between compatible instantiations
-    // Check that this does not open any security holes
-    MethodDesc*     m_pCaller;
-    AppDomain*      m_pCallerDomain;
-
-    AccessCheckOptions::AccessCheckType m_accessCheckType;
-
-    void FindCaller();
-};
 
 // This class abstracts the functionality which creats the
 //  parameters on the call stack and deals with the return type
@@ -211,86 +163,7 @@ public:
     static void* GetPointerValue(OBJECTREF pObj);
     static void* GetIntPtrValue(OBJECTREF pObj);
 
-    // Check accessability of a type or nested type.
-    static void CanAccessClass(RefSecContext*   pCtx,
-                               MethodTable*     pClass,
-                               BOOL             checkAccessForImplicitValueTypeCtor = FALSE);
-
-    static void CanAccessMethod(MethodDesc*     pMeth,
-                                MethodTable*    pParentMT,
-                                MethodTable*    pInstanceMT,
-                                RefSecContext*  pSCtx,
-                                BOOL            fCriticalToFullDemand = TRUE,
-                                BOOL            checkSkipVer = FALSE);
-
-    // Check accessability of a field
-    static void CanAccessField(RefSecContext*   pCtx,
-                               MethodTable*     pTargetMT,
-                               MethodTable*     pInstanceMT,
-                               FieldDesc*       pTargetField);
-
-    //
-    // Check to see if the target of a reflection operation is on a remote object
-    //
-    // Arguments:
-    //    pDesc     - item being accessed (MethodDesc, FieldDesc, etc)
-    //    pTargetMT - object being reflected on
-
-    template <typename T>
-    static bool IsTargetRemoted(T *pDesc, MethodTable *pTargetMT)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
-            PRECONDITION(CheckPointer(pDesc));
-        }
-        CONTRACTL_END;
-
-        if (pDesc->IsStatic())
-            return FALSE;
-
-        if (pTargetMT == NULL)
-            return FALSE;
-
-        return FALSE;
-    }
-
-    static AccessCheckOptions::AccessCheckType GetInvocationAccessCheckType(BOOL targetRemoted = FALSE);
-
 private:
-    // Check accessability of a type or nested type.
-    static void CheckAccessClass(RefSecContext *pCtx,
-                                 MethodTable *pClass,
-                                 BOOL checkAccessForImplicitValueTypeCtor = FALSE);
-
-public:
-    // Check accessability of a method
-    static void CheckAccessMethod(RefSecContext       *pCtx,
-                                  MethodTable         *pTargetMT,
-                                  MethodTable         *pInstanceMT,
-                                  MethodDesc          *pTargetMethod);
-
-private:
-    // Check accessability of a field
-    static void CheckAccessField(RefSecContext       *pCtx,
-                                 MethodTable         *pTargetMT,
-                                 MethodTable         *pInstanceMT,
-                                 FieldDesc           *pTargetField);
-
-    // Check accessability of a field or method.
-    // pTargetMD should be NULL for a field, and may be NULL for a method.
-    // If checking a generic method with a method instantiation,
-    // the method should be in as pOptionalTargetMethod so
-    // that the accessibilty of its type arguments is checked too.
-    static void CheckAccess(RefSecContext               *pCtx,
-                            MethodTable                 *pTargetMT,
-                            MethodTable                 *pInstanceMT,
-                            MethodDesc                  *pTargetMD,
-                            FieldDesc                   *pTargetField,
-                            const AccessCheckOptions    &accessCheckOptions);
-
     static void* CreateByRef(TypeHandle dstTh,CorElementType srcType, TypeHandle srcTH,OBJECTREF srcObj, OBJECTREF *pIncomingObj);
 
     // GetBoxedObject

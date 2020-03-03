@@ -247,7 +247,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
-        [ActiveIssue(37989)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1429")]
         public void Contains()
         {
             var mc = new PokerMemoryCache("MyCache");

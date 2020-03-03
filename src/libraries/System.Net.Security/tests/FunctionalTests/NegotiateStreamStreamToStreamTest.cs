@@ -188,7 +188,6 @@ namespace System.Net.Security.Tests
                 IIdentity clientIdentity = server.RemoteIdentity;
                 Assert.Equal("NTLM", clientIdentity.AuthenticationType);
 
-                // TODO #5241: Behavior difference:
                 Assert.False(clientIdentity.IsAuthenticated);
                 // On .NET Desktop: Assert.True(clientIdentity.IsAuthenticated);
 

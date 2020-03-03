@@ -16,19 +16,19 @@ No-op if a is null.
 The given BIGNUM pointer is invalid after this call.
 Always succeeds.
 */
-DLLEXPORT void CryptoNative_BigNumDestroy(BIGNUM* a);
+PALEXPORT void CryptoNative_BigNumDestroy(BIGNUM* a);
 
 /*
 Shims the BN_bin2bn method.
 */
-DLLEXPORT BIGNUM* CryptoNative_BigNumFromBinary(const uint8_t* s, int32_t len);
+PALEXPORT BIGNUM* CryptoNative_BigNumFromBinary(const uint8_t* s, int32_t len);
 
 /*
 Shims the BN_bn2bin method.
 */
-DLLEXPORT int32_t CryptoNative_BigNumToBinary(const BIGNUM* a, uint8_t* to);
+PALEXPORT int32_t CryptoNative_BigNumToBinary(const BIGNUM* a, uint8_t* to);
 
 /*
 Returns the number of bytes needed to export a BIGNUM.
 */
-DLLEXPORT int32_t CryptoNative_GetBigNumBytes(const BIGNUM* a);
+PALEXPORT int32_t CryptoNative_GetBigNumBytes(const BIGNUM* a);

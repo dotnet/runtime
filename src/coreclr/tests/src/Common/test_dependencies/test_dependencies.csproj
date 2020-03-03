@@ -1,28 +1,35 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <IsTestProject>false</IsTestProject>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
-    <TargetFramework Condition="'$(SetTFMForRestore)'=='true'">netcoreapp5.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <DisableRarCache>true</DisableRarCache>
     <DisablePackageAssetsCache>true</DisablePackageAssetsCache>
     <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(TargetRid)</RuntimeIdentifiers>
+    <TargetArchitecture>$(BuildArch)</TargetArchitecture>
+    <IncludeOOBLibraries>true</IncludeOOBLibraries>
+    <LibrariesConfiguration>Release</LibrariesConfiguration>
   </PropertyGroup>
-  <ItemGroup Condition="'$(__SkipFXRestore)' != 'true'" >
-    <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)"/>
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
-    <PackageReference Include="System.Security.Permissions" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
-    <PackageReference Include="System.Diagnostics.EventLog" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
-    <PackageReference Include="System.Drawing.Common" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
-    <PackageReference Include="System.Runtime.Intrinsics.Experimental" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tools.RuntimeClient" Version="$(MicrosoftDiagnosticsToolsRuntimeClientVersion)" />
   </ItemGroup>
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
 
   <PropertyGroup>
-    <ProjectAssetsFile>$(SourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
+    <ProjectAssetsFile>$(TestSourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
+
+  <Target Name="AddUcrtFilesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" Condition="'$(BuildOS)' == 'Windows_NT'">
+    <ItemGroup>
+      <NativeCopyLocalItems Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(BuildArch)\*.dll" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddLibrariesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" DependsOnTargets="ResolveLibrariesFromLocalBuild">
+    <ItemGroup>
+      <RuntimeCopyLocalItems Include="@(LibrariesRuntimeFiles)" />
+    </ItemGroup>
+  </Target>
 </Project>

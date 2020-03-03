@@ -43,7 +43,7 @@ namespace System.Drawing
             int nPointSize = Marshal.SizeOf(pts[0]);
             IntPtr pos = prt;
             for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
-                pts[i] = (Point)Marshal.PtrToStructure(pos, typeof(Point));
+                pts[i] = (Point)Marshal.PtrToStructure(pos, typeof(Point))!;
 
             Marshal.FreeHGlobal(prt);
         }
@@ -54,7 +54,7 @@ namespace System.Drawing
             int nPointSize = Marshal.SizeOf(pts[0]);
             IntPtr pos = prt;
             for (int i = 0; i < pts.Length; i++, pos = new IntPtr(pos.ToInt64() + nPointSize))
-                pts[i] = (PointF)Marshal.PtrToStructure(pos, typeof(PointF));
+                pts[i] = (PointF)Marshal.PtrToStructure(pos, typeof(PointF))!;
 
             Marshal.FreeHGlobal(prt);
         }

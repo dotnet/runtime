@@ -111,7 +111,7 @@ public:
     // Terminate the debuggee process.
     virtual BOOL TerminateProcess(UINT32 exitCode);
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     virtual void CleanupTargetProcess()
     {
         m_pTransport->CleanupTargetProcess();

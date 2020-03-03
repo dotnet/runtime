@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+***********************************************************************************************
+Microsoft.NET.Sdk.IL.Common.targets
+Copyright (c) .NET Foundation. All rights reserved. 
+***********************************************************************************************
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <Import Condition="'$(IsCrossTargetingBuild)' != 'true'" Project="$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.IL.targets" />
+  <Import Condition="'$(IsCrossTargetingBuild)' == 'true'" Project="$(MSBuildExtensionsPath)Microsoft.Common.CrossTargeting.targets" />
+
+</Project> 

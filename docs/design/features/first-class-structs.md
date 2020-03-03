@@ -256,7 +256,8 @@ This would be enabled first by [Defer ABI-specific transformations to Lowering](
 
   * Related: #11407, #17257
 
-###  <a name="Improve-Struct-Promotion"/>Improve Struct Promotion
+###  Improve Struct Promotion
+
  * Support recursive (nested) struct promotion, especially when struct field itself has a single field
    (#10019, #9594, #7313)
  * Support partial struct promotion when some fields are more frequently accessed.

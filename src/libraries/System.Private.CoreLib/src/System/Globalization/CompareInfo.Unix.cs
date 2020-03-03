@@ -206,7 +206,7 @@ namespace System.Globalization
             }
         }
 
-        // TODO https://github.com/dotnet/coreclr/issues/13827:
+        // TODO https://github.com/dotnet/runtime/issues/8890:
         // This method shouldn't be necessary, as we should be able to just use the overload
         // that takes two spans.  But due to this issue, that's adding significant overhead.
         private unsafe int CompareString(ReadOnlySpan<char> string1, string string2, CompareOptions options)
@@ -816,29 +816,22 @@ namespace System.Globalization
 
             if (source==null) { throw new ArgumentNullException(nameof(source)); }
 
-            if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
+            if ((options & ValidCompareMaskOffFlags) != 0)
             {
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
 
-            byte [] keyData;
-            if (source.Length == 0)
+            byte[] keyData;
+            fixed (char* pSource = source)
             {
-                keyData = Array.Empty<byte>();
-            }
-            else
-            {
-                fixed (char* pSource = source)
-                {
-                    int sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
-                    keyData = new byte[sortKeyLength];
+                int sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
+                keyData = new byte[sortKeyLength];
 
-                    fixed (byte* pSortKey = keyData)
+                fixed (byte* pSortKey = keyData)
+                {
+                    if (Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
                     {
-                        if (Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
-                        {
-                            throw new ArgumentException(SR.Arg_ExternalException);
-                        }
+                        throw new ArgumentException(SR.Arg_ExternalException);
                     }
                 }
             }
@@ -894,11 +887,6 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            if (source.Length == 0)
-            {
-                return 0;
-            }
-
             // according to ICU User Guide the performance of ucol_getSortKey is worse when it is called with null output buffer
             // the solution is to try to fill the sort key in a temporary buffer of size equal 4 x string length
             // 1MB is the biggest array that can be rented from ArrayPool.Shared without memory allocation
@@ -909,7 +897,7 @@ namespace System.Globalization
                 ? stackalloc byte[1024]
                 : (borrowedArray = ArrayPool<byte>.Shared.Rent(sortKeyLength));
 
-            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            fixed (char* pSource = &MemoryMarshal.GetNonNullPinnableReference(source))
             {
                 fixed (byte* pSortKey = &MemoryMarshal.GetReference(sortKey))
                 {

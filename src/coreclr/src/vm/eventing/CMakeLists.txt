@@ -1,9 +1,7 @@
-cmake_minimum_required(VERSION 2.8.12)
-
 set(EVENT_MANIFEST ${VM_DIR}/ClrEtwAll.man)
 set(EVENT_EXCLUSIONS ${VM_DIR}/ClrEtwAllMeta.lst)
 
-if (WIN32)
+if (CLR_CMAKE_HOST_WIN32)
   set(NONEXTERN_ARG "--nonextern")
   set(NOXPLATHEADER_ARG "--noxplatheader")
 else()
@@ -37,6 +35,6 @@ add_dependencies(eventing_headers eventprovider)
 
 add_subdirectory(eventpipe)
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
   add_subdirectory(EtwProvider)
 endif()

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);XMLSERIALIZERGENERATORTESTS</DefineConstants>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <CoverageSupported>false</CoverageSupported>
     <SkipTestsOnPlatform Condition="'$(ArchGroup)' == 'arm' or '$(ArchGroup)' == 'arm64' or '$(ArchGroup)' == 'armel' or '$(ArchGroup)' == 'wasm'">true</SkipTestsOnPlatform>
   </PropertyGroup>
@@ -10,8 +10,8 @@
     <GeneratorRuntimeConfig>$(MSBuildToolsPath)\MSBuild.runtimeconfig.json</GeneratorRuntimeConfig>
     <GeneratorCommand Condition="'$(TargetsNetCoreApp)' == 'true'">"$(TestHostRootPath)$([System.IO.Path]::GetFileName('$(DotNetTool)'))" --fx-version $(ProductVersion)</GeneratorCommand>
     <GeneratorCommand Condition="'$(TargetsNetCoreApp)' != 'true'">"$(DotNetTool)"</GeneratorCommand>
-    <GeneratorCommand Condition="'$(OS)' == 'Windows_NT'">set DOTNET_MULTILEVEL_LOOKUP=0 &amp; $(GeneratorCommand)</GeneratorCommand>
-    <GeneratorCommand Condition="'$(OS)' != 'Windows_NT'">export DOTNET_MULTILEVEL_LOOKUP=0 &amp; $(GeneratorCommand)</GeneratorCommand>
+    <GeneratorCommand Condition="'$(OSGroup)' == 'Windows_NT'">set DOTNET_MULTILEVEL_LOOKUP=0 &amp; $(GeneratorCommand)</GeneratorCommand>
+    <GeneratorCommand Condition="'$(OSGroup)' != 'Windows_NT'">export DOTNET_MULTILEVEL_LOOKUP=0 &amp;&amp; $(GeneratorCommand)</GeneratorCommand>
   </PropertyGroup>
   <ItemGroup Condition=" '$(SkipTestsOnPlatform)' != 'true' ">
     <Compile Include=".\SGenTests.cs" />

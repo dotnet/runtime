@@ -9,4 +9,14 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).il" />
   </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+set COMPlus_JitStressModeNamesNot=STRESS_UNSAFE_BUFFER_CHECKS
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+export COMPlus_JitStressModeNamesNot=STRESS_UNSAFE_BUFFER_CHECKS
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
 </Project>

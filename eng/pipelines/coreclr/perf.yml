@@ -22,7 +22,27 @@ trigger:
     - eng/pipelines/libraries/*
 
 
-pr: none
+pr:
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - '*'
+    - src/libraries/System.Private.CoreLib/*
+    exclude:
+    - docs/*
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
+    - src/installer/*
+    - src/libraries/*
+    - eng/pipelines/installer/*
+    - eng/pipelines/libraries/*
 
 jobs:
 #
@@ -32,7 +52,7 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: release
     platforms:
     - Linux_x64
@@ -51,3 +71,4 @@ jobs:
     - Windows_NT_x86
     jobParameters:
       testGroup: perf
+      liveLibrariesBuildConfig: Release

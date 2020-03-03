@@ -77,7 +77,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddFontFile_SameNameMultipleTimes_FamiliesContainsFirstFontOnly()
         {
@@ -101,7 +101,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddFontFile_NullFileName_ThrowsArgumentNullException()
         {
@@ -130,13 +130,13 @@ namespace System.Drawing.Text.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/8655")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/17328")]
         public void AddFontFile_LongFilePath_ThrowsException()
         {
             using (var fontCollection = new PrivateFontCollection())
             {
                 // Throws PathTooLongException on Desktop and FileNotFoundException elsewhere.
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     Assert.Throws<PathTooLongException>(
                         () => fontCollection.AddFontFile(new string('a', 261)));
@@ -158,7 +158,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddFontFile_Disposed_ThrowsArgumentException()
         {
@@ -200,7 +200,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0)]
         [InlineData(-1)]
@@ -229,7 +229,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddMemoryFont_Disposed_ThrowsArgumentException()
         {

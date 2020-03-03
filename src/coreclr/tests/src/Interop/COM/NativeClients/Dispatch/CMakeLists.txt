@@ -1,5 +1,3 @@
-cmake_minimum_required (VERSION 2.6)
-
 include_directories( ${INC_PLATFORM_DIR} )
 include_directories( "../../ServerContracts" )
 include_directories( "../../NativeServer" )

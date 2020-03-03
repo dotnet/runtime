@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>TestLibrary</AssemblyName>
     <OutputType>Library</OutputType>
@@ -7,12 +7,8 @@
     <DefineConstants>$(DefineConstants);$([System.String]::Copy('$(BuildArch)').ToUpper())</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateRunScript>false</GenerateRunScript>
-    <!-- Tests build for netcoreapp3.0, but use the test_dependencies
-         assets file, which has netcoreapp5.0 assets. Therefore the
-         assets file for this project must have netcoreapp5.0 assets,
-         but the project needs to build for 3.0. -->
-    <TargetFramework Condition=" '$(SetTFMForRestore)' == 'true' ">netcoreapp5.0</TargetFramework>
-    <ProjectAssetsFile>$(SourceDir)Common\CoreCLRTestLibrary\obj\project.assets.json</ProjectAssetsFile>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <ProjectAssetsFile>$(TestSourceDir)Common\CoreCLRTestLibrary\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
@@ -32,6 +28,6 @@
   <!-- This project depends on properties pulled in by Directory.Build.targets in the test/src directory,
        which isn't usually imported for the tests/src/Common
        projects. -->
-  <Import Project="$(SourceDir)\Directory.Build.targets" />
+  <Import Project="$(TestSourceDir)\Directory.Build.targets" />
 
 </Project>

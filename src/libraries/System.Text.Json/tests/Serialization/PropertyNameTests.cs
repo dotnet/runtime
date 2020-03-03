@@ -430,6 +430,26 @@ namespace System.Text.Json.Serialization.Tests
             string jsonRoundTripped = JsonSerializer.Serialize(obj, options);
             Assert.Equal(json, jsonRoundTripped);
         }
+
+        [Fact]
+        public static void BadNamingPolicy_ThrowsInvalidOperation()
+        {
+            var options = new JsonSerializerOptions { DictionaryKeyPolicy = new NullNamingPolicy() };
+
+            var inputPrimitive = new Dictionary<string, int>
+            {
+                { "validKey", 1 }
+            };
+
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(inputPrimitive, options));
+
+            var inputClass = new Dictionary<string, OverridePropertyNameDesignTime_TestClass>
+            {
+                { "validKey", new OverridePropertyNameDesignTime_TestClass() }
+            };
+
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(inputClass, options));
+        }
     }
 
     public class OverridePropertyNameDesignTime_TestClass

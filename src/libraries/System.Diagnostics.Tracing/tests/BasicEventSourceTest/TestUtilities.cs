@@ -36,6 +36,7 @@ namespace BasicEventSourceTests
                     eventSource.Name != "System.Diagnostics.Eventing.FrameworkEventSource" &&
                     eventSource.Name != "System.Buffers.ArrayPoolEventSource" &&
                     eventSource.Name != "System.Threading.SynchronizationEventSource" &&
+                    eventSource.Name != "System.Collections.Concurrent.ConcurrentCollectionsEventSource" &&
                     eventSource.Name != "System.Runtime.InteropServices.InteropEventProvider" &&
                     eventSource.Name != "System.Reflection.Runtime.Tracing" &&
                     eventSource.Name != "Microsoft-Windows-DotNETRuntime" &&

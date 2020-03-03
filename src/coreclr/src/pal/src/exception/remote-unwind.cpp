@@ -69,13 +69,13 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 #include <elf.h>
 #include <link.h>
 
-#if defined(_X86_) || defined(_ARM_)
+#if defined(HOST_X86) || defined(HOST_ARM)
 #define PRIx PRIx32
 #define PRIu PRIu32
 #define PRId PRId32
 #define PRIA "08"
 #define PRIxA PRIA PRIx
-#elif defined(_AMD64_) || defined(_ARM64_)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64)
 #define PRIx PRIx64
 #define PRIu PRIu64
 #define PRId PRId64
@@ -120,7 +120,7 @@ typedef struct _libunwindInfo
 
 static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
 {
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Rip);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Rsp);
     unw_get_reg(cursor, UNW_X86_64_RBP, (unw_word_t *) &winContext->Rbp);
@@ -129,14 +129,14 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_X86_64_R13, (unw_word_t *) &winContext->R13);
     unw_get_reg(cursor, UNW_X86_64_R14, (unw_word_t *) &winContext->R14);
     unw_get_reg(cursor, UNW_X86_64_R15, (unw_word_t *) &winContext->R15);
-#elif defined(_X86_)
+#elif defined(HOST_X86)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Eip);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Esp);
     unw_get_reg(cursor, UNW_X86_EBP, (unw_word_t *) &winContext->Ebp);
     unw_get_reg(cursor, UNW_X86_EBX, (unw_word_t *) &winContext->Ebx);
     unw_get_reg(cursor, UNW_X86_ESI, (unw_word_t *) &winContext->Esi);
     unw_get_reg(cursor, UNW_X86_EDI, (unw_word_t *) &winContext->Edi);
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_ARM_R4, (unw_word_t *) &winContext->R4);
@@ -149,7 +149,7 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_ARM_R11, (unw_word_t *) &winContext->R11);
     unw_get_reg(cursor, UNW_ARM_R14, (unw_word_t *) &winContext->Lr);
     TRACE("sp %p pc %p lr %p\n", winContext->Sp, winContext->Pc, winContext->Lr);
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_AARCH64_X19, (unw_word_t *) &winContext->X19);
@@ -210,7 +210,7 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
 
     switch (regnum)
     {
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     case UNW_REG_IP:       *valp = (unw_word_t)winContext->Rip; break;
     case UNW_REG_SP:       *valp = (unw_word_t)winContext->Rsp; break;
     case UNW_X86_64_RBP:   *valp = (unw_word_t)winContext->Rbp; break;
@@ -219,14 +219,14 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_X86_64_R13:   *valp = (unw_word_t)winContext->R13; break;
     case UNW_X86_64_R14:   *valp = (unw_word_t)winContext->R14; break;
     case UNW_X86_64_R15:   *valp = (unw_word_t)winContext->R15; break;
-#elif defined(_X86_)
+#elif defined(HOST_X86)
     case UNW_REG_IP:       *valp = (unw_word_t)winContext->Eip; break;
     case UNW_REG_SP:       *valp = (unw_word_t)winContext->Esp; break;
     case UNW_X86_EBX:      *valp = (unw_word_t)winContext->Ebx; break;
     case UNW_X86_ESI:      *valp = (unw_word_t)winContext->Esi; break;
     case UNW_X86_EDI:      *valp = (unw_word_t)winContext->Edi; break;
     case UNW_X86_EBP:      *valp = (unw_word_t)winContext->Ebp; break;
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
     case UNW_ARM_R4:       *valp = (unw_word_t)winContext->R4; break;
     case UNW_ARM_R5:       *valp = (unw_word_t)winContext->R5; break;
     case UNW_ARM_R6:       *valp = (unw_word_t)winContext->R6; break;
@@ -238,7 +238,7 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_ARM_R13:      *valp = (unw_word_t)winContext->Sp; break;
     case UNW_ARM_R14:      *valp = (unw_word_t)winContext->Lr; break;
     case UNW_ARM_R15:      *valp = (unw_word_t)winContext->Pc; break;
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
     case UNW_AARCH64_X19:  *valp = (unw_word_t)winContext->X19; break;
     case UNW_AARCH64_X20:  *valp = (unw_word_t)winContext->X20; break;
     case UNW_AARCH64_X21:  *valp = (unw_word_t)winContext->X21; break;
@@ -477,4 +477,4 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
     return FALSE;
 }
 
-#endif // defined(_AMD64_) && defined(HAVE_UNW_GET_ACCESSORS)
+#endif // defined(HOST_AMD64) && defined(HAVE_UNW_GET_ACCESSORS)

@@ -42,7 +42,7 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetFileName(path));
         }
 
-        [ActiveIssue(27552)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/25242")]
         [Theory,
             MemberData(nameof(TestData_GetPathRoot_Windows)),
             MemberData(nameof(TestData_GetPathRoot_Unc)),
@@ -273,7 +273,7 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            // https://github.com/dotnet/corefx/issues/11965
+            // https://github.com/dotnet/runtime/issues/18664
             InlineData(@"\\LOCALHOST\share\test.txt.~SS", @"\\LOCALHOST\share\test.txt.~SS"),
             InlineData(@"\\LOCALHOST\share1", @"\\LOCALHOST\share1"),
             InlineData(@"\\LOCALHOST\share3\dir", @"\\LOCALHOST\share3\dir"),
@@ -377,7 +377,7 @@ namespace System.IO.Tests
         [Theory, MemberData(nameof(TestData_UnicodeWhiteSpace))]
         public void GetFullPath_UnicodeWhiteSpaceStays(string component)
         {
-            // When not NetFX full path should not cut off component
+            // When not .NET Framework full path should not cut off component
             string path = "C:\\Test" + component;
             Assert.Equal(path, Path.GetFullPath(path));
         }
@@ -392,18 +392,18 @@ namespace System.IO.Tests
 
         public static TheoryData<string, string, string> GetFullPath_Windows_FullyQualified => new TheoryData<string, string, string>
         {
-            { @"C:\git\corefx", @"C:\git\corefx", @"C:\git\corefx" },
-            { @"C:\git\corefx.\.\.\.\.\.", @"C:\git\corefx", @"C:\git\corefx" },
-            { @"C:\git\corefx\\\.", @"C:\git\corefx", @"C:\git\corefx" },
-            { @"C:\git\corefx\..\corefx\.\..\corefx", @"C:\git\corefx", @"C:\git\corefx" },
-            { @"C:\somedir\..", @"C:\git\corefx", @"C:\" },
-            { @"C:\", @"C:\git\corefx", @"C:\" },
-            { @"..\..\..\..", @"C:\git\corefx", @"C:\" },
-            { @"C:\\\", @"C:\git\corefx", @"C:\" },
-            { @"C:\..\..\", @"C:\git\corefx", @"C:\" },
-            { @"C:\..\git\..\.\", @"C:\git\corefx", @"C:\" },
-            { @"C:\git\corefx\..\..\..\", @"C:\git\corefx", @"C:\" },
-            { @"C:\.\corefx\", @"C:\git\corefx", @"C:\corefx\" },
+            { @"C:\git\runtime", @"C:\git\runtime", @"C:\git\runtime" },
+            { @"C:\git\runtime.\.\.\.\.\.", @"C:\git\runtime", @"C:\git\runtime" },
+            { @"C:\git\runtime\\\.", @"C:\git\runtime", @"C:\git\runtime" },
+            { @"C:\git\runtime\..\runtime\.\..\runtime", @"C:\git\runtime", @"C:\git\runtime" },
+            { @"C:\somedir\..", @"C:\git\runtime", @"C:\" },
+            { @"C:\", @"C:\git\runtime", @"C:\" },
+            { @"..\..\..\..", @"C:\git\runtime", @"C:\" },
+            { @"C:\\\", @"C:\git\runtime", @"C:\" },
+            { @"C:\..\..\", @"C:\git\runtime", @"C:\" },
+            { @"C:\..\git\..\.\", @"C:\git\runtime", @"C:\" },
+            { @"C:\git\runtime\..\..\..\", @"C:\git\runtime", @"C:\" },
+            { @"C:\.\runtime\", @"C:\git\runtime", @"C:\runtime\" },
         };
 
         [Theory,
@@ -416,25 +416,25 @@ namespace System.IO.Tests
         public static TheoryData<string, string, string> GetFullPath_Windows_PathIsDevicePath => new TheoryData<string, string, string>
         {
             // Device Paths with \\?\ wont get normalized i.e. relative segments wont get removed.
-            { @"\\?\C:\git\corefx.\.\.\.\.\.", @"C:\git\corefx", @"\\?\C:\git\corefx.\.\.\.\.\." },
-            { @"\\?\C:\git\corefx\\\.", @"C:\git\corefx", @"\\?\C:\git\corefx\\\." },
-            { @"\\?\C:\git\corefx\..\corefx\.\..\corefx", @"C:\git\corefx", @"\\?\C:\git\corefx\..\corefx\.\..\corefx" },
-            { @"\\?\\somedir\..", @"C:\git\corefx", @"\\?\\somedir\.." },
-            { @"\\?\", @"C:\git\corefx", @"\\?\" },
-            { @"\\?\..\..\..\..", @"C:\git\corefx", @"\\?\..\..\..\.." },
-            { @"\\?\\\\" , @"C:\git\corefx", @"\\?\\\\" },
-            { @"\\?\C:\Foo." , @"C:\git\corefx", @"\\?\C:\Foo." },
-            { @"\\?\C:\Foo " , @"C:\git\corefx", @"\\?\C:\Foo " },
+            { @"\\?\C:\git\runtime.\.\.\.\.\.", @"C:\git\runtime", @"\\?\C:\git\runtime.\.\.\.\.\." },
+            { @"\\?\C:\git\runtime\\\.", @"C:\git\runtime", @"\\?\C:\git\runtime\\\." },
+            { @"\\?\C:\git\runtime\..\runtime\.\..\runtime", @"C:\git\runtime", @"\\?\C:\git\runtime\..\runtime\.\..\runtime" },
+            { @"\\?\\somedir\..", @"C:\git\runtime", @"\\?\\somedir\.." },
+            { @"\\?\", @"C:\git\runtime", @"\\?\" },
+            { @"\\?\..\..\..\..", @"C:\git\runtime", @"\\?\..\..\..\.." },
+            { @"\\?\\\\" , @"C:\git\runtime", @"\\?\\\\" },
+            { @"\\?\C:\Foo." , @"C:\git\runtime", @"\\?\C:\Foo." },
+            { @"\\?\C:\Foo " , @"C:\git\runtime", @"\\?\C:\Foo " },
 
-            { @"\\.\C:\git\corefx.\.\.\.\.\.", @"C:\git\corefx", @"\\.\C:\git\corefx" },
-            { @"\\.\C:\git\corefx\\\.", @"C:\git\corefx", @"\\.\C:\git\corefx" },
-            { @"\\.\C:\git\corefx\..\corefx\.\..\corefx", @"C:\git\corefx", @"\\.\C:\git\corefx" },
-            { @"\\.\\somedir\..", @"C:\git\corefx", @"\\.\" },
-            { @"\\.\", @"C:\git\corefx", @"\\.\" },
-            { @"\\.\..\..\..\..", @"C:\git\corefx", @"\\.\" },
-            { @"\\.\", @"C:\git\corefx", @"\\.\" },
-            { @"\\.\C:\Foo." , @"C:\git\corefx", @"\\.\C:\Foo" },
-            { @"\\.\C:\Foo " , @"C:\git\corefx", @"\\.\C:\Foo" },
+            { @"\\.\C:\git\runtime.\.\.\.\.\.", @"C:\git\runtime", @"\\.\C:\git\runtime" },
+            { @"\\.\C:\git\runtime\\\.", @"C:\git\runtime", @"\\.\C:\git\runtime" },
+            { @"\\.\C:\git\runtime\..\runtime\.\..\runtime", @"C:\git\runtime", @"\\.\C:\git\runtime" },
+            { @"\\.\\somedir\..", @"C:\git\runtime", @"\\.\" },
+            { @"\\.\", @"C:\git\runtime", @"\\.\" },
+            { @"\\.\..\..\..\..", @"C:\git\runtime", @"\\.\" },
+            { @"\\.\", @"C:\git\runtime", @"\\.\" },
+            { @"\\.\C:\Foo." , @"C:\git\runtime", @"\\.\C:\Foo" },
+            { @"\\.\C:\Foo " , @"C:\git\runtime", @"\\.\C:\Foo" },
         };
 
         [Theory,
@@ -540,67 +540,67 @@ namespace System.IO.Tests
 
         public static TheoryData<string, string, string> GetFullPath_CommonRootedWindowsData => new TheoryData<string, string, string>
         {
-            { "", @"C:\git\corefx", @"C:\git\corefx" },
-            { "..", @"C:\git\corefx", @"C:\git" },
+            { "", @"C:\git\runtime", @"C:\git\runtime" },
+            { "..", @"C:\git\runtime", @"C:\git" },
 
             // Current drive rooted
-            { @"\tmp\bar", @"C:\git\corefx", @"C:\tmp\bar" },
-            { @"\.\bar", @"C:\git\corefx", @"C:\bar" },
-            { @"\tmp\..", @"C:\git\corefx", @"C:\" },
-            { @"\tmp\bar\..", @"C:\git\corefx", @"C:\tmp" },
-            { @"\tmp\bar\..", @"C:\git\corefx", @"C:\tmp" },
-            { @"\", @"C:\git\corefx", @"C:\" },
+            { @"\tmp\bar", @"C:\git\runtime", @"C:\tmp\bar" },
+            { @"\.\bar", @"C:\git\runtime", @"C:\bar" },
+            { @"\tmp\..", @"C:\git\runtime", @"C:\" },
+            { @"\tmp\bar\..", @"C:\git\runtime", @"C:\tmp" },
+            { @"\tmp\bar\..", @"C:\git\runtime", @"C:\tmp" },
+            { @"\", @"C:\git\runtime", @"C:\" },
 
-            { @"..\..\tmp\bar", @"C:\git\corefx", @"C:\tmp\bar" },
-            { @"..\..\.\bar", @"C:\git\corefx", @"C:\bar" },
-            { @"..\..\..\..\tmp\..", @"C:\git\corefx", @"C:\" },
-            { @"\tmp\..\bar..\..\..", @"C:\git\corefx", @"C:\" },
-            { @"\tmp\..\bar\..", @"C:\git\corefx", @"C:\" },
-            { @"\.\.\..\..\", @"C:\git\corefx", @"C:\" },
+            { @"..\..\tmp\bar", @"C:\git\runtime", @"C:\tmp\bar" },
+            { @"..\..\.\bar", @"C:\git\runtime", @"C:\bar" },
+            { @"..\..\..\..\tmp\..", @"C:\git\runtime", @"C:\" },
+            { @"\tmp\..\bar..\..\..", @"C:\git\runtime", @"C:\" },
+            { @"\tmp\..\bar\..", @"C:\git\runtime", @"C:\" },
+            { @"\.\.\..\..\", @"C:\git\runtime", @"C:\" },
 
             // Specific drive rooted
-            { @"C:tmp\foo\..", @"C:\git\corefx", @"C:\git\corefx\tmp" },
-            { @"C:tmp\foo\.", @"C:\git\corefx", @"C:\git\corefx\tmp\foo" },
-            { @"C:tmp\foo\..", @"C:\git\corefx", @"C:\git\corefx\tmp" },
-            { @"C:tmp", @"C:\git\corefx", @"C:\git\corefx\tmp" },
-            { @"C:", @"C:\git\corefx", @"C:\git\corefx" },
-            { @"C", @"C:\git\corefx", @"C:\git\corefx\C" },
+            { @"C:tmp\foo\..", @"C:\git\runtime", @"C:\git\runtime\tmp" },
+            { @"C:tmp\foo\.", @"C:\git\runtime", @"C:\git\runtime\tmp\foo" },
+            { @"C:tmp\foo\..", @"C:\git\runtime", @"C:\git\runtime\tmp" },
+            { @"C:tmp", @"C:\git\runtime", @"C:\git\runtime\tmp" },
+            { @"C:", @"C:\git\runtime", @"C:\git\runtime" },
+            { @"C", @"C:\git\runtime", @"C:\git\runtime\C" },
 
-            { @"Z:tmp\foo\..", @"C:\git\corefx", @"Z:\tmp" },
-            { @"Z:tmp\foo\.", @"C:\git\corefx", @"Z:\tmp\foo" },
-            { @"Z:tmp\foo\..", @"C:\git\corefx", @"Z:\tmp" },
-            { @"Z:tmp", @"C:\git\corefx", @"Z:\tmp" },
-            { @"Z:", @"C:\git\corefx", @"Z:\" },
-            { @"Z", @"C:\git\corefx", @"C:\git\corefx\Z" },
+            { @"Z:tmp\foo\..", @"C:\git\runtime", @"Z:\tmp" },
+            { @"Z:tmp\foo\.", @"C:\git\runtime", @"Z:\tmp\foo" },
+            { @"Z:tmp\foo\..", @"C:\git\runtime", @"Z:\tmp" },
+            { @"Z:tmp", @"C:\git\runtime", @"Z:\tmp" },
+            { @"Z:", @"C:\git\runtime", @"Z:\" },
+            { @"Z", @"C:\git\runtime", @"C:\git\runtime\Z" },
 
             // Relative segments eating into the root
-            { @"C:..\..\..\tmp\foo\..", @"C:\git\corefx", @"C:\tmp" },
-            { @"C:tmp\..\..\foo\.", @"C:\git\corefx", @"C:\git\foo" },
-            { @"C:..\..\tmp\foo\..", @"C:\git\corefx", @"C:\tmp" },
-            { @"C:tmp\..\", @"C:\git\corefx", @"C:\git\corefx\" },
-            { @"C:", @"C:\git\corefx", @"C:\git\corefx" },
-            { @"C", @"C:\git\corefx", @"C:\git\corefx\C" },
+            { @"C:..\..\..\tmp\foo\..", @"C:\git\runtime", @"C:\tmp" },
+            { @"C:tmp\..\..\foo\.", @"C:\git\runtime", @"C:\git\foo" },
+            { @"C:..\..\tmp\foo\..", @"C:\git\runtime", @"C:\tmp" },
+            { @"C:tmp\..\", @"C:\git\runtime", @"C:\git\runtime\" },
+            { @"C:", @"C:\git\runtime", @"C:\git\runtime" },
+            { @"C", @"C:\git\runtime", @"C:\git\runtime\C" },
 
-            { @"C:tmp\..\..\..\..\foo\..", @"C:\git\corefx", @"C:\" },
+            { @"C:tmp\..\..\..\..\foo\..", @"C:\git\runtime", @"C:\" },
             { @"C:tmp\..\..\foo\.", @"C:\", @"C:\foo" },
             { @"C:..\..\tmp\..\foo\..", @"C:\", @"C:\" },
             { @"C:tmp\..\", @"C:\", @"C:\" },
 
-            { @"Z:tmp\foo\..", @"C:\git\corefx", @"Z:\tmp" },
-            { @"Z:tmp\foo\.", @"C:\git\corefx", @"Z:\tmp\foo" },
-            { @"Z:tmp\foo\..", @"C:\git\corefx", @"Z:\tmp" },
-            { @"Z:tmp", @"C:\git\corefx", @"Z:\tmp" },
-            { @"Z:", @"C:\git\corefx", @"Z:\" },
-            { @"Z", @"C:\git\corefx", @"C:\git\corefx\Z" },
+            { @"Z:tmp\foo\..", @"C:\git\runtime", @"Z:\tmp" },
+            { @"Z:tmp\foo\.", @"C:\git\runtime", @"Z:\tmp\foo" },
+            { @"Z:tmp\foo\..", @"C:\git\runtime", @"Z:\tmp" },
+            { @"Z:tmp", @"C:\git\runtime", @"Z:\tmp" },
+            { @"Z:", @"C:\git\runtime", @"Z:\" },
+            { @"Z", @"C:\git\runtime", @"C:\git\runtime\Z" },
 
-            { @"Z:..\..\..\tmp\foo\..", @"C:\git\corefx", @"Z:\tmp" },
-            { @"Z:tmp\..\..\foo\.", @"C:\git\corefx", @"Z:\foo" },
-            { @"Z:..\..\tmp\foo\..", @"C:\git\corefx", @"Z:\tmp" },
-            { @"Z:tmp\..\", @"C:\git\corefx", @"Z:\" },
-            { @"Z:", @"C:\git\corefx", @"Z:\" },
-            { @"Z", @"C:\git\corefx", @"C:\git\corefx\Z" },
+            { @"Z:..\..\..\tmp\foo\..", @"C:\git\runtime", @"Z:\tmp" },
+            { @"Z:tmp\..\..\foo\.", @"C:\git\runtime", @"Z:\foo" },
+            { @"Z:..\..\tmp\foo\..", @"C:\git\runtime", @"Z:\tmp" },
+            { @"Z:tmp\..\", @"C:\git\runtime", @"Z:\" },
+            { @"Z:", @"C:\git\runtime", @"Z:\" },
+            { @"Z", @"C:\git\runtime", @"C:\git\runtime\Z" },
 
-            { @"Z:tmp\..\..\..\..\foo\..", @"C:\git\corefx", @"Z:\" },
+            { @"Z:tmp\..\..\..\..\foo\..", @"C:\git\runtime", @"Z:\" },
             { @"Z:tmp\..\..\foo\.", @"C:\", @"Z:\foo" },
             { @"Z:..\..\tmp\..\foo\..", @"C:\", @"Z:\" },
             { @"Z:tmp\..\", @"C:\", @"Z:\" },

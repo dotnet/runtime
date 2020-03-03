@@ -26,7 +26,7 @@ typedef BYTE ZapRelocationType; // IMAGE_REL_XXX enum
 #define IMAGE_REL_INVALID           0xFF
 
 // IMAGE_REL_BASED_PTR is architecture specific reloc of virtual address
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_DIR64
 #else
 #define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_HIGHLOW

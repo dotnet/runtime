@@ -35,7 +35,7 @@ namespace System.IO.Pipelines
         public bool IsCanceled => (_resultFlags & ResultFlags.Canceled) != 0;
 
         /// <summary>
-        /// True if the <see cref="PipeWriter"/> is complete otherwise false
+        /// Gets a value that indicates the reader is no longer reading data written to the <see cref="PipeWriter" />.
         /// </summary>
         public bool IsCompleted => (_resultFlags & ResultFlags.Completed) != 0;
     }

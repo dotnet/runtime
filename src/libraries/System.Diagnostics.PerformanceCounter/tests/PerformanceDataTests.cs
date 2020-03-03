@@ -154,7 +154,7 @@ namespace System.Diagnostics.Tests
             using (CounterSet typingCounterSet = new CounterSet(_fixture._providerId, _fixture._typingCounterSetId, CounterSetInstanceType.Single))
             {
                 ArgumentException argumentException = (ArgumentException)Assert.Throws(exceptionType, () => typingCounterSet.AddCounter(8, CounterType.SampleBase, counterName));
-                Assert.Equal(PlatformDetection.IsFullFramework ? netfxParameterName : netCoreParameterName, argumentException.ParamName);
+                Assert.Equal(PlatformDetection.IsNetFramework ? netfxParameterName : netCoreParameterName, argumentException.ParamName);
             }
         }
 

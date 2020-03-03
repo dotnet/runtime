@@ -23,7 +23,7 @@
 #include "staticcontract.h"
 #include "static_assert.h"
 
-#if BIT64
+#if HOST_64BIT
     #define POINTER_BITS (64)
 #else
     #define POINTER_BITS (32)
@@ -389,7 +389,7 @@ inline UINT AlignmentTrim(UINT value, UINT alignment)
     return value&(alignment-1);
 }
 
-#ifndef PLATFORM_UNIX
+#ifndef HOST_UNIX
 // For Unix this and the previous function get the same types.
 // So, exclude this one.
 inline UINT AlignmentTrim(ULONG value, UINT alignment)
@@ -398,7 +398,7 @@ inline UINT AlignmentTrim(ULONG value, UINT alignment)
     STATIC_CONTRACT_SUPPORTS_DAC;
     return value&(alignment-1);
 }
-#endif // PLATFORM_UNIX
+#endif // HOST_UNIX
 
 inline UINT AlignmentTrim(UINT64 value, UINT alignment)
 {

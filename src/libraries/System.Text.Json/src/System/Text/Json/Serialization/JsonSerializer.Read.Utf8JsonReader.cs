@@ -4,11 +4,32 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
+        /// <summary>
+        /// Internal version that allows re-entry with preserving ReadStack so that JsonPath works correctly.
+        /// </summary>
+        internal static T Deserialize<T>(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, string? propertyName = null)
+        {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            state.Current.InitializeReEntry(typeof(T), options, propertyName);
+
+            T value = (T)ReadCoreReEntry(options, ref reader, ref state)!;
+
+            // Clear the current property state since we are done processing it.
+            state.Current.EndProperty();
+
+            return value;
+        }
+
         /// <summary>
         /// Reads one JSON value (including objects or arrays) from the provided reader into a <typeparamref name="TValue"/>.
         /// </summary>
@@ -47,9 +68,10 @@ namespace System.Text.Json
         ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
         ///   </para>
         /// </remarks>
-        public static TValue Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions options = null)
+        [return: MaybeNull]
+        public static TValue Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
         {
-            return (TValue)ReadValueCore(ref reader, typeof(TValue), options);
+            return (TValue)ReadValueCore(ref reader, typeof(TValue), options)!;
         }
 
         /// <summary>
@@ -93,7 +115,7 @@ namespace System.Text.Json
         ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
         ///   </para>
         /// </remarks>
-        public static object Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions options = null)
+        public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType == null)
                 throw new ArgumentNullException(nameof(returnType));
@@ -101,19 +123,19 @@ namespace System.Text.Json
             return ReadValueCore(ref reader, returnType, options);
         }
 
-        private static object ReadValueCore(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions options)
+        private static object? ReadValueCore(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options)
         {
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
-            ReadStack readStack = default;
-            readStack.Current.Initialize(returnType, options);
+            ReadStack state = default;
+            state.InitializeRoot(returnType, options);
 
-            ReadValueCore(options, ref reader, ref readStack);
+            ReadValueCore(options, ref reader, ref state);
 
-            return readStack.Current.ReturnValue;
+            return state.Current.ReturnValue;
         }
 
         private static void CheckSupportedOptions(JsonReaderOptions readerOptions, string paramName)
@@ -124,10 +146,10 @@ namespace System.Text.Json
             }
         }
 
-        private static void ReadValueCore(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack readStack)
+        private static void ReadValueCore(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
         {
-            JsonReaderState state = reader.CurrentState;
-            CheckSupportedOptions(state.Options, nameof(reader));
+            JsonReaderState readerState = reader.CurrentState;
+            CheckSupportedOptions(readerState.Options, nameof(reader));
 
             // Value copy to overwrite the ref on an exception and undo the destructive reads.
             Utf8JsonReader restore = reader;
@@ -281,7 +303,7 @@ namespace System.Text.Json
             {
                 reader = restore;
                 // Re-throw with Path information.
-                ThrowHelper.ReThrowWithPath(readStack, ex);
+                ThrowHelper.ReThrowWithPath(state, ex);
             }
 
             int length = valueSpan.IsEmpty ? checked((int)valueSequence.Length) : valueSpan.Length;
@@ -299,9 +321,11 @@ namespace System.Text.Json
                     valueSpan.CopyTo(rentedSpan);
                 }
 
-                var newReader = new Utf8JsonReader(rentedSpan, isFinalBlock: true, state: default);
+                JsonReaderOptions originalReaderOptions = readerState.Options;
 
-                ReadCore(options, ref newReader, ref readStack);
+                var newReader = new Utf8JsonReader(rentedSpan, originalReaderOptions);
+
+                ReadCore(options, ref newReader, ref state);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(newReader.BytesConsumed == length);

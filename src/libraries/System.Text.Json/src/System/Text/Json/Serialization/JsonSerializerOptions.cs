@@ -19,12 +19,14 @@ namespace System.Text.Json
         internal static readonly JsonSerializerOptions s_defaultOptions = new JsonSerializerOptions();
 
         private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
-        private static readonly ConcurrentDictionary<string, ImmutableCollectionCreator> s_createRangeDelegates = new ConcurrentDictionary<string, ImmutableCollectionCreator>();
-        private MemberAccessor _memberAccessorStrategy;
-        private JsonNamingPolicy _dictionayKeyPolicy;
-        private JsonNamingPolicy _jsonPropertyNamingPolicy;
+
+        private MemberAccessor? _memberAccessorStrategy;
+        private JsonNamingPolicy? _dictionaryKeyPolicy;
+        private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
-        private JavaScriptEncoder _encoder;
+        private ReferenceHandling _referenceHandling = ReferenceHandling.Default;
+        private JavaScriptEncoder? _encoder = null;
+
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
         private bool _allowTrailingCommas;
@@ -95,7 +97,7 @@ namespace System.Text.Json
         /// <summary>
         /// The encoder to use when escaping strings, or <see langword="null" /> to use the default encoder.
         /// </summary>
-        public JavaScriptEncoder Encoder
+        public JavaScriptEncoder? Encoder
         {
             get
             {
@@ -116,16 +118,16 @@ namespace System.Text.Json
         /// This property can be set to <see cref="JsonNamingPolicy.CamelCase"/> to specify a camel-casing policy.
         /// It is not used when deserializing.
         /// </remarks>
-        public JsonNamingPolicy DictionaryKeyPolicy
+        public JsonNamingPolicy? DictionaryKeyPolicy
         {
             get
             {
-                return _dictionayKeyPolicy;
+                return _dictionaryKeyPolicy;
             }
             set
             {
                 VerifyMutable();
-                _dictionayKeyPolicy = value;
+                _dictionaryKeyPolicy = value;
             }
         }
 
@@ -214,7 +216,7 @@ namespace System.Text.Json
         /// The policy is not used for properties that have a <see cref="JsonPropertyNameAttribute"/> applied.
         /// This property can be set to <see cref="JsonNamingPolicy.CamelCase"/> to specify a camel-casing policy.
         /// </remarks>
-        public JsonNamingPolicy PropertyNamingPolicy
+        public JsonNamingPolicy? PropertyNamingPolicy
         {
             get
             {
@@ -296,16 +298,29 @@ namespace System.Text.Json
             }
         }
 
+        /// <summary>
+        /// Defines how references are treated when reading and writing JSON, this is convenient to deal with circularity.
+        /// </summary>
+        public ReferenceHandling ReferenceHandling
+        {
+            get => _referenceHandling;
+            set
+            {
+                VerifyMutable();
+
+                _referenceHandling = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
+
         internal MemberAccessor MemberAccessorStrategy
         {
             get
             {
                 if (_memberAccessorStrategy == null)
                 {
-#if BUILDING_INBOX_LIBRARY
+#if NETFRAMEWORK || NETCOREAPP
                     _memberAccessorStrategy = new ReflectionEmitMemberAccessor();
 #else
-                    // todo: should we attempt to detect here, or at least have a #define like #SUPPORTS_IL_EMIT
                     _memberAccessorStrategy = new ReflectionMemberAccessor();
 #endif
                 }
@@ -319,7 +334,8 @@ namespace System.Text.Json
             _haveTypesBeenCreated = true;
 
             // todo: for performance and reduced instances, consider using the converters and JsonClassInfo from s_defaultOptions by cloning (or reference directly if no changes).
-            if (!_classes.TryGetValue(classType, out JsonClassInfo result))
+            // https://github.com/dotnet/runtime/issues/32357
+            if (!_classes.TryGetValue(classType, out JsonClassInfo? result))
             {
                 result = _classes.GetOrAdd(classType, new JsonClassInfo(classType, this));
             }
@@ -347,21 +363,6 @@ namespace System.Text.Json
                 SkipValidation = true
 #endif
             };
-        }
-
-        internal bool CreateRangeDelegatesContainsKey(string key)
-        {
-            return s_createRangeDelegates.ContainsKey(key);
-        }
-
-        internal bool TryGetCreateRangeDelegate(string delegateKey, out ImmutableCollectionCreator createRangeDelegate)
-        {
-            return s_createRangeDelegates.TryGetValue(delegateKey, out createRangeDelegate) && createRangeDelegate != null;
-        }
-
-        internal bool TryAddCreateRangeDelegate(string key, ImmutableCollectionCreator createRangeDelegate)
-        {
-            return s_createRangeDelegates.TryAdd(key, createRangeDelegate);
         }
 
         internal void VerifyMutable()

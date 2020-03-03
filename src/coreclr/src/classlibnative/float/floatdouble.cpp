@@ -124,7 +124,7 @@ FCIMPL1_V(double, COMDouble::Cbrt, double x)
     return (double)cbrt(x);
 FCIMPLEND
 
-#if defined(_MSC_VER) && defined(_TARGET_AMD64_)
+#if defined(_MSC_VER) && defined(TARGET_AMD64)
 // The /fp:fast form of `ceil` for AMD64 does not correctly handle: `-1.0 < value <= -0.0`
 // https://github.com/dotnet/coreclr/issues/19739
 #pragma float_control(push)
@@ -140,7 +140,7 @@ FCIMPL1_V(double, COMDouble::Ceil, double x)
     return (double)ceil(x);
 FCIMPLEND
 
-#if defined(_MSC_VER) && defined(_TARGET_AMD64_)
+#if defined(_MSC_VER) && defined(TARGET_AMD64)
 #pragma float_control(pop)
 #endif
 
@@ -171,7 +171,7 @@ FCIMPL1_V(double, COMDouble::Exp, double x)
     return (double)exp(x);
 FCIMPLEND
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 // The /fp:fast form of `floor` for x86 does not correctly handle: `-0.0`
 // https://github.com/dotnet/coreclr/issues/19739
 #pragma float_control(push)
@@ -187,7 +187,7 @@ FCIMPL1_V(double, COMDouble::Floor, double x)
     return (double)floor(x);
 FCIMPLEND
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma float_control(pop)
 #endif
 

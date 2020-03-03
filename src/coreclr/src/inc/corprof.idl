@@ -736,6 +736,51 @@ typedef enum
     COR_PRF_REJIT_INLINING_CALLBACKS    = 0x2
 } COR_PRF_REJIT_FLAGS;
 
+typedef UINT_PTR EVENTPIPE_PROVIDER;
+typedef UINT_PTR EVENTPIPE_EVENT;
+
+typedef enum
+{
+    COR_PRF_EVENTPIPE_BOOLEAN = 3,        // Boolean
+    COR_PRF_EVENTPIPE_CHAR = 4,           // Unicode character
+    COR_PRF_EVENTPIPE_SBYTE = 5,          // Signed 8-bit integer
+    COR_PRF_EVENTPIPE_BYTE = 6,           // Unsigned 8-bit integer
+    COR_PRF_EVENTPIPE_INT16 = 7,          // Signed 16-bit integer
+    COR_PRF_EVENTPIPE_UINT16 = 8,         // Unsigned 16-bit integer
+    COR_PRF_EVENTPIPE_INT32 = 9,          // Signed 32-bit integer
+    COR_PRF_EVENTPIPE_UINT32 = 10,        // Unsigned 32-bit integer
+    COR_PRF_EVENTPIPE_INT64 = 11,         // Signed 64-bit integer
+    COR_PRF_EVENTPIPE_UINT64 = 12,        // Unsigned 64-bit integer
+    COR_PRF_EVENTPIPE_SINGLE = 13,        // IEEE 32-bit float
+    COR_PRF_EVENTPIPE_DOUBLE = 14,        // IEEE 64-bit double
+    COR_PRF_EVENTPIPE_DECIMAL = 15,       // Decimal
+    COR_PRF_EVENTPIPE_DATETIME = 16,      // DateTime
+    COR_PRF_EVENTPIPE_GUID = 17,          // Guid
+    COR_PRF_EVENTPIPE_STRING = 18,        // Unicode character string
+} COR_PRF_EVENTPIPE_PARAM_TYPE;
+
+typedef enum
+{
+    COR_PRF_EVENTPIPE_LOGALWAYS = 0,
+    COR_PRF_EVENTPIPE_CRITICAL = 1,
+    COR_PRF_EVENTPIPE_ERROR = 2,
+    COR_PRF_EVENTPIPE_WARNING = 3,
+    COR_PRF_EVENTPIPE_INFORMATIONAL = 4,
+    COR_PRF_EVENTPIPE_VERBOSE = 5
+} COR_PRF_EVENTPIPE_LEVEL;
+
+typedef struct
+{
+    UINT32       type;
+    const WCHAR *name;
+} COR_PRF_EVENTPIPE_PARAM_DESC;
+
+typedef struct
+{
+    UINT64 ptr;
+    UINT32 size;
+    UINT32 reserved;
+} COR_PRF_EVENT_DATA;
 
 /* -------------------------------------------------------------------------- *
  * Forward declarations
@@ -4017,6 +4062,40 @@ interface ICorProfilerInfo11 : ICorProfilerInfo10
     HRESULT SetEnvironmentVariable(
                 [in, string] const WCHAR *szName,
                 [in, string] const WCHAR *szValue);
+}
+
+[
+    object,
+    uuid(27b24ccd-1cb1-47c5-96ee-98190dc30959),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo12 : ICorProfilerInfo11
+{
+    HRESULT EventPipeCreateProvider(
+                [in, string] const WCHAR    *szName,
+                [out] EVENTPIPE_PROVIDER    *pProviderHandle);
+
+    HRESULT EventPipeDefineEvent(
+                [in] EVENTPIPE_PROVIDER     provHandle,
+                [in, string] const WCHAR   *szName, 
+                [in] UINT32                 eventID,
+                [in] UINT64                 keywords,
+                [in] UINT32                 eventVersion,
+                [in] UINT32                 level,
+                [in] BOOL                   needStack,
+                [in] UINT32                 cParamDescs,
+                [in, size_is(cParamDescs)] 
+                     COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
+                [out] EVENTPIPE_EVENT      *pEventHandle);
+
+    HRESULT EventPipeWriteEvent(
+                [in] EVENTPIPE_EVENT    eventHandle,
+                [in, size_is(cData)]
+                     COR_PRF_EVENT_DATA data[],
+                [in] UINT32             cData,
+                [in] LPCGUID            pActivityId,
+                [in] LPCGUID            pRelatedActivityId);
 }
 
 /*

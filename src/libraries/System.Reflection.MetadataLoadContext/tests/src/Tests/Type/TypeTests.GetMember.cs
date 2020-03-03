@@ -47,7 +47,7 @@ namespace System.Reflection.Tests
         {
             Type t = typeof(Mixed).Project();
 
-            // Desktop compat: Type.GetMember() returns the most specific array type possible given the MemberType combinations passed in.
+            // .NET Framework compat: Type.GetMember() returns the most specific array type possible given the MemberType combinations passed in.
 
             for (MemberTypes memberType = (MemberTypes)0; memberType <= MemberTypes.All; memberType++)
             {

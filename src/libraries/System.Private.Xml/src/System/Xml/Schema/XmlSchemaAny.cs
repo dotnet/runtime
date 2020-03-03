@@ -73,7 +73,7 @@ namespace System.Xml.Schema
                             sb.Append(wildcardNS + ":*");
                             if (i < _namespaceList.Enumerate.Count)
                             {
-                                sb.Append(" ");
+                                sb.Append(' ');
                             }
                             i++;
                         }

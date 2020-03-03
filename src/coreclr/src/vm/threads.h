@@ -284,9 +284,6 @@ public:
     void EnablePreemptiveGC() { }
     void DisablePreemptiveGC() { }
 
-    inline void IncLockCount() { }
-    inline void DecLockCount() { }
-
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD) { return NULL; }
 
     PTR_AppDomain GetDomain() { return ::GetAppDomain(); }
@@ -325,12 +322,6 @@ public:
         _ASSERTE(FitsInI1(ofs));
         return (BYTE)ofs;
     }
-
-    void SetLoadingFile(DomainFile *pFile)
-    {
-    }
-
-    typedef Holder<Thread *, DoNothing, DoNothing> LoadingFileHolder;
 
     enum ThreadState
     {
@@ -466,10 +457,10 @@ typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;
 
 #else // CROSSGEN_COMPILE
 
-#if (defined(_TARGET_ARM_) && defined(FEATURE_EMULATE_SINGLESTEP))
+#if (defined(TARGET_ARM) && defined(FEATURE_EMULATE_SINGLESTEP))
 #include "armsinglestepper.h"
 #endif
-#if (defined(_TARGET_ARM64_) && defined(FEATURE_EMULATE_SINGLESTEP))
+#if (defined(TARGET_ARM64) && defined(FEATURE_EMULATE_SINGLESTEP))
 #include "arm64singlestepper.h"
 #endif
 
@@ -516,14 +507,14 @@ EXTERN_C void LeaveSyncHelper    (UINT_PTR caller, void *pAwareLock);
 // Used to capture information about the state of execution of a *SUSPENDED* thread.
 struct ExecutionState;
 
-#ifndef PLATFORM_UNIX
+#ifndef TARGET_UNIX
 // This is the type of the start function of a redirected thread pulled from
 // a HandledJITCase during runtime suspension
 typedef void (__stdcall *PFN_REDIRECTTARGET)();
 
 // Describes the weird argument sets during hijacking
 struct HijackArgs;
-#endif // !PLATFORM_UNIX
+#endif // !TARGET_UNIX
 
 #endif // FEATURE_HIJACK
 
@@ -627,9 +618,9 @@ void InitThreadManager();
 #ifdef FEATURE_HIJACK
 
 EXTERN_C void WINAPI OnHijackTripThread();
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 EXTERN_C void WINAPI OnHijackFPTripThread();  // hijacked JIT code is returning an FP value
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #endif // FEATURE_HIJACK
 
@@ -1033,9 +1024,9 @@ class Thread
     // MapWin32FaultToCOMPlusException needs access to Thread::IsAddrOfRedirectFunc()
     friend DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
     friend void STDCALL OnHijackWorker(HijackArgs * pArgs);
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
     friend void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext);
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 
 #endif // FEATURE_HIJACK
 
@@ -1070,6 +1061,8 @@ public:
         if(STSGuarantee_Force == fScope)
             return TRUE;
 
+        // For debug, always enable setting thread stack guarantee so that we can print the stack trace
+#ifndef DEBUG
         //The runtime must be hosted to have escalation policy
         //If escalation policy is enabled but StackOverflow is not part of the policy
         //   then we don't use SetThreadStackGuarantee
@@ -1079,6 +1072,7 @@ public:
             //FAIL_StackOverflow is ProcessExit so don't use SetThreadStackGuarantee
             return FALSE;
         }
+#endif // DEBUG
         return TRUE;
     }
 
@@ -1116,7 +1110,7 @@ public:
 
         TS_LegalToJoin            = 0x00000020,    // Is it now legal to attempt a Join()
 
-        // unused                 = 0x00000040,
+        TS_ExecutingOnAltStack    = 0x00000040,    // Runtime is executing on an alternate stack located anywhere in the memory
 
 #ifdef FEATURE_HIJACK
         TS_Hijacked               = 0x00000080,    // Return address has been hijacked
@@ -1201,7 +1195,7 @@ public:
         TSNC_WaitUntilGCFinished        = 0x00000010, // The current thread is waiting for GC.  If host returns
                                                       // SO during wait, we will either spin or make GC wait.
         TSNC_BlockedForShutdown         = 0x00000020, // Thread is blocked in WaitForEndOfShutdown.  We should not hit WaitForEndOfShutdown again.
-        TSNC_SOWorkNeeded               = 0x00000040, // The thread needs to wake up AD unload helper thread to finish SO work
+        // unused                       = 0x00000040,
         TSNC_CLRCreatedThread           = 0x00000080, // The thread was created through Thread::CreateNewThread
         TSNC_ExistInThreadStore         = 0x00000100, // For dtor to know if it needs to be removed from ThreadStore
         TSNC_UnsafeSkipEnterCooperative = 0x00000200, // This is a "fix" for deadlocks caused when cleaning up COM
@@ -1216,13 +1210,10 @@ public:
                                                       // After the thread is interrupted once, we turn off interruption
                                                       // at the beginning of wait.
         // unused                       = 0x00040000,
-        TSNC_CannotRecycle              = 0x00080000, // A host can not recycle this Thread object.  When a thread
-                                                      // has orphaned lock, we will apply this.
+        // unused                       = 0x00080000,
         TSNC_RaiseUnloadEvent           = 0x00100000, // Finalize thread is raising managed unload event which
                                                       // may call AppDomain.Unload.
-        TSNC_UnbalancedLocks            = 0x00200000, // Do not rely on lock accounting for this thread:
-                                                      // we left an app domain with a lock count different from
-                                                      // when we entered it
+        // unused                       = 0x00200000,
         // unused                       = 0x00400000,
         TSNC_IgnoreUnhandledExceptions  = 0x00800000, // Set for a managed thread born inside an appdomain created with the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag.
         TSNC_ProcessedUnhandledException = 0x01000000,// Set on a thread on which we have done unhandled exception processing so that
@@ -1452,6 +1443,18 @@ public:
     }
 #endif // DACCESS_COMPILE
 
+    DWORD IsExecutingOnAltStack()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_State & TS_ExecutingOnAltStack);
+    }
+
+    void SetExecutingOnAltStack()
+    {
+        LIMITED_METHOD_CONTRACT;
+        FastInterlockOr((ULONG *) &m_State, TS_ExecutingOnAltStack);
+    }
+
     DWORD IsBackground()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1506,8 +1509,6 @@ public:
     static LONG     m_DetachCount;
     static LONG     m_ActiveDetachCount;  // Count how many non-background detached
 
-    static Volatile<LONG>     m_threadsAtUnsafePlaces;
-
     // Offsets for the following variables need to fit in 1 byte, so keep near
     // the top of the object.  Also, we want cache line filling to work for us
     // so the critical stuff is ordered based on frequency of use.
@@ -1526,10 +1527,6 @@ public:
     // its Domain.
     //-----------------------------------------------------------
     PTR_AppDomain       m_pDomain;
-
-    // Track the number of locks (critical section, spin lock, syncblock lock,
-    // EE Crst, GC lock) held by the current thread.
-    DWORD                m_dwLockCount;
 
     // Unique thread id used for thin locks - kept as small as possible, as we have limited space
     // in the object header to store it.
@@ -1629,7 +1626,7 @@ public:
     // we fire the AllocationTick event. It's only for tooling purpose.
     TypeHandle m_thAllocContextObj;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 private:
     _NT_TIB *m_pTEB;
 public:
@@ -1641,7 +1638,7 @@ public:
         WRAPPER_NO_CONTRACT;
         return &GetTEB()->ExceptionList;
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     inline void SetTHAllocContextObj(TypeHandle th) {LIMITED_METHOD_CONTRACT; m_thAllocContextObj = th; }
 
@@ -1658,12 +1655,7 @@ public:
     // Flags for thread states that have no concurrency issues.
     ThreadStateNoConcurrency m_StateNC;
 
-    inline void IncLockCount();
-    inline void DecLockCount();
-
 private:
-    DWORD m_dwBeginLockCount;  // lock count when the thread enters current domain
-
 #ifdef _DEBUG
     DWORD dbg_m_cSuspendedThreads;
     // Count of suspended threads that we know are not in native code (and therefore cannot hold OS lock which prevents us calling out to host)
@@ -1743,21 +1735,6 @@ private:
     DWORD m_dwHashCodeSeed;
 
 public:
-
-    inline BOOL HasLockInCurrentDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(m_dwLockCount >= m_dwBeginLockCount);
-
-        // Equivalent to (m_dwLockCount != m_dwBeginLockCount ||
-        //                m_dwCriticalRegionCount ! m_dwBeginCriticalRegionCount),
-        // but without branching instructions
-        BOOL fHasLock = (m_dwLockCount ^ m_dwBeginLockCount);
-
-        return fHasLock;
-    }
-
     inline DWORD GetNewHashCode()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1879,7 +1856,7 @@ public:
         {
             void* curSP;
             curSP = (void *)GetCurrentSP();
-            _ASSERTE((curSP <= m_pFrame && m_pFrame < m_CacheStackBase) || m_pFrame == (Frame*) -1);
+            _ASSERTE(IsExecutingOnAltStack() || (curSP <= m_pFrame && m_pFrame < m_CacheStackBase) || m_pFrame == (Frame*) -1);
         }
 #endif
 
@@ -2464,9 +2441,9 @@ public:
         STR_SwitchedOut,
     };
 
-#if defined(FEATURE_HIJACK) && defined(PLATFORM_UNIX)
+#if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
     bool InjectGcSuspension();
-#endif // FEATURE_HIJACK && PLATFORM_UNIX
+#endif // FEATURE_HIJACK && TARGET_UNIX
 
 #ifndef DISABLE_THREADSUSPEND
     // SuspendThread
@@ -2713,9 +2690,9 @@ public:
     BOOL           IsRudeAbort();
     BOOL           IsFuncEvalAbort();
 
-#if defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
+#if defined(TARGET_AMD64) && defined(FEATURE_HIJACK)
     BOOL           IsSafeToInjectThreadAbort(PTR_CONTEXT pContextToCheck);
-#endif // defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
+#endif // defined(TARGET_AMD64) && defined(FEATURE_HIJACK)
 
     inline BOOL IsAbortRequested()
     {
@@ -2811,10 +2788,10 @@ public:
         return s_NextSelfAbortEndTime;
     }
 
-#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
+#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
     // Tricks for resuming threads from fully interruptible code with a ThreadStop.
     BOOL           ResumeUnderControl(T_CONTEXT *pCtx);
-#endif // FEATURE_HIJACK && !PLATFORM_UNIX
+#endif // FEATURE_HIJACK && !TARGET_UNIX
 
     enum InducedThrowReason {
         InducedThreadStop = 1,
@@ -2877,7 +2854,7 @@ public:
     // ARM64 unix doesn't currently support any reliable hardware mechanism for single-stepping.
     // For each we emulate single step in software. This support is used only by the debugger.
 private:
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     ArmSingleStepper m_singleStepper;
 #else
     Arm64SingleStepper m_singleStepper;
@@ -2896,7 +2873,7 @@ public:
 
     void BypassWithSingleStep(const void* ip ARM_ARG(WORD opcode1) ARM_ARG(WORD opcode2) ARM64_ARG(uint32_t opcode))
     {
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
         m_singleStepper.Bypass((DWORD)ip, opcode1, opcode2);
 #else
         m_singleStepper.Bypass((uint64_t)ip, opcode);
@@ -3171,29 +3148,6 @@ public:
 
     typedef StateHolder<Thread::IncPreventAsync, Thread::DecPreventAsync> ThreadPreventAsyncHolder;
 
-    // During a <clinit>, this thread must not be asynchronously
-    // stopped or interrupted.  That would leave the class unavailable
-    // and is therefore a security hole.
-    static void        IncPreventAbort()
-    {
-        WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
-        FastInterlockIncrement((LONG*)&pThread->m_PreventAbort);
-    }
-    static void        DecPreventAbort()
-    {
-        WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
-        FastInterlockDecrement((LONG*)&pThread->m_PreventAbort);
-    }
-
-    BOOL IsAbortPrevented()
-    {
-        return m_PreventAbort != 0;
-    }
-
-    typedef StateHolder<Thread::IncPreventAbort, Thread::DecPreventAbort> ThreadPreventAbortHolder;
-
     // The ThreadStore manages a list of all the threads in the system.  I
     // can't figure out how to expand the ThreadList template type without
     // making m_Link public.
@@ -3227,7 +3181,7 @@ public:
     static void SetCulture(OBJECTREF *CultureObj, BOOL bUICulture);
 
 private:
-#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
+#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
     // Used in suspension code to redirect a thread at a HandledJITCase
     BOOL RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt);
     BOOL RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, T_CONTEXT *pCurrentThreadCtx);
@@ -3248,7 +3202,7 @@ public:
 private:
     bool        m_fPreemptiveGCDisabledForGCStress;
 #endif // HAVE_GCCOVER && USE_REDIRECT_FOR_GCSTRESS
-#endif // FEATURE_HIJACK && !PLATFORM_UNIX
+#endif // FEATURE_HIJACK && !TARGET_UNIX
 
 public:
 
@@ -3394,7 +3348,7 @@ public:
     // space to restore the guard page, so make sure you know what you're doing when you decide to call this.
     VOID RestoreGuardPage();
 
-#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
+#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
 private:
     // Redirecting of threads in managed code at suspension
 
@@ -3415,7 +3369,7 @@ private:
 #endif // defined(HAVE_GCCOVER) && USE_REDIRECT_FOR_GCSTRESS
 
     friend void CPFH_AdjustContextForThreadSuspensionRace(T_CONTEXT *pContext, Thread *pThread);
-#endif // FEATURE_HIJACK && !PLATFORM_UNIX
+#endif // FEATURE_HIJACK && !TARGET_UNIX
 
 private:
     //-------------------------------------------------------------
@@ -3538,15 +3492,15 @@ private:
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
     MethodDesc  *m_HijackedFunction;      // remember what we hijacked
 
-#ifndef PLATFORM_UNIX
+#ifndef TARGET_UNIX
     BOOL    HandledJITCase(BOOL ForTaskSwitchIn = FALSE);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     PCODE       m_LastRedirectIP;
     ULONG       m_SpinCount;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
-#endif // !PLATFORM_UNIX
+#endif // !TARGET_UNIX
 
 #endif // FEATURE_HIJACK
 
@@ -3941,14 +3895,6 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-private:
-
-    //-------------------------------------------------------------------------
-    // Support creation of assemblies in DllMain (see ceemain.cpp)
-    //-------------------------------------------------------------------------
-    DomainFile* m_pLoadingFile;
-
-
 public:
 
     void SetInteropDebuggingHijacked(BOOL f)
@@ -4060,25 +4006,6 @@ public:
     typedef ConditionalStateHolder<Thread *, Thread::EnterHijackLock, Thread::LeaveHijackLock> HijackLockHolder;
     //-------------------------------------------------------------------------
 
-    static bool ThreadsAtUnsafePlaces(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_threadsAtUnsafePlaces != (LONG)0);
-    }
-
-    static void IncThreadsAtUnsafePlaces(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedIncrement(&m_threadsAtUnsafePlaces);
-    }
-
-    static void DecThreadsAtUnsafePlaces(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedDecrement(&m_threadsAtUnsafePlaces);
-    }
-
     void PrepareForEERestart(BOOL SuspendSucceeded)
     {
         WRAPPER_NO_CONTRACT;
@@ -4100,68 +4027,12 @@ public:
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD);
     TADDR GetStaticFieldAddrNoCreate(FieldDesc *pFD);
 
-    void SetLoadingFile(DomainFile *pFile)
-    {
-        LIMITED_METHOD_CONTRACT;
-        CONSISTENCY_CHECK(m_pLoadingFile == NULL);
-        m_pLoadingFile = pFile;
-    }
-
-    void ClearLoadingFile()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pLoadingFile = NULL;
-    }
-
-    DomainFile *GetLoadingFile()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pLoadingFile;
-    }
-
-private:
-    static void LoadingFileRelease(Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        pThread->ClearLoadingFile();
-    }
-
-public:
-     typedef Holder<Thread *, DoNothing, Thread::LoadingFileRelease> LoadingFileHolder;
-
 private:
     // Don't allow a thread to be asynchronously stopped or interrupted (e.g. because
     // it is performing a <clinit>)
     int         m_PreventAsync;
-    int         m_PreventAbort;
-    int         m_nNestedMarshalingExceptions;
-    BOOL IsMarshalingException()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_nNestedMarshalingExceptions != 0);
-    }
-    int StartedMarshalingException()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_nNestedMarshalingExceptions++;
-    }
-    void FinishedMarshalingException()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_nNestedMarshalingExceptions > 0);
-        m_nNestedMarshalingExceptions--;
-    }
 
     static LONG m_DebugWillSyncCount;
-
-    // IP cache used by QueueCleanupIP.
-    #define CLEANUP_IPS_PER_CHUNK 4
-    struct CleanupIPs {
-        IUnknown    *m_Slots[CLEANUP_IPS_PER_CHUNK];
-        CleanupIPs  *m_Next;
-        CleanupIPs() {LIMITED_METHOD_CONTRACT; memset(this, 0, sizeof(*this)); }
-    };
-    CleanupIPs   m_CleanupIPs;
 
 #define BEGIN_FORBID_TYPELOAD() _ASSERTE_IMPL((GetThreadNULLOk() == 0) || ++GetThreadNULLOk()->m_ulForbidTypeLoad)
 #define END_FORBID_TYPELOAD()   _ASSERTE_IMPL((GetThreadNULLOk() == 0) || GetThreadNULLOk()->m_ulForbidTypeLoad--)
@@ -4182,11 +4053,11 @@ public:
    this fast, the table is not perfect (there can be collisions), but this should
    not cause false positives, but it may allow errors to go undetected  */
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define OBJREF_HASH_SHIFT_AMOUNT 3
-#else // BIT64
+#else // HOST_64BIT
 #define OBJREF_HASH_SHIFT_AMOUNT 2
-#endif // BIT64
+#endif // HOST_64BIT
 
         // For debugging, you may want to make this number very large, (8K)
         // should basically insure that no collisions happen
@@ -4366,21 +4237,6 @@ public:
 public:
     // Is the current thread currently executing within a constrained execution region?
     static BOOL IsExecutingWithinCer();
-
-    // Determine whether the method at the given frame in the thread's execution stack is executing within a CER.
-    BOOL IsWithinCer(CrawlFrame *pCf);
-
-private:
-    // used to pad stack on thread creation to avoid aliasing penalty in P4 HyperThread scenarios
-
-    static DWORD WINAPI intermediateThreadProc(PVOID arg);
-    static int m_offset_counter;
-    static const int offset_multiplier = 128;
-
-    typedef struct {
-        LPTHREAD_START_ROUTINE  lpThreadFunction;
-        PVOID lpArg;
-    } intermediateThreadParam;
 
 #ifdef _DEBUG
 // when the thread is doing a stressing GC, some Crst violation could be ignored, by a non-elegant solution.
@@ -4672,43 +4528,6 @@ private:
 
     typedef ConditionalStateHolder<Thread *, Thread::EnterWorkingOnThreadContext, Thread::LeaveWorkingOnThreadContext> WorkingOnThreadContextHolder;
 
-public:
-    void PrepareThreadForSOWork()
-    {
-        WRAPPER_NO_CONTRACT;
-
-#ifdef FEATURE_HIJACK
-        UnhijackThread();
-#endif // FEATURE_HIJACK
-
-        ResetThrowControlForThread();
-
-        // Since this Thread has taken an SO, there may be state left-over after we
-        // short-circuited exception or other error handling, and so we don't want
-        // to risk recycling it.
-        SetThreadStateNC(TSNC_CannotRecycle);
-    }
-
-    void SetSOWorkNeeded()
-    {
-        SetThreadStateNC(TSNC_SOWorkNeeded);
-    }
-
-    BOOL IsSOWorkNeeded()
-    {
-        return HasThreadStateNC(TSNC_SOWorkNeeded);
-    }
-
-    void FinishSOWork();
-
-    void ClearExceptionStateAfterSO(void* pStackFrameSP)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // Clear any stale exception state.
-        m_ExceptionState.ClearExceptionStateAfterSO(pStackFrameSP);
-    }
-
 private:
     BOOL m_fAllowProfilerCallbacks;
 
@@ -4779,34 +4598,6 @@ private:
     // we may be in an infinite recursive case.
     Exception *m_pCreatingThrowableForException;
     friend OBJECTREF CLRException::GetThrowable();
-
-#ifdef _DEBUG
-private:
-    int m_dwDisableAbortCheckCount; // Disable check before calling managed code.
-                                    // !!! Use this very carefully.  If managed code runs user code
-                                    // !!! or blocks on locks, the thread may not be aborted.
-public:
-    static void        DisableAbortCheck()
-    {
-        WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
-        FastInterlockIncrement((LONG*)&pThread->m_dwDisableAbortCheckCount);
-    }
-    static void        EnableAbortCheck()
-    {
-        WRAPPER_NO_CONTRACT;
-        Thread *pThread = GetThread();
-        _ASSERTE (pThread->m_dwDisableAbortCheckCount > 0);
-        FastInterlockDecrement((LONG*)&pThread->m_dwDisableAbortCheckCount);
-    }
-
-    BOOL IsAbortCheckDisabled()
-    {
-        return m_dwDisableAbortCheckCount > 0;
-    }
-
-    typedef StateHolder<Thread::DisableAbortCheck, Thread::EnableAbortCheck> DisableAbortCheckHolder;
-#endif
 
 private:
     // At the end of a catch, we may raise ThreadAbortException.  If catch clause set IP to resume in the
@@ -4884,10 +4675,10 @@ private:
 
     PTR_GCFrame m_pGCFrame; // The topmost GC Frame
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     WORD m_wCPUGroup;
     DWORD_PTR m_pAffinityMask;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 public:
     void ChooseThreadCPUGroupAffinity();
     void ClearThreadCPUGroupAffinity();
@@ -5025,27 +4816,6 @@ private:
 
 typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;
 typedef Thread::ThreadPreventAsyncHolder ThreadPreventAsyncHolder;
-typedef Thread::ThreadPreventAbortHolder ThreadPreventAbortHolder;
-
-// Combines ForBindSuspendThreadHolder and CrstHolder into one.
-class ForbidSuspendThreadCrstHolder
-{
-public:
-    // Note: member initialization is intentionally ordered.
-    ForbidSuspendThreadCrstHolder(CrstBase * pCrst)
-        : m_forbid_suspend_holder()
-        , m_lock_holder(pCrst)
-    { WRAPPER_NO_CONTRACT; }
-
-private:
-    ForbidSuspendThreadHolder   m_forbid_suspend_holder;
-    CrstHolder                  m_lock_holder;
-};
-
-ETaskType GetCurrentTaskType();
-
-
-
 typedef Thread::AVInRuntimeImplOkayHolder AVInRuntimeImplOkayHolder;
 
 BOOL RevertIfImpersonated(BOOL *bReverted, HANDLE *phToken);

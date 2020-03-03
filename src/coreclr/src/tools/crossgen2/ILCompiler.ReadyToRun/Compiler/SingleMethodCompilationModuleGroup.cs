@@ -1,10 +1,11 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using Internal.ReadyToRunConstants;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-using System.Reflection.Metadata.Ecma335;
 
 namespace ILCompiler
 {
@@ -12,11 +13,22 @@ namespace ILCompiler
     /// A compilation group that only contains a single method. Useful for development purposes when investigating
     /// code generation issues.
     /// </summary>
-    public class SingleMethodCompilationModuleGroup : CompilationModuleGroup
+    public class SingleMethodCompilationModuleGroup : ReadyToRunCompilationModuleGroupBase
     {
         private MethodDesc _method;
 
-        public SingleMethodCompilationModuleGroup(MethodDesc method)
+        public SingleMethodCompilationModuleGroup(
+            TypeSystemContext context,
+            bool isCompositeBuildMode,
+            IEnumerable<EcmaModule> compilationModuleSet,
+            IEnumerable<ModuleDesc> versionBubbleModuleSet,
+            bool compileGenericDependenciesFromVersionBubbleModuleSet,
+            MethodDesc method) :
+                base(context,
+                     isCompositeBuildMode,
+                     compilationModuleSet,
+                     versionBubbleModuleSet,
+                     compileGenericDependenciesFromVersionBubbleModuleSet)
         {
             _method = method;
         }
@@ -26,19 +38,16 @@ namespace ILCompiler
             return method == _method;
         }
 
-        public override bool ContainsType(TypeDesc type)
+        public override void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction)
         {
-            return type == _method.OwningType;
+            // Profiler guided restrictions are ignored for single method compilation
+            return;
         }
 
-        public override bool VersionsWithModule(ModuleDesc module)
+        public override ReadyToRunFlags GetReadyToRunFlags()
         {
-            return ((EcmaMethod)_method.GetTypicalMethodDefinition()).Module == module;
-        }
-
-        public override bool GeneratesPInvoke(MethodDesc method)
-        {
-            return true;
+            // Partial by definition.
+            return ReadyToRunFlags.READYTORUN_FLAG_Partial;
         }
     }
 }

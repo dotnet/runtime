@@ -14,11 +14,11 @@ namespace Internal.Cryptography.Pal
 {
     internal static class CertificateAssetDownloader
     {
-        private static readonly Func<string, Task<byte[]>> s_downloadBytes = CreateDownloadBytesFunc();
+        private static readonly Func<string, Task<byte[]>>? s_downloadBytes = CreateDownloadBytesFunc();
 
-        internal static X509Certificate2 DownloadCertificate(string uri, ref TimeSpan remainingDownloadTime)
+        internal static X509Certificate2? DownloadCertificate(string uri, ref TimeSpan remainingDownloadTime)
         {
-            byte[] data = DownloadAsset(uri, ref remainingDownloadTime);
+            byte[]? data = DownloadAsset(uri, ref remainingDownloadTime);
 
             if (data == null)
             {
@@ -35,9 +35,9 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        internal static SafeX509CrlHandle DownloadCrl(string uri, ref TimeSpan remainingDownloadTime)
+        internal static SafeX509CrlHandle? DownloadCrl(string uri, ref TimeSpan remainingDownloadTime)
         {
-            byte[] data = DownloadAsset(uri, ref remainingDownloadTime);
+            byte[]? data = DownloadAsset(uri, ref remainingDownloadTime);
 
             if (data == null)
             {
@@ -73,9 +73,9 @@ namespace Internal.Cryptography.Pal
             return null;
         }
 
-        internal static SafeOcspResponseHandle DownloadOcspGet(string uri, ref TimeSpan remainingDownloadTime)
+        internal static SafeOcspResponseHandle? DownloadOcspGet(string uri, ref TimeSpan remainingDownloadTime)
         {
-            byte[] data = DownloadAsset(uri, ref remainingDownloadTime);
+            byte[]? data = DownloadAsset(uri, ref remainingDownloadTime);
 
             if (data == null)
             {
@@ -96,7 +96,7 @@ namespace Internal.Cryptography.Pal
             return resp;
         }
 
-        private static byte[] DownloadAsset(string uri, ref TimeSpan remainingDownloadTime)
+        private static byte[]? DownloadAsset(string uri, ref TimeSpan remainingDownloadTime)
         {
             if (s_downloadBytes != null && remainingDownloadTime > TimeSpan.Zero)
             {
@@ -123,7 +123,7 @@ namespace Internal.Cryptography.Pal
             return null;
         }
 
-        private static Func<string, Task<byte[]>> CreateDownloadBytesFunc()
+        private static Func<string, Task<byte[]>>? CreateDownloadBytesFunc()
         {
             try
             {
@@ -131,15 +131,15 @@ namespace Internal.Cryptography.Pal
                 // Since System.Net.Http.dll explicitly depends on System.Security.Cryptography.X509Certificates.dll,
                 // the latter can't in turn have an explicit dependency on the former.
 
-                Type socketsHttpHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                Type httpClientType = Type.GetType("System.Net.Http.HttpClient, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                Type? socketsHttpHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                Type? httpClientType = Type.GetType("System.Net.Http.HttpClient, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
                 if (socketsHttpHandlerType == null || httpClientType == null)
                 {
                     return null;
                 }
 
-                PropertyInfo pooledConnectionIdleTimeoutProp = socketsHttpHandlerType.GetProperty("PooledConnectionIdleTimeout");
-                MethodInfo getByteArrayAsyncMethod = httpClientType.GetMethod("GetByteArrayAsync", new Type[] { typeof(string) });
+                PropertyInfo? pooledConnectionIdleTimeoutProp = socketsHttpHandlerType.GetProperty("PooledConnectionIdleTimeout");
+                MethodInfo? getByteArrayAsyncMethod = httpClientType.GetMethod("GetByteArrayAsync", new Type[] { typeof(string) });
                 if (pooledConnectionIdleTimeoutProp == null || getByteArrayAsyncMethod == null)
                 {
                     return null;
@@ -153,8 +153,8 @@ namespace Internal.Cryptography.Pal
                 // var httpClient = new HttpClient(socketsHttpHandler);
                 // socketsHttpHandler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds);
                 // Func<string, Task<byte[]>> getByteArrayAsync = httpClient.GetByteArrayAsync;
-                object socketsHttpHandler = Activator.CreateInstance(socketsHttpHandlerType);
-                object httpClient = Activator.CreateInstance(httpClientType, new object[] { socketsHttpHandler });
+                object? socketsHttpHandler = Activator.CreateInstance(socketsHttpHandlerType);
+                object? httpClient = Activator.CreateInstance(httpClientType, new object?[] { socketsHttpHandler });
                 pooledConnectionIdleTimeoutProp.SetValue(socketsHttpHandler, TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds));
                 var getByteArrayAsync = (Func<string, Task<byte[]>>)getByteArrayAsyncMethod.CreateDelegate(
                     typeof(Func<string, Task<byte[]>>),

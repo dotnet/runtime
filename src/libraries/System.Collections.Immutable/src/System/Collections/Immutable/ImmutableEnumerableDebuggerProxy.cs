@@ -13,7 +13,7 @@ namespace System.Collections.Immutable
     /// </summary>
     /// <typeparam name="TKey">The type of the dictionary's keys.</typeparam>
     /// <typeparam name="TValue">The type of the dictionary's values.</typeparam>
-    internal class ImmutableDictionaryDebuggerProxy<TKey, TValue> : ImmutableEnumerableDebuggerProxy<KeyValuePair<TKey, TValue>>
+    internal class ImmutableDictionaryDebuggerProxy<TKey, TValue> : ImmutableEnumerableDebuggerProxy<KeyValuePair<TKey, TValue>> where TKey : notnull
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableDictionaryDebuggerProxy{TKey, TValue}"/> class.
@@ -43,7 +43,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The contents of the enumerable, cached into an array.
         /// </summary>
-        private T[] _cachedContents;
+        private T[]? _cachedContents;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableEnumerableDebuggerProxy{T}"/> class.

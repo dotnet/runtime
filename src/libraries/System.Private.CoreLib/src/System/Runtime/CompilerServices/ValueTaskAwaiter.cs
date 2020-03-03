@@ -7,9 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
-#if !NETSTANDARD2_0
 using Internal.Runtime.CompilerServices;
-#endif
 
 namespace System.Runtime.CompilerServices
 {

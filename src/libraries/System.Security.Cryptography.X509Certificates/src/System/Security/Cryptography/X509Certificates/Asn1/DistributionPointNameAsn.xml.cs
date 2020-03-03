@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;
 using System.Collections.Generic;
@@ -23,14 +24,14 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
             {
-                if (usedTags.TryGetValue(tag, out string existing))
+                if (usedTags.TryGetValue(tag, out string? existing))
                 {
                     throw new InvalidOperationException($"Tag '{tag}' is in use by both '{existing}' and '{fieldName}'");
                 }
 
                 usedTags.Add(tag, fieldName);
             };
-            
+
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 0), "FullName");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 1), "NameRelativeToCRLIssuer");
         }
@@ -38,18 +39,18 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
         internal void Encode(AsnWriter writer)
         {
-            bool wroteValue = false; 
-            
+            bool wroteValue = false;
+
             if (FullName != null)
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
 
                 writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                 for (int i = 0; i < FullName.Length; i++)
                 {
-                    FullName[i].Encode(writer); 
+                    FullName[i].Encode(writer);
                 }
                 writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
 
@@ -60,7 +61,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
                 // Validator for tag constraint for NameRelativeToCRLIssuer
                 {
                     if (!Asn1Tag.TryDecode(NameRelativeToCRLIssuer.Value.Span, out Asn1Tag validateTag, out _) ||
@@ -82,22 +83,22 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
         internal static DistributionPointNameAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, out DistributionPointNameAsn decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, encoded, out DistributionPointNameAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out DistributionPointNameAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out DistributionPointNameAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
-            AsnReader collectionReader;
-            
+            AsnValueReader collectionReader;
+            ReadOnlySpan<byte> rebindSpan = rebind.Span;
+            int offset;
+            ReadOnlySpan<byte> tmpSpan;
+
             if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
 
@@ -109,7 +110,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
                     while (collectionReader.HasData)
                     {
-                        System.Security.Cryptography.Asn1.GeneralNameAsn.Decode(collectionReader, out tmpItem); 
+                        System.Security.Cryptography.Asn1.GeneralNameAsn.Decode(ref collectionReader, rebind, out tmpItem);
                         tmpList.Add(tmpItem);
                     }
 
@@ -119,7 +120,8 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
             {
-                decoded.NameRelativeToCRLIssuer = reader.ReadEncodedValue();
+                tmpSpan = reader.ReadEncodedValue();
+                decoded.NameRelativeToCRLIssuer = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
             }
             else
             {

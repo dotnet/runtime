@@ -1162,7 +1162,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     if (!bmtProp->fIsIntrinsicType)
         return false;
 
@@ -1198,7 +1198,6 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
                 bmtFP->NumInstanceFieldBytes     = intrinsicSIMDVectorLength;
                 if (HasLayout())
                 {
-                    GetLayoutInfo()->m_cbNativeSize = intrinsicSIMDVectorLength;
                     GetLayoutInfo()->m_cbManagedSize = intrinsicSIMDVectorLength;
                 }
                 return true;
@@ -1206,7 +1205,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
         }
     }
 #endif // !CROSSGEN_COMPILE
-#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
     return false;
 }
 
@@ -1498,7 +1497,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (bmtProp->fIsIntrinsicType && !bmtGenerics->HasInstantiation())
     {
         LPCUTF8 className;
@@ -1510,7 +1509,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
             IfFailThrow(GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetEnclosingTypeToken(), NULL, &nameSpace));
         }
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
         // All the funtions in System.Runtime.Intrinsics.Arm are hardware intrinsics.
         if (hr == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics.Arm") == 0)
 #else
@@ -1519,10 +1518,10 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #endif
         {
 #if defined(CROSSGEN_COMPILE)
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
             if ((!IsNgenPDBCompilationProcess()
                 && GetAppDomain()->ToCompilationDomain()->GetTargetModule() != g_pObjectClass->GetModule()))
-#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
             {
                 // Disable AOT compiling for managed implementation of hardware intrinsics.
                 // We specially treat them here to ensure correct ISA features are set during compilation
@@ -1778,8 +1777,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
         _ASSERTE(HasLayout());
 
-        bmtFP->NumInstanceFieldBytes = IsBlittable() ? GetLayoutInfo()->m_cbNativeSize
-                                                     : GetLayoutInfo()->m_cbManagedSize;
+        bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
 
         // For simple Blittable types we still need to check if they have any overlapping
         // fields and call the method SetHasOverLayedFields() when they are detected.
@@ -1881,23 +1879,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #endif // UNIX_AMD64_ABI
     }
 
-#ifdef UNIX_AMD64_ABI
-#ifdef FEATURE_HFA
-#error "Can't have FEATURE_HFA and UNIX_AMD64_ABI defined at the same time."
-#endif // FEATURE_HFA
-    if (HasLayout())
-    {
-        SystemVAmd64CheckForPassNativeStructInRegister();
-    }
-#endif // UNIX_AMD64_ABI
-#ifdef FEATURE_HFA
-    if (HasLayout())
-    {
-        GetHalfBakedClass()->CheckForNativeHFA();
-    }
-#endif
-
-#ifdef _DEBUG
+#ifdef _DEBUG 
     pMT->SetDebugClassName(GetDebugClassName());
 #endif
 
@@ -3724,13 +3706,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
     DWORD i;
     IMDInternalImport * pInternalImport = GetMDImport(); // to avoid multiple dereferencings
 
-    NativeFieldDescriptor * pNextNativeFieldDescriptor = NULL;
-    if (HasLayout())
-    {
-        pNextNativeFieldDescriptor = GetLayoutInfo()->GetNativeFieldDescriptors();
-    }
-
-
 //========================================================================
 // BEGIN:
 //    Go thru all fields and initialize their FieldDescs.
@@ -4188,15 +4163,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 if (pwalk->m_MD == bmtMetaData->pFields[i])
                 {
                     pLayoutFieldInfo = pwalk;
-
-                    const NativeFieldDescriptor *pSrcFieldDescriptor = &pwalk->m_nfd;
-
-                    *pNextNativeFieldDescriptor = *pSrcFieldDescriptor;
-
-                    pNextNativeFieldDescriptor->SetFieldDesc(pFD);
-                    pNextNativeFieldDescriptor->SetExternalOffset(pwalk->m_nativePlacement.m_offset);
-
-                    pNextNativeFieldDescriptor++;
                     break;
                 }
                 pwalk++;
@@ -4232,7 +4198,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                     (*pByValueClassCache)[dwCurrentDeclaredField]->GetNumInstanceFieldBytes();
 
                 if (pLayoutFieldInfo)
-                    IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_nativePlacement.m_offset));
+                    IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
                 else
                     pFD->SetOffset(FIELD_OFFSET_VALUE_CLASS);
             }
@@ -4241,7 +4207,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 (DWORD_PTR &)pFD->m_pMTOfEnclosingClass =
                     (*pByValueClassCache)[dwCurrentDeclaredField]->GetNumInstanceFieldBytes();
 
-                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_managedPlacement.m_offset));
+                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
             }
             else
             {
@@ -4262,9 +4228,9 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             // mark it as either GC or non-GC and as unplaced; it will get placed later on in an optimized way.
 
             if ((IsBlittable() || HasExplicitFieldOffsetLayout()) && !fIsStatic)
-                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_nativePlacement.m_offset));
+                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
             else if (IsManagedSequential() && !fIsStatic)
-                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_managedPlacement.m_offset));
+                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
             else if (bCurrentFieldIsGCPointer)
                 pFD->SetOffset(FIELD_OFFSET_UNPLACED_GC_PTR);
             else
@@ -5953,9 +5919,9 @@ MethodTableBuilder::InitMethodDesc(
             pNewNMD->GetNDirectImportThunkGlue()->Init(pNewNMD);
 #endif // !HAS_NDIRECT_IMPORT_PRECODE
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
             pNewNMD->ndirect.m_cbStackArgumentSize = 0xFFFF;
-#endif // defined(_TARGET_X86_)
+#endif // defined(TARGET_X86)
 
             // If the RVA of a native method is set, this is an early-bound IJW call
             if (RVA != 0 && IsMiUnmanaged(dwImplFlags) && IsMiNative(dwImplFlags))
@@ -8106,17 +8072,17 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                     // value classes could have GC pointers in them, which need to be pointer-size aligned
                     // so do this if it has not been done already
 
-#if !defined(_TARGET_64BIT_) && (DATA_ALIGNMENT > 4)
+#if !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
                 dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos,
                     (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT) ? DATA_ALIGNMENT : TARGET_POINTER_SIZE);
-#else // !(!defined(_TARGET_64BIT_) && (DATA_ALIGNMENT > 4))
+#else // !(!defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4))
 #ifdef FEATURE_64BIT_ALIGNMENT
                 if (pByValueMT->RequiresAlign8())
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, 8);
                 else
 #endif // FEATURE_64BIT_ALIGNMENT
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, TARGET_POINTER_SIZE);
-#endif // !(!defined(_TARGET_64BIT_) && (DATA_ALIGNMENT > 4))
+#endif // !(!defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4))
 
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
                 dwCumulativeInstanceFieldPos += pByValueMT->GetAlignedNumInstanceFieldBytes();
@@ -8228,41 +8194,6 @@ void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister()
         GetHalfBakedMethodTable()->SetRegPassedStruct();
 
         StoreEightByteClassification(&helper);
-    }
-}
-
-// checks whether the struct is enregisterable.
-void MethodTableBuilder::SystemVAmd64CheckForPassNativeStructInRegister()
-{
-    STANDARD_VM_CONTRACT;
-    DWORD totalStructSize = 0;
-
-    // If not a native value type, return.
-    if (!IsValueClass())
-    {
-        return;
-    }
-
-    totalStructSize = GetLayoutInfo()->GetNativeSize();
-
-    // If num of bytes for the fields is bigger than CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS
-    // pass through stack
-    if (totalStructSize > CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS)
-    {
-        LOG((LF_JIT, LL_EVERYTHING, "**** SystemVAmd64CheckForPassNativeStructInRegister: struct %s is too big to pass in registers (%d bytes)\n",
-            this->GetDebugClassName(), totalStructSize));
-        return;
-    }
-
-    _ASSERTE(HasLayout());
-
-    // Classify the native layout for this struct.
-    const bool useNativeLayout = true;
-    // Iterate through the fields and make sure they meet requirements to pass in registers
-    SystemVStructRegisterPassingHelper helper((unsigned int)totalStructSize);
-    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0, useNativeLayout))
-    {
-        GetLayoutInfo()->SetNativeStructPassedInRegisters();
     }
 }
 
@@ -9612,39 +9543,33 @@ void MethodTableBuilder::CheckForSystemTypes()
                     // The System V ABI for i386 defaults to 8-byte alignment for __m64, except for parameter passing,
                     // where it has an alignment of 4.
 
-                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 8; // sizeof(__m64)
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8; // sizeof(__m64)
                 }
                 else if (strcmp(name, g_Vector128Name) == 0)
                 {
-    #ifdef _TARGET_ARM_
+    #ifdef TARGET_ARM
                     // The Procedure Call Standard for ARM defaults to 8-byte alignment for __m128
 
-                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 8;
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8;
     #else
-                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 16; // sizeof(__m128)
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__m128)
-    #endif // _TARGET_ARM_
+    #endif // TARGET_ARM
                 }
                 else if (strcmp(name, g_Vector256Name) == 0)
                 {
-    #ifdef _TARGET_ARM_
+    #ifdef TARGET_ARM
                     // No such type exists for the Procedure Call Standard for ARM. We will default
                     // to the same alignment as __m128, which is supported by the ABI.
 
-                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 8;
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8;
-    #elif defined(_TARGET_ARM64_)
+    #elif defined(TARGET_ARM64)
                     // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to
                     // 16-byte alignment for __m256.
 
-                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 16;
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
     #else
-                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 32; // sizeof(__m256)
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 32; // sizeof(__m256)
-    #endif // _TARGET_ARM_ elif _TARGET_ARM64_
+    #endif // TARGET_ARM elif TARGET_ARM64
                 }
                 else
                 {
@@ -9663,7 +9588,7 @@ void MethodTableBuilder::CheckForSystemTypes()
             _ASSERTE(g_pByReferenceClass != NULL);
             _ASSERTE(g_pByReferenceClass->IsByRefLike());
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             if (GetCl() == g_pByReferenceClass->GetCl())
             {
                 // x86 by default treats the type of ByReference<T> as the actual type of its IntPtr field, see calls to
@@ -9712,7 +9637,7 @@ void MethodTableBuilder::CheckForSystemTypes()
             pMT->SetInternalCorElementType(type);
             pMT->SetIsTruePrimitive();
 
-#if defined(_TARGET_X86_) && defined(UNIX_X86_ABI)
+#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
             switch (type)
             {
                 // The System V ABI for i386 defines different packing for these types.
@@ -9730,7 +9655,7 @@ void MethodTableBuilder::CheckForSystemTypes()
                 default:
                     break;
             }
-#endif // _TARGET_X86_ && UNIX_X86_ABI
+#endif // TARGET_X86 && UNIX_X86_ABI
 
 #ifdef _DEBUG
             if (FAILED(GetMDImport()->GetNameOfTypeDef(GetCl(), &name, &nameSpace)))
@@ -9744,7 +9669,7 @@ void MethodTableBuilder::CheckForSystemTypes()
         {
             pMT->SetIsNullable();
         }
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         else if (strcmp(name, g_ByReferenceName) == 0)
         {
             // x86 by default treats the type of ByReference<T> as the actual type of its IntPtr field, see calls to
@@ -9755,7 +9680,7 @@ void MethodTableBuilder::CheckForSystemTypes()
             pMT->SetInternalCorElementType(ELEMENT_TYPE_VALUETYPE);
         }
 #endif
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
         else if (strcmp(name, g_RuntimeArgumentHandleName) == 0)
         {
             pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
@@ -9773,7 +9698,6 @@ void MethodTableBuilder::CheckForSystemTypes()
             // data misalignent exceptions if Decimal is embedded in another type.
 
             EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
-            pLayout->m_LargestAlignmentRequirementOfAllMembers        = sizeof(ULONGLONG);
             pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = sizeof(ULONGLONG);
 
 #ifdef FEATURE_64BIT_ALIGNMENT
@@ -10163,7 +10087,7 @@ MethodTableBuilder::SetupMethodTable2(
     EEClass *pClass = GetHalfBakedClass();
 
     DWORD cbDict = bmtGenerics->HasInstantiation()
-                   ?  DictionaryLayout::GetFirstDictionaryBucketSize(
+                   ?  DictionaryLayout::GetDictionarySizeFromLayout(
                           bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout())
                    : 0;
 
@@ -10435,11 +10359,6 @@ MethodTableBuilder::SetupMethodTable2(
     }
     _ASSERTE((pMT->IsInterface() == 0) == (IsInterface() == 0));
 
-    if (HasLayout())
-    {
-        pClass->SetNativeSize(GetLayoutInfo()->GetNativeSize());
-    }
-
     FieldDesc *pFieldDescList = pClass->GetFieldDescList();
     // Set all field slots to point to the newly created MethodTable
     for (i = 0; i < (bmtEnumFields->dwNumStaticFields + bmtEnumFields->dwNumInstanceFields); i++)
@@ -10461,6 +10380,14 @@ MethodTableBuilder::SetupMethodTable2(
         {
             pInstDest[j] = inst[j];
         }
+
+        PTR_DictionaryLayout pLayout = pClass->GetDictionaryLayout();
+        if (pLayout != NULL && pLayout->GetMaxSlots() > 0)
+        {
+            PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[bmtGenerics->numDicts - 1].GetValue();
+            DWORD* pSizeSlot = (DWORD*)(pDictionarySlots + bmtGenerics->GetNumGenericArgs());
+            *pSizeSlot = cbDict;
+        }
     }
 
     CorElementType normalizedType = ELEMENT_TYPE_CLASS;
@@ -10478,7 +10405,7 @@ MethodTableBuilder::SetupMethodTable2(
         }
         else
         {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             // JIT64 is not aware of normalized value types and this
             // optimization (return small value types by value in registers)
             // is already done in JIT64.
@@ -11915,45 +11842,52 @@ MethodTableBuilder::GatherGenericsInfo(
         }
 
         TypeHandle * pDestInst = (TypeHandle *)inst.GetRawArgs();
-        for (unsigned int i = 0; i < numGenericArgs; i++)
         {
-            pInternalImport->EnumNext(&hEnumGenericPars, &tkTyPar);
-            DWORD flags;
-            if (FAILED(pInternalImport->GetGenericParamProps(tkTyPar, NULL, &flags, NULL, NULL, NULL)))
-            {
-                pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
-            }
+            // Protect multi-threaded access to Module.m_GenericParamToDescMap. Other threads may be loading the same type
+            // to break type recursion dead-locks
 
-            if (bmtGenericsInfo->fTypicalInstantiation)
+            // m_AvailableTypesLock has to be taken in cooperative mode to avoid deadlocks during GC
+            GCX_COOP();
+            CrstHolder ch(&pModule->GetClassLoader()->m_AvailableTypesLock);
+
+            for (unsigned int i = 0; i < numGenericArgs; i++)
             {
-                // code:Module.m_GenericParamToDescMap maps generic parameter RIDs to TypeVarTypeDesc
-                // instances so that we do not leak by allocating them all over again, if the type
-                // repeatedly fails to load.
-                TypeVarTypeDesc *pTypeVarTypeDesc = pModule->LookupGenericParam(tkTyPar);
-                if (pTypeVarTypeDesc == NULL)
+                pInternalImport->EnumNext(&hEnumGenericPars, &tkTyPar);
+                DWORD flags;
+                if (FAILED(pInternalImport->GetGenericParamProps(tkTyPar, NULL, &flags, NULL, NULL, NULL)))
                 {
-                    // Do NOT use the alloc tracker for this memory as we need it stay allocated even if the load fails.
-                    void *mem = (void *)pModule->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TypeVarTypeDesc)));
-                    pTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, cl, i, tkTyPar);
-
-                    // No race here - the row in GenericParam table is owned exclusively by this type and we
-                    // are holding a lock preventing other threads from concurrently loading it.
-                    pModule->StoreGenericParamThrowing(tkTyPar, pTypeVarTypeDesc);
+                    pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
                 }
-                pDestInst[i] = TypeHandle(pTypeVarTypeDesc);
-            }
 
-            DWORD varianceAnnotation = flags & gpVarianceMask;
-            bmtGenericsInfo->pVarianceInfo[i] = static_cast<BYTE>(varianceAnnotation);
-            if (varianceAnnotation != gpNonVariant)
-            {
-                if (varianceAnnotation != gpContravariant && varianceAnnotation != gpCovariant)
+                if (bmtGenericsInfo->fTypicalInstantiation)
                 {
-                    pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADVARIANCE);
+                    // code:Module.m_GenericParamToDescMap maps generic parameter RIDs to TypeVarTypeDesc
+                    // instances so that we do not leak by allocating them all over again, if the type
+                    // repeatedly fails to load.
+                    TypeVarTypeDesc* pTypeVarTypeDesc = pModule->LookupGenericParam(tkTyPar);
+                    if (pTypeVarTypeDesc == NULL)
+                    {
+                        // Do NOT use the alloc tracker for this memory as we need it stay allocated even if the load fails.
+                        void* mem = (void*)pModule->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TypeVarTypeDesc)));
+                        pTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, cl, i, tkTyPar);
+
+                        pModule->StoreGenericParamThrowing(tkTyPar, pTypeVarTypeDesc);
+                    }
+                    pDestInst[i] = TypeHandle(pTypeVarTypeDesc);
                 }
-                else
+
+                DWORD varianceAnnotation = flags & gpVarianceMask;
+                bmtGenericsInfo->pVarianceInfo[i] = static_cast<BYTE>(varianceAnnotation);
+                if (varianceAnnotation != gpNonVariant)
                 {
-                    fHasVariance = TRUE;
+                    if (varianceAnnotation != gpContravariant && varianceAnnotation != gpCovariant)
+                    {
+                        pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADVARIANCE);
+                    }
+                    else
+                    {
+                        fHasVariance = TRUE;
+                    }
                 }
             }
         }
@@ -12040,7 +11974,7 @@ BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, 
     }
     else if (IsTdAutoClass(clFlags))
     {
-#ifdef PLATFORM_WINDOWS
+#ifdef TARGET_WINDOWS
         *pNLTType = nltUnicode;
 #else
         *pNLTType = nltAnsi; // We don't have a utf8 charset in metadata yet, but ANSI == UTF-8 off-Windows

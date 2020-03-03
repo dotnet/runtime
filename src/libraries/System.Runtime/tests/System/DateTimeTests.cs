@@ -1528,7 +1528,7 @@ namespace System.Tests
         }
 
         [Fact]
-        // Regression test for https://github.com/dotnet/coreclr/issues/15896
+        // Regression test for https://github.com/dotnet/runtime/issues/9565
         public static void TryParseExact_EmptyAMPMDesignator()
         {
             var englishCulture = new CultureInfo("en-US");
@@ -1930,7 +1930,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToString_MatchesExpected_MemberData()
         {
-            // Randomly generated data on netfx with:
+            // Randomly generated data on .NET Framework with:
             //     using System;
             //     class Program
             //     {

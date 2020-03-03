@@ -6,8 +6,10 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class CharUnicodeInfoGetUnicodeCategoryTests
+    public partial class CharUnicodeInfoTests
     {
+        private const int HIGHEST_CODE_POINT = 0x10_FFFF;
+
         [Fact]
         public void GetUnicodeCategory()
         {
@@ -20,9 +22,7 @@ namespace System.Globalization.Tests
                 }
                 // Test the string overload for a surrogate pair or a single char
                 GetUnicodeCategory(testCase.Utf32CodeValue, new UnicodeCategory[] { testCase.GeneralCategory });
-#if NETCOREAPP
                 Assert.Equal(testCase.GeneralCategory, CharUnicodeInfo.GetUnicodeCategory(testCase.CodePoint));
-#endif
             }
         }
 
@@ -104,10 +104,10 @@ namespace System.Globalization.Tests
         public static readonly object[][] s_GetNumericValueData =
         {
             new object[] {"aA1!", new double[] { -1, -1, 1, -1 }},
-            // Numeric surrogate (CUNEIFORM NUMERIC SIGN FIVE BAN2 VARIANT FORM)
+            // Numeric supplementary plane code point (U+12455 CUNEIFORM NUMERIC SIGN FIVE BAN2 VARIANT FORM)
             new object[] {"\uD809\uDC55", new double[] { 5, -1 }},
             new object[] {"a\uD809\uDC55a", new double[] { -1, 5, -1 , -1 }},
-            // Numeric surrogate (CUNEIFORM NUMERIC SIGN FIVE BAN2 VARIANT FORM)
+            // Non-numeric supplementary plane code point (U+1236C CUNEIFORM SIGN ZU5 TIMES A)
             new object[] {"\uD808\uDF6C", new double[] { -1, -1 }},
             new object[] {"a\uD808\uDF6Ca", new double[] { -1, -1, -1, -1 }},
         };

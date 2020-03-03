@@ -301,7 +301,7 @@ namespace System.Net.Mail
                     // takes a string host and an int port, bypassing the need for a Uri. We workaround that here by
                     // creating an http Uri, simply for the purposes of getting an appropriate ServicePoint instance.
                     // This has some subtle impact on behavior, e.g. the returned ServicePoint's Address property will
-                    // be usable, whereas in desktop it throws an exception that "This property is not supported for
+                    // be usable, whereas in .NET Framework it throws an exception that "This property is not supported for
                     // protocols that do not use URI."
                     _servicePoint = ServicePointManager.FindServicePoint(new Uri("mailto:" + _host + ":" + _port));
                 }
@@ -543,7 +543,6 @@ namespace System.Net.Mail
                     _message = message;
                     message.Send(writer, DeliveryMethod != SmtpDeliveryMethod.Network, allowUnicode);
                     writer.Close();
-                    _transport.ReleaseConnection();
 
                     //throw if we couldn't send to any of the recipients
                     if (DeliveryMethod == SmtpDeliveryMethod.Network && recipientException != null)
@@ -690,7 +689,6 @@ namespace System.Net.Mail
                                 if (_writer != null)
                                     _writer.Close();
 
-                                _transport.ReleaseConnection();
                                 AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(null, false, _asyncOp.UserSuppliedState);
                                 InCall = false;
                                 _asyncOp.PostOperationCompleted(_onSendCompletedDelegate, eventArgs);
@@ -721,10 +719,6 @@ namespace System.Net.Mail
                     }
 
                     Abort();
-                    if (_timedOut)
-                    {
-                        throw new SmtpException(SR.net_timeout);
-                    }
 
                     if (e is SecurityException ||
                         e is AuthenticationException ||
@@ -786,17 +780,59 @@ namespace System.Net.Mail
         public Task SendMailAsync(string from, string recipients, string subject, string body)
         {
             var message = new MailMessage(from, recipients, subject, body);
-            return SendMailAsync(message);
+            return SendMailAsync(message, cancellationToken: default);
         }
 
         public Task SendMailAsync(MailMessage message)
         {
+            return SendMailAsync(message, cancellationToken: default);
+        }
+
+        public Task SendMailAsync(string from, string recipients, string subject, string body, CancellationToken cancellationToken)
+        {
+            var message = new MailMessage(from, recipients, subject, body);
+            return SendMailAsync(message, cancellationToken);
+        }
+
+        public Task SendMailAsync(MailMessage message, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
             // Create a TaskCompletionSource to represent the operation
             var tcs = new TaskCompletionSource<object>();
 
+            CancellationTokenRegistration ctr = default;
+
+            // Indicates whether the CTR has been set - captured in handler
+            int state = 0;
+
             // Register a handler that will transfer completion results to the TCS Task
             SendCompletedEventHandler handler = null;
-            handler = (sender, e) => HandleCompletion(tcs, e, handler);
+            handler = (sender, e) =>
+            {
+                if (e.UserState == tcs)
+                {
+                    try
+                    {
+                        ((SmtpClient)sender).SendCompleted -= handler;
+                        if (Interlocked.Exchange(ref state, 1) != 0)
+                        {
+                            // A CTR has been set, we have to wait until it completes before completing the task
+                            ctr.Dispose();
+                        }
+                    }
+                    catch (ObjectDisposedException) { } // SendAsyncCancel will throw if SmtpClient was disposed
+                    finally
+                    {
+                        if (e.Error != null) tcs.TrySetException(e.Error);
+                        else if (e.Cancelled) tcs.TrySetCanceled();
+                        else tcs.TrySetResult(null);
+                    }
+                }
+            };
             SendCompleted += handler;
 
             // Start the async operation.
@@ -810,22 +846,19 @@ namespace System.Net.Mail
                 throw;
             }
 
+            ctr = cancellationToken.Register(s =>
+            {
+                ((SmtpClient)s).SendAsyncCancel();
+            }, this);
+
+            if (Interlocked.Exchange(ref state, 1) != 0)
+            {
+                // SendCompleted was already invoked, ensure the CTR completes before returning the task
+                ctr.Dispose();
+            }
+
             // Return the task to represent the asynchronous operation
             return tcs.Task;
-        }
-
-        private void HandleCompletion(TaskCompletionSource<object> tcs, AsyncCompletedEventArgs e, SendCompletedEventHandler handler)
-        {
-            if (e.UserState == tcs)
-            {
-                try { SendCompleted -= handler; }
-                finally
-                {
-                    if (e.Error != null) tcs.TrySetException(e.Error);
-                    else if (e.Cancelled) tcs.TrySetCanceled();
-                    else tcs.TrySetResult(null);
-                }
-            }
         }
 
 
@@ -902,7 +935,6 @@ namespace System.Net.Mail
                             exception = se;
                         }
                     }
-                    _transport.ReleaseConnection();
                 }
             }
             finally
@@ -1043,16 +1075,7 @@ namespace System.Net.Mail
             }
         }
 
-        private void Abort()
-        {
-            try
-            {
-                _transport.Abort();
-            }
-            catch
-            {
-            }
-        }
+        private void Abort() => _transport.Abort();
 
         public void Dispose()
         {
@@ -1069,17 +1092,11 @@ namespace System.Net.Mail
                     _cancelled = true;
                     Abort();
                 }
-
-                if ((_transport != null))
+                else
                 {
-                    _transport.ReleaseConnection();
+                    _transport?.ReleaseConnection();
                 }
-
-                if (_timer != null)
-                {
-                    _timer.Dispose();
-                }
-
+                _timer?.Dispose();
                 _disposed = true;
             }
         }

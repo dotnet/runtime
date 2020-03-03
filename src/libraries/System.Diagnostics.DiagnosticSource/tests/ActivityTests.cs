@@ -263,33 +263,41 @@ namespace System.Diagnostics.Tests
             //start 2 children in different execution contexts
             Task.Run(() => child1.Start()).Wait();
             Task.Run(() => child2.Start()).Wait();
-#if DEBUG
-            Assert.Equal($"|{parent.RootId}.{child1.OperationName}-1.", child1.Id);
-            Assert.Equal($"|{parent.RootId}.{child2.OperationName}-2.", child2.Id);
-#else
-            Assert.Equal($"|{parent.RootId}.1.", child1.Id);
-            Assert.Equal($"|{parent.RootId}.2.", child2.Id);
-#endif
+
+            // In Debug builds of System.Diagnostics.DiagnosticSource, the child operation Id will be constructed as follows
+            // "|parent.RootId.<child.OperationName.Replace(., -)>-childCount.".
+            // This is for debugging purposes to know which operation the child Id is comming from.
+            //
+            // In Release builds of System.Diagnostics.DiagnosticSource, it will not contain the operation name to keep it simple and it will be as
+            // "|parent.RootId.childCount.".
+
+            string child1DebugString = $"|{parent.RootId}.{child1.OperationName}-1.";
+            string child2DebugString = $"|{parent.RootId}.{child2.OperationName}-2.";
+            string child1ReleaseString = $"|{parent.RootId}.1.";
+            string child2ReleaseString = $"|{parent.RootId}.2.";
+
+            AssertExtensions.AtLeastOneEquals(child1DebugString, child1ReleaseString, child1.Id);
+            AssertExtensions.AtLeastOneEquals(child2DebugString, child2ReleaseString, child2.Id);
+
             Assert.Equal(parent.RootId, child1.RootId);
             Assert.Equal(parent.RootId, child2.RootId);
             child1.Stop();
             child2.Stop();
             var child3 = new Activity("child3");
             child3.Start();
-#if DEBUG
-            Assert.Equal($"|{parent.RootId}.{child3.OperationName}-3.", child3.Id);
-#else
-            Assert.Equal($"|{parent.RootId}.3.", child3.Id);
-#endif
+
+            string child3DebugString = $"|{parent.RootId}.{child3.OperationName}-3.";
+            string child3ReleaseString = $"|{parent.RootId}.3.";
+
+            AssertExtensions.AtLeastOneEquals(child3DebugString, child3ReleaseString, child3.Id);
 
             var grandChild = new Activity("grandChild");
             grandChild.Start();
-#if DEBUG
-            Assert.Equal($"{child3.Id}{grandChild.OperationName}-1.", grandChild.Id);
-#else
-            Assert.Equal($"{child3.Id}1.", grandChild.Id);
-#endif
 
+            child3DebugString = $"{child3.Id}{grandChild.OperationName}-1.";
+            child3ReleaseString = $"{child3.Id}1.";
+
+            AssertExtensions.AtLeastOneEquals(child3DebugString, child3ReleaseString, grandChild.Id);
         }
 
         /// <summary>
@@ -548,6 +556,40 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void IdFormat_W3CValidVersions()
+        {
+            Activity activity0 = new Activity("activity0");
+            Activity activity1 = new Activity("activity1");
+            Activity activity2 = new Activity("activity2");
+            activity0.SetParentId("01-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
+            activity0.Start();
+            activity1.SetParentId("cc-1123456789abcdef0123456789abcdef-1123456789abcdef-00");
+            activity1.Start();
+            activity2.SetParentId("fe-2123456789abcdef0123456789abcdef-2123456789abcdef-00");
+            activity2.Start();
+
+            Assert.Equal(ActivityIdFormat.W3C, activity0.IdFormat);
+            Assert.Equal(ActivityIdFormat.W3C, activity1.IdFormat);
+            Assert.Equal(ActivityIdFormat.W3C, activity2.IdFormat);
+            Assert.Equal("0123456789abcdef0123456789abcdef", activity0.TraceId.ToHexString());
+            Assert.Equal("1123456789abcdef0123456789abcdef", activity1.TraceId.ToHexString());
+            Assert.Equal("2123456789abcdef0123456789abcdef", activity2.TraceId.ToHexString());
+            Assert.Equal("0123456789abcdef", activity0.ParentSpanId.ToHexString());
+            Assert.Equal("1123456789abcdef", activity1.ParentSpanId.ToHexString());
+            Assert.Equal("2123456789abcdef", activity2.ParentSpanId.ToHexString());
+        }
+
+        [Fact]
+        public void IdFormat_W3CInvalidVersionFF()
+        {
+            Activity activity = new Activity("activity");
+            activity.SetParentId("ff-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
+            activity.Start();
+
+            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+        }
+
+        [Fact]
         public void IdFormat_W3CWhenTraceIdAndSpanIdProvided()
         {
             Activity activity = new Activity("activity3");
@@ -682,7 +724,46 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void IdFormat_W3CForcedOveeridesParentActivityIdFormat()
+        public void Version_W3CNonHexCharsNotSupportedAndDoesNotThrow()
+        {
+            Activity activity = new Activity("activity");
+            activity.SetParentId("0.-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
+            activity.Start();
+
+            Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+        }
+
+        [Fact]
+        public void Version_W3CNonHexCharsNotSupportedAndDoesNotThrow_ForceW3C()
+        {
+            Activity activity = new Activity("activity");
+            activity.SetIdFormat(ActivityIdFormat.W3C);
+            activity.SetParentId("0.-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
+            activity.Start();
+
+            Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+            Assert.NotEqual("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
+            Assert.Equal(default, activity.ParentSpanId);
+            Assert.True(IdIsW3CFormat(activity.Id));
+        }
+
+        [Fact]
+        public void Options_W3CNonHexCharsNotSupportedAndDoesNotThrow()
+        {
+            Activity activity = new Activity("activity");
+            activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-.1");
+            activity.Start();
+
+            Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+            Assert.True(IdIsW3CFormat(activity.Id));
+
+            Assert.Equal("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
+            Assert.Equal("0123456789abcdef", activity.ParentSpanId.ToHexString());
+            Assert.Equal(ActivityTraceFlags.None, activity.ActivityTraceFlags);
+        }
+
+        [Fact]
+        public void IdFormat_W3CForcedOverridesParentActivityIdFormat()
         {
             RemoteExecutor.Invoke(() =>
             {
@@ -1005,7 +1086,7 @@ namespace System.Diagnostics.Tests
             // Let's check that duration is 1sec - 2 * maximum DateTime.UtcNow error or bigger.
             // As both start and stop timestamps may have error.
             // There is another test (ActivityDateTimeTests.StartStopReturnsPreciseDuration)
-            // that checks duration precision on netfx.
+            // that checks duration precision on .NET Framework.
             Assert.InRange(activity.Duration.TotalMilliseconds, 1000 - 2 * MaxClockErrorMSec, double.MaxValue);
         }
 
@@ -1109,7 +1190,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [OuterLoop] // Slighly flaky - https://github.com/dotnet/corefx/issues/23072
+        [OuterLoop("https://github.com/dotnet/runtime/issues/23104")]
         public void DiagnosticSourceStartStop()
         {
             using (DiagnosticListener listener = new DiagnosticListener("Testing"))

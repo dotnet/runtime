@@ -385,10 +385,6 @@ namespace System.IO
             if (n <= 0)
                 return 0;
 
-            // TODO https://github.com/dotnet/coreclr/issues/15076:
-            // Read(byte[], int, int) has an n <= 8 optimization, presumably based
-            // on benchmarking.  Determine if/where such a cut-off is here and add
-            // an equivalent optimization if necessary.
             new Span<byte>(_buffer, _position, n).CopyTo(buffer);
 
             _position += n;

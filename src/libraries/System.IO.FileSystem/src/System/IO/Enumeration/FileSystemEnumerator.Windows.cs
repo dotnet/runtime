@@ -32,14 +32,14 @@ namespace System.IO.Enumeration
         private readonly object _lock = new object();
 
         private Interop.NtDll.FILE_FULL_DIR_INFORMATION* _entry;
-        private TResult _current;
+        private TResult _current = default!;
 
         private IntPtr _buffer;
         private int _bufferLength;
         private IntPtr _directoryHandle;
-        private string _currentPath;
+        private string? _currentPath;
         private bool _lastEntryFound;
-        private Queue<(IntPtr Handle, string Path)> _pending;
+        private Queue<(IntPtr Handle, string Path)>? _pending;
 
         private void Init()
         {

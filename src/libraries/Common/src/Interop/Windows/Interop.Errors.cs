@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-internal partial class Interop
+internal static partial class Interop
 {
-    // https://msdn.microsoft.com/en-us/library/windows/desktop/ms681382.aspx
-    internal partial class Errors
+    // As defined in winerror.h and https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes
+    internal static partial class Errors
     {
         internal const int ERROR_SUCCESS = 0x0;
         internal const int ERROR_INVALID_FUNCTION = 0x1;
@@ -23,6 +23,7 @@ internal partial class Interop
         internal const int ERROR_SHARING_VIOLATION = 0x20;
         internal const int ERROR_LOCK_VIOLATION = 0x21;
         internal const int ERROR_HANDLE_EOF = 0x26;
+        internal const int ERROR_NOT_SUPPORTED = 0x32;
         internal const int ERROR_BAD_NETPATH = 0x35;
         internal const int ERROR_NETWORK_ACCESS_DENIED = 0x41;
         internal const int ERROR_BAD_NET_NAME = 0x43;
@@ -49,15 +50,19 @@ internal partial class Interop
         internal const int ERROR_MORE_DATA = 0xEA;
         internal const int ERROR_NO_MORE_ITEMS = 0x103;
         internal const int ERROR_DIRECTORY = 0x10B;
+        internal const int ERROR_NOT_OWNER = 0x120;
+        internal const int ERROR_TOO_MANY_POSTS = 0x12A;
         internal const int ERROR_PARTIAL_COPY = 0x12B;
         internal const int ERROR_ARITHMETIC_OVERFLOW = 0x216;
         internal const int ERROR_PIPE_CONNECTED = 0x217;
         internal const int ERROR_PIPE_LISTENING = 0x218;
+        internal const int ERROR_MUTANT_LIMIT_EXCEEDED = 0x24B;
         internal const int ERROR_OPERATION_ABORTED = 0x3E3;
         internal const int ERROR_IO_INCOMPLETE = 0x3E4;
         internal const int ERROR_IO_PENDING = 0x3E5;
         internal const int ERROR_NO_TOKEN = 0x3f0;
         internal const int ERROR_SERVICE_DOES_NOT_EXIST = 0x424;
+        internal const int ERROR_NO_UNICODE_TRANSLATION = 0x459;
         internal const int ERROR_DLL_INIT_FAILED = 0x45A;
         internal const int ERROR_COUNTER_TIMEOUT = 0x461;
         internal const int ERROR_NO_ASSOCIATION = 0x483;
@@ -80,10 +85,10 @@ internal partial class Interop
         internal const int ERROR_NO_SECURITY_ON_OBJECT = 0x546;
         internal const int ERROR_CANNOT_IMPERSONATE = 0x558;
         internal const int ERROR_CLASS_ALREADY_EXISTS = 0x582;
+        internal const int ERROR_NO_SYSTEM_RESOURCES = 0x5AA;
+        internal const int ERROR_TIMEOUT = 0x5B4;
         internal const int ERROR_EVENTLOG_FILE_CHANGED = 0x5DF;
         internal const int ERROR_TRUSTED_RELATIONSHIP_FAILURE = 0x6FD;
         internal const int ERROR_RESOURCE_LANG_NOT_FOUND = 0x717;
-        internal const int EFail = unchecked((int)0x80004005);
-        internal const int E_FILENOTFOUND = unchecked((int)0x80070002);
     }
 }

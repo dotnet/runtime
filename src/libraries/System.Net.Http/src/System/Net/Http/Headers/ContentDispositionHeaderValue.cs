@@ -367,7 +367,7 @@ namespace System.Net.Http.Headers
             {
                 string result;
                 // filename*=utf-8'lang'%7FMyString
-                if (parameter.EndsWith("*", StringComparison.Ordinal))
+                if (parameter.EndsWith('*'))
                 {
                     if (TryDecode5987(nameParameter.Value, out result))
                     {
@@ -403,7 +403,7 @@ namespace System.Net.Http.Headers
             else
             {
                 string processedValue = string.Empty;
-                if (parameter.EndsWith("*", StringComparison.Ordinal))
+                if (parameter.EndsWith('*'))
                 {
                     processedValue = HeaderUtilities.Encode5987(value);
                 }

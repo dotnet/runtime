@@ -178,11 +178,6 @@ public:
     static FCDECL2(Object*, GetObjectsForNativeVariants, VARIANT* aSrcNativeVariant, int cVars);
 
     //====================================================================
-    // This method generates a guid for the specified type.
-    //====================================================================
-    static FCDECL2(void, DoGenerateGuidForType, GUID * result, ReflectClassBaseObject* refTypeUNSAFE);
-
-    //====================================================================
     // Methods to retrieve information from TypeLibs and TypeInfos.
     //====================================================================
     static FCDECL2(void, DoGetTypeLibGuid, GUID * result, Object* refTlbUNSAFE);

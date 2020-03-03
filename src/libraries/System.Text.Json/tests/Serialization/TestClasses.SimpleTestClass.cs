@@ -122,7 +122,7 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyDateTime"" : ""2019-01-30T12:01:02.0000000Z""," +
                 @"""MyDateTimeOffset"" : ""2019-01-30T12:01:02.0000000+01:00""," +
                 @"""MyGuid"" : ""1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6""," +
-                @"""MyUri"" : ""https://github.com/dotnet/corefx""," +
+                @"""MyUri"" : ""https://github.com/dotnet/runtime""," +
                 @"""MyEnum"" : 2," + // int by default
                 @"""MyInt64Enum"" : -9223372036854775808," +
                 @"""MyUInt64Enum"" : 18446744073709551615," +
@@ -156,7 +156,7 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyDateTimeArray"" : [""2019-01-30T12:01:02.0000000Z""]," +
                 @"""MyDateTimeOffsetArray"" : [""2019-01-30T12:01:02.0000000+01:00""]," +
                 @"""MyGuidArray"" : [""1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6""]," +
-                @"""MyUriArray"" : [""https://github.com/dotnet/corefx""]," +
+                @"""MyUriArray"" : [""https://github.com/dotnet/runtime""]," +
                 @"""MyEnumArray"" : [2]," + // int by default
                 @"""MyInt16TwoDimensionArray"" : [[10, 11],[20, 21]]," +
                 @"""MyInt16TwoDimensionList"" : [[10, 11],[20, 21]]," +
@@ -210,7 +210,7 @@ namespace System.Text.Json.Serialization.Tests
             MyDateTime = new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc);
             MyDateTimeOffset = new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0));
             MyGuid = new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6");
-            MyUri = new Uri("https://github.com/dotnet/corefx");
+            MyUri = new Uri("https://github.com/dotnet/runtime");
             MyEnum = SampleEnum.Two;
             MyInt64Enum = SampleEnumInt64.MinNegative;
             MyUInt64Enum = SampleEnumUInt64.Max;
@@ -232,7 +232,7 @@ namespace System.Text.Json.Serialization.Tests
             MyDateTimeArray = new DateTime[] { new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc) };
             MyDateTimeOffsetArray = new DateTimeOffset[] { new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)) };
             MyGuidArray = new Guid[] { new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6") };
-            MyUriArray = new Uri[] { new Uri("https://github.com/dotnet/corefx") };
+            MyUriArray = new Uri[] { new Uri("https://github.com/dotnet/runtime") };
             MyEnumArray = new SampleEnum[] { SampleEnum.Two };
             MySimpleStruct = new SimpleStruct { One = 11, Two = 1.9999 };
             MySimpleTestStruct = new SimpleTestStruct { MyInt64 = 64, MyString = "Hello", MyInt32Array = new int[] { 32 } };
@@ -326,7 +326,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), MyDateTime);
             Assert.Equal(new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)), MyDateTimeOffset);
             Assert.Equal(new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6"), MyGuid);
-            Assert.Equal(new Uri("https://github.com/dotnet/corefx"), MyUri);
+            Assert.Equal(new Uri("https://github.com/dotnet/runtime"), MyUri);
             Assert.Equal(SampleEnum.Two, MyEnum);
             Assert.Equal(SampleEnumInt64.MinNegative, MyInt64Enum);
             Assert.Equal(SampleEnumUInt64.Max, MyUInt64Enum);
@@ -354,7 +354,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), MyDateTimeArray[0]);
             Assert.Equal(new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)), MyDateTimeOffsetArray[0]);
             Assert.Equal(new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6"), MyGuidArray[0]);
-            Assert.Equal(new Uri("https://github.com/dotnet/corefx"), MyUriArray[0]);
+            Assert.Equal(new Uri("https://github.com/dotnet/runtime"), MyUriArray[0]);
             Assert.Equal(SampleEnum.Two, MyEnumArray[0]);
 
             Assert.Equal(10, MyInt16TwoDimensionArray[0][0]);

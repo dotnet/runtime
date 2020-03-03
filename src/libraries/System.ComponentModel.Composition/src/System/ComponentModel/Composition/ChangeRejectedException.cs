@@ -17,23 +17,23 @@ namespace System.ComponentModel.Composition
         ///     Initializes a new instance of the <see cref="ChangeRejectedException"/> class.
         /// </summary>
         public ChangeRejectedException()
-            : this((string)null, (Exception)null)
+            : this((string?)null, (Exception?)null)
         {
         }
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ChangeRejectedException"/> class.
         /// </summary>
-        public ChangeRejectedException(string message)
-            : this(message, (Exception)null)
+        public ChangeRejectedException(string? message)
+            : this(message, (Exception?)null)
         {
         }
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ChangeRejectedException"/> class.
         /// </summary>
-        public ChangeRejectedException(string message, Exception innerException)
-            : base(message, innerException, (IEnumerable<CompositionError>)null)
+        public ChangeRejectedException(string? message, Exception? innerException)
+            : base(message, innerException, (IEnumerable<CompositionError>?)null)
         {
         }
 
@@ -41,8 +41,8 @@ namespace System.ComponentModel.Composition
         ///     Initializes a new instance of the <see cref="ChangeRejectedException"/> class.
         /// </summary>
         /// <param name="errors">List of errors that occured while applying the changes.</param>
-        public ChangeRejectedException(IEnumerable<CompositionError> errors)
-            : base((string)null, (Exception)null, errors)
+        public ChangeRejectedException(IEnumerable<CompositionError>? errors)
+            : base((string?)null, (Exception?)null, errors)
         {
         }
 

@@ -46,16 +46,19 @@ namespace System.Net.Security
             return Interop.Sec_Application_Protocols.ToByteArray(protocols);
         }
 
-        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteSslContext context, ArraySegment<byte> input, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? context, ReadOnlySpan<byte> inputBuffer, ref byte[]? outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default;
 
-            ThreeSecurityBuffers threeSecurityBuffers = default;
-            SecurityBuffer? incomingSecurity = input.Array != null ?
-                new SecurityBuffer(input.Array, input.Offset, input.Count, SecurityBufferType.SECBUFFER_TOKEN) :
-                (SecurityBuffer?)null;
-            Span<SecurityBuffer> inputBuffers = MemoryMarshal.CreateSpan(ref threeSecurityBuffers._item0, 3);
-            GetIncomingSecurityBuffers(sslAuthenticationOptions, in incomingSecurity, ref inputBuffers);
+            InputSecurityBuffers inputBuffers = default;
+            inputBuffers.SetNextBuffer(new InputSecurityBuffer(inputBuffer, SecurityBufferType.SECBUFFER_TOKEN));
+            inputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
+
+            if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
+            {
+                byte[] alpnBytes = ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(new ReadOnlySpan<byte>(alpnBytes), SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+            }
 
             var resultBuffer = new SecurityBuffer(outputBuffer, SecurityBufferType.SECBUFFER_TOKEN);
 
@@ -73,16 +76,18 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 
-        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteSslContext context, string targetName, ArraySegment<byte> input, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? context, string? targetName, ReadOnlySpan<byte> inputBuffer, ref byte[]? outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default;
 
-            ThreeSecurityBuffers threeSecurityBuffers = default;
-            SecurityBuffer? incomingSecurity = input.Array != null ?
-                new SecurityBuffer(input.Array, input.Offset, input.Count, SecurityBufferType.SECBUFFER_TOKEN) :
-                (SecurityBuffer?)null;
-            Span<SecurityBuffer> inputBuffers = MemoryMarshal.CreateSpan(ref threeSecurityBuffers._item0, 3);
-            GetIncomingSecurityBuffers(sslAuthenticationOptions, in incomingSecurity, ref inputBuffers);
+            InputSecurityBuffers inputBuffers = default;
+            inputBuffers.SetNextBuffer(new InputSecurityBuffer(inputBuffer, SecurityBufferType.SECBUFFER_TOKEN));
+            inputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
+            if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
+            {
+                byte[] alpnBytes = ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(new ReadOnlySpan<byte>(alpnBytes), SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+            }
 
             var resultBuffer = new SecurityBuffer(outputBuffer, SecurityBufferType.SECBUFFER_TOKEN);
 
@@ -101,46 +106,7 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 
-        private static void GetIncomingSecurityBuffers(SslAuthenticationOptions options, in SecurityBuffer? incomingSecurity, ref Span<SecurityBuffer> incomingSecurityBuffers)
-        {
-            SecurityBuffer? alpnBuffer = null;
-
-            if (options.ApplicationProtocols != null && options.ApplicationProtocols.Count != 0)
-            {
-                byte[] alpnBytes = ConvertAlpnProtocolListToByteArray(options.ApplicationProtocols);
-                alpnBuffer = new SecurityBuffer(alpnBytes, 0, alpnBytes.Length, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS);
-            }
-
-            if (incomingSecurity != null)
-            {
-                if (alpnBuffer != null)
-                {
-                    Debug.Assert(incomingSecurityBuffers.Length >= 3);
-                    incomingSecurityBuffers[0] = incomingSecurity.GetValueOrDefault();
-                    incomingSecurityBuffers[1] = new SecurityBuffer(null, 0, 0, SecurityBufferType.SECBUFFER_EMPTY);
-                    incomingSecurityBuffers[2] = alpnBuffer.GetValueOrDefault();
-                    incomingSecurityBuffers = incomingSecurityBuffers.Slice(0, 3);
-                }
-                else
-                {
-                    Debug.Assert(incomingSecurityBuffers.Length >= 2);
-                    incomingSecurityBuffers[0] = incomingSecurity.GetValueOrDefault();
-                    incomingSecurityBuffers[1] = new SecurityBuffer(null, 0, 0, SecurityBufferType.SECBUFFER_EMPTY);
-                    incomingSecurityBuffers = incomingSecurityBuffers.Slice(0, 2);
-                }
-            }
-            else if (alpnBuffer != null)
-            {
-                incomingSecurityBuffers[0] = alpnBuffer.GetValueOrDefault();
-                incomingSecurityBuffers = incomingSecurityBuffers.Slice(0, 1);
-            }
-            else
-            {
-                incomingSecurityBuffers = default;
-            }
-        }
-
-        public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate? certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
             Interop.SspiCli.SCHANNEL_CRED.Flags flags;
@@ -154,7 +120,7 @@ namespace System.Net.Security
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_DEFAULT_CREDS |
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
 
-                // CoreFX: always opt-in SCH_USE_STRONG_CRYPTO for TLS.
+                // .NET Core: always opt-in SCH_USE_STRONG_CRYPTO for TLS.
                 if (((protocolFlags == 0) ||
                         (protocolFlags & ~(Interop.SChannel.SP_PROT_SSL2 | Interop.SChannel.SP_PROT_SSL3)) != 0)
                      && (policy != EncryptionPolicy.AllowNoEncryption) && (policy != EncryptionPolicy.NoEncryption))
@@ -179,7 +145,7 @@ namespace System.Net.Security
             return AcquireCredentialsHandle(direction, secureCredential);
         }
 
-        internal static byte[] GetNegotiatedApplicationProtocol(SafeDeleteContext context)
+        internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteContext context)
         {
             Interop.SecPkgContext_ApplicationProtocol alpnContext = default;
             bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPISecureChannel, context, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_APPLICATION_PROTOCOL, ref alpnContext);
@@ -262,7 +228,7 @@ namespace System.Net.Security
             }
         }
 
-        public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteSslContext securityContext, byte[] buffer, ref int offset, ref int count)
+        public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteSslContext? securityContext, byte[] buffer, ref int offset, ref int count)
         {
             const int NumSecBuffers = 4; // data + empty + empty + empty
             fixed (byte* bufferPtr = buffer)
@@ -285,7 +251,7 @@ namespace System.Net.Security
                 {
                     pBuffers = unmanagedBuffer
                 };
-                Interop.SECURITY_STATUS errorCode = (Interop.SECURITY_STATUS)GlobalSSPI.SSPISecureChannel.DecryptMessage(securityContext, ref sdcInOut, 0);
+                Interop.SECURITY_STATUS errorCode = (Interop.SECURITY_STATUS)GlobalSSPI.SSPISecureChannel.DecryptMessage(securityContext!, ref sdcInOut, 0);
 
                 // Decrypt may repopulate the sec buffers, likely with header + data + trailer + empty.
                 // We need to find the data.
@@ -311,7 +277,7 @@ namespace System.Net.Security
             }
         }
 
-        public static SecurityStatusPal ApplyAlertToken(ref SafeFreeCredentials credentialsHandle, SafeDeleteContext securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
+        public static SecurityStatusPal ApplyAlertToken(ref SafeFreeCredentials? credentialsHandle, SafeDeleteContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
         {
             var alertToken = new Interop.SChannel.SCHANNEL_ALERT_TOKEN
             {
@@ -332,7 +298,7 @@ namespace System.Net.Security
 
         private static readonly byte[] s_schannelShutdownBytes = BitConverter.GetBytes(Interop.SChannel.SCHANNEL_SHUTDOWN);
 
-        public static SecurityStatusPal ApplyShutdownToken(ref SafeFreeCredentials credentialsHandle, SafeDeleteContext securityContext)
+        public static SecurityStatusPal ApplyShutdownToken(ref SafeFreeCredentials? credentialsHandle, SafeDeleteContext? securityContext)
         {
             var securityBuffer = new SecurityBuffer(s_schannelShutdownBytes, SecurityBufferType.SECBUFFER_TOKEN);
 
@@ -344,7 +310,7 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromInterop(errorCode, attachException: true);
         }
 
-        public static unsafe SafeFreeContextBufferChannelBinding QueryContextChannelBinding(SafeDeleteContext securityContext, ChannelBindingKind attribute)
+        public static unsafe SafeFreeContextBufferChannelBinding? QueryContextChannelBinding(SafeDeleteContext securityContext, ChannelBindingKind attribute)
         {
             return SSPIWrapper.QueryContextChannelBinding(GlobalSSPI.SSPISecureChannel, securityContext, (Interop.SspiCli.ContextAttribute)attribute);
         }
@@ -397,7 +363,7 @@ namespace System.Net.Security
 
         private static Interop.SspiCli.SCHANNEL_CRED CreateSecureCredential(
             int version,
-            X509Certificate certificate,
+            X509Certificate? certificate,
             Interop.SspiCli.SCHANNEL_CRED.Flags flags,
             int protocols, EncryptionPolicy policy)
         {

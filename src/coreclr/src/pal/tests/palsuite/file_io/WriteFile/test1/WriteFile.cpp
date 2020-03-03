@@ -75,7 +75,7 @@ int __cdecl main(int argc, char *argv[])
             last_error, szReadOnlyFile);
     }
     
-    if (!SetFileAttributes(szReadOnlyFile, FILE_ATTRIBUTE_READONLY))
+    if (!SetFileAttributesA(szReadOnlyFile, FILE_ATTRIBUTE_READONLY))
     {
 		last_error = GetLastError();
 		Trace("WriteFile: ERROR[%ld] -> Unable to make the file read-only.\n", last_error);

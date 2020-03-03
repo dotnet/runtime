@@ -11,8 +11,8 @@
 
 #include "stdafx.h"
 
-#ifndef FEATURE_PAL
-#ifndef _TARGET_X86_
+#ifndef TARGET_UNIX
+#ifndef TARGET_X86
 
 //
 //
@@ -308,7 +308,7 @@ static NTSTATUS OutOfProcessFunctionTableCallback_Stub(IN  ReadMemoryFunction   
         {
             FakeStubUnwindInfoHeader unwindInfoHeader;
             move(unwindInfoHeader, pHeader);
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
             // Consistency checks to detect corrupted process state
             if (unwindInfoHeader.FunctionEntry.BeginAddress > unwindInfoHeader.FunctionEntry.EndAddress ||
                 unwindInfoHeader.FunctionEntry.EndAddress > stubHeapSegment.cbSegment)
@@ -323,11 +323,11 @@ static NTSTATUS OutOfProcessFunctionTableCallback_Stub(IN  ReadMemoryFunction   
                 _ASSERTE(1 == pass);
                 return STATUS_UNSUCCESSFUL;
             }
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
             // Skip checking the corrupted process stateon ARM
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
             // Compute the function length
             ULONG64 functionLength = 0;
             ULONG64 unwindData = unwindInfoHeader.FunctionEntry.UnwindData;
@@ -457,5 +457,5 @@ extern "C" NTSTATUS OutOfProcessFunctionTableCallbackEx()
     return STATUS_UNSUCCESSFUL;
 }
 
-#endif // !_TARGET_X86_
-#endif // !FEATURE_PAL
+#endif // !TARGET_X86
+#endif // !TARGET_UNIX

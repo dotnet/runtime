@@ -94,7 +94,7 @@ Sample \ref .builds file defining a constant used to filter API that were added 
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <NuGetTargetMoniker>.NETStandard,Version=v1.7</NuGetTargetMoniker>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp1.1'">$(DefineConstants);netcoreapp11</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netcoreapp1.1'">$(DefineConstants);netcoreapp11</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Net.Security.cs" />
@@ -128,7 +128,7 @@ Sample \src .builds file (in this case the implementation is the same in both ne
       <OSGroup>Windows_NT</OSGroup>
     </Project>
     <Project Include="System.Net.Security.csproj">
-      <TargetGroup>net463</TargetGroup>
+      <TargetFramework>net463</TargetFramework>
     </Project>
   </ItemGroup>
   <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
@@ -137,7 +137,7 @@ Sample \src .builds file (in this case the implementation is the same in both ne
 
 Tests can be similarly filtered grouping the compilation directives under:
 ```
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp1.1'">
+  <ItemGroup Condition="'$(TargetFramework)'=='netcoreapp1.1'">
 ```
 (from `\tests\FunctionalTests\System.Net.Security.Tests.csproj`)
 
@@ -214,15 +214,16 @@ Sample `System.IO.FileSystem.pkgproj`
 ```
 
 ## Asset selection
+
 The makeup of a package folder is primarily a grouping of project references to the projects that compose that package.  Settings within each referenced project determines where that asset will be placed in the package.  For example, reference assembly projects will be placed under the `ref/{targetMoniker}` folder in the package and implementations will be under either `lib/{targetMoniker}` or `runtimes/{rid}/lib/{targetMoniker}`.  Whenever NuGet evaluates a package in the context of a referencing project it will choose the best compile time asset (preferring `ref`, then falling back to `lib`) and runtime asset (preferring `runtimes/{rid}/lib` and falling back to `lib`) for every package that is referenced.  For more information see http://docs.nuget.org/.
 
-Asset projects (`.csproj`, `.vbproj`, or `.depproj`) can control their `{targetMoniker}` using the `PackageTargetFramework` property in the project file.  Similarly `{rid}` is controlled using the `PackageTargetRuntime` property.  In the corefx repo we automatically select default values for these properties based on the [Build pivots](#build-pivots).  These can be overridden in the project reference using metadata of the same name, but this is rarely needed.
+Asset projects (`.csproj`, `.vbproj`, or `.depproj`) can control their `{targetMoniker}` using the `PackageTargetFramework` property in the project file.  Similarly `{rid}` is controlled using the `PackageTargetRuntime` property.  For the libraries we automatically select default values for these properties based on the build pivots.  These can be overridden in the project reference using metadata of the same name, but this is rarely needed.
 
 The primary thing that the library author needs to do in order to ensure the correct asset selection is:
 
 1. Configure the correct projects in your library's `.builds` file.
 2. Reference the `.builds` file from the package project.
-3. Provide a default PackageTargetFramework for empty-TargetGroup builds in the library's `.csproj` or `.vbproj`.
+3. Provide a default PackageTargetFramework for empty-BuildTargetFramework builds in the library's `.csproj` or `.vbproj`.
     ```
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet5.4</PackageTargetFramework>
     ```
@@ -233,7 +234,7 @@ NETStandard/DotNet are *open* ended portable identifiers.  They allow a package 
 
 Libraries should select a version of DotNet/NETStandard that supports the most frameworks.  This means the library should choose the lowest version that provides all the API needed to implement their functionality.  Eventually this will be the same moniker used for package resolution in the library project, AKA in `frameworks` section for the libraries project.json.
 
-In CoreFx we don't always use the package resolution for dependencies, sometimes we must use project references.  Additionally we aren't building all projects with the NETStandard/DotNet identifier.  This issue is tracked with https://github.com/dotnet/corefx/issues/2427.  As a result we calculate the version as an added safeguard based on seeds.  These seeds are listed in [Generations.json](https://github.com/dotnet/buildtools/blob/master/src/Microsoft.DotNet.Build.Tasks.Packaging/src/PackageFiles/Generations.json) and rarely change.  They are a record of what libraries shipped in-box and are unchangeable for a particular framework supporting a generation.  Occasionally an API change can be made even to these in-box libraries and shipped out-of-band, for example by adding a new type and putting that type in a hybrid facade.  This is the only case when it is permitted to update Generations.json.
+In dotnet/runtime we don't always use the package resolution for dependencies, sometimes we must use project references.  Additionally we aren't building all projects with the NETStandard/DotNet identifier.  This issue is tracked with https://github.com/dotnet/runtime/issues/14876.  As a result we calculate the version as an added safeguard based on seeds.  These seeds are listed in [Generations.json](https://github.com/dotnet/buildtools/blob/master/src/Microsoft.DotNet.Build.Tasks.Packaging/src/PackageFiles/Generations.json) and rarely change.  They are a record of what libraries shipped in-box and are unchangeable for a particular framework supporting a generation.  Occasionally an API change can be made even to these in-box libraries and shipped out-of-band, for example by adding a new type and putting that type in a hybrid facade.  This is the only case when it is permitted to update Generations.json.
 
 In addition to the minimum API version required by implementation, reference assemblies should only claim the NETStandard/DotNet version of the minimum implementation assembly.  Just because a reference assembly only depends on API in NETStandard1.0, if its implementations only apply to frameworks supporting NETStandard1.4, it should use NETStandard1.4.
 

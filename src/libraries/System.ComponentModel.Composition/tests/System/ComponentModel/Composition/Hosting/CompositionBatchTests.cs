@@ -803,6 +803,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void AddPart_ReturnedComposablePart_ExportsArrayWithNullElementAsExportsArgumentToSetImports_ShouldThrowArgument()
         {
             CompositionBatch batch = new CompositionBatch();

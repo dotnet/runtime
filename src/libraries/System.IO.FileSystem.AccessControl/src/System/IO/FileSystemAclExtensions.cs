@@ -13,18 +13,30 @@ namespace System.IO
     {
         public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo)
         {
+            if (directoryInfo == null)
+            {
+                throw new ArgumentNullException(nameof(directoryInfo));
+            }
+
             return new DirectorySecurity(directoryInfo.FullName, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
         public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo, AccessControlSections includeSections)
         {
+            if (directoryInfo == null)
+            {
+                throw new ArgumentNullException(nameof(directoryInfo));
+            }
+
             return new DirectorySecurity(directoryInfo.FullName, includeSections);
         }
 
         public static void SetAccessControl(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
         {
             if (directorySecurity == null)
+            {
                 throw new ArgumentNullException(nameof(directorySecurity));
+            }
 
             string fullPath = Path.GetFullPath(directoryInfo.FullName);
             directorySecurity.Persist(fullPath);
@@ -32,41 +44,83 @@ namespace System.IO
 
         public static FileSecurity GetAccessControl(this FileInfo fileInfo)
         {
+            if (fileInfo == null)
+            {
+                throw new ArgumentNullException(nameof(fileInfo));
+            }
+
             return GetAccessControl(fileInfo, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
         public static FileSecurity GetAccessControl(this FileInfo fileInfo, AccessControlSections includeSections)
         {
+            if (fileInfo == null)
+            {
+                throw new ArgumentNullException(nameof(fileInfo));
+            }
+
             return new FileSecurity(fileInfo.FullName, includeSections);
         }
 
         public static void SetAccessControl(this FileInfo fileInfo, FileSecurity fileSecurity)
         {
+            if (fileInfo == null)
+            {
+                throw new ArgumentNullException(nameof(fileInfo));
+            }
+
             if (fileSecurity == null)
+            {
                 throw new ArgumentNullException(nameof(fileSecurity));
+            }
 
             string fullPath = Path.GetFullPath(fileInfo.FullName);
             // Appropriate security check should be done for us by FileSecurity.
             fileSecurity.Persist(fullPath);
         }
 
+        /// <summary>
+        /// This extension method for FileStream returns a FileSecurity object containing security descriptors from the Access, Owner, and Group AccessControlSections.
+        /// </summary>
+        /// <param name="fileStream">An object that represents the file for retrieving security descriptors from</param>
+        /// <exception cref="ArgumentNullException"><paramref name="fileStream" /> is <see langword="null" />.</exception>
+        /// <exception cref="ObjectDisposedException">The file stream is closed.</exception>
         public static FileSecurity GetAccessControl(this FileStream fileStream)
         {
+            if (fileStream == null)
+            {
+                throw new ArgumentNullException(nameof(fileStream));
+            }
+
             SafeFileHandle handle = fileStream.SafeFileHandle;
             if (handle.IsClosed)
             {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
             }
+
             return new FileSecurity(handle, AccessControlSections.Access | AccessControlSections.Owner | AccessControlSections.Group);
         }
 
+        /// <summary>
+        /// This extension method for FileStream sets the security descriptors for the file using a FileSecurity instance.
+        /// </summary>
+        /// <param name="fileStream">An object that represents the file to apply security changes to.</param>
+        /// <param name="fileSecurity">An object that determines the access control and audit security for the file.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="fileStream" /> or <paramref name="fileSecurity" /> is <see langword="null" />.</exception>
+        /// <exception cref="ObjectDisposedException">The file stream is closed.</exception>
         public static void SetAccessControl(this FileStream fileStream, FileSecurity fileSecurity)
         {
-            SafeFileHandle handle = fileStream.SafeFileHandle;
+            if (fileStream == null)
+            {
+                throw new ArgumentNullException(nameof(fileStream));
+            }
 
             if (fileSecurity == null)
+            {
                 throw new ArgumentNullException(nameof(fileSecurity));
+            }
 
+            SafeFileHandle handle = fileStream.SafeFileHandle;
             if (handle.IsClosed)
             {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
@@ -85,10 +139,14 @@ namespace System.IO
         public static void Create(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
         {
             if (directoryInfo == null)
+            {
                 throw new ArgumentNullException(nameof(directoryInfo));
+            }
 
             if (directorySecurity == null)
+            {
                 throw new ArgumentNullException(nameof(directorySecurity));
+            }
 
             FileSystem.CreateDirectory(directoryInfo.FullName, directorySecurity.GetSecurityDescriptorBinaryForm());
         }
@@ -164,6 +222,41 @@ namespace System.IO
             }
         }
 
+        /// <summary>
+        /// Creates a directory and returns it, ensuring it is created with the specified directory security. If the directory already exists, the existing directory is returned.
+        /// </summary>
+        /// <param name="directorySecurity">An object that determines the access control and audit security for the directory.</param>
+        /// <param name="path">The path of the directory to create.</param>
+        /// <returns>A directory information object representing either a created directory with the provided security properties, or the existing directory.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="directorySecurity" /> or <paramref name="path" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path" /> is empty.</exception>
+        /// <exception cref="DirectoryNotFoundException">Could not find a part of the path.</exception>
+        /// <exception cref="UnauthorizedAccessException">Access to the path is denied.</exception>
+        /// <remarks>This extension method was added to .NET Core to bring the functionality that was provided by the `System.IO.Directory.CreateDirectory(System.String,System.Security.AccessControl.DirectorySecurity)` .NET Framework method.</remarks>
+        public static DirectoryInfo CreateDirectory(this DirectorySecurity directorySecurity, string path)
+        {
+            if (directorySecurity == null)
+            {
+                throw new ArgumentNullException(nameof(directorySecurity));
+            }
+
+            if (path == null)
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            if (path.Length == 0)
+            {
+                throw new ArgumentException(SR.Arg_PathEmpty);
+            }
+
+            DirectoryInfo dirInfo = new DirectoryInfo(path);
+
+            Create(dirInfo, directorySecurity);
+
+            return dirInfo;
+        }
+
         // In the context of a FileStream, the only ACCESS_MASK ACE rights we care about are reading/writing data and the generic read/write rights.
         // See: https://docs.microsoft.com/en-us/windows/win32/secauthz/access-mask
         private static FileAccess GetFileStreamFileAccess(FileSystemRights rights)
@@ -173,10 +266,12 @@ namespace System.IO
             {
                 access = FileAccess.Read;
             }
+
             if ((rights & FileSystemRights.WriteData) != 0 || ((int)rights & Interop.Kernel32.GenericOperations.GENERIC_WRITE) != 0)
             {
                 access = access == FileAccess.Read ? FileAccess.ReadWrite : FileAccess.Write;
             }
+
             return access;
         }
 
@@ -208,7 +303,7 @@ namespace System.IO
 
                 using (DisableMediaInsertionPrompt.Create())
                 {
-                    handle = Interop.Kernel32.CreateFile(fullPath, (int)rights, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
+                    handle = Interop.Kernel32.CreateFile(fullPath, (int)rights, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
                     ValidateFileHandle(handle, fullPath);
                 }
             }
@@ -227,7 +322,7 @@ namespace System.IO
                 // probably be consistent w/ every other directory.
                 int errorCode = Marshal.GetLastWin32Error();
 
-                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && fullPath.Length == Path.GetPathRoot(fullPath).Length)
+                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && fullPath.Length == Path.GetPathRoot(fullPath)!.Length)
                 {
                     errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
                 }

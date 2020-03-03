@@ -414,7 +414,6 @@ bool deps_resolver_t::resolve_tpa_list(
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies)
 {
-    const std::vector<deps_entry_t> empty(0);
     name_to_resolved_asset_map_t items;
 
     auto process_entry = [&](const pal::string_t& deps_dir, const deps_entry_t& entry, int fx_level) -> bool
@@ -549,14 +548,17 @@ bool deps_resolver_t::resolve_tpa_list(
     }
 
     // Probe FX deps entries after app assemblies are added.
-    for (size_t i = 1; i < m_fx_definitions.size(); ++i)
+    if (m_is_framework_dependent)
     {
-        const auto& deps_entries = m_is_framework_dependent ? m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime) : empty;
-        for (const auto& entry : deps_entries)
+        for (size_t i = 1; i < m_fx_definitions.size(); ++i)
         {
-            if (!process_entry(m_fx_definitions[i]->get_dir(), entry, i))
+            const auto& deps_entries = m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime);
+            for (const auto& entry : deps_entries)
             {
-                return false;
+                if (!process_entry(m_fx_definitions[i]->get_dir(), entry, i))
+                {
+                    return false;
+                }
             }
         }
     }
@@ -762,8 +764,6 @@ bool deps_resolver_t::resolve_probe_dirs(
 
     // Filter out non-serviced assets so the paths can be added after servicing paths.
     pal::string_t non_serviced;
-
-    std::vector<deps_entry_t> empty(0);
 
     pal::string_t candidate;
 

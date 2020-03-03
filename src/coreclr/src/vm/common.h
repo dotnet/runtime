@@ -11,7 +11,7 @@
 #ifndef _common_h_
 #define _common_h_
 
-#if defined(_MSC_VER) && defined(_X86_) && !defined(FPO_ON)
+#if defined(_MSC_VER) && defined(HOST_X86) && !defined(FPO_ON)
 #pragma optimize("y", on)       // Small critical routines, don't put in EBP frame
 #define FPO_ON 1
 #define COMMON_TURNED_FPO_ON 1
@@ -94,7 +94,6 @@
 
 //-----------------------------------------------------------------------------------------------------------
 
-#include "strongname.h"
 #include "stdmacros.h"
 
 #define POISONC ((UINT_PTR)((sizeof(int *) == 4)?0xCCCCCCCCL:I64(0xCCCCCCCCCCCCCCCC)))
@@ -112,7 +111,6 @@
 typedef VPTR(class LoaderAllocator)     PTR_LoaderAllocator;
 typedef VPTR(class AppDomain)           PTR_AppDomain;
 typedef DPTR(class ArrayBase)           PTR_ArrayBase;
-typedef DPTR(class ArrayTypeDesc)       PTR_ArrayTypeDesc;
 typedef DPTR(class Assembly)            PTR_Assembly;
 typedef DPTR(class AssemblyBaseObject)  PTR_AssemblyBaseObject;
 typedef DPTR(class AssemblyLoadContextBaseObject) PTR_AssemblyLoadContextBaseObject;
@@ -213,7 +211,7 @@ EXTERN_C AppDomain* STDCALL GetAppDomain();
 
 inline void RetailBreak()
 {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     __asm int 3
 #else
     DebugBreak();
@@ -244,11 +242,11 @@ FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
 
     //If memcpy has been defined to PAL_memcpy, we undefine it so that this case
     //can be covered by the if !defined(memcpy) block below
-    #ifdef FEATURE_PAL
+    #ifdef HOST_UNIX
     #if IS_REDEFINED_IN_PAL(memcpy)
     #undef memcpy
     #endif //IS_REDEFINED_IN_PAL
-    #endif //FEATURE_PAL
+    #endif //HOST_UNIX
 
         // You should be using CopyValueClass if you are doing an memcpy
         // in the CG heap.
@@ -256,11 +254,11 @@ FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
     FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len) {
             WRAPPER_NO_CONTRACT;
 
-            #ifndef FEATURE_PAL
-                return memcpy(dest, src, len);
-            #else //FEATURE_PAL
+            #ifdef HOST_UNIX
                 return PAL_memcpy(dest, src, len);
-            #endif //FEATURE_PAL
+            #else //HOST_UNIX
+                return memcpy(dest, src, len);
+            #endif //HOST_UNIX
 
         }
     extern "C" void *  __cdecl GCSafeMemCpy(void *, const void *, size_t);
@@ -377,7 +375,7 @@ namespace Loader
 HRESULT EnsureRtlFunctions();
 HINSTANCE GetModuleInst();
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 //
 // Strong memory model. No memory barrier necessary before writing object references into GC heap.
 //

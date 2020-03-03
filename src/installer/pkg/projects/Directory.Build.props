@@ -1,5 +1,5 @@
 <Project>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk" />
 
@@ -55,10 +55,14 @@
   <!-- Most packages need the host to be built first. -->
   <ItemGroup Condition="'$(DisableOrderDependencies)' != 'true'">
     <OrderProjectReference Include="@(CorehostProjectToBuild)" />
-    <!-- Pkgproj requires its depproj crossgen outputs to be signed.-->
+    <!-- NETCoreApp depproj requires binaries (CoreCLR, Libraries, Host) to be signed. -->
+    <OrderProjectReference
+      Condition="'$(MSBuildProjectExtension)' == '.depproj'"
+      Include="$(SigningToolsDir)\SignBinaries.proj" />
+    <!-- Pkgproj requires its depproj crossgen outputs to be signed. -->
     <OrderProjectReference
       Condition="'$(MSBuildProjectExtension)' == '.pkgproj'"
-      Include="$(SigningToolsDir)\SignBinaries.proj" />
+      Include="$(SigningToolsDir)\SignR2RBinaries.proj" />
   </ItemGroup>
 
   <!-- In *.builds projects, the current phase's name is the same as the project name. -->

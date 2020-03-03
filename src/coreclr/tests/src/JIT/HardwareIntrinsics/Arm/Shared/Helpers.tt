@@ -16,7 +16,6 @@ namespace JIT.HardwareIntrinsics.Arm
     static class Helpers
     {
 <#
-
         string[] typeNames = { "sbyte", "short", "int" };
         foreach (string typeName in typeNames)
         {
@@ -99,9 +98,347 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (<#= type.name #>)result;
         }
+
 <#
         }
 
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong" })
+        {
 #>
+        public static <#= typeName #> And(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 & op2);
+
+        public static <#= typeName #> BitwiseClear(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 & ~op2);
+
+        public static <#= typeName #> BitwiseSelect(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3)
+        {
+            ulong result = 0;
+
+            for (int i = 0; i < 8 * sizeof(<#= typeName #>); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result | ((ulong)op2 & (1UL << i));
+                }
+                else
+                {
+                    result = result | ((ulong)op3 & (1UL << i));
+                }
+            }
+
+            return (<#= typeName #>)result;
+        }
+
+        public static <#= typeName #> Not(<#= typeName #> op1) => (<#= typeName #>)(~op1);
+
+        public static <#= typeName #> Or(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 | op2);
+
+        public static <#= typeName #> OrNot(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 | ~op2);
+
+        public static <#= typeName #> Xor(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 ^ op2);
+
+<#
+        }
+#>
+        public static float Not(float op1) => BitConverter.Int32BitsToSingle(~BitConverter.SingleToInt32Bits(op1));
+
+        public static double Not(double op1) => BitConverter.Int64BitsToDouble(~BitConverter.DoubleToInt64Bits(op1));
+
+<#
+        foreach (string helperName in new string[] { "And", "BitwiseClear", "Or", "OrNot", "Xor" })
+        {
+#>
+        public static float <#= helperName #>(float op1, float op2) => BitConverter.Int32BitsToSingle(<#= helperName #>(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2)));
+
+        public static double <#= helperName #>(double op1, double op2) => BitConverter.Int64BitsToDouble(<#= helperName #>(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2)));
+
+<#
+        }
+#>
+        public static float BitwiseSelect(float op1, float op2, float op3) => BitConverter.Int32BitsToSingle(BitwiseSelect(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2), BitConverter.SingleToInt32Bits(op3)));
+        public static double BitwiseSelect(double op1, double op2, double op3) => BitConverter.Int64BitsToDouble(BitwiseSelect(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2), BitConverter.DoubleToInt64Bits(op3)));
+
+<#
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong" })
+        {
+
+        foreach ((string methodName, string compareOp) in new (string, string)[] {
+          ("CompareEqual", "=="),
+          ("CompareGreaterThan", ">"),
+          ("CompareGreaterThanOrEqual", ">="),
+          ("CompareLessThan", "<"),
+          ("CompareLessThanOrEqual", "<=") })
+        {
+#>
+        public static <#= typeName #> <#= methodName #>(<#= typeName #> left, <#= typeName #> right)
+        {
+            long result = 0;
+
+            if (left <#= compareOp #> right)
+            {
+                result = -1;
+            }
+
+            return (<#= typeName #>)result;
+        }
+
+<#
+        } // foreach ((string methodName, string compareOp) in ... )
+#>
+        public static <#= typeName #> CompareTest(<#= typeName #> left, <#= typeName #> right)
+        {
+            long result = 0;
+
+            if ((left & right) != 0)
+            {
+                result = -1;
+            }
+
+            return (<#= typeName #>)result;
+        }
+
+<#
+        } // foreach (string typeName in ... )
+
+        foreach ((string methodName, string compareOp, bool absoluteCompare) in new (string, string, bool)[] {
+          ("AbsoluteCompareGreaterThan", ">", true),
+          ("AbsoluteCompareGreaterThanOrEqual", ">=", true),
+          ("AbsoluteCompareLessThan", "<", true),
+          ("AbsoluteCompareLessThanOrEqual", "<=", true),
+          ("CompareEqual", "==", false),
+          ("CompareGreaterThan", ">", false),
+          ("CompareGreaterThanOrEqual", ">=", false),
+          ("CompareLessThan", "<", false),
+          ("CompareLessThanOrEqual", "<=", false),
+        })
+        {
+#>
+        public static double <#= methodName #>(double left, double right)
+        {
+            long result = 0;
+
+<#
+            if (absoluteCompare)
+            {
+#>
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+<#
+            }
+#>
+            if (left <#= compareOp #> right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float <#= methodName #>(float left, float right)
+        {
+            int result = 0;
+
+<#
+            if (absoluteCompare)
+            {
+#>
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+<#
+            }
+#>
+            if (left <#= compareOp #> right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+<#
+        }
+#>
+        public static double CompareTest(double left, double right)
+        {
+            long result = 0;
+
+            if ((BitConverter.DoubleToInt64Bits(left) & BitConverter.DoubleToInt64Bits(right)) != 0)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float CompareTest(float left, float right)
+        {
+            int result = 0;
+
+            if ((BitConverter.SingleToInt32Bits(left) & BitConverter.SingleToInt32Bits(right)) != 0)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+<#
+        foreach (var type in new[] { (name: "sbyte",  unsigned: "byte"),
+                                     (name: "short",  unsigned: "ushort"),
+                                     (name: "int",    unsigned: "uint"),
+                                     (name: "long",   unsigned: "ulong") })
+        {
+#>
+        public static <#= type.unsigned #> Abs(<#= type.name #> value) => value < 0 ? (<#= type.unsigned #>)-value : (<#= type.unsigned #>)value;
+
+<#
+        }
+#>
+        public static float Abs(float value) => Math.Abs(value);
+
+        public static double Abs(double value) => Math.Abs(value);
+
+        public static float Divide(float op1, float op2) => op1 / op2;
+
+        public static double Divide(double op1, double op2) => op1 / op2;
+
+        public static float Sqrt(float value) => MathF.Sqrt(value);
+
+        public static double Sqrt(double value) => Math.Sqrt(value);
+
+<#
+        foreach (var type in new[] { (name: "sbyte",  unsigned: "byte"),
+                                     (name: "short",  unsigned: "ushort"),
+                                     (name: "int",    unsigned: "uint"),
+                                     (name: "byte",   unsigned: "byte"),
+                                     (name: "ushort", unsigned: "ushort"),
+                                     (name: "uint",   unsigned: "uint") })
+        {
+#>
+        public static <#= type.unsigned #> AbsoluteDifference(<#= type.name #> left, <#= type.name #> right) => (<#= type.unsigned #>)Math.Abs((long)left - (long)right);
+
+<#
+        }
+
+        foreach ((string typeName, string className) in new (string, string)[] { ("float", "MathF"), ("double", "Math") })
+        {
+#>
+        public static <#= typeName #> AbsoluteDifference(<#= typeName #> op1, <#= typeName #> op2) => <#= className #>.Abs(op1 - op2);
+
+        public static <#= typeName #> FusedMultiplyAdd(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => <#= className #>.FusedMultiplyAdd(op2, op3, op1);
+
+        public static <#= typeName #> FusedMultiplyAddNegated(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => <#= className #>.FusedMultiplyAdd(-op2, op3, -op1);
+
+        public static <#= typeName #> FusedMultiplySubtract(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => <#= className #>.FusedMultiplyAdd(-op2, op3, op1);
+
+        public static <#= typeName #> FusedMultiplySubtractNegated(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => <#= className #>.FusedMultiplyAdd(op2, op3, -op1);
+
+        public static <#= typeName #> MaxNumber(<#= typeName #> op1, <#= typeName #> op2) => <#= typeName #>.IsNaN(op1) ? op2 : (<#= typeName #>.IsNaN(op2) ? op1 : <#= className #>.Max(op1, op2));
+
+        public static <#= typeName #> MaxNumberPairwise(<#= typeName #>[] op1, int i) => Pairwise(MaxNumber, op1, i);
+
+        public static <#= typeName #> MaxNumberPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(MaxNumber, op1, op2, i);
+
+        public static <#= typeName #> MinNumber(<#= typeName #> op1, <#= typeName #> op2) => <#= typeName #>.IsNaN(op1) ? op2 : (<#= typeName #>.IsNaN(op2) ? op1 : <#= className #>.Min(op1, op2));
+
+        public static <#= typeName #> MinNumberPairwise(<#= typeName #>[] op1, int i) => Pairwise(MinNumber, op1, i);
+
+        public static <#= typeName #> MinNumberPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
+
+<#
+        }
+
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double" })
+        {
+#>
+        public static <#= typeName #> Add(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 + op2);
+
+        public static <#= typeName #> AddPairwise(<#= typeName #>[] op1, int i) => Pairwise(Add, op1, i);
+
+        public static <#= typeName #> AddPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static <#= typeName #> Max(<#= typeName #> op1, <#= typeName #> op2) => Math.Max(op1, op2);
+
+        public static <#= typeName #> MaxPairwise(<#= typeName #>[] op1, int i) => Pairwise(Max, op1, i);
+
+        public static <#= typeName #> MaxPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(Max, op1, op2, i);
+
+        public static <#= typeName #> Min(<#= typeName #> op1, <#= typeName #> op2) => Math.Min(op1, op2);
+
+        public static <#= typeName #> MinPairwise(<#= typeName #>[] op1, int i) => Pairwise(Min, op1, i);
+
+        public static <#= typeName #> MinPairwise(<#= typeName #>[] op1, <#= typeName #>[] op2, int i) => Pairwise(Min, op1, op2, i);
+
+        public static <#= typeName #> Multiply(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 * op2);
+
+        public static <#= typeName #> MultiplyAdd(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => (<#= typeName #>)(op1 + (<#= typeName #>)(op2 * op3));
+
+        public static <#= typeName #> MultiplySubtract(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => (<#= typeName #>)(op1 - (<#= typeName #>)(op2 * op3));
+
+        public static <#= typeName #> Subtract(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 - op2);
+
+        private static <#= typeName #> Pairwise(Func<<#= typeName #>, <#= typeName #>, <#= typeName #>> pairOp, <#= typeName #>[] op1, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private static <#= typeName #> Pairwise(Func<<#= typeName #>, <#= typeName #>, <#= typeName #>> pairOp, <#= typeName #>[] op1, <#= typeName #>[] op2, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
+            }
+        }
+
+<#
+        }
+
+        foreach (string typeName in new string[] { "sbyte", "short", "int", "long", "float", "double" })
+        {
+#>
+        public static <#= typeName #> Negate(<#= typeName #> op1) => (<#= typeName #>)(-op1);
+
+<#
+        }
+
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "float", "double" })
+        {
+#>
+        public static <#= typeName #> AddAcross(<#= typeName #>[] op1) => Reduce(Add, op1);
+
+        public static <#= typeName #> MaxAcross(<#= typeName #>[] op1) => Reduce(Max, op1);
+
+        public static <#= typeName #> MinAcross(<#= typeName #>[] op1) => Reduce(Min, op1);
+
+        private static <#= typeName #> Reduce(Func<<#= typeName #>, <#= typeName #>, <#= typeName #>> reduceOp, <#= typeName #>[] op1)
+        {
+            <#= typeName #> acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+<#
+        }
+#>
+        public static float MaxNumberAcross(float[] op1) => Reduce(MaxNumber, op1);
+
+        public static float MinNumberAcross(float[] op1) => Reduce(MinNumber, op1);
     }
 }

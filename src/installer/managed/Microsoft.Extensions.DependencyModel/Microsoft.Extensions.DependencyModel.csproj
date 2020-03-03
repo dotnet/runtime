@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), CommonManaged.props))\CommonManaged.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(CommonManaged.props))" />
 
   <PropertyGroup>
     <Description>Abstractions for reading `.deps` files.</Description>
@@ -25,7 +25,7 @@
     -->
     <When Condition="'$(TargetFramework)' == 'netstandard2.0'">
       <ItemGroup>
-        <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
+        <PackageReference Include="System.Text.Json" Version="4.7.1" />
       </ItemGroup>
       <ItemGroup>
         <Compile Remove="DependencyContextJsonReader.JsonTextReader.cs" />

@@ -16,24 +16,97 @@
 #include "gcinfo.h"
 #include "gcinfoencoder.h"
 
-//------------------------------------------------------------------------
-// genIsTableDrivenHWIntrinsic:
-//
-// Arguments:
-//    category - category of a HW intrinsic
-//
-// Return Value:
-//    returns true if this category can be table-driven in CodeGen
-//
-static bool genIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicCategory category)
+struct HWIntrinsic final
 {
-    // TODO-Arm64-Cleanup - make more categories to the table-driven framework
-    const bool tableDrivenCategory =
-        (category != HW_Category_Special) && (category != HW_Category_Scalar) && (category != HW_Category_Helper);
-    const bool tableDrivenFlag =
-        !HWIntrinsicInfo::GeneratesMultipleIns(intrinsicId) && !HWIntrinsicInfo::HasSpecialCodegen(intrinsicId);
-    return tableDrivenCategory && tableDrivenFlag;
-}
+    HWIntrinsic(const GenTreeHWIntrinsic* node)
+        : op1(nullptr), op2(nullptr), op3(nullptr), numOperands(0), baseType(TYP_UNDEF)
+    {
+        assert(node != nullptr);
+
+        id       = node->gtHWIntrinsicId;
+        category = HWIntrinsicInfo::lookupCategory(id);
+
+        assert(HWIntrinsicInfo::RequiresCodegen(id));
+
+        InitializeOperands(node);
+        InitializeBaseType(node);
+    }
+
+    bool IsTableDriven() const
+    {
+        // TODO-Arm64-Cleanup - make more categories to the table-driven framework
+        bool isTableDrivenCategory = (category != HW_Category_Special) && (category != HW_Category_Helper);
+        bool isTableDrivenFlag = !HWIntrinsicInfo::GeneratesMultipleIns(id) && !HWIntrinsicInfo::HasSpecialCodegen(id);
+
+        return isTableDrivenCategory && isTableDrivenFlag;
+    }
+
+    NamedIntrinsic      id;
+    HWIntrinsicCategory category;
+    GenTree*            op1;
+    GenTree*            op2;
+    GenTree*            op3;
+    int                 numOperands;
+    var_types           baseType;
+
+private:
+    void InitializeOperands(const GenTreeHWIntrinsic* node)
+    {
+        op1 = node->gtGetOp1();
+        op2 = node->gtGetOp2();
+
+        assert(op1 != nullptr);
+
+        if (op1->OperIsList())
+        {
+            assert(op2 == nullptr);
+
+            GenTreeArgList* list = op1->AsArgList();
+            op1                  = list->Current();
+            list                 = list->Rest();
+            op2                  = list->Current();
+            list                 = list->Rest();
+            op3                  = list->Current();
+
+            assert(list->Rest() == nullptr);
+
+            numOperands = 3;
+        }
+        else if (op2 != nullptr)
+        {
+            numOperands = 2;
+        }
+        else
+        {
+            numOperands = 1;
+        }
+    }
+
+    void InitializeBaseType(const GenTreeHWIntrinsic* node)
+    {
+        baseType = node->gtSIMDBaseType;
+
+        if (baseType == TYP_UNKNOWN)
+        {
+            assert(category == HW_Category_Scalar);
+
+            if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
+            {
+                assert(op1 != nullptr);
+                baseType = op1->TypeGet();
+            }
+            else if (HWIntrinsicInfo::BaseTypeFromSecondArg(id))
+            {
+                assert(op2 != nullptr);
+                baseType = op2->TypeGet();
+            }
+            else
+            {
+                baseType = node->TypeGet();
+            }
+        }
+    }
+};
 
 //------------------------------------------------------------------------
 // genHWIntrinsic: Generates the code for a given hardware intrinsic node.
@@ -43,241 +116,193 @@ static bool genIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 //
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic      intrinsicId = node->gtHWIntrinsicId;
-    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+    const HWIntrinsic intrin(node);
 
-    assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
+    regNumber targetReg = node->GetRegNum();
 
-    if (genIsTableDrivenHWIntrinsic(intrinsicId, category))
+    regNumber op1Reg = REG_NA;
+    regNumber op2Reg = REG_NA;
+    regNumber op3Reg = REG_NA;
+
+    switch (intrin.numOperands)
     {
-        InstructionSet isa     = HWIntrinsicInfo::lookupIsa(intrinsicId);
-        int            ival    = HWIntrinsicInfo::lookupIval(intrinsicId);
-        int            numArgs = HWIntrinsicInfo::lookupNumArgs(node);
+        case 3:
+            assert(intrin.op3 != nullptr);
+            op3Reg = intrin.op3->GetRegNum();
+            __fallthrough;
 
-        assert(numArgs >= 0);
+        case 2:
+            assert(intrin.op2 != nullptr);
+            op2Reg = intrin.op2->GetRegNum();
+            __fallthrough;
 
-        GenTree*  op1        = node->gtGetOp1();
-        GenTree*  op2        = node->gtGetOp2();
-        regNumber targetReg  = node->GetRegNum();
-        var_types targetType = node->TypeGet();
-        var_types baseType   = node->gtSIMDBaseType;
+        case 1:
+            assert(intrin.op1 != nullptr);
+            op1Reg = intrin.op1->GetRegNum();
+            break;
 
-        instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+        default:
+            unreached();
+    }
+
+    emitAttr emitSize;
+    insOpts  opt = INS_OPTS_NONE;
+
+    if ((intrin.category == HW_Category_SIMDScalar) || (intrin.category == HW_Category_Scalar))
+    {
+        emitSize = emitActualTypeSize(intrin.baseType);
+    }
+    else
+    {
+        emitSize = EA_SIZE(node->gtSIMDSize);
+        opt      = genGetSimdInsOpt(emitSize, intrin.baseType);
+
+        if ((opt == INS_OPTS_1D) && (intrin.category == HW_Category_SimpleSIMD))
+        {
+            opt = INS_OPTS_NONE;
+        }
+    }
+
+    genConsumeHWIntrinsicOperands(node);
+
+    if (intrin.IsTableDriven())
+    {
+        instruction ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
         assert(ins != INS_invalid);
 
-        regNumber op1Reg   = REG_NA;
-        regNumber op2Reg   = REG_NA;
-        emitter*  emit     = GetEmitter();
-        emitAttr  emitSize = EA_ATTR(node->gtSIMDSize);
-        insOpts   opt      = INS_OPTS_NONE;
-
-        if (category == HW_Category_SIMDScalar)
-        {
-            emitSize = emitActualTypeSize(baseType);
-        }
-        else
-        {
-            opt = genGetSimdInsOpt(emitSize, baseType);
-        }
-
-        assert(emitSize != 0);
-        genConsumeOperands(node);
-
-        switch (numArgs)
+        switch (intrin.numOperands)
         {
             case 1:
-            {
-                assert(op1 != nullptr);
-                assert(op2 == nullptr);
-
-                op1Reg = op1->GetRegNum();
-                emit->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                 break;
-            }
 
             case 2:
-            {
-                assert(op1 != nullptr);
-                assert(op2 != nullptr);
-
-                op1Reg = op1->GetRegNum();
-                op2Reg = op2->GetRegNum();
-
-                emit->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
-            }
 
             case 3:
-            {
-                assert(op1 != nullptr);
-                assert(op2 == nullptr);
-
-                GenTreeArgList* argList = op1->AsArgList();
-                op1                     = argList->Current();
-                op1Reg                  = op1->GetRegNum();
-
-                argList = argList->Rest();
-                op2     = argList->Current();
-                op2Reg  = op2->GetRegNum();
-
-                argList          = argList->Rest();
-                GenTree*  op3    = argList->Current();
-                regNumber op3Reg = op3->GetRegNum();
-
                 if (targetReg != op1Reg)
                 {
-                    emit->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
+                    GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
                 }
-                emit->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
                 break;
-            }
 
             default:
-            {
                 unreached();
-            }
         }
-        genProduceReg(node);
     }
     else
     {
-        genSpecialIntrinsic(node);
-    }
-}
+        instruction ins = INS_invalid;
 
-void CodeGen::genSpecialIntrinsic(GenTreeHWIntrinsic* node)
-{
-    NamedIntrinsic      intrinsicId = node->gtHWIntrinsicId;
-    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
-
-    assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
-
-    InstructionSet isa     = HWIntrinsicInfo::lookupIsa(intrinsicId);
-    int            ival    = HWIntrinsicInfo::lookupIval(intrinsicId);
-    int            numArgs = HWIntrinsicInfo::lookupNumArgs(node);
-
-    assert(numArgs >= 0);
-
-    GenTree*  op1        = node->gtGetOp1();
-    GenTree*  op2        = node->gtGetOp2();
-    regNumber targetReg  = node->GetRegNum();
-    var_types targetType = node->TypeGet();
-    var_types baseType   = node->gtSIMDBaseType;
-
-    if (baseType == TYP_UNKNOWN)
-    {
-        assert(category == HW_Category_Scalar);
-
-        if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsicId))
+        switch (intrin.id)
         {
-            assert(op1 != nullptr);
-            baseType = op1->TypeGet();
-        }
-        else if (HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsicId))
-        {
-            assert(op2 != nullptr);
-            baseType = op2->TypeGet();
-        }
-        else
-        {
-            baseType = targetType;
-        }
-    }
+            case NI_Crc32_ComputeCrc32:
+                if (intrin.baseType == TYP_INT)
+                {
+                    ins = INS_crc32w;
+                }
+                else
+                {
+                    ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
+                }
+                break;
 
-    switch (intrinsicId)
-    {
-        case NI_Crc32_ComputeCrc32:
-        case NI_Crc32_ComputeCrc32C:
-        {
-            if (baseType == TYP_INT)
-            {
-                baseType = TYP_UINT;
-            }
-            break;
+            case NI_Crc32_ComputeCrc32C:
+                if (intrin.baseType == TYP_INT)
+                {
+                    ins = INS_crc32cw;
+                }
+                else
+                {
+                    ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
+                }
+                break;
+
+            case NI_Crc32_Arm64_ComputeCrc32:
+                assert(intrin.baseType == TYP_LONG);
+                ins = INS_crc32x;
+                break;
+
+            case NI_Crc32_Arm64_ComputeCrc32C:
+                assert(intrin.baseType == TYP_LONG);
+                ins = INS_crc32cx;
+                break;
+
+            default:
+                ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
+                break;
         }
 
-        case NI_Crc32_Arm64_ComputeCrc32:
-        case NI_Crc32_Arm64_ComputeCrc32C:
+        assert(ins != INS_invalid);
+
+        switch (intrin.id)
         {
-            assert(baseType == TYP_LONG);
-            baseType = TYP_ULONG;
-            break;
-        }
+            case NI_AdvSimd_BitwiseSelect:
+                if (targetReg == op1Reg)
+                {
+                    GetEmitter()->emitIns_R_R_R(INS_bsl, emitSize, targetReg, op2Reg, op3Reg, opt);
+                }
+                else if (targetReg == op2Reg)
+                {
+                    GetEmitter()->emitIns_R_R_R(INS_bif, emitSize, targetReg, op3Reg, op1Reg, opt);
+                }
+                else if (targetReg == op3Reg)
+                {
+                    GetEmitter()->emitIns_R_R_R(INS_bit, emitSize, targetReg, op2Reg, op1Reg, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
+                    GetEmitter()->emitIns_R_R_R(INS_bsl, emitSize, targetReg, op2Reg, op3Reg, opt);
+                }
+                break;
 
-        default:
-            break;
-    }
+            case NI_Aes_Decrypt:
+            case NI_Aes_Encrypt:
+                if (targetReg != op1Reg)
+                {
+                    GetEmitter()->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
+                }
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+                break;
 
-    instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-    assert(ins != INS_invalid);
+            case NI_Crc32_ComputeCrc32:
+            case NI_Crc32_ComputeCrc32C:
+            case NI_Crc32_Arm64_ComputeCrc32:
+            case NI_Crc32_Arm64_ComputeCrc32C:
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
 
-    regNumber op1Reg   = REG_NA;
-    regNumber op2Reg   = REG_NA;
-    emitter*  emit     = GetEmitter();
-    emitAttr  emitSize = EA_ATTR(node->gtSIMDSize);
-    insOpts   opt      = INS_OPTS_NONE;
+            case NI_AdvSimd_CompareLessThan:
+            case NI_AdvSimd_CompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_CompareLessThan:
+            case NI_AdvSimd_Arm64_CompareLessThanScalar:
+            case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar:
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
+                break;
 
-    if ((category == HW_Category_SIMDScalar) || (category == HW_Category_Scalar))
-    {
-        emitSize = emitActualTypeSize(baseType);
-    }
-    else
-    {
-        opt = genGetSimdInsOpt(emitSize, baseType);
-    }
+            case NI_AdvSimd_AbsoluteCompareLessThan:
+            case NI_AdvSimd_AbsoluteCompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThan:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanScalar:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqualScalar:
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
+                break;
 
-    genConsumeOperands(node);
+            case NI_AdvSimd_FusedMultiplyAddScalar:
+            case NI_AdvSimd_FusedMultiplyAddNegatedScalar:
+            case NI_AdvSimd_FusedMultiplySubtractNegatedScalar:
+            case NI_AdvSimd_FusedMultiplySubtractScalar:
+                assert(opt == INS_OPTS_NONE);
+                GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, op1Reg);
+                break;
 
-    switch (intrinsicId)
-    {
-        case NI_Aes_Decrypt:
-        case NI_Aes_Encrypt:
-        {
-            assert(op1 != nullptr);
-            assert(op2 != nullptr);
-
-            op1Reg = op1->GetRegNum();
-            op2Reg = op2->GetRegNum();
-
-            if (op1Reg != targetReg)
-            {
-                emit->emitIns_R_R(INS_mov, emitSize, targetReg, op1Reg);
-            }
-            emit->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
-            break;
-        }
-
-        case NI_ArmBase_LeadingZeroCount:
-        case NI_ArmBase_ReverseElementBits:
-        case NI_ArmBase_Arm64_LeadingSignCount:
-        case NI_ArmBase_Arm64_LeadingZeroCount:
-        case NI_ArmBase_Arm64_ReverseElementBits:
-        {
-            assert(op1 != nullptr);
-            assert(op2 == nullptr);
-
-            op1Reg = op1->GetRegNum();
-            emit->emitIns_R_R(ins, emitSize, targetReg, op1Reg);
-            break;
-        }
-
-        case NI_Crc32_ComputeCrc32:
-        case NI_Crc32_ComputeCrc32C:
-        case NI_Crc32_Arm64_ComputeCrc32:
-        case NI_Crc32_Arm64_ComputeCrc32C:
-        {
-            assert(op1 != nullptr);
-            assert(op2 != nullptr);
-
-            op1Reg = op1->GetRegNum();
-            op2Reg = op2->GetRegNum();
-            emit->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg);
-            break;
-        }
-
-        default:
-        {
-            unreached();
+            default:
+                unreached();
         }
     }
 

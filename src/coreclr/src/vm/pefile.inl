@@ -10,8 +10,6 @@
 #ifndef PEFILE_INL_
 #define PEFILE_INL_
 
-#include "strongname.h"
-#include "strongnameholders.h"
 #include "check.h"
 #include "simplerwlock.hpp"
 #include "eventtrace.h"
@@ -1251,119 +1249,6 @@ inline BOOL PEFile::HasNativeImageMetadata()
 }
 #endif
 
- // Function to get the fully qualified name of an assembly
- inline void PEAssembly::GetFullyQualifiedAssemblyName(IMDInternalImport* pImport, mdAssembly mda, SString &result, DWORD flags)
-{
-    CONTRACTL
-    {
-        PRECONDITION(CheckValue(result));
-#ifndef DACCESS_COMPILE
-        THROWS;
-#else
-        NOTHROW;
- #endif // !DACCESS_COMPILE
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if(pImport != NULL)
-    {
-        // This is for DAC, ONLY for the binding tool.  Don't use for other
-        // purposes, since this is not canonicalized through Fusion.
-        LPCSTR name;
-        AssemblyMetaDataInternal context;
-        DWORD dwFlags;
-        PBYTE pbPublicKey;
-        DWORD cbPublicKey;
-        if (FAILED(pImport->GetAssemblyProps(
-            mda,
-            (const void **) &pbPublicKey,
-            &cbPublicKey,
-            NULL,
-            &name,
-            &context,
-            &dwFlags)))
-        {
-            _ASSERTE(!"If this fires, then we have to throw for corrupted images");
-            result.SetUTF8("");
-            return;
-        }
-
-        result.SetUTF8(name);
-
-        result.AppendPrintf(W(", Version=%u.%u.%u.%u"),
-                            context.usMajorVersion, context.usMinorVersion,
-                            context.usBuildNumber, context.usRevisionNumber);
-
-        result.Append(W(", Culture="));
-        if (!*context.szLocale)
-        {
-            result.Append(W("neutral"));
-        }
-        else
-        {
-            result.AppendUTF8(context.szLocale);
-        }
-
-        if (cbPublicKey != 0)
-        {
-#ifndef DACCESS_COMPILE
-
-            StrongNameBufferHolder<BYTE> pbToken;
-            DWORD cbToken;
-            CQuickBytes qb;
-
-            if (StrongNameTokenFromPublicKey(pbPublicKey, cbPublicKey,
-                                             &pbToken, &cbToken))
-            {
-                // two hex digits per byte
-                WCHAR* szToken = (WCHAR*) qb.AllocNoThrow(sizeof(WCHAR) * (cbToken*2+1));
-                if (szToken)
-                {
-#define TOHEX(a) ((a)>=10 ? L'a'+(a)-10 : L'0'+(a))
-                    UINT x;
-                    UINT y;
-                    for ( x = 0, y = 0; x < cbToken; ++x )
-                    {
-                        WCHAR v = static_cast<WCHAR>(pbToken[x] >> 4);
-                        szToken[y++] = TOHEX( v );
-                        v = static_cast<WCHAR>(pbToken[x] & 0x0F);
-                        szToken[y++] = TOHEX( v );
-                    }
-                    szToken[y] = L'\0';
-
-                    result.Append(W(", PublicKeyToken="));
-                    result.Append(szToken);
-#undef TOHEX
-                }
-            }
-#endif
-
-        }
-        else
-        {
-            result.Append(W(", PublicKeyToken=null"));
-        }
-
-        if (dwFlags & afPA_Mask)
-        {
-            result.Append(W(", ProcessorArchitecture="));
-
-            if (dwFlags & afPA_MSIL)
-                result.Append(W("MSIL"));
-            else if (dwFlags & afPA_x86)
-                result.Append(W("x86"));
-            else if (dwFlags & afPA_IA64)
-                result.Append(W("IA64"));
-            else if (dwFlags & afPA_AMD64)
-                result.Append(W("AMD64"));
-            else if (dwFlags & afPA_ARM)
-                result.Append(W("ARM"));
-        }
-    }
-}
-
 
 // ------------------------------------------------------------
 // Descriptive strings
@@ -1373,33 +1258,18 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
     CONTRACTL
     {
         PRECONDITION(CheckValue(result));
-#ifndef DACCESS_COMPILE
         THROWS;
-#else
-        NOTHROW;
-#endif // DACCESS_COMPILE
         GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-
-    if ((flags == (ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN)) &&
-        !m_sTextualIdentity.IsEmpty())
-    {
-        result.Set(m_sTextualIdentity);
-    }
-    else
-    {
-        AssemblySpec spec;
-        spec.InitializeSpec(this);
-        spec.GetFileOrDisplayName(flags, result);
-    }
-
+    AssemblySpec spec;
+    spec.InitializeSpec(this);
+    spec.GetFileOrDisplayName(flags, result);
 #else
-    IMDInternalImport *pImport = GetMDImport();
-    GetFullyQualifiedAssemblyName(pImport, TokenFromRid(1, mdtAssembly), result, flags);
+    DacNotImpl();
 #endif //DACCESS_COMPILE
 }
 

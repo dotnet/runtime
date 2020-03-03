@@ -84,7 +84,7 @@ namespace System.Reflection.Metadata
             get { return (_rawValue & (byte)SignatureAttributes.Generic) != 0; }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is SignatureHeader && Equals((SignatureHeader)obj);
         }

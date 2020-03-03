@@ -627,6 +627,37 @@ namespace System.Globalization.Tests
             Assert.Equal(version, new CultureInfo(cultureName).CompareInfo.Version);
         }
 
+        [Fact]
+        public void TestSortKey_ZeroWeightCodePoints()
+        {
+            // In the invariant globalization mode, there's no such thing as a zero-weight code point,
+            // so the U+200C ZERO WIDTH NON-JOINER code point contributes to the final sort key value.
+
+            CompareInfo compareInfo = CultureInfo.InvariantCulture.CompareInfo;
+            SortKey sortKeyForEmptyString = compareInfo.GetSortKey("");
+            SortKey sortKeyForZeroWidthJoiner = compareInfo.GetSortKey("\u200c");
+            Assert.NotEqual(0, SortKey.Compare(sortKeyForEmptyString, sortKeyForZeroWidthJoiner));
+        }
+
+        [Theory]
+        [InlineData("", "", 0)]
+        [InlineData("", "not-empty", -1)]
+        [InlineData("not-empty", "", 1)]
+        [InlineData("hello", "hello", 0)]
+        [InlineData("prefix", "prefix-with-more-data", -1)]
+        [InlineData("prefix-with-more-data", "prefix", 1)]
+        [InlineData("e", "\u0115", -1)] // U+0115 = LATIN SMALL LETTER E WITH BREVE, tests endianness handling
+        public void TestSortKey_Compare_And_Equals(string value1, string value2, int expectedSign)
+        {
+            // These tests are in the "invariant" unit test project because we rely on Invariant mode
+            // copying the input data directly into the sort key.
+
+            SortKey sortKey1 = CultureInfo.InvariantCulture.CompareInfo.GetSortKey(value1);
+            SortKey sortKey2 = CultureInfo.InvariantCulture.CompareInfo.GetSortKey(value2);
+
+            Assert.Equal(expectedSign, Math.Sign(SortKey.Compare(sortKey1, sortKey2)));
+            Assert.Equal(expectedSign == 0, sortKey1.Equals(sortKey2));
+        }
 
         private static StringComparison GetStringComparison(CompareOptions options)
         {
@@ -671,7 +702,7 @@ namespace System.Globalization.Tests
                 Assert.Equal(result, source.LastIndexOf(value, startIndex, count, GetStringComparison(options)));
 
                 // Filter differences betweeen string-based and Span-based LastIndexOf
-                // - Empty value handling - https://github.com/dotnet/coreclr/issues/26608
+                // - Empty value handling - https://github.com/dotnet/runtime/issues/13382
                 // - Negative count
                 if (value.Length == 0 || count < 0)
                     continue;

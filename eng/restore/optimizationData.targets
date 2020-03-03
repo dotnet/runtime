@@ -2,23 +2,30 @@
 
   <ItemGroup>
     <IBCPackage Include="$(WindowsCoreFxOptimizationDataPackage)" Version="$(optimizationwindows_ntx64IBCCoreFxVersion)" />
-    <IBCPackage Include="$(LinuxCoreFxOptimizationDataPackage)" Version="$(optimizationwindows_ntx64IBCCoreFxVersion)" />
+    <IBCPackage Include="$(LinuxCoreFxOptimizationDataPackage)" Version="$(optimizationlinuxx64IBCCoreFxVersion)" />
+    <IBCPackage Include="$(WindowsOptimizationIBCCoreCLRPackage)" Version="$(optimizationwindows_ntx64IBCCoreCLRVersion)" />
+    <IBCPackage Include="$(LinuxOptimizationIBCCoreCLRPackage)" Version="$(optimizationlinuxx64IBCCoreCLRVersion)" />
     <PackageReference Include="@(IBCPackage)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
-  
+
   <!-- IBC data packages don't follow NuGet conventions.  -->
   <Target Name="GetIBCData"
           AfterTargets="Restore">
-    
+
     <ItemGroup>
       <IBCPackage>
         <PackagePath>$(NuGetPackageRoot)%(IBCPackage.Identity)\%(IBCPackage.Version)</PackagePath>
       </IBCPackage>
-      <_optimizationDataSourceFile Include="%(IBCPackage.PackagePath)\**\*.dll;%(IBCPackage.PackagePath)\**\*.ibc" Package="%(IBCPackage.Identity)" />
+      <IBCPackage Condition="$([System.String]::new('%(Identity)').ToLower().Contains('windows_nt'))">
+        <SubdirectoryName>Windows</SubdirectoryName>
+      </IBCPackage>
+      <IBCPackage Condition="$([System.String]::new('%(Identity)').ToLower().Contains('linux'))">
+        <SubdirectoryName>Linux</SubdirectoryName>
+      </IBCPackage>
+      <_optimizationDataSourceFile Include="%(IBCPackage.PackagePath)\**\*.dll;%(IBCPackage.PackagePath)\**\*.ibc" SubdirectoryName="%(IBCPackage.SubdirectoryName)" />
     </ItemGroup>
-
     <Copy SourceFiles="@(_optimizationDataSourceFile)"
-          DestinationFiles="@(_optimizationDataSourceFile->'$(IbcOptimizationDataDir)%(Package)\%(RecursiveDir)%(Filename)%(Extension)')"
+          DestinationFiles="@(_optimizationDataSourceFile->'$(IbcOptimizationDataDir)%(SubdirectoryName)\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="true" />
 

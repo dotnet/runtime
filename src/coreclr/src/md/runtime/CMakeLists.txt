@@ -9,6 +9,7 @@ set(MDRUNTIME_SOURCES
   recordpool.cpp
   mdinternaldisp.cpp
   mdinternalro.cpp
+  strongnameinternal.cpp
 )
 
 set(MDRUNTIME_HEADERS
@@ -33,17 +34,14 @@ set(MDRUNTIME_HEADERS
   metamodelcolumndefs.h
   mdinternaldisp.h
   mdinternalro.h
-  metamodel.cpp
-  metamodelro.cpp
-  recordpool.cpp
 )
 
 convert_to_absolute_path(MDRUNTIME_HEADERS ${MDRUNTIME_HEADERS})
 convert_to_absolute_path(MDRUNTIME_SOURCES ${MDRUNTIME_SOURCES})
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND MDRUNTIME_SOURCES ${MDRUNTIME_HEADERS})
-endif (WIN32)
+endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library_clr(mdruntime_dac ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime_dac PROPERTIES DAC_COMPONENT TRUE)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -30,7 +31,6 @@ namespace System.Net.Http
 
             private readonly Http2Connection _connection;
             private readonly int _streamId;
-            private readonly CreditManager _streamWindow;
             private readonly HttpRequestMessage _request;
             private HttpResponseMessage _response;
             /// <summary>Stores any trailers received after returning the response content to the caller.</summary>
@@ -38,6 +38,8 @@ namespace System.Net.Http
 
             private ArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
             private int _pendingWindowUpdate;
+            private CancelableCreditWaiter _creditWaiter;
+            private int _availableCredit;
 
             private StreamCompletionState _requestCompletionState;
             private StreamCompletionState _responseCompletionState;
@@ -103,8 +105,7 @@ namespace System.Net.Http
                 _responseBuffer = new ArrayBuffer(InitialStreamBufferSize, usePool: true);
 
                 _pendingWindowUpdate = 0;
-
-                _streamWindow = new CreditManager(this, nameof(_streamWindow), initialWindowSize);
+                _availableCredit = initialWindowSize;
 
                 _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
 
@@ -134,7 +135,7 @@ namespace System.Net.Http
                 if (NetEventSource.IsEnabled) Trace($"{request}, {nameof(initialWindowSize)}={initialWindowSize}");
             }
 
-            private object SyncObject => _streamWindow;
+            private object SyncObject => this; // this isn't handed out to code that may lock on it
 
             public int StreamId => _streamId;
 
@@ -163,7 +164,9 @@ namespace System.Net.Http
 
                 // Create a linked cancellation token source so that we can cancel the request in the event of receiving RST_STREAM
                 // and similiar situations where we need to cancel the request body (see Cancel method).
-                _requestBodyCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _requestBodyCancellationSource.Token).Token;
+                _requestBodyCancellationToken = cancellationToken.CanBeCanceled ?
+                    CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _requestBodyCancellationSource.Token).Token :
+                    _requestBodyCancellationSource.Token;
 
                 try
                 {
@@ -323,7 +326,15 @@ namespace System.Net.Http
 
                 _connection.RemoveStream(this);
 
-                _streamWindow.Dispose();
+                lock (SyncObject)
+                {
+                    CreditWaiter w = _creditWaiter;
+                    if (w != null)
+                    {
+                        w.Dispose();
+                        _creditWaiter = null;
+                    }
+                }
             }
 
             private void Cancel()
@@ -394,7 +405,33 @@ namespace System.Net.Http
                 return (signalWaiter, sendReset);
             }
 
-            public void OnWindowUpdate(int amount) => _streamWindow.AdjustCredit(amount);
+            public void OnWindowUpdate(int amount)
+            {
+                lock (SyncObject)
+                {
+                    _availableCredit = checked(_availableCredit + amount);
+                    if (_availableCredit > 0 && _creditWaiter != null && _creditWaiter.IsPending)
+                    {
+                        int granted = Math.Min(_availableCredit, _creditWaiter.Amount);
+                        if (_creditWaiter.TrySetResult(granted))
+                        {
+                            _availableCredit -= granted;
+                        }
+                    }
+                }
+            }
+
+            void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
+            {
+                // TODO: https://github.com/dotnet/runtime/issues/1505
+                Debug.Fail("Currently unused by HPACK, this should never be called.");
+            }
+
+            void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
+            {
+                // TODO: https://github.com/dotnet/runtime/issues/1505
+                Debug.Fail("Currently unused by HPACK, this should never be called.");
+            }
 
             public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
             {
@@ -406,8 +443,6 @@ namespace System.Net.Http
                 {
                     throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection._pool.Settings._maxResponseHeadersLength * 1024L));
                 }
-
-                // TODO: ISSUE 31309: Optimize HPACK static table decoding
 
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
@@ -435,16 +470,7 @@ namespace System.Net.Http
                                 throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, "duplicate status"));
                             }
 
-                            byte status1, status2, status3;
-                            if (value.Length != 3 ||
-                                !IsDigit(status1 = value[0]) ||
-                                !IsDigit(status2 = value[1]) ||
-                                !IsDigit(status3 = value[2]))
-                            {
-                                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, Encoding.ASCII.GetString(value)));
-                            }
-
-                            int statusValue = (100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0'));
+                            int statusValue = ParseStatusCode(value);
                             _response = new HttpResponseMessage()
                             {
                                 Version = HttpVersion.Version20,
@@ -957,6 +983,42 @@ namespace System.Net.Http
                 return bytesRead;
             }
 
+            public async Task CopyToAsync(HttpResponseMessage responseMessage, Stream destination, int bufferSize, CancellationToken cancellationToken)
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                try
+                {
+                    // Generallly the same logic as in ReadDataAsync, but wrapped in a loop where every read segment is written to the destination.
+                    while (true)
+                    {
+                        (bool wait, int bytesRead) = TryReadFromBuffer(buffer);
+                        if (wait)
+                        {
+                            Debug.Assert(bytesRead == 0);
+                            await GetWaiterTask(cancellationToken).ConfigureAwait(false);
+                            (wait, bytesRead) = TryReadFromBuffer(buffer);
+                            Debug.Assert(!wait);
+                        }
+
+                        if (bytesRead != 0)
+                        {
+                            ExtendWindow(bytesRead);
+                            await destination.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            // We've hit EOF.  Pull in from the Http2Stream any trailers that were temporarily stored there.
+                            CopyTrailersToResponseMessage(responseMessage);
+                            return;
+                        }
+                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
+
             private void CopyTrailersToResponseMessage(HttpResponseMessage responseMessage)
             {
                 if (_trailers != null && _trailers.Count > 0)
@@ -971,9 +1033,7 @@ namespace System.Net.Http
 
             private async ValueTask SendDataAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
-                ReadOnlyMemory<byte> remaining = buffer;
-
-                // Deal with ActiveIssue #9071:
+                // Deal with [ActiveIssue("https://github.com/dotnet/runtime/issues/17492")]
                 // Custom HttpContent classes do not get passed the cancellationToken.
                 // So, inject the expected CancellationToken here, to ensure we can cancel the request body send if needed.
                 CancellationTokenSource customCancellationSource = null;
@@ -989,17 +1049,48 @@ namespace System.Net.Http
                     cancellationToken = customCancellationSource.Token;
                 }
 
-                using (customCancellationSource)
+                try
                 {
-                    while (remaining.Length > 0)
+                    while (buffer.Length > 0)
                     {
-                        int sendSize = await _streamWindow.RequestCreditAsync(remaining.Length, cancellationToken).ConfigureAwait(false);
+                        int sendSize = -1;
+                        lock (SyncObject)
+                        {
+                            if (_availableCredit > 0)
+                            {
+                                sendSize = Math.Min(buffer.Length, _availableCredit);
+                                _availableCredit -= sendSize;
+                            }
+                            else
+                            {
+                                if (_creditWaiter is null)
+                                {
+                                    _creditWaiter = new CancelableCreditWaiter(SyncObject, cancellationToken);
+                                }
+                                else
+                                {
+                                    Debug.Assert(!_creditWaiter.IsPending);
+                                    _creditWaiter.ResetForAwait(cancellationToken);
+                                }
+                                _creditWaiter.Amount = buffer.Length;
+                            }
+                        }
+
+                        if (sendSize == -1)
+                        {
+                            sendSize = await _creditWaiter.AsValueTask().ConfigureAwait(false);
+                            _creditWaiter.CleanUp();
+                        }
 
                         ReadOnlyMemory<byte> current;
-                        (current, remaining) = SplitBuffer(remaining, sendSize);
+                        (current, buffer) = SplitBuffer(buffer, sendSize);
 
                         await _connection.SendStreamDataAsync(_streamId, current, cancellationToken).ConfigureAwait(false);
                     }
+                }
+                finally
+                {
+                    customCancellationSource?.Dispose();
                 }
             }
 
@@ -1169,6 +1260,16 @@ namespace System.Net.Http
                     }
 
                     return http2Stream.ReadDataAsync(destination, _responseMessage, cancellationToken);
+                }
+
+                public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+                {
+                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+                    Http2Stream http2Stream = _http2Stream;
+                    return
+                        http2Stream is null ? Task.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)))) :
+                        cancellationToken.IsCancellationRequested ? Task.FromCanceled<int>(cancellationToken) :
+                        http2Stream.CopyToAsync(_responseMessage, destination, bufferSize, cancellationToken);
                 }
 
                 public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);

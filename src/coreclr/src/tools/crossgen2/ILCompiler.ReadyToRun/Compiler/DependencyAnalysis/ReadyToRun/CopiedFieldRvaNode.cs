@@ -1,25 +1,28 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System;
-
+using System.Collections.Immutable;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using Internal.Text;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class CopiedFieldRvaNode : ObjectNode, ISymbolDefinitionNode
     {
-        private EcmaField _field;
+        private int _rva;
+        private EcmaModule _module;
 
-        public CopiedFieldRvaNode(EcmaField field)
+        public CopiedFieldRvaNode(EcmaModule module, int rva)
         {
-            Debug.Assert(field.HasRva);
-
-            _field = field;
+            _rva = rva;
+            _module = module;
         }
 
         public override ObjectNodeSection Section => ObjectNodeSection.TextSection;
@@ -46,10 +49,46 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.RequireInitialPointerAlignment();
             builder.AddSymbol(this);
-
-            builder.EmitBytes(_field.GetFieldRvaData());
-
+            builder.EmitBytes(GetRvaData(factory.Target.PointerSize));
             return builder.ToObjectData();
+        }
+
+        private unsafe byte[] GetRvaData(int targetPointerSize)
+        {
+            int size = 0;
+
+            MetadataReader metadataReader = _module.MetadataReader;
+            BlobReader metadataBlob = new BlobReader(_module.PEReader.GetMetadata().Pointer, _module.PEReader.GetMetadata().Length);
+            metadataBlob.Offset = metadataReader.GetTableMetadataOffset(TableIndex.FieldRva);
+
+            for (int i = 1; i <= metadataReader.GetTableRowCount(TableIndex.FieldRva); i++)
+            {
+                int currentFieldRva = metadataBlob.ReadInt32();
+                short currentFieldRid = metadataBlob.ReadInt16();
+                if (currentFieldRva != _rva)
+                    continue;
+
+                EcmaField field = (EcmaField)_module.GetField(MetadataTokens.FieldDefinitionHandle(currentFieldRid));
+                Debug.Assert(field.HasRva);
+
+                int currentSize = field.FieldType.GetElementSize().AsInt;
+                if (currentSize > size)
+                {
+                    // We need to handle overlapping fields by reusing blobs based on the rva, and just update
+                    // the size and contents
+                    size = currentSize;
+                }
+            }
+
+            Debug.Assert(size > 0);
+
+            PEMemoryBlock block = _module.PEReader.GetSectionData(_rva);
+            if (block.Length < size)
+                throw new BadImageFormatException();
+
+            byte[] result = new byte[AlignmentHelper.AlignUp(size, targetPointerSize)];
+            block.GetContent(0, size).CopyTo(result);
+            return result;
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -57,12 +96,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($"_FieldRva_{nameMangler.GetMangledFieldName(_field)}");
+            sb.Append($"_FieldRvaData_{_module.Assembly.GetName().Name}_{_rva}");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return comparer.Compare(_field, ((CopiedFieldRvaNode)other)._field);
+            int result = _module.CompareTo(((CopiedFieldRvaNode)other)._module);
+            if (result != 0)
+                return result;
+
+            return _rva - ((CopiedFieldRvaNode)other)._rva;
         }
     }
 }

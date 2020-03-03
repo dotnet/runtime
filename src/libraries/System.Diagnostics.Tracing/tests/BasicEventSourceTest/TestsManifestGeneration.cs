@@ -22,13 +22,13 @@ using System.Text.RegularExpressions;
 
 namespace BasicEventSourceTests
 {
-    public class TestsManifestGeneration
+    public partial class TestsManifestGeneration
     {
         /// <summary>
         /// EventSource would fail when an EventSource was named "EventSource".
         /// </summary>
         [Fact]
-        [ActiveIssue("dotnet/corefx #18808", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21297", TargetFrameworkMonikers.NetFramework)]
         public void Test_EventSource_NamedEventSource()
         {
             using (var es = new SdtEventSources.DontPollute.EventSource())

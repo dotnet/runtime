@@ -468,8 +468,7 @@ public:
                 BOOL fEmitsIL,
                 BOOL onInstanceMethod,
                 MethodDesc* pMD = NULL,
-                BOOL fUseCustomMarshal = TRUE,
-                BOOL fCalculatingFieldMetadata = FALSE // Calculating metadata for fields on type load.
+                BOOL fUseCustomMarshal = TRUE
 #ifdef _DEBUG
                 ,
                 LPCUTF8 pDebugName = NULL,
@@ -825,7 +824,7 @@ public:
         {
             // for the purpose of marshaling, we don't care about the inner
             // type - we just marshal pointer-sized values
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             return VT_I8;
 #else
             return VT_I4;
@@ -893,7 +892,7 @@ protected:
     {
         LIMITED_METHOD_CONTRACT;
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             return 8;
 #else
             return 4;

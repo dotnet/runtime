@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
@@ -74,6 +74,7 @@
     <Compile Include="Generic\Comparers\Comparers.Generic.cs" />
     <Compile Include="Generic\Comparers\EqualityComparer.Generic.Tests.cs" />
     <Compile Include="Generic\Comparers\EqualityComparer.Tests.cs" />
+    <Compile Include="Generic\Comparers\ReferenceEqualityComparer.Tests.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Tests.cs" />
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\InputData.cs" />
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\OutOfBoundsRegression.cs" />

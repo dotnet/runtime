@@ -13,7 +13,7 @@ namespace System.IO.Tests
         protected abstract void InvokeCreate(T item);
 
         [Fact]
-        [ActiveIssue(39108)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30108")]
         public void DoesntExistThenCreate_ReturnsDefaultValues()
         {
             T item = GetMissingItem();

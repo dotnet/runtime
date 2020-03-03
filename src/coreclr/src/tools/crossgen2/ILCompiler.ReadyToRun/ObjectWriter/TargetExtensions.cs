@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -22,6 +22,48 @@ namespace ILCompiler.PEWriter
         NetBSD = 0x1993,
     }
 
+    /// <summary>
+    /// Constants for emission of Windows PE file mostly copied from CoreCLR pewriter.cpp.
+    /// </summary>
+    public static class PEHeaderConstants
+    {
+        public const int SectionAlignment = 0x1000;
+
+        public const byte MajorLinkerVersion = 11;
+        public const byte MinorLinkerVersion = 0;
+
+        public const byte MajorOperatingSystemVersion = 4;
+        public const byte MinorOperatingSystemVersion = 0;
+
+        public const ushort MajorImageVersion = 0;
+        public const ushort MinorImageVersion = 0;
+
+        public const ushort MajorSubsystemVersion = 4;
+        public const ushort MinorSubsystemVersion = 0;
+    }
+
+    public static class PE32HeaderConstants
+    {
+        public const uint ImageBase = 0x0040_0000;
+
+        public const uint SizeOfStackReserve = 0x100000;
+        public const uint SizeOfStackCommit = 0x1000;
+        public const uint SizeOfHeapReserve = 0x100000;
+        public const uint SizeOfHeapCommit = 0x1000;
+    }
+
+    public static class PE64HeaderConstants
+    {
+        // Default base addresses used by Roslyn
+        public const ulong ExeImageBase = 0x1_4000_0000;
+        public const ulong DllImageBase = 0x1_8000_0000;
+
+        public const ulong SizeOfStackReserve = 0x400000;
+        public const ulong SizeOfStackCommit = 0x4000;
+        public const ulong SizeOfHeapReserve = 0x100000;
+        public const ulong SizeOfHeapCommit = 0x2000;
+    }
+
     public static class TargetExtensions
     {
         /// <summary>
@@ -38,6 +80,12 @@ namespace ILCompiler.PEWriter
 
                 case Internal.TypeSystem.TargetArchitecture.X86:
                     return Machine.I386;
+
+                case Internal.TypeSystem.TargetArchitecture.ARM64:
+                    return Machine.Arm64;
+
+                case Internal.TypeSystem.TargetArchitecture.ARM:
+                    return Machine.ArmThumb2;
 
                 default:
                     throw new NotImplementedException(target.Architecture.ToString());

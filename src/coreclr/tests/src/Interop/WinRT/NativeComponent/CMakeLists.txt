@@ -1,7 +1,6 @@
-cmake_minimum_required (VERSION 2.8.12)
 project (WinRTNativeComponent)
 include_directories( ${INC_PLATFORM_DIR} )
-include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 
+include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
 include_directories("../Contracts")
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -53,10 +52,10 @@ set (MIDL_COMMAND_LINE_ARGS
   /winrt
   /metadata_dir ${METADATA_DIR_ARGUMENT}
   /W1
-  /enum_class 
-  /ns_prefix 
-  /target "NT60"  
-  /nomidl 
+  /enum_class
+  /ns_prefix
+  /target "NT60"
+  /nomidl
   /h "nul"
   ${REFERENCE_WINMD_ARGS}
 )
@@ -96,7 +95,7 @@ set_source_files_properties(${CPP_WINRT_OUTPUT_FILES} PROPERTIES GENERATED TRUE)
 
 list(APPEND SOURCES ${CPP_WINRT_OUTPUT_FOLDER}/module.g.cpp)
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
   list(APPEND SOURCES Exports.def)
 endif()
 
@@ -105,7 +104,7 @@ add_library (WinRTNativeComponent SHARED ${SOURCES})
 target_link_libraries(WinRTNativeComponent ${LINK_LIBRARIES_ADDITIONAL})
 set_target_properties(WinRTNativeComponent PROPERTIES CXX_STANDARD 17)
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
   target_link_libraries(WinRTNativeComponent RuntimeObject.lib)
 endif()
 

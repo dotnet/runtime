@@ -10,7 +10,6 @@ using System.Text;
 namespace System.IO.Compression
 {
     // The disposable fields that this class owns get disposed when the ZipArchive it belongs to gets disposed
-    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
     public partial class ZipArchiveEntry
     {
         // The maximum index of our buffers, from the maximum index of a byte array
@@ -750,21 +749,10 @@ namespace System.IO.Compression
                 }
                 Debug.Assert(_archive.ArchiveReader != null);
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-                if (needToUncompress && !needToLoadIntoMemory)
+                if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveReader))
                 {
-                    if (!ZipLocalFileHeader.TryValidateBlock(_archive.ArchiveReader, this))
-                    {
-                        message = SR.LocalFileHeaderCorrupt;
-                        return false;
-                    }
-                }
-                else
-                {
-                    if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveReader))
-                    {
-                        message = SR.LocalFileHeaderCorrupt;
-                        return false;
-                    }
+                    message = SR.LocalFileHeaderCorrupt;
+                    return false;
                 }
                 // when this property gets called, some duplicated work
                 if (OffsetOfCompressedData + _compressedSize > _archive.ArchiveStream.Length)

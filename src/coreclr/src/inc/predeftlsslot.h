@@ -19,10 +19,10 @@
 // them.
 enum PredefinedTlsSlots
 {
-    TlsIdx_StrongName,
-    TlsIdx_JitPerf,
-    TlsIdx_JitX86Perf,
-    TlsIdx_JitLogEnv,
+    TlsIdx_OwnedCrstsChain, // slot to store the Crsts owned by this thread
+    TlsIdx_Unused1,
+    TlsIdx_Unused2,
+    TlsIdx_Unused3,
     TlsIdx_AssertDlgStatus, // Whether the thread is displaying an assert dialog
     TlsIdx_StressLog,
     TlsIdx_CantStopCount, // Can't-stop counter for any thread
@@ -33,7 +33,6 @@ enum PredefinedTlsSlots
 
     // Add more indices here.
     TlsIdx_ThreadType, // bit flags to indicate special thread's type
-    TlsIdx_OwnedCrstsChain, // slot to store the Crsts owned by this thread
     TlsIdx_CantAllocCount, //Can't allocate memory on heap in this thread
 
     // A transient thread value that indicates this thread is currently walking its stack

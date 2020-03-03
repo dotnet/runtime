@@ -22,7 +22,7 @@
 // These macros tell us whether the arguments we see as we proceed with the signature walk are mapped
 //   to increasing or decreasing stack addresses. This is valid only for arguments that go on the stack.
 //---------------------------------------------------------------------------------------
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 #define STACK_GROWS_DOWN_ON_ARGS_WALK
 #else
 #define STACK_GROWS_UP_ON_ARGS_WALK
@@ -423,7 +423,7 @@ class SigParser
             case ELEMENT_TYPE_I8:
             case ELEMENT_TYPE_U8:
             case ELEMENT_TYPE_R8:
-        #ifdef BIT64
+        #ifdef HOST_64BIT
             case ELEMENT_TYPE_I:
             case ELEMENT_TYPE_U:
         #endif // WIN64
@@ -434,10 +434,10 @@ class SigParser
             case ELEMENT_TYPE_I4:
             case ELEMENT_TYPE_U4:
             case ELEMENT_TYPE_R4:
-        #ifndef BIT64
+        #ifndef HOST_64BIT
             case ELEMENT_TYPE_I:
             case ELEMENT_TYPE_U:
-        #endif // BIT64
+        #endif // HOST_64BIT
 
                 *pSize = 4;
                 break;
@@ -490,7 +490,7 @@ class SigParser
 
         //------------------------------------------------------------------------
         // Is this at the Sentinal (the ... in a varargs signature) that marks
-        // the begining of varguments that are not decared at the target
+        // the beginning of varguments that are not decared at the target
 
         bool AtSentinel() const
         {
@@ -609,7 +609,6 @@ class SigParser
                 switch (bElementType)
                 {
                 case ELEMENT_TYPE_VAR_ZAPSIG:
-                case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
                 case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
                 case ELEMENT_TYPE_CANON_ZAPSIG:
                 case ELEMENT_TYPE_MODULE_ZAPSIG:
@@ -670,7 +669,6 @@ class SigParser
             {
                 switch (bElementType)
                 {
-                case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
                 case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
                 case ELEMENT_TYPE_CANON_ZAPSIG:
                 case ELEMENT_TYPE_MODULE_ZAPSIG:
@@ -968,7 +966,7 @@ inline void* StackElemEndianessFixup(void* pStackElem, UINT cbSize) {
     case 2:
         pRetVal += sizeof(void*)-2;
         break;
-#ifdef BIT64
+#ifdef HOST_64BIT
     case 4:
         pRetVal += sizeof(void*)-4;
         break;

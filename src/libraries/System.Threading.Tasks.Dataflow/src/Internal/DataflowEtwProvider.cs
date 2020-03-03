@@ -125,7 +125,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
     #region Block Completion
         /// <summary>Trace an event for a block completing.</summary>
         /// <param name="block">The block that's completing.</param>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         [NonEvent]
         internal void DataflowBlockCompleted(IDataflowBlock block)
         {

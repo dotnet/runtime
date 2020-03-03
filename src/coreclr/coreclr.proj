@@ -5,12 +5,15 @@
   <Target Name="Build">
     <ItemGroup>
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows))" Include="-skiptests" />
-      <_CoreClrBuildArg Include="-$(Platform)" />
+      <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
+      <_CoreClrBuildArg Include="$(CMakeArgs)" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
+      <_CoreClrBuildArg Include="$(Compiler)" />
       <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
-      <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and ('$(Platform)' == 'x86' or '$(Platform)' == 'x64') and '$(Configuration)' == 'Release'" Include="-enforcepgo" />
+      <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
+      <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'x64') and '$(Configuration)' == 'Release'" Include="-enforcepgo" />
       <_CoreClrBuildArg Condition="!$([MSBuild]::IsOsPlatform(Windows)) and '$(Configuration)' == 'Release'" Include="-stripsymbols" />
-      <_CoreClrBuildArg Condition="'$(OfficialBuildId)' == ''" Include="-officialbuildid=$(OfficialBuildId)" />
+      <_CoreClrBuildArg Condition="'$(OfficialBuildId)' != ''" Include="-officialbuildid=$(OfficialBuildId)" />
     </ItemGroup>
 
     <PropertyGroup>

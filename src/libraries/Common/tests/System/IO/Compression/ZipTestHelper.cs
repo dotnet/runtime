@@ -174,7 +174,7 @@ namespace System.IO.Compression.Tests
                             entrystream.Read(buffer, 0, buffer.Length);
 #if NETCOREAPP
                             uint zipcrc = entry.Crc32;
-                            Assert.Equal(CRC.CalculateCRC(buffer), zipcrc.ToString());
+                            Assert.Equal(CRC.CalculateCRC(buffer), zipcrc);
 #endif
 
                             if (file.Length != givenLength)
@@ -183,8 +183,8 @@ namespace System.IO.Compression.Tests
                             }
 
                             Assert.Equal(file.Length, buffer.Length);
-                            string crc = CRC.CalculateCRC(buffer);
-                            Assert.Equal(file.CRC, crc);
+                            ulong crc = CRC.CalculateCRC(buffer);
+                            Assert.Equal(file.CRC, crc.ToString());
                         }
 
                         if (checkTimes)

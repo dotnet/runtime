@@ -38,48 +38,33 @@ inline void TypeHandle::SetIsFullyLoaded()
         return AsMethodTable()->SetIsFullyLoaded();
 }
 
-inline MethodTable* TypeHandle::GetMethodTableOfElementType() const
+inline MethodTable* TypeHandle::GetMethodTableOfRootTypeParam() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (IsTypeDesc())
-    {
-        TypeHandle elementType = AsTypeDesc()->GetTypeParam();
-        return elementType.GetMethodTableOfElementType();
-    }
-    else
-    {
-        return AsMethodTable();
-    }
+    TypeHandle current = *this;
+    while (current.HasTypeParam())
+        current = current.GetTypeParam();
+
+    return current.GetMethodTable();
 }
 
-inline MethodTable * TypeHandle::GetPossiblySharedArrayMethodTable() const
+inline TypeHandle TypeHandle::GetArrayElementTypeHandle() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE(IsArrayType());
+    _ASSERTE(IsArray());
 
-    if (IsArray())
-        return AsArray()->GetTemplateMethodTable();
-    else
-        return AsMethodTable();
+    return AsMethodTable()->GetArrayElementTypeHandle();
 }
 
-inline TypeHandle TypeHandle::GetElementType() const
+inline unsigned int TypeHandle::GetRank() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (IsTypeDesc())
-    {
-        if (IsGenericVariable())
-            return *this;
+    _ASSERTE(IsArray());
 
-        return AsTypeDesc()->GetTypeParam().GetElementType();
-    }
-    else
-    {
-        return *this;
-    }
+    return AsMethodTable()->GetRank();
 }
 
 inline BOOL TypeHandle::IsZapped() const
@@ -91,17 +76,6 @@ inline BOOL TypeHandle::IsZapped() const
 #else
     return FALSE;
 #endif
-}
-
-inline PTR_ArrayTypeDesc TypeHandle::AsArray() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    _ASSERTE(IsArray());
-
-    PTR_ArrayTypeDesc result = PTR_ArrayTypeDesc(m_asTAddr - 2);
-    PREFIX_ASSUME(result != NULL);
-    return result;
 }
 
 // Methods to allow you get get a the two possible representations
@@ -237,10 +211,10 @@ inline void TypeHandle::ForEachComponentMethodTable(T &callback) const
     }
     CONTRACTL_END;
 
-    if (IsTypeDesc() && AsTypeDesc()->HasTypeParam())
+    if (HasTypeParam())
     {
         // If we have a type parameter, then we just need to invoke ourselves on that parameter
-        AsTypeDesc()->GetTypeParam().ForEachComponentMethodTable(callback);
+        GetTypeParam().ForEachComponentMethodTable(callback);
     }
     else if (IsFnPtrType())
     {
@@ -298,8 +272,6 @@ FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
     {
         switch (AsTypeDesc()->GetInternalCorElementType())
         {
-        case ELEMENT_TYPE_ARRAY:
-        case ELEMENT_TYPE_SZARRAY:
         case ELEMENT_TYPE_BYREF:
         case ELEMENT_TYPE_PTR:
             o = dac_cast<PTR_ParamTypeDesc>(AsTypeDesc())->GetManagedClassObjectFast();

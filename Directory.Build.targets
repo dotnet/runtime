@@ -1,5 +1,22 @@
 <Project>
 
+  <PropertyGroup>
+    <!--
+    For non-SDK projects that import this file and then import Microsoft.Common.targets,
+    tell Microsoft.Common.targets not to import Directory.Build.targets again
+    -->
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)/liveBuilds.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(SkipImportArcadeSdkFromRoot)' != 'true'" />
+
+  <PropertyGroup>
+    <!--
+      Define this here (not just in Versions.props) because the SDK resets it
+      unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
+    -->
+    <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
+  </PropertyGroup>
 
 </Project>

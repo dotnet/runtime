@@ -9,7 +9,7 @@
 ** Purpose: InterlockedIncrement64() function
 **
 **	The test case spawns MAX_THREADS Threads, and each thread call InterlockedDecrement Function to decrement a 
-**	global counter REPEAT_COUNT Times. The Test case sets the global counter to Zero at the begining of the test.  
+**	global counter REPEAT_COUNT Times. The Test case sets the global counter to Zero at the beginning of the test.  
 **	The test cases passes if at the end the test the value of the global counter is  MAX_THREADS * REPEAT_COUNT.
 **
 **
@@ -47,7 +47,7 @@ int __cdecl main(int argc, char *argv[])
 	/*
 	**  Run only on 64 bit platforms
 	*/
-	#if defined(BIT64)
+	#if defined(HOST_64BIT)
 
 		//Create MAX_THREADS threads that will operate on the global counter
 		for (i=0;i<MAX_THREADS;i++)
@@ -84,7 +84,7 @@ int __cdecl main(int argc, char *argv[])
 			Fail("Test Case Failed: InterlockedDecrement \n");
 		}
 
-	#endif  //defined(BIT64)
+	#endif  //defined(HOST_64BIT)
 	
     PAL_Terminate();
     return PASS; 

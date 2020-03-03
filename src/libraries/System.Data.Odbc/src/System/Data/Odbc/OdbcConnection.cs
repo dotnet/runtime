@@ -882,7 +882,6 @@ namespace System.Data.Odbc
         }
 
         // suppress this message - we cannot use SafeHandle here. Also, see notes in the code (VSTFDEVDIV# 560355)
-        [SuppressMessage("Microsoft.Reliability", "CA2004:RemoveCallsToGCKeepAlive")]
         protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
         {
             DbTransaction transaction = InnerConnection.BeginTransaction(isolationLevel);
@@ -940,7 +939,7 @@ namespace System.Data.Odbc
             CheckState(ADP.ChangeDatabase);
 
             // Database name must not be null, empty or whitspace
-            if ((null == value) || (0 == value.Trim().Length))
+            if (string.IsNullOrWhiteSpace(value))
             { // MDAC 62679
                 throw ADP.EmptyDatabaseName();
             }

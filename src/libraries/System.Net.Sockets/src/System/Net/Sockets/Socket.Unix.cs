@@ -11,6 +11,21 @@ namespace System.Net.Sockets
 {
     public partial class Socket
     {
+        public Socket(SocketInformation socketInformation)
+        {
+            // This constructor works in conjunction with DuplicateAndClose, which is not supported on Unix.
+            // See comments in DuplicateAndClose.
+            throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
+        }
+
+        public SocketInformation DuplicateAndClose(int targetProcessId)
+        {
+            // DuplicateAndClose is not supported on Unix, since passing file descriptors between processes
+            // requires Unix Domain Sockets. The programming model is fundamentally different,
+            // and incompatible with the design of SocketInformation-related methods.
+            throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
+        }
+
         partial void ValidateForMultiConnect(bool isMultiEndpoint)
         {
             // ValidateForMultiConnect is called before any {Begin}Connect{Async} call,
@@ -58,7 +73,7 @@ namespace System.Net.Sockets
             bool broadcast = false, dontFragment = false, noDelay = false;
             int receiveSize = -1, receiveTimeout = -1, sendSize = -1, sendTimeout = -1;
             short ttl = -1;
-            LingerOption linger = null;
+            LingerOption? linger = null;
             if (_handle.IsTrackedOption(TrackedSocketOptions.DontFragment)) dontFragment = DontFragment;
             if (_handle.IsTrackedOption(TrackedSocketOptions.EnableBroadcast)) broadcast = EnableBroadcast;
             if (_handle.IsTrackedOption(TrackedSocketOptions.LingerState)) linger = LingerState;
@@ -85,7 +100,7 @@ namespace System.Net.Sockets
             if (_handle.IsTrackedOption(TrackedSocketOptions.DualMode)) DualMode = _handle.DualMode;
             if (_handle.IsTrackedOption(TrackedSocketOptions.DontFragment)) DontFragment = dontFragment;
             if (_handle.IsTrackedOption(TrackedSocketOptions.EnableBroadcast)) EnableBroadcast = broadcast;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.LingerState)) LingerState = linger;
+            if (_handle.IsTrackedOption(TrackedSocketOptions.LingerState)) LingerState = linger!;
             if (_handle.IsTrackedOption(TrackedSocketOptions.NoDelay)) NoDelay = noDelay;
             if (_handle.IsTrackedOption(TrackedSocketOptions.ReceiveBufferSize)) ReceiveBufferSize = receiveSize;
             if (_handle.IsTrackedOption(TrackedSocketOptions.ReceiveTimeout)) ReceiveTimeout = receiveTimeout;
@@ -101,7 +116,7 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_connect_multiconnect_notsupported);
         }
 
-        private Socket GetOrCreateAcceptSocket(Socket acceptSocket, bool unused, string propertyName, out SafeSocketHandle handle)
+        private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool unused, string propertyName, out SafeSocketHandle? handle)
         {
             // AcceptSocket is not supported on Unix.
             if (acceptSocket != null)
@@ -123,13 +138,13 @@ namespace System.Net.Sockets
             }
         }
 
-        private void SendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags)
+        private void SendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags)
         {
             CheckTransmitFileOptions(flags);
 
             // Open the file, if any
             // Open it before we send the preBuffer so that any exception happens first
-            FileStream fileStream = OpenFile(fileName);
+            FileStream? fileStream = OpenFile(fileName);
 
             SocketError errorCode = SocketError.Success;
             using (fileStream)
@@ -164,7 +179,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private async Task SendFileInternalAsync(FileStream fileStream, byte[] preBuffer, byte[] postBuffer)
+        private async Task SendFileInternalAsync(FileStream? fileStream, byte[]? preBuffer, byte[]? postBuffer)
         {
             SocketError errorCode = SocketError.Success;
             using (fileStream)
@@ -204,13 +219,13 @@ namespace System.Net.Sockets
             }
         }
 
-        private IAsyncResult BeginSendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, AsyncCallback callback, object state)
+        private IAsyncResult BeginSendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
         {
             CheckTransmitFileOptions(flags);
 
             // Open the file, if any
             // Open it before we send the preBuffer so that any exception happens first
-            FileStream fileStream = OpenFile(fileName);
+            FileStream? fileStream = OpenFile(fileName);
 
             return TaskToApm.Begin(SendFileInternalAsync(fileStream, preBuffer, postBuffer), callback, state);
         }

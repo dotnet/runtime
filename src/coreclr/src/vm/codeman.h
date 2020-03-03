@@ -478,9 +478,9 @@ typedef struct _HeapList
     size_t              maxCodeHeapSize;// Size of the entire contiguous block of memory
     size_t              reserveForJumpStubs; // Amount of memory reserved for jump stubs in this block
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     BYTE        CLRPersonalityRoutine[JUMP_ALLOCATE_SIZE];                 // jump thunk to personality routine
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     UINT32      CLRPersonalityRoutine[JUMP_ALLOCATE_SIZE/sizeof(UINT32)];  // jump thunk to personality routine
 #endif
 
@@ -511,7 +511,7 @@ private:
     ExplicitControlLoaderHeap m_LoaderHeap;
     SSIZE_T m_cbMinNextPad;
 
-    LoaderCodeHeap(size_t * pPrivatePCLBytes);
+    LoaderCodeHeap();
 
 public:
     static HeapList* CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap *pJitMetaHeap);
@@ -533,7 +533,7 @@ public:
 #endif
 };
 
-#if defined(BIT64)
+#if defined(HOST_64BIT)
 // On non X86 platforms, the OS defined UnwindInfo (accessed from RUNTIME_FUNCTION
 // structures) to  support the ability unwind the stack.   Unfortunatey the pre-Win8
 // APIs defined a callback API for publishing this data dynamically that ETW does
@@ -594,7 +594,7 @@ private:
     int                 cDeletedEntries;    // Number of slots we removed.
 };
 
-#endif // defined(BIT64)
+#endif // defined(HOST_64BIT)
 
 //-----------------------------------------------------------------------------
 // The ExecutionManager uses RangeSection as the abstraction of a contiguous
@@ -636,9 +636,9 @@ struct RangeSection
     //    PTR_Module      pZapModule;   // valid if RANGE_SECTION_HEAP is not set
     // };
     TADDR           pHeapListOrZapModule;
-#if defined(BIT64)
+#if defined(HOST_64BIT)
     PTR_UnwindInfoTable pUnwindInfoTable; // Points to unwind information for this memory range.
-#endif // defined(BIT64)
+#endif // defined(HOST_64BIT)
 };
 
 /*****************************************************************************/
@@ -913,51 +913,6 @@ public:
     }
 #endif // ALLOW_SXS_JIT
 
-    VOID ClearCache()
-    {
-        CONTRACTL {
-            NOTHROW;
-            GC_NOTRIGGER;
-        } CONTRACTL_END;
-
-        if( m_jit != NULL )
-        {
-            m_jit->clearCache();
-        }
-#ifdef ALLOW_SXS_JIT
-        if( m_alternateJit != NULL )
-        {
-            m_alternateJit->clearCache();
-        }
-#endif // ALLOW_SXS_JIT
-    }
-
-    BOOL IsCacheCleanupRequired()
-    {
-        CONTRACTL {
-            NOTHROW;
-            GC_NOTRIGGER;
-        } CONTRACTL_END;
-
-        BOOL ret = FALSE;
-
-        if( m_jit != NULL )
-        {
-            if (m_jit->isCacheCleanupRequired())
-                ret = TRUE;
-        }
-
-#ifdef ALLOW_SXS_JIT
-        if( !ret && m_alternateJit != NULL )
-        {
-            if (m_alternateJit->isCacheCleanupRequired())
-                ret = TRUE;
-        }
-#endif // ALLOW_SXS_JIT
-
-        return ret;
-    }
-
 #if !defined CROSSGEN_COMPILE && !defined DACCESS_COMPILE
     EEJitManager();
 
@@ -1168,7 +1123,7 @@ private :
     CUnorderedArray<DomainCodeHeapList *, 5> m_DynamicDomainCodeHeaps;
 #endif
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 private:
     //
     // List of reserved memory blocks to be used for jump stub allocation if no suitable memory block is found
@@ -1191,7 +1146,7 @@ public:
 public:
     ICorJitCompiler *   m_jit;
     HINSTANCE           m_JITCompiler;
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     HINSTANCE           m_JITCompilerOther; // Stores the handle of the legacy JIT, if one is loaded.
 #endif
 
@@ -1281,7 +1236,7 @@ public:
         BOOL Acquired();
     };
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     static ULONG          GetCLRPersonalityRoutineValue()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1289,7 +1244,7 @@ public:
             (size_t)((ULONG)offsetof(HeapList, CLRPersonalityRoutine)));
         return offsetof(HeapList, CLRPersonalityRoutine);
     }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
     static EEJitManager * GetEEJitManager()
     {
@@ -1312,9 +1267,6 @@ public:
         return m_pReadyToRunJitManager;
     }
 #endif
-
-    static void ClearCaches( void );
-    static BOOL IsCacheCleanupRequired();
 
     static LPCWSTR         GetJitName();
 
@@ -1463,7 +1415,7 @@ private:
         static count_t Hash(key_t k)
         {
             LIMITED_METHOD_CONTRACT;
-#ifdef BIT64
+#ifdef HOST_64BIT
             return (count_t) ((size_t) k ^ ((size_t) k >> 32));
 #else
             return (count_t)(size_t)k;
@@ -1851,9 +1803,9 @@ public:
     EECodeInfo  GetMainFunctionInfo();
     ULONG               GetFixedStackSize();
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     BOOL        HasFrameRegister();
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 #else // FEATURE_EH_FUNCLETS
     ULONG       GetFixedStackSize()
@@ -1863,14 +1815,14 @@ public:
     }
 #endif // FEATURE_EH_FUNCLETS
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     void         GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset);
 
 #if defined(_DEBUG) && defined(HAVE_GCCOVER)
     // Find first funclet inside (pvFuncletStart, pvFuncletStart + cbCode)
     static LPVOID findNextFunclet (LPVOID pvFuncletStart, SIZE_T cbCode, LPVOID *ppvFuncletEnd);
 #endif // _DEBUG && HAVE_GCCOVER
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 private:
     PCODE               m_codeAddress;
@@ -1882,10 +1834,10 @@ private:
     PTR_RUNTIME_FUNCTION m_pFunctionEntry;
 #endif // FEATURE_EH_FUNCLETS
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Simple helper to return a pointer to the UNWIND_INFO given the offset to the unwind info.
     UNWIND_INFO * GetUnwindInfoHelper(ULONG unwindInfoOffset);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 };
 
 #include "codeman.inl"

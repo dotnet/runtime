@@ -151,7 +151,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>Processes the message with a user-provided action that returns a task.</summary>
         /// <param name="action">The action to use to process the message.</param>
         /// <param name="messageWithId">The message to be processed.</param>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void ProcessMessageWithTask(Func<TInput, Task> action, KeyValuePair<TInput, long> messageWithId)
         {
             Debug.Assert(action != null, "action needed for processing");
@@ -304,7 +303,6 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get

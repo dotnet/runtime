@@ -16,8 +16,6 @@ namespace System.Collections.Immutable
     /// <typeparam name="T">The type of elements stored in the queue.</typeparam>
     [DebuggerDisplay("IsEmpty = {IsEmpty}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
-    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix", Justification = "Ignored")]
     public sealed partial class ImmutableQueue<T> : IImmutableQueue<T>
     {
         /// <summary>
@@ -42,7 +40,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Backing field for the <see cref="BackwardsReversed"/> property.
         /// </summary>
-        private ImmutableStack<T> _backwardsReversed;
+        private ImmutableStack<T>? _backwardsReversed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableQueue{T}"/> class.
@@ -222,7 +220,6 @@ namespace System.Collections.Immutable
         /// <param name="value">Receives the value from the head of the queue.</param>
         /// <returns>The new queue with the head element removed.</returns>
         /// <exception cref="InvalidOperationException">Thrown when the queue is empty.</exception>
-        [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "0#")]
         [Pure]
         public ImmutableQueue<T> Dequeue(out T value)
         {

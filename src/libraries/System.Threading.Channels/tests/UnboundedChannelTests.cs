@@ -19,6 +19,43 @@ namespace System.Threading.Channels.Tests
         protected override Channel<T> CreateFullChannel<T>() => null;
 
         [Fact]
+        public void Count_IncrementsDecrementsAsExpected()
+        {
+            Channel<int> c = CreateChannel();
+
+            if (RequiresSingleReader)
+            {
+                Assert.False(c.Reader.CanCount);
+                return;
+            }
+
+            Assert.True(c.Reader.CanCount);
+
+            const int ItemsToAdd = 5;
+            for (int iter = 0; iter < 2; iter++)
+            {
+                for (int i = 0; i < ItemsToAdd; i++)
+                {
+                    Assert.Equal(i, c.Reader.Count);
+                    Assert.True(c.Writer.TryWrite(i));
+                    Assert.Equal(i + 1, c.Reader.Count);
+                }
+
+                if (iter != 0)
+                {
+                    c.Writer.Complete();
+                }
+
+                while (c.Reader.TryRead(out int item))
+                {
+                    Assert.Equal(ItemsToAdd - (item + 1), c.Reader.Count);
+                }
+
+                Assert.Equal(0, c.Reader.Count);
+            }
+        }
+
+        [Fact]
         public async Task Complete_BeforeEmpty_NoWaiters_TriggersCompletion()
         {
             Channel<int> c = CreateChannel();

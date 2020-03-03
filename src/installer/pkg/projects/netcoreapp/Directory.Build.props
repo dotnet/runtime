@@ -1,5 +1,17 @@
 <Project>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <!--
+    Determine CoreCLR/Libraries OSGroup based on Installer OSGroup. For example,
+    Installer uses Unix when applicable, but others go straight to Linux.
+  -->
+  <PropertyGroup>
+    <CoreCLROSGroup Condition="'$(TargetsWindows)' == 'true'">Windows_NT</CoreCLROSGroup>
+    <CoreCLROSGroup Condition="'$(TargetsLinux)' == 'true'">Linux</CoreCLROSGroup>
+    <CoreCLROSGroup Condition="'$(TargetsOSX)' == 'true'">OSX</CoreCLROSGroup>
+    <CoreCLROSGroup Condition="'$(TargetsFreeBSD)' == 'true'">FreeBSD</CoreCLROSGroup>
+    <LibrariesOSGroup>$(CoreCLROSGroup)</LibrariesOSGroup>
+  </PropertyGroup>
 
   <PropertyGroup>
     <ShortFrameworkName>dotnet</ShortFrameworkName>

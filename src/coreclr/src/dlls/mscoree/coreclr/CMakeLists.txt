@@ -1,4 +1,10 @@
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
+    preprocess_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
+
+    list(APPEND CLR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
+endif (CLR_CMAKE_TARGET_WIN32)
+
+if (CLR_CMAKE_HOST_WIN32)
     preprocess_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
     list(APPEND CLR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
@@ -22,11 +28,11 @@ if (WIN32)
     set(START_LIBRARY_GROUP)
     set(END_LIBRARY_GROUP)
 
-else()
+else(CLR_CMAKE_HOST_WIN32)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/coreclr.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
-    if(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
         add_link_options("LINKER:-Bsymbolic,-Bsymbolic-functions")
@@ -41,17 +47,17 @@ else()
         set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
 
         set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
-    endif(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+    endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
 
-    if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    if(CLR_CMAKE_TARGET_DARWIN)
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -force_load)
         set(END_WHOLE_ARCHIVE )
 
         set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-    endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    endif(CLR_CMAKE_TARGET_DARWIN)
 
-endif (WIN32)
+endif (CLR_CMAKE_HOST_WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=CoreCLR.dll)
 
@@ -66,9 +72,9 @@ add_dependencies(coreclr coreclr_exports)
 set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
 set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 
-if (CLR_CMAKE_PLATFORM_UNIX)
+if (CLR_CMAKE_HOST_UNIX)
     set(LIB_UNWINDER unwinder_wks)
-endif (CLR_CMAKE_PLATFORM_UNIX)
+endif (CLR_CMAKE_HOST_UNIX)
 
 if(FEATURE_MERGE_JIT_AND_ENGINE)
     set(CLRJIT_STATIC clrjit_static)
@@ -84,6 +90,7 @@ set(CORECLR_LIBRARIES
     debug-pal
     ${LIB_UNWINDER}
     cee_wks
+    v3binder
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
     mdcompiler_wks
     mdruntime_wks
@@ -96,12 +103,11 @@ set(CORECLR_LIBRARIES
     corguids
     gcinfo # Condition="'$(TargetCpu)'=='amd64' or '$(TargetCpu)' == 'arm' or '$(TargetCpu)' == 'arm64'"
     ildbsymlib
-    strongname_wks
     utilcode
-    v3binder
+    libraries-native
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND CORECLR_LIBRARIES
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
@@ -124,16 +130,17 @@ else()
         ${END_WHOLE_ARCHIVE}
         mscorrc_debug
         palrt
+        System.Globalization.Native-Static
     )
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+if(CLR_CMAKE_TARGET_LINUX)
     list(APPEND CORECLR_LIBRARIES
         ${START_WHOLE_ARCHIVE}
         tracepointprovider
         ${END_WHOLE_ARCHIVE}
     )
-endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+endif(CLR_CMAKE_TARGET_LINUX)
 
 if(FEATURE_PERFTRACING)
     list(APPEND CORECLR_LIBRARIES
@@ -142,16 +149,16 @@ if(FEATURE_PERFTRACING)
 endif(FEATURE_PERFTRACING)
 
 if(FEATURE_EVENT_TRACE)
-    if(CLR_CMAKE_PLATFORM_UNIX)
+    if(CLR_CMAKE_HOST_UNIX)
         list(APPEND CORECLR_LIBRARIES
             eventprovider # On Windows this library contains only macros
         )
-    endif(CLR_CMAKE_PLATFORM_UNIX)
+    endif(CLR_CMAKE_HOST_UNIX)
 endif(FEATURE_EVENT_TRACE)
 
 target_link_libraries(coreclr ${CORECLR_LIBRARIES})
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     if (NOT CMAKE_GENERATOR MATCHES "Visual Studio .*")
       add_custom_target(inject_debug_resources ALL COMMAND UNABLE_TO_EMBED_DAC_ON_WINDOWS_NON_VS_GENERATOR)
       add_dependencies(inject_debug_resources coreclr mscordaccore mscordbi)
@@ -160,16 +167,16 @@ if(WIN32)
       get_include_directories(INC_DIR)
       get_compile_definitions(PREPROCESS_DEFINITIONS)
       list(APPEND INC_DIR -I${CLR_DIR}/src/vm -I${CLR_DIR}/src/vm/${ARCH_SOURCES_DIR} -I${CLR_DIR}/src/debug/ee -I${CLR_DIR}/src/gc)
-      list(APPEND PREPROCESS_DEFINITIONS -DDACCESS_COMPILE -DDBG_TARGET_64BIT)
+      list(APPEND PREPROCESS_DEFINITIONS -DDACCESS_COMPILE -DTARGET_64BIT)
 
-      if (CLR_CMAKE_PLATFORM_ARCH_AMD64)
-          list(APPEND PREPROCESS_DEFINITIONS -DDBG_TARGET_AMD64)
-      elseif (CLR_CMAKE_PLATFORM_ARCH_ARM64)
-          list(APPEND PREPROCESS_DEFINITIONS -DDBG_TARGET_ARM64)
-      elseif (CLR_CMAKE_PLATFORM_ARCH_ARM)
-          list(APPEND PREPROCESS_DEFINITIONS -DDBG_TARGET_ARM)
-      elseif (CLR_CMAKE_PLATFORM_ARCH_I386)
-          list(APPEND PREPROCESS_DEFINITIONS -DDBG_TARGET_X86)
+      if (CLR_CMAKE_HOST_ARCH_AMD64)
+          list(APPEND PREPROCESS_DEFINITIONS -DTARGET_AMD64)
+      elseif (CLR_CMAKE_HOST_ARCH_ARM64)
+          list(APPEND PREPROCESS_DEFINITIONS -DTARGET_ARM64)
+      elseif (CLR_CMAKE_HOST_ARCH_ARM)
+          list(APPEND PREPROCESS_DEFINITIONS -DTARGET_ARM)
+      elseif (CLR_CMAKE_HOST_ARCH_I386)
+          list(APPEND PREPROCESS_DEFINITIONS -DTARGET_X86)
       else()
           clr_unknown_arch()
       endif()
@@ -197,7 +204,7 @@ if(WIN32)
       endif()
     endif()
 
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
 install_clr(TARGETS coreclr)

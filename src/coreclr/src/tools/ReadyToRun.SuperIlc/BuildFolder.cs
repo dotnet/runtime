@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -12,6 +12,21 @@ namespace ReadyToRun.SuperIlc
 {
     public class BuildFolder
     {
+        private static string[] s_runtimeExecutables =
+        {
+            "corerun"
+        };
+
+        private static string[] s_runtimeLibraries =
+        {
+            "coreclr",
+            "clrjit",
+            "mscorrc",
+            "mscorrc.debug",
+            "mscordaccore",
+            "mscordbi",
+        };
+
         private List<string> _compilationInputFiles;
 
         private List<string> _mainExecutables;
@@ -46,15 +61,30 @@ namespace ReadyToRun.SuperIlc
             _compilations = new List<ProcessInfo[]>();
             _executions = new List<ProcessInfo[]>();
 
-            foreach (string file in _compilationInputFiles)
+            if (options.Composite)
             {
                 ProcessInfo[] fileCompilations = new ProcessInfo[(int)CompilerIndex.Count];
                 foreach (CompilerRunner runner in compilerRunners)
                 {
-                    ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, _outputFolder, file));
+                    string outputFile = runner.GetOutputFileName(_outputFolder, "composite-r2r.dll");
+                    ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, outputFile, _compilationInputFiles));
                     fileCompilations[(int)runner.Index] = compilationProcess;
                 }
                 _compilations.Add(fileCompilations);
+            }
+            else
+            {
+                foreach (string file in _compilationInputFiles)
+                {
+                    ProcessInfo[] fileCompilations = new ProcessInfo[(int)CompilerIndex.Count];
+                    foreach (CompilerRunner runner in compilerRunners)
+                    {
+                        string outputFile = runner.GetOutputFileName(_outputFolder, file);
+                        ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, outputFile, new string[] { file }));
+                        fileCompilations[(int)runner.Index] = compilationProcess;
+                    }
+                    _compilations.Add(fileCompilations);
+                }
             }
 
             if (!options.NoExe)
@@ -98,7 +128,8 @@ namespace ReadyToRun.SuperIlc
                 {
                     compilationInputFiles.Add(file);
                 }
-                else if ((Path.GetExtension(file) != ".pdb") && (Path.GetExtension(file) != ".ilk")) // exclude .pdb and .ilk files that are large and not needed in the target folder
+                if ((!isManagedAssembly || options.Composite) &&
+                    (Path.GetExtension(file) != ".pdb") && (Path.GetExtension(file) != ".ilk")) // exclude .pdb and .ilk files that are large and not needed in the target folder
                 {
                     passThroughFiles.Add(file);
                 }
@@ -116,6 +147,21 @@ namespace ReadyToRun.SuperIlc
             if (compilationInputFiles.Count == 0)
             {
                 return null;
+            }
+
+            if (options.Composite)
+            {
+                // In composite mode we copy the native runtime to the app folder and pretend that is CORE_ROOT,
+                // otherwise CoreRun picks up the original MSIL versions of framework assemblies from CORE_ROOT
+                // instead of the rewritten ones next to the app.
+                foreach (string exe in s_runtimeExecutables)
+                {
+                    passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, exe.AppendOSExeSuffix()));
+                }
+                foreach (string lib in s_runtimeLibraries)
+                {
+                    passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, lib.AppendOSDllSuffix()));
+                }
             }
 
             foreach (CompilerRunner runner in compilerRunners)

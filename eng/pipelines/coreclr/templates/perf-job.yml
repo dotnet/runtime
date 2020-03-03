@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   framework: netcoreapp5.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
+  liveLibrariesBuildConfig: ''
   variables: {}
   pool: ''
 
@@ -24,8 +25,12 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     # Test job depends on the corresponding build job
-    dependsOn: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    dependsOn:
+    - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
     ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       extraSetupParameters: -CoreRootDirectory $(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.Release\Tests\Core_Root -Architecture ${{ parameters.archType }}
@@ -33,10 +38,22 @@ jobs:
       extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
     
     variables: ${{ parameters.variables }}
+
     frameworks:
       - ${{ parameters.framework }}
     steps:
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
+
+
+    # Optionally download live-built libraries
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(librariesDownloadDir)
+          cleanUnpackFolder: false
+          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
+          artifactName: '$(librariesBuildArtifactName)'
+          displayName: 'live-built libraries'
 
 
     # Download product binaries directory
@@ -49,10 +66,5 @@ jobs:
 
 
     # Create Core_Root
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) ${{ parameters.buildConfig }} ${{ parameters.archType }} generatelayoutonly
-        displayName: Create Core_Root
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      # TODO: add generatelayoutonly to build-test.cmd.
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) ${{ parameters.buildConfig }} ${{ parameters.archType }} skipmanaged skipnative
-        displayName: Create Core_Root
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
+      displayName: Create Core_Root

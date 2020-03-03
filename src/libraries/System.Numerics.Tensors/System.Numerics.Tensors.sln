@@ -26,18 +26,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D4718CD3-8492-4734-94B7-E31A39AA6275}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{D4718CD3-8492-4734-94B7-E31A39AA6275}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{D4718CD3-8492-4734-94B7-E31A39AA6275}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{D4718CD3-8492-4734-94B7-E31A39AA6275}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{BE0F13BE-9140-49A8-9FDD-994D0D8A3805}.Debug|Any CPU.ActiveCfg = netstandard2.0-Debug|Any CPU
-		{BE0F13BE-9140-49A8-9FDD-994D0D8A3805}.Debug|Any CPU.Build.0 = netstandard2.0-Debug|Any CPU
-		{BE0F13BE-9140-49A8-9FDD-994D0D8A3805}.Release|Any CPU.ActiveCfg = netstandard2.0-Release|Any CPU
-		{BE0F13BE-9140-49A8-9FDD-994D0D8A3805}.Release|Any CPU.Build.0 = netstandard2.0-Release|Any CPU
-		{F64208FC-83DA-4C94-973F-1DDDE4354AFF}.Debug|Any CPU.ActiveCfg = netstandard2.0-Debug|Any CPU
-		{F64208FC-83DA-4C94-973F-1DDDE4354AFF}.Debug|Any CPU.Build.0 = netstandard2.0-Debug|Any CPU
-		{F64208FC-83DA-4C94-973F-1DDDE4354AFF}.Release|Any CPU.ActiveCfg = netstandard2.0-Release|Any CPU
-		{F64208FC-83DA-4C94-973F-1DDDE4354AFF}.Release|Any CPU.Build.0 = netstandard2.0-Release|Any CPU
+		{D4718CD3-8492-4734-94B7-E31A39AA6275}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4718CD3-8492-4734-94B7-E31A39AA6275}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4718CD3-8492-4734-94B7-E31A39AA6275}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4718CD3-8492-4734-94B7-E31A39AA6275}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE0F13BE-9140-49A8-9FDD-994D0D8A3805}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE0F13BE-9140-49A8-9FDD-994D0D8A3805}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE0F13BE-9140-49A8-9FDD-994D0D8A3805}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE0F13BE-9140-49A8-9FDD-994D0D8A3805}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F64208FC-83DA-4C94-973F-1DDDE4354AFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F64208FC-83DA-4C94-973F-1DDDE4354AFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F64208FC-83DA-4C94-973F-1DDDE4354AFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F64208FC-83DA-4C94-973F-1DDDE4354AFF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

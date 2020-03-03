@@ -53,7 +53,6 @@ namespace System.Threading.Tasks.Dataflow
         /// will be made available as output from this <see cref="TransformManyBlock{TInput,TOutput}"/>.
         /// </param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="transform"/> is null (Nothing in Visual Basic).</exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public TransformManyBlock(Func<TInput, IEnumerable<TOutput>> transform) :
             this(transform, null, ExecutionDataflowBlockOptions.Default)
         { }
@@ -66,7 +65,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="TransformManyBlock{TInput,TOutput}"/>.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="transform"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public TransformManyBlock(Func<TInput, IEnumerable<TOutput>> transform, ExecutionDataflowBlockOptions dataflowBlockOptions) :
             this(transform, null, dataflowBlockOptions)
         { }
@@ -77,7 +75,6 @@ namespace System.Threading.Tasks.Dataflow
         /// will be made available as output from this <see cref="TransformManyBlock{TInput,TOutput}"/>.
         /// </param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="transform"/> is null (Nothing in Visual Basic).</exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public TransformManyBlock(Func<TInput, Task<IEnumerable<TOutput>>> transform) :
             this(null, transform, ExecutionDataflowBlockOptions.Default)
         { }
@@ -90,7 +87,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="TransformManyBlock{TInput,TOutput}"/>.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="transform"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public TransformManyBlock(Func<TInput, Task<IEnumerable<TOutput>>> transform, ExecutionDataflowBlockOptions dataflowBlockOptions) :
             this(null, transform, dataflowBlockOptions)
         { }
@@ -218,7 +214,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>Processes the message with a user-provided transform function that returns an observable.</summary>
         /// <param name="function">The transform function to use to process the message.</param>
         /// <param name="messageWithId">The message to be processed.</param>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void ProcessMessageWithTask(Func<TInput, Task<IEnumerable<TOutput>>> function, KeyValuePair<TInput, long> messageWithId)
         {
             Debug.Assert(function != null, "Function to invoke is required.");
@@ -279,7 +274,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>Completes the processing of an asynchronous message.</summary>
         /// <param name="completed">The completed task storing the output data generated for an input message.</param>
         /// <param name="messageWithId">The originating message</param>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void AsyncCompleteProcessMessageWithTask(
             Task<IEnumerable<TOutput>> completed, KeyValuePair<TInput, long> messageWithId)
         {
@@ -634,7 +628,6 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get

@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8.12.2)
-
 include(FindPython)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -34,6 +32,6 @@ add_library_clr(eventpipe STATIC ${EVENTPIPE_SOURCES})
 set_target_properties(eventpipe PROPERTIES LINKER_LANGUAGE CXX)
 add_dependencies(eventpipe eventing_headers)
 
-if (NOT WIN32)
+if (NOT CLR_CMAKE_TARGET_WIN32)
   _install(TARGETS eventpipe DESTINATION lib)
 endif()

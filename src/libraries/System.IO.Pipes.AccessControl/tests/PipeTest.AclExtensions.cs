@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Security.AccessControl;
+using System.Security.Principal;
 using Xunit;
 
 namespace System.IO.Pipes.Tests
@@ -80,6 +82,21 @@ namespace System.IO.Pipes.Tests
                 pair.readablePipe.SetAccessControl(security);
                 pair.writeablePipe.SetAccessControl(security);
             }
+        }
+
+        // This test matches .NET Framework behavior
+        [Fact]
+        public void PipeSecurity_VerifySynchronizeMasks()
+        {
+            var si = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+
+            // This is a valid mask that should not throw
+            new PipeAccessRule(si, PipeAccessRights.Synchronize, AccessControlType.Allow);
+
+            Assert.Throws<ArgumentException>("accessMask", () =>
+            {
+                new PipeAccessRule(si, PipeAccessRights.Synchronize, AccessControlType.Deny);
+            });
         }
     }
 }

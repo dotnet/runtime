@@ -161,7 +161,7 @@ namespace System.Reflection
             // so it can become a simple test
             if (right is null)
             {
-                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
                 return (left is null) ? true : false;
             }
 
@@ -188,6 +188,17 @@ namespace System.Reflection
                 return null;
             else
                 return m.Assembly;
+        }
+
+        // internal test hook
+        private static bool s_forceNullEntryPoint = false;
+
+        public static Assembly? GetEntryAssembly()
+        {
+            if (s_forceNullEntryPoint)
+                return null;
+
+            return GetEntryAssemblyInternal();
         }
 
         public static Assembly Load(byte[] rawAssembly) => Load(rawAssembly, rawSymbolStore: null);

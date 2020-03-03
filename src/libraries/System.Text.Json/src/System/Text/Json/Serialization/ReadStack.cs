@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -13,43 +14,179 @@ namespace System.Text.Json
     {
         internal static readonly char[] SpecialCharacters = { '.', ' ', '\'', '/', '"', '[', ']', '(', ')', '\t', '\n', '\r', '\f', '\b', '\\', '\u0085', '\u2028', '\u2029' };
 
+        /// <summary>
+        /// The number of stack frames when the continuation started.
+        /// </summary>
+        private int _continuationCount;
+
+        /// <summary>
+        /// The number of stack frames including Current. _previous will contain _count-1 higher frames.
+        /// </summary>
+        private int _count;
+
+        private List<ReadStackFrame> _previous;
+
+        /// <summary>
+        /// Bytes consumed in the current loop.
+        /// </summary>
+        public long BytesConsumed;
+
         // A field is used instead of a property to avoid value semantics.
         public ReadStackFrame Current;
 
-        private List<ReadStackFrame> _previous;
-        public int _index;
+        public bool IsContinuation => _continuationCount != 0;
+        public bool IsLastContinuation => _continuationCount == _count;
 
-        public void Push()
+        /// <summary>
+        /// Internal flag to let us know that we need to read ahead in the inner read loop.
+        /// </summary>
+        public bool ReadAhead;
+
+        // The bag of preservable references.
+        public DefaultReferenceResolver ReferenceResolver;
+
+        /// <summary>
+        /// Whether we need to read ahead in the inner read loop.
+        /// </summary>
+        public bool SupportContinuation;
+
+        private void AddCurrent()
         {
             if (_previous == null)
             {
                 _previous = new List<ReadStackFrame>();
             }
 
-            if (_index == _previous.Count)
+            if (_count > _previous.Count)
             {
                 // Need to allocate a new array element.
                 _previous.Add(Current);
             }
             else
             {
-                Debug.Assert(_index < _previous.Count);
-
                 // Use a previously allocated slot.
-                _previous[_index] = Current;
+                _previous[_count - 1] = Current;
             }
 
-            Current.Reset();
-            _index++;
+            _count++;
         }
 
-        public void Pop()
+        public void InitializeRoot(Type type, JsonSerializerOptions options)
         {
-            Debug.Assert(_index > 0);
-            Current = _previous[--_index];
+            JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
+            Debug.Assert(jsonClassInfo.ClassType != ClassType.Invalid);
+
+            Current.JsonClassInfo = jsonClassInfo;
+
+            // The initial JsonPropertyInfo will be used to obtain the converter.
+            Current.JsonPropertyInfo = jsonClassInfo.PolicyProperty!;
+
+            if (options.ReferenceHandling.ShouldReadPreservedReferences())
+            {
+                ReferenceResolver = new DefaultReferenceResolver(writing: false);
+            }
         }
 
-        public bool IsLastFrame => _index == 0;
+        public void Push()
+        {
+            if (_continuationCount == 0)
+            {
+                if (_count == 0)
+                {
+                    // The first stack frame is held in Current.
+                    _count = 1;
+                }
+                else
+                {
+                    JsonClassInfo jsonClassInfo;
+                    if ((Current.JsonClassInfo.ClassType & (ClassType.Object | ClassType.Value | ClassType.NewValue)) != 0)
+                    {
+                        // Although ClassType.Value doesn't push, a custom custom converter may re-enter serialization.
+                        jsonClassInfo = Current.JsonPropertyInfo!.RuntimeClassInfo;
+                    }
+                    else
+                    {
+                        jsonClassInfo = Current.JsonClassInfo.ElementClassInfo!;
+                    }
+
+                    AddCurrent();
+                    Current.Reset();
+
+                    Current.JsonClassInfo = jsonClassInfo;
+                    Current.JsonPropertyInfo = jsonClassInfo.PolicyProperty!;
+                }
+            }
+            else if (_continuationCount == 1)
+            {
+                // No need for a push since there is only one stack frame.
+                Debug.Assert(_count == 1);
+                _continuationCount = 0;
+            }
+            else
+            {
+                // A continuation; adjust the index.
+                Current = _previous[_count - 1];
+
+                // Check if we are done.
+                if (_count == _continuationCount)
+                {
+                    _continuationCount = 0;
+                }
+                else
+                {
+                    _count++;
+                }
+            }
+        }
+
+        public void Pop(bool success)
+        {
+            Debug.Assert(_count > 0);
+
+            if (!success)
+            {
+                // Check if we need to initialize the continuation.
+                if (_continuationCount == 0)
+                {
+                    if (_count == 1)
+                    {
+                        // No need for a continuation since there is only one stack frame.
+                        _continuationCount = 1;
+                    }
+                    else
+                    {
+                        AddCurrent();
+                        _count--;
+                        _continuationCount = _count;
+                        _count--;
+                        Current = _previous[_count - 1];
+                    }
+
+                    return;
+                }
+
+                if (_continuationCount == 1)
+                {
+                    // No need for a pop since there is only one stack frame.
+                    Debug.Assert(_count == 1);
+                    return;
+                }
+
+                // Update the list entry to the current value.
+                _previous[_count - 1] = Current;
+
+                Debug.Assert(_count > 0);
+            }
+            else
+            {
+                Debug.Assert(_continuationCount == 0);
+            }
+
+            if (_count > 1)
+            {
+                Current = _previous[--_count -1];
+            }
+        }
 
         // Return a JSONPath using simple dot-notation when possible. When special characters are present, bracket-notation is used:
         // $.x.y[0].z
@@ -58,95 +195,105 @@ namespace System.Text.Json
         {
             StringBuilder sb = new StringBuilder("$");
 
-            for (int i = 0; i < _index; i++)
+            // If a continuation, always report back full stack.
+            int count = Math.Max(_count, _continuationCount);
+
+            for (int i = 0; i < count - 1; i++)
             {
                 AppendStackFrame(sb, _previous[i]);
             }
 
-            AppendStackFrame(sb, Current);
+            if (_continuationCount == 0)
+            {
+                AppendStackFrame(sb, Current);
+            }
+
             return sb.ToString();
-        }
 
-        private void AppendStackFrame(StringBuilder sb, in ReadStackFrame frame)
-        {
-            // Append the property name.
-            string propertyName = GetPropertyName(frame);
-            AppendPropertyName(sb, propertyName);
-
-            if (frame.JsonClassInfo != null)
+            static void AppendStackFrame(StringBuilder sb, in ReadStackFrame frame)
             {
-                if (frame.IsProcessingDictionary())
-                {
-                    // For dictionaries add the key.
-                    AppendPropertyName(sb, frame.KeyName);
-                }
-                else if (frame.IsProcessingEnumerable())
-                {
-                    IList list = frame.TempEnumerableValues;
-                    if (list == null && frame.ReturnValue != null)
-                    {
+                // Append the property name.
+                string? propertyName = GetPropertyName(frame);
+                AppendPropertyName(sb, propertyName);
 
-                        list = (IList)frame.JsonPropertyInfo?.GetValueAsObject(frame.ReturnValue);
-                    }
-                    if (list != null)
+                if (frame.JsonClassInfo != null && frame.IsProcessingEnumerable())
+                {
+                    IEnumerable? enumerable = (IEnumerable?)frame.ReturnValue;
+                    if (enumerable == null)
                     {
-                        sb.Append(@"[");
-                        sb.Append(list.Count);
-                        sb.Append(@"]");
+                        return;
+                    }
+
+                    // Once all elements are read, the exception is not within the array.
+                    if (frame.ObjectState < StackFrameObjectState.ReadElements)
+                    {
+                        sb.Append('[');
+                        sb.Append(GetCount(enumerable));
+                        sb.Append(']');
                     }
                 }
             }
-        }
 
-        private void AppendPropertyName(StringBuilder sb, string propertyName)
-        {
-            if (propertyName != null)
+           static int GetCount(IEnumerable enumerable)
             {
-                if (propertyName.IndexOfAny(SpecialCharacters) != -1)
+                if (enumerable is ICollection collection)
                 {
-                    sb.Append(@"['");
-                    sb.Append(propertyName);
-                    sb.Append(@"']");
+                    return collection.Count;
                 }
-                else
+
+                int count = 0;
+                IEnumerator enumerator = enumerable.GetEnumerator();
+                while (enumerator.MoveNext())
                 {
-                    sb.Append('.');
-                    sb.Append(propertyName);
+                    count++;
+                }
+
+                return count;
+            }
+
+            static void AppendPropertyName(StringBuilder sb, string? propertyName)
+            {
+                if (propertyName != null)
+                {
+                    if (propertyName.IndexOfAny(SpecialCharacters) != -1)
+                    {
+                        sb.Append(@"['");
+                        sb.Append(propertyName);
+                        sb.Append(@"']");
+                    }
+                    else
+                    {
+                        sb.Append('.');
+                        sb.Append(propertyName);
+                    }
                 }
             }
+
+            static string? GetPropertyName(in ReadStackFrame frame)
+            {
+                string? propertyName = null;
+
+                // Attempt to get the JSON property name from the frame.
+                byte[]? utf8PropertyName = frame.JsonPropertyName;
+                if (utf8PropertyName == null)
+                {
+                    // Attempt to get the JSON property name from the JsonPropertyInfo.
+                    utf8PropertyName = frame.JsonPropertyInfo?.JsonPropertyName;
+                    if (utf8PropertyName == null)
+                    {
+                        // Attempt to get the JSON property name set manually for dictionary
+                        // keys and serializer re-entry cases where a property is specified.
+                        propertyName = frame.JsonPropertyNameAsString;
+                    }
+                }
+
+                if (utf8PropertyName != null)
+                {
+                    propertyName = JsonHelpers.Utf8GetString(utf8PropertyName);
+                }
+
+                return propertyName;
+            }
         }
-
-        private string GetPropertyName(in ReadStackFrame frame)
-        {
-            // Attempt to get the JSON property name from the frame.
-            byte[] utf8PropertyName = frame.JsonPropertyName;
-            if (utf8PropertyName == null)
-            {
-                // Attempt to get the JSON property name from the JsonPropertyInfo.
-                utf8PropertyName = frame.JsonPropertyInfo?.JsonPropertyName;
-            }
-
-            string propertyName;
-            if (utf8PropertyName != null)
-            {
-                propertyName = JsonHelpers.Utf8GetString(utf8PropertyName);
-            }
-            else
-            {
-                propertyName = null;
-            }
-
-            return propertyName;
-        }
-
-        /// <summary>
-        /// Bytes consumed in the current loop
-        /// </summary>
-        public long BytesConsumed;
-
-        /// <summary>
-        /// Internal flag to let us know that we need to read ahead in the inner read loop.
-        /// </summary>
-        internal bool ReadAhead;
     }
 }

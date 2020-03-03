@@ -30,7 +30,7 @@ namespace Internal.Cryptography
             return CreateTransform(Key, IV, encrypting: false);
         }
 
-        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV)
+        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV)
         {
             return CreateTransform(rgbKey, rgbIV.CloneByteArray(), encrypting: false);
         }
@@ -40,7 +40,7 @@ namespace Internal.Cryptography
             return CreateTransform(Key, IV, encrypting: true);
         }
 
-        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV)
+        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV)
         {
             return CreateTransform(rgbKey, rgbIV.CloneByteArray(), encrypting: true);
         }
@@ -59,7 +59,7 @@ namespace Internal.Cryptography
             Key = key;
         }
 
-        private ICryptoTransform CreateTransform(byte[] rgbKey, byte[] rgbIV, bool encrypting)
+        private ICryptoTransform CreateTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
         {
             // note: rgbIV is guaranteed to be cloned before this method, so no need to clone it again
 

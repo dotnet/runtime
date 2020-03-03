@@ -74,7 +74,7 @@ namespace System.Reflection.Metadata
         {
             int getter = 0;
             int setter = 0;
-            ImmutableArray<MethodDefinitionHandle>.Builder other = null;
+            ImmutableArray<MethodDefinitionHandle>.Builder? other = null;
 
             ushort methodCount;
             int firstRowId = _reader.MethodSemanticsTable.FindSemanticMethodsForProperty(Handle, out methodCount);

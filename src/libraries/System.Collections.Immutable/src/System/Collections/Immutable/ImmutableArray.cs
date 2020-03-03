@@ -106,7 +106,7 @@ namespace System.Collections.Immutable
             var immutableArray = items as IImmutableArray;
             if (immutableArray != null)
             {
-                Array array = immutableArray.Array;
+                Array? array = immutableArray.Array;
                 if (array == null)
                 {
                     throw new InvalidOperationException(SR.InvalidOperationOnDefaultArray);
@@ -143,18 +143,20 @@ namespace System.Collections.Immutable
         /// <param name="items">The elements to store in the array.</param>
         /// <returns>An immutable array.</returns>
         [Pure]
-        public static ImmutableArray<T> Create<T>(params T[] items)
+        public static ImmutableArray<T> Create<T>(params T[]? items)
         {
-            if (items == null)
+            if (items == null || items.Length == 0)
             {
-                return Create<T>();
+                return ImmutableArray<T>.Empty;
             }
 
             // We can't trust that the array passed in will never be mutated by the caller.
             // The caller may have passed in an array explicitly (not relying on compiler params keyword)
             // and could then change the array after the call, thereby violating the immutable
             // guarantee provided by this struct. So we always copy the array to ensure it won't ever change.
-            return CreateDefensiveCopy(items);
+            var tmp = new T[items.Length];
+            Array.Copy(items, tmp, items.Length);
+            return new ImmutableArray<T>(tmp);
         }
 
         /// <summary>
@@ -217,7 +219,7 @@ namespace System.Collections.Immutable
             }
 
             var array = new T[length];
-            Array.Copy(items.array, start, array, 0, length);
+            Array.Copy(items.array!, start, array, 0, length);
             return new ImmutableArray<T>(array);
         }
 
@@ -432,7 +434,7 @@ namespace System.Collections.Immutable
         [Pure]
         public static int BinarySearch<T>(this ImmutableArray<T> array, T value)
         {
-            return Array.BinarySearch<T>(array.array, value);
+            return Array.BinarySearch<T>(array.array!, value);
         }
 
         /// <summary>
@@ -461,9 +463,9 @@ namespace System.Collections.Immutable
         /// generic interface.
         /// </exception>
         [Pure]
-        public static int BinarySearch<T>(this ImmutableArray<T> array, T value, IComparer<T> comparer)
+        public static int BinarySearch<T>(this ImmutableArray<T> array, T value, IComparer<T>? comparer)
         {
-            return Array.BinarySearch<T>(array.array, value, comparer);
+            return Array.BinarySearch<T>(array.array!, value, comparer);
         }
 
         /// <summary>
@@ -498,7 +500,7 @@ namespace System.Collections.Immutable
         [Pure]
         public static int BinarySearch<T>(this ImmutableArray<T> array, int index, int length, T value)
         {
-            return Array.BinarySearch<T>(array.array, index, length, value);
+            return Array.BinarySearch<T>(array.array!, index, length, value);
         }
 
         /// <summary>
@@ -537,28 +539,9 @@ namespace System.Collections.Immutable
         /// <paramref name="index"/> is less than the lower bound of <paramref name="array"/>. -or- <paramref name="length"/> is less than zero.
         /// </exception>
         [Pure]
-        public static int BinarySearch<T>(this ImmutableArray<T> array, int index, int length, T value, IComparer<T> comparer)
+        public static int BinarySearch<T>(this ImmutableArray<T> array, int index, int length, T value, IComparer<T>? comparer)
         {
-            return Array.BinarySearch<T>(array.array, index, length, value, comparer);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct.
-        /// </summary>
-        /// <param name="items">The array from which to copy.</param>
-        internal static ImmutableArray<T> CreateDefensiveCopy<T>(T[] items)
-        {
-            Debug.Assert(items != null);
-
-            if (items.Length == 0)
-            {
-                return ImmutableArray<T>.Empty; // use just a shared empty array, allowing the input array to be potentially GC'd
-            }
-
-            // defensive copy
-            var tmp = new T[items.Length];
-            Array.Copy(items, tmp, items.Length);
-            return new ImmutableArray<T>(tmp);
+            return Array.BinarySearch<T>(array.array!, index, length, value, comparer);
         }
     }
 }

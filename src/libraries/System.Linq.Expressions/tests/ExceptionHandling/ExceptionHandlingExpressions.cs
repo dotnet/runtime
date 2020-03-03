@@ -224,6 +224,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/mono/mono/issues/14925", TestRuntimes.Mono)]
         public void ExpressionsUnwrapeExternallyThrownRuntimeWrappedException(bool useInterpreter)
         {
             ParameterExpression exRWE = Expression.Variable(typeof(RuntimeWrappedException));
@@ -931,6 +932,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/mono/mono/issues/14924", TestRuntimes.Mono)]
         public void ExceptionThrownInFilter(bool useInterpreter)
         {
             // An exception in a filter should be eaten and the filter fail.
@@ -975,7 +977,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, func());
         }
 
-        [Fact, ActiveIssue(15719)]
+        [Fact, ActiveIssue("https://github.com/dotnet/runtime/issues/20083")]
         public void TryFinallyWithinFilterCompiled()
         {
             TryFinallyWithinFilter(false);
@@ -984,7 +986,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void TryFinallyWithinFilterCompiledProhibited()
         {
-            // Ideally we can change this behaviour (see issue 15719 above),
+            // Ideally we can change this behaviour (see https://github.com/dotnet/runtime/issues/20083),
             // but for now, check correct exception thrown.
 
             TryExpression tryExp = Expression.TryCatch(
@@ -1036,7 +1038,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, func());
         }
 
-        [Fact, ActiveIssue(15719)]
+        [Fact, ActiveIssue("https://github.com/dotnet/runtime/issues/20083")]
         public void TryCatchWithinFilterCompiled()
         {
             TryCatchWithinFilter(false);
@@ -1066,7 +1068,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, func());
         }
 
-        [Fact, ActiveIssue(15719)]
+        [Fact, ActiveIssue("https://github.com/dotnet/runtime/issues/20083")]
         public void TryCatchThrowingWithinFilterCompiled()
         {
             TryCatchThrowingWithinFilter(false);

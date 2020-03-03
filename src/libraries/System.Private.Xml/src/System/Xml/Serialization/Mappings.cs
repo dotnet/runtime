@@ -1139,7 +1139,7 @@ namespace System.Xml.Serialization
                             if (s.TargetNamespace != null && s.TargetNamespace.Length > 0)
                             {
                                 if (anyNamespaces.Length > 0)
-                                    anyNamespaces.Append(" ");
+                                    anyNamespaces.Append(' ');
                                 anyNamespaces.Append(s.TargetNamespace);
                             }
                         }

@@ -666,7 +666,7 @@ EnC is not supported for generic methods and methods on generic types.
 # System V x86_64 support
 
 This section relates mostly to calling conventions on System V systems (such as Ubuntu Linux and Mac OS X).
-The general rules outlined in the System V x86_64 ABI (described at http://www.x86-64.org/documentation/abi.pdf) are followed with a few exceptions, described below:
+The general rules outlined in the [System V x86_64 ABI](https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf) are followed with a few exceptions, described below:
 
 1. The hidden argument for by-value passed structs is always after the "this" parameter (if there is one). This is a difference with the System V ABI and affects only the internal JIT calling conventions. For PInvoke calls the hidden argument is always the first parameter since there is no "this" parameter in this case.
 2. Managed structs that have no fields are always passed by-value on the stack.

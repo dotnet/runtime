@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
 using Microsoft.DotNet.CoreSetup.Test;
+using System.IO;
+using System.Xml.Linq;
 
 namespace BundleTests.Helpers
 {
@@ -19,6 +20,11 @@ namespace BundleTests.Helpers
         public static string GetAppPath(TestProjectFixture fixture)
         {
             return Path.Combine(GetPublishPath(fixture), GetAppName(fixture));
+        }
+
+        public static string GetPublishedSingleFilePath(TestProjectFixture fixture)
+        {
+            return GetHostPath(fixture);
         }
 
         public static string GetHostName(TestProjectFixture fixture)
@@ -58,6 +64,32 @@ namespace BundleTests.Helpers
             var bundler = new Microsoft.NET.HostModel.Bundle.Bundler(hostName, bundleDir.FullName);
             string singleFile = bundler.GenerateBundle(publishPath);
             return singleFile;
+        }
+
+        public static void AddLongNameContentToAppWithSubDirs(TestProjectFixture fixture)
+        {
+            // For tests using the AppWithSubDirs, One of the sub-directories with a really long name
+            // is generated during test-runs rather than being checked in as a test asset.
+            // This prevents git-clone of the repo from failing if long-file-name support is not enabled on windows.
+            var longDirName = "This is a really, really, really, really, really, really, really, really, really, really, really, really, really, really long file name for punctuation";
+            var longDirPath = Path.Combine(fixture.TestProject.ProjectDirectory, "Sentence", longDirName);
+            Directory.CreateDirectory(longDirPath);
+            using (var writer = File.CreateText(Path.Combine(longDirPath, "word")))
+            {
+                writer.Write(".");
+            }
+        }
+
+        public static void AddEmptyContentToApp(TestProjectFixture fixture)
+        {
+            XDocument projectDoc = XDocument.Load(fixture.TestProject.ProjectFile);
+            projectDoc.Root.Add(
+                new XElement("ItemGroup",
+                    new XElement("Content",
+                        new XAttribute("Include", "empty.txt"),
+                        new XElement("CopyToOutputDirectory", "PreserveNewest"))));
+            projectDoc.Save(fixture.TestProject.ProjectFile);
+            File.WriteAllBytes(Path.Combine(fixture.TestProject.Location, "empty.txt"), new byte[0]);
         }
 
     }

@@ -772,6 +772,7 @@ void SsaBuilder::RenameDef(GenTreeOp* asgNode, BasicBlock* block)
             }
             else
             {
+                assert((lclNode->gtFlags & GTF_VAR_USEASG) == 0);
                 lclNode->SetSsaNum(ssaNum);
             }
 
@@ -937,7 +938,7 @@ void SsaBuilder::AddMemoryDefToHandlerPhis(MemoryKind memoryKind, BasicBlock* bl
     if (m_pCompiler->ehBlockHasExnFlowDsc(block))
     {
         // Don't do anything for a compiler-inserted BBJ_ALWAYS that is a "leave helper".
-        if (block->bbJumpKind == BBJ_ALWAYS && (block->bbFlags & BBF_INTERNAL) && (block->bbPrev->isBBCallAlwaysPair()))
+        if ((block->bbFlags & BBF_INTERNAL) && block->isBBCallAlwaysPairTail())
         {
             return;
         }
@@ -1515,7 +1516,11 @@ void SsaBuilder::Build()
     m_visited       = BitVecOps::MakeEmpty(&m_visitedTraits);
 
     // TODO-Cleanup: We currently have two dominance computations happening.  We should unify them; for
-    // now, at least forget the results of the first.
+    // now, at least forget the results of the first. Note that this does not clear fgDomTreePreOrder
+    // and fgDomTreePostOrder nor does the subsequent code call fgNumberDomTree once the new dominator
+    // tree is built. The pre/post order numbers that were generated previously and used for loop
+    // recognition are still being used by optPerformHoistExpr via fgCreateLoopPreHeader. That's rather
+    // odd, considering that SetupBBRoot may have added a new block.
     for (BasicBlock* block = m_pCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
     {
         block->bbIDom         = nullptr;

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="monozlib">
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\adler32.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\crc32.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\deflate.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\inffast.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\inflate.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\inftrees.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\trees.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\zlib\zutil.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\crc32.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\deflate.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\gzguts.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\inffast.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\inffixed.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\inflate.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\inftrees.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\trees.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\zconf.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\zutil.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\zlib\zlib.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\zlib</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoRuntimeFilterSubFolder)\zlib">
+      <UniqueIdentifier>{2C5223F6-5956-4C75-8E67-EE8A320ECBCB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoRuntimeFilterSubFolder)\zlib">
+      <UniqueIdentifier>{0E2A6B22-4DE9-48B2-9244-CCC4738384F7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

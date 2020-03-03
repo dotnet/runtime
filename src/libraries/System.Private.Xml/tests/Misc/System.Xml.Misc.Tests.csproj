@@ -1,11 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>XmlMiscTests</RootNamespace>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="RandomizedHashing.cs" />
-    <Compile Include="..\..\src\System\Xml\Core\SecureStringHasher.cs" />
     <Compile Include="XmlUrlResolverTests.cs" />
   </ItemGroup>
 </Project>

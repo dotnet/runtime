@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// The type of the converter to create, or null if <see cref="CreateConverter(Type)"/> should be used to obtain the converter.
         /// </summary>
-        public Type ConverterType { get; private set; }
+        public Type? ConverterType { get; private set; }
 
         /// <summary>
         /// If overridden and <see cref="ConverterType"/> is null, allows a custom attribute to create the converter in order to pass additional state.
@@ -42,7 +42,7 @@ namespace System.Text.Json.Serialization
         /// <returns>
         /// The custom converter.
         /// </returns>
-        public virtual JsonConverter CreateConverter(Type typeToConvert)
+        public virtual JsonConverter? CreateConverter(Type typeToConvert)
         {
             return null;
         }

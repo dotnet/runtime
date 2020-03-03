@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma warning(disable : 4310) // cast truncates constant value - happens for (int8_t)SHUFFLE_ZXXX
 #endif
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
 #ifdef FEATURE_SIMD
 
 #include "emit.h"
@@ -765,7 +765,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
 
     instruction ins = INS_invalid;
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
     if (op1->OperGet() == GT_LONG)
     {
         assert(varTypeIsLong(baseType));
@@ -825,7 +825,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
         }
     }
     else
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
         if (op1->isContained())
     {
         if (op1->IsIntegralConst(0) || op1->IsFPZero())
@@ -849,7 +849,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
             }
             else if (op1->OperIsLocalAddr())
             {
-                unsigned offset = (op1->OperGet() == GT_LCL_FLD_ADDR) ? op1->AsLclFld()->gtLclOffs : 0;
+                unsigned offset = op1->OperIs(GT_LCL_FLD_ADDR) ? op1->AsLclFld()->GetLclOffs() : 0;
                 GetEmitter()->emitIns_R_S(ins, emitTypeSize(targetType), targetReg, op1->AsLclVarCommon()->GetLclNum(),
                                           offset);
             }
@@ -1108,7 +1108,7 @@ void CodeGen::genSIMDIntrinsic32BitConvert(GenTreeSIMD* simdNode)
         GetEmitter()->emitIns_R_I(INS_psrld, emitActualTypeSize(targetType), tmpReg2, 16);
 
 // prepare mask
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X5300000053000000);
         inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_ULONG);
 #else
@@ -1213,7 +1213,7 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
     regNumber tmpReg3;
     SIMDLevel level = compiler->getSIMDSupportLevel();
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (baseType == TYP_LONG)
     {
         tmpReg  = simdNode->ExtractTempReg(RBM_ALLFLOAT);
@@ -1271,7 +1271,7 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
         GetEmitter()->emitIns_R_I(INS_psrlq, emitActualTypeSize(simdType), tmpReg2, 32);
 
 // prepare mask for converting upper 32 bits
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X4530000000000000);
         inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_ULONG);
 #else
@@ -1293,7 +1293,7 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
         inst_RV_RV(INS_subpd, targetReg, tmpReg, simdType, emitActualTypeSize(simdType));
 
 // prepare mask for converting lower 32 bits
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X4330000000000000);
         inst_RV_RV(INS_mov_i2xmm, tmpReg, tmpIntReg, TYP_ULONG);
 #else
@@ -1319,7 +1319,7 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
     }
     else if ((intrinsicID == SIMDIntrinsicConvertToDouble) && (baseType == TYP_LONG))
     {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         instruction rightShiftIns = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
         instruction leftShiftIns  = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, TYP_SIMD16);
 
@@ -2458,7 +2458,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
             offset += compiler->lvaFrameAddress(varNum, &isEBPbased);
             if (op1->OperGet() == GT_LCL_FLD)
             {
-                offset += op1->AsLclFld()->gtLclOffs;
+                offset += op1->AsLclFld()->GetLclOffs();
             }
             baseReg = (isEBPbased) ? REG_EBP : REG_ESP;
         }
@@ -2916,7 +2916,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
     if (treeNode->OperGet() == GT_STORE_LCL_FLD)
     {
-        offs = treeNode->AsLclFld()->gtLclOffs;
+        offs = treeNode->AsLclFld()->GetLclOffs();
     }
 
     GenTree* op1 = treeNode->AsOp()->gtOp1;
@@ -2958,7 +2958,7 @@ void CodeGen::genLoadLclTypeSIMD12(GenTree* treeNode)
 
     if (treeNode->OperGet() == GT_LCL_FLD)
     {
-        offs = treeNode->AsLclFld()->gtLclOffs;
+        offs = treeNode->AsLclFld()->GetLclOffs();
     }
 
     // Need an additional Xmm register that is different from targetReg to read upper 4 bytes.
@@ -2977,7 +2977,7 @@ void CodeGen::genLoadLclTypeSIMD12(GenTree* treeNode)
     genProduceReg(treeNode);
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 //-----------------------------------------------------------------------------
 // genStoreSIMD12ToStack: store a TYP_SIMD12 (i.e. Vector3) type field to the stack.
@@ -3033,7 +3033,7 @@ void CodeGen::genPutArgStkSIMD12(GenTree* treeNode)
     genStoreSIMD12ToStack(operandReg, tmpReg);
 }
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 //-----------------------------------------------------------------------------
 // genSIMDIntrinsicUpperSave: save the upper half of a TYP_SIMD32 vector to
@@ -3238,4 +3238,4 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
 }
 
 #endif // FEATURE_SIMD
-#endif //_TARGET_XARCH_
+#endif // TARGET_XARCH

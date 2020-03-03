@@ -80,9 +80,9 @@ namespace System.Net.Security.Tests
             RemoteCertificateValidationCallback rCallback = (sender, certificate, chain, errors) => { return true; };
             LocalCertificateSelectionCallback lCallback = (sender, host, localCertificates, remoteCertificate, issuers) => { return null; };
 
-            VirtualNetwork network = new VirtualNetwork();
-            using (var clientStream = new VirtualNetworkStream(network, false))
-            using (var serverStream = new VirtualNetworkStream(network, true))
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
             using (var client = new SslStream(clientStream, false, rCallback, lCallback, EncryptionPolicy.RequireEncryption))
             using (var server = new SslStream(serverStream, false, rCallback))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
@@ -106,9 +106,9 @@ namespace System.Net.Security.Tests
         [MemberData(nameof(Alpn_TestData))]
         public async Task SslStream_StreamToStream_Alpn_Success(List<SslApplicationProtocol> clientProtocols, List<SslApplicationProtocol> serverProtocols, SslApplicationProtocol expected)
         {
-            VirtualNetwork network = new VirtualNetwork();
-            using (var clientStream = new VirtualNetworkStream(network, false))
-            using (var serverStream = new VirtualNetworkStream(network, true))
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
             using (var client = new SslStream(clientStream, false))
             using (var server = new SslStream(serverStream, false))
             {

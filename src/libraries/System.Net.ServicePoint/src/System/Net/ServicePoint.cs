@@ -22,7 +22,7 @@ namespace System.Net
             ConnectionName = address.Scheme;
         }
 
-        public BindIPEndPoint BindIPEndPointDelegate { get; set; }
+        public BindIPEndPoint? BindIPEndPointDelegate { get; set; }
 
         public int ConnectionLeaseTimeout
         {
@@ -92,9 +92,9 @@ namespace System.Net
 
         public int CurrentConnections => 0;
 
-        public X509Certificate Certificate { get; internal set; }
+        public X509Certificate? Certificate { get; internal set; }
 
-        public X509Certificate ClientCertificate { get; internal set; }
+        public X509Certificate? ClientCertificate { get; internal set; }
 
         public bool SupportsPipelining { get; internal set; } = true;
 

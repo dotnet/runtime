@@ -129,18 +129,24 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            if (source.Length == 0)
+            // LCMapStringEx doesn't support passing cchSrc = 0, so if given a null or empty input
+            // we'll normalize it to an empty null-terminated string and pass -1 to indicate that
+            // the underlying OS function should read until it encounters the null terminator.
+
+            int sourceLength = source.Length;
+            if (sourceLength == 0)
             {
-                return 0;
+                source = string.Empty;
+                sourceLength = -1;
             }
 
             uint flags = LCMAP_SORTKEY | (uint)GetNativeCompareFlags(options);
 
-            fixed (char* pSource = source)
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
             {
                 int sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
                                                   flags,
-                                                  pSource, source.Length /* in chars */,
+                                                  pSource, sourceLength /* in chars */,
                                                   null, 0,
                                                   null, null, _sortHandle);
                 if (sortKeyLength == 0)
@@ -162,7 +168,7 @@ namespace System.Globalization
                 {
                     if (Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
                                                       flags,
-                                                      pSource, source.Length /* in chars */,
+                                                      pSource, sourceLength /* in chars */,
                                                       pSortKey, sortKeyLength,
                                                       null, null, _sortHandle) != sortKeyLength)
                     {
@@ -194,7 +200,7 @@ namespace System.Globalization
             }
         }
 
-        // TODO https://github.com/dotnet/coreclr/issues/13827:
+        // TODO https://github.com/dotnet/runtime/issues/8890:
         // This method shouldn't be necessary, as we should be able to just use the overload
         // that takes two spans.  But due to this issue, that's adding significant overhead.
         private unsafe int CompareString(ReadOnlySpan<char> string1, string string2, CompareOptions options)
@@ -499,44 +505,46 @@ namespace System.Globalization
 
             if (source == null) { throw new ArgumentNullException(nameof(source)); }
 
-            if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
+            if ((options & ValidCompareMaskOffFlags) != 0)
             {
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
 
             byte[] keyData;
-            if (source.Length == 0)
-            {
-                keyData = Array.Empty<byte>();
-            }
-            else
-            {
-                uint flags = LCMAP_SORTKEY | (uint)GetNativeCompareFlags(options);
+            uint flags = LCMAP_SORTKEY | (uint)GetNativeCompareFlags(options);
 
-                fixed (char* pSource = source)
+            // LCMapStringEx doesn't support passing cchSrc = 0, so if given an empty string
+            // we'll instead pass -1 to indicate a null-terminated empty string.
+
+            int sourceLength = source.Length;
+            if (sourceLength == 0)
+            {
+                sourceLength = -1;
+            }
+
+            fixed (char* pSource = source)
+            {
+                int sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                            flags,
+                                            pSource, sourceLength,
+                                            null, 0,
+                                            null, null, _sortHandle);
+                if (sortKeyLength == 0)
                 {
-                    int sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
-                                                flags,
-                                                pSource, source.Length,
-                                                null, 0,
-                                                null, null, _sortHandle);
-                    if (sortKeyLength == 0)
+                    throw new ArgumentException(SR.Arg_ExternalException);
+                }
+
+                keyData = new byte[sortKeyLength];
+
+                fixed (byte* pBytes = keyData)
+                {
+                    if (Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                            flags,
+                                            pSource, sourceLength,
+                                            pBytes, keyData.Length,
+                                            null, null, _sortHandle) != sortKeyLength)
                     {
                         throw new ArgumentException(SR.Arg_ExternalException);
-                    }
-
-                    keyData = new byte[sortKeyLength];
-
-                    fixed (byte* pBytes = keyData)
-                    {
-                        if (Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
-                                                flags,
-                                                pSource, source.Length,
-                                                pBytes, keyData.Length,
-                                                null, null, _sortHandle) != sortKeyLength)
-                        {
-                            throw new ArgumentException(SR.Arg_ExternalException);
-                        }
                     }
                 }
             }

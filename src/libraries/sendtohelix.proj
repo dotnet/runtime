@@ -1,10 +1,5 @@
-<Project InitialTargets="BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
+<Project InitialTargets="PrintHelixQueues;PrintBuildTargetFramework;BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
   <PropertyGroup>
-    <!-- Set helix source -->
-    <HelixSourcePrefix>pr/</HelixSourcePrefix>
-    <HelixSource Condition="'$(HelixSource)' == ''">$(HelixSourcePrefix)dotnet/runtime</HelixSource>
-    <HelixSource Condition="'$(BUILD_SOURCEBRANCH)' != ''">$(HelixSource)/$(BUILD_SOURCEBRANCH)</HelixSource>
-    
     <!-- Set helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
@@ -16,30 +11,32 @@
     
     <!-- We need to enable xunit reporter so that it parses test results
          Package testing doesn't run on xunit. -->
-    <EnableXunitReporter Condition="'$(TargetGroup)' != 'AllConfigurations'">true</EnableXunitReporter>
+    <EnableXunitReporter Condition="'$(BuildAllConfigurations)' != 'true'">true</EnableXunitReporter>
     
-    <TestArchiveRuntimeFile>$(TestArchiveRuntimeRoot)test-runtime-$(BuildConfiguration).zip</TestArchiveRuntimeFile>
-    <TestArchiveRuntimeFile Condition="'$(TargetGroup)' == 'AllConfigurations'">$(TestArchiveRuntimeRoot)packages-testPayload-$(ConfigurationGroup).zip</TestArchiveRuntimeFile>
+    <TestArchiveRuntimeFile>$(TestArchiveRuntimeRoot)test-runtime-$(BuildSettings).zip</TestArchiveRuntimeFile>
+    <TestArchiveRuntimeFile Condition="'$(BuildAllConfigurations)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
 
     <!-- The helix runtime payload and the tests to run -->
     <HelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' == ''">$(TestArchiveRuntimeFile)</HelixCorrelationPayload>
     <WorkItemArchiveWildCard Condition="'$(WorkItemArchiveWildCard)' == ''">$(TestArchiveTestsRoot)**/*.zip</WorkItemArchiveWildCard>
 
-    <HelixConfiguration>$(ConfigurationGroup)</HelixConfiguration>
+    <HelixConfiguration>$(Configuration)</HelixConfiguration>
     <HelixArchitecture>$(ArchGroup)</HelixArchitecture>
 
     <!-- This property is used to show the tests results in Azure Dev Ops. By setting this property the
-    test run name will be displayed as $(BuildConfiguration)-$(HelixTargetQueue) -->
-    <TestRunNamePrefix>$(BuildConfiguration)-</TestRunNamePrefix>
+    test run name will be displayed as $(BuildSettings)-$(HelixTargetQueue) -->
+    <TestRunNamePrefix>$(BuildSettings)-</TestRunNamePrefix>
+    <TestRunNamePrefix Condition="'$(TestRunNamePrefixSuffix)' != ''">$(TestRunNamePrefix)$(TestRunNamePrefixSuffix)-</TestRunNamePrefix>
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetGroup)' == 'AllConfigurations'">
+  <PropertyGroup Condition="'$(BuildAllConfigurations)' == 'true'">
     <!-- Use helix feature to include dotnet CLI for every workitem and add it to the path -->
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
 
+    <TestRunNamePrefix>packaging-</TestRunNamePrefix>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
   </PropertyGroup>
@@ -48,10 +45,10 @@
     <!-- For PRs we want helixtype to be the same for all frameworks except package testing-->
     <TestScope Condition="'$(TestScope)' == ''">innerloop</TestScope>
     <HelixType>test/functional/cli/$(TestScope)/</HelixType>
-    <HelixType Condition="'$(TargetGroup)' == 'AllConfigurations'">test/functional/packaging/</HelixType>
+    <HelixType Condition="'$(BuildAllConfigurations)' == 'true'">test/functional/packaging/</HelixType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(TargetGroup)' == 'AllConfigurations'">
+  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(BuildAllConfigurations)' == 'true'">
     <HelixPreCommands>set DOTNET_CLI_TELEMETRY_OPTOUT=1;set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1;set DOTNET_MULTILEVEL_LOOKUP=0</HelixPreCommands>
 
     <HelixCommand>dotnet msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
@@ -67,8 +64,10 @@
       and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
       if we don't use call, then we cause the parent script to exit, and anything after will not be executed.
     -->
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+    <HelixCommand Condition="'$(OSGroup)' == 'Windows_NT'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+    <HelixCommand Condition="'$(OSGroup)' != 'Windows_NT'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+    <!-- TODO: remove rsp argument when rsp files are removed: https://github.com/dotnet/runtime/issues/1980. -->
+    <HelixCommand Condition="'$(RuntimeFlavor)' == 'mono'">$(HelixCommand) --rsp-file "$(MonoRspFileName)"</HelixCommand>
   </PropertyGroup>
 
   <!--
@@ -82,7 +81,7 @@
   <Target Name="CompressRuntimeDirectory"
           Inputs="@(_RuntimeInputs);@(TestArchiveRuntimeDependency)"
           Outputs="$(TestArchiveRuntimeFile)"
-          Condition="'$(TargetGroup)' != 'AllConfigurations'">
+          Condition="'$(BuildAllConfigurations)' != 'true'">
 
     <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
     <ZipDirectory SourceDirectory="$(TestHostRootPath)"
@@ -106,5 +105,14 @@
       </HelixWorkItem>
     </ItemGroup>
 
+  </Target>
+
+  <Target Name="PrintHelixQueues">
+    <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
+  </Target>
+
+  <Target Name="PrintBuildTargetFramework">
+    <Message Condition="'$(BuildAllConfigurations)' != 'true'" Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
+    <Message Condition="'$(BuildAllConfigurations)' == 'true'" Importance="High" Text="Doing Package Testing" />
   </Target>
 </Project>

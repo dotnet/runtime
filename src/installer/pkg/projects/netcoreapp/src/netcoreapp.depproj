@@ -1,14 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
     <FrameworkPackageName>Microsoft.NETCore.App</FrameworkPackageName>
+    <BuildFullPlatformManifest>false</BuildFullPlatformManifest>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="$(MicrosoftPrivateCoreFxNETCoreAppPackage)" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
-    <PackageReference Include="transport.$(MicrosoftNETCoreRuntimeCoreCLRPackage)" Version="$(MicrosoftNETCoreRuntimeCoreCLRVersion)" />
-    <PackageReference Include="$(MicrosoftNETCorePlatformsPackage)" Version="$(MicrosoftNETCorePlatformsVersion)" />
-    <PackageReference Include="$(MicrosoftNETCoreTargetsPackage)" Version="$(MicrosoftNETCoreTargetsVersion)" />
     <PackageReference Include="$(NETStandardLibraryPackage)" Version="$(NETStandardLibraryVersion)" />
   </ItemGroup>
 
@@ -18,11 +15,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
-    <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools,
-         Targets for an empty runtime.json to reduce conflicts from 1.x packages -->
+    <!-- Bring in NETStandard.Library for build-tools. -->
     <DependenciesToPackage Include="NETStandard.Library" />
-    <DependenciesToPackage Include="Microsoft.NETCore.Platforms" />
-    <DependenciesToPackage Include="Microsoft.NETCore.Targets" />
   </ItemGroup>
 
   <!-- get paths from packages that are needed for cross-gen and other includes,
@@ -31,53 +25,51 @@
           Condition="'$(PackageTargetRuntime)' != ''"
           DependsOnTargets="GetCorePackagePaths" />
 
-  <Target Name="GetDependencyVersionFiles" DependsOnTargets="ResolveReferences;GetPackagePaths">
+  <Target Name="GetDependencyVersionFiles" />
+
+  <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
     <ItemGroup>
-      <_coreFxVersionFile
-        Include="$(NuGetPackageRoot)$([System.String]::new('%(Reference.NuGetPackageId)').ToLowerInvariant())/%(Reference.NuGetPackageVersion)/version.txt"
-        Condition="$([System.String]::new('%(Reference.Identity)').ToLowerInvariant().Contains('system.runtime.dll'))"
-        Name="corefx" />
-      <_coreClrVersionFile
-        Include="$(_runtimePackageDir)version.txt"
-        Name="coreclr" />
+      <CoreCLRFiles>
+        <TargetPath>runtimes/$(PackageRID)/native</TargetPath>
+      </CoreCLRFiles>
 
-      <DependencyVersionFile Include="@(_coreFxVersionFile);@(_coreClrVersionFile)" />
-    </ItemGroup>
+      <CoreCLRFiles Condition="'%(FileName)' == 'crossgen'">
+        <TargetPath>tools</TargetPath>
+      </CoreCLRFiles>
 
-    <Error
-      Condition="'@(_coreFxVersionFile)' == ''"
-      Text="Failed to locate corefx version.txt file." />
-
-    <Error
-      Condition="'@(_coreClrVersionFile)' == ''"
-      Text="Failed to locate coreclr version.txt file." />
-  </Target>
-
-  <!-- Fetches all the runtime items from the packages that we want to redist -->
-  <Target Name="GetRuntimeFilesFromPackages"
-          BeforeTargets="GetRuntimeFilesToPackage"
-          DependsOnTargets="GetCorePackagePaths"
-          Condition="'$(CoreCLROverridePath)' == ''">
-    <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
-      <_ToolsToPackage Include="$(_runtimePackageDir)tools/**/*.*"/>
-      <FilesToPackage Include="@(_ToolsToPackage)">
-        <NuGetPackageId>$(_runtimePackageId)</NuGetPackageId>
-        <!--
-          Trim '/' at the end of the target path, if exists. The packaging tools automatically add
-          an ending '/' for files without any extension, resulting in e.g. 'tools//' for Linux
-          'crossgen', which creates a dir without a name in the nupkg. This folder collapses when
-          extracted to disk, but results in confusing artifacts when inspected manually, especially
-          when 'crossgen.dbg' is outside this nameless dir.
-        -->
-        <TargetPath>$([System.String]::new('tools/%(RecursiveDir)').TrimEnd('/'))</TargetPath>
-        <IsNative>true</IsNative>
-      </FilesToPackage>
-      <FilesToPackage Condition="'$(_crossDir)' != ''" Include="$(_jitPackageDir)runtimes$(_crossDir)/native/*.*">
-        <TargetPath>runtimes$(_crossDir)/native</TargetPath>
-        <IsNative>true</IsNative>
-      </FilesToPackage>
+      <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'clrjit' or '%(FileName)' == 'libclrjit'">
+        <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
+      </CoreCLRCrossTargetFiles>
+      <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'crossgen'">
+        <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
+      </CoreCLRCrossTargetFiles>
+      <CoreCLRCrossTargetFiles Condition="$([System.String]::new('%(FileName)').StartsWith('mscordaccore')) and '$(TargetsWindows)' == 'true'">
+        <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
+      </CoreCLRCrossTargetFiles>
+      <CoreCLRCrossTargetFiles Condition="'%(FileName)%(Extension)' == 'mscordbi.dll' and '$(TargetsWindows)' == 'true'">
+        <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
+      </CoreCLRCrossTargetFiles>
+      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles);@(CoreCLRCrossTargetFiles)" />
     </ItemGroup>
   </Target>
-  
+
+  <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild" BeforeTargets="GetFilesFromPackageResolve">
+    <ItemGroup>
+      <LibrariesRefAssemblies TargetPath="ref/$(NETCoreAppFramework)" />
+      <Reference Include="@(LibrariesRefAssemblies)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(PackageRID)' != ''">
+      <LibrariesRuntimeFiles Condition="'%(IsNative)' != 'true'" TargetPath="runtimes/$(PackageRID)/lib/$(NETCoreAppFramework)" />
+      <LibrariesRuntimeFiles Condition="'%(IsNative)' == 'true'" TargetPath="runtimes/$(PackageRID)/native" />
+      <ReferenceCopyLocalPaths Include="@(LibrariesRuntimeFiles)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_docFilesToPackage Include="$(ArtifactsBinDir)/docs/%(LibrariesRefAssemblies.FileName).xml" Condition="Exists('$(ArtifactsBinDir)/docs/%(LibrariesRefAssemblies.FileName).xml')"/>
+    </ItemGroup>
+  </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="localnetcoreapp.override.targets" />
 </Project>

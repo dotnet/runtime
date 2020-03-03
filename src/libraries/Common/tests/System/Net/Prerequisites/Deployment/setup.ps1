@@ -92,7 +92,7 @@ Function CreateDestinationPath($s)
 {
     return Invoke-Command -Session $s `
     {
-        $destPath = Join-Path $env:SystemDrive "COREFX_NET_Scripts"
+        $destPath = Join-Path $env:SystemDrive "LIBRARIES_NET_SCRIPTS"
         mkdir $destPath -ErrorAction SilentlyContinue | Out-Null  
         return $destPath  
     }    
@@ -138,7 +138,7 @@ Function InstallRoles
 
 Function Install
 {
-    Write-Host -ForegroundColor Cyan "Install/Update CoreFX Networking multi-machine prerequisites"
+    Write-Host -ForegroundColor Cyan "Install/Update Libraries Networking multi-machine prerequisites"
     Write-Host
     CheckRoles
 
@@ -198,7 +198,7 @@ Function UnistallMachines
 
 Function Uninstall
 {
-    Write-Host -ForegroundColor Cyan "Uninstall CoreFX Networking multi-machine prerequisites"
+    Write-Host -ForegroundColor Cyan "Uninstall Libraries Networking multi-machine prerequisites"
     Write-Host
     CheckRoles
     Write-Host

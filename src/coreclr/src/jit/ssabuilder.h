@@ -11,7 +11,7 @@
 typedef int LclVarNum;
 
 // Pair of a local var name eg: V01 and Ssa number; eg: V01_01
-typedef jitstd::pair<LclVarNum, int> SsaVarName;
+typedef std::pair<LclVarNum, int> SsaVarName;
 
 class SsaBuilder
 {

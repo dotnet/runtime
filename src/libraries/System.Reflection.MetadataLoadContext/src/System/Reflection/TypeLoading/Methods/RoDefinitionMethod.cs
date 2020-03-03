@@ -22,7 +22,7 @@ namespace System.Reflection.TypeLoading
         internal abstract MethodSig<RoParameter> SpecializeMethodSig(IRoMethodBase member);
         internal abstract MethodSig<RoType> SpecializeCustomModifiers(in TypeContext typeContext);
         internal abstract MethodSig<string> SpecializeMethodSigStrings(in TypeContext typeContext);
-        internal abstract MethodBody SpecializeMethodBody(IRoMethodBase owner);
+        internal abstract MethodBody? SpecializeMethodBody(IRoMethodBase owner);
     }
 
     /// <summary>
@@ -57,12 +57,12 @@ namespace System.Reflection.TypeLoading
 
                 if ((MethodImplementationFlags & MethodImplAttributes.PreserveSig) != 0)
                 {
-                    ConstructorInfo ci = Loader.TryGetPreserveSigCtor();
+                    ConstructorInfo? ci = Loader.TryGetPreserveSigCtor();
                     if (ci != null)
                         yield return new RoPseudoCustomAttributeData(ci);
                 }
 
-                CustomAttributeData dllImportCustomAttribute = ComputeDllImportCustomAttributeDataIfAny();
+                CustomAttributeData? dllImportCustomAttribute = ComputeDllImportCustomAttributeDataIfAny();
                 if (dllImportCustomAttribute != null)
                     yield return dllImportCustomAttribute;
             }
@@ -72,11 +72,11 @@ namespace System.Reflection.TypeLoading
         protected sealed override CallingConventions ComputeCallingConvention() => _decoder.ComputeCallingConvention();
         protected sealed override MethodImplAttributes ComputeMethodImplementationFlags() => _decoder.ComputeMethodImplementationFlags();
         protected sealed override MethodSig<RoParameter> ComputeMethodSig() => _decoder.SpecializeMethodSig(this);
-        public sealed override MethodBody GetMethodBody() => _decoder.SpecializeMethodBody(this);
+        public sealed override MethodBody? GetMethodBody() => _decoder.SpecializeMethodBody(this);
         protected sealed override MethodSig<string> ComputeMethodSigStrings() => _decoder.SpecializeMethodSigStrings(TypeContext);
         protected sealed override MethodSig<RoType> ComputeCustomModifiers() => _decoder.SpecializeCustomModifiers(TypeContext);
 
-        public sealed override bool Equals(object obj)
+        public sealed override bool Equals(object? obj)
         {
             if (!(obj is RoDefinitionMethod<TMethodDecoder> other))
                 return false;
@@ -136,7 +136,7 @@ namespace System.Reflection.TypeLoading
         internal sealed override MethodSig<RoParameter> SpecializeMethodSig(IRoMethodBase member) => _decoder.SpecializeMethodSig(member);
         internal sealed override MethodSig<RoType> SpecializeCustomModifiers(in TypeContext typeContext) => _decoder.SpecializeCustomModifiers(typeContext);
         internal sealed override MethodSig<string> SpecializeMethodSigStrings(in TypeContext typeContext) => _decoder.SpecializeMethodSigStrings(typeContext);
-        internal sealed override MethodBody SpecializeMethodBody(IRoMethodBase owner) => _decoder.SpecializeMethodBody(owner);
+        internal sealed override MethodBody? SpecializeMethodBody(IRoMethodBase owner) => _decoder.SpecializeMethodBody(owner);
 
         public sealed override TypeContext TypeContext => new TypeContext(_declaringType.Instantiation, GetGenericTypeParametersNoCopy());
     }

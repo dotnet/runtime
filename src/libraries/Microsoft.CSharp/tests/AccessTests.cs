@@ -254,7 +254,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26798", TargetFrameworkMonikers.NetFramework)]
         public void AccessNestedPrivateProtectedAssembly()
         {
             dynamic d = Container.PrivateProtectedValueTypeArray();
@@ -272,7 +272,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Fact]
-        [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/26798", TargetFrameworkMonikers.NetFramework)]
         public void InaccessibleFields()
         {
             dynamic d = new TypeWithFields();

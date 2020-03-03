@@ -49,7 +49,7 @@ namespace System.Security.Cryptography
                         optionalEntropyBlob = new DATA_BLOB((IntPtr)pOptionalEntropy, (uint)(optionalEntropy.Length));
                     }
 
-                    // For desktop compat, we ignore unknown bits in the "scope" value rather than throwing.
+                    // For .NET Framework compat, we ignore unknown bits in the "scope" value rather than throwing.
                     CryptProtectDataFlags flags = CryptProtectDataFlags.CRYPTPROTECT_UI_FORBIDDEN;
                     if (scope == DataProtectionScope.LocalMachine)
                     {
@@ -102,7 +102,7 @@ namespace System.Security.Cryptography
         private static bool ErrorMayBeCausedByUnloadedProfile(int errorCode)
         {
             // CAPI returns a file not found error if the user profile is not yet loaded
-            return errorCode == Interop.Errors.E_FILENOTFOUND ||
+            return errorCode == HResults.E_FILENOTFOUND ||
                    errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND;
         }
     }

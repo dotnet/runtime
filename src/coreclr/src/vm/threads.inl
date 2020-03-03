@@ -41,22 +41,6 @@ EXTERN_C inline AppDomain* STDCALL GetAppDomain()
 
 #endif // !DACCESS_COMPILE
 
-inline void Thread::IncLockCount()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(GetThread() == this);
-    m_dwLockCount++;
-    _ASSERTE(m_dwLockCount != 0 || HasThreadStateNC(TSNC_UnbalancedLocks));
-}
-
-inline void Thread::DecLockCount()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(GetThread() == this);
-    _ASSERTE(m_dwLockCount > 0 || HasThreadStateNC(TSNC_UnbalancedLocks));
-    m_dwLockCount--;
-}
-
 inline
 Frame* Thread::FindFrame(SIZE_T StackPointer)
 {
@@ -128,12 +112,6 @@ inline OBJECTREF Thread::GetExposedObjectRaw()
     CONTRACTL_END;
 
     return ObjectFromHandle(m_ExposedObject);
-}
-
-inline void Thread::FinishSOWork()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(!HasThreadStateNC(TSNC_SOWorkNeeded));
 }
 
 #ifdef FEATURE_COMINTEROP

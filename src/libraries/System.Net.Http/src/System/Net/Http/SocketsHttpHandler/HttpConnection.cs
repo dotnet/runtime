@@ -266,7 +266,8 @@ namespace System.Net.Http
             {
                 Debug.Assert(Kind == HttpConnectionKind.Proxy);
 
-                // TODO: #28863 Uri.IdnHost is missing '[', ']' characters around IPv6 address.
+                // TODO https://github.com/dotnet/runtime/issues/25782:
+                // Uri.IdnHost is missing '[', ']' characters around IPv6 address.
                 // So, we need to add them manually for now.
                 if (uri.HostNameType == UriHostNameType.IPv6)
                 {
@@ -355,7 +356,8 @@ namespace System.Net.Http
                         Debug.Assert(request.RequestUri.Scheme == Uri.UriSchemeHttp);
                         await WriteBytesAsync(s_httpSchemeAndDelimiter).ConfigureAwait(false);
 
-                        // TODO: #28863 Uri.IdnHost is missing '[', ']' characters around IPv6 address.
+                        // TODO https://github.com/dotnet/runtime/issues/25782:
+                        // Uri.IdnHost is missing '[', ']' characters around IPv6 address.
                         // So, we need to add them manually for now.
                         if (request.RequestUri.HostNameType == UriHostNameType.IPv6)
                         {
@@ -1743,7 +1745,7 @@ namespace System.Net.Http
             }
         }
 
-        public async ValueTask DrainResponseAsync(HttpResponseMessage response)
+        public async ValueTask DrainResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
         {
             Debug.Assert(_inUse);
 
@@ -1752,7 +1754,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.net_http_authconnectionfailure);
             }
 
-            Stream stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
             HttpContentReadStream responseStream = stream as HttpContentReadStream;
 
             Debug.Assert(responseStream != null || stream is EmptyReadStream);

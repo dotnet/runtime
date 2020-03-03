@@ -3,8 +3,10 @@
     <AllowUnsafeBlocks Condition="'$(TargetsWindows)' == 'true'">true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
-    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
-    <Nullable>annotations</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;netstandard2.0;netstandard2.0-Windows_NT;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" />
@@ -21,37 +23,36 @@
     <Compile Include="System\Security\AccessControl\FileSystemAuditRule.cs" />
     <Compile Include="System\Security\AccessControl\FileSystemRights.cs" />
     <Compile Include="System\Security\AccessControl\FileSystemSecurity.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Interop.BOOL.cs" Link="Interop\Windows\Interop.BOOL.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Interop\Windows\Interop.CreateFile.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FILE_TIME.cs" Link="Interop\Windows\Interop.FILE_TIME.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FileAttributes.cs" Link="Common\Interop\Windows\Interop.FileAttributes.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FileTypes.cs" Link="Common\Interop\Windows\Interop.FileTypes.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FindClose.cs" Link="Interop\Windows\Interop.FindClose.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FindFirstFileEx.cs" Link="Interop\Windows\Interop.FindFirstFileEx.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs" Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs" Link="Interop\Windows\Interop.GET_FILEEX_INFO_LEVELS.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs" Link="Common\Interop\Windows\Interop.GetFileAttributesEx.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs" Link="Common\Interop\Windows\Interop.GetFileType_SafeHandle.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs" Link="Common\Interop\Windows\Interop.GetFullPathNameW.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs" Link="Common\Interop\Windows\Interop.GetLongPathNameW.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs" Link="Common\Interop\Windows\Interop.GetLogicalDrives.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.MAX_PATH.cs" Link="Interop\Windows\Interop.MAX_PATH.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SecurityOptions.cs" Link="Interop\Windows\Interop.SecurityOptions.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs" Link="Interop\Windows\Interop.SetThreadErrorMode.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs" Link="Interop\Windows\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.WIN32_FIND_DATA.cs" Link="Interop\Windows\Interop.WIN32_FIND_DATA.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Interop.CreateFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_TIME.cs" Link="Common\Interop\Windows\Interop.FILE_TIME.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileAttributes.cs" Link="Common\Interop\Windows\Interop.FileAttributes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs" Link="Common\Interop\Windows\Interop.FileTypes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FindClose.cs" Link="Common\Interop\Windows\Interop.FindClose.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FindFirstFileEx.cs" Link="Common\Interop\Windows\Interop.FindFirstFileEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs" Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Common\Interop\Windows\Interop.GenericOperations.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs" Link="Common\Interop\Windows\Interop.GET_FILEEX_INFO_LEVELS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs" Link="Common\Interop\Windows\Interop.GetFileAttributesEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs" Link="Common\Interop\Windows\Interop.GetFileType_SafeHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs" Link="Common\Interop\Windows\Interop.GetFullPathNameW.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs" Link="Common\Interop\Windows\Interop.GetLongPathNameW.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetLogicalDrives.cs" Link="Common\Interop\Windows\Interop.GetLogicalDrives.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs" Link="Common\Interop\Windows\Interop.MAX_PATH.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SecurityOptions.cs" Link="Common\Interop\Windows\Interop.SecurityOptions.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs" Link="Common\Interop\Windows\Interop.SetThreadErrorMode.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs" Link="Common\Interop\Windows\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WIN32_FIND_DATA.cs" Link="Common\Interop\Windows\Interop.WIN32_FIND_DATA.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\DisableMediaInsertionPrompt.cs" Link="Common\System\IO\DisableMediaInsertionPrompt.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PathHelper.Windows.cs" Link="System\IO\PathHelper.Windows.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.cs" Link="System\IO\PathInternal.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs" Link="System\IO\PathInternal.Windows.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs" Link="System\IO\Win32Marshal.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs" Link="System\Text\ValueStringBuilder.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Common\Interop\Windows\Interop.GenericOperations.cs" />
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs" Link="Common\System\IO\Win32Marshal.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.LongFileTime.cs" Link="Common\Interop\Windows\Interop.LongFileTime.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateDirectory.cs" Link="Common\Interop\Windows\Interop.CreateDirectory.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_INFO_BY_HANDLE_CLASS.cs" Link="Common\Interop\Windows\Interop.FILE_INFO_BY_HANDLE_CLASS.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="$(CommonPath)System\IO\FileSystem.Attributes.Windows.cs" Link="Common\System\IO\FileSystem.Attributes.Windows.cs" />
     <Compile Include="$(CommonPath)System\IO\FileSystem.DirectoryCreation.Windows.cs" Link="Common\System\IO\FileSystem.DirectoryCreation.Windows.cs" />

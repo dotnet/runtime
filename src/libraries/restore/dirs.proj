@@ -1,10 +1,6 @@
 <Project>
   <Import Project="Directory.Build.props" />
 
-  <PropertyGroup>
-    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);netstandard2.0-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</AdditionalBuildConfigurations>
-  </PropertyGroup>
-
   <ItemGroup>
     <Project Condition="'$(DotNetBuildFromSource)' != 'true'" Include="analyzers/analyzers.depproj" />
 
@@ -12,7 +8,6 @@
     <Project Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp/netcoreapp.depproj" />
     <Project Include="netstandard/netstandard.depproj" />
     <Project Include="netfx/netfx.depproj" />
-    <Project Include="runtime/runtime.depproj" />
     <Project Include="tools/tools.depproj" />
     <Project Include="harvestPackages/harvestPackages.depproj" />
     <Project Include="binplacePackages/binplacePackages.depproj" />

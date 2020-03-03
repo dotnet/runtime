@@ -32,8 +32,8 @@ internal static partial class Interop
         public unsafe struct NetworkInterfaceInfo
         {
             public fixed byte Name[16];
+            public long Speed;
             public int InterfaceIndex;
-            public int Speed;
             public int Mtu;
             public ushort HardwareType;
             public byte OperationalState;

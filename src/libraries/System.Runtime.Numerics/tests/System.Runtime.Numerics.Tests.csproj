@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BigInteger\absolutevalue.cs" />
     <Compile Include="BigInteger\BigIntegerToStringTests.cs" />
-    <Compile Include="BigInteger\BigIntegerToStringTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="BigInteger\BigInteger.AddTests.cs" />
     <Compile Include="BigInteger\BigInteger.SubtractTests.cs" />
     <Compile Include="BigInteger\BigIntTools.cs" />
@@ -14,7 +13,6 @@
     <Compile Include="BigInteger\cast_to.cs" />
     <Compile Include="BigInteger\Comparison.cs" />
     <Compile Include="BigInteger\ctor.cs" />
-    <Compile Include="BigInteger\ctor.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="BigInteger\divide.cs" />
     <Compile Include="BigInteger\divrem.cs" />
     <Compile Include="BigInteger\Driver.cs" />
@@ -43,16 +41,13 @@
     <Compile Include="BigInteger\op_rightshift.cs" />
     <Compile Include="BigInteger\op_xor.cs" />
     <Compile Include="BigInteger\parse.cs" />
-    <Compile Include="BigInteger\parse.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="BigInteger\pow.cs" />
     <Compile Include="BigInteger\properties.cs" />
     <Compile Include="BigInteger\remainder.cs" />
     <Compile Include="BigInteger\sign.cs" />
     <Compile Include="BigInteger\stackcalculator.cs" />
     <Compile Include="BigInteger\ToByteArray.cs" />
-    <Compile Include="BigInteger\ToByteArray.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
-    <Compile Include="BigInteger\TryWriteBytes.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="BigInteger\TryWriteBytes.cs" />
     <Compile Include="ComplexTests.cs" />
-    <Compile Include="ComplexTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
   </ItemGroup>
 </Project>

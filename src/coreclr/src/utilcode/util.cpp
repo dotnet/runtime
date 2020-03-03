@@ -237,7 +237,7 @@ namespace
         StackSString ssDllName;
         if ((wszDllPath == nullptr) || (wszDllPath[0] == W('\0')) || fIsDllPathPrefix)
         {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
             IfFailRet(Clr::Util::Com::FindInprocServer32UsingCLSID(rclsid, ssDllName));
 
             EX_TRY
@@ -256,9 +256,9 @@ namespace
             IfFailRet(hr);
 
             wszDllPath = ssDllName.GetUnicode();
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
             return E_FAIL;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
         }
         _ASSERTE(wszDllPath != nullptr);
 
@@ -503,12 +503,12 @@ BYTE * ClrVirtualAllocExecutable(SIZE_T dwSize,
     // Fall through to
 #endif // USE_UPPER_ADDRESS
 
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
     // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
     // This will allow us to place JIT'ed code close to the coreclr library
     // and thus improve performance by avoiding jump stubs in managed code.
     flAllocationType |= MEM_RESERVE_EXECUTABLE;
-#endif // FEATURE_PAL
+#endif // HOST_UNIX
 
     return (BYTE *) ClrVirtualAlloc (NULL, dwSize, flAllocationType, flProtect);
 
@@ -523,13 +523,13 @@ LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocatio
     _ASSERTE(alignment != 0);
     _ASSERTE((alignment & (alignment - 1)) == 0);
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
 
     // The VirtualAlloc on Windows ensures 64kB alignment
     _ASSERTE(alignment <= 0x10000);
     return ClrVirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
 
-#else // !FEATURE_PAL
+#else // HOST_WINDOWS
 
     if(alignment < GetOsPageSize()) alignment = GetOsPageSize();
 
@@ -538,7 +538,7 @@ LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocatio
     SIZE_T addr = (SIZE_T)ClrVirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
     return (LPVOID)((addr + (alignment - 1)) & ~(alignment - 1));
 
-#endif // !FEATURE_PAL
+#endif // HOST_WINDOWS
 }
 
 #ifdef _DEBUG
@@ -620,13 +620,13 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
         return (BYTE*) ClrVirtualAlloc(nullptr, dwSize, flAllocationType, flProtect);
     }
 
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
     pResult = (BYTE *)PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(pMinAddr, pMaxAddr, dwSize);
     if (pResult != nullptr)
     {
         return pResult;
     }
-#endif // FEATURE_PAL
+#endif // HOST_UNIX
 
     // We will do one scan from [pMinAddr .. pMaxAddr]
     // First align the tryAddr up to next 64k base address.
@@ -733,7 +733,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     return ::VirtualAllocExNuma(hProc, lpAddr, dwSize, allocType, prot, node);
 }
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
 /*static*/ BOOL NumaNodeInfo::GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no)
 {
     return ::GetNumaProcessorNodeEx(proc_no, node_no);
@@ -767,12 +767,12 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 
     return false;
 }
-#else // !FEATURE_PAL
+#else // HOST_WINDOWS
 /*static*/ BOOL NumaNodeInfo::GetNumaProcessorNodeEx(USHORT proc_no, PUSHORT node_no)
 {
     return PAL_GetNumaProcessorNode(proc_no, node_no);
 }
-#endif // !FEATURE_PAL
+#endif // HOST_WINDOWS
 #endif
 
 /*static*/ BOOL NumaNodeInfo::m_enableGCNumaAware = FALSE;
@@ -808,7 +808,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     m_enableGCNumaAware = InitNumaNodeInfoAPI();
 }
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
 
 //******************************************************************************
 // CPUGroupInfo
@@ -840,7 +840,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
     return ::GetSystemTimes(idleTime, kernelTime, userTime);
 #else
     return FALSE;
@@ -857,7 +857,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 /*static*/ LONG CPUGroupInfo::m_initialization = 0;
 /*static*/ bool CPUGroupInfo::s_hadSingleProcessorAtStartup = false;
 
-#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
 // Calculate greatest common divisor
 DWORD GCD(DWORD u, DWORD v)
 {
@@ -887,7 +887,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     BYTE *bBuffer = NULL;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pSLPIEx = NULL;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pRecord = NULL;
@@ -962,7 +962,7 @@ DWORD LCM(DWORD u, DWORD v)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     WORD begin   = 0;
     WORD nr_proc = 0;
 
@@ -988,7 +988,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     BOOL enableGCCPUGroups     = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCCpuGroup) != 0;
     BOOL threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups) != 0;
 
@@ -1010,7 +1010,7 @@ DWORD LCM(DWORD u, DWORD v)
 	BOOL hasMultipleGroups = m_nGroups > 1;
 	m_enableGCCPUGroups = enableGCCPUGroups && hasMultipleGroups;
 	m_threadUseAllCpuGroups = threadUseAllCpuGroups && hasMultipleGroups;
-#endif // _TARGET_AMD64_ || _TARGET_ARM64_
+#endif // TARGET_AMD64 || TARGET_ARM64
 
     // Determine if the process is affinitized to a single processor (or if the system has a single processor)
     DWORD_PTR processAffinityMask, systemAffinityMask;
@@ -1041,7 +1041,7 @@ DWORD LCM(DWORD u, DWORD v)
     CONTRACTL_END;
 
     // CPUGroupInfo needs to be initialized only once. This could happen in three cases
-    // 1. CLR initialization at begining of EEStartup, or
+    // 1. CLR initialization at beginning of EEStartup, or
     // 2. Sometimes, when hosted by ASP.NET, the hosting process may initialize ThreadPool
     //    before initializing CLR, thus require CPUGroupInfo to be initialized to determine
     //    if CPU group support should/could be enabled.
@@ -1079,7 +1079,7 @@ retry:
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     WORD bTemp = 0;
     WORD bDiff = processor_number - bTemp;
 
@@ -1110,7 +1110,7 @@ retry:
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     // m_enableGCCPUGroups and m_threadUseAllCpuGroups must be TRUE
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
 
@@ -1160,7 +1160,7 @@ retry:
     }
     CONTRACTL_END;
 
-#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     WORD i, minGroup = 0;
     DWORD minWeight = 0;
 
@@ -1203,7 +1203,7 @@ found:
 /*static*/ void CPUGroupInfo::ClearCPUGroupAffinity(GROUP_AFFINITY *gf)
 {
     LIMITED_METHOD_CONTRACT;
-#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     // m_enableGCCPUGroups and m_threadUseAllCpuGroups must be TRUE
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
 
@@ -1238,7 +1238,7 @@ BOOL CPUGroupInfo::GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* 
     LIMITED_METHOD_CONTRACT;
     return m_threadUseAllCpuGroups;
 }
-#endif // !FEATURE_PAL
+#endif // HOST_WINDOWS
 
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on
@@ -1259,7 +1259,7 @@ int GetCurrentProcessCpuCount()
 
     unsigned int count = 0;
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
     DWORD_PTR pmask, smask;
 
     if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
@@ -1287,16 +1287,20 @@ int GetCurrentProcessCpuCount()
             count = 64;
     }
 
-#else // !FEATURE_PAL
+#else // HOST_WINDOWS
     count = PAL_GetLogicalCpuCountFromOS();
-#endif // !FEATURE_PAL
+
+    uint32_t cpuLimit;
+    if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < count)
+        count = cpuLimit;
+#endif // HOST_WINDOWS
 
     cCPUs = count;
 
     return count;
 }
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
 DWORD_PTR GetCurrentProcessCpuMask()
 {
     CONTRACTL
@@ -1306,7 +1310,7 @@ DWORD_PTR GetCurrentProcessCpuMask()
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
     DWORD_PTR pmask, smask;
 
     if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
@@ -1318,7 +1322,7 @@ DWORD_PTR GetCurrentProcessCpuMask()
     return 0;
 #endif
 }
-#endif // !FEATURE_PAL
+#endif // HOST_WINDOWS
 
 uint32_t GetOsPageSizeUncached()
 {
@@ -1334,7 +1338,7 @@ namespace
 
 uint32_t GetOsPageSize()
 {
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
     size_t result = g_pageSize.LoadWithoutBarrier();
 
     if(!result)
@@ -2632,11 +2636,11 @@ void PutThumb2BlRel24(UINT16 * p, INT32 imm24)
     // Verify that we got a valid offset
     _ASSERTE(FitsInThumb2BlRel24(imm24));
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     // Ensure that the ThumbBit is not set on the offset
     // as it cannot be encoded.
     _ASSERTE(!(imm24 & THUMB_CODE));
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
     USHORT Opcode0 = p[0];
     USHORT Opcode1 = p[1];
@@ -2954,7 +2958,7 @@ BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip)
     param.fRet = FALSE;
 
 // UNIXTODO: implement a proper version for PAL
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
     PAL_TRY(Param *, pParam, &param)
     {
         PTR_BYTE pBase = dac_cast<PTR_BYTE>(pParam->hModule);
@@ -3023,7 +3027,7 @@ lDone: ;
     {
     }
     PAL_ENDTRY
-#endif // !FEATURE_PAL
+#endif // HOST_WINDOWS
 
     return param.fRet;
 }
@@ -3092,7 +3096,7 @@ namespace Util
     static BOOL g_fLocalAppDataDirectoryInitted = FALSE;
     static WCHAR *g_wszLocalAppDataDirectory = NULL;
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
     // Struct used to scope suspension of client impersonation for the current thread.
     // https://docs.microsoft.com/en-us/windows/desktop/secauthz/client-impersonation
     class SuspendImpersonation
@@ -3333,7 +3337,7 @@ namespace Com
         return __imp::FindSubKeyDefaultValueForCLSID(rclsid, W("InprocServer32"), ssInprocServer32Name);
     }
 } // namespace Com
-#endif //  FEATURE_PAL
+#endif //  HOST_WINDOWS
 
 } // namespace Util
 } // namespace Clr

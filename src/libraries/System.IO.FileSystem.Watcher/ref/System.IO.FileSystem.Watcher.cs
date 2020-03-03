@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.IO
@@ -15,10 +15,10 @@ namespace System.IO
     public delegate void ErrorEventHandler(object sender, System.IO.ErrorEventArgs e);
     public partial class FileSystemEventArgs : System.EventArgs
     {
-        public FileSystemEventArgs(System.IO.WatcherChangeTypes changeType, string directory, string name) { }
+        public FileSystemEventArgs(System.IO.WatcherChangeTypes changeType, string directory, string? name) { }
         public System.IO.WatcherChangeTypes ChangeType { get { throw null; } }
         public string FullPath { get { throw null; } }
-        public string Name { get { throw null; } }
+        public string? Name { get { throw null; } }
     }
     public delegate void FileSystemEventHandler(object sender, System.IO.FileSystemEventArgs e);
     public partial class FileSystemWatcher : System.ComponentModel.Component, System.ComponentModel.ISupportInitialize
@@ -33,13 +33,13 @@ namespace System.IO
         public int InternalBufferSize { get { throw null; } set { } }
         public System.IO.NotifyFilters NotifyFilter { get { throw null; } set { } }
         public string Path { get { throw null; } set { } }
-        public override System.ComponentModel.ISite Site { get { throw null; } set { } }
-        public System.ComponentModel.ISynchronizeInvoke SynchronizingObject { get { throw null; } set { } }
-        public event System.IO.FileSystemEventHandler Changed { add { } remove { } }
-        public event System.IO.FileSystemEventHandler Created { add { } remove { } }
-        public event System.IO.FileSystemEventHandler Deleted { add { } remove { } }
-        public event System.IO.ErrorEventHandler Error { add { } remove { } }
-        public event System.IO.RenamedEventHandler Renamed { add { } remove { } }
+        public override System.ComponentModel.ISite? Site { get { throw null; } set { } }
+        public System.ComponentModel.ISynchronizeInvoke? SynchronizingObject { get { throw null; } set { } }
+        public event System.IO.FileSystemEventHandler? Changed { add { } remove { } }
+        public event System.IO.FileSystemEventHandler? Created { add { } remove { } }
+        public event System.IO.FileSystemEventHandler? Deleted { add { } remove { } }
+        public event System.IO.ErrorEventHandler? Error { add { } remove { } }
+        public event System.IO.RenamedEventHandler? Renamed { add { } remove { } }
         public void BeginInit() { }
         protected override void Dispose(bool disposing) { }
         public void EndInit() { }
@@ -55,8 +55,8 @@ namespace System.IO
     {
         public InternalBufferOverflowException() { }
         protected InternalBufferOverflowException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public InternalBufferOverflowException(string message) { }
-        public InternalBufferOverflowException(string message, System.Exception inner) { }
+        public InternalBufferOverflowException(string? message) { }
+        public InternalBufferOverflowException(string? message, System.Exception? inner) { }
     }
     [System.FlagsAttribute]
     public enum NotifyFilters
@@ -72,9 +72,9 @@ namespace System.IO
     }
     public partial class RenamedEventArgs : System.IO.FileSystemEventArgs
     {
-        public RenamedEventArgs(System.IO.WatcherChangeTypes changeType, string directory, string name, string oldName) : base (default(System.IO.WatcherChangeTypes), default(string), default(string)) { }
+        public RenamedEventArgs(System.IO.WatcherChangeTypes changeType, string directory, string? name, string? oldName) : base (default(System.IO.WatcherChangeTypes), default(string), default(string)) { }
         public string OldFullPath { get { throw null; } }
-        public string OldName { get { throw null; } }
+        public string? OldName { get { throw null; } }
     }
     public delegate void RenamedEventHandler(object sender, System.IO.RenamedEventArgs e);
     public partial struct WaitForChangedResult
@@ -82,8 +82,8 @@ namespace System.IO
         private object _dummy;
         private int _dummyPrimitive;
         public System.IO.WatcherChangeTypes ChangeType { readonly get { throw null; } set { } }
-        public string Name { readonly get { throw null; } set { } }
-        public string OldName { readonly get { throw null; } set { } }
+        public string? Name { readonly get { throw null; } set { } }
+        public string? OldName { readonly get { throw null; } set { } }
         public bool TimedOut { readonly get { throw null; } set { } }
     }
     [System.FlagsAttribute]

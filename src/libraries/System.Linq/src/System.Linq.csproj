@@ -2,12 +2,12 @@
   <PropertyGroup>
     <AssemblyName>System.Linq</AssemblyName>
     <RootNamespace>System.Linq</RootNamespace>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <ContractProject Include="..\ref\System.Linq.csproj">
-      <TargetGroup>netcoreapp</TargetGroup>
+      <BuildTargetFramework>$(NetCoreAppCurrent)</BuildTargetFramework>
     </ContractProject>
   </ItemGroup>
   <ItemGroup> <!-- Optimize for speed -->
@@ -102,9 +102,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>

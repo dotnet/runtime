@@ -4,13 +4,16 @@
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <DefineConstants>$(DefineConstants);REGISTRY_ASSEMBLY</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OSGroup)' == 'AnyOS' and '$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_Registry</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true' and '$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_Registry</GeneratePlatformNotSupportedAssemblyMessage>
     <NoWarn Condition="'$(TargetsUnix)' == 'true'">$(NoWarn);CA1823</NoWarn> <!-- Avoid unused fields warnings in Unix build -->
-    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard2.0-Unix-Debug;netstandard2.0-Unix-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetFrameworkCurrent)-Windows_NT;netstandard2.0-Windows_NT;netstandard2.0-Unix;netstandard2.0;net461-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(OSGroup)' != 'AnyOS'">
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegistryConstants.cs">
-      <Link>Interop\Windows\Advapi32\Interop.RegistryConstants.cs</Link>
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetsAnyOS)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegistryConstants.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.RegistryConstants.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs">
       <Link>Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs</Link>
@@ -33,50 +36,50 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
-      <Link>Interop\Windows\Interop.FormatMessage.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegCloseKey.cs">
-      <Link>Interop\Windows\Interop.RegCloseKey.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegCloseKey.cs">
+      <Link>Common\Interop\Windows\Interop.RegCloseKey.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegConnectRegistry.cs">
       <Link>Common\Interop\Windows\Interop.RegConnectRegistry.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegCreateKeyEx.cs">
-      <Link>Interop\Windows\Interop.RegCreateKeyEx.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegCreateKeyEx.cs">
+      <Link>Common\Interop\Windows\Interop.RegCreateKeyEx.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegDeleteKeyEx.cs">
-      <Link>Interop\Windows\Interop.RegDeleteKeyEx.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegDeleteKeyEx.cs">
+      <Link>Common\Interop\Windows\Interop.RegDeleteKeyEx.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegDeleteValue.cs">
-      <Link>Interop\Windows\Interop.RegDeleteValue.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegDeleteValue.cs">
+      <Link>Common\Interop\Windows\Interop.RegDeleteValue.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegEnumKeyEx.cs">
-      <Link>Interop\Windows\Interop.RegEnumKeyEx.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegEnumKeyEx.cs">
+      <Link>Common\Interop\Windows\Interop.RegEnumKeyEx.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegEnumValue.cs">
-      <Link>Interop\Windows\Interop.RegEnumValue.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegEnumValue.cs">
+      <Link>Common\Interop\Windows\Interop.RegEnumValue.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegFlushKey.cs">
-      <Link>Interop\Windows\Interop.RegFlushKey.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegFlushKey.cs">
+      <Link>Common\Interop\Windows\Interop.RegFlushKey.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegOpenKeyEx.cs">
-      <Link>Interop\Windows\Interop.RegOpenKeyEx.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegOpenKeyEx.cs">
+      <Link>Common\Interop\Windows\Interop.RegOpenKeyEx.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegQueryInfoKey.cs">
-      <Link>Interop\Windows\Interop.RegQueryInfoKey.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegQueryInfoKey.cs">
+      <Link>Common\Interop\Windows\Interop.RegQueryInfoKey.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegQueryValueEx.cs">
-      <Link>Interop\Windows\Interop.RegQueryValueEx.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegQueryValueEx.cs">
+      <Link>Common\Interop\Windows\Interop.RegQueryValueEx.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegSetValueEx.cs">
-      <Link>Interop\Windows\Interop.RegSetValueEx.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegSetValueEx.cs">
+      <Link>Common\Interop\Windows\Interop.RegSetValueEx.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Interop.BOOL.cs">
-      <Link>Interop\Windows\Interop.BOOL.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
-      <Link>Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\RegistryKey.Windows.cs" />
     <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs">

@@ -472,7 +472,7 @@ namespace System.Data
                 Debug.Assert(canColumn != null && canColumn.expr != null, "BuildLinearExpression : Must be a matched candidate");
                 canColumn.flag = true;
             }
-            //this is invalid assert, assumption was that all equals operator exists at the begining of candidateColumns
+            //this is invalid assert, assumption was that all equals operator exists at the beginning of candidateColumns
             // but with QFE 1704, this assumption is not true anymore
             //            Debug.Assert(matchedCandidates==1 || candidateColumns[matchedCandidates-1].equalsOperator, "BuildLinearExpression : Invalid matched candidates");
             int lenCanColumns = _candidateColumns.Length;

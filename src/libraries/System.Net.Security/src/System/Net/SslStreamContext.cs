@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Net.Security;
 using System.Security.Authentication.ExtendedProtection;
 
@@ -17,10 +16,10 @@ namespace System.Net
                 NetEventSource.Fail(this, "Not expecting a null sslStream!");
             }
 
-            _sslStream = sslStream;
+            _sslStream = sslStream!;
         }
 
-        public override ChannelBinding GetChannelBinding(ChannelBindingKind kind)
+        public override ChannelBinding? GetChannelBinding(ChannelBindingKind kind)
         {
             return _sslStream.GetChannelBinding(kind);
         }

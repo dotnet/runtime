@@ -1,0 +1,51 @@
+parameters:
+  buildConfig: ''
+  nameSuffix: ''
+  buildArgs: ''
+  archType: ''
+  osGroup: ''
+  osSubgroup: ''
+  container: ''
+  variables: {}
+  timeoutInMinutes: ''
+  pool: ''
+
+jobs:
+- template: /eng/common/templates/job/job.yml
+  parameters:
+    name: ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
+    displayName: ${{ format('Build {0}{1} {2} {3} {4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
+    dependsOn: checkout
+    pool: ${{ parameters.pool }}
+    container: ${{ parameters.container }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    workspace:
+      clean: all
+
+    variables: ${{ parameters.variables }}
+
+    steps:
+    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - script: |
+          $(setScriptToEchoAndFailOnNonZero) 
+          brew install pkgconfig icu4c openssl autoconf automake libtool pkg-config python3
+          brew link --force icu4c
+          ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
+          ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
+          ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
+        displayName: Install Build Dependencies
+
+    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
+
+    # Build
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} ${{ parameters.buildArgs }}
+      displayName: Build product
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Logs
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
+        PublishLocation: Container
+        ArtifactName: $(Agent.Os)_PublishBuildAssets
+      continueOnError: true
+      condition: always()

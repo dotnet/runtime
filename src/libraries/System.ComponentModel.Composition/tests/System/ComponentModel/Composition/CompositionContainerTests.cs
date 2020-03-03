@@ -144,32 +144,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(579990)]  // NullReferenceException
-        public void ExportsChanged_Add_WhenDisposed_ShouldThrowObjectDisposed()
-        {
-            var container = CreateCompositionContainer();
-            container.Dispose();
-
-            ExceptionAssert.ThrowsDisposed(container, () =>
-            {
-                container.ExportsChanged += (o, s) => { };
-            });
-        }
-
-        [Fact]
-        [ActiveIssue(579990)] // NullReferenceException
-        public void ExportsChanged_Remove_WhenDisposed_ShouldThrowObjectDisposed()
-        {
-            var container = CreateCompositionContainer();
-            container.Dispose();
-
-            ExceptionAssert.ThrowsDisposed(container, () =>
-            {
-                container.ExportsChanged -= (o, s) => { };
-            });
-        }
-
-        [Fact]
         public void AddPart1_ImportOnlyPart_ShouldNotGetGarbageCollected()
         {
             var container = CreateCompositionContainer();
@@ -1656,6 +1630,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32295", TestRuntimes.Mono)]
         public void GetExportOfTTMetadataView1_TypeAsMetadataViewTypeArgument_IsUsedAsMetadataConstraint()
         {
             var metadata = new Dictionary<string, object>();
@@ -1752,6 +1727,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetExportsOfTTMetadataView1_TypeAsMetadataViewTypeArgument_IsUsedAsMetadataConstraint()
         {
             var metadata = new Dictionary<string, object>();
@@ -1776,6 +1752,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetExportsOfTTMetadataView2_TypeAsMetadataViewTypeArgument_IsUsedAsMetadataConstraint()
         {
             var metadata = new Dictionary<string, object>();
@@ -1896,6 +1873,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void TryComposeSimple()
         {
             var container = CreateCompositionContainer();
@@ -1909,6 +1887,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void TryComposeSimpleFail()
         {
             var container = CreateCompositionContainer();
@@ -1926,6 +1905,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ComposeDisposableChildContainer()
         {
             var outerContainer = CreateCompositionContainer();
@@ -1985,6 +1965,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         [Trait("Type", "Integration")]
         public void OptionalImportsOfValueTypeBoundToDefaultValueShouldNotAffectAvailableValues()
         {
@@ -2004,6 +1985,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         [Trait("Type", "Integration")]
         public void OptionalImportsOfNullableValueTypeBoundToDefaultValueShouldNotAffectAvailableValues()
         {
@@ -2023,6 +2005,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         [Trait("Type", "Integration")]
         public void OptionalImportsOfReferenceTypeBoundToDefaultValueShouldNotAffectAvailableValues()
         {
@@ -2418,7 +2401,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // Actual:   typeof(System.Reflection.ReflectionTypeLoadException)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // Actual:   typeof(System.Reflection.ReflectionTypeLoadException)
         public void TryGetValueWithCatalogVerifyExecptionDuringGet()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -2431,6 +2414,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void TryGetExportedValueWhileLockedForNotify()
         {
             var container = CreateCompositionContainer();
@@ -2455,30 +2439,6 @@ namespace System.ComponentModel.Composition
             Lazy<int> export = container.GetExport<int>("foo");
 
             Assert.Equal(1, export.Value);
-        }
-
-        [Fact]
-        [ActiveIssue(468388)]
-        public void ContainerXGetXTest()
-        {
-            CompositionContainer container = CreateCompositionContainer();
-            CompositionBatch batch = new CompositionBatch();
-            batch.AddPart(new MyExporterWithNoFoo());
-            container.Compose(batch);
-            ContainerXGetExportBoundValue(container);
-        }
-
-        [Fact]
-        [ActiveIssue(468388)]
-        public void ContainerXGetXByComponentCatalogTest()
-        {
-            CompositionContainer container = ContainerFactory.CreateWithDefaultAttributedCatalog();
-            ContainerXGetExportBoundValue(container);
-        }
-
-        private void ContainerXGetExportBoundValue(CompositionContainer container)
-        {
-            throw new NotImplementedException();
         }
 
         [Export("MyExporterWithNoFoo")]
@@ -2530,6 +2490,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         [Trait("Type", "Integration")]
         public void AddPartSimple()
         {
@@ -2544,6 +2505,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         [Trait("Type", "Integration")]
         public void AddPart()
         {
@@ -2558,6 +2520,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ComposeReentrantChildContainerDisposed()
         {
             var container = CreateCompositionContainer();
@@ -2587,6 +2550,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ComposeSimple()
         {
             var container = CreateCompositionContainer();
@@ -2600,6 +2564,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ComposeSimpleFail()
         {
             var container = CreateCompositionContainer();
@@ -2617,6 +2582,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ExceptionDuringNotify()
         {
             var container = CreateCompositionContainer();
@@ -2634,6 +2600,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void NeutralComposeWhileNotified()
         {
             var container = CreateCompositionContainer();
@@ -2691,6 +2658,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ThreadSafeCompositionContainer()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SimpleExporter));
@@ -2710,6 +2678,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ThreadSafeCompositionOptionsCompositionContainer()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SimpleExporter));
@@ -2728,6 +2697,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void DisableSilentRejectionCompositionOptionsCompositionContainer()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SimpleExporter));
@@ -2746,6 +2716,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void DisableSilentRejectionThreadSafeCompositionOptionsCompositionContainer()
         {
             TypeCatalog catalog = new TypeCatalog(typeof(SimpleExporter));
@@ -2984,20 +2955,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(812029)]
-        public void ComposeExportedValueOfT_ValidContractName_ExportedValue_ExportContainsEmptyMetadata()
-        {
-            string expectedContractName = "ContractName";
-            var container = CreateCompositionContainer();
-            container.ComposeExportedValue<string>(expectedContractName, "Value");
-
-            var importDefinition = new ImportDefinition(ed => ed.ContractName == expectedContractName, null, ImportCardinality.ZeroOrMore, false, false);
-            var exports = container.GetExports(importDefinition);
-            Assert.Equal(1, exports.Count());
-            Assert.Equal(1, exports.Single().Metadata.Count); // contains type identity
-        }
-
-        [Fact]
         public void ComposeExportedValueOfT_ValidContractName_ExportedValue_ImportsAreNotDiscovered()
         {
             var container = CreateCompositionContainer();
@@ -3011,6 +2968,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void TestExportedValueCachesNullValue()
         {
             var container = ContainerFactory.Create();
@@ -3024,6 +2982,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void TestExportedValueUsingWhereClause_ExportSuccessful()
         {
             CompositionContainer container = new CompositionContainer(new TypeCatalog(typeof(MefCollection<,>)));

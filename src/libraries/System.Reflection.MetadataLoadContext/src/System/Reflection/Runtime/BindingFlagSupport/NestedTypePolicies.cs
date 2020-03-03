@@ -24,7 +24,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return typeInfo.DeclaredNestedTypes;
         }
 
-        public sealed override IEnumerable<Type> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter filter, RuntimeTypeInfo reflectedType)
+        public sealed override IEnumerable<Type> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? filter, RuntimeTypeInfo reflectedType)
         {
             Debug.Assert(reflectedType.Equals(type));  // NestedType queries are always performed as if BindingFlags.DeclaredOnly are set so the reflectedType should always be the declaring type.
             return type.GetNestedTypesCore(filter);
@@ -43,7 +43,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             visibility = member.IsNestedPublic ? MethodAttributes.Public : MethodAttributes.Private;
         }
 
-        public sealed override bool ImplicitlyOverrides(Type baseMember, Type derivedMember) => false;
+        public sealed override bool ImplicitlyOverrides(Type? baseMember, Type? derivedMember) => false;
 
         public sealed override bool IsSuppressedByMoreDerivedMember(Type member, Type[] priorMembers, int startIndex, int endIndex)
         {

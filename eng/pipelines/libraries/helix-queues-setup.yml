@@ -1,0 +1,131 @@
+parameters:
+  jobTemplate: ''
+  variables: {}
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  container: ''
+  pool: ''
+  platform: ''
+  jobParameters: {}
+
+jobs:
+- template: ${{ parameters.jobTemplate }}
+  parameters:
+    variables: ${{ parameters.variables }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    archType: ${{ parameters.archType }}
+    container: ${{ parameters.container }}
+    pool: ${{ parameters.pool }}
+    helixQueues:
+
+    # Linux arm
+    - ${{ if eq(parameters.platform, 'Linux_arm') }}:
+      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+        - (Debian.9.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm32v7-bfcd90a-20200121150037
+
+    # Linux arm64
+    - ${{ if eq(parameters.platform, 'Linux_arm64') }}:
+      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+        - (Ubuntu.1804.ArmArch.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-bfcd90a-20200127194925
+      - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
+        - (Ubuntu.1804.ArmArch.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-bfcd90a-20200127194925
+
+    # Linux musl x64
+    - ${{ if eq(parameters.platform, 'Linux_musl_x64') }}:
+      - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
+        - (Alpine.311.Amd64.Open)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.11-helix-bfcd90a-20200123191053
+      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+        - (Alpine.39.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-helix-bfcd90a-20200123191053
+        - (Alpine.310.Amd64.Open)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.10-helix-bfcd90a-20200123191054
+        - (Alpine.311.Amd64.Open)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.11-helix-bfcd90a-20200123191053
+
+    # Linux musl arm64
+    - ${{ if eq(parameters.platform, 'Linux_musl_arm64') }}:
+      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+        - (Alpine.38.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-a45aeeb-20190620184035
+
+    # Linux x64
+    - ${{ if eq(parameters.platform, 'Linux_x64') }}:
+      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+        - Centos.7.Amd64.Open
+        - RedHat.7.Amd64.Open
+        - Debian.9.Amd64.Open
+        - Ubuntu.1604.Amd64.Open
+        - Ubuntu.1804.Amd64.Open
+        - SLES.12.Amd64.Open
+        - SLES.15.Amd64.Open
+        - (Fedora.29.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-29-helix-a12566d-20191210224553
+        - (Fedora.30.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-30-helix-4f8cef7-20200121150022
+        - (Ubuntu.1910.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-19.10-helix-amd64-cfcfd50-20191030180623
+        - (Debian.10.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-bfcd90a-20200121150006
+      - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
+        - Centos.7.Amd64.Open
+        - RedHat.7.Amd64.Open
+        - Debian.9.Amd64.Open
+        - Ubuntu.1604.Amd64.Open
+        - Ubuntu.1804.Amd64.Open
+        - SLES.15.Amd64.Open
+        - (Fedora.29.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-29-helix-a12566d-20191210224553
+
+    # OSX x64
+    - ${{ if eq(parameters.platform, 'OSX_x64') }}:
+      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+        - OSX.1013.Amd64.Open
+        - OSX.1014.Amd64.Open
+        # The 10.15 machines aren't in the same configuration, see
+        # https://github.com/dotnet/runtime/issues/24736
+        #- OSX.1015.Amd64.Open
+      - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
+        - OSX.1013.Amd64.Open
+        - OSX.1014.Amd64.Open
+
+    # Windows_NT x64
+    - ${{ if eq(parameters.platform, 'Windows_NT_x64') }}:
+      # netcoreapp
+      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
+        - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+          - Windows.7.Amd64.Open
+          - Windows.81.Amd64.Open
+          - Windows.10.Amd64.ServerRS5.Open
+          - Windows.10.Amd64.Server19H1.Open
+          - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
+        - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
+          - Windows.7.Amd64.Open
+          - Windows.81.Amd64.Open
+          - Windows.10.Amd64.Server19H1.ES.Open
+          - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
+
+      # NET472
+      - ${{ if eq(parameters.jobParameters.framework, 'net472') }}:
+        - Windows.10.Amd64.Client19H1.Open
+      
+      # AllConfigurations
+      - ${{ if eq(parameters.jobParameters.framework, 'allConfigurations') }}:
+        - Windows.10.Amd64.Server19H1.Open
+
+    # Windows_NT x86
+    - ${{ if eq(parameters.platform, 'Windows_NT_x86') }}:
+      # netcoreapp
+      - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
+        - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+          # TODO: Reopen when https://github.com/dotnet/runtime/issues/32231 is fixed
+          #- Windows.7.Amd64.Open
+          #- Windows.81.Amd64.Open
+          - Windows.10.Amd64.ServerRS5.Open
+          - Windows.10.Amd64.Server19H1.Open
+        - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
+          - ${{ if eq(parameters.jobParameters.buildConfig, 'Release') }}:
+            # TODO: Reopen when https://github.com/dotnet/runtime/issues/32231 is fixed
+            #- Windows.7.Amd64.Open
+            #- Windows.81.Amd64.Open
+            - Windows.10.Amd64.Server19H1.ES.Open
+          - ${{ if eq(parameters.jobParameters.buildConfig, 'Debug') }}:
+            - Windows.10.Amd64.Server19H1.Open
+
+      # NET472
+      - ${{ if eq(parameters.jobParameters.framework, 'net472') }}:
+        - Windows.10.Amd64.Client19H1.Open
+
+    ${{ insert }}: ${{ parameters.jobParameters }}

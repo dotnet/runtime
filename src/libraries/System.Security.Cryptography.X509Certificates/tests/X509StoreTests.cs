@@ -341,8 +341,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
          * and\or have lower testing hooks or use Microsoft Fakes Framework to redirect
          * and encapsulate the actual storage logic so it can be tested, along with mock exceptions
          * to verify exception handling.
-         * See issue https://github.com/dotnet/corefx/issues/12833
-         * and https://github.com/dotnet/corefx/issues/12223
+         * See issue https://github.com/dotnet/runtime/issues/19030
+         * and https://github.com/dotnet/runtime/issues/18792
 
         [Fact]
         public static void TestAddAndRemove() {}

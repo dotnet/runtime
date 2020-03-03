@@ -75,7 +75,7 @@ int Compiler::getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd)
 //
 int Compiler::getSIMDTypeAlignment(var_types simdType)
 {
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     // Fixed length vectors have the following alignment preference
     // Vector2   = 8 byte alignment
     // Vector3/4 = 16-byte alignment
@@ -96,7 +96,7 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
         assert(size == 32);
         return 32;
     }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     return 16;
 #else
     assert(!"getSIMDTypeAlignment() unimplemented on target arch");
@@ -373,7 +373,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
         const size_t Vector128SizeBytes = 128 / 8;
         const size_t Vector256SizeBytes = 256 / 8;
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
         static_assert_no_msg(YMM_REGSIZE_BYTES == Vector256SizeBytes);
         static_assert_no_msg(XMM_REGSIZE_BYTES == Vector128SizeBytes);
 
@@ -438,7 +438,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             JITDUMP("  Known type Vector256<ulong>\n");
         }
         else
-#endif // defined(_TARGET_XARCH)
+#endif // defined(TARGET_XARCH)
             if (typeHnd == m_simdHandleCache->Vector128FloatHandle)
         {
             simdBaseType = TYP_FLOAT;
@@ -500,12 +500,18 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             JITDUMP("  Known type Vector128<ulong>\n");
         }
         else
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
             if (typeHnd == m_simdHandleCache->Vector64FloatHandle)
         {
             simdBaseType = TYP_FLOAT;
             size         = Vector64SizeBytes;
             JITDUMP("  Known type Vector64<float>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->Vector64DoubleHandle)
+        {
+            simdBaseType = TYP_DOUBLE;
+            size         = Vector64SizeBytes;
+            JITDUMP("  Known type Vector64<double>\n");
         }
         else if (typeHnd == m_simdHandleCache->Vector64IntHandle)
         {
@@ -543,7 +549,19 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             size         = Vector64SizeBytes;
             JITDUMP("  Known type Vector64<byte>\n");
         }
-#endif // defined(_TARGET_ARM64_)
+        else if (typeHnd == m_simdHandleCache->Vector64LongHandle)
+        {
+            simdBaseType = TYP_LONG;
+            size         = Vector64SizeBytes;
+            JITDUMP("  Known type Vector64<long>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->Vector64ULongHandle)
+        {
+            simdBaseType = TYP_ULONG;
+            size         = Vector64SizeBytes;
+            JITDUMP("  Known type Vector64<ulong>\n");
+        }
+#endif // defined(TARGET_ARM64)
 
         // slow path search
         if (simdBaseType == TYP_UNKNOWN)
@@ -559,7 +577,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                 JITDUMP("HW Intrinsic SIMD Candidate Type %s with Base Type %s\n", className,
                         getClassNameFromMetadata(baseTypeHnd, nullptr));
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
                 if (strcmp(className, "Vector256`1") == 0)
                 {
                     size = Vector256SizeBytes;
@@ -621,7 +639,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                     }
                 }
                 else
-#endif // defined(_TARGET_XARCH_)
+#endif // defined(TARGET_XARCH)
                     if (strcmp(className, "Vector128`1") == 0)
                 {
                     size = Vector128SizeBytes;
@@ -682,7 +700,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                             JITDUMP("  Unknown Hardware Intrinsic SIMD Type Vector128<T>\n");
                     }
                 }
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
                 else if (strcmp(className, "Vector64`1") == 0)
                 {
                     size = Vector64SizeBytes;
@@ -692,6 +710,11 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                             m_simdHandleCache->Vector64FloatHandle = typeHnd;
                             simdBaseType                           = TYP_FLOAT;
                             JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<float>\n");
+                            break;
+                        case CORINFO_TYPE_DOUBLE:
+                            m_simdHandleCache->Vector64DoubleHandle = typeHnd;
+                            simdBaseType                            = TYP_DOUBLE;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<double>\n");
                             break;
                         case CORINFO_TYPE_INT:
                             m_simdHandleCache->Vector64IntHandle = typeHnd;
@@ -713,6 +736,16 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                             simdBaseType                            = TYP_USHORT;
                             JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<ushort>\n");
                             break;
+                        case CORINFO_TYPE_LONG:
+                            m_simdHandleCache->Vector64LongHandle = typeHnd;
+                            simdBaseType                          = TYP_LONG;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<long>\n");
+                            break;
+                        case CORINFO_TYPE_ULONG:
+                            m_simdHandleCache->Vector64ULongHandle = typeHnd;
+                            simdBaseType                           = TYP_ULONG;
+                            JITDUMP("  Found type Hardware Intrinsic SIMD Vector64<ulong>\n");
+                            break;
                         case CORINFO_TYPE_UBYTE:
                             m_simdHandleCache->Vector64UByteHandle = typeHnd;
                             simdBaseType                           = TYP_UBYTE;
@@ -728,7 +761,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                             JITDUMP("  Unknown Hardware Intrinsic SIMD Type Vector64<T>\n");
                     }
                 }
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
             }
         }
 
@@ -1018,6 +1051,46 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
     return nullptr;
 }
 
+/* static */ bool Compiler::vnEncodesResultTypeForSIMDIntrinsic(SIMDIntrinsicID intrinsicId)
+{
+    switch (intrinsicId)
+    {
+        case SIMDIntrinsicInit:
+        case SIMDIntrinsicGetItem:
+        case SIMDIntrinsicAdd:
+        case SIMDIntrinsicSub:
+        case SIMDIntrinsicMul:
+        case SIMDIntrinsicDiv:
+        case SIMDIntrinsicSqrt:
+        case SIMDIntrinsicMin:
+        case SIMDIntrinsicMax:
+        case SIMDIntrinsicAbs:
+        case SIMDIntrinsicEqual:
+        case SIMDIntrinsicLessThan:
+        case SIMDIntrinsicLessThanOrEqual:
+        case SIMDIntrinsicGreaterThan:
+        case SIMDIntrinsicGreaterThanOrEqual:
+        case SIMDIntrinsicBitwiseAnd:
+        case SIMDIntrinsicBitwiseAndNot:
+        case SIMDIntrinsicBitwiseOr:
+        case SIMDIntrinsicBitwiseXor:
+        case SIMDIntrinsicDotProduct:
+        case SIMDIntrinsicCast:
+        case SIMDIntrinsicConvertToSingle:
+        case SIMDIntrinsicConvertToDouble:
+        case SIMDIntrinsicConvertToInt32:
+        case SIMDIntrinsicConvertToInt64:
+        case SIMDIntrinsicNarrow:
+        case SIMDIntrinsicWidenHi:
+        case SIMDIntrinsicWidenLo:
+            return true;
+
+        default:
+            break;
+    }
+    return false;
+}
+
 // Pops and returns GenTree node from importer's type stack.
 // Normalizes TYP_STRUCT value in case of GT_CALL, GT_RET_EXPR and arg nodes.
 //
@@ -1137,7 +1210,7 @@ GenTreeSIMD* Compiler::impSIMDGetFixed(var_types simdType, var_types baseType, u
     return simdTree;
 }
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
 // impSIMDLongRelOpEqual: transforms operands and returns the SIMD intrinsic to be applied on
 // transformed operands to obtain == comparison result.
 //
@@ -1393,7 +1466,7 @@ SIMDIntrinsicID Compiler::impSIMDIntegralRelOpGreaterThanOrEqual(
 
     return SIMDIntrinsicBitwiseOr;
 }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 
 // Transforms operands and returns the SIMD intrinsic to be applied on
 // transformed operands to obtain given relop result.
@@ -1422,7 +1495,7 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
     assert(isRelOpSIMDIntrinsic(relOpIntrinsicId));
 
     SIMDIntrinsicID intrinsicID = relOpIntrinsicId;
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     var_types baseType = *inOutBaseType;
 
     if (varTypeIsFloating(baseType))
@@ -1557,10 +1630,10 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
             return impSIMDRelOp(intrinsicID, typeHnd, size, inOutBaseType, pOp1, pOp2);
         }
     }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     // TODO-ARM64-CQ handle comparisons against zero
 
-    // _TARGET_ARM64_ doesn't support < and <= on register register comparisons
+    // TARGET_ARM64 doesn't support < and <= on register register comparisons
     // Therefore, we need to use > and >= with swapped operands.
     if (intrinsicID == SIMDIntrinsicLessThan || intrinsicID == SIMDIntrinsicLessThanOrEqual)
     {
@@ -1571,10 +1644,10 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
         intrinsicID =
             (intrinsicID == SIMDIntrinsicLessThan) ? SIMDIntrinsicGreaterThan : SIMDIntrinsicGreaterThanOrEqual;
     }
-#else  // !_TARGET_XARCH_
+#else  // !TARGET_XARCH
     assert(!"impSIMDRelOp() unimplemented on target arch");
     unreached();
-#endif // !_TARGET_XARCH_
+#endif // !TARGET_XARCH
 
     return intrinsicID;
 }
@@ -1595,7 +1668,7 @@ GenTree* Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, 
     var_types simdType = op1->TypeGet();
     GenTree*  retVal   = nullptr;
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     // When there is no direct support, Abs(v) could be computed
     // on integer vectors as follows:
     //     BitVector = v < vector.Zero
@@ -1720,7 +1793,7 @@ GenTree* Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, 
 
         retVal = gtNewSIMDNode(simdType, op1, SIMDIntrinsicAbs, baseType, size);
     }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     if (varTypeIsUnsigned(baseType))
     {
         // Abs is a no-op on unsigned integer type vectors
@@ -1730,9 +1803,9 @@ GenTree* Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, 
     {
         retVal = gtNewSIMDNode(simdType, op1, SIMDIntrinsicAbs, baseType, size);
     }
-#else  // !defined(_TARGET_XARCH)_ && !defined(_TARGET_ARM64_)
+#else // !defined(TARGET_XARCH)_ && !defined(TARGET_ARM64)
     assert(!"Abs intrinsic on non-xarch target not implemented");
-#endif // !_TARGET_XARCH_
+#endif // !TARGET_XARCH
 
     return retVal;
 }
@@ -1779,7 +1852,7 @@ GenTree* Compiler::impSIMDSelect(
     GenTree* andExpr = gtNewSIMDNode(simdType, op2, tmp, SIMDIntrinsicBitwiseAnd, baseType, size);
     GenTree* dupOp1  = gtCloneExpr(tmp);
     assert(dupOp1 != nullptr);
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     // ARM64 implements SIMDIntrinsicBitwiseAndNot as Left & ~Right
     GenTree* andNotExpr = gtNewSIMDNode(simdType, op3, dupOp1, SIMDIntrinsicBitwiseAndNot, baseType, size);
 #else
@@ -1822,10 +1895,10 @@ GenTree* Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
     var_types simdType = op1->TypeGet();
     assert(op2->TypeGet() == simdType);
 
-#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     GenTree* simdTree = nullptr;
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     // SSE2 has direct support for float/double/signed word/unsigned byte.
     // SSE4.1 has direct support for int32/uint32/signed byte/unsigned word.
     // For other integer types we compute min/max as follows
@@ -1899,7 +1972,7 @@ GenTree* Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
         tmp      = gtNewLclvNode(tmp->AsLclVarCommon()->GetLclNum(), tmp->TypeGet());
         simdTree = gtNewSIMDNode(simdType, simdTree, tmp, adjustIntrinsic, baseType, size);
     }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     // Arm64 has direct support for all types except int64/uint64
     // For which we compute min/max as follows
     //
@@ -1924,8 +1997,8 @@ GenTree* Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
         if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
         {
             op1LclNum = lvaGrabTemp(true DEBUGARG("SIMD Min/Max"));
-            dupOp1    = gtNewLclvNode(op1LclNum, op1->TypeGet());
             lvaSetStruct(op1LclNum, typeHnd, false);
+            dupOp1    = gtNewLclvNode(op1LclNum, op1->TypeGet());
             op1Assign = gtNewTempAssign(op1LclNum, op1);
             op1       = gtNewLclvNode(op1LclNum, op1->TypeGet());
         }
@@ -1937,8 +2010,8 @@ GenTree* Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
         if ((op2->gtFlags & GTF_SIDE_EFFECT) != 0)
         {
             op2LclNum = lvaGrabTemp(true DEBUGARG("SIMD Min/Max"));
-            dupOp2    = gtNewLclvNode(op2LclNum, op2->TypeGet());
             lvaSetStruct(op2LclNum, typeHnd, false);
+            dupOp2    = gtNewLclvNode(op2LclNum, op2->TypeGet());
             op2Assign = gtNewTempAssign(op2LclNum, op2);
             op2       = gtNewLclvNode(op2LclNum, op2->TypeGet());
         }
@@ -1978,10 +2051,10 @@ GenTree* Compiler::impSIMDMinMax(SIMDIntrinsicID      intrinsicId,
 
     assert(simdTree != nullptr);
     return simdTree;
-#else  // !(defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_))
+#else  // !(defined(TARGET_XARCH) || defined(TARGET_ARM64))
     assert(!"impSIMDMinMax() unimplemented on target arch");
     unreached();
-#endif // !(defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_))
+#endif // !(defined(TARGET_XARCH) || defined(TARGET_ARM64))
 }
 
 //------------------------------------------------------------------------
@@ -2112,6 +2185,26 @@ bool Compiler::areFieldsContiguous(GenTree* first, GenTree* second)
     return false;
 }
 
+//----------------------------------------------------------------------
+// areLocalFieldsContiguous: Check whether two local field are contiguous
+//
+// Arguments:
+//    first - the first local field
+//    second - the second local field
+//
+// Return Value:
+//    If the first field is located before second field, and they are located contiguously,
+//    then return true. Otherwise, return false.
+//
+bool Compiler::areLocalFieldsContiguous(GenTreeLclFld* first, GenTreeLclFld* second)
+{
+    assert(first->TypeIs(TYP_FLOAT));
+    assert(second->TypeIs(TYP_FLOAT));
+
+    return (first->TypeGet() == second->TypeGet()) &&
+           (first->GetLclOffs() + genTypeSize(first->TypeGet()) == second->GetLclOffs());
+}
+
 //-------------------------------------------------------------------------------
 // Check whether two array element nodes are located contiguously or not.
 // Arguments:
@@ -2176,6 +2269,10 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
     else if (op1->OperGet() == GT_FIELD && op2->OperGet() == GT_FIELD)
     {
         return areFieldsContiguous(op1, op2);
+    }
+    else if (op1->OperIs(GT_LCL_FLD) && op2->OperIs(GT_LCL_FLD))
+    {
+        return areLocalFieldsContiguous(op1->AsLclFld(), op2->AsLclFld());
     }
     return false;
 }
@@ -2250,7 +2347,7 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
         // = indexVal + arrayElementsCount - 1
         unsigned arrayElementsCount  = simdSize / genTypeSize(baseType);
         checkIndexExpr               = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, indexVal + arrayElementsCount - 1);
-        GenTreeArrLen*    arrLen     = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length);
+        GenTreeArrLen*    arrLen     = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
         GenTreeBoundsChk* arrBndsChk = new (this, GT_ARR_BOUNDS_CHECK)
             GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, checkIndexExpr, arrLen, SCK_RNGCHK_FAIL);
 
@@ -2375,13 +2472,11 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         return nullptr;
     }
 
-#ifdef FEATURE_CORECLR
-    // For coreclr, we also exit early if the method is not a JIT Intrinsic (which requires the [Intrinsic] attribute).
+    // Exit early if the method is not a JIT Intrinsic (which requires the [Intrinsic] attribute).
     if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) == 0)
     {
         return nullptr;
     }
-#endif // FEATURE_CORECLR
 
     // Get base type and intrinsic Id
     var_types                baseType = TYP_UNKNOWN;
@@ -2688,7 +2783,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 }
 
                 GenTreeArrLen* arrLen =
-                    gtNewArrLen(TYP_INT, arrayRefForArgRngChk, (int)OFFSETOF__CORINFO_Array__length);
+                    gtNewArrLen(TYP_INT, arrayRefForArgRngChk, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
                 argRngChk = new (this, GT_ARR_BOUNDS_CHECK)
                     GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, arrLen, op3CheckKind);
                 // Now, clone op3 to create another node for the argChk
@@ -2708,7 +2803,8 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             {
                 op2CheckKind = SCK_ARG_EXCPN;
             }
-            GenTreeArrLen*    arrLen = gtNewArrLen(TYP_INT, arrayRefForArgChk, (int)OFFSETOF__CORINFO_Array__length);
+            GenTreeArrLen* arrLen =
+                gtNewArrLen(TYP_INT, arrayRefForArgChk, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
             GenTreeBoundsChk* argChk = new (this, GT_ARR_BOUNDS_CHECK)
                 GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, checkIndexExpr, arrLen, op2CheckKind);
 
@@ -2864,7 +2960,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             {
                 if (simdIntrinsicID == SIMDIntrinsicMul)
                 {
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
                     if ((baseType != TYP_INT) && (baseType != TYP_SHORT))
                     {
                         // TODO-CQ: implement mul on these integer vectors.
@@ -2872,8 +2968,8 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                         assert(!"Mul not supported on long/ulong/uint/small int vectors\n");
                         return nullptr;
                     }
-#endif // _TARGET_XARCH_
-#if defined(_TARGET_ARM64_)
+#endif // TARGET_XARCH
+#if defined(TARGET_ARM64)
                     if ((baseType == TYP_ULONG) && (baseType == TYP_LONG))
                     {
                         // TODO-CQ: implement mul on these integer vectors.
@@ -2881,9 +2977,9 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                         assert(!"Mul not supported on long/ulong vectors\n");
                         return nullptr;
                     }
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
                 }
-#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
                 // common to all integer type vectors
                 if (simdIntrinsicID == SIMDIntrinsicDiv)
                 {
@@ -2891,7 +2987,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                     assert(!"Div not supported on integer type vectors\n");
                     return nullptr;
                 }
-#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
             }
 #endif // DEBUG
 
@@ -2900,7 +2996,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             op2 = impSIMDPopStack(simdType);
             op1 = impSIMDPopStack(simdType, instMethod);
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
             if (simdIntrinsicID == SIMDIntrinsicBitwiseAndNot)
             {
                 // XARCH implements SIMDIntrinsicBitwiseAndNot as ~op1 & op2, while the
@@ -2910,7 +3006,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 op2          = op1;
                 op1          = tmp;
             }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 
             simdTree = gtNewSIMDNode(simdType, op1, op2, simdIntrinsicID, baseType, size);
             retVal   = simdTree;
@@ -2985,14 +3081,14 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
         case SIMDIntrinsicDotProduct:
         {
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
             // Right now dot product is supported only for float/double vectors and
             // int vectors on SSE4/AVX.
             if (!varTypeIsFloating(baseType) && !(baseType == TYP_INT && getSIMDSupportLevel() >= SIMD_SSE4_Supported))
             {
                 return nullptr;
             }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 
             // op1 is a SIMD variable that is the first source and also "this" arg.
             // op2 is a SIMD variable which is the second source.
@@ -3010,7 +3106,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
         case SIMDIntrinsicSqrt:
         {
-#if (defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)) && defined(DEBUG)
+#if (defined(TARGET_XARCH) || defined(TARGET_ARM64)) && defined(DEBUG)
             // SSE/AVX/ARM64 doesn't support sqrt on integer type vectors and hence
             // should never be seen as an intrinsic here. See SIMDIntrinsicList.h
             // for supported base types for this intrinsic.
@@ -3019,7 +3115,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 assert(!"Sqrt not supported on integer vectors\n");
                 return nullptr;
             }
-#endif // (defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)) && defined(DEBUG)
+#endif // (defined(TARGET_XARCH) || defined(TARGET_ARM64)) && defined(DEBUG)
 
             op1 = impSIMDPopStack(simdType);
 
@@ -3094,7 +3190,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
         case SIMDIntrinsicConvertToInt64:
         {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             op1 = impSIMDPopStack(simdType, instMethod);
 
             simdTree = gtNewSIMDNode(simdType, op1, nullptr, simdIntrinsicID, baseType, size);
@@ -3162,7 +3258,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             return nullptr;
     }
 
-#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     // XArch/Arm64: also indicate that we use floating point registers.
     // The need for setting this here is that a method may not have SIMD
     // type lclvars, but might be exercising SIMD intrinsics on fields of
@@ -3170,7 +3266,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
     //
     // e.g.  public Vector<float> ComplexVecFloat::sqabs() { return this.r * this.r + this.i * this.i; }
     compFloatingPointUsed = true;
-#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
     // At this point, we have a tree that we are going to store into a destination.
     // TODO-1stClassStructs: This should be a simple store or assignment, and should not require

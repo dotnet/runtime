@@ -147,7 +147,7 @@ namespace System.Xml.Xsl
                     // In this situation the compiler returned for example Line 10, Column 0.
                     // This means that the compiler knows the line of the error, but it doesn't
                     //   know (or support) the column part of the location.
-                    // Since we don't allow column 0 (as it's invalid), let's turn it into 1 (the begining of the line)
+                    // Since we don't allow column 0 (as it's invalid), let's turn it into 1 (the beginning of the line)
                     errorColumn = 1;
                 }
             }

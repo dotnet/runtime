@@ -137,7 +137,7 @@ public:
     // running on. If for any reason we can't tell then return 0xFFFFFFFF.
     static unsigned int GetCurrentProcessorNumber()
     {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         if (s_pProcGroupOffsets)
         {
             PROCESSOR_NUMBER procNum;
@@ -219,7 +219,7 @@ private:
     //! Bitmask tracking EventPipe active sessions.
     // in all groups preceding it. For example if there are three groups with sizes:
     // 1, 7, 6 the table would be 0, 1, 8
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     static unsigned int * s_pProcGroupOffsets;
 #endif
     static Volatile<uint32_t> s_numberOfSessions;

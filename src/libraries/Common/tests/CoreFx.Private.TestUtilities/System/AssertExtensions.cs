@@ -13,7 +13,7 @@ namespace System
 {
     public static class AssertExtensions
     {
-        private static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework");
+        private static bool IsNetFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework");
 
         public static void Throws<T>(Action action, string expectedMessage)
             where T : Exception
@@ -32,14 +32,14 @@ namespace System
         {
             T exception = Assert.Throws<T>(action);
 
-            if (netFxParamName == null && IsFullFramework)
+            if (netFxParamName == null && IsNetFramework)
             {
-                // Param name varies between NETFX versions -- skip checking it
+                // Param name varies between .NET Framework versions -- skip checking it
                 return;
             }
 
             string expectedParamName =
-                IsFullFramework ?
+                IsNetFramework ?
                 netFxParamName : netCoreParamName;
 
             Assert.Equal(expectedParamName, exception.ParamName);
@@ -50,14 +50,14 @@ namespace System
         {
             T exception = Assert.Throws<T>(testCode);
 
-            if (netFxParamName == null && IsFullFramework)
+            if (netFxParamName == null && IsNetFramework)
             {
-                // Param name varies between NETFX versions -- skip checking it
+                // Param name varies between .NET Framework versions -- skip checking it
                 return;
             }
 
             string expectedParamName =
-                IsFullFramework ?
+                IsNetFramework ?
                 netFxParamName : netCoreParamName;
 
             Assert.Equal(expectedParamName, exception.ParamName);
@@ -139,7 +139,7 @@ namespace System
             where TNetCoreExceptionType : ArgumentException
             where TNetFxExceptionType : Exception
         {
-            if (IsFullFramework)
+            if (IsNetFramework)
             {
                 // Support cases where the .NET Core exception derives from ArgumentException
                 // but the .NET Framework exception is not.
@@ -168,7 +168,7 @@ namespace System
 
         public static Exception Throws(Type netCoreExceptionType, Type netFxExceptionType, Action action)
         {
-            if (IsFullFramework)
+            if (IsNetFramework)
             {
                 return Assert.Throws(netFxExceptionType, action);
             }
@@ -182,7 +182,7 @@ namespace System
             where TNetCoreExceptionType : ArgumentException
             where TNetFxExceptionType : ArgumentException
         {
-            if (IsFullFramework)
+            if (IsNetFramework)
             {
                 Throws<TNetFxExceptionType>(netFxParamName, action);
             }
@@ -376,6 +376,13 @@ namespace System
             {
                 throw new XunitException($"Expected: {string.Join(", ", expected)}{Environment.NewLine}Actual: {string.Join(", ", actual)}");
             }
+        }
+
+        public static void AtLeastOneEquals<T>(T expected1, T expected2, T value)
+        {
+            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+            if (!(comparer.Equals(value, expected1) || comparer.Equals(value, expected2)))
+                throw new XunitException($"Expected: {expected1} || {expected2}{Environment.NewLine}Actual: {value}");
         }
 
         public delegate void AssertThrowsActionReadOnly<T>(ReadOnlySpan<T> span);

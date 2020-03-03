@@ -29,22 +29,12 @@ namespace ILCompiler
         public TargetArchitecture _targetArchitecture;
         public OptimizationMode _optimizationMode;
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, string> _unrootedInputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         private Program(CommandLineOptions commandLineOptions)
         {
             _commandLineOptions = commandLineOptions;
-        }
-
-        private void Help(string helpText)
-        {
-            Console.WriteLine();
-            Console.Write("Microsoft (R) CoreCLR Native Image Generator");
-            Console.Write(" ");
-            Console.Write(typeof(Program).GetTypeInfo().Assembly.GetName().Version);
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine(helpText);
         }
 
         private void InitializeDefaultOptions()
@@ -77,11 +67,6 @@ namespace ILCompiler
                 default:
                     throw new NotImplementedException();
             }
-
-            // Workaround for https://github.com/dotnet/corefx/issues/25267
-            // If pointer size is 8, we're obviously not an X86 process...
-            if (_targetArchitecture == TargetArchitecture.X86 && IntPtr.Size == 8)
-                _targetArchitecture = TargetArchitecture.X64;
         }
 
         private void ProcessCommandLine()
@@ -90,7 +75,7 @@ namespace ILCompiler
 
             if (_commandLineOptions.WaitForDebugger)
             {
-                Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
+                Console.WriteLine(SR.WaitingForDebuggerAttach);
                 Console.ReadLine();
             }
 
@@ -98,7 +83,7 @@ namespace ILCompiler
             {
                 if (!_commandLineOptions.InputBubble)
                 {
-                    Console.WriteLine("Warning: ignoring --compilebubblegenerics because --inputbubble was not specified");
+                    Console.WriteLine(SR.WarningIgnoringBubbleGenerics);
                     _commandLineOptions.CompileBubbleGenerics = false;
                 }
             }
@@ -107,7 +92,7 @@ namespace ILCompiler
             if (_commandLineOptions.OptimizeSpace)
             {
                 if (_commandLineOptions.OptimizeTime)
-                    Console.WriteLine("Warning: overriding -Ot with -Os");
+                    Console.WriteLine(SR.WarningOverridingOptimizeSpace);
                 _optimizationMode = OptimizationMode.PreferSize;
             }
             else if (_commandLineOptions.OptimizeTime)
@@ -117,6 +102,9 @@ namespace ILCompiler
 
             foreach (var input in _commandLineOptions.InputFilePaths ?? Enumerable.Empty<FileInfo>())
                 Helpers.AppendExpandedPaths(_inputFilePaths, input.FullName, true);
+
+            foreach (var input in _commandLineOptions.UnrootedInputFilePaths ?? Enumerable.Empty<FileInfo>())
+                Helpers.AppendExpandedPaths(_unrootedInputFilePaths, input.FullName, true);
 
             foreach (var reference in _commandLineOptions.Reference ?? Enumerable.Empty<string>())
                 Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
@@ -129,7 +117,7 @@ namespace ILCompiler
             ProcessCommandLine();
 
             if (_commandLineOptions.OutputFilePath == null)
-                throw new CommandLineException("Output filename must be specified (/out <file>)");
+                throw new CommandLineException(SR.MissingOutputFile);
 
             //
             // Set target Architecture and OS
@@ -147,7 +135,7 @@ namespace ILCompiler
                 else if (_commandLineOptions.TargetArch.Equals("arm64", StringComparison.OrdinalIgnoreCase))
                     _targetArchitecture = TargetArchitecture.ARM64;
                 else
-                    throw new CommandLineException("Target architecture is not supported");
+                    throw new CommandLineException(SR.TargetArchitectureUnsupported);
             }
             if (_commandLineOptions.TargetOS != null)
             {
@@ -158,7 +146,7 @@ namespace ILCompiler
                 else if (_commandLineOptions.TargetOS.Equals("osx", StringComparison.OrdinalIgnoreCase))
                     _targetOS = TargetOS.OSX;
                 else
-                    throw new CommandLineException("Target OS is not supported");
+                    throw new CommandLineException(SR.TargetOSUnsupported);
             }
 
             using (PerfEventSource.StartStopEvents.CompilationEvents())
@@ -184,13 +172,17 @@ namespace ILCompiler
                     // When we undo this this hack, replace this foreach with
                     //  typeSystemContext.InputFilePaths = _inputFilePaths;
                     //
+                    Dictionary<string, string> allInputFilePaths = new Dictionary<string, string>();
                     Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
+                    List<ModuleDesc> referenceableModules = new List<ModuleDesc>();
                     foreach (var inputFile in _inputFilePaths)
                     {
                         try
                         {
                             var module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+                            allInputFilePaths.Add(inputFile.Key, inputFile.Value);
                             inputFilePaths.Add(inputFile.Key, inputFile.Value);
+                            referenceableModules.Add(module);
                         }
                         catch (TypeSystemException.BadImageFormatException)
                         {
@@ -198,14 +190,57 @@ namespace ILCompiler
                         }
                     }
 
-                    typeSystemContext.InputFilePaths = inputFilePaths;
+                    Dictionary<string, string> unrootedInputFilePaths = new Dictionary<string, string>();
+                    foreach (var unrootedInputFile in _unrootedInputFilePaths)
+                    {
+                        try
+                        {
+                            var module = typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
+                            if (!allInputFilePaths.ContainsKey(unrootedInputFile.Key))
+                            {
+                                allInputFilePaths.Add(unrootedInputFile.Key, unrootedInputFile.Value);
+                                unrootedInputFilePaths.Add(unrootedInputFile.Key, unrootedInputFile.Value);
+                                referenceableModules.Add(module);
+                            }
+                        }
+                        catch (TypeSystemException.BadImageFormatException)
+                        {
+                            // Keep calm and carry on.
+                        }
+                    }
+
+                    typeSystemContext.InputFilePaths = allInputFilePaths;
                     typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
+                    List<EcmaModule> inputModules = new List<EcmaModule>();
+                    List<EcmaModule> rootingModules = new List<EcmaModule>();
+                    HashSet<ModuleDesc> versionBubbleModulesHash = new HashSet<ModuleDesc>();
+
+                    foreach (var inputFile in inputFilePaths)
+                    {
+                        EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+                        inputModules.Add(module);
+                        rootingModules.Add(module);
+                        versionBubbleModulesHash.Add(module);
+
+                        if (!_commandLineOptions.InputBubble)
+                        {
+                            break;
+                        }
+                    }
+
+                    foreach (var unrootedInputFile in unrootedInputFilePaths)
+                    {
+                        EcmaModule module = typeSystemContext.GetModuleFromPath(unrootedInputFile.Value);
+                        inputModules.Add(module);
+                        versionBubbleModulesHash.Add(module);
+                    }
+
                     string systemModuleName = _commandLineOptions.SystemModule ?? DefaultSystemModule;
-                    typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(systemModuleName));
+                    typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
 
                     if (typeSystemContext.InputFilePaths.Count == 0)
-                        throw new CommandLineException("No input files specified");
+                        throw new CommandLineException(SR.NoInputFiles);
 
                     //
                     // Initialize compilation group and compilation roots
@@ -216,105 +251,103 @@ namespace ILCompiler
 
                     var logger = new Logger(Console.Out, _commandLineOptions.Verbose);
 
-                    List<ModuleDesc> referenceableModules = new List<ModuleDesc>();
-                    foreach (var inputFile in inputFilePaths)
+                    List<string> mibcFiles = new List<string>();
+                    if (_commandLineOptions.Mibc != null)
                     {
-                        try
+                        foreach (var file in _commandLineOptions.Mibc)
                         {
-                            referenceableModules.Add(typeSystemContext.GetModuleFromPath(inputFile.Value));
+                            mibcFiles.Add(file.FullName);
                         }
-                        catch { } // Ignore non-managed pe files
                     }
 
                     foreach (var referenceFile in _referenceFilePaths.Values)
                     {
                         try
                         {
-                            referenceableModules.Add(typeSystemContext.GetModuleFromPath(referenceFile));
+                            EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile);
+                            if (versionBubbleModulesHash.Contains(module))
+                            {
+                                // Ignore reference assemblies that have also been passed as inputs
+                                continue;
+                            }
+                            referenceableModules.Add(module);
+                            if (_commandLineOptions.InputBubble)
+                            {
+                                // In large version bubble mode add reference paths to the compilation group
+                                versionBubbleModulesHash.Add(module);
+                            }
                         }
                         catch { } // Ignore non-managed pe files
                     }
 
-                    ProfileDataManager profileDataManager = new ProfileDataManager(logger, referenceableModules);
+                    List<ModuleDesc> versionBubbleModules = new List<ModuleDesc>(versionBubbleModulesHash);
 
-                    CompilationModuleGroup compilationGroup;
+                    if (!_commandLineOptions.Composite && inputModules.Count != 1)
+                    {
+                        throw new Exception(string.Format(SR.ErrorMultipleInputFilesCompositeModeOnly, string.Join("; ", inputModules)));
+                    }
+
+                    ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
                     if (singleMethod != null)
                     {
                         // Compiling just a single method
-                        compilationGroup = new SingleMethodCompilationModuleGroup(singleMethod);
+                        compilationGroup = new SingleMethodCompilationModuleGroup(
+                            typeSystemContext,
+                            _commandLineOptions.Composite,
+                            inputModules,
+                            versionBubbleModules,
+                            _commandLineOptions.CompileBubbleGenerics,
+                            singleMethod);
                         compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                     }
                     else
                     {
-                        // Either single file, or multifile library, or multifile consumption.
-                        EcmaModule entrypointModule = null;
-                        foreach (var inputFile in typeSystemContext.InputFilePaths)
+                        // Single assembly compilation.
+                        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
+                            typeSystemContext,
+                            _commandLineOptions.Composite,
+                            inputModules,
+                            versionBubbleModules,
+                            _commandLineOptions.CompileBubbleGenerics);
+                    }
+
+                    // Examine profile guided information as appropriate
+                    ProfileDataManager profileDataManager =
+                        new ProfileDataManager(logger,
+                        referenceableModules,
+                        inputModules,
+                        versionBubbleModules,
+                        _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null,
+                        mibcFiles,
+                        typeSystemContext,
+                        compilationGroup);
+
+                    if (_commandLineOptions.Partial)
+                        compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);
+                    else
+                        compilationGroup.ApplyProfilerGuidedCompilationRestriction(null);
+
+                    if (singleMethod == null)
+                    {
+                        // For non-single-method compilations add compilation roots.
+                        foreach (var module in rootingModules)
                         {
-                            EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-
-                            if (module.PEReader.PEHeaders.IsExe)
-                            {
-                                if (entrypointModule != null)
-                                    throw new Exception("Multiple EXE modules");
-                                entrypointModule = module;
-                            }
-                        }
-
-                        List<EcmaModule> inputModules = new List<EcmaModule>();
-
-                        foreach (var inputFile in typeSystemContext.InputFilePaths)
-                        {
-                            EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-                            compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager));
-                            inputModules.Add(module);
+                            compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager, _commandLineOptions.Partial));
 
                             if (!_commandLineOptions.InputBubble)
                             {
                                 break;
                             }
                         }
-
-
-                        List<ModuleDesc> versionBubbleModules = new List<ModuleDesc>();
-                        if (_commandLineOptions.InputBubble)
-                        {
-                            // In large version bubble mode add reference paths to the compilation group
-                            foreach (string referenceFile in _referenceFilePaths.Values)
-                            {
-                                try
-                                {
-                                    // Currently SimpleTest.targets has no easy way to filter out non-managed assemblies
-                                    // from the reference list.
-                                    EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile);
-                                    versionBubbleModules.Add(module);
-                                }
-                                catch (TypeSystemException.BadImageFormatException ex)
-                                {
-                                    Console.WriteLine("Warning: cannot open reference assembly '{0}': {1}", referenceFile, ex.Message);
-                                }
-                            }
-                        }
-
-                        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
-                            typeSystemContext, inputModules, versionBubbleModules, _commandLineOptions.CompileBubbleGenerics,
-                            _commandLineOptions.Partial ? profileDataManager : null);
                     }
 
                     //
                     // Compile
                     //
 
-                    string inputFilePath = "";
-                    foreach (var input in typeSystemContext.InputFilePaths)
-                    {
-                        inputFilePath = input.Value;
-                        break;
-                    }
-                    CompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath,
-                        ibcTuning: _commandLineOptions.Tuning,
-                        resilient: _commandLineOptions.Resilient);
-
+                    ReadyToRunCodegenCompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(
+                        typeSystemContext, compilationGroup, allInputFilePaths.Values);
                     string compilationUnitPrefix = "";
                     builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
@@ -324,8 +357,12 @@ namespace ILCompiler
                         DependencyTrackingLevel.None : (_commandLineOptions.GenerateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
                     builder
-                        .UseILProvider(ilProvider)
+                        .UseIbcTuning(_commandLineOptions.Tuning)
+                        .UseResilience(_commandLineOptions.Resilient)
+                        .UseMapFile(_commandLineOptions.Map)
+                        .UseParallelism(_commandLineOptions.Parallelism)
                         .UseJitPath(_commandLineOptions.JitPath)
+                        .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)
                         .UseDependencyTracking(trackingLevel)
@@ -354,7 +391,7 @@ namespace ILCompiler
                     ?? CustomAttributeTypeNameParser.ResolveCustomAttributeTypeDefinitionName(typeDefName, module, throwIfNotFound);
             });
             if (foundType == null)
-                throw new CommandLineException($"Type '{typeName}' not found");
+                throw new CommandLineException(string.Format(SR.TypeNotFound, typeName));
 
             return foundType;
         }
@@ -365,20 +402,20 @@ namespace ILCompiler
                 return null;
 
             if (_commandLineOptions.SingleMethodName == null || _commandLineOptions.SingleMethodTypeName == null)
-                throw new CommandLineException("Both method name and type name are required parameters for single method mode");
+                throw new CommandLineException(SR.TypeAndMethodNameNeeded);
 
             TypeDesc owningType = FindType(context, _commandLineOptions.SingleMethodTypeName);
 
             // TODO: allow specifying signature to distinguish overloads
             MethodDesc method = owningType.GetMethod(_commandLineOptions.SingleMethodName, null);
             if (method == null)
-                throw new CommandLineException($"Method '{_commandLineOptions.SingleMethodName}' not found in '{_commandLineOptions.SingleMethodTypeName}'");
+                throw new CommandLineException(string.Format(SR.MethodNotFoundOnType, _commandLineOptions.SingleMethodName, _commandLineOptions.SingleMethodTypeName));
 
             if (method.HasInstantiation != (_commandLineOptions.SingleMethodGenericArgs != null) ||
                 (method.HasInstantiation && (method.Instantiation.Length != _commandLineOptions.SingleMethodGenericArgs.Length)))
             {
                 throw new CommandLineException(
-                    $"Expected {method.Instantiation.Length} generic arguments for method '{_commandLineOptions.SingleMethodName}' on type '{_commandLineOptions.SingleMethodTypeName}'");
+                    string.Format(SR.GenericArgCountMismatch, method.Instantiation.Length, _commandLineOptions.SingleMethodName, _commandLineOptions.SingleMethodTypeName));
             }
 
             if (method.HasInstantiation)
@@ -394,7 +431,7 @@ namespace ILCompiler
 
         private static bool DumpReproArguments(CodeGenerationFailedException ex)
         {
-            Console.WriteLine("To repro, add following arguments to the command line:");
+            Console.WriteLine(SR.DumpReproInstructions);
 
             MethodDesc failingMethod = ex.Method;
 
@@ -406,6 +443,7 @@ namespace ILCompiler
             for (int i = 0; i < failingMethod.Instantiation.Length; i++)
                 Console.Write($" --singlemethodgenericarg \"{formatter.FormatName(failingMethod.Instantiation[i], true)}\"");
 
+            Console.WriteLine();
             return false;
         }
 
@@ -434,7 +472,7 @@ namespace ILCompiler
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine("Error: " + e.Message);
+                Console.Error.WriteLine(string.Format(SR.ProgramError, e.Message));
                 Console.Error.WriteLine(e.ToString());
                 return 1;
             }

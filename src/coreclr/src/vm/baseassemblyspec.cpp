@@ -16,6 +16,9 @@
 
 #include "../binder/inc/fusionassemblyname.hpp"
 
+#include "strongnameinternal.h"
+#include "strongnameholders.h"
+
 VOID BaseAssemblySpec::CloneFieldsToStackingAllocator( StackingAllocator* alloc)
 {
     CONTRACTL
@@ -211,11 +214,10 @@ VOID BaseAssemblySpec::ConvertPublicKeyToToken()
 
     StrongNameBufferHolder<BYTE> pbPublicKeyToken;
     DWORD cbPublicKeyToken;
-    if (!StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
-                                      m_cbPublicKeyOrToken,
-                                      &pbPublicKeyToken,
-                                      &cbPublicKeyToken))
-        ThrowHR(StrongNameErrorInfo());
+    IfFailThrow(StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
+        m_cbPublicKeyOrToken,
+        &pbPublicKeyToken,
+        &cbPublicKeyToken));
 
     BYTE *temp = new BYTE [cbPublicKeyToken];
     memcpy(temp, pbPublicKeyToken, cbPublicKeyToken);

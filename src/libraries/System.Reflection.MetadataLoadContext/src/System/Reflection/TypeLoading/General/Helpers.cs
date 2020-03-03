@@ -5,13 +5,15 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.Reflection.TypeLoading
 {
     internal static class Helpers
     {
-        public static T[] CloneArray<T>(this T[] original)
+        [return: NotNullIfNotNull("original")]
+        public static T[]? CloneArray<T>(this T[]? original)
         {
             if (original == null)
                 return null;
@@ -35,7 +37,7 @@ namespace System.Reflection.TypeLoading
 
         public static int GetTokenRowNumber(this int token) => token & 0x00ffffff;
 
-        public static RoMethod FilterInheritedAccessor(this RoMethod accessor)
+        public static RoMethod? FilterInheritedAccessor(this RoMethod accessor)
         {
             if (accessor.ReflectedType == accessor.DeclaringType)
                 return accessor;
@@ -43,14 +45,14 @@ namespace System.Reflection.TypeLoading
             if (accessor.IsPrivate)
                 return null;
 
-            // If the accessor is virtual, NETFX tries to look for a overriding member starting from ReflectedType - a situation
+            // If the accessor is virtual, .NET Framework tries to look for a overriding member starting from ReflectedType - a situation
             // which probably isn't expressible in any known language. Detecting overrides veers into vtable-building business which
             // is something this library tries to avoid. If anyone ever cares about this, welcome to fix.
 
             return accessor;
         }
 
-        public static MethodInfo FilterAccessor(this MethodInfo accessor, bool nonPublic)
+        public static MethodInfo? FilterAccessor(this MethodInfo accessor, bool nonPublic)
         {
             if (nonPublic)
                 return accessor;
@@ -125,7 +127,7 @@ namespace System.Reflection.TypeLoading
         /// <summary>
         /// For AssemblyReferences, convert "unspecified" components from the ECMA format (0xffff) to the in-memory System.Version format (0xffffffff).
         /// </summary>
-        public static Version AdjustForUnspecifiedVersionComponents(this Version v)
+        public static Version? AdjustForUnspecifiedVersionComponents(this Version v)
         {
             int mask =
                 ((v.Revision == ushort.MaxValue) ? 0b0001 : 0) |
@@ -143,11 +145,11 @@ namespace System.Reflection.TypeLoading
             };
         }
 
-        public static byte[] ComputePublicKeyToken(this byte[] pkt)
+        public static byte[]? ComputePublicKeyToken(this byte[] pkt)
         {
             // @TODO - https://github.com/dotnet/corefxlab/issues/2447 - This is not the best way to compute the PKT as AssemblyName
             // throws if the PK isn't a valid PK blob. That's not something we should block a metadata inspection tool for so we
-            // should compute the PKT ourselves as soon as we can convince the CoreFx analyzers to let us use SHA1.
+            // should compute the PKT ourselves as soon as we can convince the libraries analyzers to let us use SHA1.
             AssemblyName an = new AssemblyName();
             an.SetPublicKey(pkt);
             return an.GetPublicKeyToken();
@@ -213,7 +215,7 @@ namespace System.Reflection.TypeLoading
             sb.Append(' ');
             sb.Append(roMethodBase.MethodBase.Name);
 
-            Type[] genericMethodArguments = typeContext.GenericMethodArguments;
+            Type[]? genericMethodArguments = typeContext.GenericMethodArguments;
             int count = genericMethodArguments == null ? 0 : genericMethodArguments.Length;
             if (count != 0)
             {
@@ -222,7 +224,7 @@ namespace System.Reflection.TypeLoading
                 {
                     if (gpi != 0)
                         sb.Append(',');
-                    sb.Append(genericMethodArguments[gpi].ToString());
+                    sb.Append(genericMethodArguments![gpi].ToString());
                 }
                 sb.Append(']');
             }
@@ -256,17 +258,17 @@ namespace System.Reflection.TypeLoading
             return true;
         }
 
-        public static RoType LoadTypeFromAssemblyQualifiedName(string name, RoAssembly defaultAssembly, bool ignoreCase, bool throwOnError)
+        public static RoType? LoadTypeFromAssemblyQualifiedName(string name, RoAssembly defaultAssembly, bool ignoreCase, bool throwOnError)
         {
             if (!name.TypeNameContainsTypeParserMetacharacters())
             {
                 // Fast-path: the type contains none of the parser metacharacters nor the escape character. Just treat as plain old type name.
                 name.SplitTypeName(out string ns, out string simpleName);
-                RoType type = defaultAssembly.GetTypeCore(ns, simpleName, ignoreCase: ignoreCase, out Exception e);
+                RoType? type = defaultAssembly.GetTypeCore(ns, simpleName, ignoreCase: ignoreCase, out Exception? e);
                 if (type != null)
                     return type;
                 if (throwOnError)
-                    throw e;
+                    throw e!;
             }
 
             MetadataLoadContext loader = defaultAssembly.Loader;
@@ -277,8 +279,8 @@ namespace System.Reflection.TypeLoading
                     return loader.LoadFromAssemblyName(assemblyName);
                 };
 
-            Func<Assembly, string, bool, Type> typeResolver =
-                delegate (Assembly assembly, string fullName, bool ignoreCase2)
+            Func<Assembly?, string, bool, Type?> typeResolver =
+                delegate (Assembly? assembly, string fullName, bool ignoreCase2)
                 {
                     if (assembly == null)
                         assembly = defaultAssembly;
@@ -288,15 +290,15 @@ namespace System.Reflection.TypeLoading
 
                     fullName = fullName.UnescapeTypeNameIdentifier();
                     fullName.SplitTypeName(out string ns, out string simpleName);
-                    Type type = roAssembly.GetTypeCore(ns, simpleName, ignoreCase: ignoreCase2, out Exception e);
+                    Type? type = roAssembly.GetTypeCore(ns, simpleName, ignoreCase: ignoreCase2, out Exception? e);
                     if (type != null)
                         return type;
                     if (throwOnError)
-                        throw e;
+                        throw e!;
                     return null;
                 };
 
-            return (RoType)Type.GetType(name, assemblyResolver: assemblyResolver, typeResolver: typeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
+            return (RoType?)Type.GetType(name, assemblyResolver: assemblyResolver, typeResolver: typeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 
         public static Type[] ExtractCustomModifiers(this RoType type, bool isRequired)
@@ -344,7 +346,7 @@ namespace System.Reflection.TypeLoading
                 return true;
 
             if (visibility == TypeAttributes.NestedPublic)
-                return type.DeclaringType.IsVisibleOutsideAssembly();
+                return type.DeclaringType!.IsVisibleOutsideAssembly();
 
             return false;
         }
@@ -359,7 +361,7 @@ namespace System.Reflection.TypeLoading
 
             // AssemblyName's PKT property getters do NOT copy the array before giving it out. Make our own copy
             // as the original is wide open to tampering by anyone.
-            byte[] pkt = assemblyName.GetPublicKeyToken().CloneArray();
+            byte[]? pkt = assemblyName.GetPublicKeyToken().CloneArray();
 
             return new RoAssemblyName(assemblyName.Name, assemblyName.Version, assemblyName.CultureName, pkt, assemblyName.Flags);
         }
@@ -373,7 +375,7 @@ namespace System.Reflection.TypeLoading
         //
         //    public sealed override string ToString() => Loader.GetDisposedString() ?? <your real ToString() code>;"
         //
-        public static string GetDisposedString(this MetadataLoadContext loader) => loader.IsDisposed ? SR.MetadataLoadContextDisposed : null;
+        public static string? GetDisposedString(this MetadataLoadContext loader) => loader.IsDisposed ? SR.MetadataLoadContextDisposed : null;
 
         public static TypeContext ToTypeContext(this RoType[] instantiation) => new TypeContext(instantiation, null);
     }

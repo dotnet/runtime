@@ -402,7 +402,7 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, _dataTable.outArrayPtr);
         }
-        
+
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
@@ -466,7 +466,6 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            
             for (var i = 0; i < RetElementCount; i++)
             {
                 if (Helpers.ReverseElementBits(firstOp[i]) != result[i])

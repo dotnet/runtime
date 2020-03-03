@@ -359,10 +359,6 @@ namespace System.Tests.Types
 
         public override bool HasElementType => true;
 
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
-
         public override bool IsTypeDefinition => false;
     }
 
@@ -390,10 +386,6 @@ namespace System.Tests.Types
         public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.SequentialLayout | TypeAttributes.Sealed | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
 
         public override bool IsPrimitive => true;
-
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
     }
 
     public abstract class EnumTypeTestBase : StructTypeTestBase
@@ -521,10 +513,6 @@ namespace System.Tests.Types
         public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
 
         public override Type BaseType => null;
-
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
     }
 
     public class ValueTypeTests : ClassTypeTestBase
@@ -532,10 +520,6 @@ namespace System.Tests.Types
         public override Type CreateType() => typeof(ValueType);
 
         public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
-
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
     }
 
     public class EnumTypeTests : ClassTypeTestBase
@@ -545,22 +529,12 @@ namespace System.Tests.Types
         public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
 
         public override Type BaseType => typeof(ValueType);
-
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/31713", TestRuntimes.Mono)]
     public class VoidTests : StructTypeTestBase
     {
         public override Type CreateType() => typeof(void);
-
-        public override TypeAttributes Attributes =>
-            PlatformDetection.IsNetCore ? base.Attributes : base.Attributes | TypeAttributes.Serializable;
-
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
     }
 
     public class IntRefTests : TypePropertyTestBase
@@ -572,10 +546,6 @@ namespace System.Tests.Types
         public override Type BaseType => null;
 
         public override bool IsByRef => true;
-
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
 
         public override bool IsTypeDefinition => false;
 
@@ -599,10 +569,6 @@ namespace System.Tests.Types
         public override bool HasElementType => true;
 
         public override Type ElementType => typeof(int);
-
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
     }
 
     public class IntArrayTests : ArrayTypeTestBase
@@ -655,10 +621,6 @@ namespace System.Tests.Types
         public override Type CreateType() => typeof(Array);
 
         public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
-
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
     }
 
     public class NonGenericClassTests : ClassTypeTestBase
@@ -676,10 +638,6 @@ namespace System.Tests.Types
     public class TypedReferenceTypeTests : StructTypeTestBase
     {
         public override Type CreateType() => typeof(TypedReference);
-
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
     }
 
     public class GenericClass1Tests : ClassTypeTestBase
@@ -859,10 +817,6 @@ namespace System.Tests.Types
 
         public override bool IsGenericParameter => true;
 
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
-
         public override bool IsTypeDefinition => false;
 
         public override int? GenericParameterPosition => 0;
@@ -881,10 +835,6 @@ namespace System.Tests.Types
         public override GenericParameterAttributes? GenericParameterAttributes => Reflection.GenericParameterAttributes.None;
 
         public override bool IsGenericParameter => true;
-
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
 
         public override bool IsTypeDefinition => false;
 
@@ -905,10 +855,6 @@ namespace System.Tests.Types
 
         public override bool IsGenericParameter => true;
 
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
-
         public override bool IsTypeDefinition => false;
 
         public override int? GenericParameterPosition => 1;
@@ -928,10 +874,6 @@ namespace System.Tests.Types
 
         public override bool IsGenericParameter => true;
 
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
-
         public override bool IsTypeDefinition => false;
 
         public override int? GenericParameterPosition => 0;
@@ -950,10 +892,6 @@ namespace System.Tests.Types
         public override GenericParameterAttributes? GenericParameterAttributes => Reflection.GenericParameterAttributes.None;
 
         public override bool IsGenericParameter => true;
-
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
 
         public override bool IsTypeDefinition => false;
 
@@ -976,10 +914,6 @@ namespace System.Tests.Types
 
         public override bool IsGenericParameter => true;
 
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
-
         public override bool IsTypeDefinition => false;
 
         public override int? GenericParameterPosition => 0;
@@ -1001,47 +935,32 @@ namespace System.Tests.Types
 
         public override bool IsGenericParameter => true;
 
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
-
         public override bool IsTypeDefinition => false;
 
         public override int? GenericParameterPosition => 1;
     }
 
-    public class MarshalByRefObjectTests : TypePropertyTestBase
+    public class MarshalByRefObjectTests : ClassTypeTestBase
     {
         public override Type CreateType() => typeof(MarshalByRefObject);
 
-        public override TypeAttributes Attributes => PlatformDetection.IsNetCore
-            ? TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit
-            : TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
+        public override TypeAttributes Attributes => base.Attributes | TypeAttributes.Abstract;
 
-        public override bool IsMarshalByRef => !PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
+        // Remoting is not supported in .NET Core
+        public override bool IsMarshalByRef => false;
     }
 
-    public class ContextBoundObjectTests : TypePropertyTestBase
+    public class ContextBoundObjectTests : ClassTypeTestBase
     {
         public override Type CreateType() => typeof(ContextBoundObject);
 
-        public override TypeAttributes Attributes => PlatformDetection.IsNetCore
-            ? TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit
-            : TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
+        public override TypeAttributes Attributes => base.Attributes | TypeAttributes.Abstract;
 
         public override Type BaseType => typeof(MarshalByRefObject);
 
-        public override bool IsMarshalByRef => !PlatformDetection.IsNetCore;
-
-        public override bool IsContextful => !PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
-
-        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
+        // Remoting is not supported in .NET Core
+        public override bool IsMarshalByRef => false;
+        public override bool IsContextful => false;
     }
 
     public enum ByteEnum : byte { }

@@ -41,7 +41,6 @@ namespace System.Collections.Generic
         RightLeft
     }
 
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "by design name choice")]
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
@@ -806,7 +805,7 @@ namespace System.Collections.Generic
         /// <param name="set2">The second set.</param>
         /// <param name="comparer">The fallback comparer to use if the sets do not have equal comparers.</param>
         /// <returns><c>true</c> if the sets have equal contents; otherwise, <c>false</c>.</returns>
-        internal static bool SortedSetEquals(SortedSet<T> set1, SortedSet<T> set2, IComparer<T> comparer)
+        internal static bool SortedSetEquals(SortedSet<T>? set1, SortedSet<T>? set2, IComparer<T> comparer)
         {
             if (set1 == null)
             {
@@ -1899,7 +1898,6 @@ namespace System.Collections.Generic
 #endif
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
         public struct Enumerator : IEnumerator<T>, IEnumerator, ISerializable, IDeserializationCallback
         {
             private readonly SortedSet<T> _tree;

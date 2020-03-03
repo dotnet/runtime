@@ -305,6 +305,17 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Returns True if compiling for OSX
+        /// </summary>
+        public bool IsOSX
+        {
+            get
+            {
+                return OperatingSystem == TargetOS.OSX;
+            }
+        }
+
+        /// <summary>
         /// Maximum number of elements in a HFA type.
         /// </summary>
         public int MaximumHfaElementCount
@@ -312,7 +323,7 @@ namespace Internal.TypeSystem
             get
             {
                 // There is a hard limit of 4 elements on an HFA type, see
-                // http://blogs.msdn.com/b/vcblog/archive/2013/07/12/introducing-vector-calling-convention.aspx
+                // https://devblogs.microsoft.com/cppblog/introducing-vector-calling-convention/
                 Debug.Assert(Architecture == TargetArchitecture.ARM ||
                     Architecture == TargetArchitecture.ARM64 ||
                     Architecture == TargetArchitecture.X64 ||

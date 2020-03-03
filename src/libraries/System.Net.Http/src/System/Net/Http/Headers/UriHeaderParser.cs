@@ -55,9 +55,6 @@ namespace System.Net.Http.Headers
             return true;
         }
 
-        // TODO (#5525): This is a helper method copied from WebHeaderCollection.HeaderEncoding.DecodeUtf8FromString.
-        // Merge this code and move to System.Net.Common.
-        //
         // The normal client header parser just casts bytes to chars (see GetString).
         // Check if those bytes were actually utf-8 instead of ASCII.
         // If not, just return the input value.

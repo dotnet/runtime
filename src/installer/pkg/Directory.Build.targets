@@ -1,9 +1,20 @@
 <Project>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 
-  <PropertyGroup>
-    <RuntimeIdGraphDefinitionFile>$(NuGetPackageRoot)$(PlatformPackageId.ToLowerInvariant())\$(MicrosoftNETCorePlatformsVersion)\runtime.json</RuntimeIdGraphDefinitionFile>
-  </PropertyGroup>
+  <!--
+    Add hook for depproj build to respect OrderProjectReferences like pkgproj does. "BeforeTargets"
+    runs after "DependsOnTargets", so hook each crossgen target individually to ensure this happens
+    before any of them.
+
+    TODO: (Consolidation) Add this target properly to the sharedfx tooling. https://github.com/dotnet/runtime/issues/749
+  -->
+  <Target Name="EnsureOrderProjectReferencesBuilt"
+          BeforeTargets="
+            CrossGen;
+            CreateCrossGenImages;
+            CreateCrossGenSymbols">
+    <MSBuild Projects="@(OrderProjectReference)" Targets="Build" />
+  </Target>
 
   <!--
     Get branding names for the installers.
@@ -33,6 +44,7 @@
       <HostFxrBrandName>$(ProductBrandPrefix) Host FX Resolver - $(ProductBrandSuffix)</HostFxrBrandName>
       <TargetingPackBrandName>$(ProductBrandPrefix) Targeting Pack - $(ProductBrandSuffix)</TargetingPackBrandName>
       <AppHostPackBrandName>$(ProductBrandPrefix) AppHost Pack - $(ProductBrandSuffix)</AppHostPackBrandName>
+      <Crossgen2PackBrandName>$(ProductBrandPrefix) Crossgen2 Pack - $(ProductBrandSuffix)</Crossgen2PackBrandName>
       <SharedFrameworkBrandName>$(ProductBrandPrefix) Runtime - $(ProductBrandSuffix)</SharedFrameworkBrandName>
 
       <SharedHostComponentId>com.microsoft.dotnet.sharedhost.component.osx.x64</SharedHostComponentId>

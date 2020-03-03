@@ -3,8 +3,8 @@
     <TargetOS Condition="'$(TargetOS)' == ''">$(DefaultOSGroup)</TargetOS>
     <RunWorkingDirectory>$(OutDir)</RunWorkingDirectory>
 
-    <RunScriptInputName Condition="'$(TargetOS)' == 'Windows_NT'">RunnerTemplate.Windows.txt</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' != 'Windows_NT'">RunnerTemplate.Unix.txt</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'Windows_NT'">RunnerTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' != 'Windows_NT'">RunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputPath>$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
 
     <RunScriptOutputName Condition="'$(TargetOS)' == 'Windows_NT'">RunTests.cmd</RunScriptOutputName>
@@ -16,11 +16,14 @@
 
     <RunScriptHost Condition="'$(TargetOS)' == 'Windows_NT'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
     <RunScriptHost Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptHostDir)dotnet</RunScriptHost>
+
+    <!-- TODO: remove rsp argument when rsp files are removed: https://github.com/dotnet/runtime/issues/1980. -->
+    <MonoRspFile>$(RunWorkingDirectory)$(MonoRspFileName)</MonoRspFile>
   </PropertyGroup>
 
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
-          Condition="'$(ArchiveTests)' == 'true'"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'"
           AfterTargets="PrepareForRun"
           DependsOnTargets="GenerateRunScript">
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
@@ -72,6 +75,19 @@
                        OutputPath="$(RunScriptOutputPath)" />
 
     <Exec Condition="'$(TargetOS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
+
+    <!-- Generate Mono .rsp file -->
+    <!-- TODO: remove when rsp files are removed: https://github.com/dotnet/runtime/issues/1980. -->
+    <ItemGroup>
+      <_rspFile Include="$(TestRspFile)" Condition="'$(TestRspFile)' != ''" />
+      <_rspFile Include="$(MonoProjectRoot)netcore\CoreFX.issues_linux.rsp" Condition="'$(TargetOS)' == 'Linux'" />
+      <_rspFile Include="$(MonoProjectRoot)netcore\CoreFX.issues_windows.rsp" Condition="'$(TargetOS)' == 'Windows_NT'" />
+    </ItemGroup>
+    <ItemGroup>
+      <_rspFileContent Include="$([System.IO.File]::ReadAllText(%(_rspFile.Identity)))" Condition="'$(TargetOS)' != 'OSX'" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(MonoRspFile)" Lines="@(_rspFileContent)" Overwrite="true" />
   </Target>
 
   <Target Name="ValidateTestPlatform">
@@ -89,7 +105,7 @@
              Text="Skipping tests in $(AssemblyName) because it is not supported on $(TargetOS)" />
 
     <Message Condition="'$(ConfigurationErrorMsg)' != ''"
-             Text="Skipping tests in $(AssemblyName) because there is no configuration compatible with the current BuildConfiguration." />
+             Text="Skipping tests in $(AssemblyName) because there is no TargetFramework compatible with the current BuildTargetFramework." />
   </Target>
 
   <Target Name="RunTests"
@@ -100,7 +116,9 @@
 
     <PropertyGroup>
       <RunTestsCommand>"$(RunScriptOutputPath)" --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TestRspFile)' != ''">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
+      <!-- TODO: remove rsp argument when rsp files are removed: https://github.com/dotnet/runtime/issues/1980. -->
+      <RunTestsCommand Condition="'$(RuntimeFlavor)' == 'Mono'">$(RunTestsCommand) --rsp-file "$(MonoRspFile)"</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
     </PropertyGroup>
 
     <!-- Invoke the run script with the test host as the runtime path. -->
@@ -124,4 +142,6 @@
   <Target Name="Test" DependsOnTargets="GenerateRunScript;RunTests" />
   <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
+  
+  <Import Project="$(MSBuildThisFileDirectory)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
 </Project>

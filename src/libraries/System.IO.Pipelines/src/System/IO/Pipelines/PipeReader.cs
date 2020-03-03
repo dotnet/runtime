@@ -35,6 +35,7 @@ namespace System.IO.Pipelines
         /// <param name="consumed">Marks the extent of the data that has been successfully processed.</param>
         /// <remarks>
         /// The memory for the consumed data will be released and no longer available.
+        /// The <see cref="ReadResult.Buffer" /> previously returned from <see cref="ReadAsync(CancellationToken)" /> must not be accessed after this call.
         /// The examined data communicates to the pipeline when it should signal more data is available.
         /// </remarks>
         public abstract void AdvanceTo(SequencePosition consumed);
@@ -46,6 +47,7 @@ namespace System.IO.Pipelines
         /// <param name="examined">Marks the extent of the data that has been read and examined.</param>
         /// <remarks>
         /// The memory for the consumed data will be released and no longer available.
+        /// The <see cref="ReadResult.Buffer" /> previously returned from <see cref="ReadAsync(CancellationToken)" /> must not be accessed after this call.
         /// The examined data communicates to the pipeline when it should signal more data is available.
         /// </remarks>
         public abstract void AdvanceTo(SequencePosition consumed, SequencePosition examined);
@@ -176,14 +178,13 @@ namespace System.IO.Pipelines
         {
             while (true)
             {
-                SequencePosition consumed = default;
-
                 ReadResult result = await ReadAsync(cancellationToken).ConfigureAwait(false);
+                ReadOnlySequence<byte> buffer = result.Buffer;
+                SequencePosition position = buffer.Start;
+                SequencePosition consumed = position;
+
                 try
                 {
-                    ReadOnlySequence<byte> buffer = result.Buffer;
-                    SequencePosition position = buffer.Start;
-
                     if (result.IsCanceled)
                     {
                         ThrowHelper.ThrowOperationCanceledException_ReadCanceled();
@@ -196,10 +197,8 @@ namespace System.IO.Pipelines
                         consumed = position;
                     }
 
-                    if (consumed.Equals(default))
-                    {
-                        consumed = buffer.End;
-                    }
+                    // The while loop completed succesfully, so we've consumed the entire buffer.
+                    consumed = buffer.End;
 
                     if (result.IsCompleted)
                     {

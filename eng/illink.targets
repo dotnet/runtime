@@ -9,8 +9,9 @@
 
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
-    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(MSBuildRuntimeType)' == 'core'">$(ILLinkDir)netcoreapp2.0/ILLink.Tasks.dll</ILLinkTasksPath>
-    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' And '$(MSBuildRuntimeType)' != 'core'">$(ILLinkDir)net472/ILLink.Tasks.dll</ILLinkTasksPath>
+    <ILLinkTasksDir>$([MSBuild]::NormalizeDirectory('$(PkgILLink_Tasks)', 'tools'))</ILLinkTasksDir>
+    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' == 'core'">$(ILLinkTasksDir)netcoreapp3.0/ILLink.Tasks.dll</ILLinkTasksPath>
+    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' != 'core'">$(ILLinkTasksDir)$(NetFrameworkCurrent)/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
     <ILLinkTrimAssemblySymbols>$(IntermediateOutputPath)$(TargetName).pdb</ILLinkTrimAssemblySymbols>
     <ILLinkTrimInputPath>$(IntermediateOutputPath)PreTrim/</ILLinkTrimInputPath>
@@ -34,23 +35,23 @@
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
   --> 
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
-    <BinPlaceConfiguration Include="$(BuildConfiguration)">
-      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildConfiguration)/trimmed</RuntimePath>
+    <BinPlaceTargetFramework Include="$(BuildSettings)">
+      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/trimmed</RuntimePath>
       <ItemName>TrimmedItem</ItemName>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Include="$(BuildConfiguration)">
-      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildConfiguration)/reports</RuntimePath>
+    </BinPlaceTargetFramework>
+    <BinPlaceTargetFramework Include="$(BuildSettings)">
+      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/reports</RuntimePath>
       <ItemName>TrimmingReport</ItemName>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Include="$(BuildConfiguration)">
-      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildConfiguration)/pretrimmed</RuntimePath>
+    </BinPlaceTargetFramework>
+    <BinPlaceTargetFramework Include="$(BuildSettings)">
+      <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildSettings)/pretrimmed</RuntimePath>
       <ItemName>PreTrimmedItem</ItemName>
-    </BinPlaceConfiguration>
+    </BinPlaceTargetFramework>
   </ItemGroup>
 
   <Target Name="_SetILLinkTrimAssembly" 
           Condition="'$(ILLinkTrimAssembly)' == ''"
-          DependsOnTargets="GetBinPlaceConfiguration">
+          DependsOnTargets="GetBinPlaceTargetFramework">
     <PropertyGroup>
       <!-- Currently ILLink cannot handle type projections from Windows.winmd, disable if the project references it -->
       <ILLinkTrimAssembly Condition="'%(ReferencePath.FileName)%(ReferencePath.Extension)' == 'Windows.winmd'">false</ILLinkTrimAssembly>
@@ -82,6 +83,8 @@
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
       <!-- keep interface implementations -->
       <ILLinkArgs>$(ILLinkArgs) --disable-opt unusedinterfaces</ILLinkArgs>
+      <!-- disable optimization to unblock dependencies bump -->
+      <ILLinkArgs>$(ILLinkArgs) --disable-opt ipconstprop</ILLinkArgs>
       <!-- keep PreserveDependencyAttribute unless a project explicitly disables it -->
       <ILLinkArgs Condition="'$(ILLinkKeepDepAttributes)' != 'false'">$(ILLinkArgs) --keep-dep-attributes true</ILLinkArgs>
     </PropertyGroup>

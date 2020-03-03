@@ -19,14 +19,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0657A043-0AEE-445E-9BE4-0B3A9D80318F}.Debug|Any CPU.ActiveCfg = netfx-Debug|Any CPU
-		{0657A043-0AEE-445E-9BE4-0B3A9D80318F}.Debug|Any CPU.Build.0 = netfx-Debug|Any CPU
-		{0657A043-0AEE-445E-9BE4-0B3A9D80318F}.Release|Any CPU.ActiveCfg = netfx-Release|Any CPU
-		{0657A043-0AEE-445E-9BE4-0B3A9D80318F}.Release|Any CPU.Build.0 = netfx-Release|Any CPU
-		{0CAF38F5-C7E7-46F2-8F39-C5D57492FF7F}.Debug|Any CPU.ActiveCfg = net461-Windows_NT-Debug|Any CPU
-		{0CAF38F5-C7E7-46F2-8F39-C5D57492FF7F}.Debug|Any CPU.Build.0 = net461-Windows_NT-Debug|Any CPU
-		{0CAF38F5-C7E7-46F2-8F39-C5D57492FF7F}.Release|Any CPU.ActiveCfg = net461-Windows_NT-Release|Any CPU
-		{0CAF38F5-C7E7-46F2-8F39-C5D57492FF7F}.Release|Any CPU.Build.0 = net461-Windows_NT-Release|Any CPU
+		{0657A043-0AEE-445E-9BE4-0B3A9D80318F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0657A043-0AEE-445E-9BE4-0B3A9D80318F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0657A043-0AEE-445E-9BE4-0B3A9D80318F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0657A043-0AEE-445E-9BE4-0B3A9D80318F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0CAF38F5-C7E7-46F2-8F39-C5D57492FF7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0CAF38F5-C7E7-46F2-8F39-C5D57492FF7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0CAF38F5-C7E7-46F2-8F39-C5D57492FF7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0CAF38F5-C7E7-46F2-8F39-C5D57492FF7F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

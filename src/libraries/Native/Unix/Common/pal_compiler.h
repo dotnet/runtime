@@ -9,11 +9,16 @@
 #endif
 
 #ifdef static_assert
-#define c_static_assert(e) static_assert((e),"")
+#define c_static_assert_msg(e, msg) static_assert((e), msg)
+#define c_static_assert(e) c_static_assert_msg(e,"")
 #elif __has_extension(c_static_assert)
-#define c_static_assert(e) _Static_assert((e), "")
+#define c_static_assert_msg(e, msg) _Static_assert((e), msg)
+#define c_static_assert(e) c_static_assert_msg(e, "")
 #else
-#define c_static_assert(e) typedef char __c_static_assert__[(e)?1:-1]
+#define c_static_assert_msg(e, msg) typedef char __c_static_assert__[(e)?1:-1]
+#define c_static_assert(e) c_static_assert_msg(e, "")
 #endif
 
-#define DLLEXPORT __attribute__ ((__visibility__ ("default")))
+#ifndef PALEXPORT
+#define PALEXPORT __attribute__ ((__visibility__ ("default")))
+#endif // ifndef PALEXPORT

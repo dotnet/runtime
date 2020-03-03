@@ -49,7 +49,7 @@ MembersMustExist : Member 'System.AppDomain.SetupInformation.get()' does not exi
 // SetAccessControl in FileStream not going to be implemented in netcore20 as no ACL support:
 MembersMustExist : Member 'System.IO.FileStream.SetAccessControl(System.Security.AccessControl.FileSecurity)' does not exist in the implementation but it does exist in the contract.
 
-// StackTrace ctor deprecated in netfx and won't be implemented in any netcoreapp versions:
+// StackTrace ctor deprecated in net472 and won't be implemented in any netcoreapp versions:
 MembersMustExist : Member 'System.Diagnostics.StackTrace..ctor(System.Threading.Thread, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 
 // Dan said there is a reason for those in System.Resrouces to ignore:

@@ -144,7 +144,7 @@ namespace System.Net
                 if (null != _sslContext)
                 {
                     _sslContext.Dispose();
-                    _sslContext = null;
+                    _sslContext = null!;
                 }
             }
 
@@ -217,20 +217,23 @@ namespace System.Net
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
 
+            Write(buf.AsSpan(offset, count));
+        }
 
+        internal void Write(ReadOnlySpan<byte> buf)
+        {
             lock (_fromConnection)
             {
-                for (int i = 0; i < count; i++)
+                foreach (byte b in buf)
                 {
-                    _fromConnection.Enqueue(buf[offset + i]);
+                    _fromConnection.Enqueue(b);
                 }
             }
-
         }
 
         internal int BytesReadyForConnection => _toConnection.Count;
 
-        internal byte[] ReadPendingWrites()
+        internal byte[]? ReadPendingWrites()
         {
             lock (_toConnection)
             {
@@ -353,7 +356,7 @@ namespace System.Net
 
             X509Chain chain = TLSCertificateExtensions.BuildNewChain(
                 certificate,
-                includeClientApplicationPolicy: false);
+                includeClientApplicationPolicy: false)!;
 
             using (chain)
             {
@@ -374,7 +377,7 @@ namespace System.Net
 
                 for (int i = 0; i < intermediateCerts.Length; i++)
                 {
-                    X509Certificate2 intermediateCert = elements[i + 1].Certificate;
+                    X509Certificate2 intermediateCert = elements[i + 1].Certificate!;
 
                     if (intermediateCert.HasPrivateKey)
                     {
@@ -399,7 +402,7 @@ namespace System.Net
                 // And since the intermediateCerts could have been new instances, Dispose them, too
                 for (int i = 0; i < elements.Count; i++)
                 {
-                    elements[i].Certificate.Dispose();
+                    elements[i].Certificate!.Dispose();
 
                     if (i < intermediateCerts.Length)
                     {

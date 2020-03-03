@@ -7,7 +7,7 @@
 
 // The major version of the GC/EE interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define GC_INTERFACE_MAJOR_VERSION 3
+#define GC_INTERFACE_MAJOR_VERSION 4
 
 // The minor version of the GC/EE interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
@@ -137,7 +137,7 @@ struct gc_alloc_context
     uint8_t*       alloc_ptr;
     uint8_t*       alloc_limit;
     int64_t        alloc_bytes; //Number of bytes allocated on SOH by this context
-    int64_t        alloc_bytes_loh; //Number of bytes allocated on LOH by this context
+    int64_t        alloc_bytes_uoh; //Number of bytes allocated not on SOH by this context
     // These two fields are deliberately not exposed past the EE-GC interface.
     void*          gc_reserved_1;
     void*          gc_reserved_2;
@@ -151,7 +151,7 @@ public:
         alloc_ptr = 0;
         alloc_limit = 0;
         alloc_bytes = 0;
-        alloc_bytes_loh = 0;
+        alloc_bytes_uoh = 0;
         gc_reserved_1 = 0;
         gc_reserved_2 = 0;
         alloc_count = 0;
@@ -734,6 +734,9 @@ public:
     // Tells the GC how many YieldProcessor calls are equal to one scaled yield processor call.
     virtual void SetYieldProcessorScalingFactor(float yieldProcessorScalingFactor) = 0;
 
+    // Flush the log and close the file if GCLog is turned on.
+    virtual void Shutdown() = 0;
+
     /*
     ============================================================================
     Add/RemoveMemoryPressure support routines. These are on the interface
@@ -793,8 +796,8 @@ public:
     Heap verification routines. These are used during heap verification only.
     ===========================================================================
     */
-    // Returns whether or not this object is in the fixed heap.
-    virtual bool IsObjectInFixedHeap(Object* pObj) = 0;
+    // Returns whether or not this object is too large for SOH.
+    virtual bool IsLargeObject(Object* pObj) = 0;
 
     // Walks an object and validates its members.
     virtual void ValidateObjectMember(Object* obj) = 0;

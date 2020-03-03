@@ -85,7 +85,7 @@ You can also build just managed code with:
 
     $ ./build.sh --arch arm /p:BuildNative=false
 
-The output is at `artifacts/bin/[BuildConfiguration]` where `BuildConfiguration` looks something like `netcoreapp-<OSGroup>-Debug-<Architecture>`. Ex: `artifacts/bin/netcoreapp-Linux-Debug-x64`. For more details on the build configurations see [project-guidelines](../coding-guidelines/project-guidelines.md)
+The output is at `artifacts/bin/[BuildSettings]` where `BuildSettings` looks something like `netcoreapp5.0-<OSGroup>-Debug-<Architecture>`. Ex: `artifacts/bin/netcoreapp5.0-Linux-Debug-x64`. For more details on the build configurations see [project-guidelines](/docs/coding-guidelines/project-guidelines.md)
 
 Building corefx for Linux ARM Emulator
 =======================================
@@ -118,14 +118,14 @@ When building for a new architecture you will need to build the native pieces se
 Example building for armel
 ```
 src/Native/build-native.sh armel
---> Output goes to artifacts/bin/runtime/netcoreapp-Linux-Debug-armel
+--> Output goes to artifacts/bin/runtime/netcoreapp5.0-Linux-Debug-armel
 
 build /p:ArchGroup=x64 /p:BuildNative=false
---> Output goes to artifacts/bin/runtime/netcoreapp-Linux-Debug-x64
+--> Output goes to artifacts/bin/runtime/netcoreapp5.0-Linux-Debug-x64
 ```
 
 The reason you need to build the managed portion for x64 is because it depends on runtime packages for the new architecture which don't exist yet so we use another existing architecture such as x64 as a proxy for building the managed binaries.
 
-Similar if you want to try and run tests you will have to copy the managed assemblies from the proxy directory (i.e. `netcoreapp-Linux-Debug-x64`) to the new architecture directory (i.e `netcoreapp-Linux-Debug-armel`) and run code via another host such as corerun because dotnet is at a higher level and most likely doesn't exist for the new architecture yet.
+Similar if you want to try and run tests you will have to copy the managed assemblies from the proxy directory (i.e. `netcoreapp5.0-Linux-Debug-x64`) to the new architecture directory (i.e `netcoreapp5.0-Linux-Debug-armel`) and run code via another host such as corerun because dotnet is at a higher level and most likely doesn't exist for the new architecture yet.
 
 Once all the necessary builds are setup and packages are published the splitting of the build and manual creation of the runtime should no longer be necessary.

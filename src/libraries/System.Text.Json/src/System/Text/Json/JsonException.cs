@@ -14,7 +14,7 @@ namespace System.Text.Json
     public class JsonException : Exception
     {
         // Allow the message to mutate to avoid re-throwing and losing the StackTrace to an inner exception.
-        private string _message;
+        internal string? _message;
 
         /// <summary>
         /// Creates a new exception object to relay error information to the user.
@@ -27,7 +27,7 @@ namespace System.Text.Json
         /// <remarks>
         /// Note that the <paramref name="bytePositionInLine"/> counts the number of bytes (i.e. UTF-8 code units) and not characters or scalars.
         /// </remarks>
-        public JsonException(string message, string path, long? lineNumber, long? bytePositionInLine, Exception innerException) : base(message, innerException)
+        public JsonException(string? message, string path, long? lineNumber, long? bytePositionInLine, Exception? innerException) : base(message, innerException)
         {
             _message = message;
             LineNumber = lineNumber;
@@ -45,7 +45,7 @@ namespace System.Text.Json
         /// <remarks>
         /// Note that the <paramref name="bytePositionInLine"/> counts the number of bytes (i.e. UTF-8 code units) and not characters or scalars.
         /// </remarks>
-        public JsonException(string message, string path, long? lineNumber, long? bytePositionInLine) : base(message)
+        public JsonException(string? message, string? path, long? lineNumber, long? bytePositionInLine) : base(message)
         {
             _message = message;
             LineNumber = lineNumber;
@@ -58,7 +58,7 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="message">The context specific error message.</param>
         /// <param name="innerException">The exception that caused the current exception.</param>
-        public JsonException(string message, Exception innerException) : base(message, innerException)
+        public JsonException(string? message, Exception? innerException) : base(message, innerException)
         {
             _message = message;
         }
@@ -67,7 +67,7 @@ namespace System.Text.Json
         /// Creates a new exception object to relay error information to the user.
         /// </summary>
         /// <param name="message">The context specific error message.</param>
-        public JsonException(string message) : base(message)
+        public JsonException(string? message) : base(message)
         {
             _message = message;
         }
@@ -125,7 +125,7 @@ namespace System.Text.Json
         /// <summary>
         /// The path within the JSON where the exception was encountered.
         /// </summary>
-        public string Path { get; internal set; }
+        public string? Path { get; internal set; }
 
         /// <summary>
         /// Gets a message that describes the current exception.
@@ -134,11 +134,11 @@ namespace System.Text.Json
         {
             get
             {
-                return _message;
+                return _message ?? base.Message;
             }
         }
 
-        internal void SetMessage(string message)
+        internal void SetMessage(string? message)
         {
             _message = message;
         }

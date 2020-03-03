@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="HttpClientAuthenticationTest.cs" />
+
+    <Compile Include="$(CommonTestPath)System\Net\EnterpriseTests\EnterpriseTestConfiguration.cs">
+      <Link>Common\System\Net\EnterpriseTests\EnterpriseTestConfiguration.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

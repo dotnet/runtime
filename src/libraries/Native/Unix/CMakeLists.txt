@@ -1,14 +1,22 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.14.2)
+cmake_policy(SET CMP0042 NEW)
+
 project(CoreFX C)
+
+include(${CLR_ENG_NATIVE_DIR}/configureplatform.cmake)
+
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    cmake_policy(SET CMP0083 NEW)
+endif(NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
 set(CMAKE_MACOSX_RPATH ON)
 set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
-set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/../../_version.c")
+set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 
-# We mark the function which needs exporting with DLLEXPORT
+# We mark the function which needs exporting with PALEXPORT
 add_compile_options(-fvisibility=hidden)
 
 add_compile_options(-Wno-format-nonliteral)
@@ -27,9 +35,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL Clang)
 endif()
 add_compile_options(-Werror)
 
-if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
-    # Build a static library so no -fPIC
-    set(CLR_CMAKE_PLATFORM_WASM 1)
+if(CLR_CMAKE_TARGET_ARCH_WASM)
     add_definitions(-D_WASM_)
     # The emscripten build has additional warnings so -Werror breaks
     add_compile_options(-Wno-unused-parameter)
@@ -37,34 +43,42 @@ if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
     add_compile_options(-Wno-alloca)
     add_compile_options(-Wno-implicit-int-float-conversion)
 else()
-  add_compile_options(-fPIC)
   set(GEN_SHARED_LIB 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+endif(CLR_CMAKE_TARGET_ARCH_WASM)
 
-if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
-    add_definitions(-DBIT64=1)
-    add_definitions(-D_AMD64_)
-elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL x86 OR CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
-    add_definitions(-DBIT32=1)
-    add_definitions(-D_X86_)
+if (CLR_CMAKE_TARGET_ARCH_AMD64)
+    add_definitions(-DTARGET_64BIT=1)
+    add_definitions(-DTARGET_AMD64)
+elseif (CLR_CMAKE_TARGET_ARCH_I386)
+    add_definitions(-DTARGET_32BIT=1)
+    add_definitions(-DTARGET_X86)
     add_definitions(-D_FILE_OFFSET_BITS=64)
-elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
-    add_definitions(-DBIT64=1)
-    add_definitions(-D_ARM64_)
-elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
-    add_definitions(-DBIT32=1)
-    add_definitions(-D_ARM_)
+elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
+    add_definitions(-DTARGET_64BIT=1)
+    add_definitions(-DTARGET_ARM64)
+elseif (CLR_CMAKE_TARGET_ARCH_ARM)
+    add_definitions(-DTARGET_32BIT=1)
+    add_definitions(-DTARGET_ARM)
     add_definitions(-D_FILE_OFFSET_BITS=64)
-  if(ARM_SOFTFP)
-    add_compile_options(-mfloat-abi=softfp)
-  endif ()
-    add_compile_options(-mthumb)
-    add_compile_options(-mfpu=vfpv3)
-    add_compile_options(-march=armv7-a)
-elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
-    add_definitions(-DBIT32=1)
-    add_definitions(-D_ARM_)
-    add_definitions(-D_FILE_OFFSET_BITS=64)
+
+    if (CLR_CMAKE_TARGET_ARCH_ARMV7L)
+        if(ARM_SOFTFP)
+            add_compile_options(-mfloat-abi=softfp)
+        endif ()
+
+        add_compile_options(-mthumb)
+        if (NOT DEFINED CLR_ARM_FPU_TYPE)
+            set(CLR_ARM_FPU_TYPE vfpv3)
+        endif(NOT DEFINED CLR_ARM_FPU_TYPE)
+
+        add_compile_options(-mfpu=${CLR_ARM_FPU_TYPE})
+        if (NOT DEFINED CLR_ARM_FPU_CAPABILITY)
+            set(CLR_ARM_FPU_CAPABILITY 0x7)
+        endif(NOT DEFINED CLR_ARM_FPU_CAPABILITY)
+
+        add_definitions(-DCLR_ARM_FPU_CAPABILITY=${CLR_ARM_FPU_CAPABILITY})
+        add_compile_options(-march=armv7-a)
+    endif()
 endif ()
 
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
@@ -94,7 +108,7 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
 elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
     # Use O1 option when the clang version is smaller than 3.9
     # Otherwise use O3 option in release build
-    if (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l AND DEFINED ENV{CROSSCOMPILE} AND CMAKE_C_COMPILER_VERSION VERSION_LESS 3.9)
+    if (CLR_CMAKE_TARGET_ARCH_ARMV7L AND DEFINED ENV{CROSSCOMPILE} AND CMAKE_C_COMPILER_VERSION VERSION_LESS 3.9)
         add_compile_options (-O1)
     else()
         add_compile_options (-O3)
@@ -104,8 +118,8 @@ else ()
     message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.")
 endif ()
 
-if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
-elseif (APPLE)
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+elseif (CLR_CMAKE_TARGET_DARWIN)
     add_definitions(-D__APPLE_USE_RFC_3542)
 
    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
@@ -114,39 +128,14 @@ else ()
    add_compile_options(-fstack-protector-strong)
 endif ()
 
-if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+if (CLR_CMAKE_TARGET_LINUX)
    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
-   set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,--noexecstack")
-   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=sha1")
-   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--build-id=sha1")
 endif ()
 
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
-    set(CLR_CMAKE_PLATFORM_UNIX 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
-
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    set(CLR_CMAKE_PLATFORM_UNIX 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-
-if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-    set(CLR_CMAKE_PLATFORM_UNIX 1)
+if(CLR_CMAKE_TARGET_FREEBSD)
     add_definitions(-D_BSD_SOURCE) # required for getline
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld -Xlinker --build-id=sha1")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}  -fuse-ld=lld -Xlinker --build-id=sha1")
-endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-
-if(CMAKE_SYSTEM_NAME STREQUAL OpenBSD)
-    set(CLR_CMAKE_PLATFORM_UNIX 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL OpenBSD)
-
-if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
-    set(CLR_CMAKE_PLATFORM_UNIX 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
-
-if(CMAKE_SYSTEM_NAME STREQUAL SunOS)
-    set(CLR_CMAKE_PLATFORM_UNIX 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
+    add_link_options(-fuse-ld=lld)
+endif(CLR_CMAKE_TARGET_FREEBSD)
 
 # CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
 # CLR_ADDITIONAL_COMPILER_OPTIONS - used for passing additional arguments to compiler
@@ -154,14 +143,10 @@ endif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
 # For example:
 #       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
 #
-if(CLR_CMAKE_PLATFORM_UNIX)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}" )
-    add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
-endif(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_TARGET_UNIX)
+    if (CLR_CMAKE_TARGET_DARWIN)
+        add_link_options(-Wl,-bind_at_load)
 
-if (NOT WIN32)
-    if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
         # Ensure that dsymutil and strip are present
         find_program(DSYMUTIL dsymutil)
         if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
@@ -172,12 +157,15 @@ if (NOT WIN32)
         if (STRIP STREQUAL "STRIP-NOTFOUND")
             message(FATAL_ERROR "strip not found")
         endif()
-    elseif (CLR_CMAKE_PLATFORM_WASM)
+    elseif (CLR_CMAKE_TARGET_ARCH_WASM)
         # No object stripping for WASM
-    else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    else (CLR_CMAKE_TARGET_DARWIN)
+        add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+        add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
+
         # Ensure that objcopy is present
         if(DEFINED ENV{CROSSCOMPILE})
-            if(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL i686 OR CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
+            if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_I386)
                 find_program(OBJCOPY ${TOOLCHAIN}-objcopy)
             else()
                 message(FATAL_ERROR "Only AMD64, X86, ARM64 and ARM are supported")
@@ -185,15 +173,18 @@ if (NOT WIN32)
         else()
             find_program(OBJCOPY objcopy)
         endif()
-        if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND" AND NOT CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
+        if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND" AND NOT CLR_CMAKE_TARGET_ARCH_I386)
             message(FATAL_ERROR "objcopy not found")
         endif()
-    endif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
-endif ()
+    endif(CLR_CMAKE_TARGET_DARWIN)
 
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}" )
+    add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
+endif(CLR_CMAKE_TARGET_UNIX)
 
 function(strip_symbols targetName outputFilename)
-    if(CLR_CMAKE_PLATFORM_UNIX)
+    if(CLR_CMAKE_TARGET_UNIX)
         if(STRIP_SYMBOLS)
 
             # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
@@ -205,7 +196,7 @@ function(strip_symbols targetName outputFilename)
                 get_property(strip_source_file TARGET ${targetName} PROPERTY LOCATION)
             endif()
 
-            if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+            if(CLR_CMAKE_TARGET_DARWIN)
                 set(strip_destination_file ${strip_source_file}.dwarf)
 
                 add_custom_command(
@@ -216,7 +207,7 @@ function(strip_symbols targetName outputFilename)
                     COMMAND ${STRIP} -u -r ${strip_source_file}
                     COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
                 )
-            else(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+            else(CLR_CMAKE_TARGET_DARWIN)
                 set(strip_destination_file ${strip_source_file}.dbg)
 
                 add_custom_command(
@@ -228,11 +219,11 @@ function(strip_symbols targetName outputFilename)
                     COMMAND ${OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
                     COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
                 )
-            endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+            endif(CLR_CMAKE_TARGET_DARWIN)
 
             set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
         endif(STRIP_SYMBOLS)
-    endif(CLR_CMAKE_PLATFORM_UNIX)
+    endif(CLR_CMAKE_TARGET_UNIX)
 endfunction()
 
 function(install_library_and_symbols targetName)
@@ -248,7 +239,7 @@ function(install_library_and_symbols targetName)
     endif()
 
     install(PROGRAMS ${install_source_file} DESTINATION .)
-    if(WIN32)
+    if(CLR_CMAKE_TARGET_WIN32)
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION PDB)
     else()
         install(FILES ${strip_destination_file} DESTINATION .)
@@ -256,10 +247,12 @@ function(install_library_and_symbols targetName)
 endfunction()
 
 include(configure.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
-if (NOT CLR_CMAKE_PLATFORM_WASM)
-    add_subdirectory(System.IO.Compression.Native)
-	add_subdirectory(System.IO.Ports.Native)
+add_subdirectory(System.IO.Compression.Native)
+
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    add_subdirectory(System.IO.Ports.Native)
 endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
@@ -268,11 +261,12 @@ endif()
 
 add_subdirectory(System.Native)
 
-if (NOT CLR_CMAKE_PLATFORM_WASM)
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
 
-if(APPLE)
+if(CLR_CMAKE_TARGET_DARWIN)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
 endif()

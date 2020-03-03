@@ -373,28 +373,41 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             {
                 if (pWrappedMD->IsSharedByGenericMethodInstantiations())
                 {
+                    // Note that it is possible for the dictionary layout to be expanded in size by other threads while we're still
+                    // creating this method. In other words: this method will have a smaller dictionary that its layout. This is not a
+                    // problem however because whenever we need to load a value from the dictionary of this method beyond its size, we
+                    // will expand the dictionary at that point.
                     pDL = pWrappedMD->AsInstantiatedMethodDesc()->GetDictLayoutRaw();
                 }
             }
             else if (getWrappedCode)
             {
-                // 4 seems like a good number
-                pDL = DictionaryLayout::Allocate(4, pAllocator, &amt);
-#ifdef _DEBUG
+                pDL = DictionaryLayout::Allocate(NUM_DICTIONARY_SLOTS, pAllocator, &amt);
+#ifdef _DEBUG 
                 {
                     SString name;
                     TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
                     LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of size %d for %S\n",
-                         DictionaryLayout::GetFirstDictionaryBucketSize(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL), name.GetUnicode()));
+                        DictionaryLayout::GetDictionarySizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL), name.GetUnicode()));
                 }
 #endif // _DEBUG
             }
 
             // Allocate space for the instantiation and dictionary
-            infoSize = DictionaryLayout::GetFirstDictionaryBucketSize(methodInst.GetNumArgs(), pDL);
-            pInstOrPerInstInfo = (TypeHandle *) (void*) amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(infoSize)));
+            infoSize = DictionaryLayout::GetDictionarySizeFromLayout(methodInst.GetNumArgs(), pDL);
+            pInstOrPerInstInfo = (TypeHandle*)(void*)amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(infoSize)));
             for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
                 pInstOrPerInstInfo[i] = methodInst[i];
+
+            if (pDL != NULL && pDL->GetMaxSlots() > 0)
+            {
+                // Has to be at least larger than the first slots containing the instantiation arguments,
+                // and the slot with size information. Otherwise, we shouldn't really have a size slot
+                _ASSERTE(infoSize > sizeof(TypeHandle*) * (methodInst.GetNumArgs() + 1));
+
+                DWORD* pDictSizeSlot = (DWORD*)(pInstOrPerInstInfo + methodInst.GetNumArgs());
+                *pDictSizeSlot = infoSize;
+            }
         }
 
         BOOL forComInterop = FALSE;
@@ -482,8 +495,8 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 const char* verb = "Created";
                 if (pWrappedMD)
                     LOG((LF_CLASSLOADER, LL_INFO1000,
-                         "GENERICS: %s instantiating-stub method desc %s with dictionary size %d\n",
-                         verb, pDebugNameUTF8, infoSize));
+                        "GENERICS: %s instantiating-stub method desc %s with dictionary size %d\n",
+                        verb, pDebugNameUTF8, infoSize));
                 else
                     LOG((LF_CLASSLOADER, LL_INFO1000,
                          "GENERICS: %s instantiated method desc %s\n",
@@ -1433,26 +1446,33 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIM
     m_pPerInstInfo.SetValue((Dictionary *) pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(dwAllocSize)));
 
     TypeHandle * pInstDest = (TypeHandle *) IMD_GetMethodDictionaryNonNull();
-    for(unsigned int i = 0; i < numTyPars; i++)
+
     {
-        hEnumTyPars.EnumNext(&tkTyPar);
+        // Protect multi-threaded access to Module.m_GenericParamToDescMap. Other threads may be loading the same type
+        // to break type recursion dead-locks
 
-        // code:Module.m_GenericParamToDescMap maps generic parameter RIDs to TypeVarTypeDesc
-        // instances so that we do not leak by allocating them all over again, if the declaring
-        // type repeatedly fails to load.
-        TypeVarTypeDesc *pTypeVarTypeDesc = pModule->LookupGenericParam(tkTyPar);
-        if (pTypeVarTypeDesc == NULL)
+        // m_AvailableTypesLock has to be taken in cooperative mode to avoid deadlocks during GC
+        GCX_COOP();
+        CrstHolder ch(&pModule->GetClassLoader()->m_AvailableTypesLock);
+
+        for (unsigned int i = 0; i < numTyPars; i++)
         {
-            // Do NOT use pamTracker for this memory as we need it stay allocated even if the load fails.
-            void *mem = (void *)pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TypeVarTypeDesc)));
-            pTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, tok, i, tkTyPar);
+            hEnumTyPars.EnumNext(&tkTyPar);
 
-            // No race here - the row in GenericParam table is owned exclusively by this method and we
-            // are holding a lock preventing other threads from loading the declaring type and setting
-            // up this method desc.
-            pModule->StoreGenericParamThrowing(tkTyPar, pTypeVarTypeDesc);
+            // code:Module.m_GenericParamToDescMap maps generic parameter RIDs to TypeVarTypeDesc
+            // instances so that we do not leak by allocating them all over again, if the declaring
+            // type repeatedly fails to load.
+            TypeVarTypeDesc* pTypeVarTypeDesc = pModule->LookupGenericParam(tkTyPar);
+            if (pTypeVarTypeDesc == NULL)
+            {
+                // Do NOT use pamTracker for this memory as we need it stay allocated even if the load fails.
+                void* mem = (void*)pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TypeVarTypeDesc)));
+                pTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, tok, i, tkTyPar);
+
+                pModule->StoreGenericParamThrowing(tkTyPar, pTypeVarTypeDesc);
+            }
+            pInstDest[i] = TypeHandle(pTypeVarTypeDesc);
         }
-        pInstDest[i] = TypeHandle(pTypeVarTypeDesc);
     }
     LOG((LF_JIT, LL_INFO10000, "GENERICSVER: Initialized typical  method instantiation with %d type handles\n",numTyPars));
 }

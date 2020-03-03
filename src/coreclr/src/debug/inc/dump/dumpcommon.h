@@ -5,7 +5,7 @@
 #ifndef DEBUGGER_DUMPCOMMON_H
 #define DEBUGGER_DUMPCOMMON_H
 
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
 typedef enum _MINIDUMP_TYPE {
     MiniDumpNormal                         = 0x00000000,
     MiniDumpWithDataSegs                   = 0x00000001,
@@ -32,7 +32,7 @@ typedef enum _MINIDUMP_TYPE {
     MiniDumpWithAvxXStateContext           = 0x00200000,
     MiniDumpValidTypeFlags                 = 0x003fffff,
 } MINIDUMP_TYPE;
-#endif // FEATURE_PAL
+#endif // HOST_UNIX
 
 #if defined(DACCESS_COMPILE) || defined(RIGHT_SIDE_COMPILE)
 

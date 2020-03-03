@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Immutable
 {
@@ -22,7 +23,7 @@ namespace System.Collections.Immutable
             }
         }
 
-        public static bool TryTake(out T item)
+        public static bool TryTake([MaybeNullWhen(false)] out T item)
         {
             Stack<RefAsValueType<T>> localStack = ThreadLocalStack;
             if (localStack != null && localStack.Count > 0)
@@ -31,7 +32,7 @@ namespace System.Collections.Immutable
                 return true;
             }
 
-            item = default(T);
+            item = default(T)!;
             return false;
         }
 
@@ -40,15 +41,14 @@ namespace System.Collections.Immutable
             get
             {
                 // Ensure the [ThreadStatic] is initialized to a dictionary
-                Dictionary<Type, object> typesToStacks = AllocFreeConcurrentStack.t_stacks;
+                Dictionary<Type, object>? typesToStacks = AllocFreeConcurrentStack.t_stacks;
                 if (typesToStacks == null)
                 {
                     AllocFreeConcurrentStack.t_stacks = typesToStacks = new Dictionary<Type, object>();
                 }
 
                 // Get the stack that corresponds to the T
-                object stackObj;
-                if (!typesToStacks.TryGetValue(s_typeOfT, out stackObj))
+                if (!typesToStacks.TryGetValue(s_typeOfT, out object? stackObj))
                 {
                     stackObj = new Stack<RefAsValueType<T>>(MaxSize);
                     typesToStacks.Add(s_typeOfT, stackObj);
@@ -67,10 +67,10 @@ namespace System.Collections.Immutable
         // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools.
         // Get in touch with the diagnostics team if you have questions.
 
-        // Workaround for https://github.com/dotnet/coreclr/issues/2191.
+        // Workaround for https://github.com/dotnet/runtime/issues/4731.
         // When that's fixed, a [ThreadStatic] Stack should be added back to AllocFreeConcurrentStack<T>.
 
         [ThreadStatic]
-        internal static Dictionary<Type, object> t_stacks;
+        internal static Dictionary<Type, object>? t_stacks;
     }
 }

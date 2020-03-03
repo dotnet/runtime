@@ -19,18 +19,18 @@ namespace System.Security.AccessControl
         }
 
         internal FileSystemSecurity(bool isContainer, string name, AccessControlSections includeSections, bool isDirectory)
-            : base(isContainer, s_ResourceType, name, includeSections, _HandleErrorCode, isDirectory)
+            : base(isContainer, s_ResourceType, PathInternal.EnsureExtendedPrefixIfNeeded(Path.GetFullPath(name)), includeSections, _HandleErrorCode, isDirectory)
         {
         }
 
-        internal FileSystemSecurity(bool isContainer, SafeFileHandle handle, AccessControlSections includeSections, bool isDirectory)
+        internal FileSystemSecurity(bool isContainer, SafeFileHandle? handle, AccessControlSections includeSections, bool isDirectory)
             : base(isContainer, s_ResourceType, handle, includeSections, _HandleErrorCode, isDirectory)
         {
         }
 
-        private static Exception _HandleErrorCode(int errorCode, string name, SafeHandle handle, object context)
+        private static Exception? _HandleErrorCode(int errorCode, string? name, SafeHandle? handle, object? context)
         {
-            Exception exception = null;
+            Exception? exception = null;
 
             switch (errorCode)
             {
@@ -176,9 +176,7 @@ namespace System.Security.AccessControl
 
             for (int i = 0; i < rules.Count; i++)
             {
-                FileSystemAccessRule fsrule = rules[i] as FileSystemAccessRule;
-
-                if ((fsrule != null) && (fsrule.FileSystemRights == rule.FileSystemRights)
+                if ((rules[i] is FileSystemAccessRule fsrule) && (fsrule.FileSystemRights == rule.FileSystemRights)
                     && (fsrule.IdentityReference == rule.IdentityReference)
                     && (fsrule.AccessControlType == rule.AccessControlType))
                 {
@@ -222,9 +220,7 @@ namespace System.Security.AccessControl
 
             for (int i = 0; i < rules.Count; i++)
             {
-                FileSystemAccessRule fsrule = rules[i] as FileSystemAccessRule;
-
-                if ((fsrule != null) && (fsrule.FileSystemRights == rule.FileSystemRights)
+                if ((rules[i] is FileSystemAccessRule fsrule) && (fsrule.FileSystemRights == rule.FileSystemRights)
                     && (fsrule.IdentityReference == rule.IdentityReference)
                     && (fsrule.AccessControlType == rule.AccessControlType))
                 {

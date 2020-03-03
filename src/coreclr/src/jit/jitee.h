@@ -21,7 +21,7 @@ public:
         JIT_FLAG_GCPOLL_CALLS            = 6, // Emit calls to JIT_POLLGC for thread suspension.
         JIT_FLAG_MCJIT_BACKGROUND        = 7, // Calling from multicore JIT background thread, do not call JitComplete
 
-    #if defined(_TARGET_X86_)
+    #if defined(TARGET_X86)
 
         JIT_FLAG_PINVOKE_RESTORE_ESP     = 8, // Restore ESP after returning from inlined PInvoke
         JIT_FLAG_TARGET_P4               = 9,
@@ -29,7 +29,7 @@ public:
         JIT_FLAG_USE_CMOV                = 11, // Generated code may use cmov instruction
         JIT_FLAG_USE_SSE2                = 12, // Generated code may use SSE-2 instructions
 
-    #else // !defined(_TARGET_X86_)
+    #else // !defined(TARGET_X86)
 
         JIT_FLAG_UNUSED1                 = 8,
         JIT_FLAG_UNUSED2                 = 9,
@@ -37,29 +37,29 @@ public:
         JIT_FLAG_UNUSED4                 = 11,
         JIT_FLAG_UNUSED5                 = 12,
 
-    #endif // !defined(_TARGET_X86_)
+    #endif // !defined(TARGET_X86)
 
         JIT_FLAG_UNUSED6                 = 13,
 
-    #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+    #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
         JIT_FLAG_USE_AVX                 = 14,
         JIT_FLAG_USE_AVX2                = 15,
         JIT_FLAG_USE_AVX_512             = 16,
 
-    #else // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
+    #else // !defined(TARGET_X86) && !defined(TARGET_AMD64)
 
         JIT_FLAG_UNUSED7                 = 14,
         JIT_FLAG_UNUSED8                 = 15,
         JIT_FLAG_UNUSED9                 = 16,
 
-    #endif // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
+    #endif // !defined(TARGET_X86) && !defined(TARGET_AMD64)
 
-    #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+    #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
         JIT_FLAG_FEATURE_SIMD            = 17,
     #else
         JIT_FLAG_UNUSED10                = 17,
-    #endif // !(defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+    #endif // !(defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64))
 
         JIT_FLAG_MAKEFINALCODE           = 18, // Use the final code generator, i.e., not the interpreter.
         JIT_FLAG_READYTORUN              = 19, // Use version-resilient code generation
@@ -81,19 +81,19 @@ public:
         JIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
         JIT_FLAG_USE_PINVOKE_HELPERS     = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         JIT_FLAG_REVERSE_PINVOKE         = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
-        JIT_FLAG_DESKTOP_QUIRKS          = 38, // The JIT should generate desktop-quirk-compatible code
+        // JIT_FLAG_UNUSED               = 38,
         JIT_FLAG_TIER0                   = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         JIT_FLAG_TIER1                   = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
         JIT_FLAG_RELATIVE_CODE_RELOCS    = 41, // JIT should generate PC-relative address computations instead of EE relocation records
-#else // !defined(_TARGET_ARM_)
+#else // !defined(TARGET_ARM)
         JIT_FLAG_UNUSED11                = 41,
-#endif // !defined(_TARGET_ARM_)
+#endif // !defined(TARGET_ARM)
 
         JIT_FLAG_NO_INLINING             = 42, // JIT should not inline any called method into this method
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 
         JIT_FLAG_HAS_ARM64_AES           = 43, // ID_AA64ISAR0_EL1.AES is 1 or better
         JIT_FLAG_HAS_ARM64_ATOMICS       = 44, // ID_AA64ISAR0_EL1.Atomic is 2 or better
@@ -117,7 +117,7 @@ public:
         JIT_FLAG_HAS_ARM64_SM4           = 62, // ID_AA64ISAR0_EL1.SM4 is 1 or better
         JIT_FLAG_HAS_ARM64_SVE           = 63  // ID_AA64PFR0_EL1.SVE is 1 or better
 
-#elif defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#elif defined(TARGET_X86) || defined(TARGET_AMD64)
 
         JIT_FLAG_USE_SSE3                = 43,
         JIT_FLAG_USE_SSSE3               = 44,
@@ -142,7 +142,7 @@ public:
         JIT_FLAG_UNUSED32                = 63
 
 
-#else // !defined(_TARGET_ARM64_) && !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
+#else // !defined(TARGET_ARM64) && !defined(TARGET_X86) && !defined(TARGET_AMD64)
 
         JIT_FLAG_UNUSED12                = 43,
         JIT_FLAG_UNUSED13                = 44,
@@ -166,7 +166,7 @@ public:
         JIT_FLAG_UNUSED31                = 62,
         JIT_FLAG_UNUSED32                = 63
 
-#endif // !defined(_TARGET_ARM64_) && !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_)
+#endif // !defined(TARGET_ARM64) && !defined(TARGET_X86) && !defined(TARGET_AMD64)
 
     };
     // clang-format on
@@ -236,7 +236,7 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_GCPOLL_CALLS, JIT_FLAG_GCPOLL_CALLS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND, JIT_FLAG_MCJIT_BACKGROUND);
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PINVOKE_RESTORE_ESP, JIT_FLAG_PINVOKE_RESTORE_ESP);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_TARGET_P4, JIT_FLAG_TARGET_P4);
@@ -246,7 +246,7 @@ public:
 
 #endif
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX, JIT_FLAG_USE_AVX);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2, JIT_FLAG_USE_AVX2);
@@ -254,7 +254,7 @@ public:
 
 #endif
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD, JIT_FLAG_FEATURE_SIMD);
 
@@ -280,19 +280,18 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND, JIT_FLAG_SAMPLING_JIT_BACKGROUND);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_PINVOKE_HELPERS, JIT_FLAG_USE_PINVOKE_HELPERS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE, JIT_FLAG_REVERSE_PINVOKE);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_DESKTOP_QUIRKS, JIT_FLAG_DESKTOP_QUIRKS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_TIER0, JIT_FLAG_TIER0);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_TIER1, JIT_FLAG_TIER1);
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_RELATIVE_CODE_RELOCS, JIT_FLAG_RELATIVE_CODE_RELOCS);
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING, JIT_FLAG_NO_INLINING);
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_AES, JIT_FLAG_HAS_ARM64_AES);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ATOMICS, JIT_FLAG_HAS_ARM64_ATOMICS);
@@ -316,7 +315,7 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SM4, JIT_FLAG_HAS_ARM64_SM4);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SVE, JIT_FLAG_HAS_ARM64_SVE);
 
-#elif defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#elif defined(TARGET_X86) || defined(TARGET_AMD64)
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3, JIT_FLAG_USE_SSE3);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_SSSE3, JIT_FLAG_USE_SSSE3);
@@ -330,7 +329,7 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_PCLMULQDQ, JIT_FLAG_USE_PCLMULQDQ);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_POPCNT, JIT_FLAG_USE_POPCNT);
 
-#endif // _TARGET_X86_ || _TARGET_AMD64_
+#endif // TARGET_X86 || TARGET_AMD64
 
 #undef FLAGS_EQUAL
     }

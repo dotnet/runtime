@@ -14,7 +14,10 @@
   <ItemGroup>
     <ProjectReference Include="Dispatch/CMakeLists.txt" />
     <ProjectReference Include="../NetServer/NetServer.csproj" />
-    <ProjectReference Include="$(SourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Interop.settings.targets))\Interop.settings.targets" />
+  <ItemGroup>
+    <TraitTags Include="OsSpecific" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
 </Project>

@@ -33,22 +33,19 @@ namespace System.Collections.Immutable
         /// <returns><c>true</c> if the count could be determined; <c>false</c> otherwise.</returns>
         internal static bool TryGetCount<T>(this IEnumerable sequence, out int count)
         {
-            var collection = sequence as ICollection;
-            if (collection != null)
+            if (sequence is ICollection collection)
             {
                 count = collection.Count;
                 return true;
             }
 
-            var collectionOfT = sequence as ICollection<T>;
-            if (collectionOfT != null)
+            if (sequence is ICollection<T> collectionOfT)
             {
                 count = collectionOfT.Count;
                 return true;
             }
 
-            var readOnlyCollection = sequence as IReadOnlyCollection<T>;
-            if (readOnlyCollection != null)
+            if (sequence is IReadOnlyCollection<T> readOnlyCollection)
             {
                 count = readOnlyCollection.Count;
                 return true;
@@ -107,11 +104,9 @@ namespace System.Collections.Immutable
             Debug.Assert(arrayIndex >= 0 && arrayIndex <= array.Length);
 
             // IList is the GCD of what the following types implement.
-            var listInterface = sequence as IList<T>;
-            if (listInterface != null)
+            if (sequence is IList<T> listInterface)
             {
-                var list = sequence as List<T>;
-                if (list != null)
+                if (sequence is List<T> list)
                 {
                     list.CopyTo(array, arrayIndex);
                     return true;
@@ -119,7 +114,7 @@ namespace System.Collections.Immutable
 
                 // Array.Copy can throw an ArrayTypeMismatchException if the underlying type of
                 // the destination array is not typeof(T[]), but is assignment-compatible with T[].
-                // See https://github.com/dotnet/corefx/issues/2241 for more info.
+                // See https://github.com/dotnet/runtime/issues/14794 for more info.
                 if (sequence.GetType() == typeof(T[]))
                 {
                     var sourceArray = (T[])sequence;
@@ -127,10 +122,9 @@ namespace System.Collections.Immutable
                     return true;
                 }
 
-                if (sequence is ImmutableArray<T>)
+                if (sequence is ImmutableArray<T> immutable)
                 {
-                    var immutable = (ImmutableArray<T>)sequence;
-                    Array.Copy(immutable.array, 0, array, arrayIndex, immutable.Length);
+                    Array.Copy(immutable.array!, 0, array, arrayIndex, immutable.Length);
                     return true;
                 }
             }
@@ -157,7 +151,7 @@ namespace System.Collections.Immutable
 
             if (count == 0)
             {
-                return ImmutableArray<T>.Empty.array;
+                return ImmutableArray<T>.Empty.array!;
             }
 
             T[] array = new T[count];

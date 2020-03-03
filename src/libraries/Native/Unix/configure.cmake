@@ -7,21 +7,21 @@ include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 
-if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+if (CLR_CMAKE_TARGET_LINUX)
     set(PAL_UNIX_NAME \"LINUX\")
-elseif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+elseif (CLR_CMAKE_TARGET_DARWIN)
     set(PAL_UNIX_NAME \"OSX\")
 
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
-elseif (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+elseif (CLR_CMAKE_TARGET_FREEBSD)
     set(PAL_UNIX_NAME \"FREEBSD\")
     include_directories(SYSTEM /usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES /usr/local/include)
-elseif (CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+elseif (CLR_CMAKE_TARGET_NETBSD)
     set(PAL_UNIX_NAME \"NETBSD\")
-elseif (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+elseif (CLR_CMAKE_TARGET_ARCH_WASM)
     set(PAL_UNIX_NAME \"WEBASSEMBLY\")
 else ()
     message(FATAL_ERROR "Unknown platform.  Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
@@ -30,7 +30,8 @@ endif ()
 # We compile with -Werror, so we need to make sure these code fragments compile without warnings.
 # Older CMake versions (3.8) do not assign the result of their tests, causing unused-value errors
 # which are not distinguished from the test failing. So no error for that one.
-set(CMAKE_REQUIRED_FLAGS "-Werror -Wno-error=unused-value")
+# For clang-5.0 avoid errors like "unused variable 'err' [-Werror,-Wunused-variable]".
+set(CMAKE_REQUIRED_FLAGS "-Werror -Wno-error=unused-value -Wno-error=unused-variable")
 
 # Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
 # the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
@@ -121,7 +122,7 @@ check_symbol_exists(
 
 check_symbol_exists(
     posix_fadvise64
-    fnctl.h
+    fcntl.h
     HAVE_POSIX_FADVISE64)
 
 check_symbol_exists(
@@ -305,10 +306,11 @@ check_c_source_compiles(
 check_c_source_compiles(
     "
     #include <dirent.h>
+    #include <stddef.h>
     int main(void)
     {
-        DIR* dir;
-        struct dirent* entry;
+        DIR* dir = NULL;
+        struct dirent* entry = NULL;
         struct dirent* result;
         readdir_r(dir, entry, &result);
         return 0;
@@ -410,18 +412,19 @@ set(PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
 set(CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
 check_c_source_compiles(
      "
+     #include <stddef.h>
      #include <sys/types.h>
      #include <netdb.h>
 
      int main(void)
      {
         const struct sockaddr *addr;
-        socklen_t addrlen;
-        char *host;
-        socklen_t hostlen;
-        char *serv;
-        socklen_t servlen;
-        int flags;
+        socklen_t addrlen = 0;
+        char *host = NULL;
+        socklen_t hostlen = 0;
+        char *serv = NULL;
+        socklen_t servlen = 0;
+        int flags = 0;
         int result = getnameinfo(addr, addrlen, host, hostlen, serv, servlen, flags);
         return 0;
      }
@@ -431,13 +434,12 @@ set(CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
 set(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 0)
 
-if (CMAKE_SYSTEM_NAME STREQUAL Linux)
-    if (NOT CLR_CMAKE_PLATFORM_ANDROID)
+if (CLR_CMAKE_TARGET_LINUX)
+    if (NOT CLR_CMAKE_TARGET_ANDROID)
         set(CMAKE_REQUIRED_LIBRARIES rt)
     endif ()
 
     set(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 1)
-    
 endif ()
 
 check_c_source_runs(
@@ -497,13 +499,14 @@ set (CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
 
 check_c_source_compiles(
     "
+    #include <stddef.h>
     #include <sys/socket.h>
 
     int main(void)
     {
-        int fd;
-        struct sockaddr* addr;
-        socklen_t addrLen;
+        int fd = -1;
+        struct sockaddr* addr = NULL;
+        socklen_t addrLen = 0;
 
         int err = bind(fd, addr, addrLen);
         return 0;
@@ -713,15 +716,22 @@ set (CMAKE_REQUIRED_FLAGS "-Werror -Weverything")
 check_c_source_compiles(
     "
     #include <unistd.h>
-    int main(void) { size_t namelen = 20; char name[20]; getdomainname(name, namelen); return 0; }
+    int main(void)
+    {
+        size_t namelen = 20;
+        char name[20];
+        int dummy = getdomainname(name, namelen);
+        (void)dummy;
+        return 0;
+    }
     "
     HAVE_GETDOMAINNAME_SIZET
 )
 set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
 set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
-if (HAVE_SYS_INOTIFY_H AND CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-set (CMAKE_REQUIRED_LIBRARIES "-linotify -L/usr/local/lib")
+if (HAVE_SYS_INOTIFY_H AND CLR_CMAKE_TARGET_FREEBSD)
+    set (CMAKE_REQUIRED_LIBRARIES "-linotify -L/usr/local/lib")
 endif()
 
 check_symbol_exists(
@@ -743,7 +753,7 @@ set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)
     set (HAVE_INOTIFY 1)
-elseif (CMAKE_SYSTEM_NAME STREQUAL Linux)
+elseif (CLR_CMAKE_TARGET_LINUX)
     message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
 endif()
 

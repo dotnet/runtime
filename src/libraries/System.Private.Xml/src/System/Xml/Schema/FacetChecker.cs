@@ -156,7 +156,7 @@ namespace System.Xml.Schema
                 if (_firstPattern == true)
                 {
                     _regStr = new StringBuilder();
-                    _regStr.Append("(");
+                    _regStr.Append('(');
                     _regStr.Append(facet.Value);
                     _pattern_facet = facet;
                     _firstPattern = false;
@@ -357,12 +357,12 @@ namespace System.Xml.Schema
                     }
                     try
                     {
-                        _regStr.Append(")");
+                        _regStr.Append(')');
                         string tempStr = _regStr.ToString();
                         if (tempStr.Contains('|'))
                         { // ordinal compare
-                            _regStr.Insert(0, "(");
-                            _regStr.Append(")");
+                            _regStr.Insert(0, '(');
+                            _regStr.Append(')');
                         }
                         _derivedRestriction.Patterns.Add(new Regex(Preprocess(_regStr.ToString())));
                     }
@@ -701,7 +701,7 @@ namespace System.Xml.Schema
             private static string Preprocess(string pattern)
             {
                 StringBuilder bufBld = new StringBuilder();
-                bufBld.Append("^");
+                bufBld.Append('^');
 
                 char[] source = pattern.ToCharArray();
                 int length = pattern.Length;
@@ -739,7 +739,7 @@ namespace System.Xml.Schema
                     bufBld.Append(source, copyPosition, length - copyPosition);
                 }
 
-                bufBld.Append("$");
+                bufBld.Append('$');
                 return bufBld.ToString();
             }
 

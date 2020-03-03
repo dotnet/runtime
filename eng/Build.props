@@ -15,10 +15,7 @@
       https://github.com/dotnet/arcade/issues/388
   -->
 
-  <PropertyGroup>
-    <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
-  </PropertyGroup>
-
+  <Import Project="$(MSBuildThisFileDirectory)Configurations.props" />
   <Import Project="$(MSBuildThisFileDirectory)Subsets.props" />
 
   <Target Name="CheckSpecifiedSubsetValidity"

@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8.12.2)
-
 # This test fails to build on ARM
 #add_subdirectory(test1)
 add_subdirectory(test10)

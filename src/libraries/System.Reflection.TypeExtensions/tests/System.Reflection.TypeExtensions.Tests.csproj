@@ -1,22 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
-    <Compile Include="MemberInfoTests.cs" />
-    <Compile Include="ModuleTests.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyExtensionTests.cs" />
     <Compile Include="ConstructorInfo\ConstructorInfoInvokeArrayTests.cs" />
     <Compile Include="ConstructorInfo\ConstructorInfoTests.cs" />
-    <Compile Include="MethodInfoTests.cs" />
-    <Compile Include="TypeTests.cs" />
-    <Compile Include="PropertyInfoTests.cs" />
-    <Compile Include="Helpers.cs" />
     <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfoTests.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="MetadataTokenTests.cs" />
     <Compile Include="MethodBaseTests.cs" />
+    <Compile Include="MethodInfoTests.cs" />
+    <Compile Include="ModuleTests.cs" />
+    <Compile Include="PropertyInfoTests.cs" />
+    <Compile Include="TypeTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(CommonTestPath)Data\TinyAssembly.dll">
+      <Link>TinyAssembly.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

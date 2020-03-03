@@ -24,7 +24,6 @@ namespace System.Threading.Tasks.Dataflow
     /// <typeparam name="T">Specifies the type of data put into batches.</typeparam>
     [DebuggerDisplay("{DebuggerDisplayContent,nq}")]
     [DebuggerTypeProxy(typeof(BatchBlock<>.DebugView))]
-    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
     public sealed class BatchBlock<T> : IPropagatorBlock<T, T[]>, IReceivableSourceBlock<T[]>, IDebuggerDisplay
     {
         /// <summary>The target half of this batch.</summary>
@@ -180,7 +179,6 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get
@@ -246,7 +244,6 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <summary>Provides the core target implementation for a Batch.</summary>
-        [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
         [DebuggerDisplay("{DebuggerDisplayContent,nq}")]
         private sealed class BatchBlockTargetCore
         {
@@ -435,7 +432,6 @@ namespace System.Threading.Tasks.Dataflow
             /// In general, it is not safe to pass releaseReservedMessages:true, because releasing of reserved messages
             /// is done without taking a lock. We pass releaseReservedMessages:true only when an exception has been
             /// caught inside the message processing loop which is a single instance at any given moment.</summary>
-            [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
             internal void Complete(Exception exception, bool dropPendingMessages, bool releaseReservedMessages, bool revertProcessingState = false)
             {
                 // Ensure that no new messages may be added
@@ -666,7 +662,6 @@ namespace System.Threading.Tasks.Dataflow
 
 
             /// <summary>Task body used to process messages.</summary>
-            [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
             private void ProcessMessagesLoopCore()
             {
                 Debug.Assert(_nonGreedyState != null, "Non-greedy state is required for non-greedy mode.");
@@ -1086,7 +1081,6 @@ namespace System.Threading.Tasks.Dataflow
             /// Whether to allow an exception from a release to propagate immediately,
             /// or to delay propagation until all releases have been attempted.
             /// </param>
-            [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
             internal void ReleaseReservedMessages(bool throwOnFirstException)
             {
                 Common.ContractAssertMonitorStatus(IncomingLock, held: false);
@@ -1164,7 +1158,6 @@ namespace System.Threading.Tasks.Dataflow
             internal DebuggingInformation GetDebuggingInformation() { return new DebuggingInformation(this); }
 
             /// <summary>Gets the object to display in the debugger display attribute.</summary>
-            [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
             private object DebuggerDisplayContent
             {
                 get

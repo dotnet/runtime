@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Reflection.Emit
 {
     public sealed class GenericTypeParameterBuilder : TypeInfo
     {
-        public override bool IsAssignableFrom(System.Reflection.TypeInfo? typeInfo)
+        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
             if (typeInfo == null) return false;
             return IsAssignableFrom(typeInfo.AsType());
@@ -176,7 +177,7 @@ namespace System.Reflection.Emit
 
         protected override bool IsValueTypeImpl() { return false; }
 
-        public override bool IsAssignableFrom(Type? c) { throw new NotSupportedException(); }
+        public override bool IsAssignableFrom([NotNullWhen(true)] Type? c) { throw new NotSupportedException(); }
 
         public override bool IsSubclassOf(Type c) { throw new NotSupportedException(); }
         #endregion

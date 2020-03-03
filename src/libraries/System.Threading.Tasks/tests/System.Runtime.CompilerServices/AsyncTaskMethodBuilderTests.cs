@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Diagnostics.Tracing;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
+using Xunit;
+using Xunit.Sdk;
 
 namespace System.Threading.Tasks.Tests
 {
@@ -521,7 +523,7 @@ namespace System.Threading.Tasks.Tests
             TaskScheduler.UnobservedTaskException -= handler;
         }
 
-        [ActiveIssue(39155)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30122")]
         [Fact]
         public static async Task AsyncMethodsDropsStateMachineAndExecutionContextUponCompletion()
         {
@@ -590,7 +592,39 @@ namespace System.Threading.Tasks.Tests
                         GC.WaitForPendingFinalizers();
                     });
 
-                    Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                    // To help diagnose https://github.com/dotnet/runtime/issues/2198
+                    // Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                    var sb = new StringBuilder();
+                    foreach (EventWrittenEventArgs ev in events)
+                    {
+                        if (ev.EventId == 0)
+                        {
+                            sb.AppendLine("Events contained unexpected event:")
+                              .AppendLine($"ActivityId: {ev.ActivityId}")
+                              .AppendLine($"Channel: {ev.Channel}")
+                              .AppendLine($"EventId: {ev.EventId}")
+                              .AppendLine($"EventName: {ev.EventName}")
+                              .AppendLine($"EventSource: {ev.EventSource}")
+                              .AppendLine($"Keywords: {ev.Keywords}")
+                              .AppendLine($"Level: {ev.Level}")
+                              .AppendLine($"Message: {ev.Message}")
+                              .AppendLine($"Opcode: {ev.Opcode}")
+                              .AppendLine($"OSThreadId: {ev.OSThreadId}")
+                              .AppendLine($"Payload: {(ev.Payload != null ? string.Join(", ", ev.Payload) : "(null)")}")
+                              .AppendLine($"PayloadNames: {(ev.PayloadNames != null ? string.Join(", ", ev.PayloadNames) : "(null)")}")
+                              .AppendLine($"RelatedActivityId: {ev.RelatedActivityId}")
+                              .AppendLine($"Tags: {ev.Tags}")
+                              .AppendLine($"Task: {ev.Task}")
+                              .AppendLine($"TimeStamp: {ev.TimeStamp}")
+                              .AppendLine($"Version: {ev.Version}")
+                              .AppendLine();
+                        }
+                    }
+                    if (sb.Length > 0)
+                    {
+                        throw new XunitException(sb.ToString());
+                    }
+
                     EventWrittenEventArgs iam = events.SingleOrDefault(e => e.EventName == "IncompleteAsyncMethod");
                     Assert.NotNull(iam);
                     Assert.NotNull(iam.Payload);

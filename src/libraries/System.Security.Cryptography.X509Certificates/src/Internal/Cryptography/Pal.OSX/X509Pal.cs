@@ -24,11 +24,11 @@ namespace Internal.Cryptography.Pal
         private partial class AppleX509Pal : ManagedX509ExtensionProcessor, IX509Pal
         {
             public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters,
-                ICertificatePal certificatePal)
+                ICertificatePal? certificatePal)
             {
                 const int errSecInvalidKeyRef = -67712;
                 const int errSecUnsupportedKeySize = -67735;
-                AppleCertificatePal applePal = certificatePal as AppleCertificatePal;
+                AppleCertificatePal? applePal = certificatePal as AppleCertificatePal;
 
                 if (applePal != null)
                 {
@@ -55,7 +55,7 @@ namespace Internal.Cryptography.Pal
                                 throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecInvalidKeyRef);
                             }
                             // EccGetKeySizeInBits can fail for two reasons. First, the Apple implementation has changed
-                            // and we receive values from API that were not previously handled. In that case the CoreFX
+                            // and we receive values from API that were not previously handled. In that case the
                             // implementation will need to be adjusted to handle these values. Second, we deliberately
                             // return 0 from the native code to prevent hitting buggy API implementations in Apple code
                             // later.
