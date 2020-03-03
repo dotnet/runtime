@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return result;
         }
 
-        public int ReadByteString(Span<byte> buffer)
+        public bool TryReadByteString(Span<byte> buffer, out int bytesWritten)
         {
             CborInitialByte header = Peek(expectedType: CborMajorType.ByteString);
             int length = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
@@ -30,13 +30,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (length > buffer.Length)
             {
-                return -1;
+                bytesWritten = 0;
+                return false;
             }
 
             _buffer.Slice(1 + additionalBytes, length).CopyTo(buffer);
             AdvanceBuffer(1 + additionalBytes + length);
 
-            return length;
+            bytesWritten = length;
+            return true;
         }
 
         // Implements major type 3 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
@@ -51,7 +53,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return result;
         }
 
-        public int ReadTextString(Span<char> buffer)
+        public bool TryReadTextString(Span<char> buffer, out int charsWritten)
         {
             CborInitialByte header = Peek(expectedType: CborMajorType.TextString);
             int byteLength = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
@@ -61,12 +63,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             int charLength = s_utf8Encoding.GetCharCount(encodedSlice);
             if (charLength > buffer.Length)
             {
-                return -1;
+                charsWritten = 0;
+                return false;
             }
 
             s_utf8Encoding.GetChars(encodedSlice, buffer);
             AdvanceBuffer(1 + additionalBytes + byteLength);
-            return charLength;
+            charsWritten = charLength;
+            return true;
         }
     }
 }
