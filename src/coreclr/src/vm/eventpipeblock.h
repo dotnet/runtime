@@ -232,6 +232,69 @@ private:
     unsigned int m_count;
 };
 
+// A block that contains V2 metadata entries. For older readers it masquerades as an empty block
+// of V1 metadata events by treating the entire block region as header with a 0 byte payload.
+class EventPipeMetadataBlockV2 : public EventPipeBlock
+{
+public:
+    EventPipeMetadataBlockV2(unsigned int maxBlockSize);
+
+    unsigned int GetHeaderSize() override
+    {
+        // This header must be interprettable as a EventPipeMetadataBlock header
+        // so that old readers can skip over it.
+        unsigned int v1HeaderSize =
+            sizeof(unsigned short) + // header size (dummy size that includes entire block)
+            sizeof(unsigned short) + // unused flags
+            sizeof(LARGE_INTEGER) +  // unsused min timestamp
+            sizeof(LARGE_INTEGER);   // unused max timestamp
+
+        return v1HeaderSize + GetV2HeaderSize();
+    }
+
+    unsigned int GetV2HeaderSize()
+    {
+        return
+            sizeof(unsigned int) + // v2 header size
+            sizeof(unsigned int) + // v2 metadata region start block offset
+            sizeof(unsigned int);  // v2 metadata region length
+    }
+
+    void SerializeHeader(FastSerializer* pSerializer) override
+    {
+        // V1 header
+        // The V1 header claims to cover the entire block so that old readers
+        // will skip over the data succesfully
+        const unsigned short headerSizeV1 = GetHeaderSize() + GetBytesWritten();
+        pSerializer->WriteBuffer((BYTE*)&headerSizeV1, sizeof(headerSizeV1));
+        const unsigned short flags = 0;
+        pSerializer->WriteBuffer((BYTE*)&flags, sizeof(flags));
+        const LARGE_INTEGER unusedTimestamp = { 0 };
+        pSerializer->WriteBuffer((BYTE*)&unusedTimestamp, sizeof(unusedTimestamp));
+        pSerializer->WriteBuffer((BYTE*)&unusedTimestamp, sizeof(unusedTimestamp));
+
+        // V2 header
+        const unsigned int headerSizeV2 = GetV2HeaderSize();
+        pSerializer->WriteBuffer((BYTE*)&headerSizeV2, sizeof(headerSizeV2));
+        const unsigned int metadataRegionStart = GetHeaderSize();
+        pSerializer->WriteBuffer((BYTE*)&metadataRegionStart, sizeof(metadataRegionStart));
+        const unsigned int metadataRegionLength = GetBytesWritten();
+        pSerializer->WriteBuffer((BYTE*)&metadataRegionLength, sizeof(metadataRegionLength));
+    }
+
+    const char* GetTypeName() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return "MetadataBlock";
+    }
+
+    // Returns true if the metadata blob can fit in the block
+    bool CanStoreMetadataBlob(const SString& providerName, unsigned int metadataBlobLength);
+
+    // Caller is responsible to ensure the blob fits before calling this
+    void WriteMetadataBlob(unsigned int metadataId, const SString& providerName, BYTE* pMetadataBlob, unsigned int metadataBlobLength);
+};
+
 #endif // FEATURE_PERFTRACING
 
 #endif // __EVENTPIPE_BLOCK_H__

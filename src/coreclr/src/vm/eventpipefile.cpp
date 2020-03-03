@@ -92,6 +92,8 @@ EventPipeFile::EventPipeFile(StreamWriter *pStreamWriter, EventPipeSerialization
     m_format = format;
     m_pBlock = new EventPipeEventBlock(100 * 1024, format);
     m_pMetadataBlock = new EventPipeMetadataBlock(100 * 1024);
+    // Due to encoding details the size of the V2 block + its header must fit in a signed short
+    m_pMetadataBlockV2 = new EventPipeMetadataBlockV2(30 * 1024); 
     m_pStackBlock = new EventPipeStackBlock(100 * 1024);
 
     // File start time information.
@@ -177,6 +179,7 @@ EventPipeFile::~EventPipeFile()
 
     delete m_pBlock;
     delete m_pMetadataBlock;
+    delete m_pMetadataBlockV2;
     delete m_pStackBlock;
     delete m_pSerializer;
     delete m_pMetadataIds;
@@ -201,9 +204,10 @@ void EventPipeFile::WriteEvent(EventPipeEventInstance &instance, ULONGLONG captu
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(m_pSerializer != nullptr);
     }
     CONTRACTL_END;
+
+    if (HasErrors()) return;
 
 #ifdef DEBUG
     _ASSERTE(instance.GetTimeStamp()->QuadPart >= m_lastSortedTimestamp.QuadPart);
@@ -221,14 +225,16 @@ void EventPipeFile::WriteEvent(EventPipeEventInstance &instance, ULONGLONG captu
 
     // Check to see if we've seen this event type before.
     // If not, then write the event metadata to the event stream first.
-    unsigned int metadataId = GetMetadataId(*instance.GetEvent());
+    EventPipeEvent* pEvent = instance.GetEvent();
+    unsigned int metadataId = GetMetadataId(*pEvent);
     if(metadataId == 0)
     {
         metadataId = GenerateMetadataId();
 
         EventPipeEventInstance* pMetadataInstance = EventPipe::BuildEventMetadataEvent(instance, metadataId);
 
-        WriteEventToBlock(*pMetadataInstance, 0); // metadataId=0 breaks recursion and represents the metadata event.
+        WriteMetadataEventToBlock(*pMetadataInstance, metadataId, pEvent->GetProvider()->GetProviderName(),
+            pEvent->GetMetadataV2(), pEvent->GetMetadataV2Length());
 
         SaveMetadataId(*instance.GetEvent(), metadataId);
 
@@ -247,7 +253,6 @@ void EventPipeFile::WriteSequencePoint(EventPipeSequencePoint* pSequencePoint)
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pSequencePoint != nullptr);
-        PRECONDITION(m_pSerializer != nullptr);
     }
     CONTRACTL_END;
 
@@ -259,6 +264,9 @@ void EventPipeFile::WriteSequencePoint(EventPipeSequencePoint* pSequencePoint)
 
     Flush(FlushAllBlocks);
     EventPipeSequencePointBlock sequencePointBlock(pSequencePoint);
+
+    if (HasErrors()) return;
+
     m_pSerializer->WriteObject(&sequencePointBlock);
 
     // stack cache resets on sequence points
@@ -278,17 +286,25 @@ void EventPipeFile::Flush(FlushFlags flags)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(m_pSerializer != nullptr);
         PRECONDITION(m_pMetadataBlock != nullptr);
         PRECONDITION(m_pStackBlock != nullptr);
         PRECONDITION(m_pBlock != nullptr);
     }
     CONTRACTL_END;
 
+    if (HasErrors()) return;
+
     // we write current blocks to the disk, whether they are full or not
-    if ((m_pMetadataBlock->GetBytesWritten() != 0) && ((flags & FlushMetadataBlock) != 0))
+    if (((m_pMetadataBlock->GetBytesWritten() != 0) || (m_pMetadataBlockV2->GetBytesWritten() != 0))
+        && ((flags & FlushMetadataBlock) != 0))
     {
         _ASSERTE(m_format >= EventPipeSerializationFormat::NetTraceV4);
+        if (m_pMetadataBlockV2->GetBytesWritten() != 0)
+        {
+            m_pSerializer->WriteObject(m_pMetadataBlockV2);
+            m_pMetadataBlockV2->Clear();
+        }
+
         m_pSerializer->WriteObject(m_pMetadataBlock);
         m_pMetadataBlock->Clear();
     }
@@ -342,27 +358,60 @@ void EventPipeFile::WriteEventToBlock(EventPipeEventInstance &instance,
 
     instance.SetMetadataId(metadataId);
 
-    // If we are flushing events we need to flush metadata and stacks as well
-    // to ensure referenced metadata/stacks were written to the file before the
-    // event which referenced them.
-    FlushFlags flags = FlushAllBlocks;
-    EventPipeEventBlockBase* pBlock = m_pBlock;
-    if(metadataId == 0 && m_format >= EventPipeSerializationFormat::NetTraceV4)
+    if (!m_pBlock->WriteEvent(instance, captureThreadId, sequenceNumber, stackId, isSortedEvent))
     {
-        flags = FlushMetadataBlock;
-        pBlock = m_pMetadataBlock;
+        // we can't write this event to the current block (it's full)
+        // so we write what we have in the block to the serializer
+        // If we are flushing events we need to flush metadata and stacks as well
+        // to ensure referenced metadata/stacks were written to the file before the
+        // event which referenced them.
+        Flush(FlushAllBlocks);
+
+        bool result = m_pBlock->WriteEvent(instance, captureThreadId, sequenceNumber, stackId, isSortedEvent);
+        _ASSERTE(result == true); // we should never fail to add event to a clear block (if we do the max size is too small)
+    }
+}
+void EventPipeFile::WriteMetadataEventToBlock(
+    EventPipeEventInstance& instance,
+    unsigned int metadataId,
+    const SString &providerName,
+    BYTE* pMetadataBlobV2,
+    unsigned int metadataBlobLengthV2
+)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    instance.SetMetadataId(0);
+
+    if (m_format >= EventPipeSerializationFormat::NetTraceV4)
+    {
+        // We want to ensure that the V1 and V2 metadata blocks describe the same set of events. Make sure that the
+        // V2 blob will fit so that if we succeed writing V1 we will also succeed writing V2. If either V1 or V2
+        // blocks don't have room we will flush both to ensure they do.
+        if (pMetadataBlobV2 != nullptr && !m_pMetadataBlockV2->CanStoreMetadataBlob(providerName, metadataBlobLengthV2))
+        {
+            Flush(FlushMetadataBlock);
+            if (!m_pMetadataBlockV2->CanStoreMetadataBlob(providerName, metadataBlobLengthV2))
+            {
+                _ASSERTE(!"EventPipe metadata blobs shouldn't be so large that they don't fit in an empty block");
+                pMetadataBlobV2 = nullptr;
+                metadataBlobLengthV2 = 0;
+            }
+        }
     }
 
-    if (pBlock->WriteEvent(instance, captureThreadId, sequenceNumber, stackId, isSortedEvent))
-        return; // the block is not full, we added the event and continue
-
-    // we can't write this event to the current block (it's full)
-    // so we write what we have in the block to the serializer
-    Flush(flags);
-
-    bool result = pBlock->WriteEvent(instance, captureThreadId, sequenceNumber, stackId, isSortedEvent);
-
-    _ASSERTE(result == true); // we should never fail to add event to a clear block (if we do the max size is too small)
+    if (!m_pMetadataBlock->WriteEvent(instance, 0, 0, 0, TRUE))
+    {
+        // we can't write this event to the current block (it's full)
+        // so we write what we have in the block to the serializer
+        Flush(FlushMetadataBlock);
+    }
 }
 
 unsigned int EventPipeFile::GenerateMetadataId()

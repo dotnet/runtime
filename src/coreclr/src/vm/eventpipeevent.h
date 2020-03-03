@@ -43,13 +43,21 @@ private:
     // Metadata length;
     unsigned int m_metadataLength;
 
+    // V2 Metadata
+    // Unfortunately our first serialization format for metadata had no extensibility and did not include arrays
+    // so we needed to create an updated format. The updated format is often NULL as long as the original format
+    // is sufficient for describing the event.
+    BYTE* m_pMetadataV2;
+    unsigned int m_metadataV2Length;
+
     // Refreshes the runtime state for this event.
     // Called by EventPipeProvider when the provider configuration changes.
     void RefreshState();
 
     // Only EventPipeProvider can create events.
     // The provider is responsible for allocating and freeing events.
-    EventPipeEvent(EventPipeProvider &provider, INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata = NULL, unsigned int metadataLength = 0);
+    EventPipeEvent(EventPipeProvider &provider, INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level, bool needStack,
+        BYTE *pMetadata = NULL, unsigned int metadataLength = 0, BYTE* pMetadataV2 = NULL, unsigned int metadataV2Length = 0);
 
 public:
     ~EventPipeEvent();
@@ -78,6 +86,10 @@ public:
     BYTE *GetMetadata() const;
 
     unsigned int GetMetadataLength() const;
+
+    BYTE* GetMetadataV2() const;
+
+    unsigned int GetMetadataV2Length() const;
 
     bool IsEnabled(uint64_t sessionMask) const;
 

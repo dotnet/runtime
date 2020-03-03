@@ -683,15 +683,17 @@ namespace System.Diagnostics.Tracing
                 if (eventID == 0)
                     continue;
 
-                byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateEventMetadata(m_eventData[i]);
-                uint metadataLength = (metadata != null) ? (uint)metadata.Length : 0;
+                EventPipeMetadata metadata = EventPipeMetadataGenerator.Instance.GenerateEventMetadata(m_eventData[i]);
+                uint metadataLength = (metadata.MetadataV1 != null) ? (uint)metadata.MetadataV1.Length : 0;
+                uint metadataLengthV2 = (metadata.MetadataV2 != null) ? (uint)metadata.MetadataV2.Length : 0;
 
                 string eventName = m_eventData[i].Name;
                 long keywords = m_eventData[i].Descriptor.Keywords;
                 uint eventVersion = m_eventData[i].Descriptor.Version;
                 uint level = m_eventData[i].Descriptor.Level;
 
-                fixed (byte* pMetadata = metadata)
+                fixed (byte *pMetadata = metadata.MetadataV1)
+                fixed (byte *pMetadataV2 = metadata.MetadataV2)
                 {
                     IntPtr eventHandle = m_eventPipeProvider.m_eventProvider.DefineEventHandle(
                         eventID,
@@ -700,7 +702,9 @@ namespace System.Diagnostics.Tracing
                         eventVersion,
                         level,
                         pMetadata,
-                        metadataLength);
+                        metadataLength,
+                        pMetadataV2,
+                        metadataLengthV2);
 
                     Debug.Assert(eventHandle != IntPtr.Zero);
                     m_eventData[i].EventHandle = eventHandle;

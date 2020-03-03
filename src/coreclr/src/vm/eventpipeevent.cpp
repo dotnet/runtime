@@ -16,14 +16,19 @@ EventPipeEvent::EventPipeEvent(
     EventPipeEventLevel level,
     bool needStack,
     BYTE *pMetadata,
-    unsigned int metadataLength) : m_pProvider(&provider),
+    unsigned int metadataLength,
+    BYTE *pMetadataV2,
+    unsigned int metadataV2Length) : m_pProvider(&provider),
                                    m_keywords(keywords),
                                    m_eventID(eventID),
                                    m_eventVersion(eventVersion),
                                    m_level(level),
                                    m_needStack(needStack),
                                    m_enabledMask(0),
-                                   m_pMetadata(nullptr)
+                                   m_pMetadata(nullptr),
+                                   m_metadataLength(0),
+                                   m_pMetadataV2(nullptr),
+                                   m_metadataV2Length(0)
 {
     CONTRACTL
     {
@@ -46,6 +51,13 @@ EventPipeEvent::EventPipeEvent(
         m_pMetadata = BuildMinimumMetadata();
         m_metadataLength = MinimumMetadataLength;
     }
+    
+    if (pMetadataV2 != nullptr)
+    {
+        m_pMetadataV2 = new BYTE[metadataV2Length];
+        memcpy(m_pMetadataV2, pMetadataV2, metadataV2Length);
+        m_metadataV2Length = metadataV2Length;
+    }
 }
 
 EventPipeEvent::~EventPipeEvent()
@@ -59,6 +71,7 @@ EventPipeEvent::~EventPipeEvent()
     CONTRACTL_END;
 
     delete[] m_pMetadata;
+    delete[] m_pMetadataV2;
 }
 
 BYTE *EventPipeEvent::BuildMinimumMetadata()
@@ -151,6 +164,18 @@ unsigned int EventPipeEvent::GetMetadataLength() const
 {
     LIMITED_METHOD_CONTRACT;
     return m_metadataLength;
+}
+
+BYTE* EventPipeEvent::GetMetadataV2() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_pMetadataV2;
+}
+
+unsigned int EventPipeEvent::GetMetadataV2Length() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_metadataV2Length;
 }
 
 void EventPipeEvent::RefreshState()

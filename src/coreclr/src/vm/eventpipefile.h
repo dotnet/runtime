@@ -135,6 +135,12 @@ private:
                            unsigned int stackId = 0,
                            BOOL isSortedEvent = TRUE);
 
+    void WriteMetadataEventToBlock(EventPipeEventInstance &instance,
+        unsigned int metadataId,
+        const SString& providerName,
+        BYTE* pMetadataBlobV2,
+        unsigned int metadataBlobV2Length);
+
     // The format to serialize
     EventPipeSerializationFormat m_format;
 
@@ -143,6 +149,7 @@ private:
 
     EventPipeEventBlock *m_pBlock;
     EventPipeMetadataBlock *m_pMetadataBlock;
+    EventPipeMetadataBlockV2* m_pMetadataBlockV2;
     EventPipeStackBlock *m_pStackBlock;
 
     // The system time when the file was opened.

@@ -69,7 +69,9 @@ public:
         UINT32 eventVersion,
         UINT32 level,
         void *pMetadata,
-        UINT32 metadataLength);
+        UINT32 metadataLength,
+        void *pMetadataV2,
+        UINT32 metadataLengthV2);
 
     static INT_PTR QCALLTYPE GetProvider(
         __in_z LPCWSTR providerName);
