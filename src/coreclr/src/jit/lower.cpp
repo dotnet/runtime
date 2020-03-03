@@ -2060,9 +2060,9 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
 
 #else // !FEATURE_FASTTAILCALL
 
-    // Platform choose not to implement fast tail call mechanism. In such a
-    // case we should never be reaching this method as the expectation is that
-    // all tailcalls will be dispatched via helper.
+    // Platform does not implement fast tail call mechanism. This cannot be
+    // reached because we always choose to do a tailcall via helper on those
+    // platforms (or no tailcall at all).
     unreached();
 #endif
 }

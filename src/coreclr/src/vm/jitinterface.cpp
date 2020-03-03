@@ -13943,10 +13943,10 @@ void* CEEInfo::getTailCallCopyArgsThunk(CORINFO_SIG_INFO       *pSig,
     return ftn;
 }
 
-bool CEEInfo::getTailCallHelpersHelper(CORINFO_RESOLVED_TOKEN* callToken,
-                                       CORINFO_SIG_INFO* sig,
-                                       CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
-                                       CORINFO_TAILCALL_HELPERS* pResult)
+bool CEEInfo::getTailCallHelpersInternal(CORINFO_RESOLVED_TOKEN* callToken,
+                                         CORINFO_SIG_INFO* sig,
+                                         CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
+                                         CORINFO_TAILCALL_HELPERS* pResult)
 {
     MethodDesc* pTargetMD = NULL;
 
@@ -14013,7 +14013,7 @@ bool CEEInfo::getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken,
 
     JIT_TO_EE_TRANSITION();
 
-    success = getTailCallHelpersHelper(callToken, sig, flags, pResult);
+    success = getTailCallHelpersInternal(callToken, sig, flags, pResult);
 
     EE_TO_JIT_TRANSITION();
 

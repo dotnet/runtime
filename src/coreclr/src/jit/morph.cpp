@@ -7409,35 +7409,42 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     return result;
 }
 
-/*****************************************************************************
- *
- * Transform the given GT_CALL tree for tail call code generation.
- * This transforms
- *   CALL
- *       {callTarget}
- *       {this}
- *       {args}
- * to
- *   COMMA
- *     CALL StoreArgsStub
- *       {callTarget} // depending on flags provided by the runtime
- *       {this}       // as a regular arg
- *       {args}
- *     COMMA
- *       CALL Dispatcher
- *         ADDR ReturnAddress
- *         CallTargetStub
- *         ADDR ReturnValue
- *       LCL ReturnValue
- * whenever the call node returns a value. If the call node does not return a
- * value the last comma will not be there.
- */
+//------------------------------------------------------------------------
+// fgMorphTailCallViaHelpers: Transform the given GT_CALL tree for tailcall code
+// generation.
+//
+// Arguments:
+//     call - The call to transform
+//     helpers - The tailcall helpers provided by the runtime.
+//
+// Return Value:
+//    Returns the transformed node.
+//
+// Notes:
+//   This transforms
+//     GT_CALL
+//         {callTarget}
+//         {this}
+//         {args}
+//   into
+//     GT_COMMA
+//       GT_CALL StoreArgsStub
+//         {callTarget}         (depending on flags provided by the runtime)
+//         {this}               (as a regular arg)
+//         {args}
+//       GT_COMMA
+//         GT_CALL Dispatcher
+//           GT_ADDR ReturnAddress
+//           {CallTargetStub}
+//           GT_ADDR ReturnValue
+//         GT_LCL ReturnValue
+// whenever the call node returns a value. If the call node does not return a
+// value the last comma will not be there.
+//
 GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help)
 {
     JITDUMP("fgMorphTailCallViaHelpers (before):\n");
     DISPTREE(call);
-
-    // TODO: Some comments (check old document and see what still applies)
 
     // Don't support tail calling helper methods
     assert(call->gtCallType != CT_HELPER);
@@ -7524,6 +7531,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
 
             // R2R requires different handling but we don't support tailcall via
             // helpers in R2R yet, so just leave it for now.
+            // TODO: R2R: TailCallViaHelper
             assert(!opts.IsReadyToRun());
 
             if (!call->tailCallInfo->IsCallvirt() ||

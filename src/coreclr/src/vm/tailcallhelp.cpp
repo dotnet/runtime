@@ -696,8 +696,7 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
     }
     else
     {
-        // Build the signature for the calli. TODO: Should we use the signature
-        // from the original calli instead?
+        // Build the signature for the calli.
         SigBuilder calliSig;
 
         if (info.CallSiteSig->HasThis())

@@ -7460,7 +7460,7 @@ void emitter::emitRecordCallSite(ULONG                 instrOffset,  /* IN */
     // lazily obtain it here using the given method handle (we only save the sig
     // info when we explicitly need it, i.e. for CALLI calls, vararg calls, and
     // tail calls).
-    CORINFO_SIG_INFO sigInf;
+    CORINFO_SIG_INFO sigInfo;
 
     if (callSig == nullptr)
     {
@@ -7468,8 +7468,8 @@ void emitter::emitRecordCallSite(ULONG                 instrOffset,  /* IN */
 
         if (Compiler::eeGetHelperNum(methodHandle) == CORINFO_HELP_UNDEF)
         {
-            emitComp->eeGetMethodSig(methodHandle, &sigInf);
-            callSig = &sigInf;
+            emitComp->eeGetMethodSig(methodHandle, &sigInfo);
+            callSig = &sigInfo;
         }
     }
 

@@ -354,6 +354,7 @@ public:
         WRAPPER_NO_CONTRACT;
         return GetTokenWorker<mdtFieldDef, FieldDesc*>(pFieldDesc);
     }
+
     mdToken GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig)
     {
         CONTRACTL

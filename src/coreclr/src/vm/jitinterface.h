@@ -979,7 +979,7 @@ public:
     void* getTailCallCopyArgsThunk(CORINFO_SIG_INFO       *pSig,
                                    CorInfoHelperTailCallSpecialHandling flags);
 
-    bool getTailCallHelpersHelper(
+    bool getTailCallHelpersInternal(
         CORINFO_RESOLVED_TOKEN* callToken,
         CORINFO_SIG_INFO* sig,
         CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,

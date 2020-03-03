@@ -6083,12 +6083,14 @@ void MethodContext::recGetTailCallCopyArgsThunk(CORINFO_SIG_INFO*               
     GetTailCallCopyArgsThunk->Add(key, (DWORDLONG)result);
     DEBUG_REC(dmpGetTailCallCopyArgsThunk(key, (DWORDLONG)result));
 }
+
 void MethodContext::dmpGetTailCallCopyArgsThunk(const Agnostic_GetTailCallCopyArgsThunk& key, DWORDLONG value)
 {
     printf("GetTailCallCopyArgsThunk key sig%s flg-%08X",
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(key.Sig).c_str(), key.flags);
     printf(", value res-%016llX", value);
 }
+
 void* MethodContext::repGetTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
 {
     AssertCodeMsg(GetTailCallCopyArgsThunk != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for ...");
@@ -6137,6 +6139,7 @@ void MethodContext::recGetTailCallHelpers(
     GetTailCallHelpers->Add(key, value);
     DEBUG_REC(dmpGetTailCallHelpers(key, value));
 }
+
 void MethodContext::dmpGetTailCallHelpers(const Agnostic_GetTailCallHelpers& key, const Agnostic_CORINFO_TAILCALL_HELPERS& value)
 {
     printf("GetTailCallHelpers key callToken-%s sig-%s flg-%08X",
@@ -6150,6 +6153,7 @@ void MethodContext::dmpGetTailCallHelpers(const Agnostic_GetTailCallHelpers& key
         value.hCallTarget,
         value.hDispatcher);
 }
+
 bool MethodContext::repGetTailCallHelpers(
     CORINFO_RESOLVED_TOKEN* callToken,
     CORINFO_SIG_INFO* sig,

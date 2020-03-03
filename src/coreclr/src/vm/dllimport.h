@@ -261,7 +261,6 @@ inline bool SF_IsSharedStub(DWORD dwStubFlags)
         return false;
     }
 
-    // TODO: Share tailcall store args and call target stubs
     if (SF_IsTailCallStoreArgsStub(dwStubFlags) || SF_IsTailCallCallTargetStub(dwStubFlags) ||
         SF_IsTailCallDispatcherStub(dwStubFlags))
     {

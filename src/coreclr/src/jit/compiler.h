@@ -3060,7 +3060,10 @@ public:
     unsigned            lvaOutgoingArgSpaceVar;  // dummy TYP_LCLBLK var for fixed outgoing argument space
     PhasedVar<unsigned> lvaOutgoingArgSpaceSize; // size of fixed outgoing argument space
 #endif                                           // FEATURE_FIXED_OUT_ARGS
-    unsigned lvaRetAddrVar;                      // variable representing the return address
+    // Variable representing the return address. The helper-based tailcall
+    // mechanism passes the address of the return address to a runtime helper
+    // where it is used to detect tail-call chains.
+    unsigned lvaRetAddrVar;
 
 #ifdef _TARGET_ARM_
     // On architectures whose ABIs allow structs to be passed in registers, struct promotion will sometimes
@@ -8726,6 +8729,9 @@ public:
     bool compTailCallStress()
     {
 #ifdef DEBUG
+        // Do not stress tailcalls in IL stubs as the runtime creates several IL
+        // stubs to implement the tailcall mechanism, which would then
+        // recursively create more IL stubs.
         return !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) &&
                (JitConfig.TailcallStress() != 0 || compStressCompile(STRESS_TAILCALL, 5));
 #else
