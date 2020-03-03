@@ -424,7 +424,7 @@ DWORD EEClassFactoryInfoHashTableHelper::Hash(ClassFactoryInfo *pKey)
     DWORD dwHash = 0;
     BYTE *pGuidData = (BYTE*)&pKey->m_clsid;
 
-    for (unsigned int i = 0; i < sizeof(GUID); i++)
+    for (SIZE_T i = sizeof(GUID); i; i--)
     {
         dwHash = (dwHash << 5) + (dwHash >> 5) + (*pGuidData);
         pGuidData++;
