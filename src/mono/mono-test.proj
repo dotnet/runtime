@@ -7,14 +7,53 @@
     <MonoObjTestsDir>$(MonoObjDir)mono/tests/</MonoObjTestsDir>
   </PropertyGroup>
 
+  <!-- stolen from src/coreclr/tests/src/Directory.Build.props and modified -->
+  <PropertyGroup>
+    <BaseOutputPath>$(ArtifactsDir)\tests\mono</BaseOutputPath>
+    <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)</BaseOutputPath>
+    <BaseOutputPathWithConfig>$(BaseOutputPath)\$(PlatformConfigPathPart)\</BaseOutputPathWithConfig>
+    <BinDir>$(BaseOutputPathWithConfig)</BinDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MonoTestSimpleCsprojTemplateTestDriver>$(MSBuildProjectDirectory)\mono\mini\TestDriver.cs</MonoTestSimpleCsprojTemplateTestDriver>
+    <!-- FIXME: Not sure if I need to set anything up so that Restore in this template does the right thing -->
+    <MonoTestsSimpleCsprojTemplate>
+      <![CDATA[
+<Project>
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultItems>false</EnableDefaultItems>
+  </PropertyGroup>
+
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+
+  <PropertyGroup>
+    <OutputPath>$(__MonoTestsSimpleCsprojTemplateOutputPath)</OutputPath>
+    <IntermediateOutputPath>$([System.IO.Path]::GetDirectoryName($(__MonoTestsSimpleCsprojPath)))\obj\</IntermediateOutputPath>
+  </PropertyGroup>
+
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+
+  <ItemGroup>
+    <Compile Include="$(__MonoTestSimpleCsprojTemplateSourceFile)" />
+    <Compile Include="$(MonoTestSimpleCsprojTemplateTestDriver)" Condition="'$(__MonoTestSimpleCsprojTemplateTestType)' == 'TestDriver'" />
+  </ItemGroup>
+
+</Project>
+]]>
+    </MonoTestsSimpleCsprojTemplate>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- one item per test file -->
     <!-- FIXME: use globbing but exclude failing tests, tests comprised of multiple source files, etc -->
-    <MonoTests Include="mono\tests\array-12193.cs">
+    <MonoTests Include="$(MSBuildProjectDirectory)\mono\tests\array-12193.cs">
       <MonoTestType>SingleFile</MonoTestType>
       <MonoTestNeedsLibtest>false</MonoTestNeedsLibtest>
     </MonoTests>
-    <MonoTests Include="mono\tests\debug-casts.cs">
+    <MonoTests Include="$(MSBuildProjectDirectory)\mono\tests\debug-casts.cs">
       <MonoTestType>TestDriver</MonoTestType>
       <MonoTestNeedsLibtest>false</MonoTestNeedsLibtest>
     </MonoTests>
@@ -24,18 +63,33 @@
     <ItemGroup>
       <MonoTestsSimple Include="@(MonoTests)" Condition="'%(MonoTestType)' == 'SingleFile'" />
       <MonoTestsSimple Include="@(MonoTests)" Condition="'%(MonoTestType)' == 'TestDriver'" />
-      <MonoTestsSimpleBaseDir Include="@(MonoTestsSimple -> %(Filename))" />
-      <MonoTestsSimpleCsproj Include="@(MonoTestsSimple -> '%(Filename)\%(Filename).csproj')" />
+      <MonoTestsSimpleWithAttr Include="@(MonoTestsSimple)">
+	<ObjDir>$(MonoObjTestsDir)%(Filename)\</ObjDir>
+	<Csproj>$(MonoObjTestsDir)%(Filename)\%(Filename).csproj</Csproj>
+	<OutputDir>$(BinDir)\%(Filename)\</OutputDir>
+      </MonoTestsSimpleWithAttr>
     </ItemGroup>
   </Target>
-  
-  <Target Name="CompileMonoRuntimeTests" DependsOnTargets="SelectViableMonoRuntimeTests">
-    <Message Text="Compiling mono runtime tests" Importance="High" />
+
+  <Target Name="CreateSingleCsprojFileForMonoRuntimeTest">
+    <WriteLinesToFile File="$(__MonoTestsSimpleCsprojPath)" Lines="$(MonoTestsSimpleCsprojTemplate)" Overwrite="true" />
+  </Target>
+
+  <Target Name="CreateProjFilesForMonoRuntimeTests" DependsOnTargets="SelectViableMonoRuntimeTests">
+    <Message Text="Creating .csproj files for mono runtime tests" Importance="High" />
     <Message Text="Mono obj dir is $(MonoObjDir)" Importance="High" />
     <Message Text="Mono obj tests dir is $(MonoObjTestsDir)" Importance="High" />
-    <Message Text="There are @(MonoTests->Count()) tests, @(MonoTestsSimple->Count()) simple" Importance="High" />
-    <Message Text="  Csproj %(MonoTestsSimpleCsproj.Identity)" Importance="High" />
-    <!-- MakeDir Directories="$(MonoObjDir)" / -->
-    
+    <Message Text="There are @(MonoTests->Count()) tests, @(MonoTestsSimpleWithAttr->Count()) simple" Importance="High" />
+    <Message Text="  Csproj %(MonoTestsSimpleWithAttr.Csproj)" Importance="High" />
+    <Message Text="  Test obj dir full path %(MonoTestsSimpleWithAttr.ObjDir)" Importance="High" />
+    <MakeDir Directories="%(MonoTestsSimpleWithAttr.ObjDir)" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateSingleCsprojFileForMonoRuntimeTest" Properties="__MonoTestsSimpleCsprojTemplateOutputPath=%(MonoTestsSimpleWithAttr.OutputDir);__MonoTestsSimpleCsprojPath=%(MonoTestsSimpleWithAttr.Csproj);__MonoTestSimpleCsprojTemplateSourceFile=%(MonoTestsSimpleWithAttr.FullPath);__MonoTestSimpleCsprojTemplateTestType=%(MonoTestsSimpleWithAttr.MonoTestType)" />
+  </Target>
+  
+  <Target Name="CompileMonoRuntimeTests" DependsOnTargets="CreateProjFilesForMonoRuntimeTests">
+    <Message Text="Compiling mono runtime tests" Importance="High" />
+    <Message Text="There are @(MonoTests->Count()) tests, @(MonoTestsSimpleWithAttr->Count()) simple" Importance="High" />
+    <Message Text="  Csproj %(MonoTestsSimpleWithAttr.Csproj)" Importance="High" />
+    <MSBuild Projects="%(MonoTestsSimpleWithAttr.Csproj)" Targets="Restore;Build" />
   </Target>
 </Project>
