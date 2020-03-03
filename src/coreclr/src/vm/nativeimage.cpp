@@ -40,9 +40,6 @@ NativeImage::NativeImage(
     NewHolder<PEImageLayout>& peImageLayout,
     READYTORUN_HEADER *pHeader,
     LPCUTF8 nativeImageName,
-#ifdef TARGET_UNIX
-    PALPEFileHolder& loadedFile,
-#endif
     LoaderAllocator *pLoaderAllocator,
     AllocMemTracker *pamTracker)
     : m_eagerFixupsLock(CrstNativeImageEagerFixups)
@@ -61,10 +58,6 @@ NativeImage::NativeImage(
     m_peImageLayout.Assign(peImageLayout.Extract());
     m_eagerFixupsHaveRun = false;
 
-#if TARGET_UNIX
-    m_loadedFile = loadedFile;
-#endif
-    
     m_pReadyToRunInfo.Assign(new ReadyToRunInfo(/*pModule*/ NULL, peImageLayout, pHeader, /*compositeImage*/ NULL, pamTracker), /*takeOwnership*/ TRUE);
     m_pComponentAssemblies = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ComponentAssemblies);
     m_componentAssemblyCount = m_pComponentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY);
@@ -113,12 +106,7 @@ NativeImage *NativeImage::Open(
         return NULL;
     }
     READYTORUN_HEADER *pHeader = (READYTORUN_HEADER *)((BYTE *)peLoadedImage->GetBase() + headerRVA);
-    return new NativeImage(
-        peLoadedImage, pHeader, nativeImageName,
-#ifdef TARGET_UNIX
-        loadedFile,
-#endif
-        pLoaderAllocator, pamTracker);
+    return new NativeImage(peLoadedImage, pHeader, nativeImageName, pLoaderAllocator, pamTracker);
 }
 #endif
 

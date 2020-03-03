@@ -70,19 +70,11 @@ private:
     Crst m_eagerFixupsLock;
     bool m_eagerFixupsHaveRun;
 
-    HMODULE m_hModule;
-#ifdef TARGET_UNIX
-    PALPEFileHolder m_loadedFile;
-#endif
-
 private:
     NativeImage(
         NewHolder<PEImageLayout>& peImageLayout,
         READYTORUN_HEADER *header,
         LPCUTF8 nativeImageName,
-#if TARGET_UNIX
-        PALPEFileHolder& loadedFile,
-#endif
         LoaderAllocator *loaderAllocator,
         AllocMemTracker *pamTracker);
 
