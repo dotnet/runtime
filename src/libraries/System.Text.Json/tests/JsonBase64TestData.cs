@@ -32,7 +32,7 @@ namespace System.Text.Json.Tests
             var random = new Random(42);
             var charArray = new char[502];
             charArray[0] = '"';
-            for (int i = 1; i < charArray.Length; i++)
+            for (int i = 1; i < charArray.Length - 1; i++)
             {
                 charArray[i] = (char)random.Next('A', 'Z'); // ASCII values (between 65 and 90) that constitute valid base 64 string.
             }
@@ -46,7 +46,7 @@ namespace System.Text.Json.Tests
             var random = new Random(42);
             var charArray = new char[500];
             charArray[0] = '"';
-            for (int i = 1; i < charArray.Length; i++)
+            for (int i = 1; i < charArray.Length - 1; i++)
             {
                 charArray[i] = (char)random.Next('?', '\\'); // ASCII values (between 63 and 91) that don't need to be escaped.
             }
