@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return result;
         }
 
-        public bool TryReadByteString(Span<byte> buffer, out int bytesWritten)
+        public bool TryReadByteString(Span<byte> destination, out int bytesWritten)
         {
             CborInitialByte header = Peek(expectedType: CborMajorType.ByteString);
             int length = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
