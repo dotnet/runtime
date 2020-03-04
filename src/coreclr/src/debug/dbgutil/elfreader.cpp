@@ -435,7 +435,6 @@ ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias, El
         TRACE("ERROR: EnumerateProgramHeaders Invalid elf header signature\n");
         return false;
     }
-
     _ASSERTE(ehdr.e_phentsize == sizeof(Elf_Phdr));
 #ifdef TARGET_64BIT
     _ASSERTE(ehdr.e_ident[EI_CLASS] == ELFCLASS64);
@@ -443,15 +442,11 @@ ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias, El
     _ASSERTE(ehdr.e_ident[EI_CLASS] == ELFCLASS32);
 #endif
     _ASSERTE(ehdr.e_ident[EI_DATA] == ELFDATA2LSB);
-
     int phnum = ehdr.e_phnum;
-
 #ifdef PN_XNUM
      _ASSERTE(phnum != PN_XNUM);
 #endif
-
     if (ehdr.e_phoff == 0 || phnum <= 0) {
-
         return false;
     }
     TRACE("ELF: type %d mach 0x%x ver %d flags 0x%x phnum %d phoff %" PRIxA " phentsize 0x%02x shnum %d shoff %" PRIxA " shentsize 0x%02x shstrndx %d\n",
