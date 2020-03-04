@@ -15,6 +15,9 @@ namespace System
                 int result = defaultValue;
                 switch (config)
                 {
+                    case uint value:
+                        result = (int)value;
+                        break;
                     case string str:
                         if (str.StartsWith('0'))
                         {
@@ -57,6 +60,15 @@ namespace System
                 short result = defaultValue;
                 switch (config)
                 {
+                    case uint value:
+                        {
+                            result = (short)value;
+                            if ((uint)result != value)
+                            {
+                                return defaultValue; // overflow
+                            }
+                            break;
+                        }
                     case string str:
                         if (str.StartsWith("0x"))
                         {

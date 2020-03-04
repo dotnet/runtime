@@ -193,45 +193,131 @@ namespace System.Threading
         // Time in ms for which ThreadPoolWorkQueue.Dispatch keeps executing work items before returning to the OS
         private const uint DispatchQuantum = 30;
 
+        internal static readonly bool UsePortableThreadPool = InitializeConfigAndDetermineUsePortableThreadPool();
+
         internal static readonly bool EnableWorkerTracking = GetEnableWorkerTracking();
 
         internal static bool KeepDispatching(int startTickCount)
         {
+            if (UsePortableThreadPool)
+            {
+                return true;
+            }
+
             // Note: this function may incorrectly return false due to TickCount overflow
             // if work item execution took around a multiple of 2^32 milliseconds (~49.7 days),
             // which is improbable.
             return (uint)(Environment.TickCount - startTickCount) < DispatchQuantum;
         }
 
+        private static unsafe bool InitializeConfigAndDetermineUsePortableThreadPool()
+        {
+            bool usePortableThreadPool = false;
+            int configVariableIndex = 0;
+            while (true)
+            {
+                int nextConfigVariableIndex =
+                    GetNextConfigUInt32Value(
+                        configVariableIndex,
+                        out uint configValue,
+                        out bool isBoolean,
+                        out char* appContextConfigNameUnsafe);
+                if (nextConfigVariableIndex < 0)
+                {
+                    break;
+                }
+
+                Debug.Assert(nextConfigVariableIndex > configVariableIndex);
+                configVariableIndex = nextConfigVariableIndex;
+
+                if (appContextConfigNameUnsafe == null)
+                {
+                    // Special case for UsePortableThreadPool, which doesn't go into the AppContext
+                    Debug.Assert(configValue != 0);
+                    Debug.Assert(isBoolean);
+                    usePortableThreadPool = true;
+                    continue;
+                }
+
+                var appContextConfigName = new string(appContextConfigNameUnsafe);
+                if (isBoolean)
+                {
+                    AppContext.SetSwitch(appContextConfigName, configValue != 0);
+                }
+                else
+                {
+                    AppContext.SetData(appContextConfigName, configValue);
+                }
+            }
+
+            return usePortableThreadPool;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe int GetNextConfigUInt32Value(
+            int configVariableIndex,
+            out uint configValue,
+            out bool isBoolean,
+            out char* appContextConfigName);
+
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
-            return
-                workerThreads >= 0 &&
-                completionPortThreads >= 0 &&
-                SetMaxThreadsNative(workerThreads, completionPortThreads);
+            if (workerThreads < 0 || completionPortThreads < 0)
+            {
+                return false;
+            }
+
+            if (UsePortableThreadPool && !PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads))
+            {
+                return false;
+            }
+
+            return SetMaxThreadsNative(workerThreads, completionPortThreads);
         }
 
         public static void GetMaxThreads(out int workerThreads, out int completionPortThreads)
         {
             GetMaxThreadsNative(out workerThreads, out completionPortThreads);
+
+            if (UsePortableThreadPool)
+            {
+                workerThreads = PortableThreadPool.ThreadPoolInstance.GetMaxThreads();
+            }
         }
 
         public static bool SetMinThreads(int workerThreads, int completionPortThreads)
         {
-            return
-                workerThreads >= 0 &&
-                completionPortThreads >= 0 &&
-                SetMinThreadsNative(workerThreads, completionPortThreads);
+            if (workerThreads < 0 || completionPortThreads < 0)
+            {
+                return false;
+            }
+
+            if (UsePortableThreadPool && !PortableThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads))
+            {
+                return false;
+            }
+
+            return SetMinThreadsNative(workerThreads, completionPortThreads);
         }
 
         public static void GetMinThreads(out int workerThreads, out int completionPortThreads)
         {
             GetMinThreadsNative(out workerThreads, out completionPortThreads);
+
+            if (UsePortableThreadPool)
+            {
+                workerThreads = PortableThreadPool.ThreadPoolInstance.GetMinThreads();
+            }
         }
 
         public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads)
         {
             GetAvailableThreadsNative(out workerThreads, out completionPortThreads);
+
+            if (UsePortableThreadPool)
+            {
+                workerThreads = PortableThreadPool.ThreadPoolInstance.GetAvailableThreads();
+            }
         }
 
         /// <summary>
@@ -240,11 +326,11 @@ namespace System.Threading
         /// <remarks>
         /// For a thread pool implementation that may have different types of threads, the count includes all types.
         /// </remarks>
-        public static extern int ThreadCount
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
+        public static int ThreadCount =>
+            (UsePortableThreadPool ? PortableThreadPool.ThreadPoolInstance.ThreadCount : 0) + GetThreadCount();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern int GetThreadCount();
 
         /// <summary>
         /// Gets the number of work items that have been processed so far.
@@ -252,16 +338,26 @@ namespace System.Threading
         /// <remarks>
         /// For a thread pool implementation that may have different types of work items, the count includes all types.
         /// </remarks>
-        public static long CompletedWorkItemCount => GetCompletedWorkItemCount();
+        public static long CompletedWorkItemCount
+        {
+            get
+            {
+                long count = GetCompletedWorkItemCount();
+                if (UsePortableThreadPool)
+                {
+                    count += PortableThreadPool.ThreadPoolInstance.CompletedWorkItemCount;
+                }
+                return count;
+            }
+        }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern long GetCompletedWorkItemCount();
 
-        private static extern long PendingUnmanagedWorkItemCount
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
+        private static long PendingUnmanagedWorkItemCount => UsePortableThreadPool ? 0 : GetPendingUnmanagedWorkItemCount();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern long GetPendingUnmanagedWorkItemCount();
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
@@ -295,8 +391,19 @@ namespace System.Threading
             return registeredWaitHandle;
         }
 
+        internal static void RequestWorkerThread()
+        {
+            if (UsePortableThreadPool)
+            {
+                PortableThreadPool.ThreadPoolInstance.RequestWorker();
+                return;
+            }
+
+            RequestWorkerThreadNative();
+        }
+
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern Interop.BOOL RequestWorkerThread();
+        private static extern Interop.BOOL RequestWorkerThreadNative();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe bool PostQueuedCompletionStatus(NativeOverlapped* overlapped);
@@ -322,19 +429,46 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetAvailableThreadsNative(out int workerThreads, out int completionPortThreads);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool NotifyWorkItemComplete();
+        internal static bool NotifyWorkItemComplete()
+        {
+            if (UsePortableThreadPool)
+            {
+                return PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete();
+            }
+
+            return NotifyWorkItemCompleteNative();
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ReportThreadStatus(bool isWorking);
+        private static extern bool NotifyWorkItemCompleteNative();
+
+        internal static void ReportThreadStatus(bool isWorking)
+        {
+            if (UsePortableThreadPool)
+            {
+                // TODO: PortableThreadPool - Implement worker tracking
+                return;
+            }
+
+            ReportThreadStatusNative(isWorking);
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void ReportThreadStatusNative(bool isWorking);
 
         internal static void NotifyWorkItemProgress()
         {
+            if (UsePortableThreadPool)
+            {
+                PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete();
+                return;
+            }
+
             NotifyWorkItemProgressNative();
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void NotifyWorkItemProgressNative();
+        private static extern void NotifyWorkItemProgressNative();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool GetEnableWorkerTracking();

@@ -334,7 +334,7 @@ namespace System.Threading
         public static void GetMaxThreads(out int workerThreads, out int completionPortThreads)
         {
             // Note that worker threads and completion port threads share the same thread pool.
-            // The total number of threads cannot exceed MaxThreadCount.
+            // The total number of threads cannot exceed MaxPossibleThreadCount.
             workerThreads = PortableThreadPool.ThreadPoolInstance.GetMaxThreads();
             completionPortThreads = 1;
         }
@@ -350,7 +350,6 @@ namespace System.Threading
 
         public static void GetMinThreads(out int workerThreads, out int completionPortThreads)
         {
-            // All threads are pre-created at present
             workerThreads = PortableThreadPool.ThreadPoolInstance.GetMinThreads();
             completionPortThreads = 0;
         }

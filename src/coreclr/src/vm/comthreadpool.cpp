@@ -123,6 +123,45 @@ DelegateInfo *DelegateInfo::MakeDelegateInfo(OBJECTREF *state,
 }
 
 /*****************************************************************************************************/
+FCIMPL4(INT32, ThreadPoolNative::GetNextConfigUInt32Value,
+    INT32 configVariableIndex,
+    UINT32 *configValueRef,
+    BOOL *isBooleanRef,
+    LPCWSTR *appContextConfigNameRef)
+{
+    FCALL_CONTRACT;
+    _ASSERTE(configVariableIndex >= 0);
+    _ASSERTE(configValueRef != NULL);
+    _ASSERTE(isBooleanRef != NULL);
+    _ASSERTE(appContextConfigNameRef != NULL);
+
+    if (!ThreadpoolMgr::UsePortableThreadPool())
+    {
+        *configValueRef = 0;
+        *isBooleanRef = false;
+        *appContextConfigNameRef = NULL;
+        return -1;
+    }
+
+    switch (configVariableIndex)
+    {
+        case 0:
+            // Special case for UsePortableThreadPool, which doesn't go into the AppContext
+            *configValueRef = 1;
+            *isBooleanRef = true;
+            *appContextConfigNameRef = NULL;
+            return 1;
+
+        default:
+            *configValueRef = 0;
+            *isBooleanRef = false;
+            *appContextConfigNameRef = NULL;
+            return -1;
+    }
+}
+FCIMPLEND
+
+/*****************************************************************************************************/
 FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorSetMaxThreads,DWORD workerThreads, DWORD completionPortThreads)
 {
     FCALL_CONTRACT;
@@ -207,6 +246,8 @@ INT64 QCALLTYPE ThreadPoolNative::GetCompletedWorkItemCount()
 FCIMPL0(INT64, ThreadPoolNative::GetPendingUnmanagedWorkItemCount)
 {
     FCALL_CONTRACT;
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+
     return PerAppDomainTPCountList::GetUnmanagedTPCount()->GetNumRequests();
 }
 FCIMPLEND
@@ -216,6 +257,7 @@ FCIMPLEND
 FCIMPL0(VOID, ThreadPoolNative::NotifyRequestProgress)
 {
     FCALL_CONTRACT;
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
     _ASSERTE(ThreadpoolMgr::IsInitialized()); // can't be here without requesting a thread first
 
     ThreadpoolMgr::NotifyWorkItemCompleted();
@@ -247,6 +289,7 @@ FCIMPLEND
 FCIMPL0(FC_BOOL_RET, ThreadPoolNative::NotifyRequestComplete)
 {
     FCALL_CONTRACT;
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
     _ASSERTE(ThreadpoolMgr::IsInitialized()); // can't be here without requesting a thread first
 
     ThreadpoolMgr::NotifyWorkItemCompleted();
@@ -396,6 +439,7 @@ FCIMPL5(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
                                         Object* registeredWaitObjectUNSAFE)
 {
     FCALL_CONTRACT;
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
 
     HANDLE handle = 0;
     struct _gc
@@ -473,6 +517,8 @@ BOOL QCALLTYPE ThreadPoolNative::RequestWorkerThread()
 
     BEGIN_QCALL;
 
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
+
     ThreadpoolMgr::EnsureInitialized();
     ThreadpoolMgr::SetAppDomainRequestsActive();
 
@@ -498,6 +544,7 @@ BOOL QCALLTYPE ThreadPoolNative::RequestWorkerThread()
 FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorUnregisterWait, LPVOID WaitHandle, Object* objectToNotify)
 {
     FCALL_CONTRACT;
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
 
     BOOL retVal = false;
     SAFEHANDLEREF refSH = (SAFEHANDLEREF) ObjectToOBJECTREF(objectToNotify);
@@ -553,6 +600,7 @@ FCIMPLEND
 FCIMPL1(void, ThreadPoolNative::CorWaitHandleCleanupNative, LPVOID WaitHandle)
 {
     FCALL_CONTRACT;
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPool());
 
     HELPER_METHOD_FRAME_BEGIN_0();
 
