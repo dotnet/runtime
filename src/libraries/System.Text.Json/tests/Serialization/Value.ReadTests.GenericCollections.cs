@@ -1170,6 +1170,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericIListWrapperPrivateConstructor<string>>(@"[""1""]"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericISetWrapperPrivateConstructor<string>>(@"[""1""]"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericIDictionaryWrapperPrivateConstructor<string, string>>(@"{""Key"":""Value""}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<StringToStringIReadOnlyDictionaryWrapperPrivateConstructor>(@"{""Key"":""Value""}"));
 
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericListWrapperPrivateConstructor<string>>(@"[""1""]"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericQueueWrapperPrivateConstructor<string>>(@"[""1""]"));

@@ -1080,6 +1080,11 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class StringToStringIReadOnlyDictionaryWrapperPrivateConstructor : StringToStringIReadOnlyDictionaryWrapper
+    {
+        private StringToStringIReadOnlyDictionaryWrapperPrivateConstructor() { }
+    }
+
     public class StringListWrapper : List<string> { }
 
     class MyMyList<T> : GenericListWrapper<T>
