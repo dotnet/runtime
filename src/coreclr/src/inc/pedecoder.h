@@ -41,6 +41,7 @@
 #include "corcompile.h"
 
 #include "readytorun.h"
+typedef DPTR(struct READYTORUN_CORE_HEADER) PTR_READYTORUN_CORE_HEADER;
 typedef DPTR(struct READYTORUN_HEADER) PTR_READYTORUN_HEADER;
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
@@ -338,6 +339,7 @@ class PEDecoder
     TADDR GetVirtualSectionsTable(COUNT_T *pSize = NULL) const;
 #endif // FEATURE_PREJIT
 
+    BOOL IsComponentAssembly() const;
     BOOL HasReadyToRunHeader() const;
     READYTORUN_HEADER *GetReadyToRunHeader() const;
 
@@ -348,6 +350,9 @@ class PEDecoder
     // Native DLLMain Entrypoint
     BOOL HasNativeEntryPoint() const;
     void *GetNativeEntryPoint() const;
+
+    // Look up a named symbol in the export directory
+    void *GetExport(LPCSTR exportName) const;
 
 #ifdef _DEBUG
     // Stress mode for relocations
