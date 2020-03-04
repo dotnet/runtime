@@ -201,8 +201,6 @@ namespace JitBench
             }
         }
 
-
-
         public static string GetRuntimeDownloadLink(string version, Architecture arch)
         {
             return GetFrameworkDownloadLink(DefaultAzureFeed, version, DefaultOSPlatform, arch);
