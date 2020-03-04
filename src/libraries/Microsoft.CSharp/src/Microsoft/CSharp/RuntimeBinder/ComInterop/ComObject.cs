@@ -35,8 +35,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         {
             Debug.Assert(ComBinder.IsComObject(rcw));
 
-            // Marshal.Get/SetComObjectData has a LinkDemand for UnmanagedCode which will turn into
-            // a full demand. We could avoid this by making this method SecurityCritical
             object data = Marshal.GetComObjectData(rcw, s_comObjectInfoKey);
             if (data != null)
             {

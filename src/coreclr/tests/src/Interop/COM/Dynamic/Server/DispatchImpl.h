@@ -32,7 +32,7 @@ private:
     void *_instance;
 };
 
-// Marco to use for defining ref counting impls
+// Macro to use for defining dispatch impls
 #define DEFINE_DISPATCH() \
     STDMETHOD(GetTypeInfoCount)(UINT *pctinfo) \
         { return DispatchImpl::DoGetTypeInfoCount(pctinfo); } \

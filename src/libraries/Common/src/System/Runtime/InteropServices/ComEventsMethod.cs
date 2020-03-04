@@ -229,9 +229,9 @@ namespace System.Runtime.InteropServices
         {
             lock (_delegateWrappers)
             {
-                // Find delegate wrapper indexes
+                // Find delegate wrapper indexes. Iterate in reverse such that the list to remove is sorted by high to low index.
                 List<int> toRemove = new List<int>();
-                for (int i = 0; i < _delegateWrappers.Count; i++)
+                for (int i = _delegateWrappers.Count - 1; i >= 0; i--)
                 {
                     DelegateWrapper wrapper = _delegateWrappers[i];
                     Delegate[] invocationList = wrapper.Delegate.GetInvocationList();

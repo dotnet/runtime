@@ -259,20 +259,20 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             Marshal.GetNativeVariantForObject(obj, ConvertVariantByrefToPtr(ref variant));
         }
 
-        [Obsolete("do not use this method", true)]
+        // This method is intended for use through reflection and should not be used directly
         public static object GetObjectForVariant(Variant variant)
         {
             IntPtr ptr = UnsafeMethods.ConvertVariantByrefToPtr(ref variant);
             return Marshal.GetObjectForNativeVariant(ptr);
         }
 
-        [Obsolete("do not use this method", true)]
+        // This method is intended for use through reflection and should only be used directly by IUnknownReleaseNotZero
         public static int IUnknownRelease(IntPtr interfacePointer)
         {
             return s_iUnknownRelease(interfacePointer);
         }
 
-        [Obsolete("do not use this method", true)]
+        // This method is intended for use through reflection and should not be used directly
         public static void IUnknownReleaseNotZero(IntPtr interfacePointer)
         {
             if (interfacePointer != IntPtr.Zero)
@@ -281,7 +281,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
-        [Obsolete("do not use this method", true)]
+        // This method is intended for use through reflection and should not be used directly
         public static int IDispatchInvoke(
             IntPtr dispatchPointer,
             int memberDispId,
@@ -318,7 +318,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return hresult;
         }
 
-        [Obsolete("do not use this method", true)]
+        // This method is intended for use through reflection and should not be used directly
         public static IntPtr GetIdsOfNamedParameters(IDispatch dispatch, string[] names, int methodDispId, out GCHandle pinningHandle)
         {
             pinningHandle = GCHandle.Alloc(null, GCHandleType.Pinned);
@@ -391,12 +391,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 {
                     if (s_dynamicModule == null)
                     {
-                        var attributes = new CustomAttributeBuilder[] {
-                            new CustomAttributeBuilder(typeof(UnverifiableCodeAttribute).GetConstructor(Array.Empty<Type>()), Array.Empty<object>())
-                        };
-
                         string name = typeof(VariantArray).Namespace + ".DynamicAssembly";
-                        var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), AssemblyBuilderAccess.Run, attributes);
+                        var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), AssemblyBuilderAccess.Run);
                         s_dynamicModule = assembly.DefineDynamicModule(name);
                     }
                     return s_dynamicModule;

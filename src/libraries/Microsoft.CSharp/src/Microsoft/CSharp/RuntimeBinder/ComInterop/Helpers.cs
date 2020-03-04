@@ -33,6 +33,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
     internal static class Requires
     {
+        [System.Diagnostics.Conditional("DEBUG")]
         internal static void NotNull(object value, string paramName)
         {
             if (value == null)
@@ -41,6 +42,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
+        [System.Diagnostics.Conditional("DEBUG")]
         internal static void Condition(bool precondition, string paramName)
         {
             if (!precondition)

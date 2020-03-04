@@ -7,10 +7,6 @@ namespace Dynamic
     using System;
     using TestLibrary;
 
-    /*
-       Param array : ParamArrayArgs
-     */
-
     class Program
     {
         static int Main(string[] doNotUse)

@@ -44,7 +44,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return t.IsGenericType && t.GetGenericTypeDefinition() == typeof(StrongBox<>);
         }
 
-        // this helper prepares arguments for COM binding by transforming ByVal StongBox arguments
+        // This helper prepares arguments for COM binding by transforming ByVal StrongBox arguments
         // into ByRef expressions that represent the argument's Value fields.
         internal static bool[] ProcessArgumentsForCom(ref DynamicMetaObject[] args)
         {

@@ -23,8 +23,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         public static ComEventSinksContainer FromRuntimeCallableWrapper(object rcw, bool createIfNotFound)
         {
-            // !!! Marshal.Get/SetComObjectData has a LinkDemand for UnmanagedCode which will turn into
-            // a full demand. We need to avoid this by making this method SecurityCritical
             object data = Marshal.GetComObjectData(rcw, s_comObjectEventSinksKey);
             if (data != null || createIfNotFound == false)
             {
