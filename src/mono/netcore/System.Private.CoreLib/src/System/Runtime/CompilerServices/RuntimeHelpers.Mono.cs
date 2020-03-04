@@ -101,7 +101,7 @@ namespace System.Runtime.CompilerServices
 
 		public static IntPtr AllocateTypeAssociatedMemory (Type type, int size)
 		{
-			throw new PlatformNotSupported();
+			throw new PlatformNotSupportedException ();
 		}
 
 		[Intrinsic]
