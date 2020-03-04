@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-export EXCLUDE_MONO_FAILURES="true"
-
-
-
 build_test_wrappers()
 {
     if [[ "$__BuildTestWrappers" -ne -0 ]]; then
@@ -19,8 +15,7 @@ build_test_wrappers()
 
         export __Exclude __BuildLogRootName
 
-        # buildVerbosity="Summary"
-        buildVerbosity="Diag"
+        buildVerbosity="Summary"
 
         if [[ "$__VerboseBuild" == 1 ]]; then
             buildVerbosity="Diag"
@@ -36,7 +31,7 @@ build_test_wrappers()
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild -bl:LogFile=wrapper.binlog -verbosity:diag \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TargetsWindows=false $__Logging /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch"
+        nextCommand="\"${__DotNetCli}\" msbuild  \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TargetsWindows=false $__Logging /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch"
         eval $nextCommand
 
         local exitCode="$?"
