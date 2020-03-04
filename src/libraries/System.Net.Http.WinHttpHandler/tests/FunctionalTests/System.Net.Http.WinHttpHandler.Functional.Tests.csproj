@@ -11,6 +11,7 @@
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs">
       <Link>Common\System\Net\Configuration.Http.cs</Link>
     </Compile>
+    <Compile Include="BaseCertificateTest.cs" />
     <Compile Include="ServerCertificateTest.cs" />
     <Compile Include="WinHttpHandlerTest.cs" />
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
@@ -193,9 +194,6 @@
     <Compile Include="HttpClientHandlerTestBase.WinHttpHandler.cs" />
     <Compile Include="WinHttpClientHandler.cs" />
     <Compile Include="PlatformHandlerTest.cs" />
-  </ItemGroup>  
-  <ItemGroup>
-    <Compile Include="BaseCertificateTest.cs" />
     <Compile Include="ClientCertificateTest.cs" />
   </ItemGroup>
   <ItemGroup>
