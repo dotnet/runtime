@@ -197,7 +197,7 @@ source "$__RepoRootDir/eng/native/init-os-and-arch.sh"
 
 __BuildArch=$arch
 __HostArch=$arch
-__BuildOS=$os
+__TargetOS=$os
 __HostOS=$os
 
 __msbuildonunsupportedplatform=0

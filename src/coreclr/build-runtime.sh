@@ -189,8 +189,8 @@ __LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
-__BinDir="$__RootBinDir/bin/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
-__IntermediatesDir="$__RootBinDir/obj/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
+__BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
+__IntermediatesDir="$__RootBinDir/obj/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __ArtifactsIntermediatesDir="$__RepoRootDir/artifacts/obj/coreclr"
 export __IntermediatesDir __ArtifactsIntermediatesDir
 __CrossComponentBinDir="$__BinDir"
