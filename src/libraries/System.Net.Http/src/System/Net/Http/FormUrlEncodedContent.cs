@@ -53,13 +53,13 @@ namespace System.Net.Http
             return Uri.EscapeDataString(data).Replace("%20", "+");
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
             GetType() == typeof(FormUrlEncodedContent) ? SerializeToStreamAsyncCore(stream, cancellationToken) :
             base.SerializeToStreamAsync(stream, context, cancellationToken);
 
-        internal override Stream TryCreateContentReadStream() =>
+        internal override Stream? TryCreateContentReadStream() =>
             GetType() == typeof(FormUrlEncodedContent) ? CreateMemoryStreamForByteArray() : // type check ensures we use possible derived type's CreateContentReadStreamAsync override
             null;
     }

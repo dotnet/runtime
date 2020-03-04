@@ -144,7 +144,7 @@ namespace System.Net.Http
 
             private async Task CompleteCopyToAsync(Task copyTask, CancellationToken cancellationToken)
             {
-                CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
+                CancellationTokenRegistration ctr = _connection!.RegisterCancellation(cancellationToken);
                 try
                 {
                     await copyTask.ConfigureAwait(false);
@@ -164,7 +164,7 @@ namespace System.Net.Http
             private void Finish()
             {
                 _contentBytesRemaining = 0;
-                _connection.CompleteResponse();
+                _connection!.CompleteResponse();
                 _connection = null;
             }
 
@@ -174,7 +174,7 @@ namespace System.Net.Http
                 Debug.Assert(maxBytesToRead > 0);
                 Debug.Assert(_contentBytesRemaining > 0);
 
-                ReadOnlyMemory<byte> connectionBuffer = _connection.RemainingBuffer;
+                ReadOnlyMemory<byte> connectionBuffer = _connection!.RemainingBuffer;
                 if (connectionBuffer.Length == 0)
                 {
                     return default;
@@ -208,13 +208,13 @@ namespace System.Net.Http
                     return false;
                 }
 
-                CancellationTokenSource cts = null;
+                CancellationTokenSource? cts = null;
                 CancellationTokenRegistration ctr = default;
                 TimeSpan drainTime = _connection._pool.Settings._maxResponseDrainTime;
                 if (drainTime != Timeout.InfiniteTimeSpan)
                 {
                     cts = new CancellationTokenSource((int)drainTime.TotalMilliseconds);
-                    ctr = cts.Token.Register(s => ((HttpConnection)s).Dispose(), _connection);
+                    ctr = cts.Token.Register(s => ((HttpConnection)s!).Dispose(), _connection);
                 }
                 try
                 {

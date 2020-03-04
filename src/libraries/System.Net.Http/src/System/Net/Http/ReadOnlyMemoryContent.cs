@@ -20,14 +20,14 @@ namespace System.Net.Http
             {
                 // If we have an array, allow HttpClient to take optimized paths by just
                 // giving it the array content to use as its already buffered data.
-                SetBuffer(array.Array, array.Offset, array.Count);
+                SetBuffer(array.Array!, array.Offset, array.Count);
             }
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             stream.WriteAsync(_content).AsTask();
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             stream.WriteAsync(_content, cancellationToken).AsTask();
 
         protected internal override bool TryComputeLength(out long length)
@@ -36,8 +36,8 @@ namespace System.Net.Http
             return true;
         }
 
-        protected override Task<Stream> CreateContentReadStreamAsync() =>
-            Task.FromResult<Stream>(new ReadOnlyMemoryStream(_content));
+        protected override Task<Stream?> CreateContentReadStreamAsync() =>
+            Task.FromResult<Stream?>(new ReadOnlyMemoryStream(_content));
 
         internal override Stream TryCreateContentReadStream() =>
             new ReadOnlyMemoryStream(_content);

@@ -48,14 +48,13 @@ namespace System.Net.Http.Headers
                 .ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string input, out TransferCodingWithQualityHeaderValue parsedValue)
+        public static bool TryParse(string input, out TransferCodingWithQualityHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
             if (TransferCodingHeaderParser.SingleValueWithQualityParser.TryParseValue(
-                input, null, ref index, out output))
+                input, null, ref index, out object? output))
             {
                 parsedValue = (TransferCodingWithQualityHeaderValue)output;
                 return true;

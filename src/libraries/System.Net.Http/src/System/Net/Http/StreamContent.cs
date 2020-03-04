@@ -11,7 +11,7 @@ namespace System.Net.Http
 {
     public class StreamContent : HttpContent
     {
-        private Stream _content;
+        private Stream _content = null!; // Initialized in helper
         private int _bufferSize;
         private bool _contentConsumed;
         private long _start;
@@ -52,10 +52,10 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) NetEventSource.Associate(this, content);
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             SerializeToStreamAsyncCore(stream, default);
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
             GetType() == typeof(StreamContent) ? SerializeToStreamAsyncCore(stream, cancellationToken) :
@@ -96,13 +96,13 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        protected override Task<Stream> CreateContentReadStreamAsync()
+        protected override Task<Stream?> CreateContentReadStreamAsync()
         {
             // Wrap the stream with a read-only stream to prevent someone from writing to the stream.
-            return Task.FromResult<Stream>(new ReadOnlyStream(_content));
+            return Task.FromResult<Stream?>(new ReadOnlyStream(_content));
         }
 
-        internal override Stream TryCreateContentReadStream() =>
+        internal override Stream? TryCreateContentReadStream() =>
             GetType() == typeof(StreamContent) ? new ReadOnlyStream(_content) : // type check ensures we use possible derived type's CreateContentReadStreamAsync override
             null;
 

@@ -9,7 +9,7 @@ namespace System.Net.Http.HPack
 {
     internal class HPackEncoder
     {
-        private IEnumerator<KeyValuePair<string, string>> _enumerator;
+        private IEnumerator<KeyValuePair<string, string>>? _enumerator;
 
         public bool BeginEncode(IEnumerable<KeyValuePair<string, string>> headers, Span<byte> buffer, out int length)
         {
@@ -39,6 +39,7 @@ namespace System.Net.Http.HPack
         private bool Encode(Span<byte> buffer, bool throwIfNoneEncoded, out int length)
         {
             int currentLength = 0;
+            Debug.Assert(_enumerator != null);
             do
             {
                 if (!EncodeHeader(_enumerator.Current.Key, _enumerator.Current.Value, buffer.Slice(currentLength), out int headerLength))
@@ -423,7 +424,7 @@ namespace System.Net.Http.HPack
             return false;
         }
 
-        public static bool EncodeStringLiterals(ReadOnlySpan<string> values, string separator, Span<byte> destination, out int bytesWritten)
+        public static bool EncodeStringLiterals(ReadOnlySpan<string> values, string? separator, Span<byte> destination, out int bytesWritten)
         {
             bytesWritten = 0;
 
@@ -446,6 +447,7 @@ namespace System.Net.Http.HPack
                     valueLength = checked((int)(valueLength + part.Length));
                 }
 
+                Debug.Assert(separator != null);
                 valueLength = checked((int)(valueLength + (values.Length - 1) * separator.Length));
 
                 destination[0] = 0;

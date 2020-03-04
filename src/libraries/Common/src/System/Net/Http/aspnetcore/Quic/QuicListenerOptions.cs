@@ -14,22 +14,22 @@ namespace System.Net.Quic
         /// <summary>
         /// Server Ssl options to use for ALPN, SNI, etc.
         /// </summary>
-        public SslServerAuthenticationOptions ServerAuthenticationOptions { get; set; }
+        public SslServerAuthenticationOptions? ServerAuthenticationOptions { get; set; }
 
         /// <summary>
         /// Optional path to certificate file to configure the security configuration.
         /// </summary>
-        public string CertificateFilePath { get; set; }
+        public string? CertificateFilePath { get; set; }
 
         /// <summary>
         /// Optional path to private key file to configure the security configuration.
         /// </summary>
-        public string PrivateKeyFilePath { get; set; }
+        public string? PrivateKeyFilePath { get; set; }
 
         /// <summary>
         /// The endpoint to listen on.
         /// </summary>
-        public IPEndPoint ListenEndPoint { get; set; }
+        public IPEndPoint? ListenEndPoint { get; set; }
 
         /// <summary>
         /// Number of connections to be held without accepting the connection.

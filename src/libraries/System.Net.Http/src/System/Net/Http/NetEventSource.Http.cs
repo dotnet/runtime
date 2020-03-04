@@ -21,14 +21,14 @@ namespace System.Net
         private const int HandlerErrorId = AuthenticationErrorId + 1;
 
         [NonEvent]
-        public static void UriBaseAddress(object obj, Uri baseAddress)
+        public static void UriBaseAddress(object obj, Uri? baseAddress)
         {
             Debug.Assert(IsEnabled);
             Log.UriBaseAddress(baseAddress?.ToString(), IdOf(obj), GetHashCode(obj));
         }
 
         [Event(UriBaseAddressId, Keywords = Keywords.Debug, Level = EventLevel.Informational)]
-        private unsafe void UriBaseAddress(string uriBaseAddress, string objName, int objHash) =>
+        private unsafe void UriBaseAddress(string? uriBaseAddress, string objName, int objHash) =>
             WriteEvent(UriBaseAddressId, uriBaseAddress, objName, objHash);
 
         [NonEvent]
@@ -50,7 +50,7 @@ namespace System.Net
         }
 
         [Event(ClientSendCompletedId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
-        private void ClientSendCompleted(string responseString, int httpRequestMessageHash, int httpResponseMessageHash, int httpClientHash) =>
+        private void ClientSendCompleted(string? responseString, int httpRequestMessageHash, int httpResponseMessageHash, int httpClientHash) =>
             WriteEvent(ClientSendCompletedId, responseString, httpRequestMessageHash, httpResponseMessageHash, httpClientHash);
 
         [Event(HeadersInvalidValueId, Keywords = Keywords.Debug, Level = EventLevel.Error)]
@@ -58,11 +58,11 @@ namespace System.Net
             WriteEvent(HeadersInvalidValueId, name, rawValue);
 
         [Event(HandlerMessageId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
-        public void HandlerMessage(int poolId, int workerId, int requestId, string memberName, string message) =>
+        public void HandlerMessage(int poolId, int workerId, int requestId, string? memberName, string? message) =>
             WriteEvent(HandlerMessageId, poolId, workerId, requestId, memberName, message);
 
         [Event(HandlerErrorId, Keywords = Keywords.Debug, Level = EventLevel.Error)]
-        public void HandlerMessageError(int poolId, int workerId, int requestId, string memberName, string message) =>
+        public void HandlerMessageError(int poolId, int workerId, int requestId, string? memberName, string message) =>
             WriteEvent(HandlerErrorId, poolId, workerId, requestId, memberName, message);
 
         [NonEvent]
@@ -73,22 +73,22 @@ namespace System.Net
         }
 
         [Event(AuthenticationInfoId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
-        public void AuthenticationInfo(string uri, string message) =>
+        public void AuthenticationInfo(string? uri, string message) =>
             WriteEvent(AuthenticationInfoId, uri, message);
 
         [NonEvent]
-        public static void AuthenticationError(Uri uri, string message)
+        public static void AuthenticationError(Uri? uri, string message)
         {
             Debug.Assert(IsEnabled);
             Log.AuthenticationError(uri?.ToString(), message);
         }
 
         [Event(AuthenticationErrorId, Keywords = Keywords.Debug, Level = EventLevel.Error)]
-        public void AuthenticationError(string uri, string message) =>
+        public void AuthenticationError(string? uri, string message) =>
             WriteEvent(AuthenticationErrorId, uri, message);
 
         [NonEvent]
-        private unsafe void WriteEvent(int eventId, int arg1, int arg2, int arg3, string arg4, string arg5)
+        private unsafe void WriteEvent(int eventId, int arg1, int arg2, int arg3, string? arg4, string? arg5)
         {
             if (IsEnabled())
             {

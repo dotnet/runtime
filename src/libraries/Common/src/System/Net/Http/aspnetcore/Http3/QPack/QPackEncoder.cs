@@ -10,7 +10,7 @@ namespace System.Net.Http.QPack
 {
     internal class QPackEncoder
     {
-        private IEnumerator<KeyValuePair<string, string>> _enumerator;
+        private IEnumerator<KeyValuePair<string, string>>? _enumerator;
 
         // https://tools.ietf.org/html/draft-ietf-quic-qpack-11#section-4.5.2
         //   0   1   2   3   4   5   6   7
@@ -194,7 +194,7 @@ namespace System.Net.Http.QPack
         /// <summary>
         /// Encodes a value by concatenating a collection of strings, separated by a separator string.
         /// </summary>
-        public static bool EncodeValueString(ReadOnlySpan<string> values, string separator, Span<byte> buffer, out int length)
+        public static bool EncodeValueString(ReadOnlySpan<string> values, string? separator, Span<byte> buffer, out int length)
         {
             if (values.Length == 1)
             {
@@ -209,7 +209,7 @@ namespace System.Net.Http.QPack
 
             if (buffer.Length > 0)
             {
-                int valueLength = separator.Length * (values.Length - 1);
+                int valueLength = separator!.Length * (values.Length - 1);
                 for (int i = 0; i < values.Length; ++i)
                 {
                     valueLength += values[i].Length;
@@ -386,7 +386,7 @@ namespace System.Net.Http.QPack
 
             do
             {
-                if (!EncodeLiteralHeaderFieldWithoutNameReference(_enumerator.Current.Key, _enumerator.Current.Value, buffer.Slice(length), out int headerLength))
+                if (!EncodeLiteralHeaderFieldWithoutNameReference(_enumerator!.Current.Key, _enumerator.Current.Value, buffer.Slice(length), out int headerLength))
                 {
                     if (length == 0 && throwIfNoneEncoded)
                     {

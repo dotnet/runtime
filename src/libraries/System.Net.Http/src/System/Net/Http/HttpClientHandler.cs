@@ -71,13 +71,13 @@ namespace System.Net.Http
             set => _socketsHttpHandler.UseProxy = value;
         }
 
-        public IWebProxy Proxy
+        public IWebProxy? Proxy
         {
             get => _socketsHttpHandler.Proxy;
             set => _socketsHttpHandler.Proxy = value;
         }
 
-        public ICredentials DefaultProxyCredentials
+        public ICredentials? DefaultProxyCredentials
         {
             get => _socketsHttpHandler.DefaultProxyCredentials;
             set => _socketsHttpHandler.DefaultProxyCredentials = value;
@@ -111,7 +111,7 @@ namespace System.Net.Http
             }
         }
 
-        public ICredentials Credentials
+        public ICredentials? Credentials
         {
             get => _socketsHttpHandler.Credentials;
             set => _socketsHttpHandler.Credentials = value;
@@ -180,7 +180,7 @@ namespace System.Net.Http
             }
         }
 
-        public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
+        public Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback
         {
             get => (_socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback?.Target as ConnectHelper.CertificateCallbackMapper)?.FromHttpClientHandler;
             set

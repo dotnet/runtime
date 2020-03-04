@@ -56,12 +56,12 @@ namespace System.Net.Http.Headers
             {
                 return ((int)_delta.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
             }
-            return HttpDateParser.DateToString(_date.Value);
+            return HttpDateParser.DateToString(_date!.Value);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            RetryConditionHeaderValue other = obj as RetryConditionHeaderValue;
+            RetryConditionHeaderValue? other = obj as RetryConditionHeaderValue;
 
             if (other == null)
             {
@@ -73,33 +73,32 @@ namespace System.Net.Http.Headers
                 return (other._delta != null) && (_delta.Value == other._delta.Value);
             }
 
-            return (other._date != null) && (_date.Value == other._date.Value);
+            return (other._date != null) && (_date!.Value == other._date.Value);
         }
 
         public override int GetHashCode()
         {
             if (_delta == null)
             {
-                return _date.Value.GetHashCode();
+                return _date!.Value.GetHashCode();
             }
 
             return _delta.Value.GetHashCode();
         }
 
-        public static RetryConditionHeaderValue Parse(string input)
+        public static RetryConditionHeaderValue Parse(string? input)
         {
             int index = 0;
             return (RetryConditionHeaderValue)GenericHeaderParser.RetryConditionParser.ParseValue(
                 input, null, ref index);
         }
 
-        public static bool TryParse(string input, out RetryConditionHeaderValue parsedValue)
+        public static bool TryParse(string? input, out RetryConditionHeaderValue? parsedValue)
         {
             int index = 0;
-            object output;
             parsedValue = null;
 
-            if (GenericHeaderParser.RetryConditionParser.TryParseValue(input, null, ref index, out output))
+            if (GenericHeaderParser.RetryConditionParser.TryParseValue(input, null, ref index, out object? output))
             {
                 parsedValue = (RetryConditionHeaderValue)output;
                 return true;
@@ -107,7 +106,7 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        internal static int GetRetryConditionLength(string input, int startIndex, out object parsedValue)
+        internal static int GetRetryConditionLength(string? input, int startIndex, out object? parsedValue)
         {
             Debug.Assert(startIndex >= 0);
 

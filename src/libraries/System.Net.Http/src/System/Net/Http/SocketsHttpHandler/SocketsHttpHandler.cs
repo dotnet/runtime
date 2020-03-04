@@ -12,7 +12,7 @@ namespace System.Net.Http
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
-        private HttpMessageHandler _handler;
+        private HttpMessageHandler? _handler;
         private bool _disposed;
 
         private void CheckDisposed()
@@ -72,7 +72,7 @@ namespace System.Net.Http
             }
         }
 
-        public IWebProxy Proxy
+        public IWebProxy? Proxy
         {
             get => _settings._proxy;
             set
@@ -82,7 +82,7 @@ namespace System.Net.Http
             }
         }
 
-        public ICredentials DefaultProxyCredentials
+        public ICredentials? DefaultProxyCredentials
         {
             get => _settings._defaultProxyCredentials;
             set
@@ -102,7 +102,7 @@ namespace System.Net.Http
             }
         }
 
-        public ICredentials Credentials
+        public ICredentials? Credentials
         {
             get => _settings._credentials;
             set
@@ -336,7 +336,7 @@ namespace System.Net.Http
             CheckDisposed();
             HttpMessageHandler handler = _handler ?? SetupHandlerChain();
 
-            Exception error = ValidateAndNormalizeRequest(request);
+            Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)
             {
                 return Task.FromException<HttpResponseMessage>(error);
@@ -345,7 +345,7 @@ namespace System.Net.Http
             return handler.SendAsync(request, cancellationToken);
         }
 
-        private Exception ValidateAndNormalizeRequest(HttpRequestMessage request)
+        private Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
         {
             if (request.Version.Major == 0)
             {

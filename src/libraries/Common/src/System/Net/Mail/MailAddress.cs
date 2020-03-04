@@ -13,7 +13,7 @@ namespace System.Net.Mail
             MailAddressParser.TryParseAddress(address, out ParseAddressInfo _, throwExceptionIfFail: true);
         }
 
-        internal MailAddress(string displayName, string localPart, string domain, Encoding displayNameEncoding)
+        internal MailAddress(string displayName, string localPart, string domain, Encoding? displayNameEncoding)
         {
         }
     }

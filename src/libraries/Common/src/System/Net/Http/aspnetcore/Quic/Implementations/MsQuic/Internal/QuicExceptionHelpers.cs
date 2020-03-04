@@ -6,7 +6,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal static class QuicExceptionHelpers
     {
-        internal static void ThrowIfFailed(uint status, string message = null, Exception innerException = null)
+        internal static void ThrowIfFailed(uint status, string? message = null, Exception? innerException = null)
         {
             if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
             {
