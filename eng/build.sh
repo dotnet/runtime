@@ -60,6 +60,25 @@ usage()
   echo "Arguments can also be passed in with a single hyphen."
 }
 
+initDistroRid()
+{
+    source $scriptroot/native/init-distro-rid.sh
+
+    local passedRootfsDir=""
+    local buildOs="$1"
+    local buildArch="$2"
+    local isCrossBuild="$3"
+    # For RID calculation purposes, say we are always a portable build
+    # All of our packages that use the distro rid (CoreCLR packages) are portable.
+    local isPortableBuild=1
+
+    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified.
+    if (( isCrossBuild == 1 )); then
+        passedRootfsDir=${ROOTFS_DIR}
+    fi
+    initDistroRidGlobal ${buildOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}
+}
+
 arguments=''
 cmakeargs=''
 extraargs=''
@@ -67,6 +86,9 @@ build=false
 buildtests=false
 subsetCategory=''
 checkedPossibleDirectoryToBuild=false
+crossBuild=0
+
+source $scriptroot/native/init-os-and-arch.sh
 
 # Check if an action is passed in
 declare -a actions=("r" "restore" "b" "build" "buildtests" "rebuild" "t" "test" "pack" "sign" "publish" "clean")
@@ -89,6 +111,7 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
      -arch)
+      arch=$2
       arguments="$arguments /p:ArchGroup=$2 /p:TargetArchitecture=$2"
       shift 2
       ;;
@@ -103,6 +126,7 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
      -os)
+      os=$2
       arguments="$arguments /p:OSGroup=$2"
       shift 2
       ;;
@@ -141,6 +165,7 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
      -cross)
+      crossBuild=1
       arguments="$arguments /p:CrossBuild=True"
       shift 1
       ;;
@@ -186,6 +211,8 @@ fi
 if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
+
+initDistroRid $os $arch $crossBuild
 
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.

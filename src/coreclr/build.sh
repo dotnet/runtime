@@ -391,6 +391,8 @@ handle_arguments_local() {
 }
 
 echo "Commencing CoreCLR Repo build"
+echo "WARNING: This build script is deprecated and will be deleted soon. Use the root build script to build CoreCLR. If you want to build the CoreCLR runtime without using MSBuild, use the build-native.sh script."
+echo "See https://github.com/dotnet/runtime/issues/32991 for more information."
 
 # Argument types supported by this script:
 #
@@ -546,4 +548,6 @@ fi
 
 echo "Repo successfully built."
 echo "Product binaries are available at $__BinDir"
+echo "WARNING: This build script is deprecated and will be deleted soon. Use the root build script to build CoreCLR. If you want to build the CoreCLR runtime without using MSBuild, use the build-native.sh script."
+echo "See https://github.com/dotnet/runtime/issues/32991 for more information."
 exit 0
