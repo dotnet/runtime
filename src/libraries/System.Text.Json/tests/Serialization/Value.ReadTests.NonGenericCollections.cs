@@ -461,8 +461,13 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadSimpleTestClass_NonGenericWrappers_NoAddMethod_Throws()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithIEnumerableWrapper>(SimpleTestClassWithIEnumerableWrapper.s_json));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithICollectionWrapper>(SimpleTestClassWithICollectionWrapper.s_json));
+            NotSupportedException ex;
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithIEnumerableWrapper>(SimpleTestClassWithIEnumerableWrapper.s_json));
+            Assert.Contains(typeof(WrapperForIEnumerable).ToString(), ex.Message);
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithICollectionWrapper>(SimpleTestClassWithICollectionWrapper.s_json));
+            Assert.Contains(typeof(WrapperForICollection).ToString(), ex.Message);
         }
 
         [Fact]

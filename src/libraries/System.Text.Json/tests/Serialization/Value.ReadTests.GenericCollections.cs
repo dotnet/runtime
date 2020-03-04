@@ -1135,19 +1135,37 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadSimpleTestClass_GenericWrappers_NoAddMethod_Throws()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIEnumerableWrapper>(SimpleTestClassWithStringIEnumerableWrapper.s_json));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIReadOnlyCollectionWrapper>(SimpleTestClassWithStringIReadOnlyCollectionWrapper.s_json));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIReadOnlyListWrapper>(SimpleTestClassWithStringIReadOnlyListWrapper.s_json));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper>(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json));
+            NotSupportedException ex;
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIEnumerableWrapper>(SimpleTestClassWithStringIEnumerableWrapper.s_json));
+            Assert.Contains(typeof(StringIEnumerableWrapper).ToString(), ex.Message);
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIReadOnlyCollectionWrapper>(SimpleTestClassWithStringIReadOnlyCollectionWrapper.s_json));
+            Assert.Contains(typeof(StringIReadOnlyCollectionWrapper).ToString(), ex.Message);
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIReadOnlyListWrapper>(SimpleTestClassWithStringIReadOnlyListWrapper.s_json));
+            Assert.Contains(typeof(StringIReadOnlyListWrapper).ToString(), ex.Message);
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper>(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json));
+            Assert.Contains(typeof(StringToStringIReadOnlyDictionaryWrapper).ToString(), ex.Message);
         }
 
         [Fact]
         public static void ReadReadOnlyCollections_Throws()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyWrapperForIList>(@"[""1"", ""2""]"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyStringIListWrapper>(@"[""1"", ""2""]"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyStringICollectionWrapper>(@"[""1"", ""2""]"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyStringToStringIDictionaryWrapper>(@"{""Key"":""key"",""Value"":""value""}"));
+            NotSupportedException ex;
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyWrapperForIList>(@"[""1"", ""2""]"));
+            Assert.Contains(typeof(ReadOnlyWrapperForIList).ToString(), ex.Message);
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyStringIListWrapper>(@"[""1"", ""2""]"));
+            Assert.Contains(typeof(ReadOnlyStringIListWrapper).ToString(), ex.Message);
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyStringICollectionWrapper>(@"[""1"", ""2""]"));
+            Assert.Contains(typeof(ReadOnlyStringICollectionWrapper).ToString(), ex.Message);
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyStringToStringIDictionaryWrapper>(@"{""Key"":""key"",""Value"":""value""}"));
+            Assert.Contains(typeof(ReadOnlyStringToStringIDictionaryWrapper).ToString(), ex.Message);
         }
 
         [Fact]

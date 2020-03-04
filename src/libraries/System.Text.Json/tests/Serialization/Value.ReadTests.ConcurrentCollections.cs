@@ -32,11 +32,15 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void Read_ConcurrentCollection_Throws()
         {
-            // Not supported. Not IList, and we don't detect the add method for this collection.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<BlockingCollection<string>>(@"[""1""]"));
+            NotSupportedException ex;
 
             // Not supported. Not IList, and we don't detect the add method for this collection.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ConcurrentBag<string>>(@"[""1""]"));
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<BlockingCollection<string>>(@"[""1""]"));
+            Assert.Contains(typeof(BlockingCollection<string>).ToString(), ex.Message);
+
+            // Not supported. Not IList, and we don't detect the add method for this collection.
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ConcurrentBag<string>>(@"[""1""]"));
+            Assert.Contains(typeof(ConcurrentBag<string>).ToString(), ex.Message);
         }
 
         [Fact]
