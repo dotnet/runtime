@@ -5,7 +5,7 @@
     <PropertyGroup>
       <_PythonLocationScript>-c "import sys; sys.stdout.write(sys.executable)"</_PythonLocationScript>
     </PropertyGroup>
-    <Exec Command="py -3 $(_PythonLocationScript) || python3 $(_PythonLocationScript) || python $(_PythonLocationScript)"
+    <Exec Command="py -3 $(_PythonLocationScript) 2&gt; nul || python3 $(_PythonLocationScript) 2&gt; nul || python $(_PythonLocationScript) 2&gt; nul"
           StandardOutputImportance="Low"
           EchoOff="true"
           ConsoleToMsBuild="true">
