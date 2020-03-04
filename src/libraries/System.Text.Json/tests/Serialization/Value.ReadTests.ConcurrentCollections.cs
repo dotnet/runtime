@@ -42,8 +42,13 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void Read_ConcurrentCollection_NoPublicConstructor_Throws()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericConcurrentQueuePrivateConstructor<string>>(@"[""1""]"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericConcurrentStackPrivateConstructor<string>>(@"[""1""]"));
+            NotSupportedException ex;
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericConcurrentQueuePrivateConstructor<string>>(@"[""1""]"));
+            Assert.Contains(typeof(GenericConcurrentQueuePrivateConstructor<string>).ToString(), ex.Message);
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericConcurrentStackPrivateConstructor<string>>(@"[""1""]"));
+            Assert.Contains(typeof(GenericConcurrentStackPrivateConstructor<string>).ToString(), ex.Message);
         }
     }
 }

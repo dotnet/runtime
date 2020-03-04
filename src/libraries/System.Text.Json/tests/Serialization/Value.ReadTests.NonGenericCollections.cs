@@ -468,10 +468,19 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void Read_NonGeneric_NoPublicConstructor_Throws()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForIEnumerablePrivateConstructor>(@"[""1""]"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForICollectionPrivateConstructor>(@"[""1""]"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForIListPrivateConstructor>(@"[""1""]"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForIDictionaryPrivateConstructor>(@"{""Key"":""Value""}"));
+            NotSupportedException ex;
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForIEnumerablePrivateConstructor>(@"[""1""]"));
+            Assert.Contains(typeof(WrapperForIEnumerablePrivateConstructor).ToString(), ex.Message);
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForICollectionPrivateConstructor>(@"[""1""]"));
+            Assert.Contains(typeof(WrapperForICollectionPrivateConstructor).ToString(), ex.Message);
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForIListPrivateConstructor>(@"[""1""]"));
+            Assert.Contains(typeof(WrapperForIListPrivateConstructor).ToString(), ex.Message);
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForIDictionaryPrivateConstructor>(@"{""Key"":""Value""}"));
+            Assert.Contains(typeof(WrapperForIDictionaryPrivateConstructor).ToString(), ex.Message);
         }
     }
 }
