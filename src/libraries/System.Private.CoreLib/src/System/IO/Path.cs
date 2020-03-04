@@ -938,13 +938,13 @@ namespace System.IO
             if (path == null)
                 return null;
 
-            if (PathInternal.IsEffectivelyEmpty(path))
+            if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 return string.Empty;
 
             ValueStringBuilder sb = new ValueStringBuilder(path.Length);
-            ReadOnlySpan<char> pathRoot = GetPathRoot(path);
+            ReadOnlySpan<char> pathRoot = GetPathRoot(path.AsSpan());
 
-            if (!PathInternal.TryRemoveRedundantSegments(path, pathRoot.Length, ref sb))
+            if (!PathInternal.TryRemoveRedundantSegments(path.AsSpan(), pathRoot.Length, ref sb))
             {
                 sb.Dispose();
                 return path;
