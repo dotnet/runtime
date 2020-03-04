@@ -77,8 +77,8 @@ jobs:
       - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
     # Run all steps in the container.
-    # Note that the containers are defined in platform-matrix.yml
-    container: ${{ parameters.container }}
+    # The test portion of the job only requires python3.7
+    container: python:3.7
     timeoutInMinutes: 180 # 3 hrs
 
     steps:
