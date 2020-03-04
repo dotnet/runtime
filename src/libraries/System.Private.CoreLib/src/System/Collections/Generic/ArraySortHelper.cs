@@ -16,6 +16,10 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
+using Internal;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
@@ -321,12 +325,30 @@ namespace System.Collections.Generic
 
         #region IArraySortHelper<T> Members
 
-        public void Sort(Span<T> keys, IComparer<T>? comparer)
+        public unsafe void Sort(Span<T> keys, IComparer<T>? comparer)
         {
             try
             {
                 if (comparer == null || comparer == Comparer<T>.Default)
                 {
+
+                    if (keys.Length == 0) {
+                        return;
+                    }
+
+                    if (Avx2.IsSupported)
+                    {
+                        if (typeof(T) == typeof(int))
+                        {
+                            fixed (int* startPtr = &Unsafe.As<T, int>(ref keys[0]))
+                            {
+                                var sorter = new VectorizedSort.VectorizedUnstableSortInt32(startPtr, keys.Length);
+                                sorter.Sort();
+                            }
+                        }
+                    }
+
+
                     IntrospectiveSort(keys);
                 }
                 else
@@ -434,12 +456,7 @@ namespace System.Collections.Generic
         }
 
         internal static void IntrospectiveSort(Span<T> keys)
-        {
-            if (keys.Length > 1)
-            {
-                IntroSort(keys, 2 * IntrospectiveSortUtilities.FloorLog2PlusOne(keys.Length));
-            }
-        }
+            => IntroSort(keys, 2 * IntrospectiveSortUtilities.FloorLog2PlusOne(keys.Length));
 
         private static void IntroSort(Span<T> keys, int depthLimit)
         {

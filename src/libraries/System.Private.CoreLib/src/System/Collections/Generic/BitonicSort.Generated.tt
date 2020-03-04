@@ -1,0 +1,129 @@
+<#@ template language="C#" #>
+<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs" #>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using static System.Runtime.Intrinsics.X86.Avx;
+using static System.Runtime.Intrinsics.X86.Avx2;
+
+namespace System.Collections.Generic
+{
+    using V = Vector256<int>;
+    static unsafe partial class BitonicSort<T>
+    {
+<#
+    static uint GetNextPowerOf2(uint v)
+    {
+        v--;
+        v |= v >> 1;
+        v |= v >> 2;
+        v |= v >> 4;
+        v |= v >> 8;
+        v |= v >> 16;
+        v++;
+        return v;
+    }
+
+
+    string GenerateParamList(uint start, uint numParams)
+        => string.Join(", ", Enumerable.Range((int) start, (int) numParams).Select(p => $"ref d{p:00}"));
+
+    string GenerateParamDefList(uint numParams)
+        => string.Join(", ", Enumerable.Range(1, (int) numParams).Select(p => $"ref V d{p:00}"));
+
+    const uint MaxBitonicSortVectors = 16U;
+
+    uint LargestMergeVariantNeeded = GetNextPowerOf2(MaxBitonicSortVectors) / 2;
+#>
+<#  for (var m = 2U; m <= MaxBitonicSortVectors; m++) {
+        var s1 = GetNextPowerOf2(m) / 2;
+        var s2 = m - s1; #>
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        private static void BitonicSort<#= $"{m:00}" #>V(<#= GenerateParamDefList(m) #>)
+        {
+            V tmp;
+
+            BitonicSort<#= $"{s1:00}" #>V(<#= GenerateParamList(1, s1) #>);
+            BitonicSort<#= $"{s2:00}" #>V(<#= GenerateParamList(s1 + 1, s2) #>);
+
+<#    for (var r = s1 + 1; r < m + 1; r++) {
+           var x = s1 + 1 - (r - s1); #>
+            tmp = Shuffle(d<#= $"{r:00}" #>, X_R);
+            tmp = Permute4x64(tmp.AsInt64(), P_X).AsInt32();
+            d<#= $"{r:00}" #> = Max(d<#= $"{x:00}" #>, tmp);
+            d<#= $"{x:00}" #> = Min(d<#= $"{x:00}" #>, tmp);
+
+<#      } #>
+            BitonicSort<#= $"{s1:00}" #>VMerge(<#= GenerateParamList(1, s1) #>);
+            BitonicSort<#= $"{s2:00}" #>VMerge(<#= GenerateParamList(s1 + 1, s2) #>);
+        }
+<#      if (m <= LargestMergeVariantNeeded) { #>
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        private static void BitonicSort<#= $"{m:00}" #>VMerge(<#= GenerateParamDefList(m) #>)
+        {
+            V tmp;
+
+<#        for (var r = s1 + 1; r < m + 1; r++) {
+              var x = (r - s1); #>
+            tmp = d<#= $"{x:00}" #>;
+            d<#= $"{x:00}" #> = Min(d<#= $"{r:00}" #>, d<#= $"{x:00}" #>);
+            d<#= $"{r:00}" #> = Max(d<#= $"{r:00}" #>, tmp);
+
+<#        } #>
+            BitonicSort<#= $"{s1:00}" #>VMerge(<#= GenerateParamList(1, s1) #>);
+            BitonicSort<#= $"{s2:00}" #>VMerge(<#= GenerateParamList(s1 + 1, s2) #>);
+        }
+<#      } #>
+
+<#  } #>
+
+<#    for (var m = 1U; m <= MaxBitonicSortVectors; m++) { #>
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        private static void BitonicSort<#= $"{m:00}" #>V(int* ptr)
+        {
+            var N = V.Count;
+
+<#
+          for (var l = 0; l < m; l++) { #>
+            var d<#= $"{l + 1:00}" #> = LoadDquVector256(ptr + <#= $"{l:00}" #>*N);
+<#        } #>
+
+            BitonicSort<#= $"{m:00}" #>V(<#= GenerateParamList(1, m) #>);
+
+<#
+          for (var l = 0; l < m; l++) { #>
+            Store(ptr + <#= $"{l:00}" #>*N, d<#= $"{l + 1:00}" #>);
+<#        } #>
+        }
+<#  } #>
+
+        public const int MinBitonicSortSize = 8;
+        public const int MaxBitonicSortSize = <#= MaxBitonicSortVectors * 8 #>;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public static void Sort(int* ptr, int length)
+        {
+            Debug.Assert(length % 8 == 0);
+            Debug.Assert(length <= MaxBitonicSortSize);
+
+            switch (length / 8) {
+<#    for (var m = 1U; m <= MaxBitonicSortVectors; m++) { #>
+                case <#= $"{m:00}" #>: BitonicSort<#= $"{m:00}" #>V(ptr); return;
+<#    } #>
+
+                default:
+                    throw new NotSupportedException("length is not power a multiple of 8 && <= <#= MaxBitonicSortVectors * 8 #>");
+            }
+        }
+    }
+}
