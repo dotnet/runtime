@@ -259,6 +259,9 @@ namespace System.Threading
 
         public static void Sleep(int millisecondsTimeout) => SleepInternal(millisecondsTimeout);
 
+        [DllImport(RuntimeHelpers.QCall)]
+        internal static extern void UninterruptibleSleep0();
+
         /// <summary>
         /// Wait for a length of time proportional to 'iterations'.  Each iteration is should
         /// only take a few machine instructions.  Calling this API is preferable to coding
@@ -351,6 +354,8 @@ namespace System.Threading
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            internal set;
         }
 
         /// <summary>Returns the priority of the thread.</summary>

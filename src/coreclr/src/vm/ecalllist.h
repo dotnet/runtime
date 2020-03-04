@@ -596,6 +596,7 @@ FCFuncStart(gThreadFuncs)
 #undef Sleep
     FCFuncElement("SleepInternal", ThreadNative::Sleep)
 #define Sleep(a) Dont_Use_Sleep(a)
+    QCFuncElement("UninterruptibleSleep0", ThreadNative::UninterruptibleSleep0)
     FCFuncElement("SetStart", ThreadNative::SetStart)
     QCFuncElement("InformThreadNameChange", ThreadNative::InformThreadNameChange)
     FCFuncElement("SpinWaitInternal", ThreadNative::SpinWait)
@@ -610,6 +611,7 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("IsBackgroundNative", ThreadNative::IsBackground)
     FCFuncElement("SetBackgroundNative", ThreadNative::SetBackground)
     FCFuncElement("get_IsThreadPoolThread", ThreadNative::IsThreadpoolThread)
+    FCFuncElement("set_IsThreadPoolThread", ThreadNative::SetIsThreadpoolThread)
     FCFuncElement("GetPriorityNative", ThreadNative::GetPriority)
     FCFuncElement("SetPriorityNative", ThreadNative::SetPriority)
     QCFuncElement("GetCurrentOSThreadId", ThreadNative::GetCurrentOSThreadId)
@@ -664,6 +666,12 @@ FCFuncStart(gWaitHandleFuncs)
     FCFuncElement("WaitMultipleIgnoringSyncContext", WaitHandleNative::CorWaitMultipleNative)
     FCFuncElement("SignalAndWaitNative", WaitHandleNative::CorSignalAndWaitOneNative)
 FCFuncEnd()
+
+#ifdef TARGET_UNIX
+FCFuncStart(gLowLevelLifoSemaphoreFuncs)
+    QCFuncElement("WaitNative", WaitHandleNative::CorWaitOnePrioritizedNative)
+FCFuncEnd()
+#endif
 
 #ifdef FEATURE_COMINTEROP
 FCFuncStart(gVariantFuncs)
@@ -1151,6 +1159,9 @@ FCClassElement("Interlocked", "System.Threading", gInterlockedFuncs)
 FCClassElement("Kernel32", "", gPalKernel32Funcs)
 #endif
 FCClassElement("LoaderAllocatorScout", "System.Reflection", gLoaderAllocatorFuncs)
+#ifdef TARGET_UNIX
+FCClassElement("LowLevelLifoSemaphore", "System.Threading", gLowLevelLifoSemaphoreFuncs)
+#endif
 FCClassElement("Marshal", "System.Runtime.InteropServices", gInteropMarshalFuncs)
 FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
