@@ -142,6 +142,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Serialization\TestClasses.ConcurrentCollections.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
   </ItemGroup>
 </Project>
