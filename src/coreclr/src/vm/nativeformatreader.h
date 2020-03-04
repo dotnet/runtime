@@ -666,11 +666,7 @@ namespace NativeFormat
             return false;
         }
 
-        bool
-#ifdef USE_INTEL_INTRINSICS_FOR_CUCKOO_FILTER
-        __attribute__((__target__("sse2")))
-#endif
-        MayExist(UInt32 hashcode, UInt16 fingerprint)
+        bool MayExist(UInt32 hashcode, UInt16 fingerprint)
         {
             if ((_base == NULL) || (_disableFilter))
                 return true;
