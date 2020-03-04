@@ -97,6 +97,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     methodimpl.cpp
     methoditer.cpp
     methodtable.cpp
+    nativeimage.cpp
     object.cpp
     pefile.cpp
     peimage.cpp

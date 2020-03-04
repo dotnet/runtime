@@ -2358,6 +2358,4 @@ DomainAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     }
 }
 
-
 #endif // #ifdef DACCESS_COMPILE
-
