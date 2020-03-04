@@ -569,7 +569,7 @@ function Stop-Processes() {
 }
 
 #
-# Executes msbuild (or 'dotnet build') with arguments passed to the function.
+# Executes msbuild (or 'dotnet msbuild') with arguments passed to the function.
 # The arguments are automatically quoted.
 # Terminates the script if the build fails.
 #
@@ -598,7 +598,7 @@ function MSBuild() {
 }
 
 #
-# Executes msbuild (or 'dotnet build') with arguments passed to the function.
+# Executes msbuild (or 'dotnet msbuild') with arguments passed to the function.
 # The arguments are automatically quoted.
 # Terminates the script if the build fails.
 #
