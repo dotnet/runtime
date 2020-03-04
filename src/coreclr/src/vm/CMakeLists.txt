@@ -38,13 +38,15 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
     array.cpp
     assembly.cpp
+    assemblyloadcontext.cpp
     baseassemblyspec.cpp
     binder.cpp
     castcache.cpp
-    callcounter.cpp
+    callcounting.cpp
     ceeload.cpp
     class.cpp
     classhash.cpp
+    classlayoutinfo.cpp
     clsload.cpp
     codeman.cpp
     codeversion.cpp
@@ -95,6 +97,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     methodimpl.cpp
     methoditer.cpp
     methodtable.cpp
+    nativeimage.cpp
     object.cpp
     pefile.cpp
     peimage.cpp
@@ -139,10 +142,12 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     appdomain.inl
     array.h
     assembly.hpp
+    assemblyloadcontext.h
     baseassemblyspec.h
     baseassemblyspec.inl
     binder.h
     castcache.h
+    callcounting.h
     ceeload.h
     ceeload.inl
     class.h
@@ -409,7 +414,6 @@ set(VM_HEADERS_WKS
     assemblyspec.hpp
     assemblyspecbase.h
     cachelinealloc.h
-    callcounter.h
     callhelpers.h
     callsiteinspect.h
     ceemain.h

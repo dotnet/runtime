@@ -13,6 +13,7 @@ namespace System.Drawing
     public static class Helpers
     {
         public const string IsDrawingSupported = nameof(Helpers) + "." + nameof(GetIsDrawingSupported);
+        public const string IsWindowsOrAtLeastLibgdiplus6 = nameof(Helpers) + "." + nameof(GetIsWindowsOrAtLeastLibgdiplus6);
         public const string RecentGdiplusIsAvailable = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable);
         public const string RecentGdiplusIsAvailable2 = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable2);
         public const string GdiPlusIsAvailableNotRedhat73 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotRedhat73);
@@ -21,6 +22,32 @@ namespace System.Drawing
         public const string WindowsRS3OrEarlier = nameof(Helpers) + "." + nameof(IsWindowsRS3OrEarlier);
 
         public static bool GetIsDrawingSupported() => PlatformDetection.IsDrawingSupported;
+
+        public static bool GetIsWindowsOrAtLeastLibgdiplus6()
+        {
+            if (!PlatformDetection.IsDrawingSupported)
+            {
+                return false;
+            }
+
+            if (PlatformDetection.IsWindows)
+            {
+                return true;
+            }
+
+            Version installedVersion;
+
+            try
+            {
+                installedVersion = new Version(GetLibgdiplusVersion());
+            }
+            catch (EntryPointNotFoundException)
+            {
+                return false;
+            }
+
+            return installedVersion.Major >= 6;
+        }
 
         public static bool IsNotUnix => PlatformDetection.IsWindows;
 
@@ -138,6 +165,9 @@ namespace System.Drawing
         }
 
         private const int MONITOR_DEFAULTTOPRIMARY = 1;
+
+        [DllImport("libgdiplus", ExactSpelling = true)]
+        internal static extern string GetLibgdiplusVersion();
 
         [DllImport("user32.dll", SetLastError = true)]
         private static extern IntPtr MonitorFromWindow(IntPtr hWnd, int dwFlags);

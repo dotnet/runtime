@@ -108,7 +108,7 @@ namespace System.Text.Json
 
                 string key = reader.GetString()!;
 
-                // todo: verify value is converter.TypeToConvert and throw JsonException? (currently no test)
+                // todo: https://github.com/dotnet/runtime/issues/32354
                 state.Current.ReturnValue = state.ReferenceResolver.ResolveReferenceOnDeserialize(key);
                 state.Current.ObjectState = StackFrameObjectState.MetadataRefPropertyEndObject;
             }

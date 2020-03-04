@@ -232,8 +232,8 @@ namespace System.Text.Encodings.Web
 
         // Writes a scalar value as a JavaScript-escaped character (or sequence of characters).
         // See ECMA-262, Sec. 7.8.4, and ECMA-404, Sec. 9
-        // http://www.ecma-international.org/ecma-262/5.1/#sec-7.8.4
-        // http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
+        // https://www.ecma-international.org/ecma-262/5.1/#sec-7.8.4
+        // https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
         public override unsafe bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
         {
             if (buffer == null)

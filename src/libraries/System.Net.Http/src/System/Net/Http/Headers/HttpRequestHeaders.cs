@@ -62,14 +62,19 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (ExpectCore.IsSpecialValueSet)
+                // ExpectCore will force the collection into existence, so avoid accessing it if possible.
+                if (_expectContinueSet || ContainsParsedValue(KnownHeaders.Expect.Descriptor, HeaderUtilities.ExpectContinue))
                 {
-                    return true;
+                    if (ExpectCore.IsSpecialValueSet)
+                    {
+                        return true;
+                    }
+                    if (_expectContinueSet)
+                    {
+                        return false;
+                    }
                 }
-                if (_expectContinueSet)
-                {
-                    return false;
-                }
+
                 return null;
             }
             set

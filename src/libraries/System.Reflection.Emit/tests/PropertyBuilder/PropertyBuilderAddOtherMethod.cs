@@ -9,6 +9,7 @@ namespace System.Reflection.Emit.Tests
     public class PropertyBuilderTest2
     {
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [InlineData(MethodAttributes.Public, CallingConventions.HasThis, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)]
         [InlineData(MethodAttributes.Private, CallingConventions.HasThis, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)]
         [InlineData(MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Any, BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance)]

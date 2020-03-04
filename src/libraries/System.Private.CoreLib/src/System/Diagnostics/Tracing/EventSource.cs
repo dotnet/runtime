@@ -649,10 +649,8 @@ namespace System.Diagnostics.Tracing
         {
             m_config = ValidateSettings(settings);
 
-            Guid eventSourceGuid;
-            string? eventSourceName;
 
-            GetMetadata(out eventSourceGuid, out eventSourceName, out _, out _);
+            GetMetadata(out Guid eventSourceGuid, out string? eventSourceName, out _, out _);
 
             if (eventSourceGuid.Equals(Guid.Empty) || eventSourceName == null)
             {
@@ -1579,7 +1577,11 @@ namespace System.Diagnostics.Tracing
             /// <param name="input">
             /// Data to include in the hash. Must not be null.
             /// </param>
+#if ES_BUILD_STANDALONE
             public void Append(byte[] input)
+#else
+            public void Append(ReadOnlySpan<byte> input)
+#endif
             {
                 foreach (byte b in input)
                 {
@@ -1691,6 +1693,7 @@ namespace System.Diagnostics.Tracing
 
         private static Guid GenerateGuidFromName(string name)
         {
+#if ES_BUILD_STANDALONE
             if (namespaceBytes == null)
             {
                 namespaceBytes = new byte[] {
@@ -1698,6 +1701,13 @@ namespace System.Diagnostics.Tracing
                     0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
                 };
             }
+#else
+            ReadOnlySpan<byte> namespaceBytes = new byte[] // rely on C# compiler optimization to remove byte[] allocation
+            {
+                0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
+                0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
+            };
+#endif
 
             byte[] bytes = Encoding.BigEndianUnicode.GetBytes(name);
             Sha1ForNonSecretPurposes hash = default;
@@ -2859,13 +2869,10 @@ namespace System.Diagnostics.Tracing
             if (m_eventData == null)
             {
                 Guid eventSourceGuid = Guid.Empty;
-                string? eventSourceName = null;
-                EventMetadata[]? eventData = null;
-                byte[]? manifest = null;
 
                 // Try the GetMetadata provided by the ILTransform in ProjectN. The default sets all to null, and in that case we fall back
                 // to the reflection approach.
-                GetMetadata(out eventSourceGuid, out eventSourceName, out eventData, out manifest);
+                GetMetadata(out eventSourceGuid, out string? eventSourceName, out EventMetadata[]? eventData, out byte[]? manifest);
 
                 if (eventSourceGuid.Equals(Guid.Empty) || eventSourceName == null || eventData == null || manifest == null)
                 {
@@ -3882,10 +3889,10 @@ namespace System.Diagnostics.Tracing
         // WARNING: Do not depend upon initialized statics during creation of EventSources, as it is possible for creation of an EventSource to trigger
         // creation of yet another EventSource.  When this happens, these statics may not yet be initialized.
         // Rather than depending on initialized statics, use lazy initialization to ensure that the statics are initialized exactly when they are needed.
-
+#if ES_BUILD_STANDALONE
         // used for generating GUID from eventsource name
         private static byte[]? namespaceBytes;
-
+#endif
 #endregion
     }
 
@@ -4020,8 +4027,6 @@ namespace System.Diagnostics.Tracing
         /// is the only way to actually make the listen die. Thus it is important that users of EventListener
         /// call Dispose when they are done with their logging.
         /// </summary>
-#if ES_BUILD_STANDALONE
-#endif
         public virtual void Dispose()
         {
             lock (EventListenersLock)
@@ -5286,7 +5291,7 @@ namespace System.Diagnostics.Tracing
             sb.AppendLine(" <instrumentation xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:win=\"http://manifests.microsoft.com/win/2004/08/windows/events\">");
             sb.AppendLine("  <events xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
             sb.Append("<provider name=\"").Append(providerName).
-               Append("\" guid=\"{").Append(providerGuid.ToString()).Append("}");
+               Append("\" guid=\"{").Append(providerGuid.ToString()).Append('}');
             if (dllName != null)
                 sb.Append("\" resourceFileName=\"").Append(dllName).Append("\" messageFileName=\"").Append(dllName);
 
@@ -5541,8 +5546,7 @@ namespace System.Diagnostics.Tracing
             if (channelTab.Count == MaxCountChannels)
                 ManifestError(SR.EventSource_MaxChannelExceeded);
 
-            ChannelInfo? info;
-            if (!channelTab.TryGetValue((int)channel, out info))
+            if (!channelTab.TryGetValue((int)channel, out ChannelInfo? info))
             {
                 // If we were not given an explicit channel, allocate one.
                 if (channelKeyword != 0)
@@ -5866,8 +5870,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW_CHANNELS
         private string? GetChannelName(EventChannel channel, string eventName, string? eventMessage)
         {
-            ChannelInfo? info = null;
-            if (channelTab == null || !channelTab.TryGetValue((int)channel, out info))
+            if (channelTab == null || !channelTab.TryGetValue((int)channel, out ChannelInfo? info))
             {
                 if (channel < EventChannel.Admin) // || channel > EventChannel.Debug)
                     ManifestError(SR.Format(SR.EventSource_UndefinedChannel, channel, eventName));
@@ -5899,9 +5902,8 @@ namespace System.Diagnostics.Tracing
             if (task == EventTask.None)
                 return "";
 
-            string? ret;
             taskTab ??= new Dictionary<int, string>();
-            if (!taskTab.TryGetValue((int)task, out ret))
+            if (!taskTab.TryGetValue((int)task, out string? ret))
                 ret = taskTab[(int)task] = eventName;
             return ret;
         }
@@ -5934,8 +5936,7 @@ namespace System.Diagnostics.Tracing
                     return "win:Receive";
             }
 
-            string? ret;
-            if (opcodeTab == null || !opcodeTab.TryGetValue((int)opcode, out ret))
+            if (opcodeTab == null || !opcodeTab.TryGetValue((int)opcode, out string? ret))
             {
                 ManifestError(SR.Format(SR.EventSource_UndefinedOpcode, opcode, eventName), true);
                 ret = null;
@@ -6042,7 +6043,6 @@ namespace System.Diagnostics.Tracing
         {
             StringBuilder? stringBuilder = null;        // We lazily create this
             int writtenSoFar = 0;
-            int chIdx = -1;
             for (int i = 0; ;)
             {
                 if (i >= eventMessage.Length)
@@ -6053,6 +6053,7 @@ namespace System.Diagnostics.Tracing
                     return stringBuilder.ToString();
                 }
 
+                int chIdx;
                 if (eventMessage[i] == '%')
                 {
                     // handle format message escaping character '%' by escaping it
@@ -6115,8 +6116,7 @@ namespace System.Diagnostics.Tracing
 
         private int TranslateIndexToManifestConvention(int idx, string evtName)
         {
-            List<int>? byteArrArgIndices;
-            if (perEventByteArrayArgIndices.TryGetValue(evtName, out byteArrArgIndices))
+            if (perEventByteArrayArgIndices.TryGetValue(evtName, out List<int>? byteArrArgIndices))
             {
                 foreach (int byArrIdx in byteArrArgIndices)
                 {

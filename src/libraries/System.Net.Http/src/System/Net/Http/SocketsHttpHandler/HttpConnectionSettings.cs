@@ -48,6 +48,9 @@ namespace System.Net.Http
 
         internal bool _allowUnencryptedHttp2;
 
+        // Used for testing until https://github.com/dotnet/runtime/issues/987
+        internal bool _assumePrenegotiatedHttp3ForTesting;
+
         internal SslClientAuthenticationOptions _sslOptions;
 
         internal IDictionary<string, object> _properties;
@@ -99,6 +102,7 @@ namespace System.Net.Http
                 _useCookies = _useCookies,
                 _useProxy = _useProxy,
                 _allowUnencryptedHttp2 = _allowUnencryptedHttp2,
+                _assumePrenegotiatedHttp3ForTesting = _assumePrenegotiatedHttp3ForTesting
             };
         }
 

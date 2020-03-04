@@ -21,6 +21,9 @@ namespace System.Text.Json
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
         public static Task SerializeAsync<TValue>(Stream utf8Json, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
+            if (utf8Json == null)
+                throw new ArgumentNullException(nameof(utf8Json));
+
             return WriteAsyncCore(utf8Json, value, typeof(TValue), options, cancellationToken);
         }
 
@@ -65,11 +68,6 @@ namespace System.Text.Json
                     return;
                 }
 
-                if (inputType == null)
-                {
-                    inputType = value.GetType();
-                }
-
                 WriteStack state = default;
                 state.InitializeRoot(inputType, options, supportContinuation: true);
 
@@ -77,7 +75,9 @@ namespace System.Text.Json
 
                 do
                 {
-                    state.FlushThreshold = (int)(bufferWriter.Capacity * .9); //todo: determine best value here
+                    // todo: determine best value here
+                    // https://github.com/dotnet/runtime/issues/32356
+                    state.FlushThreshold = (int)(bufferWriter.Capacity * .9);
                     isFinalBlock = WriteCore(
                         writer,
                         value,

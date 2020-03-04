@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
             "2B0E03021A0414822078BC83E955E314BDA908D76D4C5177CC94EB0414711018" +
             "F2897A44A90E92779CB655EA11814EC598").HexToByteArray();
 
-        // Extracted from https://github.com/dotnet/corefx/issues/11046
+        // Extracted from https://github.com/dotnet/runtime/issues/18254
         internal static readonly ReadOnlyMemory<byte> IndefiniteEncodingNoMac = (
             "3080020103308006092A864886F70D010701A0802480048203E8308030800609" +
             "2A864886F70D010701A0802480048203E83082051530820511060B2A864886F7" +

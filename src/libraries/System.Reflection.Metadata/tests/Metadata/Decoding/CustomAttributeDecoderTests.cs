@@ -76,7 +76,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                             break;
 
                         default:
-                            // TODO: https://github.com/dotnet/corefx/issues/6534
+                            // TODO: https://github.com/dotnet/runtime/issues/16552
                             // The other cases are missing corresponding assertions. This needs some refactoring to
                             // be data-driven. A better approach would probably be to generically compare reflection
                             // CustomAttributeData to S.R.M CustomAttributeValue for every test attribute applied.

@@ -206,7 +206,8 @@ namespace System.Numerics
         public BigInteger(decimal value)
         {
             // First truncate to get scale to 0 and extract bits
-            int[] bits = decimal.GetBits(decimal.Truncate(value));
+            Span<int> bits = stackalloc int[4];
+            decimal.GetBits(decimal.Truncate(value), bits);
 
             Debug.Assert(bits.Length == 4 && (bits[3] & DecimalScaleFactorMask) == 0);
 

@@ -26,7 +26,7 @@ build_test_wrappers()
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TargetsWindows=false $__Logging /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch"
+        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch"
         eval $nextCommand
 
         local exitCode="$?"
@@ -135,7 +135,9 @@ generate_layout()
 
     # Precompile framework assemblies with crossgen if required
     if [[ "$__DoCrossgen" != 0 || "$__DoCrossgen2" != 0 ]]; then
-        precompile_coreroot_fx
+        if [[ "$__SkipCrossgenFramework" == 0 ]]; then
+            precompile_coreroot_fx
+        fi
     fi
 }
 
@@ -184,22 +186,25 @@ precompile_coreroot_fx()
             continue
         fi
 
-        echo Precompiling "$filename"
+        local commandLine=""
 
         if [[ "$__DoCrossgen" != 0 ]]; then
-            "$__CrossgenExe" /Platform_Assemblies_Paths "$overlayDir" "$filename" 1> "$filename".stdout 2> "$filename".stderr
+            commandLine="$__CrossgenExe /Platform_Assemblies_Paths $overlayDir $filename"
         fi
 
         if [[ "$__DoCrossgen2" != 0 ]]; then
-            "$overlayDir"/crossgen2/crossgen2 "$crossgen2References" -O --inputbubble --out "$outputDir"/"$(basename $filename)" "$filename" 1> "$filename".stdout 2> "$filename".stderr
+            commandLine="$overlayDir/crossgen2/crossgen2 $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
         fi
 
+        echo Precompiling "$filename"
+        $commandLine 1> "$filename".stdout 2> "$filename".stderr
         local exitCode="$?"
         if [[ "$exitCode" != 0 ]]; then
             if grep -q -e '0x80131018' "$filename".stderr; then
                 printf "\n\t$filename is not a managed assembly.\n\n"
             else
                 echo Unable to precompile "$filename", exit code is "$exitCode".
+                echo Command-line: "$commandLine"
                 cat "$filename".stdout
                 cat "$filename".stderr
                 failedAssemblies+=($(basename -- "$filename"))
@@ -500,14 +505,17 @@ handle_arguments_local() {
             __SkipManaged=1
             __CopyNativeTestBinaries=1
             __CopyNativeProjectsAfterCombinedTestBuild=true
+            __SkipCrossgenFramework=1
             ;;
 
         crossgen|-crossgen)
             __DoCrossgen=1
+            __TestBuildMode=crossgen
             ;;
 
         crossgen2|-crossgen2)
             __DoCrossgen2=1
+            __TestBuildMode=crossgen2
             ;;
 
         generatetesthostonly|-generatetesthostonly)
@@ -584,6 +592,7 @@ __SkipManaged=0
 __SkipNative=0
 __SkipRestore=""
 __SkipRestorePackages=0
+__SkipCrossgenFramework=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=
 __LocalCoreFXConfig=${__BuildType}

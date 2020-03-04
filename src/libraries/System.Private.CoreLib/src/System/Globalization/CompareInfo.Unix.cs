@@ -206,7 +206,7 @@ namespace System.Globalization
             }
         }
 
-        // TODO https://github.com/dotnet/coreclr/issues/13827:
+        // TODO https://github.com/dotnet/runtime/issues/8890:
         // This method shouldn't be necessary, as we should be able to just use the overload
         // that takes two spans.  But due to this issue, that's adding significant overhead.
         private unsafe int CompareString(ReadOnlySpan<char> string1, string string2, CompareOptions options)

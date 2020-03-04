@@ -48,7 +48,7 @@ If the *Default LoadContext* fallback also did not resolve the load (or was not 
 
 * **System.Private.CoreLib.dll** is only loaded once, and into the **Default LoadContext**, during the .NET Core Runtime startup as it is a logical extension of the same. It cannot be loaded into **Custom LoadContext**.
 * Currently, custom **LoadContext** cannot be unloaded once created. This is a feature we are looking into for a future release.
-* If an attempt is made to load a [Ready-To-Run (R2R)](https://github.com/dotnet/coreclr/blob/master/Documentation/botr/readytorun-overview.md) image from the same location in multiple load context's, then precompiled code can only be used from the first image that got loaded. The subsequent images will have their code JITted. This happens because subsequent loading binaries from the same location results in OS mapping them to the same memory as the previous one was mapped to and thus, could corrupt internal state information required for use precompiled code.
+* If an attempt is made to load a [Ready-To-Run (R2R)](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/readytorun-overview.md) image from the same location in multiple load context's, then precompiled code can only be used from the first image that got loaded. The subsequent images will have their code JITted. This happens because subsequent loading binaries from the same location results in OS mapping them to the same memory as the previous one was mapped to and thus, could corrupt internal state information required for use precompiled code.
 
 ## Tests
 

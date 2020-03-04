@@ -514,9 +514,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
 
             public void GetLicInfo(ref LICINFO licInfo)
             {
-                bool runtimeKeyAvail;
-                bool licVerified;
-                _licenseProxy.GetLicInfo(_classType, out runtimeKeyAvail, out licVerified);
+                _licenseProxy.GetLicInfo(_classType, out bool runtimeKeyAvail, out bool licVerified);
 
                 // The LICINFO is a struct with a DWORD size field and two BOOL fields. Each BOOL
                 // is typedef'd from a DWORD, therefore the size is manually computed as below.

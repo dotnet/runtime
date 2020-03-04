@@ -22,8 +22,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly bool _useInstantiatingStub;
 
-        private readonly SignatureContext _signatureContext;
-
         public DelayLoadHelperMethodImport(
             NodeFactory factory, 
             ImportSectionNode importSectionNode, 
@@ -32,13 +30,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             bool useVirtualCall,
             bool useInstantiatingStub,
             Signature instanceSignature, 
-            SignatureContext signatureContext,
             string callSite = null)
             : base(factory, importSectionNode, helper, instanceSignature, useVirtualCall, callSite)
         {
             _method = method;
             _useInstantiatingStub = useInstantiatingStub;
-            _signatureContext = signatureContext;
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
@@ -55,8 +51,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     new MethodWithToken(canonMethod, _method.Token, constrainedType: null),
                     isUnboxingStub: false,
                     isInstantiatingStub: false,
-                    isPrecodeImportRequired: false,
-                    signatureContext: _signatureContext);
+                    isPrecodeImportRequired: false);
                 yield return new DependencyListEntry(canonMethodNode, "Canonical method for instantiating stub");
             }
         }
@@ -69,10 +64,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             DelayLoadHelperMethodImport otherNode = (DelayLoadHelperMethodImport)other;
             int result = _useInstantiatingStub.CompareTo(otherNode._useInstantiatingStub);
-            if (result != 0)
-                return result;
-
-            result = _signatureContext.CompareTo(otherNode._signatureContext, comparer);
             if (result != 0)
                 return result;
 

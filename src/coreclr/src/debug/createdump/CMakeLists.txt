@@ -2,6 +2,8 @@ project(createdump)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+include(configure.cmake)
+
 # Set the RPATH of createdump so that it can find dependencies without needing to set LD_LIBRARY_PATH
 # For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
 if (CORECLR_SET_RPATH)
@@ -42,6 +44,7 @@ add_dependencies(createdump pal_redefines_file)
 target_link_libraries(createdump
     createdump_lib
     corguids
+    dbgutil
     # share the PAL in the dac module
     mscordaccore
 )

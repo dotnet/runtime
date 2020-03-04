@@ -12,15 +12,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class NewObjectFixupSignature : Signature
     {
         private readonly TypeDesc _typeDesc;
-        private readonly SignatureContext _signatureContext;
 
-        public NewObjectFixupSignature(TypeDesc typeDesc, SignatureContext signatureContext)
+        public NewObjectFixupSignature(TypeDesc typeDesc)
         {
             _typeDesc = typeDesc;
-            _signatureContext = signatureContext;
 
             // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
-            signatureContext.Resolver.CompilerContext.EnsureLoadableType(typeDesc);
+            ((CompilerTypeSystemContext)typeDesc.Context).EnsureLoadableType(typeDesc);
         }
 
         public override int ClassCode => 551247760;
@@ -33,8 +31,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                EcmaModule targetModule = _signatureContext.GetTargetModule(_typeDesc);
-                SignatureContext innerContext = dataBuilder.EmitFixup(factory, ReadyToRunFixupKind.NewObject, targetModule, _signatureContext);
+                EcmaModule targetModule = factory.SignatureContext.GetTargetModule(_typeDesc);
+                SignatureContext innerContext = dataBuilder.EmitFixup(factory, ReadyToRunFixupKind.NewObject, targetModule, factory.SignatureContext);
                 dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
             }
 
@@ -51,11 +49,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             NewObjectFixupSignature otherNode = (NewObjectFixupSignature)other;
-            int result = comparer.Compare(_typeDesc, otherNode._typeDesc);
-            if (result != 0)
-                return result;
-
-            return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
+            return comparer.Compare(_typeDesc, otherNode._typeDesc);
         }
     }
 }

@@ -119,8 +119,6 @@ private:
     void LowerBlock(BasicBlock* block);
     GenTree* LowerNode(GenTree* node);
 
-    void CheckVSQuirkStackPaddingNeeded(GenTreeCall* call);
-
     // ------------------------------
     // Call Lowering
     // ------------------------------
@@ -278,7 +276,7 @@ private:
 
     // Per tree node member functions
     void LowerStoreIndir(GenTreeIndir* node);
-    void LowerAdd(GenTreeOp* node);
+    GenTree* LowerAdd(GenTreeOp* node);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);
     GenTree* LowerSignedDivOrMod(GenTree* node);

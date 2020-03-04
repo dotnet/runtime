@@ -2448,7 +2448,6 @@ PTR_ICLRPrivBinder PEFile::GetBindingContext()
 
     // CoreLibrary is always bound in context of the TPA Binder. However, since it gets loaded and published
     // during EEStartup *before* DefaultContext Binder (aka TPAbinder) is initialized, we dont have a binding context to publish against.
-    // Thus, we will always return NULL for its binding context.
     if (!IsSystem())
     {
         pBindingContext = dac_cast<PTR_ICLRPrivBinder>(GetHostAssembly());
@@ -2466,3 +2465,31 @@ PTR_ICLRPrivBinder PEFile::GetBindingContext()
 
     return pBindingContext;
 }
+
+#ifndef DACCESS_COMPILE
+AssemblyLoadContext* PEFile::GetAssemblyLoadContext()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    PTR_ICLRPrivBinder pBindingContext = GetBindingContext();
+    ICLRPrivBinder* pOpaqueBinder = NULL;
+
+    if (pBindingContext != NULL)
+    {
+        UINT_PTR assemblyBinderID = 0;
+        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
+
+        pOpaqueBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
+
+#ifdef FEATURE_COMINTEROP
+        // Treat WinRT assemblies (bound using the WinRT binder) as if they were loaded into the TPA ALC
+        if (AreSameBinderInstance(AppDomain::GetCurrentDomain()->GetWinRtBinder(), pOpaqueBinder))
+        {
+            pOpaqueBinder = NULL;
+        }
+#endif
+    }
+
+    return (pOpaqueBinder != NULL) ? (AssemblyLoadContext*)pOpaqueBinder : AppDomain::GetCurrentDomain()->GetTPABinderContext();
+}
+#endif

@@ -173,7 +173,7 @@ internal static partial class Interop
                             // the end of the optional values.
 
                             const string Separator = " - ";
-                            int endOfOptionalFields = line.IndexOf(Separator);
+                            int endOfOptionalFields = line.IndexOf(Separator, StringComparison.Ordinal);
                             if (endOfOptionalFields == -1)
                             {
                                 // Malformed line.

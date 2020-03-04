@@ -34,7 +34,7 @@ namespace System.Xml.Serialization
             identifier = MakeValid(identifier);
             if (identifier.Length <= 2)
             {
-                return CultureInfo.InvariantCulture.TextInfo.ToUpper(identifier);
+                return identifier.ToUpperInvariant();
             }
             else if (char.IsLower(identifier[0]))
             {
@@ -55,11 +55,11 @@ namespace System.Xml.Serialization
             identifier = MakeValid(identifier);
             if (identifier.Length <= 2)
             {
-                return CultureInfo.InvariantCulture.TextInfo.ToLower(identifier);
+                return identifier.ToLowerInvariant();
             }
             else if (char.IsUpper(identifier[0]))
             {
-                char lower = char.ToLower(identifier[0]);
+                char lower = char.ToLowerInvariant(identifier[0]);
                 return string.Concat(MemoryMarshal.CreateReadOnlySpan(ref lower, 1), identifier.AsSpan(1));
             }
             else
@@ -179,7 +179,7 @@ namespace System.Xml.Serialization
             if (t.DeclaringType != null && t.DeclaringType != t)
             {
                 index = GetCSharpName(t.DeclaringType, parameters, index, sb);
-                sb.Append(".");
+                sb.Append('.');
             }
             string name = t.Name;
             int nameEnd = name.IndexOf('`');
@@ -190,17 +190,17 @@ namespace System.Xml.Serialization
             if (nameEnd > 0)
             {
                 EscapeKeywords(name.Substring(0, nameEnd), sb);
-                sb.Append("<");
-                int arguments = int.Parse(name.Substring(nameEnd + 1), CultureInfo.InvariantCulture) + index;
+                sb.Append('<');
+                int arguments = int.Parse(name.AsSpan(nameEnd + 1), provider: CultureInfo.InvariantCulture) + index;
                 for (; index < arguments; index++)
                 {
                     sb.Append(GetCSharpName(parameters[index]));
                     if (index < arguments - 1)
                     {
-                        sb.Append(",");
+                        sb.Append(',');
                     }
                 }
-                sb.Append(">");
+                sb.Append('>');
             }
             else
             {
@@ -222,11 +222,11 @@ namespace System.Xml.Serialization
             string ns = t.Namespace;
             if (ns != null && ns.Length > 0)
             {
-                string[] parts = ns.Split(new char[] { '.' });
+                string[] parts = ns.Split('.');
                 for (int i = 0; i < parts.Length; i++)
                 {
                     EscapeKeywords(parts[i], sb);
-                    sb.Append(".");
+                    sb.Append('.');
                 }
             }
 

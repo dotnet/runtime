@@ -1091,7 +1091,7 @@ namespace System.DirectoryServices.ActiveDirectory
             InitializePropertiesFromSchemaContainer();
 
             Debug.Assert(_propertyValuesFromServer != null);
-            ArrayList values = (ArrayList)_propertyValuesFromServer[propertyName.ToLower(CultureInfo.InvariantCulture)];
+            ArrayList values = (ArrayList)_propertyValuesFromServer[propertyName.ToLowerInvariant()];
 
             Debug.Assert(values != null);
             if (values.Count < 1 && mustExist)
@@ -1116,7 +1116,7 @@ namespace System.DirectoryServices.ActiveDirectory
             InitializePropertiesFromSchemaContainer();
 
             Debug.Assert(_propertyValuesFromServer != null);
-            ArrayList values = (ArrayList)_propertyValuesFromServer[propertyName.ToLower(CultureInfo.InvariantCulture)];
+            ArrayList values = (ArrayList)_propertyValuesFromServer[propertyName.ToLowerInvariant()];
 
             Debug.Assert(values != null);
             return values;
@@ -1178,7 +1178,7 @@ namespace System.DirectoryServices.ActiveDirectory
             str.Append("(&(");
             str.Append(PropertyManager.ObjectCategory);
             str.Append("=classSchema)");
-            str.Append("(");
+            str.Append('(');
             if (!isDefunctOnServer)
             {
                 str.Append(PropertyManager.LdapDisplayName);
@@ -1187,16 +1187,16 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 str.Append(PropertyManager.Cn);
             }
-            str.Append("=");
+            str.Append('=');
             str.Append(Utils.GetEscapedFilterValue(name));
-            str.Append(")");
+            str.Append(')');
             if (!isDefunctOnServer)
             {
                 str.Append("(!(");
             }
             else
             {
-                str.Append("(");
+                str.Append('(');
             }
             str.Append(PropertyManager.IsDefunct);
             if (!isDefunctOnServer)
@@ -1325,15 +1325,15 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 foreach (string ldapDisplayName in ldapDisplayNames)
                 {
-                    str.Append("(");
+                    str.Append('(');
                     str.Append(PropertyManager.LdapDisplayName);
-                    str.Append("=");
+                    str.Append('=');
                     str.Append(Utils.GetEscapedFilterValue(ldapDisplayName));
-                    str.Append(")");
+                    str.Append(')');
                 }
                 if (ldapDisplayNames.Count > 1)
                 {
-                    str.Append(")");
+                    str.Append(')');
                 }
 
                 string filter = "(&(" + PropertyManager.ObjectCategory + "=classSchema)" + str.ToString() + "(!(" + PropertyManager.IsDefunct + "=TRUE)))";
@@ -1403,15 +1403,15 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 foreach (string ldapDisplayName in ldapDisplayNames)
                 {
-                    str.Append("(");
+                    str.Append('(');
                     str.Append(PropertyManager.LdapDisplayName);
-                    str.Append("=");
+                    str.Append('=');
                     str.Append(Utils.GetEscapedFilterValue(ldapDisplayName));
-                    str.Append(")");
+                    str.Append(')');
                 }
                 if (ldapDisplayNames.Count > 1)
                 {
-                    str.Append(")");
+                    str.Append(')');
                 }
 
                 string filter = "(&(" + PropertyManager.ObjectCategory + "=attributeSchema)" + str.ToString() + "(!(" + PropertyManager.IsDefunct + "=TRUE)))";

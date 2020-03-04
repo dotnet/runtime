@@ -81,7 +81,7 @@ namespace System
 
             bool hasUnicode = false;
 
-            _iriParsing = (IriParsing && ((_syntax == null) || _syntax.InFact(UriSyntaxFlags.AllowIriParsing)));
+            _iriParsing = IriParsingStatic(_syntax);
 
             if (_iriParsing &&
                 (CheckForUnicode(_string) || CheckForEscapedUnreserved(_string)))

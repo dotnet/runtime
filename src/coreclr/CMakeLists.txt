@@ -131,7 +131,12 @@ endif(CLR_CROSS_COMPONENTS_BUILD)
 #-------------------
 include(pgosupport.cmake)
 
-add_subdirectory(src/libraries-native)
+#-------------------------------
+# Include libraries native shims
+#-------------------------------
+if(NOT CLR_CROSS_COMPONENTS_BUILD)
+  add_subdirectory(src/libraries-native)
+endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
 #-----------------------------------------
 # Add Projects
@@ -191,5 +196,3 @@ endif (CLR_CMAKE_HOST_UNIX)
 # Add Product Directory
 #------------------------------
 add_subdirectory(src)
-
-include(definitionsconsistencycheck.cmake)

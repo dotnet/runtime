@@ -154,7 +154,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         // Build the "WinNT://machineName/" portion of the new path
                         adsPath.Append(_storeCtx.MachineUserSuppliedName);
-                        adsPath.Append("/");
+                        adsPath.Append('/');
 
                         // Build the "WinNT://machineName/foo" portion of the new path
                         int cElements = pathName.GetNumElements();
@@ -166,7 +166,7 @@ namespace System.DirectoryServices.AccountManagement
                         for (int i = cElements - 2; i >= 0; i--)
                         {
                             adsPath.Append(pathName.GetElement(i));
-                            adsPath.Append("/");
+                            adsPath.Append('/');
                         }
 
                         adsPath.Remove(adsPath.Length - 1, 1);  // remove the trailing "/"

@@ -11,12 +11,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly ModuleToken _token;
 
-        private readonly SignatureContext _signatureContext;
-
-        public StringImportSignature(ModuleToken token, SignatureContext signatureContext)
+        public StringImportSignature(ModuleToken token)
         {
             _token = token;
-            _signatureContext = signatureContext;
         }
 
         public override int ClassCode => 324832559;
@@ -29,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                dataBuilder.EmitFixup(factory, ReadyToRunFixupKind.StringHandle, _token.Module, _signatureContext);
+                dataBuilder.EmitFixup(factory, ReadyToRunFixupKind.StringHandle, _token.Module, factory.SignatureContext);
                 dataBuilder.EmitUInt(_token.TokenRid);
             }
 
@@ -45,10 +42,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             StringImportSignature otherNode = (StringImportSignature)other;
-            int result = _signatureContext.CompareTo(otherNode._signatureContext, comparer);
-            if (result != 0)
-                return result;
-
             return _token.CompareTo(otherNode._token);
         }
     }

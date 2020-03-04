@@ -939,7 +939,7 @@ namespace System.Data.Odbc
             CheckState(ADP.ChangeDatabase);
 
             // Database name must not be null, empty or whitspace
-            if ((null == value) || (0 == value.Trim().Length))
+            if (string.IsNullOrWhiteSpace(value))
             { // MDAC 62679
                 throw ADP.EmptyDatabaseName();
             }

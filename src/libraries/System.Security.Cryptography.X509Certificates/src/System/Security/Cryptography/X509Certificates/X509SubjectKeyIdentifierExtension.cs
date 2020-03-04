@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
-        public string SubjectKeyIdentifier
+        public string? SubjectKeyIdentifier
         {
             get
             {
@@ -135,7 +135,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private string _subjectKeyIdentifier;
+        private string? _subjectKeyIdentifier;
         private bool _decoded;
     }
 }

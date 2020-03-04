@@ -29,10 +29,5 @@
       <Project Remove="@(Project)" />
       <Project Include="@(_projectsToBuild)" />
     </ItemGroup>
-
-    <PropertyGroup>
-      <!-- don't use BuildConfiguration filtering -->
-      <FilterProjectsByBuildConfiguration>false</FilterProjectsByBuildConfiguration>
-    </PropertyGroup>
   </Target>
 </Project>

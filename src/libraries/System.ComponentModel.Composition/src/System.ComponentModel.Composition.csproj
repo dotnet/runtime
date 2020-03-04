@@ -6,7 +6,7 @@
     <!-- CommonStrings needs RootNamespace to be empty -->
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
-    <TargetFrameworks>netstandard2.0;netcoreapp2.0;$(NetCoreAppCurrent);_$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;_$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
     <NoWarn Condition="'$(TargetsNetCoreApp)' != 'true' or '$(TargetFramework)' == 'netcoreapp2.0'">$(NoWarn);nullable</NoWarn>

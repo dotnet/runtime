@@ -9,7 +9,7 @@ namespace System.Drawing
     /// </summary>
     public sealed partial class FontFamily : MarshalByRefObject, IDisposable
     {
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == this)
             {

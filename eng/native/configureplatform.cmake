@@ -137,7 +137,7 @@ if(CLR_CMAKE_HOST_UNIX_ARM)
     set(CLR_CMAKE_HOST_ARCH_ARM 1)
     set(CLR_CMAKE_HOST_ARCH "arm")
 
-    if(CLR_CMAKE_HOST_HOST_ARMV7L)
+    if(CLR_CMAKE_HOST_UNIX_ARMV7L)
         set(CLR_CMAKE_HOST_ARCH_ARMV7L 1)
     endif()
 elseif(CLR_CMAKE_HOST_UNIX_ARM64)
@@ -169,6 +169,12 @@ endif()
 # if target arch is not specified then host & target are same
 if(NOT DEFINED CLR_CMAKE_TARGET_ARCH OR CLR_CMAKE_TARGET_ARCH STREQUAL "" )
   set(CLR_CMAKE_TARGET_ARCH ${CLR_CMAKE_HOST_ARCH})
+
+  # This is required for "arm" targets (CMAKE_SYSTEM_PROCESSOR "armv7l"),
+  # for which this flag otherwise won't be set up below
+  if (CLR_CMAKE_HOST_ARCH_ARMV7L)
+    set(CLR_CMAKE_TARGET_ARCH_ARMV7L 1)
+  endif()
 endif()
 
 # Set target architecture variables
@@ -182,6 +188,7 @@ if (CLR_CMAKE_TARGET_ARCH STREQUAL x64)
     set(CLR_CMAKE_TARGET_ARCH_ARM 1)
   elseif(CLR_CMAKE_TARGET_ARCH STREQUAL armel)
     set(CLR_CMAKE_TARGET_ARCH_ARM 1)
+    set(CLR_CMAKE_TARGET_ARCH_ARMV7L 1)
     set(ARM_SOFTFP 1)
   else()
     clr_unknown_arch()

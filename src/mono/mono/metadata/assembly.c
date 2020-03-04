@@ -476,6 +476,13 @@ mono_set_assemblies_path (const char* path)
 	}
 }
 
+void
+mono_set_assemblies_path_direct (char **path)
+{
+	g_strfreev (assemblies_path);
+	assemblies_path = path;
+}
+
 static void
 check_path_env (void)
 {

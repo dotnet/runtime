@@ -824,9 +824,9 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        // https://github.com/dotnet/corefx/issues/39808
+        // https://github.com/dotnet/runtime/issues/30388
         [Fact]
-        public static void WriteClassWithNullKeyValuePairValues_Regression39808()
+        public static void WriteClassWithNullKeyValuePairValues_NullWrittenAsEmptyObject()
         {
             var value = new SimpleClassWithKeyValuePairs()
             {

@@ -568,7 +568,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 return Assembly.Load(assemblyName);
             }
-            //fallback attempt issue https://github.com/dotnet/corefx/issues/27433
+            //fallback attempt issue https://github.com/dotnet/runtime/issues/25177
             catch (FileNotFoundException)
             {
                 return Assembly.LoadFrom(codeBase);

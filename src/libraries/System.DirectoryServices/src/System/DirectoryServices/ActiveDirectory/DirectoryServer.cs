@@ -260,7 +260,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw ExceptionHelper.GetExceptionFromCOMException(context, e);
                 }
 
-                ArrayList readOnlyPartitions = (ArrayList)values[PropertyManager.HasPartialReplicaNCs.ToLower(CultureInfo.InvariantCulture)];
+                ArrayList readOnlyPartitions = (ArrayList)values[PropertyManager.HasPartialReplicaNCs.ToLowerInvariant()];
 
                 Debug.Assert(readOnlyPartitions != null);
                 foreach (string readOnlyPartition in readOnlyPartitions)

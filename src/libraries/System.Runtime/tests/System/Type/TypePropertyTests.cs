@@ -531,6 +531,7 @@ namespace System.Tests.Types
         public override Type BaseType => typeof(ValueType);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/31713", TestRuntimes.Mono)]
     public class VoidTests : StructTypeTestBase
     {
         public override Type CreateType() => typeof(void);

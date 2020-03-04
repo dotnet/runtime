@@ -6,7 +6,6 @@ using Microsoft.DotNet.Cli.Build;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -252,7 +251,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string runtime = null,
             string framework = null,
             string selfContained = null,
-            string outputDirectory = null)
+            string outputDirectory = null,
+            bool singleFile = false)
         {
             dotnet = dotnet ?? SdkDotnet;
             outputDirectory = outputDirectory ?? TestProject.OutputDirectory;
@@ -289,6 +289,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 publishArgs.Add("-o");
                 publishArgs.Add(outputDirectory);
+            }
+
+            if (singleFile)
+            {
+                publishArgs.Add("/p:PublishSingleFile=true");
             }
 
             publishArgs.Add($"/p:TestTargetRid={RepoDirProvider.TargetRID}");

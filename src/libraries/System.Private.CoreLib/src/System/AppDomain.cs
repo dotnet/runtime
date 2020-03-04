@@ -30,7 +30,7 @@ namespace System
 
         public static AppDomain CurrentDomain => s_domain;
 
-        public string? BaseDirectory => AppContext.BaseDirectory;
+        public string BaseDirectory => AppContext.BaseDirectory;
 
         public string? RelativeSearchPath => null;
 
@@ -149,8 +149,7 @@ namespace System
 
         public bool? IsCompatibilitySwitchSet(string value)
         {
-            bool result;
-            return AppContext.TryGetSwitch(value, out result) ? result : default(bool?);
+            return AppContext.TryGetSwitch(value, out bool result) ? result : default(bool?);
         }
 
         public bool IsDefaultAppDomain() => true;

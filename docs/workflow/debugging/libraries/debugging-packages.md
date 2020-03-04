@@ -81,7 +81,7 @@ Ensure that the test is referencing the correct pkg. For example:
   </ItemGroup>
 ```
 
-Ensure that the right `TargetGroup` (what we're testing) is set.
+Ensure that the right `BuildTargetFramework` (what we're testing) is set.
 
 To identify which of the combinations failed, search for the following pattern in the output:
 
@@ -96,7 +96,7 @@ ResolvePkgProjReferences:
 To run a test from a single Build Pivot combination, specify all properties and build the `csproj`:
 
 ```
-dotnet msbuild System.Net.ServicePoint.Tests.csproj /t:rebuildandtest /p:TargetGroup=netcoreapp2.0 /p:OuterLoop=true /p:xunitoptions=-showprogress /p:ConfigurationGroup=Debug
+dotnet build System.Net.ServicePoint.Tests.csproj -f netcoreapp2.0 /t:rebuildandtest /p:OuterLoop=true /p:xunitoptions=-showprogress
 ```
 Will run the test using the following pivot values:
 * Architecture: AnyCPU

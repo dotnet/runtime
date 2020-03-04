@@ -8,6 +8,6 @@ namespace System.Net
 {
     public abstract class TransportContext
     {
-        public abstract ChannelBinding GetChannelBinding(ChannelBindingKind kind);
+        public abstract ChannelBinding? GetChannelBinding(ChannelBindingKind kind);
     }
 }

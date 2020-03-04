@@ -161,7 +161,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             var toExplore = new Stack<KeyValuePair<Graph<T>, Graph<T>>>();
             toExplore.Push(new KeyValuePair<Graph<T>, Graph<T>>(this, o));
-            var seen1 = new HashSet<Graph<T>>(new ObjectReferenceEqualityComparer());
+            var seen1 = new HashSet<Graph<T>>(ReferenceEqualityComparer.Instance);
             while (toExplore.Count > 0)
             {
                 var cur = toExplore.Pop();
@@ -448,12 +448,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
     {
         public int State;
         public int GetState() => State;
-    }
-
-    internal sealed class ObjectReferenceEqualityComparer : IEqualityComparer<object>
-    {
-        public new bool Equals(object x, object y) => ReferenceEquals(x, y);
-        public int GetHashCode(object obj) => RuntimeHelpers.GetHashCode(obj);
     }
 
     [Serializable]

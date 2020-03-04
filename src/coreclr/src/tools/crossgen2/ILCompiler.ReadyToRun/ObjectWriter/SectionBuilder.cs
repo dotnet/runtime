@@ -245,7 +245,10 @@ namespace ILCompiler.PEWriter
         DirectoryEntry _relocationDirectoryEntry;
 
         /// <summary>
-        /// Symbol representing the ready-to-run header table.
+        /// Symbol representing the ready-to-run COR (MSIL) header table.
+        /// Only present in single-file R2R executables. Composite R2R
+        /// executables don't have a COR header and locate the ReadyToRun
+        /// header directly using the well-known export symbol RTR_HEADER.
         /// </summary>
         ISymbolNode _corHeaderSymbol;
 
@@ -522,11 +525,6 @@ namespace ILCompiler.PEWriter
                 {
                     sectionList.Add(new SectionInfo(section.Name, section.Characteristics));
                 }
-            }
-
-            if (_exportSymbols.Count != 0 && FindSection(R2RPEBuilder.ExportDataSectionName) == null)
-            {
-                sectionList.Add(new SectionInfo(R2RPEBuilder.ExportDataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead));
             }
 
             return sectionList;

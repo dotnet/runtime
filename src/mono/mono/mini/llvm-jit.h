@@ -31,14 +31,16 @@
 
 G_BEGIN_DECLS
 
-typedef unsigned char * (AllocCodeMemoryCb) (LLVMValueRef function, int size);
-typedef void (FunctionEmittedCb) (LLVMValueRef function, void *start, void *end);
-typedef void (ExceptionTableCb) (void *data);
-
 typedef void* MonoEERef;
 
+void
+mono_llvm_jit_init (void);
+
+void
+mono_llvm_jit_set_tls_cfg (MonoCompile *cfg);
+
 MonoEERef
-mono_llvm_create_ee (AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, LLVMExecutionEngineRef *ee);
+mono_llvm_create_ee (LLVMExecutionEngineRef *ee);
 
 void
 mono_llvm_dispose_ee (MonoEERef *mono_ee);

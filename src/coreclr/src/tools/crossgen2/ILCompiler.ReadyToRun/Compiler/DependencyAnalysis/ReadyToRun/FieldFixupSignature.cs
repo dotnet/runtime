@@ -18,16 +18,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly FieldDesc _fieldDesc;
 
-        private readonly SignatureContext _signatureContext;
-
-        public FieldFixupSignature(ReadyToRunFixupKind fixupKind, FieldDesc fieldDesc, SignatureContext signatureContext)
+        public FieldFixupSignature(ReadyToRunFixupKind fixupKind, FieldDesc fieldDesc)
         {
             _fixupKind = fixupKind;
             _fieldDesc = fieldDesc;
-            _signatureContext = signatureContext;
 
             // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
-            signatureContext.Resolver.CompilerContext.EnsureLoadableType(fieldDesc.OwningType);
+            ((CompilerTypeSystemContext)fieldDesc.Context).EnsureLoadableType(fieldDesc.OwningType);
         }
 
         public override int ClassCode => 271828182;
@@ -40,8 +37,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                EcmaModule targetModule = _signatureContext.GetTargetModule(_fieldDesc);
-                SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, _signatureContext);
+                EcmaModule targetModule = factory.SignatureContext.GetTargetModule(_fieldDesc);
+                SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, factory.SignatureContext);
 
                 dataBuilder.EmitFieldSignature(_fieldDesc, innerContext);
             }
@@ -62,11 +59,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            result = comparer.Compare(_fieldDesc, otherNode._fieldDesc);
-            if (result != 0)
-                return result;
-
-            return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
+            return comparer.Compare(_fieldDesc, otherNode._fieldDesc);
         }
     }
 }

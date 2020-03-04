@@ -192,7 +192,7 @@ public:
     UNATIVE_OFFSET GetFuncletPrologOffset(emitter* emit) const;
 
 #ifdef DEBUG
-    void Print() const;
+    void Print(LONG compMethodID) const;
 #endif // DEBUG
 
 private:

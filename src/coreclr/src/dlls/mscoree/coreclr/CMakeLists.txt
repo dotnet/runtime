@@ -90,6 +90,7 @@ set(CORECLR_LIBRARIES
     debug-pal
     ${LIB_UNWINDER}
     cee_wks
+    v3binder
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
     mdcompiler_wks
     mdruntime_wks
@@ -103,7 +104,7 @@ set(CORECLR_LIBRARIES
     gcinfo # Condition="'$(TargetCpu)'=='amd64' or '$(TargetCpu)' == 'arm' or '$(TargetCpu)' == 'arm64'"
     ildbsymlib
     utilcode
-    v3binder
+    libraries-native
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -127,7 +128,7 @@ else()
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
         ${END_WHOLE_ARCHIVE}
-        mscorrc_debug
+        mscorrc
         palrt
         System.Globalization.Native-Static
     )

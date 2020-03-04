@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -16,7 +18,7 @@ namespace System.Net
     {
         private const int MaxIPv4StringLength = 15; // 4 numbers separated by 3 periods, with up to 3 digits per number
 
-        internal static IPAddress Parse(ReadOnlySpan<char> ipSpan, bool tryParse)
+        internal static IPAddress? Parse(ReadOnlySpan<char> ipSpan, bool tryParse)
         {
             if (ipSpan.Contains(':'))
             {
@@ -209,7 +211,7 @@ namespace System.Net
             }
             if (isValid || (end != ipSpan.Length))
             {
-                string scopeId = null;
+                string? scopeId = null;
                 IPv6AddressHelper.Parse(ipSpan, numbers, 0, ref scopeId);
 
                 if (scopeId?.Length > 1)
@@ -279,22 +281,18 @@ namespace System.Net
         }
 
         /// <summary>Appends a number as hexadecimal (without the leading "0x") to the StringBuilder.</summary>
-        private static unsafe void AppendHex(ushort value, StringBuilder buffer)
+        private static void AppendHex(ushort value, StringBuilder buffer)
         {
-            const int MaxLength = sizeof(ushort) * 2; // two hex chars per byte
-            char* chars = stackalloc char[MaxLength];
-            int pos = MaxLength;
+            if ((value & 0xF000) != 0)
+                buffer.Append(HexConverter.ToCharLower(value >> 12));
 
-            do
-            {
-                int rem = value % 16;
-                value /= 16;
-                chars[--pos] = rem < 10 ? (char)('0' + rem) : (char)('a' + (rem - 10));
-                Debug.Assert(pos >= 0);
-            }
-            while (value != 0);
+            if ((value & 0xFF00) != 0)
+                buffer.Append(HexConverter.ToCharLower(value >> 8));
 
-            buffer.Append(chars + pos, MaxLength - pos);
+            if ((value & 0xFFF0) != 0)
+                buffer.Append(HexConverter.ToCharLower(value >> 4));
+
+            buffer.Append(HexConverter.ToCharLower(value));
         }
 
         /// <summary>Extracts the IPv4 address from the end of the IPv6 address byte array.</summary>

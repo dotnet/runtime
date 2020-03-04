@@ -608,7 +608,7 @@ namespace System.Drawing
         {
             get
             {
-                Brush brush = null;
+                Brush? brush = null;
 
                 switch (PenType)
                 {
@@ -636,7 +636,7 @@ namespace System.Drawing
                         break;
                 }
 
-                return brush;
+                return brush!;
             }
             set
             {

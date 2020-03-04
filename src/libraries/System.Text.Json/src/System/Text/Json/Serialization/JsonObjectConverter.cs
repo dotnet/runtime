@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal abstract class JsonObjectConverter<T> : JsonResumableConverter<T>
     {
-        internal override ClassType ClassType => ClassType.Object;
+        internal sealed override ClassType ClassType => ClassType.Object;
         internal sealed override Type? ElementType => null;
     }
 }

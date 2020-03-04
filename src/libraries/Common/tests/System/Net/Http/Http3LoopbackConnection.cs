@@ -8,14 +8,33 @@ using System.Globalization;
 using System.Net.Quic;
 using System.Text;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace System.Net.Test.Common
 {
-    public sealed class Http3LoopbackConnection : GenericLoopbackConnection
+    internal sealed class Http3LoopbackConnection : GenericLoopbackConnection
     {
+        public const long H3_NO_ERROR = 0x100;
+        public const long H3_GENERAL_PROTOCOL_ERROR = 0x101;
+        public const long H3_INTERNAL_ERROR = 0x102;
+        public const long H3_STREAM_CREATION_ERROR = 0x103;
+        public const long H3_CLOSED_CRITICAL_STREAM = 0x104;
+        public const long H3_FRAME_UNEXPECTED = 0x105;
+        public const long H3_FRAME_ERROR = 0x106;
+        public const long H3_EXCESSIVE_LOAD = 0x107;
+        public const long H3_ID_ERROR = 0x108;
+        public const long H3_SETTINGS_ERROR = 0x109;
+        public const long H3_MISSING_SETTINGS = 0x10a;
+        public const long H3_REQUEST_REJECTED = 0x10b;
+        public const long H3_REQUEST_CANCELLED = 0x10c;
+        public const long H3_REQUEST_INCOMPLETE = 0x10d;
+        public const long H3_CONNECT_ERROR = 0x10f;
+        public const long H3_VERSION_FALLBACK = 0x110;
+
         private readonly QuicConnection _connection;
         private readonly Dictionary<int, Http3LoopbackStream> _openStreams = new Dictionary<int, Http3LoopbackStream>();
         private Http3LoopbackStream _currentStream;
+        private bool _closed;
 
         public Http3LoopbackConnection(QuicConnection connection)
         {
@@ -29,7 +48,18 @@ namespace System.Net.Test.Common
                 stream.Dispose();
             }
 
-            _connection.Dispose();
+            if (!_closed)
+            {
+            //    CloseAsync(H3_INTERNAL_ERROR).GetAwaiter().GetResult();
+            }
+
+            //_connection.Dispose();
+        }
+
+        public async Task CloseAsync(long errorCode)
+        {
+            await _connection.CloseAsync(errorCode).ConfigureAwait(false);
+            _closed = true;
         }
 
         public Http3LoopbackStream OpenUnidirectionalStream()
@@ -73,13 +103,27 @@ namespace System.Net.Test.Common
 
         public override async Task<HttpRequestData> ReadRequestDataAsync(bool readBody = true)
         {
-            Http3LoopbackStream stream = await AcceptStreamAsync().ConfigureAwait(false);
+            Http3LoopbackStream stream;
+
+            do
+            {
+                stream = await AcceptStreamAsync().ConfigureAwait(false);
+            }
+            while (!stream.CanWrite); // skip control stream.
+
             return await stream.ReadRequestDataAsync(readBody).ConfigureAwait(false);
         }
 
         public override async Task SendResponseAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
         {
-            await SendResponseHeadersAsync(statusCode, headers, requestId).ConfigureAwait(false);
+            IEnumerable<HttpHeaderData> newHeaders = headers ?? Enumerable.Empty<HttpHeaderData>();
+
+            if (content != null && !newHeaders.Any(x => x.Name == "Content-Length"))
+            {
+                newHeaders = newHeaders.Append(new HttpHeaderData("Content-Length", content.Length.ToString(CultureInfo.InvariantCulture)));
+            }
+
+            await SendResponseHeadersAsync(statusCode, newHeaders, requestId).ConfigureAwait(false);
             await SendResponseBodyAsync(Encoding.UTF8.GetBytes(content ?? ""), isFinal, requestId).ConfigureAwait(false);
         }
 
@@ -94,7 +138,7 @@ namespace System.Net.Test.Common
 
             if (isFinal)
             {
-                stream.ShutdownSend();
+                await stream.ShutdownSendAsync().ConfigureAwait(false);
                 stream.Dispose();
             }
         }
@@ -104,18 +148,19 @@ namespace System.Net.Test.Common
             return SendResponseHeadersAsync(statusCode, headers, requestId);
         }
 
-        private async Task SendResponseHeadersAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        private async Task SendResponseHeadersAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IEnumerable<HttpHeaderData> headers = null, int requestId = 0)
         {
-            var allHeaders = new List<HttpHeaderData>((headers?.Count ?? 0) + 1);
+            headers ??= Enumerable.Empty<HttpHeaderData>();
+
+            // Some tests use Content-Length with a null value to indicate Content-Length should not be set.
+            headers = headers.Where(x => x.Name != "Content-Length" || x.Value != null);
 
             if (statusCode != null)
             {
-                allHeaders.Add(new HttpHeaderData(":status", ((int)statusCode).ToString(CultureInfo.InvariantCulture)));
+                headers = headers.Prepend(new HttpHeaderData(":status", ((int)statusCode).ToString(CultureInfo.InvariantCulture)));
             }
 
-            allHeaders.AddRange(headers);
-
-            await GetOpenRequest(requestId).SendHeadersFrameAsync(allHeaders).ConfigureAwait(false);
+            await GetOpenRequest(requestId).SendHeadersFrameAsync(headers).ConfigureAwait(false);
         }
 
         public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)

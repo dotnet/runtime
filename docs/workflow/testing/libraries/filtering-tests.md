@@ -44,22 +44,22 @@ This attribute returns the 'failing' category, which is disabled by default.
 
 **Disable for all platforms and all target frameworks:**
 ```cs
-[ActiveIssue(int issue)]
 [ActiveIssue(string issue)]
 ```
 **Disable for specific platform:**
 ```cs
-[ActiveIssue(int issue, TestPlatforms platforms)]
 [ActiveIssue(string issue, TestPlatforms platforms)]
+```
+**Disable for specific runtime:**
+```cs
+[ActiveIssue(string issue, TestRuntimes runtimes)]
 ```
 **Disable for specific target frameworks:**
 ```cs
-[ActiveIssue(int issue, TargetFrameworkMonikers frameworks)]
 [ActiveIssue(string issue, TargetFrameworkMonikers frameworks)]
 ```
 **Disable for specific test platforms and target frameworks:**
 ```cs
-[ActiveIssue(int issue, TestPlatforms platforms, TargetFrameworkMonikers frameworks)]
 [ActiveIssue(string issue, TestPlatforms platforms, TargetFrameworkMonikers frameworks)]
 ```
 Use this attribute over test methods to skip failing tests only on the specific platforms and the specific target frameworks.
@@ -142,7 +142,7 @@ public class TestClass
 }
 ```
 
-**Note that all of the attributes above must include an issue number/link and/or have a comment next to them briefly justifying the reason. ActiveIssueAttribute and SkipOnTargetFrameworkAttribute should use their constructor parameters to do this**
+**Note that all of the attributes above must include an issue link and/or have a comment next to them briefly justifying the reason. ActiveIssueAttribute and SkipOnTargetFrameworkAttribute should use their constructor parameters to do this**
 
 _**A few common examples with the above attributes:**_
 

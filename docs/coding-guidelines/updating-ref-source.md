@@ -11,8 +11,7 @@ This document provides the steps you need to take to update the reference assemb
 
 ## For System.Runtime
 
-These steps can also be applied to some unique assemblies which depend on changes in System.Private.Corelib coming from [coreclr](https://github.com/dotnet/coreclr) (partial facades like [System.Memory](https://github.com/dotnet/corefx/blob/83711167ee74d2e87cf2d5ed3508c94044bb7edc/src/System.Memory/src/System.Memory.csproj#L6), for example).
-1) Build coreclr release.
-2) Build corefx release with coreclr bits (see (// TODO //)) for more details).
-3) Run `msbuild /t:GenerateReferenceSource /p:ConfigurationGroup=Release` from the System.Runtime/ref directory.
-4) Filter out all unrelated changes and extract the changes you care about (ignore certain attributes being removed). Generally, this step is not required for other reference assemblies.
+These steps can also be applied to some unique assemblies which depend on changes in System.Private.Corelib. (partial facades like System.Memory, for example).
+
+1) Run `dotnet build -c Release /t:GenerateReferenceSource` from the System.Runtime/ref directory.
+2) Filter out all unrelated changes and extract the changes you care about (ignore certain attributes being removed). Generally, this step is not required for other reference assemblies.

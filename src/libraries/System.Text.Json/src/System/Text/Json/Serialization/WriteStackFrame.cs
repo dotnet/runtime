@@ -99,6 +99,7 @@ namespace System.Text.Json
             JsonClassInfo newClassInfo = options.GetOrAddClass(type);
 
             // todo: check if type==newtype and skip below?
+            // https://github.com/dotnet/runtime/issues/32358
 
             // Set for exception handling calculation of JsonPath.
             JsonPropertyNameAsString = propertyName;

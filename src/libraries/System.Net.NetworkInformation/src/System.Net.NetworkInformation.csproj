@@ -52,6 +52,9 @@
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\NetworkInformationException.cs">
       <Link>Common\System\Net\NetworkInformation\NetworkInformationException.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <!-- Logging -->

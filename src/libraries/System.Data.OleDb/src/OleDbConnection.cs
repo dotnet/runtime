@@ -319,7 +319,7 @@ namespace System.Data.OleDb
         public override void ChangeDatabase(string value)
         {
             CheckStateOpen(ADP.ChangeDatabase);
-            if ((null == value) || (0 == value.Trim().Length))
+            if (string.IsNullOrWhiteSpace(value))
             {
                 throw ADP.EmptyDatabaseName();
             }

@@ -291,6 +291,7 @@ gpointer g_try_realloc (gpointer obj, gsize size);
 #define g_new(type,size)        ((type *) g_malloc (sizeof (type) * (size)))
 #define g_new0(type,size)       ((type *) g_malloc0 (sizeof (type)* (size)))
 #define g_newa(type,size)       ((type *) alloca (sizeof (type) * (size)))
+#define g_newa0(type,size)      ((type *) memset (alloca (sizeof (type) * (size)), 0, sizeof (type) * (size)))
 
 #define g_memmove(dest,src,len) memmove (dest, src, len)
 #define g_renew(struct_type, mem, n_structs) ((struct_type*)g_realloc (mem, sizeof (struct_type) * n_structs))
@@ -973,7 +974,9 @@ GUnicodeBreakType   g_unichar_break_type (gunichar c);
  * format must be a string literal, in order to be concatenated.
  * If this is too restrictive, g_error remains.
  */
-#if defined(_MSC_VER) && (_MSC_VER < 1910)
+#ifdef DISABLE_ASSERT_MESSAGES
+#define g_assertf(x, format, ...) (G_LIKELY((x)) ? 1 : (mono_assertion_message_disabled (__FILE__, __LINE__), 0))
+#elif defined(_MSC_VER) && (_MSC_VER < 1910)
 #define g_assertf(x, format, ...) (G_LIKELY((x)) ? 1 : (g_assertion_message ("* Assertion at %s:%d, condition `%s' not met, function:%s, " format "\n", __FILE__, __LINE__, #x, __func__, __VA_ARGS__), 0))
 #else
 #define g_assertf(x, format, ...) (G_LIKELY((x)) ? 1 : (g_assertion_message ("* Assertion at %s:%d, condition `%s' not met, function:%s, " format "\n", __FILE__, __LINE__, #x, __func__, ##__VA_ARGS__), 0))
@@ -1045,6 +1048,19 @@ gboolean  g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***a
 gchar    *g_shell_unquote    (const gchar *quoted_string, GError **gerror);
 gchar    *g_shell_quote      (const gchar *unquoted_string);
 
+#ifndef G_OS_WIN32 // Spawn could be implemented but is not.
+
+int eg_getdtablesize (void);
+
+#if !defined (HAVE_FORK) || !defined (HAVE_EXECVE)
+
+#define HAVE_G_SPAWN 0
+
+#else
+
+#define HAVE_G_SPAWN 1
+
+
 /*
  * Spawn
  */
@@ -1064,7 +1080,8 @@ gboolean g_spawn_command_line_sync (const gchar *command_line, gchar **standard_
 gboolean g_spawn_async_with_pipes  (const gchar *working_directory, gchar **argv, gchar **envp, GSpawnFlags flags, GSpawnChildSetupFunc child_setup,
 				gpointer user_data, GPid *child_pid, gint *standard_input, gint *standard_output, gint *standard_error, GError **gerror);
 
-int eg_getdtablesize (void);
+#endif
+#endif
 
 /*
  * Timer

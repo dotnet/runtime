@@ -17,14 +17,14 @@ namespace System.Security.Cryptography.Pkcs
         private PfxAsn _decoded;
         private ReadOnlyMemory<byte> _authSafeContents;
 
-        public ReadOnlyCollection<Pkcs12SafeContents> AuthenticatedSafe { get; private set; }
+        public ReadOnlyCollection<Pkcs12SafeContents> AuthenticatedSafe { get; private set; } = null!; // Initialized using object initializer
         public Pkcs12IntegrityMode IntegrityMode { get; private set; }
 
         private Pkcs12Info()
         {
         }
 
-        public bool VerifyMac(string password)
+        public bool VerifyMac(string? password)
         {
             // This extension-method call allows null.
             return VerifyMac(password.AsSpan());

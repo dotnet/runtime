@@ -192,7 +192,7 @@ guint32 mono_cache_unwind_info (guint8 *unwind_info, guint32 unwind_info_len);
 
 guint8* mono_get_cached_unwind_info (guint32 index, guint32 *unwind_info_len);
 
-MONO_LLVM_INTERNAL guint8* mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJitExceptionInfo **ex_info, guint32 *ex_info_len, gpointer **type_info, int *this_reg, int *this_offset);
+guint8* mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJitExceptionInfo **ex_info, guint32 *ex_info_len, gpointer **type_info, int *this_reg, int *this_offset);
 
 /* Data retrieved from an LLVM Mono FDE entry */
 typedef struct {
@@ -203,11 +203,11 @@ typedef struct {
 	int this_offset;
 } MonoLLVMFDEInfo;
 
-MONO_LLVM_INTERNAL void
+void
 mono_unwind_decode_llvm_mono_fde (guint8 *fde, int fde_len, guint8 *cie, guint8 *code, MonoLLVMFDEInfo *res, MonoJitExceptionInfo *ei, gpointer *type_info, guint8 *unw_info);
 
 GSList* mono_unwind_get_cie_program (void);
 
-MONO_LLVM_INTERNAL void mono_print_unwind_info (guint8 *unwind_info, int unwind_info_len);
+void mono_print_unwind_info (guint8 *unwind_info, int unwind_info_len);
 
 #endif

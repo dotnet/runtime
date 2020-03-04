@@ -19,7 +19,7 @@ namespace System.Runtime.Intrinsics
         where T : struct
     {
         // These fields exist to ensure the alignment is 8, rather than 1.
-        // This also allows the debug view to work https://github.com/dotnet/coreclr/issues/15694)
+        // This also allows the debug view to work https://github.com/dotnet/runtime/issues/9495)
         private readonly ulong _00;
 
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector64{T}" />.</summary>

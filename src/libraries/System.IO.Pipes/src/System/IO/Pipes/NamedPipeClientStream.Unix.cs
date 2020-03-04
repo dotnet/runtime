@@ -28,7 +28,7 @@ namespace System.IO.Pipes
             SafePipeHandle? clientHandle = null;
             try
             {
-                socket.Connect(new UnixDomainSocketEndPoint(_normalizedPipePath));
+                socket.Connect(new UnixDomainSocketEndPoint(_normalizedPipePath!));
                 clientHandle = new SafePipeHandle(socket);
                 ConfigureSocket(socket, clientHandle, _direction, 0, 0, _inheritability);
             }

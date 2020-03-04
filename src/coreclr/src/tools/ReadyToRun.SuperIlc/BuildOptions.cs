@@ -111,7 +111,7 @@ namespace ReadyToRun.SuperIlc
         public string CoreRunPath(CompilerIndex index, bool isFramework)
         {
             string coreRunDir = CoreRootOutputPath(index, isFramework);
-            string coreRunExe = "corerun".OSExeSuffix();
+            string coreRunExe = "corerun".AppendOSExeSuffix();
             string coreRunPath = Path.Combine(coreRunDir, coreRunExe);
             if (!File.Exists(coreRunPath))
             {

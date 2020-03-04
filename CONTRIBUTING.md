@@ -5,7 +5,7 @@ You can contribute to .NET Runtime with issues and PRs. Simply filing issues for
 
 ## Contribution "Bar"
 
-Project maintainers will merge changes that improve the product significantly and broadly and that align with the [.NET Core roadmap](https://github.com/dotnet/core/blob/master/roadmap.md).
+Project maintainers will merge changes that improve the product significantly and broadly and that align with the [.NET Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md).
 
 Maintainers will not merge changes that have narrowly-defined benefits, due to compatibility risk. The .NET Core codebase is used by several Microsoft products (for example, ASP.NET Core, .NET Framework 4.x, Windows Universal Apps) to enable execution of managed code. Other companies are building products on top of .NET, too. We may revert changes if they are found to be breaking.
 
@@ -33,7 +33,7 @@ Please do not:
 * **DON'T** submit PRs that alter licensing related files or headers. If you believe there's a problem with them, file an issue and we'll be happy to discuss it.
 * **DON'T** add API additions without filing an issue and discussing with us first. See [API Review Process](docs/project/api-review-process.md).
 
-## Managed Code Compatibility
+## Breaking Changes
 
 Contributions must maintain [API signature](docs/coding-guidelines/breaking-changes.md#bucket-1-public-contract) and behavioral compatibility. Contributions that include [breaking changes](docs/coding-guidelines/breaking-changes.md) will be rejected. Please file an issue to discuss your idea or change if you believe that it may affect managed code compatibility.
 
@@ -52,6 +52,7 @@ We use and recommend the following workflow:
     - Name the branch so that it clearly communicates your intentions, such as issue-123 or githubhandle-issue.
     - Branches are useful since they isolate your changes from incoming changes from upstream. They also enable you to create multiple PRs from the same fork.
 4. Make and commit your changes to your branch.
+    - [Workflow Instructions](docs/workflow/README.md) explains how to build and test.
     - Please follow our [Commit Messages](#commit-messages) guidance.
 5. Add new tests corresponding to your change, if applicable.
 6. Build the repository with your changes.
@@ -73,14 +74,6 @@ Note: It is OK to create your PR as "[WIP]" on the upstream repo before the impl
 ## Up for Grabs
 
 The team marks the most straightforward issues as [up for grabs](https://github.com/dotnet/runtime/labels/up-for-grabs). This set of issues is the place to start if you are interested in contributing but new to the codebase.
-
-Some issues have not yet been migrated here from our "old" repos. You can find those here:
-
-[CoreFX up for grabs](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs)
-
-[CoreCLR up for grabs](https://github.com/dotnet/coreclr/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs)
-
-Even for these issues, the pull request should go to this repo.
 
 ## Commit Messages
 

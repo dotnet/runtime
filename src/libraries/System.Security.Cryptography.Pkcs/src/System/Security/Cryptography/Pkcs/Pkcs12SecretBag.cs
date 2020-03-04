@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Pkcs
 {
     public sealed class Pkcs12SecretBag : Pkcs12SafeBag
     {
-        private Oid _secretTypeOid;
+        private Oid? _secretTypeOid;
         private readonly SecretBagAsn _decoded;
 
         public ReadOnlyMemory<byte> SecretValue => _decoded.SecretValue;
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static byte[] EncodeBagValue(Oid secretTypeOid, in ReadOnlyMemory<byte> secretValue)
         {
-            Debug.Assert(secretTypeOid != null);
+            Debug.Assert(secretTypeOid != null && secretTypeOid.Value != null);
 
             SecretBagAsn secretBagAsn = new SecretBagAsn
             {

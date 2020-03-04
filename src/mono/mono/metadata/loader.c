@@ -1041,7 +1041,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	MonoTableInfo *tables = image->tables;
 	MonoGenericContainer *generic_container = NULL, *container = NULL;
 	const char *sig = NULL;
-	guint32 cols [MONO_TYPEDEF_SIZE];
+	guint32 cols [MONO_METHOD_SIZE];
 
 	error_init (error);
 
@@ -1089,10 +1089,10 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 			return NULL;
 	}
 
-	mono_metadata_decode_row (&image->tables [MONO_TABLE_METHOD], idx - 1, cols, 6);
+	mono_metadata_decode_row (&image->tables [MONO_TABLE_METHOD], idx - 1, cols, MONO_METHOD_SIZE);
 
-	if ((cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
+	if ((cols [MONO_METHOD_FLAGS] & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+	    (cols [MONO_METHOD_IMPLFLAGS] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
 		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodPInvoke));
 	} else {
 		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethod));
@@ -1103,10 +1103,10 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	result->slot = -1;
 	result->klass = klass;
-	result->flags = cols [2];
-	result->iflags = cols [1];
+	result->flags = cols [MONO_METHOD_FLAGS];
+	result->iflags = cols [MONO_METHOD_IMPLFLAGS];
 	result->token = token;
-	result->name = mono_metadata_string_heap (image, cols [3]);
+	result->name = mono_metadata_string_heap (image, cols [MONO_METHOD_NAME]);
 
 	/* If a method is abstract and marked as an icall, silently ignore the
 	 * icall attribute so that we don't later emit a warning that the icall
@@ -1117,7 +1117,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		result->iflags &= ~METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
 
 	if (!sig) /* already taken from the methodref */
-		sig = mono_metadata_blob_heap (image, cols [4]);
+		sig = mono_metadata_blob_heap (image, cols [MONO_METHOD_SIGNATURE]);
 	/* size = */ mono_metadata_decode_blob_size (sig, &sig);
 
 	container = mono_class_try_get_generic_container (klass);
@@ -1138,16 +1138,16 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		container = generic_container;
 	}
 
-	if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+	if (cols [MONO_METHOD_IMPLFLAGS] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		if (result->klass == mono_defaults.string_class && !strcmp (result->name, ".ctor"))
 			result->string_ctor = 1;
-	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+	} else if (cols [MONO_METHOD_FLAGS] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)result;
 
 #ifdef TARGET_WIN32
 		/* IJW is P/Invoke with a predefined function pointer. */
-		if (m_image_is_module_handle (image) && (cols [1] & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
-			piinfo->addr = mono_image_rva_map (image, cols [0]);
+		if (m_image_is_module_handle (image) && (cols [MONO_METHOD_IMPLFLAGS] & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
+			piinfo->addr = mono_image_rva_map (image, cols [MONO_METHOD_RVA]);
 			g_assert (piinfo->addr);
 		}
 #endif

@@ -227,9 +227,9 @@ namespace System.Text.Json
                     // Once all elements are read, the exception is not within the array.
                     if (frame.ObjectState < StackFrameObjectState.ReadElements)
                     {
-                        sb.Append(@"[");
+                        sb.Append('[');
                         sb.Append(GetCount(enumerable));
-                        sb.Append(@"]");
+                        sb.Append(']');
                     }
                 }
             }

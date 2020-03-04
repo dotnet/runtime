@@ -18,7 +18,7 @@ namespace System.Net
                 certificate == null || certificate is X509Certificate2,
                 "Only X509Certificate2 certificates are supported at this time");
 
-            X509Certificate2 cert = (X509Certificate2)certificate;
+            X509Certificate2? cert = (X509Certificate2?)certificate;
 
             if (cert != null)
             {
@@ -43,7 +43,7 @@ namespace System.Net
 
         public SslProtocols Protocols { get; }
 
-        public X509Certificate2 Certificate { get; }
+        public X509Certificate2? Certificate { get; }
 
         public override bool IsInvalid => false;
 

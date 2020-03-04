@@ -54,7 +54,7 @@
   <ItemGroup Condition="'@(BinPlaceTargetFrameworks)' == ''">
     <!-- binplace to directories for the target vertical -->
     <BinPlaceTargetFrameworks Include="$(BuildTargetFramework)-$(OSGroup)" Condition="'$(BinPlaceForTargetVertical)' == 'true'">
-      <RefPath>$(BuildConfigurationRefPath)</RefPath>
+      <RefPath>$(BuildTargetFrameworkRefPath)</RefPath>
       <RuntimePath>$(RuntimePath)</RuntimePath>
     </BinPlaceTargetFrameworks>
     <!-- binplace to directories for packages -->
@@ -66,6 +66,10 @@
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
       <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' and '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
     </BinPlaceTargetFrameworks>
+    <BinPlaceTargetFrameworks Condition="'$(IsAspNetCoreApp)' == 'true'" Include="$(NetCoreAppCurrent)">
+      <RuntimePath>$(ASPNETCoreAppPackageRuntimePath)</RuntimePath>
+      <RefPath>$(ASPNETCoreAppPackageRefPath)</RefPath>
+    </BinPlaceTargetFrameworks>
 
     <!-- Setup the shared framework directory for testing -->
     <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(NetCoreAppCurrent)-$(OSGroup)">
@@ -75,7 +79,7 @@
       <RuntimePath>$(TestHostRootPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
-    <!-- binplace targeting packs which may be different from BuildConfiguration -->
+    <!-- binplace targeting packs which may be different from Build TargetFramework -->
     <BinPlaceTargetFrameworks Include="netstandard2.0">
       <RefPath>$(NetStandard20RefPath)</RefPath>
     </BinPlaceTargetFrameworks>
@@ -91,7 +95,7 @@
     <BinPlaceTargetFrameworks Condition="'$(BuildAllConfigurations)' == 'true'" Include="@(AllTargetFrameworkList)">
       <RefPath>$(RefRootPath)%(Identity)/</RefPath>
     </BinPlaceTargetFrameworks>
-    <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical targetgroups. -->
+    <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical target frameworks. -->
     <BinPlaceTargetFrameworks Condition="'$(BuildAllConfigurations)' == 'true' and ('$(BinPlaceForTargetVertical)' == 'true' or ('$(TargetFramework)' != '$(NetCoreAppCurrent)' and '$(TargetFrameworkSuffix)' == ''))" Include="$(NetCoreAppCurrent)-$(OSGroup)">
       <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(Configuration)-$(ArchGroup)</RuntimePath>
     </BinPlaceTargetFrameworks>
@@ -113,13 +117,6 @@
   <Import Project="$(RepositoryEngineeringDir)referenceFromRuntime.targets" />
   <Import Project="$(RepositoryEngineeringDir)illink.targets" />
   <Import Project="$(RepositoryEngineeringDir)notSupported.SourceBuild.targets" Condition="'$(DotNetBuildFromSource)' == 'true'" />
-
-  <Target Name="ReportConfigurationErrorMessage"
-          BeforeTargets="AssignProjectConfiguration"
-          Condition="'$(BuildConfigurations)' != ''" >
-    <Message Importance="Low" Text="$(MSBuildProjectFullPath), C: $(Configuration) BC: $(BuildConfiguration) BCs: $(BuildConfigurations)" />
-    <Message Importance="High" Condition="'$(ConfigurationErrorMsg)' != ''" Text="$(MSBuildProjectFullPath) ConfigurationErrorMessage: $(ConfigurationErrorMsg)" />
-  </Target>
 
   <Target Name="GenerateReferenceSource">
     <PropertyGroup>
@@ -143,6 +140,8 @@
     <Exec Command="$(_GenAPICmd)" />
     <Message Text="Generated reference assembly source code: $(_RefSourceFileOutputPath)" />
   </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
 
   <!-- Import Packaging targets -->
   <Import Project="$(RepositoryEngineeringDir)packaging.targets" />
@@ -204,4 +203,11 @@
     <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
     <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)' and '$(ExcludeCurrentFullFrameworkFromPackage)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
+
+  <!-- The Default behavior in VS is to show files for the first target framework in TargetFrameworks property.
+        This is required to show all the files corresponding to all target frameworks in VS. -->
+  <ItemGroup>
+    <None Include="$(MSBuildProjectDirectory)\**\*.cs"
+          Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder);@(Compile)" />
+  </ItemGroup>
 </Project>

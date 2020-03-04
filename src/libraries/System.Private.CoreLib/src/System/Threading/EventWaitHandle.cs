@@ -30,8 +30,7 @@ namespace System.Threading
 
         public static EventWaitHandle OpenExisting(string name)
         {
-            EventWaitHandle? result;
-            switch (OpenExistingWorker(name, out result))
+            switch (OpenExistingWorker(name, out EventWaitHandle? result))
             {
                 case OpenExistingResult.NameNotFound:
                     throw new WaitHandleCannotBeOpenedException();

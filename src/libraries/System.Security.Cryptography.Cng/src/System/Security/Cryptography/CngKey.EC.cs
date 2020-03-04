@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
                 algorithm == CngAlgorithm.ECDsa.Algorithm);
         }
 
-        internal string GetCurveName(out string oidValue)
+        internal string? GetCurveName(out string? oidValue)
         {
             if (IsECNamedCurve())
             {
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography
         /// </summary>
         internal static CngProperty GetPropertyFromNamedCurve(ECCurve curve)
         {
-            string curveName = curve.Oid.FriendlyName;
+            string curveName = curve.Oid.FriendlyName!;
             unsafe
             {
                 byte[] curveNameBytes = new byte[(curveName.Length + 1) * sizeof(char)]; // +1 to add trailing null
@@ -131,7 +131,7 @@ namespace System.Security.Cryptography
             return CngAlgorithm.ECDiffieHellman;
         }
 
-        internal static CngKey Create(ECCurve curve, Func<string, CngAlgorithm> algorithmResolver)
+        internal static CngKey Create(ECCurve curve, Func<string?, CngAlgorithm> algorithmResolver)
         {
             System.Diagnostics.Debug.Assert(algorithmResolver != null);
 
@@ -199,7 +199,7 @@ namespace System.Security.Cryptography
                 if (errorCode == Interop.NCrypt.ErrorCode.NTE_INVALID_PARAMETER ||
                     errorCode == Interop.NCrypt.ErrorCode.NTE_NOT_SUPPORTED)
                 {
-                    string target = curve.IsNamed ? curve.Oid.FriendlyName : curve.CurveType.ToString();
+                    string? target = curve.IsNamed ? curve.Oid.FriendlyName : curve.CurveType.ToString();
                     throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, target), e);
                 }
 

@@ -5284,7 +5284,6 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             fef.InitAndLink(ex->GetContextRecord());
         }
 
-        SaveCurrentExceptionInfo(ex->GetExceptionRecord(), ex->GetContextRecord());
         DispatchManagedException(*ex, true /* isHardwareException */);
         UNREACHABLE();
     }

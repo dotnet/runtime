@@ -2,4 +2,3 @@ LIBRARY
 EXPORTS
     getJit
     jitStartup
-    sxsJitStartup

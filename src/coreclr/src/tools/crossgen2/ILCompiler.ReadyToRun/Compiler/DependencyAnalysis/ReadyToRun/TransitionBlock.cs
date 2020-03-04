@@ -471,6 +471,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             public override int OffsetOfFloatArgumentRegisters => 8 * sizeof(double) + PointerSize;
             public override int EnregisteredParamTypeMaxSize => 0;
             public override int EnregisteredReturnTypeIntegerMaxSize => 4;
+
+            public override bool IsArgPassedByRef(TypeHandle th) => false;
+
             public override int GetRetBuffArgOffset(bool hasThis) => OffsetOfArgumentRegisters + (hasThis ? PointerSize : 0);
         }
 

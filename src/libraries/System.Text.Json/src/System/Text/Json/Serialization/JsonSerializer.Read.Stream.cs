@@ -92,7 +92,7 @@ namespace System.Text.Json
 
             var readerState = new JsonReaderState(options.GetReaderOptions());
 
-            // todo: switch to ArrayBuffer implementation to handle and simplify the allocs?
+            // todo: https://github.com/dotnet/runtime/issues/32355
             int utf8BomLength = JsonConstants.Utf8Bom.Length;
             byte[] buffer = ArrayPool<byte>.Shared.Rent(Math.Max(options.DefaultBufferSize, utf8BomLength));
             int bytesInBuffer = 0;

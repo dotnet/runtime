@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#include "../dbgutil/elfreader.h"
+
 // typedef for our parsing of the auxv variables in /proc/pid/auxv.
 #if defined(__i386) || defined(__ARM_EABI__)
 typedef Elf32_auxv_t elf_aux_entry;
@@ -24,7 +26,7 @@ typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 // All interesting auvx entry types are AT_SYSINFO_EHDR and below
 #define AT_MAX (AT_SYSINFO_EHDR + 1)
 
-class CrashInfo : public ICLRDataEnumMemoryRegionsCallback
+class CrashInfo : public ElfReader, public ICLRDataEnumMemoryRegionsCallback
 {
 private:
     LONG m_ref;                                     // reference count
@@ -78,10 +80,10 @@ public:
 
 private:
     bool GetAuxvEntries();
-    bool EnumerateModuleMappings();
     bool GetDSOInfo();
-    bool GetELFInfo(uint64_t baseAddress);
-    bool EnumerateProgramHeaders(ElfW(Phdr)* phdrAddr, int phnum, uint64_t baseAddress, ElfW(Dyn)** pdynamicAddr);
+    void VisitModule(uint64_t baseAddress, std::string& moduleName);
+    void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr);
+    bool EnumerateModuleMappings();
     bool EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType);
     bool EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess);
     bool UnwindAllThreads(IXCLRDataProcess* pClrDataProcess);
@@ -91,4 +93,5 @@ private:
     uint32_t GetMemoryRegionFlags(uint64_t start);
     bool ValidRegion(const MemoryRegion& region);
     void CombineMemoryRegions();
+    void Trace(const char* format, ...);
 };

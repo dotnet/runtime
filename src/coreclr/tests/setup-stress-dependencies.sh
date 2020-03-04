@@ -31,7 +31,7 @@ function exit_with_error {
     if [ ! -z "$2" ]; then
         echo $2
     fi
-    
+
     exit $errorCode
 }
 
@@ -180,7 +180,7 @@ fi
 
 CoreDisToolsPackagePathOutputFile="${scriptDir}/../../../artifacts/obj/coreclr/${__BuildOS}.x64/optdatapath.txt"
 
-bash -c -x "$dotnet msbuild $csprojPath /t:DumpCoreDisToolsPackagePath /p:CoreDisToolsPackagePathOutputFile=\"$CoreDisToolsPackagePathOutputFile\" /p:RuntimeIdentifier=\"$rid\" /bl" 
+bash -c -x "$dotnet msbuild $csprojPath /t:DumpCoreDisToolsPackagePath /p:CoreDisToolsPackagePathOutputFile=\"$CoreDisToolsPackagePathOutputFile\" /p:RuntimeIdentifier=\"$rid\""
 if [ $? -ne 0 ]
 then
     exit_with_error 1 "Failed to find the path to CoreDisTools."

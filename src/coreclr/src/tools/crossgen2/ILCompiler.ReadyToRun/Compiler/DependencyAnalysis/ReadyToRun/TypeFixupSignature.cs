@@ -17,16 +17,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly TypeDesc _typeDesc;
 
-        private readonly SignatureContext _signatureContext;
-
-        public TypeFixupSignature(ReadyToRunFixupKind fixupKind, TypeDesc typeDesc, SignatureContext signatureContext)
+        public TypeFixupSignature(ReadyToRunFixupKind fixupKind, TypeDesc typeDesc)
         {
             _fixupKind = fixupKind;
             _typeDesc = typeDesc;
-            _signatureContext = signatureContext;
 
             // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
-            signatureContext.Resolver.CompilerContext.EnsureLoadableType(typeDesc);
+            ((CompilerTypeSystemContext)typeDesc.Context).EnsureLoadableType(typeDesc);
         }
 
         public override int ClassCode => 255607008;
@@ -39,8 +36,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                EcmaModule targetModule = _signatureContext.GetTargetModule(_typeDesc);
-                SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, _signatureContext);
+                EcmaModule targetModule = factory.SignatureContext.GetTargetModule(_typeDesc);
+                SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, factory.SignatureContext);
                 dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
             }
 
@@ -61,11 +58,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            result = comparer.Compare(_typeDesc, otherNode._typeDesc);
-            if (result != 0)
-                return result;
-
-            return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
+            return comparer.Compare(_typeDesc, otherNode._typeDesc);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

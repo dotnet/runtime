@@ -46,6 +46,7 @@ class PEFile;
 class PEModule;
 class PEAssembly;
 class SimpleRWLock;
+class AssemblyLoadContext;
 
 typedef VPTR(PEModule) PTR_PEModule;
 typedef VPTR(PEAssembly) PTR_PEAssembly;
@@ -568,6 +569,8 @@ public:
     // Returns the ICLRPrivBinder* instance associated with the PEFile
     PTR_ICLRPrivBinder GetBindingContext();
 
+    AssemblyLoadContext* GetAssemblyLoadContext();
+
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }
 
@@ -729,8 +732,8 @@ class PEAssembly : public PEFile
     // Indicates if the assembly can be cached in a binding cache such as AssemblySpecBindingCache.
     inline bool CanUseWithBindingCache()
     {
-            STATIC_CONTRACT_WRAPPER;
-            return (HasBindableIdentity());
+        STATIC_CONTRACT_WRAPPER;
+        return (HasBindableIdentity());
     }
 };
 

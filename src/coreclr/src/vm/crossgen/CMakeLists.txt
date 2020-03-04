@@ -2,6 +2,7 @@ set(VM_CROSSGEN_SOURCES
   ../appdomain.cpp
   ../array.cpp
   ../assembly.cpp
+  ../assemblyloadcontext.cpp
   ../assemblyspec.cpp
   ../baseassemblyspec.cpp
   ../binder.cpp
@@ -10,6 +11,7 @@ set(VM_CROSSGEN_SOURCES
   ../ceemain.cpp
   ../class.cpp
   ../classhash.cpp
+  ../classlayoutinfo.cpp
   ../clrex.cpp
   ../clrprivbinderutil.cpp
   ../clsload.cpp
@@ -59,6 +61,7 @@ set(VM_CROSSGEN_SOURCES
   ../methodtablebuilder.cpp
   ../mlinfo.cpp
   ../mscorlib.cpp
+  ../nativeimage.cpp
   ../olevariant.cpp
   ../pefile.cpp
   ../peimage.cpp
@@ -91,6 +94,7 @@ set(VM_CROSSGEN_HEADERS
   ../appdomain.inl
   ../array.h
   ../assembly.hpp
+  ../assemblyloadcontext.h
   ../assemblyspec.hpp
   ../assemblyspecbase.h
   ../baseassemblyspec.h

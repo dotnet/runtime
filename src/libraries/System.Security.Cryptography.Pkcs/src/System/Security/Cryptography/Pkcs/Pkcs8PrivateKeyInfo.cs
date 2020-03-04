@@ -203,7 +203,7 @@ namespace System.Security.Cryptography.Pkcs
             finally
             {
                 CryptographicOperations.ZeroMemory(decryptedMemory.Span);
-                CryptoPool.Return(decrypted.Array, clearSize: 0);
+                CryptoPool.Return(decrypted.Array!, clearSize: 0);
             }
         }
 
@@ -235,7 +235,7 @@ namespace System.Security.Cryptography.Pkcs
             finally
             {
                 CryptographicOperations.ZeroMemory(decryptedMemory.Span);
-                CryptoPool.Return(decrypted.Array, clearSize: 0);
+                CryptoPool.Return(decrypted.Array!, clearSize: 0);
             }
         }
 

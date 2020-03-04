@@ -106,16 +106,6 @@ inline const char* dspBool(bool b)
     return (b) ? "true" : "false";
 }
 
-#ifdef FEATURE_CORECLR
-#ifdef _CRT_ABS_DEFINED
-// we don't have the full standard library
-inline int64_t abs(int64_t t)
-{
-    return t > 0 ? t : -t;
-}
-#endif
-#endif // FEATURE_CORECLR
-
 template <typename T>
 int signum(T val)
 {

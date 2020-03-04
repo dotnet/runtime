@@ -456,8 +456,6 @@ mono_runtime_posix_install_handlers (void)
 		add_signal_handler (SIGUSR2, sigusr2_signal_handler, SA_RESTART);
 		sigaddset (&signal_set, SIGUSR2);
 	}
-	add_signal_handler (SIGTRAP, mono_crashing_signal_handler, 0);
-	sigaddset (&signal_set, SIGTRAP);
 	add_signal_handler (SIGSYS, mono_crashing_signal_handler, 0);
 	sigaddset (&signal_set, SIGSYS);
 
@@ -504,6 +502,7 @@ mono_runtime_cleanup_handlers (void)
 	remove_signal_handler (SIGBUS);
 	if (mono_jit_trace_calls != NULL)
 		remove_signal_handler (SIGUSR2);
+	remove_signal_handler (SIGSYS);
 
 	remove_signal_handler (SIGABRT);
 
@@ -1028,10 +1027,10 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		g_async_safe_printf ("=================================================================\n");
 
 		if (!leave) {
-			mono_summarize_timeline_start ();
+			mono_summarize_timeline_start (signal);
 			mono_summarize_toggle_assertions (TRUE);
 
-			int mono_max_summary_len = 500000;
+			int mono_max_summary_len = 10000000;
 			int mono_state_tmp_file_tag = 1;
 			mono_state_alloc_mem (&merp_mem, mono_state_tmp_file_tag, mono_max_summary_len * sizeof (gchar));
 

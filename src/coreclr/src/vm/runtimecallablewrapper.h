@@ -90,8 +90,6 @@ class Thread;
 #define GC_PRESSURE_WINRT_HIGH    800000
 #endif // HOST_64BIT
 
-extern bool g_fShutDownCOM;
-
 enum {INTERFACE_ENTRY_CACHE_SIZE = 8};
 
 struct RCWAuxiliaryData;

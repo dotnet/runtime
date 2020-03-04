@@ -27,16 +27,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly GenericContext _methodContext;
 
-        private readonly SignatureContext _signatureContext;
-
         public GenericLookupSignature(
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             TypeDesc typeArgument,
             MethodWithToken methodArgument,
             FieldDesc fieldArgument,
-            GenericContext methodContext,
-            SignatureContext signatureContext)
+            GenericContext methodContext)
         {
             Debug.Assert(typeArgument != null || methodArgument != null || fieldArgument != null);
             _runtimeLookupKind = runtimeLookupKind;
@@ -45,7 +42,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _methodArgument = methodArgument;
             _fieldArgument = fieldArgument;
             _methodContext = methodContext;
-            _signatureContext = signatureContext;
         }
 
         public override int ClassCode => 258608008;
@@ -65,11 +61,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             else if (_typeArgument != null)
             {
-                targetModule = _signatureContext.GetTargetModule(_typeArgument);
+                targetModule = factory.SignatureContext.GetTargetModule(_typeArgument);
             }
             else if (_fieldArgument != null)
             {
-                targetModule = _signatureContext.GetTargetModule(_fieldArgument);
+                targetModule = factory.SignatureContext.GetTargetModule(_fieldArgument);
             }
             else
             {
@@ -101,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
 
-            SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupToEmit, targetModule, _signatureContext);
+            SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupToEmit, targetModule, factory.SignatureContext);
             if (contextTypeToEmit != null)
             {
                 dataBuilder.EmitTypeSignature(contextTypeToEmit, innerContext);
@@ -214,11 +210,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     return result;
             }
 
-            result = comparer.Compare(_methodContext.ContextMethod, otherNode._methodContext.ContextMethod);
-            if (result != 0)
-                return result;
-
-            return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
+            return comparer.Compare(_methodContext.ContextMethod, otherNode._methodContext.ContextMethod);
         }
     }
 }

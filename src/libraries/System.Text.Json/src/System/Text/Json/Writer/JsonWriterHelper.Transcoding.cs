@@ -11,7 +11,7 @@ namespace System.Text.Json
 {
     internal static partial class JsonWriterHelper
     {
-        // TODO: Replace this with publicly shipping implementation: https://github.com/dotnet/corefx/issues/34094
+        // TODO: Replace this with publicly shipping implementation: https://github.com/dotnet/runtime/issues/28204
         /// <summary>
         /// Converts a span containing a sequence of UTF-16 bytes into UTF-8 bytes.
         ///

@@ -150,7 +150,6 @@
 #include "olevariant.h"
 #include "comcallablewrapper.h"
 #include "apithreadstress.h"
-#include "perflog.h"
 #include "../dlls/mscorrc/resource.h"
 #include "util.hpp"
 #include "shimload.h"
@@ -198,10 +197,6 @@
 #include "proftoeeinterfaceimpl.h"
 #include "profilinghelper.h"
 #endif // PROFILING_SUPPORTED
-
-#ifdef FEATURE_COMINTEROP
-#include "synchronizationcontextnative.h"       // For SynchronizationContextNative::Cleanup
-#endif
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -683,6 +678,9 @@ void EEStartupHelper(COINITIEE fFlags)
         InitializeStartupFlags();
 
         MethodDescBackpatchInfoTracker::StaticInitialize();
+        CodeVersionManager::StaticInitialize();
+        TieredCompilationManager::StaticInitialize();
+        CallCountingManager::StaticInitialize();
 
         InitThreadManager();
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "Returned successfully from InitThreadManager");
@@ -731,10 +729,6 @@ void EEStartupHelper(COINITIEE fFlags)
 #ifdef LOGGING
         InitializeLogging();
 #endif
-
-#ifdef ENABLE_PERF_LOG
-        PerfLog::PerfLogInitialize();
-#endif //ENABLE_PERF_LOG
 
 #ifdef FEATURE_PERFMAP
         PerfMap::Initialize();
@@ -1163,41 +1157,6 @@ HRESULT EEStartup(COINITIEE fFlags)
 
 #ifndef CROSSGEN_COMPILE
 
-#ifdef FEATURE_COMINTEROP
-
-void InnerCoEEShutDownCOM()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    static LONG AlreadyDone = -1;
-
-    if (g_fEEStarted != TRUE)
-        return;
-
-    if (FastInterlockIncrement(&AlreadyDone) != 0)
-        return;
-
-    g_fShutDownCOM = true;
-
-    // Release IJupiterGCMgr *
-    RCWWalker::OnEEShutdown();
-
-    // Release all of the RCWs in all contexts in all caches.
-    ReleaseRCWsInCaches(NULL);
-
-#ifdef FEATURE_APPX
-    // Cleanup cached factory pointer in SynchronizationContextNative
-    SynchronizationContextNative::Cleanup();
-#endif
-}
-
-#endif // FEATURE_COMINTEROP
-
 // ---------------------------------------------------------------------------
 // %%Function: ForceEEShutdown()
 //
@@ -1604,10 +1563,6 @@ part2:
 
                 //@TODO: find the right place for this
                 VirtualCallStubManager::UninitStatic();
-
-#ifdef ENABLE_PERF_LOG
-                PerfLog::PerfLogDone();
-#endif //ENABLE_PERF_LOG
 
                 // Unregister our vectored exception and continue handlers from the OS.
                 // This will ensure that if any other DLL unload (after ours) has an exception,

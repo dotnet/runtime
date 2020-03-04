@@ -17,13 +17,16 @@ namespace System
                 switch (config)
                 {
                     case string str:
-                        if (str.StartsWith("0x"))
+                        if (str.StartsWith('0'))
                         {
-                            result = Convert.ToInt32(str, 16);
-                        }
-                        else if (str.StartsWith("0"))
-                        {
-                            result = Convert.ToInt32(str, 8);
+                            if (str.Length >= 2 && str[1] == 'x')
+                            {
+                                result = Convert.ToInt32(str, 16);
+                            }
+                            else
+                            {
+                                result = Convert.ToInt32(str, 8);
+                            }
                         }
                         else
                         {

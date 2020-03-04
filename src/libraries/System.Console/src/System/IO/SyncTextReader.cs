@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /* SyncTextReader intentionally locks on itself rather than a private lock object.
-     * This is done to synchronize different console readers (https://github.com/dotnet/corefx/issues/2855).
+     * This is done to synchronize different console readers (https://github.com/dotnet/corefx/pull/2855).
      */
     internal sealed partial class SyncTextReader : TextReader
     {

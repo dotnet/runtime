@@ -8,12 +8,23 @@ namespace System.Reflection.Internal
     {
         public static int GetScale(this decimal value)
         {
+#if NETCOREAPP
+            Span<int> bits = stackalloc int[4];
+            decimal.GetBits(value, bits);
+            return unchecked((byte)(bits[3] >> 16));
+#else
             return unchecked((byte)(decimal.GetBits(value)[3] >> 16));
+#endif
         }
 
         public static void GetBits(this decimal value, out bool isNegative, out byte scale, out uint low, out uint mid, out uint high)
         {
+#if NETCOREAPP
+            Span<int> bits = stackalloc int[4];
+            decimal.GetBits(value, bits);
+#else
             int[] bits = decimal.GetBits(value);
+#endif
 
             // The return value is a four-element array of 32-bit signed integers.
             // The first, second, and third elements of the returned array contain the low, middle, and high 32 bits of the 96-bit integer number.

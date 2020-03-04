@@ -18,6 +18,8 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.TypeSystem.Ecma;
+using System.Linq;
 
 namespace ILCompiler
 {
@@ -187,9 +189,9 @@ namespace ILCompiler
         private readonly ConditionalWeakTable<Thread, CorInfoImpl> _corInfoImpls;
 
         /// <summary>
-        /// Name of the compilation input MSIL file.
+        /// Input MSIL file names.
         /// </summary>
-        private readonly string _inputFilePath;
+        private readonly IEnumerable<string> _inputFiles;
 
         private bool _resilient;
 
@@ -206,38 +208,84 @@ namespace ILCompiler
             ILProvider ilProvider,
             Logger logger,
             DevirtualizationManager devirtualizationManager,
-            string inputFilePath,
-            IEnumerable<ModuleDesc> modulesBeingInstrumented,
+            IEnumerable<string> inputFiles,
             bool resilient,
             bool generateMapFile,
             int parallelism)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, devirtualizationManager, modulesBeingInstrumented, logger)
+            : base(
+                  dependencyGraph,
+                  nodeFactory,
+                  roots,
+                  ilProvider,
+                  devirtualizationManager,
+                  modulesBeingInstrumented: nodeFactory.CompilationModuleGroup.CompilationModuleSet,
+                  logger)
         {
             _resilient = resilient;
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
-
-            _inputFilePath = inputFilePath;
-
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
+            _inputFiles = inputFiles;
         }
 
         public override void Compile(string outputFile)
         {
-            using (FileStream inputFile = File.OpenRead(_inputFilePath))
+            _dependencyGraph.ComputeMarkedNodes();
+            var nodes = _dependencyGraph.MarkedNodeList;
+
+            using (PerfEventSource.StartStopEvents.EmittingEvents())
             {
-                PEReader inputPeReader = new PEReader(inputFile);
+                NodeFactory.SetMarkingComplete();
+                ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: null, nodes, NodeFactory, _generateMapFile);
+                CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
-                _dependencyGraph.ComputeMarkedNodes();
-                var nodes = _dependencyGraph.MarkedNodeList;
-
-                using (PerfEventSource.StartStopEvents.EmittingEvents())
+                if (moduleGroup.IsCompositeBuildMode)
                 {
-                    NodeFactory.SetMarkingComplete();
-                    ReadyToRunObjectWriter.EmitObject(inputPeReader, outputFile, nodes, NodeFactory, _generateMapFile);
+                    // In composite mode with standalone MSIL we rewrite all input MSIL assemblies to the
+                    // output folder, adding a format R2R header to them with forwarding information to
+                    // the composite executable.
+                    string outputDirectory = Path.GetDirectoryName(outputFile);
+                    string ownerExecutableName = Path.GetFileName(outputFile);
+                    foreach (string inputFile in _inputFiles)
+                    {
+                        string standaloneMsilOutputFile = Path.Combine(outputDirectory, Path.GetFileName(inputFile));
+                        RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName);
+                    }
                 }
             }
+        }
+
+        private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName)
+        {
+            EcmaModule inputModule = NodeFactory.TypeSystemContext.GetModuleFromPath(inputFile);
+
+            CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
+            DebugDirectoryNode debugDirectory = new DebugDirectoryNode(inputModule);
+            NodeFactory componentFactory = new NodeFactory(
+                _nodeFactory.TypeSystemContext,
+                _nodeFactory.CompilationModuleGroup,
+                _nodeFactory.NameMangler,
+                copiedCorHeader,
+                debugDirectory,
+                win32Resources: new Win32Resources.ResourceData(inputModule),
+                Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_Component);
+
+            IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
+            DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);
+
+            componentGraph.AddRoot(componentFactory.Header, "Component module R2R header");
+            OwnerCompositeExecutableNode ownerExecutableNode = new OwnerCompositeExecutableNode(_nodeFactory.Target, ownerExecutableName);
+            componentGraph.AddRoot(ownerExecutableNode, "Owner composite executable name");
+            componentGraph.AddRoot(copiedCorHeader, "Copied COR header");
+            componentGraph.AddRoot(debugDirectory, "Debug directory");
+            if (componentFactory.Win32ResourcesNode != null)
+            {
+                componentGraph.AddRoot(componentFactory.Win32ResourcesNode, "Win32 resources");
+            }
+            componentGraph.ComputeMarkedNodes();
+            componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode, ownerExecutableNode);
+            ReadyToRunObjectWriter.EmitObject(outputFile, componentModule: inputModule, componentGraph.MarkedNodeList, componentFactory, generateMapFile: false);
         }
 
         public override void WriteDependencyLog(string outputFileName)

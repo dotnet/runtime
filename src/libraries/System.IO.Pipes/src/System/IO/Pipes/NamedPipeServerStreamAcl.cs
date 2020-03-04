@@ -41,7 +41,7 @@ namespace System.IO.Pipes
             PipeOptions options,
             int inBufferSize,
             int outBufferSize,
-            PipeSecurity pipeSecurity,
+            PipeSecurity? pipeSecurity,
             HandleInheritability inheritability = HandleInheritability.None,
             PipeAccessRights additionalAccessRights = default)
         {

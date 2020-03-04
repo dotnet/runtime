@@ -85,7 +85,7 @@ namespace System.ComponentModel.Composition.Hosting
                             string? relativeSearchPath = AppDomain.CurrentDomain.RelativeSearchPath;
                             if (!string.IsNullOrEmpty(relativeSearchPath))
                             {
-                                string[] probingPaths = relativeSearchPath.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                                string[] probingPaths = relativeSearchPath.Split(';', StringSplitOptions.RemoveEmptyEntries);
                                 foreach (var probingPath in probingPaths)
                                 {
                                     var path = Path.Combine(location, probingPath);

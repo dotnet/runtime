@@ -25,14 +25,14 @@ namespace Internal.Cryptography.Pal
         private const string BCRYPT_ECC_CURVE_NAME_PROPERTY = "ECCCurveName";
         private const string BCRYPT_ECC_PARAMETERS_PROPERTY = "ECCParameters";
 
-        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal)
+        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal? certificatePal)
         {
             if (oid.Value == Oids.EcPublicKey && certificatePal != null)
             {
                 return DecodeECDsaPublicKey((CertificatePal)certificatePal);
             }
 
-            int algId = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oid.Value, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
+            int algId = Interop.Crypt32.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, oid.Value!, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
             switch (algId)
             {
                 case AlgId.CALG_RSA_KEYX:
@@ -61,7 +61,7 @@ namespace Internal.Cryptography.Pal
             {
                 CngKeyBlobFormat blobFormat;
                 byte[] keyBlob;
-                string curveName = GetCurveName(bCryptKeyHandle);
+                string? curveName = GetCurveName(bCryptKeyHandle);
 
                 if (curveName == null)
                 {
@@ -186,7 +186,7 @@ namespace Internal.Cryptography.Pal
 
         private static byte[] ConstructDSSPublicKeyCspBlob(byte[] encodedKeyValue, byte[] encodedParameters)
         {
-            byte[] decodedKeyValue = DecodeDssKeyValue(encodedKeyValue);
+            byte[] decodedKeyValue = DecodeDssKeyValue(encodedKeyValue)!;
 
             byte[] p, q, g;
             DecodeDssParameters(encodedParameters, out p, out q, out g);
@@ -252,11 +252,11 @@ namespace Internal.Cryptography.Pal
             return keyBlob.ToArray();
         }
 
-        private static byte[] DecodeDssKeyValue(byte[] encodedKeyValue)
+        private static byte[]? DecodeDssKeyValue(byte[] encodedKeyValue)
         {
             unsafe
             {
-                byte[] decodedKeyValue = null;
+                byte[]? decodedKeyValue = null;
 
                 encodedKeyValue.DecodeObject(
                     CryptDecodeObjectStructType.X509_DSS_PUBLICKEY,
@@ -274,9 +274,9 @@ namespace Internal.Cryptography.Pal
 
         private static void DecodeDssParameters(byte[] encodedParameters, out byte[] p, out byte[] q, out byte[] g)
         {
-            byte[] pLocal = null;
-            byte[] qLocal = null;
-            byte[] gLocal = null;
+            byte[] pLocal = null!;
+            byte[] qLocal = null!;
+            byte[] gLocal = null!;
 
             unsafe
             {
@@ -300,19 +300,19 @@ namespace Internal.Cryptography.Pal
 
         private static bool HasExplicitParameters(SafeBCryptKeyHandle bcryptHandle)
         {
-            byte[] explicitParams = GetProperty(bcryptHandle, BCRYPT_ECC_PARAMETERS_PROPERTY);
+            byte[]? explicitParams = GetProperty(bcryptHandle, BCRYPT_ECC_PARAMETERS_PROPERTY);
             return (explicitParams != null && explicitParams.Length > 0);
         }
 
-        private static string GetCurveName(SafeBCryptKeyHandle bcryptHandle)
+        private static string? GetCurveName(SafeBCryptKeyHandle bcryptHandle)
         {
             return GetPropertyAsString(bcryptHandle, BCRYPT_ECC_CURVE_NAME_PROPERTY);
         }
 
-        private static string GetPropertyAsString(SafeBCryptKeyHandle cryptHandle, string propertyName)
+        private static string? GetPropertyAsString(SafeBCryptKeyHandle cryptHandle, string propertyName)
         {
             Debug.Assert(!cryptHandle.IsInvalid);
-            byte[] value = GetProperty(cryptHandle, propertyName);
+            byte[]? value = GetProperty(cryptHandle, propertyName);
             if (value == null || value.Length == 0)
                 return null;
 
@@ -320,13 +320,13 @@ namespace Internal.Cryptography.Pal
             {
                 fixed (byte* pValue = &value[0])
                 {
-                    string valueAsString = Marshal.PtrToStringUni((IntPtr)pValue);
+                    string? valueAsString = Marshal.PtrToStringUni((IntPtr)pValue);
                     return valueAsString;
                 }
             }
         }
 
-        private static byte[] GetProperty(SafeBCryptKeyHandle cryptHandle, string propertyName)
+        private static byte[]? GetProperty(SafeBCryptKeyHandle cryptHandle, string propertyName)
         {
             Debug.Assert(!cryptHandle.IsInvalid);
             unsafe

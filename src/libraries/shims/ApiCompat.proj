@@ -10,7 +10,7 @@
     <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
     <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netstandard.txt</ApiCompatNSBaselineFile>
     <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
-    <ApiCompatImplementationDirs>$(BuildConfigurationRefPath.TrimEnd('\/'))</ApiCompatImplementationDirs>
+    <ApiCompatImplementationDirs>$(BuildTargetFrameworkRefPath.TrimEnd('\/'))</ApiCompatImplementationDirs>
     <!-- Set to true to build this project -->
     <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
     <_RunApiCompat>true</_RunApiCompat>

@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
@@ -65,8 +66,8 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Settings for UI shown on access to the key
         /// </summary>
-        public CngUIPolicy UIPolicy { get; set; }
+        public CngUIPolicy? UIPolicy { get; set; }
 
-        private CngProvider _provider;
+        private CngProvider _provider = null!; // will be initialized via property setter called by ctor
     }
 }

@@ -374,9 +374,8 @@ namespace System
 
             ref Guid g = ref result._parsedGuid;
 
-            uint uintTmp;
             if (TryParseHex(guidString.Slice(0, 8), out Unsafe.As<int, uint>(ref g._a)) && // _a
-                TryParseHex(guidString.Slice(9, 4), out uintTmp)) // _b
+                TryParseHex(guidString.Slice(9, 4), out uint uintTmp)) // _b
             {
                 g._b = (short)uintTmp;
 
@@ -424,9 +423,8 @@ namespace System
 
             ref Guid g = ref result._parsedGuid;
 
-            uint uintTmp;
             if (uint.TryParse(guidString.Slice(0, 8), NumberStyles.AllowHexSpecifier, null, out Unsafe.As<int, uint>(ref g._a)) && // _a
-                uint.TryParse(guidString.Slice(8, 8), NumberStyles.AllowHexSpecifier, null, out uintTmp)) // _b, _c
+                uint.TryParse(guidString.Slice(8, 8), NumberStyles.AllowHexSpecifier, null, out uint uintTmp)) // _b, _c
             {
                 g._b = (short)(uintTmp >> 16);
                 g._c = (short)uintTmp;
@@ -600,8 +598,7 @@ namespace System
                 }
 
                 // Read in the number
-                uint byteVal;
-                if (!TryParseHex(guidString.Slice(numStart, numLen), out byteVal, ref overflow) || overflow || byteVal > byte.MaxValue)
+                if (!TryParseHex(guidString.Slice(numStart, numLen), out uint byteVal, ref overflow) || overflow || byteVal > byte.MaxValue)
                 {
                     // The previous implementation had some odd inconsistencies, which are carried forward here.
                     // The byte values in the X format are treated as integers with regards to overflow, so
@@ -635,8 +632,7 @@ namespace System
 
         private static bool TryParseHex(ReadOnlySpan<char> guidString, out short result, ref bool overflow)
         {
-            uint tmp;
-            bool success = TryParseHex(guidString, out tmp, ref overflow);
+            bool success = TryParseHex(guidString, out uint tmp, ref overflow);
             result = (short)tmp;
             return success;
         }
@@ -957,20 +953,13 @@ namespace System
             return ToString(format, null);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static char HexToChar(int a)
-        {
-            a &= 0xf;
-            return (char)((a > 9) ? a - 10 + 0x61 : a + 0x30);
-        }
-
         private static unsafe int HexsToChars(char* guidChars, int a, int b)
         {
-            guidChars[0] = HexToChar(a >> 4);
-            guidChars[1] = HexToChar(a);
+            guidChars[0] = HexConverter.ToCharLower(a >> 4);
+            guidChars[1] = HexConverter.ToCharLower(a);
 
-            guidChars[2] = HexToChar(b >> 4);
-            guidChars[3] = HexToChar(b);
+            guidChars[2] = HexConverter.ToCharLower(b >> 4);
+            guidChars[3] = HexConverter.ToCharLower(b);
 
             return 4;
         }
@@ -980,15 +969,15 @@ namespace System
             guidChars[0] = '0';
             guidChars[1] = 'x';
 
-            guidChars[2] = HexToChar(a >> 4);
-            guidChars[3] = HexToChar(a);
+            guidChars[2] = HexConverter.ToCharLower(a >> 4);
+            guidChars[3] = HexConverter.ToCharLower(a);
 
             guidChars[4] = ',';
             guidChars[5] = '0';
             guidChars[6] = 'x';
 
-            guidChars[7] = HexToChar(b >> 4);
-            guidChars[8] = HexToChar(b);
+            guidChars[7] = HexConverter.ToCharLower(b >> 4);
+            guidChars[8] = HexConverter.ToCharLower(b);
 
             return 9;
         }
@@ -1035,8 +1024,7 @@ namespace System
 
             string guidString = string.FastAllocateString(guidSize);
 
-            int bytesWritten;
-            bool result = TryFormat(new Span<char>(ref guidString.GetRawStringData(), guidString.Length), out bytesWritten, format);
+            bool result = TryFormat(new Span<char>(ref guidString.GetRawStringData(), guidString.Length), out int bytesWritten, format);
             Debug.Assert(result && bytesWritten == guidString.Length, "Formatting guid should have succeeded.");
 
             return guidString;

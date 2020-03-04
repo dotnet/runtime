@@ -20,7 +20,7 @@ namespace System.Xml
 
         private static volatile Type[] s_tokenTypeMap = null;
 
-        private static readonly byte[] s_xsdKatmaiTimeScaleToValueLengthMap = new byte[8] {
+        private static ReadOnlySpan<byte> XsdKatmaiTimeScaleToValueLengthMap => new byte[8] { // rely on C# compiler optimization to eliminate allocation
         // length scale
             3, // 0
             3, // 1
@@ -3613,7 +3613,7 @@ namespace System.Xml
             {
                 throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
             }
-            return s_xsdKatmaiTimeScaleToValueLengthMap[scale];
+            return XsdKatmaiTimeScaleToValueLengthMap[scale];
         }
 
         private long ValueAsLong()

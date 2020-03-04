@@ -23,7 +23,7 @@ namespace System.Net.Http
             var builder = new UriBuilder(Uri.UriSchemeHttp, host, port);
             Uri uri = builder.Uri;
 
-            // TODO https://github.com/dotnet/corefx/issues/28863:
+            // TODO https://github.com/dotnet/runtime/issues/25782:
             // Uri.IdnHost is missing '[', ']' characters around IPv6 address.
             // So, we need to add them manually for now.
             IdnHost = uri.HostNameType == UriHostNameType.IPv6 ? "[" + uri.IdnHost + "]" : uri.IdnHost;

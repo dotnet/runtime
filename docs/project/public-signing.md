@@ -37,4 +37,4 @@ Starting with Visual Studio 2015 Update 2, the C# and VB compilers support the n
 
 # Legacy FakeSign tool
 
-If you're not able to use Visual Studio 2016 Update 2 or later, the [FakeSign package on NuGet](https://www.nuget.org/packages/fakesign) contains the `FakeSign.exe` tool that can flip the bit on or off.
+If you're not able to use Visual Studio 2015 Update 2 or later, the [FakeSign package on NuGet](https://www.nuget.org/packages/fakesign) contains the `FakeSign.exe` tool that can flip the bit on or off.

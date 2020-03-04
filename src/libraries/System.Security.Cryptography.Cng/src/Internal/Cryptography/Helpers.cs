@@ -21,7 +21,7 @@ namespace Internal.Cryptography
             return cipherMode != CipherMode.ECB;
         }
 
-        public static byte[] GetCipherIv(this CipherMode cipherMode, byte[] iv)
+        public static byte[]? GetCipherIv(this CipherMode cipherMode, byte[]? iv)
         {
             if (cipherMode.UsesIv())
             {
@@ -50,7 +50,7 @@ namespace Internal.Cryptography
         //
         // which always sets "p" to a non-NULL pointer for a non-null byte array.
         //
-        public static byte[] MapZeroLengthArrayToNonNullPointer(this byte[] src)
+        public static byte[]? MapZeroLengthArrayToNonNullPointer(this byte[]? src)
         {
             if (src != null && src.Length == 0)
                 return new byte[1];
@@ -74,7 +74,7 @@ namespace Internal.Cryptography
         /// null - if property not defined on key.
         /// throws - for any other type of error.
         /// </returns>
-        public static byte[] GetProperty(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
+        public static byte[]? GetProperty(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
         {
             unsafe
             {
@@ -104,9 +104,9 @@ namespace Internal.Cryptography
         /// Retrieve a well-known CNG string property. (Note: .NET Framework compat: this helper likes to return special values rather than throw exceptions for missing
         /// or ill-formatted property values. Only use it for well-known properties that are unlikely to be ill-formatted.)
         /// </summary>
-        public static string GetPropertyAsString(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
+        public static string? GetPropertyAsString(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
         {
-            byte[] value = ncryptHandle.GetProperty(propertyName, options);
+            byte[]? value = ncryptHandle.GetProperty(propertyName, options);
             if (value == null)
                 return null;   // .NET Framework compat: return null if key not present.
             if (value.Length == 0)
@@ -115,7 +115,7 @@ namespace Internal.Cryptography
             {
                 fixed (byte* pValue = &value[0])
                 {
-                    string valueAsString = Marshal.PtrToStringUni((IntPtr)pValue);
+                    string? valueAsString = Marshal.PtrToStringUni((IntPtr)pValue);
                     return valueAsString;
                 }
             }
@@ -127,7 +127,7 @@ namespace Internal.Cryptography
         /// </summary>
         public static int GetPropertyAsDword(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
         {
-            byte[] value = ncryptHandle.GetProperty(propertyName, options);
+            byte[]? value = ncryptHandle.GetProperty(propertyName, options);
             if (value == null)
                 return 0;   // .NET Framework compat: return 0 if key not present.
             return BitConverter.ToInt32(value, 0);

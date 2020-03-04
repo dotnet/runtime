@@ -161,10 +161,11 @@ namespace System.Text.Json.Serialization.Tests
         public static void NullReadTestChar()
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("null"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>(""));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("1234"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("\"\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>(""));   // Empty JSON is invalid
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("1234")); // Can't convert a JSON number to JSON string/char
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("\"stringTooLong\""));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("\"\u0059\"B"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("\"\u0059B\""));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("\"\uD800\uDC00\""));
             Assert.Equal('a', JsonSerializer.Deserialize<char>("\"a\""));
             Assert.Equal('Y', JsonSerializer.Deserialize<char>("\"\u0059\""));

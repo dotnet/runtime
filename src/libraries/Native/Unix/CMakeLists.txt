@@ -16,7 +16,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 
-# We mark the function which needs exporting with DLLEXPORT
+# We mark the function which needs exporting with PALEXPORT
 add_compile_options(-fvisibility=hidden)
 
 add_compile_options(-Wno-format-nonliteral)

@@ -59,7 +59,7 @@ namespace System.IO.Tests
         [Fact]
         public void MoveFile()
         {
-            // Regression https://github.com/dotnet/corefx/issues/19710
+            // Regression https://github.com/dotnet/runtime/issues/21673
             string source = GetTestFilePath();
             string destination = GetTestFilePath();
             File.Create(source).Dispose();
@@ -71,7 +71,7 @@ namespace System.IO.Tests
         [Fact]
         public void MoveFile_TrailingDestinationSlash()
         {
-            // Regression https://github.com/dotnet/corefx/issues/19710
+            // Regression https://github.com/dotnet/runtime/issues/21673
             string source = GetTestFilePath();
             string destination = GetTestFilePath();
             File.Create(source).Dispose();
@@ -84,7 +84,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MoveFile_TrailingDestinationAltSlash_Windows()
         {
-            // Regression https://github.com/dotnet/corefx/issues/19710
+            // Regression https://github.com/dotnet/runtime/issues/21673
             string source = GetTestFilePath();
             string destination = GetTestFilePath();
             File.Create(source).Dispose();

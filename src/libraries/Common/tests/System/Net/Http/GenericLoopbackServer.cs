@@ -18,10 +18,7 @@ namespace System.Net.Test.Common
         public abstract GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null);
         public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null);
 
-        // TODO: just expose a version property.
-        public abstract bool IsHttp11 { get; }
-        public abstract bool IsHttp2 { get; }
-        public abstract bool IsHttp3 { get; }
+        public abstract Version Version { get; }
 
         // Common helper methods
 

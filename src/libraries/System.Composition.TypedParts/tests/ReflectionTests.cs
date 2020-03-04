@@ -17,7 +17,7 @@ namespace System.Composition.TypedParts.Tests
         public static bool HasMultiplerProcessors { get; } = Environment.ProcessorCount > 1;
 
         /// <summary>
-        /// Regression test for https://github.com/dotnet/corefx/issues/6857
+        /// Regression test for https://github.com/dotnet/runtime/issues/16683
         /// System.Composition: Bug in Resolving Activators Due to the .NET Type System
         /// Non-deterministic
         /// </summary>
@@ -28,7 +28,7 @@ namespace System.Composition.TypedParts.Tests
         /// revert to a default value during GetExport.
         /// </remarks>
         [ConditionalFact(nameof(HasMultiplerProcessors))]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void MultiThreadedGetExportsWorkWithImportingConstuctor()
         {
             var errors = new ConcurrentBag<Exception>();
