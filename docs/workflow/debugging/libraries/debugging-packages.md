@@ -72,7 +72,7 @@ Build:
 
 To validate the content of the nupkg, change the extension to .zip. As before, use an IL disassembler to verify that the right APIs are present within `ref\<platform>\contractname.dll` and the right implementations within the `lib\<platform>\contractname.dll`.
 
-4. Run the tests from `\tests`: `dotnet msbuild /t:rebuildandtest`
+4. Run the tests from `\tests`: `dotnet msbuild /t:test`
 
 Ensure that the test is referencing the correct pkg. For example:
 ```
@@ -96,7 +96,7 @@ ResolvePkgProjReferences:
 To run a test from a single Build Pivot combination, specify all properties and build the `csproj`:
 
 ```
-dotnet build System.Net.ServicePoint.Tests.csproj -f netcoreapp2.0 /t:rebuildandtest /p:OuterLoop=true /p:xunitoptions=-showprogress
+dotnet build System.Net.ServicePoint.Tests.csproj -f netcoreapp2.0 /t:test /p:OuterLoop=true /p:xunitoptions=-showprogress
 ```
 Will run the test using the following pivot values:
 * Architecture: AnyCPU

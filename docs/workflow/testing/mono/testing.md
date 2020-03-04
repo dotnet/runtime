@@ -32,7 +32,7 @@ build.cmd /p:RuntimeFlavor=mono
 3. Run the tests
 
 ```
-dotnet msbuild /t:BuildAndTest /p:RuntimeFlavor=mono
+dotnet msbuild /t:Test /p:RuntimeFlavor=mono
 ```
 
 # Patching Local dotnet (.dotnet-mono)

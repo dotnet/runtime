@@ -6,9 +6,7 @@
     <CoverageReportInputPath>$(ArtifactsBinDir)*.Tests/**/coverage.xml</CoverageReportInputPath>
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
     <SerializeProjects>true</SerializeProjects>
-  </PropertyGroup>
-  <PropertyGroup>
-    <TargetFramework>netcoreapp5.0</TargetFramework> 
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework> 
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
