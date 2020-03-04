@@ -824,6 +824,7 @@ public:
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars);
     void setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo);
+    CORINFO_PATCHPOINT_INFO* getOSRInfo(ULONG32* ilOffset);
 
     // ICorArgInfo stuff
 
@@ -1217,8 +1218,6 @@ public:
 
     void * allocGCInfo (size_t  size);
 
-    void * allocPatchpointInfo (size_t  size);
-
     void setEHcount (unsigned cEH);
 
     void setEHinfo (
@@ -1294,10 +1293,12 @@ public:
         m_pNativeVarInfo = NULL;
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-        if (m_pPatchpointInfo != NULL)
+        if (m_fOwnsPatchpointInfo && (m_pPatchpointInfo != NULL))
             delete [] ((BYTE*) m_pPatchpointInfo);
 
         m_pPatchpointInfo = NULL;
+        m_fOwnsPatchpointInfo = false;
+        m_ilOffset = 0;
 #endif
 
 #ifdef FEATURE_EH_FUNCLETS
@@ -1362,6 +1363,17 @@ public:
     }
 #endif
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    void SetOSRInfo(CORINFO_OSR_INFO* info)
+    {
+        _ASSERTE(m_pPatchpointInfo == NULL);
+        _ASSERTE(info->patchpointInfo != NULL);
+        m_pPatchpointInfo = info->patchpointInfo;
+        m_ilOffset = info->ilOffset;
+        m_fOwnsPatchpointInfo = false;
+    }
+#endif
+
     CEEJitInfo(MethodDesc* fd,  COR_ILMETHOD_DECODER* header,
                EEJitManager* jm, bool fVerifyOnly, bool allowInlining = true)
         : CEEInfo(fd, fVerifyOnly, allowInlining),
@@ -1390,7 +1402,9 @@ public:
           m_iNativeVarInfo(0),
           m_pNativeVarInfo(NULL),
 #ifdef FEATURE_ON_STACK_REPLACEMENT
+          m_fOwnsPatchpointInfo(false),
           m_pPatchpointInfo(NULL),
+          m_ilOffset(0)
 #endif
           m_gphCache()
     {
@@ -1420,7 +1434,7 @@ public:
             delete [] ((BYTE*) m_pNativeVarInfo);
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-        if (m_pPatchpointInfo != NULL)
+        if (m_fOwnsPatchpointInfo && (m_pPatchpointInfo != NULL))
             delete [] ((BYTE*) m_pPatchpointInfo);
 #endif
 
@@ -1496,7 +1510,9 @@ protected :
     ICorDebugInfo::NativeVarInfo * m_pNativeVarInfo;
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
+    bool                      m_fOwnsPatchpointInfo;
     CORINFO_PATCHPOINT_INFO * m_pPatchpointInfo;
+    unsigned                  m_ilOffset;
 #endif
 
     // The first time a call is made to CEEJitInfo::GetProfilingHandle() from this thread

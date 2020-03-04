@@ -10961,12 +10961,36 @@ void CEEJitInfo::setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     // We receive ownership of the array
     _ASSERTE(m_pPatchpointInfo == NULL);
+    m_fOwnsPatchpointInfo = true;
     m_pPatchpointInfo = patchpointInfo;
 #else
     UNREACHABLE();
 #endif
 
     EE_TO_JIT_TRANSITION();
+}
+
+CORINFO_PATCHPOINT_INFO* CEEJitInfo::getPatchpointInfo(unsigned* ilOffset)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_PATCHPONT_INFO* result = NULL;
+    *ilOffset = = 0;
+
+    JIT_TO_EE_TRANSITION();
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    result = m_pPatchpointInfo;
+    *ilOffset = m_ilOffset;
+#endif
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
 }
 
 void CEEJitInfo::CompressDebugInfo()
@@ -12682,14 +12706,6 @@ PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODE
 
     getMethodInfoHelper(ftn, ftnHnd, ILHeader, &methodInfo);
 
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-    if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR))
-    {
-        CORINFO_OSR_INFO *osrInfo = nativeCodeVersion.GetOSRInfo();
-        methodInfo.osrInfo = *osrInfo;
-    }
-#endif
-
     // If it's generic then we can only enter through an instantiated md (unless we're just verifying it)
     _ASSERTE(flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) || !ftn->IsGenericMethodDefinition());
 
@@ -12752,6 +12768,14 @@ PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODE
             jitInfo.SetJumpStubOverflow(fForceJumpStubOverflow);
 #endif
         jitInfo.SetReserveForJumpStubs(reserveForJumpStubs);
+#endif
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR))
+        {
+            CORINFO_OSR_INFO *osrInfo = nativeCodeVersion.GetOSRInfo();
+            jitInfo.SetOSRInfo(osrInfo);
+        }
 #endif
 
         MethodDesc * pMethodForSecurity = jitInfo.GetMethodForSecurity(ftnHnd);
@@ -13927,6 +13951,12 @@ void CEEInfo::setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::N
 }
 
 void CEEInfo::setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+CORINFO_PATCHPOINT_INFO* CEEInfo::getPatchpointInfo(unsigned* ilOffset)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.
