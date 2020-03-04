@@ -195,7 +195,7 @@ namespace System.Text.RegularExpressions
 
         private static string UnescapeImpl(string input, int i)
         {
-            var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, stackalloc RegexOptions[OptionStackDefaultSize]);
+            var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, stackalloc int[OptionStackDefaultSize]);
 
             // In the worst case the escaped string has the same length.
             // For small inputs we use stack allocation.
