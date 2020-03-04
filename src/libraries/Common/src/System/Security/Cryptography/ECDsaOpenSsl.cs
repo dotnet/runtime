@@ -93,6 +93,15 @@ namespace System.Security.Cryptography
             }
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+            public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
+            {
+                return TrySignHashCore(
+                    hash,
+                    destination,
+                    DSASignatureFormat.IeeeP1363FixedFieldConcatenation,
+                    out bytesWritten);
+            }
+
             protected override bool TrySignHashCore(
                 ReadOnlySpan<byte> hash,
                 Span<byte> destination,
@@ -194,6 +203,9 @@ namespace System.Security.Cryptography
             }
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+            public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
+                VerifyHashCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+
             protected override bool VerifyHashCore(
                 ReadOnlySpan<byte> hash,
                 ReadOnlySpan<byte> signature,

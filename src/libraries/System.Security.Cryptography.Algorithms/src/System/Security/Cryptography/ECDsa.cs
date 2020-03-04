@@ -14,6 +14,9 @@ namespace System.Security.Cryptography
     {
         // secp521r1 maxes out at 139 bytes in the DER format, so 256 should always be enough
         private const int SignatureStackBufSize = 256;
+        // The biggest supported hash algorithm is SHA-2-512, which is only 64 bytes.
+        // One power of two bigger should cover most unknown algorithms, too.
+        private const int HashBufferStackSize = 128;
 
         private static readonly string[] s_validOids =
         {
@@ -76,10 +79,9 @@ namespace System.Security.Cryptography
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            // hashAlgorithm is verified in the overload
 
-            return SignDataCore(data, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            return SignData(data, 0, data.Length, hashAlgorithm);
         }
 
         public virtual byte[] SignData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
@@ -93,10 +95,8 @@ namespace System.Security.Cryptography
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
-            return SignDataCore(
-                new ReadOnlySpan<byte>(data, offset, count),
-                hashAlgorithm,
-                DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            byte[] hash = HashData(data, offset, count, hashAlgorithm);
+            return SignHash(hash);
         }
 
         /// <summary>
@@ -373,11 +373,9 @@ namespace System.Security.Cryptography
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
-            return TrySignDataCore(data,
-                destination,
-                hashAlgorithm,
-                DSASignatureFormat.IeeeP1363FixedFieldConcatenation,
-                out bytesWritten);
+            Span<byte> hashTmp = stackalloc byte[HashBufferStackSize];
+            ReadOnlySpan<byte> hash = HashSpanToTmp(data, hashAlgorithm, hashTmp);
+            return TrySignHash(hash, destination, out bytesWritten);
         }
 
         /// <summary>
@@ -446,21 +444,10 @@ namespace System.Security.Cryptography
             DSASignatureFormat signatureFormat,
             out int bytesWritten)
         {
-            // SHA-2-512 is the biggest hash we know about.
-            Span<byte> hashSpan = stackalloc byte[512 / 8];
+            Span<byte> hashTmp = stackalloc byte[HashBufferStackSize];
+            ReadOnlySpan<byte> hash = HashSpanToTmp(data, hashAlgorithm, hashTmp);
 
-            if (TryHashData(data, hashSpan, hashAlgorithm, out int hashSize))
-            {
-                hashSpan = hashSpan.Slice(0, hashSize);
-            }
-            else
-            {
-                // TryHashData didn't work, the algorithm must be exotic,
-                // call the array-returning variant.
-                hashSpan = HashData(data.ToArray(), 0, data.Length, hashAlgorithm);
-            }
-
-            return TrySignHashCore(hashSpan, destination, signatureFormat, out bytesWritten);
+            return TrySignHashCore(hash, destination, signatureFormat, out bytesWritten);
         }
 
         public virtual byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm)
@@ -495,11 +482,8 @@ namespace System.Security.Cryptography
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
-            return VerifyDataCore(
-                new ReadOnlySpan<byte>(data, offset, count),
-                signature,
-                hashAlgorithm,
-                DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            byte[] hash = HashData(data, offset, count, hashAlgorithm);
+            return VerifyHash(hash, signature);
         }
 
         /// <summary>
@@ -608,7 +592,9 @@ namespace System.Security.Cryptography
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
-            return VerifyDataCore(data, signature, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            Span<byte> hashTmp = stackalloc byte[HashBufferStackSize];
+            ReadOnlySpan<byte> hash = HashSpanToTmp(data, hashAlgorithm, hashTmp);
+            return VerifyHash(hash, signature);
         }
 
         /// <summary>
@@ -686,7 +672,8 @@ namespace System.Security.Cryptography
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
-            return VerifyDataCore(data, signature, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            byte[] hash = HashData(data, hashAlgorithm);
+            return VerifyHash(hash, signature);
         }
 
         /// <summary>
@@ -951,6 +938,39 @@ namespace System.Security.Cryptography
 
             // The only available implementation here is abstract method, use it
             return VerifyHash(hash.ToArray(), sig);
+        }
+
+        private ReadOnlySpan<byte> HashSpanToTmp(
+            ReadOnlySpan<byte> data,
+            HashAlgorithmName hashAlgorithm,
+            Span<byte> tmp)
+        {
+            Debug.Assert(tmp.Length == HashBufferStackSize);
+
+            if (TryHashData(data, tmp, hashAlgorithm, out int hashSize))
+            {
+                return tmp.Slice(0, hashSize);
+            }
+
+            // This is not expected, but a poor virtual implementation of TryHashData,
+            // or an exotic new algorithm, will hit this fallback.
+            return HashSpanToArray(data, hashAlgorithm);
+        }
+
+        private byte[] HashSpanToArray(ReadOnlySpan<byte> data, HashAlgorithmName hashAlgorithm)
+        {
+            // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
+            byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
+            try
+            {
+                data.CopyTo(array);
+                return HashData(array, 0, data.Length, hashAlgorithm);
+            }
+            finally
+            {
+                Array.Clear(array, 0, data.Length);
+                ArrayPool<byte>.Shared.Return(array);
+            }
         }
 
         public override unsafe bool TryExportEncryptedPkcs8PrivateKey(
