@@ -123,6 +123,7 @@
     </Exec>
 
     <PropertyGroup Condition="'$(TestRunExitCode)' != '0'">
+      <TestResultsPath>$(RunWorkingDirectory)$(TestResultsName)</TestResultsPath>
       <TestRunErrorMessage>One or more tests failed while running tests from '$(TestProjectName)'.</TestRunErrorMessage>
       <TestRunErrorMessage Condition="Exists('$(TestResultsPath)')">$(TestRunErrorMessage) Please check $(TestResultsPath) for details!</TestRunErrorMessage>
     </PropertyGroup>
