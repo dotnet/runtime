@@ -16,7 +16,7 @@ public class Program
     {
         float[] testValues =
             {
-                0, 0, 0.01f, 1.333f, 1/3.0f, 0.5f, 1, 2, 3, 4,
+                0, 0.01f, 1.333f, 1/3.0f, 0.5f, 1, 2, 3, 4,
                 MathF.PI, MathF.E,
                 float.MinValue, float.MaxValue,
                 int.MaxValue, long.MaxValue,
