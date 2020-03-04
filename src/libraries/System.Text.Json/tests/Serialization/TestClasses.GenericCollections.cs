@@ -196,6 +196,11 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class GenericIEnumerableWrapperPrivateConstructor<T> : GenericIEnumerableWrapper<T>
+    {
+        private GenericIEnumerableWrapperPrivateConstructor() { }
+    }
+
     public class StringICollectionWrapper : ICollection<string>
     {
         private readonly List<string> _list = new List<string>();
@@ -372,6 +377,11 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class GenericIListWrapperPrivateConstructor<T> : GenericIListWrapper<T>
+    {
+        private GenericIListWrapperPrivateConstructor() { }
+    }
+
     public class GenericICollectionWrapper<T> : ICollection<T>
     {
         private readonly List<T> _list = new List<T>();
@@ -414,6 +424,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             return ((ICollection<T>)_list).GetEnumerator();
         }
+    }
+
+    public class GenericICollectionWrapperPrivateConstructor<T> : GenericICollectionWrapper<T>
+    {
+        private GenericICollectionWrapperPrivateConstructor() { }
     }
 
     public class StringIReadOnlyCollectionWrapper : IReadOnlyCollection<string>
@@ -712,6 +727,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             return ((ISet<T>)_hashset).GetEnumerator();
         }
+    }
+
+    public class GenericISetWrapperPrivateConstructor<T> : GenericISetWrapper<T>
+    {
+        private GenericISetWrapperPrivateConstructor() { }
     }
 
     public class StringToStringIDictionaryWrapper : IDictionary<string, string>
@@ -1072,6 +1092,11 @@ namespace System.Text.Json.Serialization.Tests
 
     public class GenericListWrapper<T> : List<T> { }
 
+    public class GenericListWrapperPrivateConstructor<T> : GenericListWrapper<T>
+    {
+        private GenericListWrapperPrivateConstructor() { }
+    }
+
     public class StringStackWrapper : Stack<string>
     {
         public StringStackWrapper() { }
@@ -1100,6 +1125,11 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class GenericStackWrapperPrivateConstructor<T> : GenericStackWrapper<T>
+    {
+        private GenericStackWrapperPrivateConstructor() { }
+    }
+
     public class StringQueueWrapper : Queue<string>
     {
         public StringQueueWrapper() { }
@@ -1126,6 +1156,11 @@ namespace System.Text.Json.Serialization.Tests
                 Enqueue(item);
             }
         }
+    }
+
+    public class GenericQueueWrapperPrivateConstructor<T> : GenericQueueWrapper<T>
+    {
+        private GenericQueueWrapperPrivateConstructor() { }
     }
 
     public class StringHashSetWrapper : HashSet<string>
@@ -1238,6 +1273,11 @@ namespace System.Text.Json.Serialization.Tests
                 Add(item.Key, item.Value);
             }
         }
+    }
+
+    public class StringToGenericDictionaryWrapperPrivateConstructor<T> : StringToGenericDictionaryWrapper<T>
+    {
+        private StringToGenericDictionaryWrapperPrivateConstructor() { }
     }
 
     public class StringToStringSortedDictionaryWrapper : SortedDictionary<string, string>

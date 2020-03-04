@@ -1161,5 +1161,20 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("test", JsonSerializer.Deserialize<MyMyList<string>>(json).First());
             Assert.Equal("test", JsonSerializer.Deserialize<MyListString>(json).First());
         }
+
+        [Fact]
+        public static void Read_Generic_NoPublicConstructor_Throws()
+        {
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericIEnumerableWrapperPrivateConstructor<string>>(@"[""1""]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericICollectionWrapperPrivateConstructor<string>>(@"[""1""]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericIListWrapperPrivateConstructor<string>>(@"[""1""]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericISetWrapperPrivateConstructor<string>>(@"[""1""]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericIDictionaryWrapperPrivateConstructor<string, string>>(@"{""Key"":""Value""}"));
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericListWrapperPrivateConstructor<string>>(@"[""1""]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericQueueWrapperPrivateConstructor<string>>(@"[""1""]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericStackWrapperPrivateConstructor<string>>(@"[""1""]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<StringToGenericDictionaryWrapperPrivateConstructor<string>>(@"{""Key"":""Value""}"));
+        }
     }
 }
