@@ -1431,6 +1431,18 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float FusedMultiplySubtractNegated(float op1, float op2, float op3) => MathF.FusedMultiplyAdd(op2, op3, -op1);
 
+        public static float MaxNumber(float op1, float op2) => float.IsNaN(op1) ? op2 : (float.IsNaN(op2) ? op1 : MathF.Max(op1, op2));
+
+        public static float MaxNumberPairwise(float[] op1, int i) => Pairwise(MaxNumber, op1, i);
+
+        public static float MaxNumberPairwise(float[] op1, float[] op2, int i) => Pairwise(MaxNumber, op1, op2, i);
+
+        public static float MinNumber(float op1, float op2) => float.IsNaN(op1) ? op2 : (float.IsNaN(op2) ? op1 : MathF.Min(op1, op2));
+
+        public static float MinNumberPairwise(float[] op1, int i) => Pairwise(MinNumber, op1, i);
+
+        public static float MinNumberPairwise(float[] op1, float[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
+
         public static double AbsoluteDifference(double op1, double op2) => Math.Abs(op1 - op2);
 
         public static double FusedMultiplyAdd(double op1, double op2, double op3) => Math.FusedMultiplyAdd(op2, op3, op1);
@@ -1441,11 +1453,35 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double FusedMultiplySubtractNegated(double op1, double op2, double op3) => Math.FusedMultiplyAdd(op2, op3, -op1);
 
+        public static double MaxNumber(double op1, double op2) => double.IsNaN(op1) ? op2 : (double.IsNaN(op2) ? op1 : Math.Max(op1, op2));
+
+        public static double MaxNumberPairwise(double[] op1, int i) => Pairwise(MaxNumber, op1, i);
+
+        public static double MaxNumberPairwise(double[] op1, double[] op2, int i) => Pairwise(MaxNumber, op1, op2, i);
+
+        public static double MinNumber(double op1, double op2) => double.IsNaN(op1) ? op2 : (double.IsNaN(op2) ? op1 : Math.Min(op1, op2));
+
+        public static double MinNumberPairwise(double[] op1, int i) => Pairwise(MinNumber, op1, i);
+
+        public static double MinNumberPairwise(double[] op1, double[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
+
         public static sbyte Add(sbyte op1, sbyte op2) => (sbyte)(op1 + op2);
+
+        public static sbyte AddPairwise(sbyte[] op1, int i) => Pairwise(Add, op1, i);
+
+        public static sbyte AddPairwise(sbyte[] op1, sbyte[] op2, int i) => Pairwise(Add, op1, op2, i);
 
         public static sbyte Max(sbyte op1, sbyte op2) => Math.Max(op1, op2);
 
+        public static sbyte MaxPairwise(sbyte[] op1, int i) => Pairwise(Max, op1, i);
+
+        public static sbyte MaxPairwise(sbyte[] op1, sbyte[] op2, int i) => Pairwise(Max, op1, op2, i);
+
         public static sbyte Min(sbyte op1, sbyte op2) => Math.Min(op1, op2);
+
+        public static sbyte MinPairwise(sbyte[] op1, int i) => Pairwise(Min, op1, i);
+
+        public static sbyte MinPairwise(sbyte[] op1, sbyte[] op2, int i) => Pairwise(Min, op1, op2, i);
 
         public static sbyte Multiply(sbyte op1, sbyte op2) => (sbyte)(op1 * op2);
 
@@ -1455,11 +1491,47 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte Subtract(sbyte op1, sbyte op2) => (sbyte)(op1 - op2);
 
+        private static sbyte Pairwise(Func<sbyte, sbyte, sbyte> pairOp, sbyte[] op1, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private static sbyte Pairwise(Func<sbyte, sbyte, sbyte> pairOp, sbyte[] op1, sbyte[] op2, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
+            }
+        }
+
         public static byte Add(byte op1, byte op2) => (byte)(op1 + op2);
+
+        public static byte AddPairwise(byte[] op1, int i) => Pairwise(Add, op1, i);
+
+        public static byte AddPairwise(byte[] op1, byte[] op2, int i) => Pairwise(Add, op1, op2, i);
 
         public static byte Max(byte op1, byte op2) => Math.Max(op1, op2);
 
+        public static byte MaxPairwise(byte[] op1, int i) => Pairwise(Max, op1, i);
+
+        public static byte MaxPairwise(byte[] op1, byte[] op2, int i) => Pairwise(Max, op1, op2, i);
+
         public static byte Min(byte op1, byte op2) => Math.Min(op1, op2);
+
+        public static byte MinPairwise(byte[] op1, int i) => Pairwise(Min, op1, i);
+
+        public static byte MinPairwise(byte[] op1, byte[] op2, int i) => Pairwise(Min, op1, op2, i);
 
         public static byte Multiply(byte op1, byte op2) => (byte)(op1 * op2);
 
@@ -1469,11 +1541,47 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte Subtract(byte op1, byte op2) => (byte)(op1 - op2);
 
+        private static byte Pairwise(Func<byte, byte, byte> pairOp, byte[] op1, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private static byte Pairwise(Func<byte, byte, byte> pairOp, byte[] op1, byte[] op2, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
+            }
+        }
+
         public static short Add(short op1, short op2) => (short)(op1 + op2);
+
+        public static short AddPairwise(short[] op1, int i) => Pairwise(Add, op1, i);
+
+        public static short AddPairwise(short[] op1, short[] op2, int i) => Pairwise(Add, op1, op2, i);
 
         public static short Max(short op1, short op2) => Math.Max(op1, op2);
 
+        public static short MaxPairwise(short[] op1, int i) => Pairwise(Max, op1, i);
+
+        public static short MaxPairwise(short[] op1, short[] op2, int i) => Pairwise(Max, op1, op2, i);
+
         public static short Min(short op1, short op2) => Math.Min(op1, op2);
+
+        public static short MinPairwise(short[] op1, int i) => Pairwise(Min, op1, i);
+
+        public static short MinPairwise(short[] op1, short[] op2, int i) => Pairwise(Min, op1, op2, i);
 
         public static short Multiply(short op1, short op2) => (short)(op1 * op2);
 
@@ -1483,11 +1591,47 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short Subtract(short op1, short op2) => (short)(op1 - op2);
 
+        private static short Pairwise(Func<short, short, short> pairOp, short[] op1, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private static short Pairwise(Func<short, short, short> pairOp, short[] op1, short[] op2, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
+            }
+        }
+
         public static ushort Add(ushort op1, ushort op2) => (ushort)(op1 + op2);
+
+        public static ushort AddPairwise(ushort[] op1, int i) => Pairwise(Add, op1, i);
+
+        public static ushort AddPairwise(ushort[] op1, ushort[] op2, int i) => Pairwise(Add, op1, op2, i);
 
         public static ushort Max(ushort op1, ushort op2) => Math.Max(op1, op2);
 
+        public static ushort MaxPairwise(ushort[] op1, int i) => Pairwise(Max, op1, i);
+
+        public static ushort MaxPairwise(ushort[] op1, ushort[] op2, int i) => Pairwise(Max, op1, op2, i);
+
         public static ushort Min(ushort op1, ushort op2) => Math.Min(op1, op2);
+
+        public static ushort MinPairwise(ushort[] op1, int i) => Pairwise(Min, op1, i);
+
+        public static ushort MinPairwise(ushort[] op1, ushort[] op2, int i) => Pairwise(Min, op1, op2, i);
 
         public static ushort Multiply(ushort op1, ushort op2) => (ushort)(op1 * op2);
 
@@ -1497,11 +1641,47 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort Subtract(ushort op1, ushort op2) => (ushort)(op1 - op2);
 
+        private static ushort Pairwise(Func<ushort, ushort, ushort> pairOp, ushort[] op1, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private static ushort Pairwise(Func<ushort, ushort, ushort> pairOp, ushort[] op1, ushort[] op2, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
+            }
+        }
+
         public static int Add(int op1, int op2) => (int)(op1 + op2);
+
+        public static int AddPairwise(int[] op1, int i) => Pairwise(Add, op1, i);
+
+        public static int AddPairwise(int[] op1, int[] op2, int i) => Pairwise(Add, op1, op2, i);
 
         public static int Max(int op1, int op2) => Math.Max(op1, op2);
 
+        public static int MaxPairwise(int[] op1, int i) => Pairwise(Max, op1, i);
+
+        public static int MaxPairwise(int[] op1, int[] op2, int i) => Pairwise(Max, op1, op2, i);
+
         public static int Min(int op1, int op2) => Math.Min(op1, op2);
+
+        public static int MinPairwise(int[] op1, int i) => Pairwise(Min, op1, i);
+
+        public static int MinPairwise(int[] op1, int[] op2, int i) => Pairwise(Min, op1, op2, i);
 
         public static int Multiply(int op1, int op2) => (int)(op1 * op2);
 
@@ -1511,11 +1691,47 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int Subtract(int op1, int op2) => (int)(op1 - op2);
 
+        private static int Pairwise(Func<int, int, int> pairOp, int[] op1, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private static int Pairwise(Func<int, int, int> pairOp, int[] op1, int[] op2, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
+            }
+        }
+
         public static uint Add(uint op1, uint op2) => (uint)(op1 + op2);
+
+        public static uint AddPairwise(uint[] op1, int i) => Pairwise(Add, op1, i);
+
+        public static uint AddPairwise(uint[] op1, uint[] op2, int i) => Pairwise(Add, op1, op2, i);
 
         public static uint Max(uint op1, uint op2) => Math.Max(op1, op2);
 
+        public static uint MaxPairwise(uint[] op1, int i) => Pairwise(Max, op1, i);
+
+        public static uint MaxPairwise(uint[] op1, uint[] op2, int i) => Pairwise(Max, op1, op2, i);
+
         public static uint Min(uint op1, uint op2) => Math.Min(op1, op2);
+
+        public static uint MinPairwise(uint[] op1, int i) => Pairwise(Min, op1, i);
+
+        public static uint MinPairwise(uint[] op1, uint[] op2, int i) => Pairwise(Min, op1, op2, i);
 
         public static uint Multiply(uint op1, uint op2) => (uint)(op1 * op2);
 
@@ -1525,11 +1741,47 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint Subtract(uint op1, uint op2) => (uint)(op1 - op2);
 
+        private static uint Pairwise(Func<uint, uint, uint> pairOp, uint[] op1, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private static uint Pairwise(Func<uint, uint, uint> pairOp, uint[] op1, uint[] op2, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
+            }
+        }
+
         public static long Add(long op1, long op2) => (long)(op1 + op2);
+
+        public static long AddPairwise(long[] op1, int i) => Pairwise(Add, op1, i);
+
+        public static long AddPairwise(long[] op1, long[] op2, int i) => Pairwise(Add, op1, op2, i);
 
         public static long Max(long op1, long op2) => Math.Max(op1, op2);
 
+        public static long MaxPairwise(long[] op1, int i) => Pairwise(Max, op1, i);
+
+        public static long MaxPairwise(long[] op1, long[] op2, int i) => Pairwise(Max, op1, op2, i);
+
         public static long Min(long op1, long op2) => Math.Min(op1, op2);
+
+        public static long MinPairwise(long[] op1, int i) => Pairwise(Min, op1, i);
+
+        public static long MinPairwise(long[] op1, long[] op2, int i) => Pairwise(Min, op1, op2, i);
 
         public static long Multiply(long op1, long op2) => (long)(op1 * op2);
 
@@ -1539,11 +1791,47 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long Subtract(long op1, long op2) => (long)(op1 - op2);
 
+        private static long Pairwise(Func<long, long, long> pairOp, long[] op1, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private static long Pairwise(Func<long, long, long> pairOp, long[] op1, long[] op2, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
+            }
+        }
+
         public static ulong Add(ulong op1, ulong op2) => (ulong)(op1 + op2);
+
+        public static ulong AddPairwise(ulong[] op1, int i) => Pairwise(Add, op1, i);
+
+        public static ulong AddPairwise(ulong[] op1, ulong[] op2, int i) => Pairwise(Add, op1, op2, i);
 
         public static ulong Max(ulong op1, ulong op2) => Math.Max(op1, op2);
 
+        public static ulong MaxPairwise(ulong[] op1, int i) => Pairwise(Max, op1, i);
+
+        public static ulong MaxPairwise(ulong[] op1, ulong[] op2, int i) => Pairwise(Max, op1, op2, i);
+
         public static ulong Min(ulong op1, ulong op2) => Math.Min(op1, op2);
+
+        public static ulong MinPairwise(ulong[] op1, int i) => Pairwise(Min, op1, i);
+
+        public static ulong MinPairwise(ulong[] op1, ulong[] op2, int i) => Pairwise(Min, op1, op2, i);
 
         public static ulong Multiply(ulong op1, ulong op2) => (ulong)(op1 * op2);
 
@@ -1553,11 +1841,47 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong Subtract(ulong op1, ulong op2) => (ulong)(op1 - op2);
 
+        private static ulong Pairwise(Func<ulong, ulong, ulong> pairOp, ulong[] op1, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private static ulong Pairwise(Func<ulong, ulong, ulong> pairOp, ulong[] op1, ulong[] op2, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
+            }
+        }
+
         public static float Add(float op1, float op2) => (float)(op1 + op2);
+
+        public static float AddPairwise(float[] op1, int i) => Pairwise(Add, op1, i);
+
+        public static float AddPairwise(float[] op1, float[] op2, int i) => Pairwise(Add, op1, op2, i);
 
         public static float Max(float op1, float op2) => Math.Max(op1, op2);
 
+        public static float MaxPairwise(float[] op1, int i) => Pairwise(Max, op1, i);
+
+        public static float MaxPairwise(float[] op1, float[] op2, int i) => Pairwise(Max, op1, op2, i);
+
         public static float Min(float op1, float op2) => Math.Min(op1, op2);
+
+        public static float MinPairwise(float[] op1, int i) => Pairwise(Min, op1, i);
+
+        public static float MinPairwise(float[] op1, float[] op2, int i) => Pairwise(Min, op1, op2, i);
 
         public static float Multiply(float op1, float op2) => (float)(op1 * op2);
 
@@ -1567,11 +1891,47 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float Subtract(float op1, float op2) => (float)(op1 - op2);
 
+        private static float Pairwise(Func<float, float, float> pairOp, float[] op1, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private static float Pairwise(Func<float, float, float> pairOp, float[] op1, float[] op2, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
+            }
+        }
+
         public static double Add(double op1, double op2) => (double)(op1 + op2);
+
+        public static double AddPairwise(double[] op1, int i) => Pairwise(Add, op1, i);
+
+        public static double AddPairwise(double[] op1, double[] op2, int i) => Pairwise(Add, op1, op2, i);
 
         public static double Max(double op1, double op2) => Math.Max(op1, op2);
 
+        public static double MaxPairwise(double[] op1, int i) => Pairwise(Max, op1, i);
+
+        public static double MaxPairwise(double[] op1, double[] op2, int i) => Pairwise(Max, op1, op2, i);
+
         public static double Min(double op1, double op2) => Math.Min(op1, op2);
+
+        public static double MinPairwise(double[] op1, int i) => Pairwise(Min, op1, i);
+
+        public static double MinPairwise(double[] op1, double[] op2, int i) => Pairwise(Min, op1, op2, i);
 
         public static double Multiply(double op1, double op2) => (double)(op1 * op2);
 
@@ -1580,6 +1940,30 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double MultiplySubtract(double op1, double op2, double op3) => (double)(op1 - (double)(op2 * op3));
 
         public static double Subtract(double op1, double op2) => (double)(op1 - op2);
+
+        private static double Pairwise(Func<double, double, double> pairOp, double[] op1, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private static double Pairwise(Func<double, double, double> pairOp, double[] op1, double[] op2, int i)
+        {
+            if (2 * i + 1 < op1.Length)
+            {
+                return pairOp(op1[2 * i], op1[2 * i + 1]);
+            }
+            else
+            {
+                return pairOp(op2[2 * i - op1.Length], op2[2 * i + 1 - op1.Length]);
+            }
+        }
 
         public static sbyte Negate(sbyte op1) => (sbyte)(-op1);
 
@@ -1593,5 +1977,152 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double Negate(double op1) => (double)(-op1);
 
+        public static sbyte AddAcross(sbyte[] op1) => Reduce(Add, op1);
+
+        public static sbyte MaxAcross(sbyte[] op1) => Reduce(Max, op1);
+
+        public static sbyte MinAcross(sbyte[] op1) => Reduce(Min, op1);
+
+        private static sbyte Reduce(Func<sbyte, sbyte, sbyte> reduceOp, sbyte[] op1)
+        {
+            sbyte acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+        public static byte AddAcross(byte[] op1) => Reduce(Add, op1);
+
+        public static byte MaxAcross(byte[] op1) => Reduce(Max, op1);
+
+        public static byte MinAcross(byte[] op1) => Reduce(Min, op1);
+
+        private static byte Reduce(Func<byte, byte, byte> reduceOp, byte[] op1)
+        {
+            byte acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+        public static short AddAcross(short[] op1) => Reduce(Add, op1);
+
+        public static short MaxAcross(short[] op1) => Reduce(Max, op1);
+
+        public static short MinAcross(short[] op1) => Reduce(Min, op1);
+
+        private static short Reduce(Func<short, short, short> reduceOp, short[] op1)
+        {
+            short acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+        public static ushort AddAcross(ushort[] op1) => Reduce(Add, op1);
+
+        public static ushort MaxAcross(ushort[] op1) => Reduce(Max, op1);
+
+        public static ushort MinAcross(ushort[] op1) => Reduce(Min, op1);
+
+        private static ushort Reduce(Func<ushort, ushort, ushort> reduceOp, ushort[] op1)
+        {
+            ushort acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+        public static int AddAcross(int[] op1) => Reduce(Add, op1);
+
+        public static int MaxAcross(int[] op1) => Reduce(Max, op1);
+
+        public static int MinAcross(int[] op1) => Reduce(Min, op1);
+
+        private static int Reduce(Func<int, int, int> reduceOp, int[] op1)
+        {
+            int acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+        public static uint AddAcross(uint[] op1) => Reduce(Add, op1);
+
+        public static uint MaxAcross(uint[] op1) => Reduce(Max, op1);
+
+        public static uint MinAcross(uint[] op1) => Reduce(Min, op1);
+
+        private static uint Reduce(Func<uint, uint, uint> reduceOp, uint[] op1)
+        {
+            uint acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+        public static float AddAcross(float[] op1) => Reduce(Add, op1);
+
+        public static float MaxAcross(float[] op1) => Reduce(Max, op1);
+
+        public static float MinAcross(float[] op1) => Reduce(Min, op1);
+
+        private static float Reduce(Func<float, float, float> reduceOp, float[] op1)
+        {
+            float acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+        public static double AddAcross(double[] op1) => Reduce(Add, op1);
+
+        public static double MaxAcross(double[] op1) => Reduce(Max, op1);
+
+        public static double MinAcross(double[] op1) => Reduce(Min, op1);
+
+        private static double Reduce(Func<double, double, double> reduceOp, double[] op1)
+        {
+            double acc = op1[0];
+
+            for (int i = 1; i < op1.Length; i++)
+            {
+                acc = reduceOp(acc, op1[i]);
+            }
+
+            return acc;
+        }
+
+        public static float MaxNumberAcross(float[] op1) => Reduce(MaxNumber, op1);
+
+        public static float MinNumberAcross(float[] op1) => Reduce(MinNumber, op1);
     }
 }

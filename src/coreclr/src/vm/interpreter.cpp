@@ -1747,17 +1747,12 @@ static void MonitorEnter(Object* obj, BYTE* pbLockTaken)
 
     GCPROTECT_BEGININTERIOR(pbLockTaken);
 
-#ifdef _DEBUG
-    Thread *pThread = GetThread();
-    DWORD lockCount = pThread->m_dwLockCount;
-#endif
     if (GET_THREAD()->CatchAtSafePointOpportunistic())
     {
         GET_THREAD()->PulseGCMode();
     }
     objRef->EnterObjMonitor();
-    _ASSERTE ((objRef->GetSyncBlock()->GetMonitor()->GetRecursionLevel() == 1 && pThread->m_dwLockCount == lockCount + 1) ||
-              pThread->m_dwLockCount == lockCount);
+
     if (pbLockTaken != 0) *pbLockTaken = 1;
 
     GCPROTECT_END();

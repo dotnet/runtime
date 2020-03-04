@@ -187,10 +187,21 @@ namespace ReadyToRun.SuperIlc
                 processParameters.Arguments = "-c " + scriptToRun;
             }
 
+            string coreRootDir;
+            if (_options.Composite)
+            {
+                coreRootDir = GetOutputPath(outputRoot);
+            }
+            else
+            {
+                coreRootDir = _options.CoreRootOutputPath(Index, isFramework: false);
+            }
+
             processParameters.InputFileNames = new string[] { scriptToRun };
             processParameters.OutputFileName = scriptToRun;
             processParameters.LogPath = scriptToRun + ".log";
-            processParameters.EnvironmentOverrides["CORE_ROOT"] = _options.CoreRootOutputPath(Index, isFramework: false);
+            processParameters.EnvironmentOverrides["CORE_ROOT"] = coreRootDir;
+
             return processParameters;
         }
 

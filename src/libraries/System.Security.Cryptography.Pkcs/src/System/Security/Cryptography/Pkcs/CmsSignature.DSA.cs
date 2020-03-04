@@ -59,7 +59,7 @@ namespace System.Security.Cryptography.Pkcs
                             _signatureAlgorithm));
                 }
 
-                DSA dsa = certificate.GetDSAPublicKey();
+                DSA? dsa = certificate.GetDSAPublicKey();
 
                 if (dsa == null)
                 {
@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 DSAParameters dsaParameters = dsa.ExportParameters(false);
-                int bufSize = 2 * dsaParameters.Q.Length;
+                int bufSize = 2 * dsaParameters.Q!.Length;
 
 #if NETCOREAPP || NETSTANDARD2_1
                 byte[] rented = CryptoPool.Rent(bufSize);
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Pkcs
                 [NotNullWhen(true)] out byte[]? signatureValue)
             {
                 // If there's no private key, fall back to the public key for a "no private key" exception.
-                DSA dsa = key as DSA ??
+                DSA? dsa = key as DSA ??
                     PkcsPal.Instance.GetPrivateKeyForSigning<DSA>(certificate, silent) ??
                     certificate.GetDSAPublicKey();
 
@@ -145,7 +145,7 @@ namespace System.Security.Cryptography.Pkcs
                     {
                         var signature = new ReadOnlySpan<byte>(rented, 0, bytesWritten);
 
-                        if (key != null && !certificate.GetDSAPublicKey().VerifySignature(dataHash, signature))
+                        if (key != null && !certificate.GetDSAPublicKey()!.VerifySignature(dataHash, signature))
                         {
                             // key did not match certificate
                             signatureValue = null;

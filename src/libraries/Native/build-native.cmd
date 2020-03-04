@@ -145,7 +145,7 @@ goto :Failure
 
 :BuildNativeProj
 :: Build the project created by Cmake
-set __msbuildArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%"
+set __msbuildArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065
 
 call msbuild "%__IntermediatesDir%\install.vcxproj" /t:%__BuildTarget% /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
 IF ERRORLEVEL 1 (

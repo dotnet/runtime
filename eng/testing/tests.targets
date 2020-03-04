@@ -103,17 +103,11 @@
 
     <Message Condition="'%(UnsupportedPlatformsItems.Identity)' == '$(TargetOS)'"
              Text="Skipping tests in $(AssemblyName) because it is not supported on $(TargetOS)" />
-
-    <Message Condition="'$(ConfigurationErrorMsg)' != ''"
-             Text="Skipping tests in $(AssemblyName) because there is no TargetFramework compatible with the current BuildTargetFramework." />
   </Target>
 
   <Target Name="RunTests"
           Condition="'$(TestDisabled)' != 'true'"
           DependsOnTargets="ValidateTestPlatform">
-    <Error Condition="!Exists('$(TargetPath)')"
-           Text="Test assembly couldn't be found. Make sure to build the test project first." />
-
     <PropertyGroup>
       <RunTestsCommand>"$(RunScriptOutputPath)" --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
       <!-- TODO: remove rsp argument when rsp files are removed: https://github.com/dotnet/runtime/issues/1980. -->
@@ -128,7 +122,8 @@
       <Output PropertyName="TestRunExitCode" TaskParameter="ExitCode" />
     </Exec>
 
-    <PropertyGroup>
+    <PropertyGroup Condition="'$(TestRunExitCode)' != '0'">
+      <TestResultsPath>$(RunWorkingDirectory)$(TestResultsName)</TestResultsPath>
       <TestRunErrorMessage>One or more tests failed while running tests from '$(TestProjectName)'.</TestRunErrorMessage>
       <TestRunErrorMessage Condition="Exists('$(TestResultsPath)')">$(TestRunErrorMessage) Please check $(TestResultsPath) for details!</TestRunErrorMessage>
     </PropertyGroup>
@@ -139,9 +134,7 @@
   <Import Project="$(MSBuildThisFileDirectory)xunit\xunit.targets" Condition="'$(TestFramework)' == 'xunit'" />
 
   <!-- Main test targets -->
-  <Target Name="Test" DependsOnTargets="GenerateRunScript;RunTests" />
-  <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
-  <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
+  <Target Name="Test" DependsOnTargets="$(TestDependsOn)" />
   
   <Import Project="$(MSBuildThisFileDirectory)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
 </Project>

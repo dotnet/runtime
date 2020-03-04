@@ -78,8 +78,7 @@ namespace System.Threading
 
         private int ReleaseCore(int releaseCount)
         {
-            int previousCount;
-            if (!Interop.Kernel32.ReleaseSemaphore(SafeWaitHandle!, releaseCount, out previousCount))
+            if (!Interop.Kernel32.ReleaseSemaphore(SafeWaitHandle!, releaseCount, out int previousCount))
                 throw new SemaphoreFullException();
 
             return previousCount;

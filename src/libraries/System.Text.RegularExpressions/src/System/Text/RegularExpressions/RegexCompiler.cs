@@ -4597,14 +4597,16 @@ namespace System.Text.RegularExpressions
                             // actually checking anything.
 
                             // runtextpos += len;
+                            // i = 0;
                             // goto loopEnd;
                             Ldloc(_runtextposLocal!);
                             Ldloc(lenLocal);
                             Add();
                             Stloc(_runtextposLocal!);
+                            Ldc(0);
+                            Stloc(iLocal);
                             BrFar(loopEnd);
                         }
-
                         else
                         {
                             // Otherwise, we emit the open-coded loop.

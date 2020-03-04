@@ -17,11 +17,8 @@ include_directories(../superpmi-shared)
 
 set(SUPERPMI_SOURCES
     commandline.cpp
-    coreclrcallbacks.cpp
     cycletimer.cpp
     icorjitinfo.cpp
-    ieememorymanager.cpp
-    iexecutionengine.cpp
     jitdebugger.cpp
     jitinstance.cpp
     methodstatsemitter.cpp
@@ -52,7 +49,7 @@ target_precompile_header(TARGET superpmi HEADER standardpch.h)
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi
         utilcodestaticnohost
-        mscorrc_debug
+        mscorrc
         coreclrpal
         palrt
     )

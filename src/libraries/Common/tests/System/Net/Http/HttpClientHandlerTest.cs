@@ -1019,6 +1019,7 @@ namespace System.Net.Http.Functional.Tests
                 $"X-Frame-Options: {fold}deny{newline}" +
                 $"X-WebKit-CSP: default-src 'self'{newline}" +
                 $"Refresh: {fold}5; url=http://www.w3.org/pub/WWW/People.html{newline}" +
+                $"Server-Timing: serveroperat{fold}ion;dur=1.23{newline}" +
                 $"Status: {fold}200 OK{newline}" +
                 $"Timing-Allow-Origin: {fold}<origin>[, <origin>]*{newline}" +
                 $"Upgrade-Insecure-Requests:{fold} 1{newline}" +

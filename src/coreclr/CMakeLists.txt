@@ -196,5 +196,3 @@ endif (CLR_CMAKE_HOST_UNIX)
 # Add Product Directory
 #------------------------------
 add_subdirectory(src)
-
-include(definitionsconsistencycheck.cmake)

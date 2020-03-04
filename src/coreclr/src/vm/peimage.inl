@@ -197,6 +197,18 @@ inline BOOL PEImage::HasCorHeader()
     }
 }
 
+inline BOOL PEImage::IsComponentAssembly()
+{
+    WRAPPER_NO_CONTRACT;
+    if (HasLoadedLayout())
+        return GetLoadedLayout()->IsComponentAssembly();
+    else
+    {
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        return pLayout->IsComponentAssembly();
+    }
+}
+
 inline BOOL PEImage::HasReadyToRunHeader()
 {
     WRAPPER_NO_CONTRACT;

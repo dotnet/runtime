@@ -196,7 +196,7 @@ namespace JIT.HardwareIntrinsics.Arm
         private static readonly int LargestVectorSize = 16;
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<SByte>>() / sizeof(SByte);
-        private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<SByte>>() / sizeof(SByte);
+        private static readonly int RetElementCount = Unsafe.SizeOf<Vector64<SByte>>() / sizeof(SByte);
 
         private static SByte[] _data1 = new SByte[Op1ElementCount];
 
@@ -260,7 +260,7 @@ namespace JIT.HardwareIntrinsics.Arm
                                         Unsafe.Read<Vector128<SByte>>(_dataTable.inArray1Ptr)
                                      });
 
-            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<SByte>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, (Vector64<SByte>)(result));
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
         }
 
@@ -273,7 +273,7 @@ namespace JIT.HardwareIntrinsics.Arm
                                         AdvSimd.LoadVector128((SByte*)(_dataTable.inArray1Ptr))
                                      });
 
-            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<SByte>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, (Vector64<SByte>)(result));
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
         }
 
@@ -402,7 +402,7 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, _dataTable.outArrayPtr);
         }
-        
+
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
@@ -446,7 +446,7 @@ namespace JIT.HardwareIntrinsics.Arm
             SByte[] outArray = new SByte[RetElementCount];
 
             Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray1[0]), op1);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<SByte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector64<SByte>>());
 
             ValidateResult(inArray1, outArray, method);
         }
@@ -457,7 +457,7 @@ namespace JIT.HardwareIntrinsics.Arm
             SByte[] outArray = new SByte[RetElementCount];
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector128<SByte>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<SByte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector64<SByte>>());
 
             ValidateResult(inArray1, outArray, method);
         }
@@ -466,12 +466,21 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            SByte temp = 0;
-            for (var i = 0; i < RetElementCount; i++)
+            if (Helpers.AddAcross(firstOp) != result[0])
             {
-                temp += firstOp[i];
+                succeeded = false;
             }
-            succeeded = temp == result[0];
+            else
+            {
+                for (int i = 1; i < RetElementCount; i++)
+                {
+                    if (result[i] != 0)
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+            }
 
             if (!succeeded)
             {

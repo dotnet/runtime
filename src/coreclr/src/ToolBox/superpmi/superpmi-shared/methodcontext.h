@@ -170,17 +170,11 @@ public:
         DWORD offsetOfDelegateInstance;
         DWORD offsetOfDelegateFirstTarget;
         DWORD offsetOfWrapperDelegateIndirectCell;
-        DWORD offsetOfTransparentProxyRP;
-        DWORD offsetOfRealProxyServer;
-        DWORD offsetOfObjArrayData;
         DWORD sizeOfReversePInvokeFrame;
         DWORD osPageSize;
         DWORD maxUncheckedOffsetForNullObject;
         DWORD targetAbi;
         DWORD osType;
-        DWORD osMajor;
-        DWORD osMinor;
-        DWORD osBuild;
     };
     struct Agnostic_GetFieldAddress
     {
@@ -697,10 +691,6 @@ public:
     void dmpGetUnmanagedCallConv(DWORDLONG key, DWORD result);
     CorInfoUnmanagedCallConv repGetUnmanagedCallConv(CORINFO_METHOD_HANDLE method);
 
-    void recIsInstantiationOfVerifiedGeneric(CORINFO_METHOD_HANDLE method, CorInfoInstantiationVerification result);
-    void dmpIsInstantiationOfVerifiedGeneric(DWORDLONG key, DWORD value);
-    CorInfoInstantiationVerification repIsInstantiationOfVerifiedGeneric(CORINFO_METHOD_HANDLE method);
-
     void recAsCorInfoType(CORINFO_CLASS_HANDLE cls, CorInfoType result);
     void dmpAsCorInfoType(DWORDLONG key, DWORD value);
     CorInfoType repAsCorInfoType(CORINFO_CLASS_HANDLE cls);
@@ -736,10 +726,6 @@ public:
     void recGetSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd, CorInfoHelpFunc result);
     void dmpGetSharedCCtorHelper(DWORDLONG key, DWORD value);
     CorInfoHelpFunc repGetSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd);
-
-    void recGetSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn, CorInfoHelpFunc result);
-    void dmpGetSecurityPrologHelper(DWORDLONG key, DWORD value);
-    CorInfoHelpFunc repGetSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn);
 
     void recGetTypeForBox(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
     void dmpGetTypeForBox(DWORDLONG key, DWORDLONG value);
@@ -1027,7 +1013,7 @@ public:
 
     void recGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* result);
     void dmpGetLocationOfThisType(DWORDLONG key, const Agnostic_CORINFO_LOOKUP_KIND& value);
-    CORINFO_LOOKUP_KIND repGetLocationOfThisType(CORINFO_METHOD_HANDLE context);
+    void repGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
 
     void recGetDelegateCtor(CORINFO_METHOD_HANDLE methHnd,
                             CORINFO_CLASS_HANDLE  clsHnd,
@@ -1066,21 +1052,10 @@ public:
                                CorInfoInlineTypeCheck       result);
     void dmpCanInlineTypeCheck(DLD key, DWORD value);
     CorInfoInlineTypeCheck repCanInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
-    void recCanInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls, BOOL result);
-    void dmpCanInlineTypeCheckWithObjectVTable(DWORDLONG key, DWORD value);
-    BOOL repCanInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls);
 
     void recSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method, BOOL result);
     void dmpSatisfiesMethodConstraints(DLDL key, DWORD value);
     BOOL repSatisfiesMethodConstraints(CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method);
-
-    void recInitConstraintsForVerification(CORINFO_METHOD_HANDLE method,
-                                           BOOL*                 pfHasCircularClassConstraints,
-                                           BOOL*                 pfHasCircularMethodConstraint);
-    void dmpInitConstraintsForVerification(DWORDLONG key, DD value);
-    void repInitConstraintsForVerification(CORINFO_METHOD_HANDLE method,
-                                           BOOL*                 pfHasCircularClassConstraints,
-                                           BOOL*                 pfHasCircularMethodConstraint);
 
     void recIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK, BOOL result);
     void dmpIsValidStringRef(DLD key, DWORD value);
@@ -1112,10 +1087,6 @@ public:
 
     void recHandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
     void dmpHandleException(DWORD key, DWORD value);
-
-    void recGetAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void** ppIndirection, void* result);
-    void dmpGetAddressOfPInvokeFixup(DWORDLONG key, DLDL value);
-    void* repGetAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void** ppIndirection);
 
     void recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
     void dmpGetAddressOfPInvokeTarget(DWORDLONG key, DLD value);
@@ -1157,12 +1128,6 @@ public:
     void dmpIsDelegateCreationAllowed(DLDL key, DWORD value);
     BOOL repIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeHnd);
 
-    void recCanSkipMethodVerification(CORINFO_METHOD_HANDLE            ftnHandle,
-                                      BOOL                             skip,
-                                      CorInfoCanSkipVerificationResult result);
-    void dmpCanSkipMethodVerification(DLD key, DWORD value);
-    CorInfoCanSkipVerificationResult repCanSkipMethodVerification(CORINFO_METHOD_HANDLE ftnHandle, BOOL skip);
-
     void recFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
                             unsigned               methTOK,
                             CORINFO_CONTEXT_HANDLE context,
@@ -1172,10 +1137,6 @@ public:
                             unsigned               methTOK,
                             CORINFO_CONTEXT_HANDLE context,
                             CORINFO_SIG_INFO*      sig);
-
-    void recShouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope, BOOL result);
-    void dmpShouldEnforceCallvirtRestriction(DWORDLONG key, DWORD value);
-    BOOL repShouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope);
 
     void recGetMethodSync(CORINFO_METHOD_HANDLE ftn, void** ppIndirection, void* result);
     void dmpGetMethodSync(DWORDLONG key, DLDL value);
@@ -1265,10 +1226,6 @@ public:
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     WORD repGetRelocTypeHint(void* target);
 
-    void recIsWriteBarrierHelperRequired(CORINFO_FIELD_HANDLE field, bool result);
-    void dmpIsWriteBarrierHelperRequired(DWORDLONG key, DWORD value);
-    bool repIsWriteBarrierHelperRequired(CORINFO_FIELD_HANDLE field);
-
     void recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, BOOL result);
     void dmpIsValidToken(DLD key, DWORD value);
     BOOL repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
@@ -1301,10 +1258,6 @@ public:
     void recCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, BOOL fOptional, BOOL result);
     void dmpCheckMethodModifier(const Agnostic_CheckMethodModifier& key, DWORD value);
     BOOL repCheckMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, BOOL fOptional);
-
-    void recGetPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void** ppIndirection, void* result);
-    void dmpGetPInvokeUnmanagedTarget(DWORDLONG key, DLDL value);
-    void* repGetPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void** ppIndirection);
 
     void recGetArrayRank(CORINFO_CLASS_HANDLE cls, unsigned result);
     void dmpGetArrayRank(DWORDLONG key, DWORD value);
@@ -1373,7 +1326,7 @@ enum mcPackets
     Packet_CanInline                      = 9,
     Packet_CanInlineTypeCheck = 173, // Added 11/15/2018 as a replacement for CanInlineTypeCheckWithObjectVTable
     Packet_CanInlineTypeCheckWithObjectVTable            = 10,
-    Packet_CanSkipMethodVerification                     = 11,
+    Packet_CanSkipMethodVerification                     = 11, // Retired 2/18/2020
     Packet_CanTailCall                                   = 12,
     Retired4                                             = 13,
     Packet_CheckMethodModifier                           = 142, // retired as 13 on 2013/07/04
@@ -1398,7 +1351,7 @@ enum mcPackets
     Packet_FindNameOfToken                               = 145, // Added 7/19/2013 - adjusted members to proper types
     Packet_GetSystemVAmd64PassStructInRegisterDescriptor = 156, // Added 2/17/2016
     Packet_FindSig                                       = 25,
-    Packet_GetAddressOfPInvokeFixup                      = 26,
+    Packet_GetAddressOfPInvokeFixup                      = 26, // Retired 2/18/2020
     Packet_GetAddressOfPInvokeTarget                     = 153, // Added 2/3/2016
     Packet_GetAddrOfCaptureThreadGlobal                  = 27,
     Retired1                                             = 28,
@@ -1468,10 +1421,10 @@ enum mcPackets
     Packet_GetNewArrHelper                               = 79,
     Packet_GetNewHelper                                  = 80,
     Packet_GetParentType                                 = 81,
-    Packet_GetPInvokeUnmanagedTarget                     = 82,
+    Packet_GetPInvokeUnmanagedTarget                     = 82, // Retired 2/18/2020
     Packet_GetProfilingHandle                            = 83,
     Packet_GetRelocTypeHint                              = 84,
-    Packet_GetSecurityPrologHelper                       = 85,
+    Packet_GetSecurityPrologHelper                       = 85, // Retired 2/18/2020
     Packet_GetSharedCCtorHelper                          = 86,
     Packet_GetTailCallCopyArgsThunk                      = 87,
     Packet_GetThreadTLSIndex                             = 88,
@@ -1488,12 +1441,12 @@ enum mcPackets
     Packet_GetVars                                       = 96,
     Packet_HandleException                               = 135,
     Packet_InitClass                                     = 97,
-    Packet_InitConstraintsForVerification                = 98,
+    Packet_InitConstraintsForVerification                = 98, // Retired 2/18/2020
     Packet_IsCompatibleDelegate                          = 99,
     Packet_IsDelegateCreationAllowed                     = 155,
     Packet_IsFieldStatic                                 = 137, // Added 4/9/2013 - needed for 4.5.1
     Packet_IsIntrinsicType                               = 148, // Added 10/26/2019 - SIMD support
-    Packet_IsInstantiationOfVerifiedGeneric              = 100,
+    Packet_IsInstantiationOfVerifiedGeneric              = 100, // Retired 2/18/2020
     Packet_IsSDArray                                     = 101,
     Packet_IsStructRequiringStackAllocRetBuf             = 102,
     Packet_IsValidStringRef                              = 103,
@@ -1501,7 +1454,7 @@ enum mcPackets
     Retired6                                             = 104,
     Packet_IsValidToken                                  = 144, // Added 7/19/2013 - adjusted members to proper types
     Packet_IsValueClass                                  = 105,
-    Packet_IsWriteBarrierHelperRequired                  = 106,
+    Packet_IsWriteBarrierHelperRequired                  = 106, // Retired 2/18/2020
     Packet_MergeClasses                                  = 107,
     Packet_IsMoreSpecificType                            = 174, // Added 2/14/2019
     Packet_PInvokeMarshalingRequired                     = 108,
@@ -1510,7 +1463,7 @@ enum mcPackets
     Packet_TryResolveToken                               = 158, // Added 4/26/2016
     Packet_SatisfiesClassConstraints                     = 110,
     Packet_SatisfiesMethodConstraints                    = 111,
-    Packet_ShouldEnforceCallvirtRestriction              = 112,
+    Packet_ShouldEnforceCallvirtRestriction              = 112, // Retired 2/18/2020
 
     PacketCR_AddressMap                        = 113,
     PacketCR_AllocMethodBlockCounts            = 131,

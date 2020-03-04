@@ -360,20 +360,9 @@ MONO_JIT_ICALLS
 	MonoJitICallInfo array [MONO_JIT_ICALL_count];
 } MonoJitICallInfos;
 
-// Indirect mono_jit_icall_info access through a function or macro due to loaded LLVM.
-//
-#if MONO_LLVM_LOADED
-
-MONO_LLVM_INTERNAL MonoJitICallInfos*
-mono_get_jit_icall_info (void);
-
-#else
-
 extern MonoJitICallInfos mono_jit_icall_info;
 
 #define mono_get_jit_icall_info() (&mono_jit_icall_info)
-
-#endif
 
 // Convert MonoJitICallInfo* to an int or enum.
 //

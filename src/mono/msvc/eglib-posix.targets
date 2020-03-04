@@ -19,6 +19,9 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmodule-unix.c">
       <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gspawn.c" >
+      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gtimer-unix.c">
       <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
     </ClCompile>

@@ -46,6 +46,7 @@ namespace System
         private static int _infinitelyRecursingCount;
         private static bool _resourceManagerInited = false;
 
+        [PreserveDependency(".cctor()", "System.Resources.ResourceManager")]
         private static string? InternalGetResourceString(string? key)
         {
             if (string.IsNullOrEmpty(key))

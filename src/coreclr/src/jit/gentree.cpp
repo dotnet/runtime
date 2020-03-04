@@ -5405,11 +5405,16 @@ bool GenTree::OperIsImplicitIndir() const
         case GT_ARR_ELEM:
         case GT_ARR_OFFSET:
             return true;
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+        {
+            return AsSIMD()->OperIsMemoryLoad();
+        }
+#endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
         {
-            GenTreeHWIntrinsic* hwIntrinsicNode = (const_cast<GenTree*>(this))->AsHWIntrinsic();
-            return hwIntrinsicNode->OperIsMemoryLoadOrStore();
+            return AsHWIntrinsic()->OperIsMemoryLoadOrStore();
         }
 #endif // FEATURE_HW_INTRINSICS
         default:
@@ -12498,6 +12503,39 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         objOp = opOther->AsCall()->gtCallThisArg->GetNode();
     }
 
+    bool                 pIsExact   = false;
+    bool                 pIsNonNull = false;
+    CORINFO_CLASS_HANDLE objCls     = gtGetClassHandle(objOp, &pIsExact, &pIsNonNull);
+
+    // if both classes are "final" (e.g. System.String[]) we can replace the comparison
+    // with `true/false` + null check.
+    if ((objCls != NO_CLASS_HANDLE) && (pIsExact || impIsClassExact(objCls)))
+    {
+        TypeCompareState tcs = info.compCompHnd->compareTypesForEquality(objCls, clsHnd);
+        if (tcs != TypeCompareState::May)
+        {
+            const bool operatorIsEQ  = oper == GT_EQ;
+            const bool typesAreEqual = tcs == TypeCompareState::Must;
+            GenTree*   compareResult = gtNewIconNode((operatorIsEQ ^ typesAreEqual) ? 0 : 1);
+
+            if (!pIsNonNull)
+            {
+                // we still have to emit a null-check
+                // obj.GetType == typeof() -> (nullcheck) true/false
+                GenTree* nullcheck = gtNewNullCheck(objOp, compCurBB);
+                return gtNewOperNode(GT_COMMA, tree->TypeGet(), nullcheck, compareResult);
+            }
+            else if (objOp->gtFlags & GTF_ALL_EFFECT)
+            {
+                return gtNewOperNode(GT_COMMA, tree->TypeGet(), objOp, compareResult);
+            }
+            else
+            {
+                return compareResult;
+            }
+        }
+    }
+
     GenTree* const objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, objOp);
 
     // Update various flags
@@ -13276,8 +13314,10 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         if (options == BR_REMOVE_AND_NARROW || options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE)
         {
             JITDUMP(" to read first byte of struct via modified [%06u]\n", dspTreeID(copySrc));
-            copySrc->ChangeOper(GT_IND);
+            copySrc->ChangeOper(GT_NULLCHECK);
             copySrc->gtType = TYP_BYTE;
+            compCurBB->bbFlags |= BBF_HAS_NULLCHECK;
+            optMethodFlags |= OMF_HAS_NULLCHECK;
         }
         else
         {
@@ -18222,6 +18262,16 @@ bool GenTree::isCommutativeSIMDIntrinsic()
             return false;
     }
 }
+
+// Returns true for the SIMD Instrinsic instructions that have MemoryLoad semantics, false otherwise
+bool GenTreeSIMD::OperIsMemoryLoad() const
+{
+    if (gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
+    {
+        return true;
+    }
+    return false;
+}
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -18431,7 +18481,7 @@ GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORI
 }
 
 // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
-bool GenTreeHWIntrinsic::OperIsMemoryLoad()
+bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
 {
 #ifdef TARGET_XARCH
     // Some xarch instructions have MemoryLoad sematics
@@ -18473,7 +18523,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad()
 }
 
 // Returns true for the HW Instrinsic instructions that have MemoryStore semantics, false otherwise
-bool GenTreeHWIntrinsic::OperIsMemoryStore()
+bool GenTreeHWIntrinsic::OperIsMemoryStore() const
 {
 #ifdef TARGET_XARCH
     // Some xarch instructions have MemoryStore sematics
@@ -18508,7 +18558,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore()
 }
 
 // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
-bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore()
+bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
 {
 #ifdef TARGET_XARCH
     return OperIsMemoryLoad() || OperIsMemoryStore();

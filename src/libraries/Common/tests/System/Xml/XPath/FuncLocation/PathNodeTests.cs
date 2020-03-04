@@ -7,6 +7,7 @@ using System;
 using System.Xml;
 using System.Xml.XPath;
 using XPathTests.Common;
+using System.Xml.Linq;
 
 namespace XPathTests.FunctionalTests.Location.Paths
 {
@@ -15,6 +16,29 @@ namespace XPathTests.FunctionalTests.Location.Paths
     /// </summary>
     public static partial class NodeTestsTests
     {
+        [Fact]
+        public static void PathNavigatorMoveToNext_HasNotNextNode()
+        {
+            var current = new XElement("current");
+            new XElement("parent", current);
+
+            XPathNavigator nav = current.CreateNavigator();
+            Assert.False(nav.MoveToNext(XPathNodeType.Element));
+            Assert.Equal("current", nav.LocalName);
+        }
+
+        [Fact]
+        public static void PathNavigatorMoveToNext_HasNextNode()
+        {
+            var current = new XElement("current");
+            var next = new XElement("next");
+            new XElement("parent", current, next);
+
+            XPathNavigator nav = current.CreateNavigator();
+            Assert.True(nav.MoveToNext(XPathNodeType.Element));
+            Assert.Equal("next", nav.LocalName);
+        }
+
         /// <summary>
         /// Expected: Selects all text node descendants of the context node.
         /// descendant::text()

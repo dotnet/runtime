@@ -7725,11 +7725,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
+		case OP_CREATE_SCALAR:
 		case OP_CREATE_SCALAR_UNSAFE: {
-			values [ins->dreg] = LLVMBuildInsertElement (builder, 
-				LLVMGetUndef (simd_class_to_llvm_type (ctx, ins->klass)), 
-				convert (ctx, lhs, primitive_type_to_llvm_type (inst_c1_type (ins))),
-				LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			LLVMTypeRef type = type_to_simd_type (ins->inst_c1);
+			// use undef vector (most likely empty but may contain garbage values) for OP_CREATE_SCALAR_UNSAFE
+			// and zero one for OP_CREATE_SCALAR
+			LLVMValueRef vector = (ins->opcode == OP_CREATE_SCALAR) ? LLVMConstNull (type) : LLVMGetUndef (type);
+			LLVMValueRef insert_pos = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			values [ins->dreg] = LLVMBuildInsertElement (builder, vector, lhs, insert_pos, "");
 			break;
 		}
 
@@ -8640,7 +8643,6 @@ emit_method_inner (EmitContext *ctx)
 	}
 	ctx->has_safepoints = requires_safepoint;
 
-#ifndef MONO_LLVM_LOADED
 	if (!cfg->llvm_only && mono_threads_are_safepoints_enabled () && requires_safepoint) {
 		if (!cfg->compile_aot && cfg->method->wrapper_type != MONO_WRAPPER_ALLOC) {
 			LLVMSetGC (method, "coreclr");
@@ -8649,7 +8651,6 @@ emit_method_inner (EmitContext *ctx)
 			LLVMSetGC (method, "coreclr");
 		}
 	}
-#endif
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
 	mono_llvm_add_func_attr (method, LLVM_ATTR_UW_TABLE);

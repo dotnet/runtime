@@ -15,7 +15,7 @@
     <!-- Distro rid is passed as runtimeos-arch-->
     <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
     <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(__BuildOS)' == 'OSX'">osx.10.12-x64</_parseDistroRid>
-    <_distroRidIndex>$(_parseDistroRid.IndexOfAny("-"))</_distroRidIndex>
+    <_distroRidIndex>$(_parseDistroRid.LastIndexOfAny("-"))</_distroRidIndex>
     <_archRidIndex>$([MSBuild]::Add($(_distroRidIndex), 1))</_archRidIndex>
     <OSRid Condition="'$(OSRid)' == '' and '$(_distroRidIndex)' != '-1'">$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</OSRid>
     <OSRid Condition="'$(OSRid)' == ''">win10</OSRid>
@@ -106,6 +106,18 @@
         <PackageRID>$(OSRid)-$(ArchGroup)</PackageRID>
         <!-- Set the platform part of the RID if we are doing a portable build -->
         <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(_runtimeOSFamily)' == 'alpine'">
+      <PropertyGroup>
+        <PackageRID>$(OSRid)-$(ArchGroup)</PackageRID>
+        <!-- Set the platform part of the RID if we are doing a portable build -->
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-musl-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(RuntimeOS)' == 'linux-musl'">
+      <PropertyGroup>
+        <PackageRID>$(RuntimeOS)-$(ArchGroup)</PackageRID>
       </PropertyGroup>
     </When>
     <Otherwise>

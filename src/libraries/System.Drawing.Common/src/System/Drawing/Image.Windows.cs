@@ -117,10 +117,10 @@ namespace System.Drawing
             if (format == null)
                 throw new ArgumentNullException(nameof(format));
 
-            ImageCodecInfo codec = format.FindEncoder();
+            ImageCodecInfo? codec = format.FindEncoder();
 
             if (codec == null)
-                codec = ImageFormat.Png.FindEncoder();
+                codec = ImageFormat.Png.FindEncoder()!;
 
             Save(filename, codec, null);
         }
@@ -128,7 +128,7 @@ namespace System.Drawing
         /// <summary>
         /// Saves this <see cref='Image'/> to the specified file in the specified format and with the specified encoder parameters.
         /// </summary>
-        public void Save(string filename, ImageCodecInfo encoder, EncoderParameters encoderParams)
+        public void Save(string filename, ImageCodecInfo encoder, EncoderParameters? encoderParams)
         {
             if (filename == null)
                 throw new ArgumentNullException(nameof(filename));
@@ -150,7 +150,7 @@ namespace System.Drawing
 
                 if (_rawData != null)
                 {
-                    ImageCodecInfo rawEncoder = RawFormat.FindEncoder();
+                    ImageCodecInfo? rawEncoder = RawFormat.FindEncoder();
                     if (rawEncoder != null && rawEncoder.Clsid == g)
                     {
                         using (FileStream fs = File.OpenWrite(filename))
@@ -187,7 +187,7 @@ namespace System.Drawing
                 dest = ImageFormat.Png;
 
             // If we don't find an Encoder (for things like Icon), we just switch back to PNG...
-            ImageCodecInfo codec = dest.FindEncoder() ?? ImageFormat.Png.FindEncoder();
+            ImageCodecInfo codec = dest.FindEncoder() ?? ImageFormat.Png.FindEncoder()!;
 
             Save(stream, codec, null);
         }
@@ -200,14 +200,14 @@ namespace System.Drawing
             if (format == null)
                 throw new ArgumentNullException(nameof(format));
 
-            ImageCodecInfo codec = format.FindEncoder();
+            ImageCodecInfo codec = format.FindEncoder()!;
             Save(stream, codec, null);
         }
 
         /// <summary>
         /// Saves this <see cref='Image'/> to the specified stream in the specified format.
         /// </summary>
-        public void Save(Stream stream, ImageCodecInfo encoder, EncoderParameters encoderParams)
+        public void Save(Stream stream, ImageCodecInfo encoder, EncoderParameters? encoderParams)
         {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
@@ -229,7 +229,7 @@ namespace System.Drawing
 
                 if (_rawData != null)
                 {
-                    ImageCodecInfo rawEncoder = RawFormat.FindEncoder();
+                    ImageCodecInfo? rawEncoder = RawFormat.FindEncoder();
                     if (rawEncoder != null && rawEncoder.Clsid == g)
                     {
                         stream.Write(_rawData, 0, _rawData.Length);
@@ -258,7 +258,7 @@ namespace System.Drawing
         /// <summary>
         /// Adds an <see cref='EncoderParameters'/> to this <see cref='Image'/>.
         /// </summary>
-        public void SaveAdd(EncoderParameters encoderParams)
+        public void SaveAdd(EncoderParameters? encoderParams)
         {
             IntPtr encoder = IntPtr.Zero;
             if (encoderParams != null)
@@ -282,7 +282,7 @@ namespace System.Drawing
         /// <summary>
         /// Adds an <see cref='EncoderParameters'/> to the specified <see cref='Image'/>.
         /// </summary>
-        public void SaveAdd(Image image, EncoderParameters encoderParams)
+        public void SaveAdd(Image image, EncoderParameters? encoderParams)
         {
             IntPtr encoder = IntPtr.Zero;
 
@@ -374,7 +374,7 @@ namespace System.Drawing
         /// <summary>
         /// Returns the thumbnail for this <see cref='Image'/>.
         /// </summary>
-        public Image GetThumbnailImage(int thumbWidth, int thumbHeight, GetThumbnailImageAbort callback, IntPtr callbackData)
+        public Image GetThumbnailImage(int thumbWidth, int thumbHeight, GetThumbnailImageAbort? callback, IntPtr callbackData)
         {
             IntPtr thumbImage = IntPtr.Zero;
 
@@ -414,7 +414,7 @@ namespace System.Drawing
         /// <summary>
         /// Gets the specified property item from this <see cref='Image'/>.
         /// </summary>
-        public PropertyItem GetPropertyItem(int propid)
+        public PropertyItem? GetPropertyItem(int propid)
         {
             Gdip.CheckStatus(Gdip.GdipGetPropertyItemSize(new HandleRef(this, nativeImage), propid, out int size));
 
@@ -422,9 +422,6 @@ namespace System.Drawing
                 return null;
 
             IntPtr propdata = Marshal.AllocHGlobal(size);
-
-            if (propdata == IntPtr.Zero)
-                throw Gdip.StatusException(Gdip.OutOfMemory);
 
             try
             {

@@ -284,7 +284,7 @@ namespace System.Net
     public partial interface IWebProxy
     {
         System.Net.ICredentials? Credentials { get; set; }
-        System.Uri GetProxy(System.Uri destination);
+        System.Uri? GetProxy(System.Uri destination);
         bool IsBypassed(System.Uri host);
     }
     public partial class NetworkCredential : System.Net.ICredentials, System.Net.ICredentialsByHost

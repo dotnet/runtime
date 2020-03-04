@@ -13,7 +13,7 @@ namespace System.Drawing.Imaging
         private int _id;
         private int _len;
         private short _type;
-        private byte[] _value;
+        private byte[]? _value;
 
         internal PropertyItem()
         {
@@ -46,7 +46,7 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Contains the property value.
         /// </summary>
-        public byte[] Value
+        public byte[]? Value
         {
             get { return _value; }
             set { _value = value; }

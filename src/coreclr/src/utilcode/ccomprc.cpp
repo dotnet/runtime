@@ -10,7 +10,7 @@
 #include "../dlls/mscorrc/resource.h"
 #ifdef HOST_UNIX
 #include "resourcestring.h"
-#define NATIVE_STRING_RESOURCE_NAME mscorrc_debug
+#define NATIVE_STRING_RESOURCE_NAME mscorrc
 __attribute__((visibility("default"))) DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME);
 #endif
 #include "sstring.h"
@@ -112,15 +112,13 @@ HRESULT CCompRC::AddMapNode(LocaleID langId, HRESOURCEDLL hInst, BOOL fMissing)
 //*****************************************************************************
 // Initialize
 //*****************************************************************************
-LPCWSTR CCompRC::m_pDefaultResource = W("mscorrc.debug.dll");
-LPCWSTR CCompRC::m_pFallbackResource= W("mscorrc.dll");
+LPCWSTR CCompRC::m_pDefaultResource = W("mscorrc.dll");
 
 #ifdef HOST_UNIX
-LPCSTR CCompRC::m_pDefaultResourceDomain = "mscorrc.debug";
-LPCSTR CCompRC::m_pFallbackResourceDomain = "mscorrc";
+LPCSTR CCompRC::m_pDefaultResourceDomain = "mscorrc";
 #endif // HOST_UNIX
 
-HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
+HRESULT CCompRC::Init(LPCWSTR pResourceFile)
 {
     CONTRACTL
     {
@@ -136,8 +134,6 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
     // Make sure to NEVER null out the function callbacks in the Init
     // function. They get set for the "Default CCompRC" during EEStartup
     // and we want to make sure we don't wipe them out.
-
-    m_bUseFallback = bUseFallback;
 
     if (m_pResourceFile == NULL)
     {
@@ -171,10 +167,6 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
     if (m_pResourceFile == m_pDefaultResource)
     {
         m_pResourceDomain = m_pDefaultResourceDomain;
-    }
-    else if (m_pResourceFile == m_pFallbackResource)
-    {
-        m_pResourceDomain = m_pFallbackResourceDomain;
     }
     else
     {
@@ -310,7 +302,7 @@ CCompRC* CCompRC::GetDefaultResourceDll()
     if (m_dwDefaultInitialized)
         return &m_DefaultResourceDll;
 
-    if(FAILED(m_DefaultResourceDll.Init(NULL, TRUE)))
+    if(FAILED(m_DefaultResourceDll.Init(NULL)))
     {
         return NULL;
     }
@@ -318,35 +310,6 @@ CCompRC* CCompRC::GetDefaultResourceDll()
 
     return &m_DefaultResourceDll;
 }
-
-LONG    CCompRC::m_dwFallbackInitialized = 0;
-CCompRC CCompRC::m_FallbackResourceDll;
-
-CCompRC* CCompRC::GetFallbackResourceDll()
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-#ifdef      MODE_PREEMPTIVE
-        MODE_PREEMPTIVE;
-#endif
-    }
-    CONTRACTL_END;
-
-    if (m_dwFallbackInitialized)
-        return &m_FallbackResourceDll;
-
-    if(FAILED(m_FallbackResourceDll.Init(m_pFallbackResource, FALSE)))
-    {
-        return NULL;
-    }
-    m_dwFallbackInitialized = 1;
-
-    return &m_FallbackResourceDll;
-}
-
-
 
 //*****************************************************************************
 //*****************************************************************************
@@ -576,115 +539,6 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
             hr=HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
         else
             hr=HRESULT_FROM_GetLastError();
-    }
-
-
-    // Failed to load string
-    if ( hr != E_OUTOFMEMORY && ShouldUseFallback())
-    {
-        CCompRC* pFallback=CCompRC::GetFallbackResourceDll();
-        if (pFallback)
-        {
-            //should not fall back to itself
-            _ASSERTE(pFallback != this);
-
-            // check existence in the fallback Dll
-
-            hr = pFallback->LoadString(Optional, langId, iResourceID,szBuffer, iMax, pcwchUsed);
-
-            if(SUCCEEDED(hr))
-                return hr;
-        }
-        switch (eCategory)
-        {
-            case Optional:
-                hr = E_FAIL;
-                break;
-            case  DesktopCLR:
-                hr = E_FAIL;
-                break;
-            case Debugging:
-            case Error:
-                // get stub message
-                {
-
-                   if (pFallback)
-                   {
-
-                        StackSString ssErrorFormat;
-                        if (eCategory == Error)
-                        {
-                            hr=ssErrorFormat.LoadResourceAndReturnHR(pFallback,  CCompRC::Required, IDS_EE_LINK_FOR_ERROR_MESSAGES);
-                        }
-                        else
-                        {
-                            _ASSERTE(eCategory == Debugging);
-                            hr=ssErrorFormat.LoadResourceAndReturnHR(pFallback,  CCompRC::Required, IDS_EE_LINK_FOR_DEBUGGING_MESSAGES);
-                        }
-
-                        if (SUCCEEDED(hr))
-                        {
-                            StackSString sFormattedMessage;
-                            int iErrorCode = HR_FOR_URT_MSG(iResourceID);
-
-                            hr = S_OK;
-
-                            DWORD_PTR args[] = {(DWORD_PTR)VER_FILEVERSION_STR_L, iResourceID, iErrorCode};
-
-                            length = WszFormatMessage(FORMAT_MESSAGE_FROM_STRING | FORMAT_MESSAGE_ARGUMENT_ARRAY ,
-                                                        (LPCWSTR)ssErrorFormat, 0, 0,
-                                                        szBuffer,iMax,(va_list*)args);
-
-                            if (length == 0 && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
-                            {
-                                // The buffer wasn't big enough for the message. Tell the caller this.
-                                //
-                                // Clear the buffer, just in case.
-                                if (szBuffer && iMax)
-                                    *szBuffer = W('\0');
-
-                                length = iMax;
-                                hr=HRESULT_FROM_GetLastError();
-                            }
-
-                            if(length > 0)
-                            {
-                                if(pcwchUsed)
-                                {
-                                    *pcwchUsed = length;
-                                }
-                                return hr;
-                            }
-
-                            // Format mesage failed
-                            hr=HRESULT_FROM_GetLastError();
-
-                        }
-                    }
-                    else // if (pFallback)
-                    {
-                        _ASSERTE(FAILED(hr));
-                    }
-                }
-                // if we got here then we couldn't get the fallback message
-                // the fallback message is required so just falling through into "Required"
-
-            case Required:
-
-                if ( hr != E_OUTOFMEMORY)
-                {
-                    // Shouldn't be any reason for this condition but the case where
-                    // the resource dll is missing, code used the wrong ID or developer didn't
-                    // update the resource DLL.
-                    _ASSERTE(!"Missing mscorrc.dll or mscorrc.debug.dll?");
-                    hr = HRESULT_FROM_GetLastError();
-                }
-                break;
-            default:
-                {
-                    _ASSERTE(!"Invalid eCategory");
-                }
-        }
     }
 
     // Return an empty string to save the people with a bad error handling

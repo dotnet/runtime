@@ -10,7 +10,6 @@
 #include "standardpch.h"
 #include "superpmi-shim-simple.h"
 #include "runtimedetails.h"
-#include "coreclrcallbacks.h"
 #include "icorjitcompiler.h"
 #include "errorhandling.h"
 #include "logging.h"
@@ -152,43 +151,4 @@ extern "C" DLLEXPORT ICorJitCompiler* __stdcall getJit()
     pJitInstance                           = new interceptor_ICJC();
     pJitInstance->original_ICorJitCompiler = tICJI;
     return pJitInstance;
-}
-
-extern "C" DLLEXPORT void __stdcall sxsJitStartup(CoreClrCallbacks const& original_cccallbacks)
-{
-    PsxsJitStartup pnsxsJitStartup;
-
-    SetDefaultPaths();
-    SetLibName();
-
-    // Load Library
-    if (g_hRealJit == 0)
-    {
-        g_hRealJit = ::LoadLibraryW(g_realJitPath);
-        if (g_hRealJit == 0)
-        {
-            LogError("sxsJitStartup() - LoadLibrary failed to load '%ws' (0x%08x)", g_realJitPath, ::GetLastError());
-            return;
-        }
-    }
-
-    // get entry point
-    pnsxsJitStartup = (PsxsJitStartup)::GetProcAddress(g_hRealJit, "sxsJitStartup");
-
-    if (pnsxsJitStartup != nullptr)
-    {
-        // Setup CoreClrCallbacks and call sxsJitStartup
-        original_CoreClrCallbacks                             = new CoreClrCallbacks();
-        original_CoreClrCallbacks->m_hmodCoreCLR              = original_cccallbacks.m_hmodCoreCLR;
-        original_CoreClrCallbacks->m_pfnIEE                   = original_cccallbacks.m_pfnIEE;
-        original_CoreClrCallbacks->m_pfnGetCORSystemDirectory = original_cccallbacks.m_pfnGetCORSystemDirectory;
-
-        CoreClrCallbacks* temp = new CoreClrCallbacks();
-
-        temp->m_hmodCoreCLR              = original_cccallbacks.m_hmodCoreCLR;
-        temp->m_pfnIEE                   = IEE_t;
-        temp->m_pfnGetCORSystemDirectory = original_cccallbacks.m_pfnGetCORSystemDirectory;
-
-        pnsxsJitStartup(*temp);
-    }
 }

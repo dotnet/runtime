@@ -6027,7 +6027,7 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 }
 
 static void
-emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, uint32_t target_handle)
+emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle)
 {
 	MonoMethodSignature *sig, *csig;
 	int i, *tmp_locals, orig_domain, attach_cookie;
@@ -6121,14 +6121,16 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 
 	if (sig->hasthis) {
 		if (target_handle) {
-			mono_mb_emit_icon (mb, (gint32)target_handle);
+			mono_mb_emit_icon8 (mb, (gint64)target_handle);
+			mono_mb_emit_byte (mb, CEE_CONV_I);
 			mono_mb_emit_icall (mb, mono_gchandle_get_target_internal);
 		} else {
 			/* fixme: */
 			g_assert_not_reached ();
 		}
 	} else if (closed) {
-		mono_mb_emit_icon (mb, (gint32)target_handle);
+		mono_mb_emit_icon8 (mb, (gint64)target_handle);
+		mono_mb_emit_byte (mb, CEE_CONV_I);
 		mono_mb_emit_icall (mb, mono_gchandle_get_target_internal);
 	}
 

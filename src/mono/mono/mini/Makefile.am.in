@@ -210,17 +210,6 @@ libmain_a_SOURCES += main.c
 endif
 libmain_a_CFLAGS = $(AM_CFLAGS) @CXX_ADD_CFLAGS@
 
-if LOADED_LLVM
-lib_LTLIBRARIES += libmono-llvm.la
-libmono_llvm_la_SOURCES = mini-llvm.c mini-llvm-cpp.cpp llvm-jit.cpp
-libmono_llvm_la_LIBADD = $(glib_libs) $(LLVM_LIBS) $(LLVM_LDFLAGS)
-libmono_llvm_la_CFLAGS = $(AM_CFLAGS) @CXX_ADD_CFLAGS@
-
-if HOST_DARWIN
-libmono_llvm_la_LDFLAGS=-Wl,-undefined -Wl,suppress -Wl,-flat_namespace 
-endif
-endif
-
 # we need this to prevent automake from generating a default mono_SOURCES = mono.c
 mono_SOURCES =
 
@@ -267,11 +256,7 @@ MONO_LIB=libmonoboehm-2.0.la
 MONO_SGEN_LIB=libmonosgen-2.0.la
 endif
 
-if LOADED_LLVM
-LLVMMONOF=
-else
 LLVMMONOF=$(LLVM_LIBS) $(LLVM_LDFLAGS)
-endif
 
 mono_boehm_LDADD = \
 	libmain_a-main.$(OBJEXT) \
@@ -427,16 +412,10 @@ posix_sources = \
 	mini-posix.c
 
 if ENABLE_LLVM
-if LOADED_LLVM
-llvm_sources = \
-	mini-llvm-loaded.c
-else
 llvm_sources = \
 	mini-llvm.c		\
-	mini-llvm-loaded.c \
 	mini-llvm-cpp.cpp \
 	llvm-jit.cpp
-endif
 endif
 
 interp_sources =	\

@@ -2517,11 +2517,11 @@ signature_in_image (MonoMethodSignature *sig, MonoImage *image)
 	gpointer iter = NULL;
 	MonoType *p;
 
-	while ((p = mono_signature_get_params (sig, &iter)) != NULL)
+	while ((p = mono_signature_get_params_internal (sig, &iter)) != NULL)
 		if (type_in_image (p, image))
 			return TRUE;
 
-	return type_in_image (mono_signature_get_return_type (sig), image);
+	return type_in_image (mono_signature_get_return_type_internal (sig), image);
 }
 
 static gboolean
@@ -2979,8 +2979,8 @@ collect_signature_images (MonoMethodSignature *sig, CollectData *data)
 	gpointer iter = NULL;
 	MonoType *p;
 
-	collect_type_images (mono_signature_get_return_type (sig), data);
-	while ((p = mono_signature_get_params (sig, &iter)) != NULL)
+	collect_type_images (mono_signature_get_return_type_internal (sig), data);
+	while ((p = mono_signature_get_params_internal (sig, &iter)) != NULL)
 		collect_type_images (p, data);
 }
 
@@ -5657,8 +5657,8 @@ mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gbo
 		return FALSE;
 
 	while (TRUE) {
-		MonoType *t1 = mono_signature_get_params (s1, &iter1);
-		MonoType *t2 = mono_signature_get_params (s2, &iter2);
+		MonoType *t1 = mono_signature_get_params_internal (s1, &iter1);
+		MonoType *t2 = mono_signature_get_params_internal (s2, &iter2);
 
 		if (t1 == NULL || t2 == NULL)
 			return (t1 == t2);
