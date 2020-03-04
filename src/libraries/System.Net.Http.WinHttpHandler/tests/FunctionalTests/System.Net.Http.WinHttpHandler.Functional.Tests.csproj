@@ -193,6 +193,10 @@
     <Compile Include="HttpClientHandlerTestBase.WinHttpHandler.cs" />
     <Compile Include="WinHttpClientHandler.cs" />
     <Compile Include="PlatformHandlerTest.cs" />
+  </ItemGroup>  
+  <ItemGroup>
+    <Compile Include="BaseCertificateTest.cs" />
+    <Compile Include="ClientCertificateTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />

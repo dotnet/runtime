@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Functional.Tests;
 using System.Net.Security;
@@ -28,6 +27,7 @@ namespace System.Net.Test.Common
         private readonly byte[] _prefix;
         public string PrefixString => Encoding.UTF8.GetString(_prefix, 0, _prefix.Length);
         public bool IsInvalid => _connectionSocket == null;
+        public Stream Stream => _connectionStream;
 
         public Http2LoopbackConnection(Socket socket, Http2Options httpOptions)
         {
