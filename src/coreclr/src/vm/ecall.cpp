@@ -201,6 +201,9 @@ void ECall::PopulateManagedCastHelpers()
     // so indirection is not as big concern.
     // We JIT-compile the following helpers eagerly here to avoid indirection costs.
 
+    //TODO: revise if this specialcasing is still needed when crossgen supports tailcall optimizations
+    //      see: https://github.com/dotnet/runtime/issues/5857
+
     pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__STELEMREF));
     pMD->DoPrestub(NULL);
     // This helper is marked AggressiveOptimization and its native code is in its final form.
