@@ -519,6 +519,7 @@ common_sources = \
 	mini-cross-helpers.c \
 	arch-stubs.c		\
 	llvm-runtime.h	\
+	llvm-intrinsics.h	\
 	type-checking.c \
 	calls.c			\
 	lldb.h			\

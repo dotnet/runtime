@@ -279,145 +279,8 @@ static LLVMRealPredicate fpcond_to_llvm_cond [] = {
 };
 
 typedef enum {
-	INTRINS_MEMSET,
-	INTRINS_MEMCPY,
-	INTRINS_MEMMOVE,
-	INTRINS_SADD_OVF_I32,
-	INTRINS_UADD_OVF_I32,
-	INTRINS_SSUB_OVF_I32,
-	INTRINS_USUB_OVF_I32,
-	INTRINS_SMUL_OVF_I32,
-	INTRINS_UMUL_OVF_I32,
-	INTRINS_SADD_OVF_I64,
-	INTRINS_UADD_OVF_I64,
-	INTRINS_SSUB_OVF_I64,
-	INTRINS_USUB_OVF_I64,
-	INTRINS_SMUL_OVF_I64,
-	INTRINS_UMUL_OVF_I64,
-	INTRINS_SIN,
-	INTRINS_COS,
-	INTRINS_SQRT,
-	INTRINS_FLOOR,
-	INTRINS_CEIL,
-	INTRINS_FMA,
-	INTRINS_FABS,
-	INTRINS_ABSF,
-	INTRINS_SINF,
-	INTRINS_COSF,
-	INTRINS_SQRTF,
-	INTRINS_FLOORF,
-	INTRINS_CEILF,
-	INTRINS_FMAF,
-	INTRINS_POW,
-	INTRINS_POWF,
-	INTRINS_EXP,
-	INTRINS_EXPF,
-	INTRINS_LOG,
-	INTRINS_LOG2,
-	INTRINS_LOG2F,
-	INTRINS_LOG10,
-	INTRINS_LOG10F,
-	INTRINS_TRUNC,
-	INTRINS_TRUNCF,
-	INTRINS_COPYSIGN,
-	INTRINS_COPYSIGNF,
-	INTRINS_EXPECT_I8,
-	INTRINS_EXPECT_I1,
-	INTRINS_CTPOP_I32,
-	INTRINS_CTPOP_I64,
-	INTRINS_CTLZ_I32,
-	INTRINS_CTLZ_I64,
-	INTRINS_CTTZ_I32,
-	INTRINS_CTTZ_I64,
-	INTRINS_PEXT_I32,
-	INTRINS_PEXT_I64,
-	INTRINS_PDEP_I32,
-	INTRINS_PDEP_I64,
-	INTRINS_BZHI_I32,
-	INTRINS_BZHI_I64,
-	INTRINS_BEXTR_I32,
-	INTRINS_BEXTR_I64,
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
-	INTRINS_SSE_PMOVMSKB,
-	INTRINS_SSE_MOVMSK_PS,
-	INTRINS_SSE_MOVMSK_PD,
-	INTRINS_SSE_PSRLI_W,
-	INTRINS_SSE_PSRAI_W,
-	INTRINS_SSE_PSLLI_W,
-	INTRINS_SSE_PSRLI_D,
-	INTRINS_SSE_PSRAI_D,
-	INTRINS_SSE_PSLLI_D,
-	INTRINS_SSE_PSRLI_Q,
-	INTRINS_SSE_PSLLI_Q,
-	INTRINS_SSE_SQRT_PD,
-	INTRINS_SSE_SQRT_PS,
-	INTRINS_SSE_RSQRT_PS,
-	INTRINS_SSE_RCP_PS,
-	INTRINS_SSE_CVTTPD2DQ,
-	INTRINS_SSE_CVTTPS2DQ,
-	INTRINS_SSE_CVTDQ2PD,
-	INTRINS_SSE_CVTDQ2PS,
-	INTRINS_SSE_CVTPD2DQ,
-	INTRINS_SSE_CVTPS2DQ,
-	INTRINS_SSE_CVTPD2PS,
-	INTRINS_SSE_CVTPS2PD,
-	INTRINS_SSE_CVTSS2SI,
-	INTRINS_SSE_CVTSS2SI64,
-	INTRINS_SSE_CVTTSS2SI,
-	INTRINS_SSE_CVTTSS2SI64,
-	INTRINS_SSE_CVTSD2SI,
-	INTRINS_SSE_CVTSD2SI64,
-	INTRINS_SSE_CVTTSD2SI64,
-	INTRINS_SSE_CVTSI2SS,
-	INTRINS_SSE_CVTSI2SS64,
-	INTRINS_SSE_CVTSI2SD,
-	INTRINS_SSE_CVTSI2SD64,
-	INTRINS_SSE_CMPPD,
-	INTRINS_SSE_CMPPS,
-	INTRINS_SSE_PACKSSWB,
-	INTRINS_SSE_PACKUSWB,
-	INTRINS_SSE_PACKSSDW,
-	INTRINS_SSE_PACKUSDW,
-	INTRINS_SSE_MINPS,
-	INTRINS_SSE_MAXPS,
-	INTRINS_SSE_HADDPS,
-	INTRINS_SSE_HSUBPS,
-	INTRINS_SSE_ADDSUBPS,
-	INTRINS_SSE_MINPD,
-	INTRINS_SSE_MAXPD,
-	INTRINS_SSE_HADDPD,
-	INTRINS_SSE_HSUBPD,
-	INTRINS_SSE_ADDSUBPD,
-	INTRINS_SSE_PADDSW,
-	INTRINS_SSE_PSUBSW,
-	INTRINS_SSE_PADDUSW,
-	INTRINS_SSE_PSUBUSW,
-	INTRINS_SSE_PAVGW,
-	INTRINS_SSE_PMULHW,
-	INTRINS_SSE_PMULHU,
-	INTRINS_SE_PADDSB,
-	INTRINS_SSE_PSUBSB,
-	INTRINS_SSE_PADDUSB,
-	INTRINS_SSE_PSUBUSB,
-	INTRINS_SSE_PAVGB,
-	INTRINS_SSE_PAUSE,
-	INTRINS_SSE_DPPS,
-	INTRINS_SSE_ROUNDSS,
-	INTRINS_SSE_ROUNDPD,
-	INTRINS_SSE_PTESTZ,
-	INTRINS_SSE_INSERTPS,
-	INTRINS_SSE_PSHUFB,
-	INTRINS_SSE_SADD_SATI8,
-	INTRINS_SSE_UADD_SATI8,
-	INTRINS_SSE_SADD_SATI16,
-	INTRINS_SSE_UADD_SATI16,
-#endif
-#ifdef TARGET_WASM
-	INTRINS_WASM_ANYTRUE_V16,
-	INTRINS_WASM_ANYTRUE_V8,
-	INTRINS_WASM_ANYTRUE_V4,
-	INTRINS_WASM_ANYTRUE_V2,
-#endif
+#define INTRINS(name, llvm_name) INTRINS_ ## name,
+#include "llvm-intrinsics.h"
 	INTRINS_NUM
 } IntrinsicId;
 
@@ -1047,7 +910,7 @@ ovf_op_to_intrins (int opcode)
 }
 
 static const char*
-simd_op_to_intrins (int opcode)
+simd_ins_to_intrins (int opcode)
 {
 	switch (opcode) {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -7042,7 +6905,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [0] = lhs;
 			args [1] = rhs;
 
-			values [ins->dreg] = LLVMBuildCall (builder, get_intrins_by_name (ctx, simd_op_to_intrins (ins->opcode)), args, 2, dname);
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins_by_name (ctx, simd_ins_to_intrins (ins->opcode)), args, 2, dname);
 			break;
 		}
 		case OP_PAVGB_UN:
@@ -7217,7 +7080,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			v = convert (ctx, values [ins->sreg1], simd_op_to_llvm_type (ins->opcode));
 
-			values [ins->dreg] = LLVMBuildCall (builder, get_intrins_by_name (ctx, simd_op_to_intrins (ins->opcode)), &v, 1, dname);
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins_by_name (ctx, simd_ins_to_intrins (ins->opcode)), &v, 1, dname);
 			break;
 		}
 		case OP_COMPPS:
@@ -7278,7 +7141,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [0] = lhs;
 			args [1] = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
 
-			values [ins->dreg] = LLVMBuildCall (builder, get_intrins_by_name (ctx, simd_op_to_intrins (ins->opcode)), args, 2, dname);
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins_by_name (ctx, simd_ins_to_intrins (ins->opcode)), args, 2, dname);
 			break;
 		}
 
@@ -7295,7 +7158,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [0] = lhs;
 			args [1] = values [ins->sreg2];
 
-			values [ins->dreg] = LLVMBuildCall (builder, get_intrins_by_name (ctx, simd_op_to_intrins (ins->opcode)), args, 2, dname);
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins_by_name (ctx, simd_ins_to_intrins (ins->opcode)), args, 2, dname);
 			break;
 		}
 
@@ -7492,7 +7355,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			/* 0xf1 == multiply all 4 elements, add them together, and store the result to the lowest element */
 			args [2] = LLVMConstInt (LLVMInt8Type (), 0xf1, FALSE);
 
-			values [ins->dreg] = LLVMBuildCall (builder, get_intrins_by_name (ctx, simd_op_to_intrins (ins->opcode)), args, 3, dname);
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrins_by_name (ctx, simd_ins_to_intrins (ins->opcode)), args, 3, dname);
 			break;
 		}
 
@@ -9392,154 +9255,8 @@ typedef struct {
 } IntrinsicDesc;
 
 static IntrinsicDesc intrinsics[] = {
-	{INTRINS_MEMSET, "llvm.memset.p0i8.i32"},
-	{INTRINS_MEMCPY, "llvm.memcpy.p0i8.p0i8.i32"},
-	{INTRINS_MEMMOVE, "llvm.memmove.p0i8.p0i8.i64"},
-	{INTRINS_SADD_OVF_I32, "llvm.sadd.with.overflow.i32"},
-	{INTRINS_UADD_OVF_I32, "llvm.uadd.with.overflow.i32"},
-	{INTRINS_SSUB_OVF_I32, "llvm.ssub.with.overflow.i32"},
-	{INTRINS_USUB_OVF_I32, "llvm.usub.with.overflow.i32"},
-	{INTRINS_SMUL_OVF_I32, "llvm.smul.with.overflow.i32"},
-	{INTRINS_UMUL_OVF_I32, "llvm.umul.with.overflow.i32"},
-	{INTRINS_SADD_OVF_I64, "llvm.sadd.with.overflow.i64"},
-	{INTRINS_UADD_OVF_I64, "llvm.uadd.with.overflow.i64"},
-	{INTRINS_SSUB_OVF_I64, "llvm.ssub.with.overflow.i64"},
-	{INTRINS_USUB_OVF_I64, "llvm.usub.with.overflow.i64"},
-	{INTRINS_SMUL_OVF_I64, "llvm.smul.with.overflow.i64"},
-	{INTRINS_UMUL_OVF_I64, "llvm.umul.with.overflow.i64"},
-	{INTRINS_SIN, "llvm.sin.f64"},
-	{INTRINS_COS, "llvm.cos.f64"},
-	{INTRINS_SQRT, "llvm.sqrt.f64"},
-	{INTRINS_FLOOR, "llvm.floor.f64"},
-	{INTRINS_FLOORF, "llvm.floor.f32"},
-	{INTRINS_CEIL, "llvm.ceil.f64"},
-	{INTRINS_CEILF, "llvm.ceil.f32"},
-	{INTRINS_FMA, "llvm.fma.f64"},
-	{INTRINS_FMAF, "llvm.fma.f32"},
-	/* This isn't an intrinsic, instead llvm seems to special case it by name */
-	{INTRINS_FABS, "fabs"},
-	{INTRINS_ABSF, "llvm.fabs.f32"},
-	{INTRINS_SINF, "llvm.sin.f32"},
-	{INTRINS_COSF, "llvm.cos.f32"},
-	{INTRINS_SQRTF, "llvm.sqrt.f32"},
-	{INTRINS_POWF, "llvm.pow.f32"},
-	{INTRINS_POW, "llvm.pow.f64"},
-	{INTRINS_EXP, "llvm.exp.f64"},
-	{INTRINS_EXPF, "llvm.exp.f32"},
-	{INTRINS_LOG, "llvm.log.f64"},
-	{INTRINS_LOG2, "llvm.log2.f64"},
-	{INTRINS_LOG2F, "llvm.log2.f32"},
-	{INTRINS_LOG10, "llvm.log10.f64"},
-	{INTRINS_LOG10F, "llvm.log10.f32"},
-	{INTRINS_TRUNC, "llvm.trunc.f64"},
-	{INTRINS_TRUNCF, "llvm.trunc.f32"},
-	{INTRINS_COPYSIGN, "llvm.copysign.f64"},
-	{INTRINS_COPYSIGNF, "llvm.copysign.f32"},
-	{INTRINS_EXPECT_I8, "llvm.expect.i8"},
-	{INTRINS_EXPECT_I1, "llvm.expect.i1"},
-	{INTRINS_CTPOP_I32, "llvm.ctpop.i32"},
-	{INTRINS_CTPOP_I64, "llvm.ctpop.i64"},
-	{INTRINS_CTLZ_I32, "llvm.ctlz.i32"},
-	{INTRINS_CTLZ_I64, "llvm.ctlz.i64"},
-	{INTRINS_CTTZ_I32, "llvm.cttz.i32"},
-	{INTRINS_CTTZ_I64, "llvm.cttz.i64"},
-	{INTRINS_BZHI_I32, "llvm.x86.bmi.bzhi.32"},
-	{INTRINS_BZHI_I64, "llvm.x86.bmi.bzhi.64"},
-	{INTRINS_BEXTR_I32, "llvm.x86.bmi.bextr.32"},
-	{INTRINS_BEXTR_I64, "llvm.x86.bmi.bextr.64"},
-	{INTRINS_PEXT_I32, "llvm.x86.bmi.pext.32"},
-	{INTRINS_PEXT_I64, "llvm.x86.bmi.pext.64"},
-	{INTRINS_PDEP_I32, "llvm.x86.bmi.pdep.32"},
-	{INTRINS_PDEP_I64, "llvm.x86.bmi.pdep.64"},
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
-	{INTRINS_SSE_PMOVMSKB, "llvm.x86.sse2.pmovmskb.128"},
-	{INTRINS_SSE_MOVMSK_PS, "llvm.x86.sse.movmsk.ps"},
-	{INTRINS_SSE_MOVMSK_PD, "llvm.x86.sse2.movmsk.pd"},
-	{INTRINS_SSE_PSRLI_W, "llvm.x86.sse2.psrli.w"},
-	{INTRINS_SSE_PSRAI_W, "llvm.x86.sse2.psrai.w"},
-	{INTRINS_SSE_PSLLI_W, "llvm.x86.sse2.pslli.w"},
-	{INTRINS_SSE_PSRLI_D, "llvm.x86.sse2.psrli.d"},
-	{INTRINS_SSE_PSRAI_D, "llvm.x86.sse2.psrai.d"},
-	{INTRINS_SSE_PSLLI_D, "llvm.x86.sse2.pslli.d"},
-	{INTRINS_SSE_PSRLI_Q, "llvm.x86.sse2.psrli.q"},
-	{INTRINS_SSE_PSLLI_Q, "llvm.x86.sse2.pslli.q"},
-	{INTRINS_SSE_SQRT_PD, "llvm.x86.sse2.sqrt.pd"},
-	{INTRINS_SSE_SQRT_PS, "llvm.x86.sse.sqrt.ps"},
-	{INTRINS_SSE_RSQRT_PS, "llvm.x86.sse.rsqrt.ps"},
-	{INTRINS_SSE_RCP_PS, "llvm.x86.sse.rcp.ps"},
-	{INTRINS_SSE_CVTTPD2DQ, "llvm.x86.sse2.cvttpd2dq"},
-	{INTRINS_SSE_CVTTPS2DQ, "llvm.x86.sse2.cvttps2dq"},
-	{INTRINS_SSE_CVTDQ2PD, "llvm.x86.sse2.cvtdq2pd"},
-	{INTRINS_SSE_CVTDQ2PS, "llvm.x86.sse2.cvtdq2ps"},
-	{INTRINS_SSE_CVTPD2DQ, "llvm.x86.sse2.cvtpd2dq"},
-	{INTRINS_SSE_CVTPS2DQ, "llvm.x86.sse2.cvtps2dq"},
-	{INTRINS_SSE_CVTPD2PS, "llvm.x86.sse2.cvtpd2ps"},
-	{INTRINS_SSE_CVTPS2PD, "llvm.x86.sse2.cvtps2pd"},
-	{INTRINS_SSE_CVTSS2SI, "llvm.x86.sse.cvtss2si"},
-	{INTRINS_SSE_CVTSS2SI64, "llvm.x86.sse.cvtss2si64"},
-	{INTRINS_SSE_CVTTSS2SI, "llvm.x86.sse.cvttss2si"},
-	{INTRINS_SSE_CVTTSS2SI64, "llvm.x86.sse.cvttss2si64"},
-	{INTRINS_SSE_CVTSD2SI, "llvm.x86.sse2.cvtsd2si"},
-	{INTRINS_SSE_CVTSD2SI64, "llvm.x86.sse2.cvtsd2si64"},
-	{INTRINS_SSE_CVTTSD2SI64, "llvm.x86.sse2.cvttsd2si64"},
-	{INTRINS_SSE_CVTSI2SS, "llvm.x86.sse.cvtsi2ss"},
-	{INTRINS_SSE_CVTSI2SS64, "llvm.x86.sse.cvtsi642ss"},
-	{INTRINS_SSE_CVTSI2SD, "llvm.x86.sse2.cvtsi2sd"},
-	{INTRINS_SSE_CVTSI2SD64, "llvm.x86.sse2.cvtsi642sd"},
-	{INTRINS_SSE_CMPPD, "llvm.x86.sse2.cmp.pd"},
-	{INTRINS_SSE_CMPPS, "llvm.x86.sse.cmp.ps"},
-	{INTRINS_SSE_PACKSSWB, "llvm.x86.sse2.packsswb.128"},
-	{INTRINS_SSE_PACKUSWB, "llvm.x86.sse2.packuswb.128"},
-	{INTRINS_SSE_PACKSSDW, "llvm.x86.sse2.packssdw.128"},
-	{INTRINS_SSE_PACKUSDW, "llvm.x86.sse41.packusdw"},
-	{INTRINS_SSE_MINPS, "llvm.x86.sse.min.ps"},
-	{INTRINS_SSE_MAXPS, "llvm.x86.sse.max.ps"},
-	{INTRINS_SSE_HADDPS, "llvm.x86.sse3.hadd.ps"},
-	{INTRINS_SSE_HSUBPS, "llvm.x86.sse3.hsub.ps"},
-	{INTRINS_SSE_ADDSUBPS, "llvm.x86.sse3.addsub.ps"},
-	{INTRINS_SSE_MINPD, "llvm.x86.sse2.min.pd"},
-	{INTRINS_SSE_MAXPD, "llvm.x86.sse2.max.pd"},
-	{INTRINS_SSE_HADDPD, "llvm.x86.sse3.hadd.pd"},
-	{INTRINS_SSE_HSUBPD, "llvm.x86.sse3.hsub.pd"},
-	{INTRINS_SSE_ADDSUBPD, "llvm.x86.sse3.addsub.pd"},
-	{INTRINS_SSE_PADDSW, "llvm.x86.sse2.padds.w"},
-	{INTRINS_SSE_PSUBSW, "llvm.x86.sse2.psubs.w"},
-	{INTRINS_SSE_PADDUSW, "llvm.x86.sse2.paddus.w"},
-	{INTRINS_SSE_PSUBUSW, "llvm.x86.sse2.psubus.w"},
-	{INTRINS_SSE_PAVGW, "llvm.x86.sse2.pavg.w"},
-	{INTRINS_SSE_PMULHW, "llvm.x86.sse2.pmulh.w"},
-	{INTRINS_SSE_PMULHU, "llvm.x86.sse2.pmulhu.w"},
-	{INTRINS_SE_PADDSB, "llvm.x86.sse2.padds.b"},
-	{INTRINS_SSE_PSUBSB, "llvm.x86.sse2.psubs.b"},
-	{INTRINS_SSE_PADDUSB, "llvm.x86.sse2.paddus.b"},
-	{INTRINS_SSE_PSUBUSB, "llvm.x86.sse2.psubus.b"},
-	{INTRINS_SSE_PAVGB, "llvm.x86.sse2.pavg.b"},
-	{INTRINS_SSE_PAUSE, "llvm.x86.sse2.pause"},
-	{INTRINS_SSE_PSHUFB, "llvm.x86.ssse3.pshuf.b.128"},
-	{INTRINS_SSE_DPPS, "llvm.x86.sse41.dpps"},
-	{INTRINS_SSE_ROUNDSS, "llvm.x86.sse41.round.ss"},
-	{INTRINS_SSE_ROUNDPD, "llvm.x86.sse41.round.pd"},
-	{INTRINS_SSE_PTESTZ, "llvm.x86.sse41.ptestz"},
-	{INTRINS_SSE_INSERTPS, "llvm.x86.sse41.insertps"},
-#if LLVM_API_VERSION >= 800
-	// these intrinsics were renamed in LLVM 8
-	{INTRINS_SSE_SADD_SATI8, "llvm.sadd.sat.v16i8"},
-	{INTRINS_SSE_UADD_SATI8, "llvm.uadd.sat.v16i8"},
-	{INTRINS_SSE_SADD_SATI16, "llvm.sadd.sat.v8i16"},
-	{INTRINS_SSE_UADD_SATI16, "llvm.uadd.sat.v8i16"},
-#else
-	{INTRINS_SSE_SADD_SATI8, "llvm.x86.sse2.padds.b"},
-	{INTRINS_SSE_UADD_SATI8, "llvm.x86.sse2.paddus.b"},
-	{INTRINS_SSE_SADD_SATI16, "llvm.x86.sse2.padds.w"},
-	{INTRINS_SSE_UADD_SATI16, "llvm.x86.sse2.paddus.w"},
-#endif
-#endif
-#ifdef TARGET_WASM
-	{INTRINS_WASM_ANYTRUE_V16, "llvm.wasm.anytrue.v16i8"},
-	{INTRINS_WASM_ANYTRUE_V8, "llvm.wasm.anytrue.v8i16"},
-	{INTRINS_WASM_ANYTRUE_V4, "llvm.wasm.anytrue.v4i32"},
-	{INTRINS_WASM_ANYTRUE_V2, "llvm.wasm.anytrue.v2i64"},
-#endif
+#define INTRINS(name, llvm_name) {INTRINS_ ## name, llvm_name},
+#include "llvm-intrinsics.h"
 };
 
 static void
