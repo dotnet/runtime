@@ -1075,6 +1075,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
         overflows = DoesBinOpOverflow(block, expr->AsOp());
     }
     // GT_AND, GT_UMOD, GT_LSH and GT_RSH don't overflow
+    // Actually, GT_LSH can overflow so it depends on the analysis done in ComputeRangeForBinOp
     else if (expr->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD))
     {
         overflows = false;
