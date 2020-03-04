@@ -331,5 +331,18 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2, overwrite: true));
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2 + alternateStream, overwrite: true));
         }
+
+        [Fact]
+        public void CopyOntoLockedFile()
+        {
+            string testFileSource = GetTestFilePath();
+            string testFileDest = GetTestFilePath();
+            File.Create(testFileSource).Dispose();
+            File.Create(testFileDest).Dispose();
+            using (var stream = new FileStream(testFileDest, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                Assert.Throws<IOException>(() => Copy(testFileSource, testFileDest, overwrite: true));
+            }
+        }
     }
 }
