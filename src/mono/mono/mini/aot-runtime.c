@@ -2079,6 +2079,25 @@ init_amodule_got (MonoAotModule *amodule, gboolean preinit)
 	mono_loader_unlock ();
 }
 
+#ifdef MONOTOUCH
+// Follow branch islands on ARM iOS machines.
+static inline guint8 *
+method_address_resolve (guint8 *code_addr) {
+	for (;;) {
+		// `mono_arch_get_call_target` takes the IP after the branch
+		// instruction, not before. Add 4 bytes to compensate.
+		guint8 *next = mono_arch_get_call_target (code_addr + 4);
+		if (next == NULL) return code_addr;
+		code_addr = next;
+	}
+}
+#else
+static inline guint8 *
+method_address_resolve (guint8 *code_addr) {
+	return code_addr;
+}
+#endif
+
 static void
 load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer user_data, MonoError *error)
 {
@@ -2382,6 +2401,8 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 				g_assert (addr);
 				if (addr == amodule->info.method_addresses)
 					addr = NULL;
+				else
+					addr = method_address_resolve ((guint8 *) addr);
 			}
 		}
 		if (addr == NULL)
