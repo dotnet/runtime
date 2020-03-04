@@ -304,6 +304,8 @@ namespace System.Runtime.CompilerServices
         public ushort InterfaceCount;
         [FieldOffset(ParentMethodTableOffset)]
         public MethodTable* ParentMethodTable;
+        [FieldOffset(ElementTypeOffset)]
+        public void* ElementType;
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
 
@@ -317,6 +319,16 @@ namespace System.Runtime.CompilerServices
                                                              | 0x00400000;// enum_flag_ICastable;
 
         private const int ParentMethodTableOffset = 0x10
+#if DEBUG
+        + sizeof(nuint)   // adjust for debug_m_szClassName
+#endif
+        ;
+
+#if TARGET_64BIT
+        private const int ElementTypeOffset = 0x30
+#else
+        private const int ElementTypeOffset = 0x20
+#endif
 #if DEBUG
         + sizeof(nuint)   // adjust for debug_m_szClassName
 #endif

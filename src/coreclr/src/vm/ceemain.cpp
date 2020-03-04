@@ -964,6 +964,10 @@ void EEStartupHelper(COINITIEE fFlags)
         SystemDomain::System()->PublishAppDomainAndInformDebugger(SystemDomain::System()->DefaultDomain());
 #endif
 
+#ifdef HAVE_GCCOVER
+        MethodDesc::Init();
+#endif
+
 #endif // CROSSGEN_COMPILE
 
         SystemDomain::System()->Init();
@@ -1043,10 +1047,6 @@ void EEStartupHelper(COINITIEE fFlags)
         g_Mscorlib.CheckExtended();
 
 #endif // _DEBUG
-
-#ifdef HAVE_GCCOVER
-        MethodDesc::Init();
-#endif
 
 #endif // !CROSSGEN_COMPILE
 

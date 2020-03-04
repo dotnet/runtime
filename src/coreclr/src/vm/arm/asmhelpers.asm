@@ -24,10 +24,7 @@
     IMPORT PreStubWorker
     IMPORT PreStubGetMethodDescForCompactEntryPoint
     IMPORT NDirectImportWorker
-    IMPORT ObjIsInstanceOfCached
-    IMPORT ArrayStoreCheck
     IMPORT VSD_ResolveWorker
-    IMPORT $g_pObjectClass
 
 #ifdef WRITE_BARRIER_CHECK
     SETALIAS g_GCShadow, ?g_GCShadow@@3PAEA
@@ -1460,104 +1457,6 @@ CallCppHelper3
     bx lr
     LEAF_END
 
-
-; ------------------------------------------------------------------
-; __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref(PtrArray* array, unsigned idx, Object* val)
-    LEAF_ENTRY JIT_Stelem_Ref
-
-    ; We retain arguments as they were passed and use r0 == array; r1 == idx; r2 == val
-
-    ; check for null array
-    cbz     r0, ThrowNullReferenceException
-
-    ; idx bounds check
-    ldr     r3,[r0,#ArrayBase__m_NumComponents]
-    cmp     r3,r1
-    bls     ThrowIndexOutOfRangeException
-
-    ; fast path to null assignment (doesn't need any write-barriers)
-    cbz     r2, AssigningNull
-
-    ; Verify the array-type and val-type matches before writing
-    ldr     r12, [r0] ; r12 = array MT
-    ldr     r3, [r2] ; r3 = val->GetMethodTable()
-    ldr     r12, [r12, #MethodTable__m_ElementType] ; array->GetArrayElementTypeHandle()
-    cmp     r3, r12
-    beq     JIT_Stelem_DoWrite
-
-    ; Types didnt match but allow writing into an array of objects
-    ldr     r3, =$g_pObjectClass
-    ldr     r3, [r3]  ; r3 = *g_pObjectClass
-    cmp     r3, r12   ; array type matches with Object*
-    beq     JIT_Stelem_DoWrite
-
-    ; array type and val type do not exactly match. Raise frame and do detailed match
-    b       JIT_Stelem_Ref_NotExactMatch
-
-AssigningNull
-    ; Assigning null doesn't need write barrier
-    adds    r0, r1, LSL #2               ; r0 = r0 + (r1 x 4) = array->m_array[idx]
-    str     r2, [r0, #PtrArray__m_Array] ; array->m_array[idx] = val
-    bx      lr
-
-ThrowNullReferenceException
-    ; Tail call JIT_InternalThrow(NullReferenceException)
-    ldr     r0, =CORINFO_NullReferenceException_ASM
-    b       JIT_InternalThrow
-
-ThrowIndexOutOfRangeException
-    ; Tail call JIT_InternalThrow(NullReferenceException)
-    ldr     r0, =CORINFO_IndexOutOfRangeException_ASM
-    b       JIT_InternalThrow
-
-    LEAF_END
-
-; ------------------------------------------------------------------
-; __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref_NotExactMatch(PtrArray* array,
-;                                                       unsigned idx, Object* val)
-;   r12 = array->GetArrayElementTypeHandle()
-;
-    NESTED_ENTRY JIT_Stelem_Ref_NotExactMatch
-    PROLOG_PUSH   {lr}
-    PROLOG_PUSH   {r0-r2}
-
-    CHECK_STACK_ALIGNMENT
-
-    ; allow in case val can be casted to array element type
-    ; call ObjIsInstanceOfCached(val, array->GetArrayElementTypeHandle())
-    mov     r1, r12 ; array->GetArrayElementTypeHandle()
-    mov     r0, r2
-    bl      ObjIsInstanceOfCached
-    cmp     r0, TypeHandle_CanCast
-    beq     DoWrite             ; ObjIsInstance returned TypeHandle::CanCast
-
-    ; check via raising frame
-NeedFrame
-    mov     r1, sp              ; r1 = &array
-    adds    r0, sp, #8          ; r0 = &val
-    bl      ArrayStoreCheck     ; ArrayStoreCheck(&val, &array)
-
-DoWrite
-    EPILOG_POP  {r0-r2}
-    EPILOG_POP  {lr}
-    EPILOG_BRANCH JIT_Stelem_DoWrite
-
-    NESTED_END
-
-; ------------------------------------------------------------------
-; __declspec(naked) void F_CALL_CONV JIT_Stelem_DoWrite(PtrArray* array, unsigned idx, Object* val)
-    LEAF_ENTRY  JIT_Stelem_DoWrite
-
-    ; Setup args for JIT_WriteBarrier. r0 = &array->m_array[idx]; r1 = val
-    adds    r0, #PtrArray__m_Array     ; r0 = &array->m_array
-    adds    r0, r1, LSL #2
-    mov     r1, r2                     ; r1 = val
-
-    ; Branch to the write barrier (which is already correctly overwritten with
-    ; single or multi-proc code based on the current CPU
-    b       JIT_WriteBarrier
-
-    LEAF_END
 
 ; ------------------------------------------------------------------
 ; GC write barrier support.

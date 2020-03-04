@@ -1986,13 +1986,6 @@ void SystemDomain::LoadBaseSystemClasses()
 
     g_TypedReferenceMT = MscorlibBinder::GetClass(CLASS__TYPED_REFERENCE);
 
-    // further loading of nonprimitive types may need casting support.
-    // initialize cast cache here.
-#ifndef CROSSGEN_COMPILE
-    CastCache::Initialize();
-    ECall::PopulateManagedCastHelpers();
-#endif // CROSSGEN_COMPILE
-
     // unfortunately, the following cannot be delay loaded since the jit
     // uses it to compute method attributes within a function that cannot
     // handle Complus exception and the following call goes through a path
@@ -2005,6 +1998,13 @@ void SystemDomain::LoadBaseSystemClasses()
 #ifndef CROSSGEN_COMPILE
     CrossLoaderAllocatorHashSetup::EnsureTypesLoaded();
 #endif
+
+    // further loading of nonprimitive types may need casting support.
+    // initialize cast cache here.
+#ifndef CROSSGEN_COMPILE
+    CastCache::Initialize();
+    ECall::PopulateManagedCastHelpers();
+#endif // CROSSGEN_COMPILE
 
     // used by IsImplicitInterfaceOfSZArray
     MscorlibBinder::GetClass(CLASS__IENUMERABLEGENERIC);

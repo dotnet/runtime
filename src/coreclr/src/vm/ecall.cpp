@@ -195,6 +195,28 @@ void ECall::PopulateManagedCastHelpers()
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_UNBOX, pDest);
 
+    // Array element accessors are more perf sensitive than other managed helpers and indirection 
+    // costs introduced by PreStub could be noticeable (7% to 30% depending on platform).
+    // Other helpers are either more complex, less common, or have their trivial case inlined by the JIT, 
+    // so indirection is not as big concern.
+    // We JIT-compile the following helpers eagerly here to avoid indirection costs.
+
+    //TODO: revise if this specialcasing is still needed when crossgen supports tailcall optimizations
+    //      see: https://github.com/dotnet/runtime/issues/5857
+
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__STELEMREF));
+    pMD->DoPrestub(NULL);
+    // This helper is marked AggressiveOptimization and its native code is in its final form.
+    // Get the code directly to avoid PreStub indirection.
+    pDest = pMD->GetNativeCode();
+    SetJitHelperFunction(CORINFO_HELP_ARRADDR_ST, pDest);
+
+    pMD = MscorlibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF));
+    pMD->DoPrestub(NULL);
+    // This helper is marked AggressiveOptimization and its native code is in its final form.
+    // Get the code directly to avoid PreStub indirection.
+    pDest = pMD->GetNativeCode();
+    SetJitHelperFunction(CORINFO_HELP_LDELEMA_REF, pDest);
 #endif  //CROSSGEN_COMPILE
 }
 
