@@ -15,11 +15,12 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentNullException>("path", () => File.Decrypt(null));
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
         [Fact]
-        public static void EncryptDecrypt_NotFound()
+        public static void EncryptDecrypt_NotSupported()
         {
-            Assert.Throws<FileNotFoundException>(() => File.Encrypt("path"));
-            Assert.Throws<FileNotFoundException>(() => File.Decrypt("path"));
+            Assert.Throws<PlatformNotSupportedException>(() => File.Encrypt("path"));
+            Assert.Throws<PlatformNotSupportedException>(() => File.Decrypt("path"));
         }
 
         // On Windows Nano Server and Home Edition, file encryption with File.Encrypt(string path) throws an IOException
