@@ -33,20 +33,6 @@ enum PredefinedTlsSlots
 
     // Add more indices here.
     TlsIdx_ThreadType, // bit flags to indicate special thread's type
-    TlsIdx_Unused12,
-
-    // A transient thread value that indicates this thread is currently walking its stack
-    // or the stack of another thread. This value is useful to help short-circuit
-    // some problematic checks in the loader, guarantee that types & assemblies
-    // encountered during the walk must already be loaded, and provide information to control
-    // assembly loading behavior during stack walks.
-    //
-    // This value is set around the main portions of the stack walk (as those portions may
-    // enter the type & assembly loaders). This is also explicitly cleared while the
-    // walking thread calls the stackwalker callback or needs to execute managed code, as
-    // such calls may execute arbitrary code unrelated to the actual stack walking, and
-    // may never return, in the case of exception stackwalk callbacks.
-    TlsIdx_StackWalkerWalkingThread, // Thread* that the stack walker is currently walking.
 
     MAX_PREDEFINED_TLS_SLOT
 };

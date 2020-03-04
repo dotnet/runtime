@@ -6647,7 +6647,7 @@ void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         // Mark that we are performing a stackwalker like operation on the current thread.
         // This is necessary to allow the signature parsing functions to work without triggering any loads.
-        ClrFlsValueSwitch threadStackWalking(TlsIdx_StackWalkerWalkingThread, pThread);
+        StackWalkerWalkingThreadHolder threadStackWalking(pThread);
 
         // Hijack the return address to point to the appropriate routine based on the method's return type.
         void *pvHijackAddr = GetHijackAddr(pThread, &codeInfo);

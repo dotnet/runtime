@@ -4495,29 +4495,7 @@ inline void ClrFlsClearThreadType (TlsThreadTypeFlag flag)
 
 #endif //!DACCESS_COMPILE
 
-#ifdef DACCESS_COMPILE
-#define SET_THREAD_TYPE_STACKWALKER(pThread)
-#define CLEAR_THREAD_TYPE_STACKWALKER()
-#else   // DACCESS_COMPILE
-#define SET_THREAD_TYPE_STACKWALKER(pThread)   ClrFlsSetValue(TlsIdx_StackWalkerWalkingThread, pThread)
-#define CLEAR_THREAD_TYPE_STACKWALKER() ClrFlsSetValue(TlsIdx_StackWalkerWalkingThread, NULL)
-#endif  // DACCESS_COMPILE
-
 HRESULT SetThreadName(HANDLE hThread, PCWSTR lpThreadDescription);
-
-inline BOOL IsStackWalkerThread()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-#if defined(DACCESS_COMPILE)
-    return FALSE;
-#else
-    return ClrFlsGetValue (TlsIdx_StackWalkerWalkingThread) != NULL;
-#endif
-}
 
 inline BOOL IsGCThread ()
 {
@@ -4590,38 +4568,6 @@ private:
     TlsThreadTypeFlag m_flag;
     BOOL m_fPreviouslySet;
     INDEBUG(size_t m_nPreviousFlagGroup);
-};
-
-class ClrFlsValueSwitch
-{
-public:
-    ClrFlsValueSwitch (PredefinedTlsSlots slot, PVOID value)
-    {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_GC_NOTRIGGER;
-        STATIC_CONTRACT_MODE_ANY;
-
-#ifndef DACCESS_COMPILE
-        m_slot = slot;
-        m_PreviousValue = ClrFlsGetValue(slot);
-        ClrFlsSetValue(slot, value);
-#endif // DACCESS_COMPILE
-    }
-
-    ~ClrFlsValueSwitch ()
-    {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_GC_NOTRIGGER;
-        STATIC_CONTRACT_MODE_ANY;
-
-#ifndef DACCESS_COMPILE
-        ClrFlsSetValue(m_slot, m_PreviousValue);
-#endif // DACCESS_COMPILE
-    }
-
-private:
-    PVOID m_PreviousValue;
-    PredefinedTlsSlots m_slot;
 };
 
 //*********************************************************************************

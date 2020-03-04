@@ -7741,7 +7741,7 @@ HRESULT ProfToEEInterfaceImpl::ProfilerEbpWalker(
 
     // Remember that we're walking the stack.  This holder will reinstate the original
     // value of the stackwalker flag (from the thread type mask) in its destructor.
-    ClrFlsValueSwitch _threadStackWalking(TlsIdx_StackWalkerWalkingThread, pThreadToSnapshot);
+    StackWalkerWalkingThreadHolder threadStackWalking(pThreadToSnapshot);
 
     // This flag remembers if we reported a managed frame since the last unmanaged block
     // we reported. It's used to avoid reporting two unmanaged blocks in a row.

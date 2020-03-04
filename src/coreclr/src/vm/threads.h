@@ -6435,4 +6435,50 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc);
 
 #endif // FEATURE_WRITEBARRIER_COPY
 
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+extern thread_local Thread* t_pStackWalkerWalkingThread;
+#define SET_THREAD_TYPE_STACKWALKER(pThread)    t_pStackWalkerWalkingThread = pThread
+#define CLEAR_THREAD_TYPE_STACKWALKER()         t_pStackWalkerWalkingThread = NULL
+#else
+#define SET_THREAD_TYPE_STACKWALKER(pThread)
+#define CLEAR_THREAD_TYPE_STACKWALKER()
+#endif
+
+inline BOOL IsStackWalkerThread()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+    return t_pStackWalkerWalkingThread != NULL;
+#else
+    return FALSE;
+#endif
+}
+
+class StackWalkerWalkingThreadHolder
+{
+public:
+    StackWalkerWalkingThreadHolder(Thread* value)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+        m_PreviousValue = t_pStackWalkerWalkingThread;
+        t_pStackWalkerWalkingThread = value;
+#endif
+    }
+
+    ~StackWalkerWalkingThreadHolder()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+        t_pStackWalkerWalkingThread = m_PreviousValue;
+#endif
+    }
+
+private:
+    Thread* m_PreviousValue;
+};
+
 #endif //__threads_h__
