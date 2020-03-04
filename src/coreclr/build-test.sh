@@ -5,10 +5,10 @@ build_test_wrappers()
     if [[ "$__BuildTestWrappers" -ne -0 ]]; then
         echo "${__MsgPrefix}Creating test wrappers..."
 
-	if [[ $__Mono -eq 1 ]]; then
-		echo "Excluding mono test failures"
-		export EXCLUDE_MONO_FAILURES="true"
-	fi
+        if [[ $__Mono -eq 1 ]]; then
+            echo "Excluding mono test failures"
+            export EXCLUDE_MONO_FAILURES="true"
+        fi
 
         __Exclude="${__ProjectDir}/tests/issues.targets"
         __BuildLogRootName="Tests_XunitWrapper"
