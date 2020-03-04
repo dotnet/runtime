@@ -19,8 +19,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <AllProjects Include="GC/API/GC/AddMemoryPressureTest.csproj" Exclude="@(DisabledProjects)" /> 
-      <AllProjects Include="GC/API/GC/Collect.csproj" Exclude="@(DisabledProjects)" />
+       <AllProjects Include="*\**\*.csproj" Exclude="@(DisabledProjects)" />
+       <AllProjects Include="*\**\*.ilproj" Exclude="@(DisabledProjects)" />  
     </ItemGroup>
 
     <!-- All the test projects are partitioned into the test groups as defined below.
@@ -120,9 +120,6 @@
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
     </ItemGroup>
-
-    <Message Importance="High" Text="!!! dirs.proj All projects: %(AllProjects.Identity)"/>
-    <Message Importance="High" Text="!!! dirs.proj All CMDs: %(AllCMDsPresent.Identity)"/>
   </Target>
 
   <Import Project="..\dir.traversal.targets" />
