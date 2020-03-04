@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -1020,7 +1019,6 @@ namespace System.Net.WebSockets
 
             if (thisLockTaken || sessionHandleLockTaken)
             {
-                RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
                 }
@@ -1104,7 +1102,6 @@ namespace System.Net.WebSockets
             Debug.Assert(lockObject != null, "'lockObject' MUST NOT be NULL.");
             if (lockTaken)
             {
-                RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
                 }

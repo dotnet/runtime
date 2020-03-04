@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -18,10 +17,6 @@ namespace System.Reflection.Internal
 
             public DisposableData(IDisposable accessor, SafeBuffer safeBuffer, long offset)
             {
-                // Make sure the current thread isn't aborted in between acquiring the pointer and assigning the fields.
-#if !NETSTANDARD1_1
-                RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                 try
                 {
                 }
@@ -38,11 +33,6 @@ namespace System.Reflection.Internal
 
             protected override void Release()
             {
-                // Make sure the current thread isn't aborted in between zeroing the references and releasing/disposing.
-                // Safe buffer only frees the underlying resource if its ref count drops to zero, so we have to make sure it does.
-#if !NETSTANDARD1_1
-                RuntimeHelpers.PrepareConstrainedRegions();
-#endif
                 try
                 {
                 }
