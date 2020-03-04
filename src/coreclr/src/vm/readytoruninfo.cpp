@@ -537,7 +537,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
 
 ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, AllocMemTracker *pamTracker)
     : m_pModule(pModule), m_pLayout(pLayout), m_pHeader(pHeader), m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
-    m_pPersistentInlineTrackingMap(NULL)
+    m_pPersistentInlineTrackingMap(NULL), m_readyToRunCodeDisabled(FALSE)
 {
     STANDARD_VM_CONTRACT;
 
@@ -706,6 +706,10 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     mdToken token = pMD->GetMemberDef();
     int rid = RidFromToken(token);
     if (rid == 0)
+        goto done;
+
+    // If R2R code is disabled for this module, simply behave as if it is never found
+    if (m_readyToRunCodeDisabled)
         goto done;
 
     uint offset;
@@ -898,6 +902,9 @@ BOOL ReadyToRunInfo::MethodIterator::Next()
         MODE_ANY;
     }
     CONTRACTL_END;
+
+    if (m_pInfo->m_readyToRunCodeDisabled)
+        return FALSE;
 
     // Enumerate non-generic methods
     while (++m_methodDefIndex < (int)m_pInfo->m_methodDefEntryPoints.GetCount())

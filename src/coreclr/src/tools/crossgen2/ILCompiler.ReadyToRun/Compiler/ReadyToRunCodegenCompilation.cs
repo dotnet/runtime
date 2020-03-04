@@ -171,6 +171,13 @@ namespace ILCompiler
                 IMethodNode methodEntryPoint = _factory.MethodEntrypoint(canonMethod);
                 _rootAdder(methodEntryPoint, reason);
             }
+
+            public NodeFactory NodeFactory => _factory;
+
+            public void AddRoot(object o, string reason)
+            {
+                _rootAdder(o, reason);
+            }
         }
     }
 

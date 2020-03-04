@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler
 {
@@ -12,5 +13,7 @@ namespace ILCompiler
     public interface IRootingServiceProvider
     {
         void AddCompilationRoot(MethodDesc method, string reason);
+        public NodeFactory NodeFactory { get; }
+        public void AddRoot(object o, string reason);
     }
 }

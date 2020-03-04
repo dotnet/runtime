@@ -116,6 +116,8 @@ namespace Internal.ReadyToRunConstants
         IndirectPInvokeTarget = 0x2E,       // Target (indirect) of an inlined pinvoke
         PInvokeTarget = 0x2F,               // Target of an inlined pinvoke
 
+        Check_InstructionSetSupport = 0x30, // Define the set of instruction sets that must be supported/unsupported to use the fixup 
+
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
         // table of the MSIL metadata of the master context module for the signature or
@@ -309,6 +311,30 @@ namespace Internal.ReadyToRunConstants
         TypeHandleToRuntimeType,
         GetRefAny,
         TypeHandleToRuntimeTypeHandle,
+    }
+
+    public enum ReadyToRunInstructionSet
+    {
+        Aes = 0x01,
+        Avx = 0x02,
+        Avx2 = 0x03,
+        Bmi1 = 0x04,
+        Bmi2 = 0x05,
+        Fma = 0x06,
+        Lzcnt = 0x07,
+        Pclmuldq = 0x08,
+        Popcnt = 0x09,
+        Sse = 0x0A,
+        Sse2 = 0x0B,
+        Sse3 = 0x0C,
+        Ssse3 = 0x0D,
+        Sse41 = 0x0E,
+        Sse42 = 0x0F,
+        AdvSimd = 0x10,
+        ArmBase = 0x11,
+        Crc32 = 0x12,
+        Sha1 = 0x13,
+        Sha256 = 0x14,
     }
 
     public static class ReadyToRunRuntimeConstants
