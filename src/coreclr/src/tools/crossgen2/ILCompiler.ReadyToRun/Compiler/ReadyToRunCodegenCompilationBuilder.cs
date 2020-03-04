@@ -26,6 +26,7 @@ namespace ILCompiler
         private bool _generateMapFile;
         private int _parallelism;
         private InstructionSetSupport _instructionSetSupport;
+        private AggressiveOptimizationBehavior _optimizationBehavior = AggressiveOptimizationBehavior.DontCompile;
 
         private string _jitPath;
 
@@ -115,6 +116,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseAggressiveOptimizationBehavior(AggressiveOptimizationBehavior optimizationBehavior)
+        {
+            _optimizationBehavior = optimizationBehavior;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -184,7 +191,7 @@ namespace ILCompiler
             if (_ibcTuning)
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBINSTR);
 
-            JitConfigProvider.Initialize(corJitFlags, _ryujitOptions, _instructionSetSupport, _jitPath);
+            JitConfigProvider.Initialize(corJitFlags, _ryujitOptions, _instructionSetSupport, _optimizationBehavior, _jitPath);
 
             return new ReadyToRunCodegenCompilation(
                 graph,

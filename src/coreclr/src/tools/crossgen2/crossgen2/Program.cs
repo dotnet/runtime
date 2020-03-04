@@ -151,7 +151,7 @@ namespace ILCompiler
 
             InstructionSetSupportBuilder instructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
 
-            if (_commandLineOptions.InstructionSet.Length > 0)
+            if (_commandLineOptions.InstructionSet != null && _commandLineOptions.InstructionSet.Length > 0)
             {
                 // At this time, instruction sets may only be specified with --input-bubble, as
                 // we do not yet have a stable ABI for all vector parameter/return types.
@@ -207,7 +207,7 @@ namespace ILCompiler
 
                     SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
-                    var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, SimdVectorLength.None);
+                    var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
                     CompilerTypeSystemContext typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode);
 
                     //
@@ -375,12 +375,13 @@ namespace ILCompiler
                     else
                         compilationGroup.ApplyProfilerGuidedCompilationRestriction(null);
 
+                    AggressiveOptimizationBehavior aggressiveOptBehavior = _commandLineOptions.CompileAggressiveOptimizationMethods? AggressiveOptimizationBehavior.Compile: AggressiveOptimizationBehavior.DontCompile;
                     if (singleMethod == null)
                     {
                         // For non-single-method compilations add compilation roots.
                         foreach (var module in rootingModules)
                         {
-                            compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager, _commandLineOptions.Partial));
+                            compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager, aggressiveOptBehavior, _commandLineOptions.Partial));
 
                             if (!_commandLineOptions.InputBubble)
                             {
@@ -410,6 +411,7 @@ namespace ILCompiler
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseJitPath(_commandLineOptions.JitPath)
                         .UseInstructionSetSupport(instructionSetSupport)
+                        .UseAggressiveOptimizationBehavior(aggressiveOptBehavior)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)

@@ -23,6 +23,7 @@ namespace ILCompiler
         public bool CompileBubbleGenerics { get; set; }
         public bool Verbose { get; set; }
         public bool Composite { get; set; }
+        public bool CompileAggressiveOptimizationMethods { get; set; }
 
         public FileInfo DgmlLogFileName { get; set; }
         public bool GenerateFullDgmlLog { get; set; }
@@ -174,6 +175,10 @@ namespace ILCompiler
                     Argument = new Argument<int>(() => Environment.ProcessorCount)
                 },
                 new Option(new[] { "--map" }, SR.MapFileOption)
+                {
+                    Argument = new Argument<bool>()
+                },
+                new Option(new[] {"--compile-aggressive-optimization-methods"}, SR.CompileAggressiveOptimizationMethods)
                 {
                     Argument = new Argument<bool>()
                 },
