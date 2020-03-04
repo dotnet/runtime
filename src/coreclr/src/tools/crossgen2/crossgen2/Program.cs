@@ -289,6 +289,11 @@ namespace ILCompiler
                     if (typeSystemContext.InputFilePaths.Count == 0)
                         throw new CommandLineException(SR.NoInputFiles);
 
+
+                    // ON DEBUG BUILDS validate that the hardcoded list of instruction sets in InstructionSetSupportBuilder
+                    // matches with what is defined in System.Private.CoreLib. This function call is Conditional on the DEBUG #define
+                    InstructionSetSupportBuilder.ValidateInstructionSetSupport(typeSystemContext.SystemModule);
+
                     //
                     // Initialize compilation group and compilation roots
                     //
