@@ -547,11 +547,8 @@ handle_arguments_local() {
             __SkipGenerateLayout=1
             ;;
 
-	mono|-mono)
+	excludemonofailures|-excludemonofailures)
 	    __Mono=1
-	    ;;
-	coreclr|-coreclr)
-	    __CoreCLR=1
 	    ;;
         *)
             __UnprocessedBuildArgs+=("$1")
