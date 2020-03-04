@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Internal.TypeSystem;
 
@@ -11,6 +12,9 @@ namespace ILCompiler
 {
     public class InstructionSetSupport
     {
+        private static Dictionary<ValueTuple<TargetArchitecture, string, string>, bool> s_apiSupportViaImplication = new Dictionary<ValueTuple<TargetArchitecture, string, string>, bool>();
+        private static object s_lock = new object();
+
         private readonly HashSet<string> _supportedInstructionSets = new HashSet<string>();
         private readonly HashSet<string> _unsupportedInstructionSets = new HashSet<string>();
         private readonly TargetArchitecture _targetArchitecture;
@@ -36,40 +40,45 @@ namespace ILCompiler
 
         public TargetArchitecture Architecture => _targetArchitecture;
 
-        public bool IsSupportedInstructionSetIntrinsic(MethodDesc method)
+        public static string GetHardwareIntrinsicId(TargetArchitecture architecture, MetadataType potentialType)
         {
-            var owningType = (MetadataType)method.OwningType;
-
-            if (_targetArchitecture == TargetArchitecture.X64)
+            if (architecture == TargetArchitecture.X64)
             {
-                if (owningType.Name == "X64")
-                    owningType = (MetadataType)owningType.ContainingType;
-                if (owningType.Namespace != "System.Runtime.Intrinsics.X86")
-                    return false;
+                if (potentialType.Name == "X64")
+                    potentialType = (MetadataType)potentialType.ContainingType;
+                if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
+                    return "";
             }
-            else if (_targetArchitecture == TargetArchitecture.X86)
+            else if (architecture == TargetArchitecture.X86)
             {
-                if (owningType.Namespace != "System.Runtime.Intrinsics.X86")
-                    return false;
+                if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
+                    return "";
             }
-            else if (_targetArchitecture == TargetArchitecture.ARM64)
+            else if (architecture == TargetArchitecture.ARM64)
             {
-                if (owningType.Name == "Arm64")
-                    owningType = (MetadataType)owningType.ContainingType;
-                if (owningType.Namespace != "System.Runtime.Intrinsics.Arm")
-                    return false;
+                if (potentialType.Name == "Arm64")
+                    potentialType = (MetadataType)potentialType.ContainingType;
+                if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
+                    return "";
             }
-            else if (_targetArchitecture == TargetArchitecture.ARM)
+            else if (architecture == TargetArchitecture.ARM)
             {
-                if (owningType.Namespace != "System.Runtime.Intrinsics.Arm")
-                    return false;
+                if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
+                    return "";
             }
             else
             {
                 throw new InternalCompilerErrorException("Unknown architecture");
             }
 
-            return IsInstructionSetSupported(owningType.Name);
+            return potentialType.Name;
+        }
+
+        public bool IsSupportedInstructionSetIntrinsic(MethodDesc method)
+        {
+            var owningType = (MetadataType)method.OwningType;
+
+            return IsInstructionSetSupported(GetHardwareIntrinsicId(_targetArchitecture, owningType));
         }
 
         public SimdVectorLength GetVectorTSimdVector()
@@ -96,6 +105,21 @@ namespace ILCompiler
                 throw new InternalCompilerErrorException("Unknown architecture");
             }
         }
+
+        public static bool DoesInstructionSetImplyOtherInstructionSet(TargetArchitecture architecture, string instructionSet, string impliedInstructionSet)
+        {
+            lock (s_lock)
+            {
+                if (!s_apiSupportViaImplication.TryGetValue((architecture, instructionSet, impliedInstructionSet), out bool instructionSetImplied))
+                {
+                    InstructionSetSupportBuilder builder = new InstructionSetSupportBuilder(architecture);
+                    builder.AddSupportedInstructionSet(instructionSet);
+                    instructionSetImplied = builder.CreateInstructionSetSupport(null).IsInstructionSetSupported(impliedInstructionSet);
+                    s_apiSupportViaImplication.Add((architecture, instructionSet, impliedInstructionSet), instructionSetImplied);
+                }
+                return instructionSetImplied;
+            }
+        }
     }
 
     public class InstructionSetSupportBuilder
@@ -109,7 +133,7 @@ namespace ILCompiler
             supportMatrix[TargetArchitecture.ARM] = new Dictionary<string, string[]>();
             supportMatrix[TargetArchitecture.X64] = ComputeInstructSetSupportForX64();
             supportMatrix[TargetArchitecture.X86] = supportMatrix[TargetArchitecture.X64]; // At the moment support for x86 matches X64;
-            supportMatrix[TargetArchitecture.ARM64] = new Dictionary<string, string[]>();
+            supportMatrix[TargetArchitecture.ARM64] = ComputeInstructSetSupportForArm64();
 
             return supportMatrix;
         }
@@ -156,6 +180,62 @@ namespace ILCompiler
             support["Crc32"] = new string[] { "ArmBase" };
             support["Sha1"] = new string[] { "ArmBase" };
             support["Sha256"] = new string[] { "ArmBase" };
+
+            return support;
+        }
+
+        /// <summary>
+        /// Validate that the instruction set support values hardcoded above are actually accurate and up to date
+        /// </summary>
+        /// <param name="coreLibModule"></param>
+        [Conditional("DEBUG")]
+        public static void ValidateInstructionSetSupport(ModuleDesc coreLibModule)
+        {
+            var moduleDefinedSupportMatrix = new Dictionary<TargetArchitecture, Dictionary<string, string[]>>();
+            moduleDefinedSupportMatrix[TargetArchitecture.ARM] = new Dictionary<string, string[]>();
+            moduleDefinedSupportMatrix[TargetArchitecture.X64] = ComputeInstructionSetSupportMatrixFromPEFile(coreLibModule, "System.Runtime.Intrinsics.X86");
+            moduleDefinedSupportMatrix[TargetArchitecture.X86] = moduleDefinedSupportMatrix[TargetArchitecture.X64]; // At the moment support for x86 matches X64;
+            moduleDefinedSupportMatrix[TargetArchitecture.ARM64] = ComputeInstructionSetSupportMatrixFromPEFile(coreLibModule, "System.Runtime.Intrinsics.Arm");
+
+            Debug.Assert(moduleDefinedSupportMatrix.Count == s_instructionSetSupport.Count);
+            foreach (var moduleDefinedArchitectureSupport in moduleDefinedSupportMatrix)
+            {
+                Debug.Assert(s_instructionSetSupport.ContainsKey(moduleDefinedArchitectureSupport.Key));
+                var instructionSetsOnArch = s_instructionSetSupport[moduleDefinedArchitectureSupport.Key];
+
+                Debug.Assert(moduleDefinedArchitectureSupport.Value.Count == instructionSetsOnArch.Count);
+                foreach (var moduleDefinedInstructionSetSupport in moduleDefinedArchitectureSupport.Value)
+                {
+                    Debug.Assert(instructionSetsOnArch.ContainsKey(moduleDefinedInstructionSetSupport.Key));
+                    string[] impliedInstructionSets = instructionSetsOnArch[moduleDefinedInstructionSetSupport.Key];
+
+                    Debug.Assert(moduleDefinedInstructionSetSupport.Value.Length == impliedInstructionSets.Length);
+                    foreach (string moduleDefinedImpliedInstructionSet in moduleDefinedInstructionSetSupport.Value)
+                    {
+                        Debug.Assert(impliedInstructionSets.Contains(moduleDefinedImpliedInstructionSet));
+                    }
+                }
+            }
+        }
+
+        private static Dictionary<string, string[]> ComputeInstructionSetSupportMatrixFromPEFile(ModuleDesc coreLibModule, string @namespace)
+        {
+            var support = new Dictionary<string, string[]>();
+
+            foreach (MetadataType type in coreLibModule.GetAllTypes())
+            {
+                if (type.Namespace == @namespace)
+                {
+                    if (type.BaseType == type.Context.GetWellKnownType(WellKnownType.Object))
+                    {
+                        support.Add(type.Name, Array.Empty<string>());
+                    }
+                    else
+                    {
+                        support.Add(type.Name, new string[] { type.BaseType.Name });
+                    }
+                }
+            }
 
             return support;
         }
