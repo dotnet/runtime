@@ -39,7 +39,7 @@ function Get-Help() {
   Write-Host "  -build                  Build all source projects (short: -b)"
   Write-Host "  -buildtests             Build all test projects"
   Write-Host "  -rebuild                Rebuild all source projects"
-  Write-Host "  -test                   Run all unit tests (short: -t)"
+  Write-Host "  -test                   Build and run tests (short: -t)"
   Write-Host "  -pack                   Package build outputs into NuGet packages"
   Write-Host "  -sign                   Sign build outputs"
   Write-Host "  -publish                Publish artifacts (e.g. symbols)"

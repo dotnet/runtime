@@ -250,7 +250,7 @@
     <Error Condition="$(LibraryToTest) == ''" Text="LibraryToTest variable is not set" />
     <Error Condition="$(LibraryToTest.EndsWith('.Tests'))" Text="LibraryToTest should not end with .Tests, e.g. just 'System.Runtime'" />
     <MSBuild Projects="$(RepoRoot)src\libraries\$(LibraryToTest)\tests\$(LibraryToTest).Tests.csproj" 
-             Properties="Configuration=$(LibrariesTestConfig)" Targets="BuildAndTest" />
+             Properties="Configuration=$(LibrariesTestConfig)" Targets="Test" />
   </Target>
 
   <Target Name="RunBenchmarks" DependsOnTargets="PatchLocalMonoDotnet">

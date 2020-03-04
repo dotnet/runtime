@@ -35,7 +35,7 @@ usage()
   echo "  --build                    Build all source projects (short: -b)"
   echo "  --buildtests               Build all test projects"
   echo "  --rebuild                  Rebuild all source projects"
-  echo "  --test                     Run all unit tests (short: -t)"
+  echo "  --test                     Build and run tests (short: -t)"
   echo "  --pack                     Package build outputs into NuGet packages"
   echo "  --sign                     Sign build outputs"
   echo "  --publish                  Publish artifacts (e.g. symbols)"
