@@ -18,6 +18,13 @@ namespace System
         private static Exception CreateArgumentOutOfRangeException(ExceptionArgument argument) { return new ArgumentOutOfRangeException(argument.ToString()); }
 
         [DoesNotReturn]
+        internal static void ThrowValueArgumentOutOfRange_NeedNonNegNumException()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.value,
+                                                    SR.ArgumentOutOfRange_NeedNonNegNum);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowInvalidOperationException() { throw CreateInvalidOperationException(); }
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateInvalidOperationException() { return new InvalidOperationException(); }
@@ -55,7 +62,8 @@ namespace System
         culture,
         index,
         input,
-        value,
+        length,
         start,
+        value,
     }
 }

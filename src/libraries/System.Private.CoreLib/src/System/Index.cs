@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace System
 {
@@ -140,11 +141,18 @@ namespace System
 
         private string ToStringFromEnd()
         {
+#if SYSTEM_PRIVATE_CORELIB || NETCOREAPP
             Span<char> span = stackalloc char[11]; // 1 for ^ and 10 for longest possible uint value
             bool formatted = ((uint)Value).TryFormat(span.Slice(1), out int charsWritten);
             Debug.Assert(formatted);
             span[0] = '^';
             return new string(span.Slice(0, charsWritten + 1));
+#else
+            var builder = new StringBuilder(11);
+            builder.Append('^');
+            builder.Append((uint)Value);
+            return builder.ToString();
+#endif
         }
     }
 }

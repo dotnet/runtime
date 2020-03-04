@@ -22,7 +22,7 @@
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="System\Globalization\GlobalizationMode.cs" />
     <Compile Include="System\Runtime\Intrinsics\Intrinsics.Shims.cs" />
-    <Compile Include="System\Text\ThrowHelper.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\Utf8Extensions.Portable.cs" />
     <Compile Include="System\Utf8String.Portable.cs" />
     <Compile Include="$(CommonPath)System\Marvin.cs">
@@ -33,6 +33,12 @@
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Char8.cs">
       <Link>System\Char8.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Index.cs">
+      <Link>System\Index.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Range.cs">
+      <Link>System\Range.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\UnicodeDebug.cs">
       <Link>System\Text\UnicodeDebug.cs</Link>
@@ -54,6 +60,9 @@
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Numerics\BitOperations.cs">
       <Link>System\Numerics\BitOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs">
+      <Link>System\Numerics\Hashing\HashHelpers.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\ASCIIUtility.cs">
       <Link>System\Text\ASCIIUtility.cs</Link>
