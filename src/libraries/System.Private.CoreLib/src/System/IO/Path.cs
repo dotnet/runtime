@@ -938,7 +938,19 @@ namespace System.IO
             if (path == null)
                 return null;
 
-            return RemoveRedundantSegments(path.AsSpan());
+            if (PathInternal.IsEffectivelyEmpty(path))
+                return string.Empty;
+
+            ValueStringBuilder sb = new ValueStringBuilder(path.Length);
+            ReadOnlySpan<char> pathRoot = GetPathRoot(path);
+
+            if (!PathInternal.TryRemoveRedundantSegments(path, pathRoot.Length, ref sb))
+            {
+                sb.Dispose();
+                return path;
+            }
+
+            return sb.ToString(); // Disposes
         }
 
         /// <summary>
@@ -954,10 +966,18 @@ namespace System.IO
             ValueStringBuilder sb = new ValueStringBuilder(path.Length);
             ReadOnlySpan<char> pathRoot = GetPathRoot(path);
 
+            string result;
             if (!PathInternal.TryRemoveRedundantSegments(path, pathRoot.Length, ref sb))
-                return path.ToString();
+            {
+                result = path.ToString();
+                sb.Dispose();
+            }
+            else
+            {
+                result = sb.ToString(); // Disposes
+            }
 
-            return sb.ToString();
+            return result;
         }
 
         /// <summary>
@@ -978,17 +998,19 @@ namespace System.IO
             ValueStringBuilder sb = new ValueStringBuilder(path.Length);
             ReadOnlySpan<char> pathRoot = GetPathRoot(path);
 
+            bool result = false;
             if (PathInternal.TryRemoveRedundantSegments(path, pathRoot.Length, ref sb))
             {
-                return sb.TryCopyTo(destination, out charsWritten);
+                result = sb.TryCopyTo(destination, out charsWritten); // Disposes
             }
             else if (path.TryCopyTo(destination))
             {
                 charsWritten = path.Length;
-                return true;
+                result = true;
+                sb.Dispose();
             }
 
-            return false;
+            return result;
         }
     }
 }
