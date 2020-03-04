@@ -1223,6 +1223,21 @@ static bool CopyFile_ReadWrite(int inFd, int outFd)
     return true;
 }
 
+static void CopyFile_CloseAndUnlock(intptr_t fd)
+{
+    int tmpErrno = errno;
+
+    // Closing the file should drop the lock, but close can be interrupted, and we don't retry closes.
+    // As such, we could end up leaving the file locked, which could prevent subsequent usage of the
+    // file until this process dies.  To avoid that, we proactively try to release the lock before we
+    // close the handle.
+    SystemNative_FLock(fd, LOCK_UN);
+
+    SystemNative_Close(fd);
+
+    errno = tmpErrno;
+}
+
 #if HAVE_CLONEFILE
 enum CloneFileResult
 {
@@ -1235,6 +1250,7 @@ static enum CloneFileResult CopyFile_CloneFile(const char* srcPath, const char* 
 {
     struct stat_ destStat;
     int ret;
+    intptr_t outFd;
 
     while ((ret = stat_(destPath, &destStat)) < 0 && errno == EINTR);
     if (ret == 0)
@@ -1253,12 +1269,29 @@ static enum CloneFileResult CopyFile_CloneFile(const char* srcPath, const char* 
             return CLONEFILE_ERROR;
         }
 
-        // We need to unlink the destination file first but we need to check
-        // permission first to ensure we don't try to unlink a read-only file.
-        if (access(destPath, W_OK) != 0)
+        if (sourceStat->st_dev == destStat.st_dev)
         {
+            // Cloning between devices would always fail, bail early.
             return CLONEFILE_TRY_READ_WRITE;
         }
+
+        // We need to unlink the destination file first but we need to check permissions
+        // and locks first to ensure we don't try to unlink a read-only or locked file.
+        outFd = SystemNative_Open(destPath,
+            PAL_O_WRONLY | PAL_O_CREAT | PAL_O_CLOEXEC | PAL_O_EXCL,
+            sourceStat->st_mode & (S_IRWXU | S_IRWXG | S_IRWXO));
+        if (outFd < 0)
+        {
+            return CLONEFILE_ERROR;
+        }
+
+        if (SystemNative_FLock(outFd, LOCK_EX | LOCK_NB) < 0)
+        {
+            CopyFile_CloseAndUnlock(outFd);
+            return CLONEFILE_ERROR;
+        }
+
+        CopyFile_CloseAndUnlock(outFd);
 
         if (unlink(destPath) < 0)
         {
@@ -1403,7 +1436,6 @@ int32_t SystemNative_CopyFile(const char* srcPath, const char* destPath, int32_t
     intptr_t inFd;
     intptr_t outFd;
     int ret;
-    int tmpErrno;
     struct stat_ sourceStat;
     bool locked = false;
     bool copied = false;
@@ -1417,9 +1449,9 @@ int32_t SystemNative_CopyFile(const char* srcPath, const char* destPath, int32_t
         goto out_no_open;
     }
 
-    if (SystemNative_FLock(inFd, LOCK_EX | LOCK_NB) < 0)
+    if (SystemNative_FLock(inFd, LOCK_SH | LOCK_NB) < 0)
     {
-        goto out;
+        goto out_close_infd;
     }
 
     locked = true;
@@ -1427,7 +1459,7 @@ int32_t SystemNative_CopyFile(const char* srcPath, const char* destPath, int32_t
     while ((ret = fstat_(ToFileDescriptor(inFd), &sourceStat)) < 0 && errno == EINTR);
     if (ret != 0)
     {
-        goto out;
+        goto out_close_infd;
     }
 
 #if HAVE_CLONEFILE
@@ -1437,9 +1469,9 @@ int32_t SystemNative_CopyFile(const char* srcPath, const char* destPath, int32_t
     {
         case CLONEFILE_SUCCESS:
             copied = true;
-            goto out;
+            goto out_close_infd;
         case CLONEFILE_ERROR:
-            goto out;
+            goto out_close_infd;
         case CLONEFILE_TRY_READ_WRITE:
             break;
     }
@@ -1449,11 +1481,22 @@ int32_t SystemNative_CopyFile(const char* srcPath, const char* destPath, int32_t
     // operation is pending and, when it's finshed, hardlink it to the final destination path.
     // This way, if the process is interrupted mid-copy, no files are left on the disk.
     outFd = SystemNative_Open(destPath,
-        PAL_O_WRONLY | PAL_O_TRUNC | PAL_O_CREAT | PAL_O_CLOEXEC | (overwrite ? 0 : PAL_O_EXCL),
+        PAL_O_WRONLY | PAL_O_CREAT | PAL_O_CLOEXEC | (overwrite ? 0 : PAL_O_EXCL),
         sourceStat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO));
     if (outFd < 0)
     {
-        goto out;
+        goto out_close_infd;
+    }
+
+    if (SystemNative_FLock(outFd, LOCK_EX | LOCK_NB) < 0)
+    {
+        goto out_close_outfd_infd;
+    }
+
+    while ((ret = SystemNative_FTruncate(outFd, 0)) < 0 && errno == EINTR);
+    if (ret < 0)
+    {
+        goto out_close_outfd_infd;
     }
 
 #if defined(PAL_COPY_FILE_RANGE_SYSCALL)
@@ -1483,27 +1526,19 @@ int32_t SystemNative_CopyFile(const char* srcPath, const char* destPath, int32_t
         while (unlink(destPath) < 0 && errno == EINTR);
     }
 
-    tmpErrno = errno;
-    SystemNative_Close(outFd);
-    errno = tmpErrno;
+out_close_outfd_infd:
+    CopyFile_CloseAndUnlock(outFd);
 
-out:
-    // Closing the file should drop the lock, but be cautious here and issue a flock() anyway.
-    // (Errors are ignored because, at this point, there's nothing that can be done, as the
-    // file is being closed next.)
-    SystemNative_FLock(inFd, LOCK_UN);
-
-    tmpErrno = errno;
-    SystemNative_Close(inFd);
-    errno = tmpErrno;
+out_close_infd:
+    CopyFile_CloseAndUnlock(inFd);
 
     if (locked)
     {
-        return copied ? 0 : errno;
+        return copied ? 0 : 1;
     }
 
 out_no_open:
-    return -errno;
+    return -1;
 }
 
 intptr_t SystemNative_INotifyInit(void)
