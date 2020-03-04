@@ -45,7 +45,7 @@ namespace System.Collections.Concurrent.Tests
 
         protected override bool IDictionary_NonGeneric_Keys_Values_ParentDictionaryModifiedInvalidates => false;
 
-        protected override bool ResetImplemented => false;
+        protected override bool ResetImplemented => true;
 
         protected override bool IDictionary_NonGeneric_Keys_Values_Enumeration_ResetImplemented => true;
 

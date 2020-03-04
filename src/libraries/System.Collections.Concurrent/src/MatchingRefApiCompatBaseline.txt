@@ -1,0 +1,10 @@
+Compat issues with assembly System.Collections.Concurrent:
+MembersMustExist : Member 'System.Collections.Concurrent.ConcurrentDictionary<TKey, TValue>..ctor(System.Int32)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Collections.Concurrent.ConcurrentDictionary<TKey, TValue>..ctor(System.Int32, System.Collections.Generic.IEqualityComparer<TKey>)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Collections.Concurrent.ConcurrentDictionary<TKey, TValue>..ctor(System.Int32, System.Collections.Generic.IEqualityComparer<TKey>, System.Collections.Generic.IEqualityComparer<TValue>)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Collections.Concurrent.ConcurrentDictionary<TKey, TValue>.AddOrUpdate(TKey, TValue, TValue)' does not exist in the reference but it does exist in the implementation.
+Total Issues: 4
+
+
+
+
