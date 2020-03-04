@@ -1493,8 +1493,7 @@ int32_t SystemNative_CopyFile(const char* srcPath, const char* destPath, int32_t
         goto out_close_outfd_infd;
     }
 
-    while ((ret = SystemNative_FTruncate(outFd, 0)) < 0 && errno == EINTR);
-    if (ret < 0)
+    if (SystemNative_FTruncate(outFd, 0) < 0)
     {
         goto out_close_outfd_infd;
     }
