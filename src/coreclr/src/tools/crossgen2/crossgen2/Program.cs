@@ -395,6 +395,10 @@ namespace ILCompiler
                         }
                     }
 
+                    // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
+                    // code if the runtime environment doesn't support the specified instruction set
+                    compilationRoots.Add(instructionSetSupport);
+
                     //
                     // Compile
                     //
