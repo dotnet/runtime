@@ -1143,6 +1143,8 @@ namespace System.Tests
         [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity)]
         [InlineData(double.MinValue, double.MaxValue, double.MinValue)]
         [InlineData(double.NaN, double.NaN, double.NaN)]
+        [InlineData(double.NaN, 1.0, double.NaN)]
+        [InlineData(1.0, double.NaN, double.NaN)]
         [InlineData(-0.0, 0.0, -0.0)]
         [InlineData(2.0, -3.0, -3.0)]
         [InlineData(3.0, -2.0, -2.0)]

@@ -674,24 +674,20 @@ namespace System
             // otherwise returns the larger of the inputs. It
             // treats +0 as larger than -0 as per the specification.
 
-            return val1 < val2
-                ? val1
-                : MinSlow(val1, val2);
-
-            static double MinSlow(double val1, double val2)
+            if (val1 < val2)
             {
-                if (val1 < val2 || IsNaN(val1))
-                {
-                    return val1;
-                }
-
-                if (val1 == val2)
-                {
-                    return IsNegative(val1) ? val1 : val2;
-                }
-
-                return val2;
+                goto Exit;
             }
+
+            if (val1 == val2 && IsNegative(val1))
+            {
+                goto Exit;
+            }
+
+            val1 = val2;
+
+        Exit:
+            return val1;
         }
 
         [NonVersionable]
