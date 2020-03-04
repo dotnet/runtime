@@ -73,14 +73,14 @@ namespace System.Net.NetworkInformation
 
         public override bool IsDynamicDnsEnabled { get { return _dynamicDnsEnabled; } }
 
-        public override IPv4InterfaceProperties? GetIPv4Properties()
+        public override IPv4InterfaceProperties GetIPv4Properties()
         {
             if ((_adapterFlags & Interop.IpHlpApi.AdapterFlags.IPv4Enabled) == 0)
             {
                 throw new NetworkInformationException(SocketError.ProtocolNotSupported);
             }
 
-            return _ipv4Properties;
+            return _ipv4Properties!;
         }
 
         public override IPv6InterfaceProperties GetIPv6Properties()

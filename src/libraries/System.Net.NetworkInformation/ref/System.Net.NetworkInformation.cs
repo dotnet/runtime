@@ -185,7 +185,7 @@ namespace System.Net.NetworkInformation
         public abstract System.Net.NetworkInformation.MulticastIPAddressInformationCollection MulticastAddresses { get; }
         public abstract System.Net.NetworkInformation.UnicastIPAddressInformationCollection UnicastAddresses { get; }
         public abstract System.Net.NetworkInformation.IPAddressCollection WinsServersAddresses { get; }
-        public abstract System.Net.NetworkInformation.IPv4InterfaceProperties? GetIPv4Properties();
+        public abstract System.Net.NetworkInformation.IPv4InterfaceProperties GetIPv4Properties();
         public abstract System.Net.NetworkInformation.IPv6InterfaceProperties GetIPv6Properties();
     }
     public abstract partial class IPInterfaceStatistics
