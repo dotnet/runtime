@@ -37,11 +37,12 @@ namespace System.Text.Json.Serialization.Tests
 
             // Not supported. Not IList, and we don't detect the add method for this collection.
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ConcurrentBag<string>>(@"[""1""]"));
+        }
 
-            // Not supported. Collection must have a public constructor.
+        [Fact]
+        public static void Read_ConcurrentCollection_NoPublicConstructor_Throws()
+        {
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericConcurrentQueuePrivateConstructor<string>>(@"[""1""]"));
-
-            // Not supported. Collection must have a public constructor.
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericConcurrentStackPrivateConstructor<string>>(@"[""1""]"));
         }
     }

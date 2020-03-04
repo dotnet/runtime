@@ -464,5 +464,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithIEnumerableWrapper>(SimpleTestClassWithIEnumerableWrapper.s_json));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithICollectionWrapper>(SimpleTestClassWithICollectionWrapper.s_json));
         }
+
+        [Fact]
+        public static void Read_NonGeneric_NoPublicConstructor_Throws()
+        {
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForIEnumerablePrivateConstructor>(@"[""1""]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForICollectionPrivateConstructor>(@"[""1""]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForIListPrivateConstructor>(@"[""1""]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForIDictionaryPrivateConstructor>(@"{""Key"":""Value""}"));
+        }
     }
 }

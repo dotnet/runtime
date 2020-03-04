@@ -149,6 +149,11 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class WrapperForIEnumerablePrivateConstructor : WrapperForIEnumerable
+    {
+        private WrapperForIEnumerablePrivateConstructor() { }
+    }
+
     public class WrapperForICollection : ICollection
     {
         private readonly List<object> _list = new List<object>();
@@ -178,6 +183,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             return _list.GetEnumerator();
         }
+    }
+
+    public class WrapperForICollectionPrivateConstructor : WrapperForICollection
+    {
+        private WrapperForICollectionPrivateConstructor() { }
     }
 
     public class ReadOnlyWrapperForIList : WrapperForIList
@@ -247,6 +257,11 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class WrapperForIListPrivateConstructor : WrapperForIList
+    {
+        private WrapperForIListPrivateConstructor() { }
+    }
+
     public class WrapperForIDictionary : IDictionary
     {
         private readonly Dictionary<string, object> _dictionary = new Dictionary<string, object>();
@@ -301,6 +316,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             return ((IDictionary)_dictionary).GetEnumerator();
         }
+    }
+
+    public class WrapperForIDictionaryPrivateConstructor : WrapperForIDictionary
+    {
+        private WrapperForIDictionaryPrivateConstructor() { }
     }
 
     public class StackWrapper : Stack
