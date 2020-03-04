@@ -168,7 +168,7 @@ jobs:
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts.
     - ${{ if ne(parameters.corefxTests, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+      - script: $(coreClrRepoRootDir)build-test$(scriptExt) copynativeonly $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
         displayName: Copy native test components to test output folder
 
 

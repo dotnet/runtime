@@ -161,8 +161,6 @@
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
   </Target>
 
-    
-  
   <PropertyGroup>
     <EnableAzurePipelinesReporter>$(PublishTestResults)</EnableAzurePipelinesReporter>
     <EnableAzurePipelinesReporter Condition=" '$(EnableAzurePipelinesReporter)' == '' ">false</EnableAzurePipelinesReporter>

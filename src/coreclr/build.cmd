@@ -6,6 +6,8 @@ setlocal EnableDelayedExpansion EnableExtensions
 set "__MsgPrefix=BUILD: "
 
 echo %__MsgPrefix%Starting Build at %TIME%
+echo %__MsgPrefix%WARNING: This build script is deprecated and will be deleted soon. Use the root build script to build CoreCLR. If you want to build the CoreCLR runtime without using MSBuild, use the build-native.cmd script.
+echo %__MsgPrefix%See https://github.com/dotnet/runtime/issues/32991 for more information.
 
 set __ThisScriptFull="%~f0"
 set __ThisScriptDir="%~dp0"
@@ -907,6 +909,11 @@ if not !errorlevel! == 0 (
     echo %__MsgPrefix%    %__BuildArch% %__BuildType% %__PassThroughArgs% >> %__BuildResultFile%
     set __AllBuildSuccess=false
 )
+
+
+echo %__MsgPrefix%WARNING: This build script is deprecated and will be deleted soon. Use the root build script to build CoreCLR. If you want to build the CoreCLR runtime without using MSBuild, use the build-native.cmd script.
+echo %__MsgPrefix%See https://github.com/dotnet/runtime/issues/32991 for more information.
+
 exit /b 0
 
 REM =========================================================================================
@@ -922,9 +929,13 @@ REM === Like MSBuild or Powershell. If we directly exit /b 1 from within a if st
 REM === any of the routines, the exit code is not propagated.
 REM =========================================================================================
 :ExitWithError
+echo %__MsgPrefix%WARNING: This build script is deprecated and will be deleted soon. Use the root build script to build CoreCLR. If you want to build the CoreCLR runtime without using MSBuild, use the build-native.cmd script.
+echo %__MsgPrefix%See https://github.com/dotnet/runtime/issues/32991 for more information.
 exit /b 1
 
 :ExitWithCode
+echo %__MsgPrefix%WARNING: This build script is deprecated and will be deleted soon. Use the root build script to build CoreCLR. If you want to build the CoreCLR runtime without using MSBuild, use the build-native.cmd script.
+echo %__MsgPrefix%See https://github.com/dotnet/runtime/issues/32991 for more information.
 exit /b !__exitCode!
 
 :BuildCrossOSDac

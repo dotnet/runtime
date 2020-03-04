@@ -40,6 +40,7 @@ namespace ILCompiler
             return false;
         }
 
+#if !READYTORUN
         public static bool IsIsSupportedMethod(MethodDesc method)
         {
             return method.Name == "get_IsSupported";
@@ -188,5 +189,6 @@ namespace ILCompiler
             public const int Popcnt = 0x0040;
             public const int Lzcnt = 0x0080;
         }
+#endif // !READYTORUN
     }
 }

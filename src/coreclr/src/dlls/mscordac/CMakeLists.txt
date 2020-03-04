@@ -177,7 +177,7 @@ if(CLR_CMAKE_HOST_WIN32)
     )
 else(CLR_CMAKE_HOST_WIN32)
     list(APPEND COREDAC_LIBRARIES
-        mscorrc_debug
+        mscorrc
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
         palrt

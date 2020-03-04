@@ -85,7 +85,7 @@ jobs:
       value: ''
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
-        value: '-officialbuildid=$(Build.BuildNumber)'
+        value: '/p:OfficialBuildId=$(Build.BuildNumber)'
     - name: enforcePgoArg
       value: ''
     # The EnforcePGO script is only supported on Windows and is not supported on arm or arm64.
@@ -118,13 +118,21 @@ jobs:
         parameters:
           installDotnet: true
 
-    # Build
+    # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci -skipnuget $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
-        displayName: Build product
+      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
+        displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(enforcePgoArg)
-        displayName: Build product
+      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg)
+        displayName: Build CoreCLR Runtime
+
+    - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(parameters.archType, 'x86')) }}:
+      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac $(officialBuildIdArg)
+        displayName: Build Cross OS Linux DAC for Windows
+
+    # Build CoreCLR Managed Components
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib-nativecorelib-tools-packages $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci
+      displayName: Build managed product components and packages
 
     # Build native test components
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg) skipgeneratelayout
@@ -172,10 +180,6 @@ jobs:
           azureSubscription: 'DotNet-Engineering-Services_KeyVault'
           KeyVaultName: EngKeyVault
           SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
-
-    # Build packages
-    - script: $(coreClrRepoRootDir)build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossArg) $(officialBuildIdArg) -ci --configuration $(_BuildConfig)
-      displayName: Build packages
 
     # Save packages using the prepare-signed-artifacts format.
     - ${{ if eq(parameters.isOfficialBuild, true) }}:

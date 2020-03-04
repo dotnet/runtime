@@ -11,14 +11,15 @@
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
     <BuildArch>$(__BuildArch)</BuildArch>
-    <BuildArch Condition="'$(__BuildArch)'==''">x64</BuildArch>
-    <BuildArch Condition="'$(__BuildArch)' == 'amd64'">x64</BuildArch>
+    <BuildArch Condition="'$(BuildArch)' == ''">$(TargetArchitecture)</BuildArch>
+    <BuildArch Condition="'$(BuildArch)'==''">x64</BuildArch>
+    <BuildArch Condition="'$(BuildArch)' == 'amd64'">x64</BuildArch>
 
     <BuildType>$(__BuildType)</BuildType>
-    <BuildType Condition="'$(__BuildType)'==''">Debug</BuildType>
-    <BuildType Condition="'$(__BuildType)' == 'debug'">Debug</BuildType>
-    <BuildType Condition="'$(__BuildType)' == 'release'">Release</BuildType>
-    <BuildType Condition="'$(__BuildType)' == 'checked'">Checked</BuildType>
+    <BuildType Condition="'$(BuildType)'==''">Debug</BuildType>
+    <BuildType Condition="'$(BuildType)' == 'debug'">Debug</BuildType>
+    <BuildType Condition="'$(BuildType)' == 'release'">Release</BuildType>
+    <BuildType Condition="'$(BuildType)' == 'checked'">Checked</BuildType>
 
     <!-- TODO: converge on one property for TargetOS and __TargetOS (and similar), and remove these extra lines. -->
     <__TargetOS>$(TargetOS)</__TargetOS>

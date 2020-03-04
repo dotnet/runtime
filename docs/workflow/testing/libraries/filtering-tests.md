@@ -11,7 +11,7 @@ Tests marked as `OuterLoop` are for scenarios that don't need to run every build
 
 ```cmd
 build -test -testscope outerloop
-cd src/System.Text.RegularExpressions/tests && dotnet build /t:RebuildAndTest /p:TestScope=outerloop
+cd src/System.Text.RegularExpressions/tests && dotnet build /t:Test /p:TestScope=outerloop
 ```
 
 #### PlatformSpecificAttribute
@@ -28,11 +28,11 @@ Use this attribute on test methods to specify that this test may only be run on 
 
 When running tests by building a test project, tests that don't apply to the `TargetOS` are not run. For example, to run Linux-specific tests on a Linux box, use the following command line:
 ```sh
-dotnet build <csproj_file> /t:BuildAndTest /p:TargetOS=Linux
+dotnet build <csproj_file> /t:Test /p:TargetOS=Linux
 ```
 To run all Linux-compatible tests that are failing:
 ```sh
-dotnet build <csproj_file> /t:BuildAndTest /p:TargetOS=Linux /p:WithCategories=failing
+dotnet build <csproj_file> /t:Test /p:TargetOS=Linux /p:WithCategories=failing
 ```
 
 #### ActiveIssueAttribute
@@ -148,9 +148,9 @@ _**A few common examples with the above attributes:**_
 
 - Run all tests acceptable on Windows that are not failing:
 ```cmd
-dotnet build <csproj_file> /t:BuildAndTest /p:TargetOS=Windows_NT
+dotnet build <csproj_file> /t:Test /p:TargetOS=Windows_NT
 ```
 - Run all outer loop tests acceptable on OS X that are currently associated with active issues:
 ```sh
-dotnet build <csproj_file> /t:BuildAndTest /p:TargetOS=OSX /p:WithCategories="OuterLoop;failing""
+dotnet build <csproj_file> /t:Test /p:TargetOS=OSX /p:WithCategories="OuterLoop;failing""
 ```

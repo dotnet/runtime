@@ -246,9 +246,9 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-#if NETCOREAPP
+#if NETCOREAPP || NETSTANDARD2_1
             return string.GetHashCode(AsSpan());
-#elif NETSTANDARD
+#elif NETSTANDARD2_0
             // This GetHashCode is expensive since it allocates on every call.
             // However this is required to ensure we retain any behavior (such as hash code randomization) that
             // string.GetHashCode has.

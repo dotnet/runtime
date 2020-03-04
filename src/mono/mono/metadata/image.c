@@ -1153,7 +1153,7 @@ typedef enum {
 typedef struct {
 	int hash;
 	int assembly_name;
-	const char guid [40];
+	char guid [40];
 } IgnoredAssembly;
 
 typedef struct {

@@ -8,23 +8,22 @@ Here is one example of a daily workflow for a developer working mainly on the li
 :: From root:
 git clean -xdf
 git pull upstream master & git push origin master
-build -subsetCategory coreclr -c Release
 :: Build Debug libraries on top of Release runtime:
-build -subsetCategory libraries -runtimeConfiguration Release
-
+build -subsetCategory coreclr-libraries -runtimeConfiguration Release
 :: The above you may only perform once in a day, or when you pull down significant new changes.
 
 :: Switch to working on a given library (RegularExpressions in this case)
 cd src\libraries\System.Text.RegularExpressions
 
 :: If you use Visual Studio, you might open System.Text.RegularExpressions.sln here.
+build -vs System.Text.RegularExpressions
 
 :: Change to test directory
 cd tests
 
 :: Then inner loop build / test
 :: (If using Visual Studio, you might run tests inside it instead)
-pushd ..\src & dotnet build & popd & dotnet build /t:buildandtest
+pushd ..\src & dotnet build & popd & dotnet build /t:test
 ```
 
 The instructions for Linux and macOS are essentially the same:
@@ -33,10 +32,8 @@ The instructions for Linux and macOS are essentially the same:
 # From root:
 git clean -xdf
 git pull upstream master & git push origin master
-./build.sh -subsetCategory coreclr -c Release
 # Build Debug libraries on top of Release runtime:
-./build.sh -subsetCategory libraries -runtimeConfiguration Release
-
+./build.sh -subsetCategory coreclr-libraries -runtimeconfiguration Release
 # The above you may only perform once in a day, or when you pull down significant new changes.
 
 # Switch to working on a given library (RegularExpressions in this case)
@@ -46,7 +43,7 @@ cd src/libraries/System.Text.RegularExpressions
 cd tests
 
 # Then inner loop build / test:
-pushd ../src & dotnet build & popd & dotnet build /t:buildandtest
+pushd ../src & dotnet build & popd & dotnet build /t:test
 ```
 
 The steps above may be all you need to know to make a change. Want more details about what this means? Read on.

@@ -46,11 +46,8 @@
   </PropertyGroup>
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
-  <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
   <Target Name="Clean" DependsOnTargets="$(TraversalCleanDependsOn)" />
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
-  <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
   <Target Name="Restore" />
-  <Target Name="Test" />
 
 </Project>
