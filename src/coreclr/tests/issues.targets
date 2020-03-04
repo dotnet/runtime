@@ -103,7 +103,7 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/coreroot_determinism/coreroot_determinism/*">
             <Issue>32333</Issue>
-        </ExcludeList> 
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets -->
