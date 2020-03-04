@@ -667,7 +667,7 @@ namespace NativeFormat
         }
 
         bool
-#if defined(USE_INTEL_INTRINSICS_FOR_CUCKOO_FILTER) && defined(__GNUC__)
+#ifdef USE_INTEL_INTRINSICS_FOR_CUCKOO_FILTER
         __attribute__((__target__("sse2")))
 #endif
         MayExist(UInt32 hashcode, UInt16 fingerprint)
