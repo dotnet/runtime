@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
@@ -23,20 +24,17 @@ namespace System.Threading
             _waitThreadLock.Acquire();
             try
             {
-                if (_waitThreadsHead == null) // Lazily create the first wait thread.
+                WaitThreadNode? current = _waitThreadsHead;
+                if (current == null) // Lazily create the first wait thread.
                 {
-                    _waitThreadsHead = new WaitThreadNode
-                    {
-                        Thread = new WaitThread()
-                    };
+                    _waitThreadsHead = current = new WaitThreadNode(new WaitThread());
                 }
 
                 // Register the wait handle on the first wait thread that is not at capacity.
                 WaitThreadNode prev;
-                WaitThreadNode? current = _waitThreadsHead;
                 do
                 {
-                    if (current.Thread!.RegisterWaitHandle(handle))
+                    if (current.Thread.RegisterWaitHandle(handle))
                     {
                         return;
                     }
@@ -45,10 +43,7 @@ namespace System.Threading
                 } while (current != null);
 
                 // If all wait threads are full, create a new one.
-                prev.Next = new WaitThreadNode
-                {
-                    Thread = new WaitThread()
-                };
+                prev.Next = new WaitThreadNode(new WaitThread());
                 prev.Next.Thread.RegisterWaitHandle(handle);
                 return;
             }
@@ -87,14 +82,14 @@ namespace System.Threading
         /// <param name="thread">The wait thread to remove from the list.</param>
         private void RemoveWaitThread(WaitThread thread)
         {
-            if (_waitThreadsHead!.Thread == thread)
+            WaitThreadNode? current = _waitThreadsHead!;
+            if (current.Thread == thread)
             {
-                _waitThreadsHead = _waitThreadsHead.Next;
+                _waitThreadsHead = current.Next;
                 return;
             }
 
             WaitThreadNode prev;
-            WaitThreadNode? current = _waitThreadsHead;
 
             do
             {
@@ -112,8 +107,10 @@ namespace System.Threading
 
         private class WaitThreadNode
         {
-            public WaitThread? Thread { get; set; }
+            public WaitThread Thread { get; }
             public WaitThreadNode? Next { get; set; }
+
+            public WaitThreadNode(WaitThread thread) => Thread = thread;
         }
 
         /// <summary>
@@ -146,7 +143,7 @@ namespace System.Threading
             /// <remarks>
             /// The zeroth element of this array is always <see cref="_changeHandlesEvent"/>.
             /// </remarks>
-            private readonly WaitHandle[] _waitHandles = new WaitHandle[WaitHandle.MaxWaitHandles];
+            private readonly SafeWaitHandle[] _waitHandles = new SafeWaitHandle[WaitHandle.MaxWaitHandles];
             /// <summary>
             /// The number of user-registered waits on this wait thread.
             /// </summary>
@@ -170,7 +167,7 @@ namespace System.Threading
 
             public WaitThread()
             {
-                _waitHandles[0] = _changeHandlesEvent;
+                _waitHandles[0] = _changeHandlesEvent.SafeWaitHandle;
                 Thread waitThread = new Thread(WaitThreadStart);
                 waitThread.IsBackground = true;
                 waitThread.Start();
@@ -197,12 +194,14 @@ namespace System.Threading
                     {
                         for (int i = 0; i < numUserWaits; i++)
                         {
-                            if (_registeredWaits[i].IsInfiniteTimeout)
+                            RegisteredWaitHandle registeredWait = _registeredWaits[i];
+                            Debug.Assert(registeredWait != null);
+                            if (registeredWait.IsInfiniteTimeout)
                             {
                                 continue;
                             }
 
-                            int handleTimeoutDurationMs = _registeredWaits[i].TimeoutTimeMs - preWaitTimeMs;
+                            int handleTimeoutDurationMs = registeredWait.TimeoutTimeMs - preWaitTimeMs;
 
                             if (timeoutDurationMs == Timeout.Infinite)
                             {
@@ -220,17 +219,25 @@ namespace System.Threading
                         }
                     }
 
-                    int signaledHandleIndex = WaitHandle.WaitAny(new ReadOnlySpan<WaitHandle>(_waitHandles, 0, numUserWaits + 1), timeoutDurationMs);
+                    int signaledHandleIndex = WaitHandle.WaitAny(new ReadOnlySpan<SafeWaitHandle>(_waitHandles, 0, numUserWaits + 1), timeoutDurationMs);
+
+                    if (signaledHandleIndex >= WaitHandle.WaitAbandoned &&
+                        signaledHandleIndex < WaitHandle.WaitAbandoned + 1 + numUserWaits)
+                    {
+                        // For compatibility, treat an abandoned mutex wait result as a success and ignore the abandonment
+                        Debug.Assert(signaledHandleIndex != WaitHandle.WaitAbandoned); // the first wait handle is an event
+                        signaledHandleIndex += WaitHandle.WaitSuccess - WaitHandle.WaitAbandoned;
+                    }
 
                     if (signaledHandleIndex == 0) // If we were woken up for a change in our handles, continue.
                     {
                         continue;
                     }
 
-                    RegisteredWaitHandle? signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _registeredWaits[signaledHandleIndex - 1] : null;
-
-                    if (signaledHandle != null)
+                    if (signaledHandleIndex != WaitHandle.WaitTimeout)
                     {
+                        RegisteredWaitHandle signaledHandle = _registeredWaits[signaledHandleIndex - 1];
+                        Debug.Assert(signaledHandle != null);
                         QueueWaitCompletion(signaledHandle, false);
                     }
                     else
@@ -247,6 +254,7 @@ namespace System.Threading
                         for (int i = 0; i < numUserWaits; i++)
                         {
                             RegisteredWaitHandle registeredHandle = _registeredWaits[i];
+                            Debug.Assert(registeredHandle != null);
                             int handleTimeoutDurationMs = registeredHandle.TimeoutTimeMs - preWaitTimeMs;
                             if (elapsedDurationMs >= handleTimeoutDurationMs)
                             {
@@ -282,17 +290,22 @@ namespace System.Threading
                     // This is O(N^2), but max(N) = 63 and N will usually be very low
                     for (int i = 0; i < _numPendingRemoves; i++)
                     {
+                        RegisteredWaitHandle waitHandleToRemove = _pendingRemoves[i]!;
                         for (int j = 0; j < _numUserWaits; j++)
                         {
-                            if (_pendingRemoves[i] == _registeredWaits[j])
+                            if (waitHandleToRemove == _registeredWaits[j])
                             {
-                                _registeredWaits[j].OnRemoveWait();
+                                waitHandleToRemove.OnRemoveWait();
                                 _registeredWaits[j] = _registeredWaits[_numUserWaits - 1];
+                                Debug.Assert(_registeredWaits[j] != null);
                                 _waitHandles[j + 1] = _waitHandles[_numUserWaits];
+                                Debug.Assert(_waitHandles[j + 1] != null);
                                 _registeredWaits[_numUserWaits - 1] = null!;
                                 _waitHandles[_numUserWaits] = null!;
                                 --_numUserWaits;
                                 _pendingRemoves[i] = null;
+
+                                waitHandleToRemove.Handle.DangerousRelease();
                                 break;
                             }
                         }
@@ -351,6 +364,10 @@ namespace System.Threading
                 {
                     return false;
                 }
+
+                bool success = false;
+                handle.Handle.DangerousAddRef(ref success);
+                Debug.Assert(success);
 
                 _registeredWaits[_numUserWaits] = handle;
                 _waitHandles[_numUserWaits + 1] = handle.Handle;

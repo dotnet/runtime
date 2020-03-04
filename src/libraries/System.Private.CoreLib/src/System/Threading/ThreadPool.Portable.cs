@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
@@ -10,11 +9,24 @@ namespace System.Threading
     // Portable implementation of ThreadPool
     //
 
+    public sealed partial class RegisteredWaitHandle : MarshalByRefObject
+    {
+        /// <summary>
+        /// Unregisters this wait handle registration from the wait threads.
+        /// </summary>
+        /// <param name="waitObject">The event to signal when the handle is unregistered.</param>
+        /// <returns>If the handle was successfully marked to be removed and the provided wait handle was set as the user provided event.</returns>
+        /// <remarks>
+        /// This method will only return true on the first call.
+        /// Passing in a wait handle with a value of -1 will result in a blocking wait, where Unregister will not return until the full unregistration is completed.
+        /// </remarks>
+        public bool Unregister(WaitHandle waitObject) => UnregisterPortable(waitObject);
+    }
+
     public static partial class ThreadPool
     {
         internal const bool EnableWorkerTracking = false;
 
-        internal static void InitializeForThreadPoolThread() { }
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
@@ -93,27 +105,7 @@ namespace System.Threading
             return PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete();
         }
 
-        private static RegisteredWaitHandle RegisterWaitForSingleObject(
-             WaitHandle waitObject,
-             WaitOrTimerCallback callBack,
-             object? state,
-             uint millisecondsTimeOutInterval,
-             bool executeOnlyOnce,
-             bool flowExecutionContext)
-        {
-            if (waitObject == null)
-                throw new ArgumentNullException(nameof(waitObject));
-
-            if (callBack == null)
-                throw new ArgumentNullException(nameof(callBack));
-
-            RegisteredWaitHandle registeredHandle = new RegisteredWaitHandle(
-                waitObject,
-                new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
-                (int)millisecondsTimeOutInterval,
-                !executeOnlyOnce);
-            PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredHandle);
-            return registeredHandle;
-        }
+        private static void RegisterWaitForSingleObjectCore(WaitHandle? waitObject, RegisteredWaitHandle registeredWaitHandle) =>
+            PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredWaitHandle);
     }
 }

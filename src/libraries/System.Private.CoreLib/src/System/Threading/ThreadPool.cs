@@ -19,6 +19,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using Internal.Runtime.CompilerServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
@@ -938,31 +939,23 @@ namespace System.Threading
     /// An object representing the registration of a <see cref="WaitHandle"/> via <see cref="ThreadPool.RegisterWaitForSingleObject"/>.
     /// </summary>
     [UnsupportedOSPlatform("browser")]
-    public sealed class RegisteredWaitHandle : MarshalByRefObject
+    public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
             int millisecondsTimeout, bool repeating)
         {
-            Handle = waitHandle;
+            Handle = waitHandle.SafeWaitHandle;
             Callback = callbackHelper;
             TimeoutDurationMs = millisecondsTimeout;
             Repeating = repeating;
             RestartTimeout(Environment.TickCount);
         }
 
-        ~RegisteredWaitHandle()
-        {
-            if (WaitThread != null)
-            {
-                Unregister(null);
-            }
-        }
-
-        private static AutoResetEvent s_cachedEvent;
+        private static AutoResetEvent? s_cachedEvent;
 
         private static AutoResetEvent RentEvent()
         {
-            AutoResetEvent resetEvent = Interlocked.Exchange(ref s_cachedEvent, (AutoResetEvent)null);
+            AutoResetEvent? resetEvent = Interlocked.Exchange(ref s_cachedEvent, (AutoResetEvent?)null);
             if (resetEvent == null)
             {
                 resetEvent = new AutoResetEvent(false);
@@ -978,6 +971,8 @@ namespace System.Threading
             }
         }
 
+        private static readonly LowLevelLock s_callbackLock = new LowLevelLock();
+
         /// <summary>
         /// The callback to execute when the wait on <see cref="Handle"/> either times out or completes.
         /// </summary>
@@ -985,16 +980,16 @@ namespace System.Threading
 
 
         /// <summary>
-        /// The <see cref="WaitHandle"/> that was registered.
+        /// The <see cref="SafeWaitHandle"/> that was registered.
         /// </summary>
-        internal WaitHandle Handle { get; }
+        internal SafeWaitHandle Handle { get; }
 
         /// <summary>
         /// The time this handle times out at in ms.
         /// </summary>
         internal int TimeoutTimeMs { get; private set; }
 
-        private int TimeoutDurationMs { get; }
+        internal int TimeoutDurationMs { get; }
 
         internal bool IsInfiniteTimeout => TimeoutDurationMs == -1;
 
@@ -1011,23 +1006,23 @@ namespace System.Threading
         /// <summary>
         /// The <see cref="WaitHandle"/> the user passed in via <see cref="Unregister(WaitHandle)"/>.
         /// </summary>
-        private SafeWaitHandle UserUnregisterWaitHandle { get; set; }
+        private SafeWaitHandle? UserUnregisterWaitHandle { get; set; }
 
         private IntPtr UserUnregisterWaitHandleValue { get; set; }
 
-        internal bool IsBlocking => UserUnregisterWaitHandleValue == (IntPtr)(-1);
+        private static IntPtr InvalidHandleValue => new IntPtr(-1);
+
+        internal bool IsBlocking => UserUnregisterWaitHandleValue == InvalidHandleValue;
 
         /// <summary>
         /// The <see cref="PortableThreadPool.WaitThread"/> this <see cref="RegisteredWaitHandle"/> was registered on.
         /// </summary>
-        internal PortableThreadPool.WaitThread WaitThread { get; set; }
+        internal PortableThreadPool.WaitThread? WaitThread { get; set; }
 
         /// <summary>
         /// The number of callbacks that are currently queued on the Thread Pool or executing.
         /// </summary>
         private int _numRequestedCallbacks;
-
-        private LowLevelLock _callbackLock = new LowLevelLock();
 
         /// <summary>
         /// Notes if we need to signal the user's unregister event after all callbacks complete.
@@ -1038,23 +1033,17 @@ namespace System.Threading
 
         private bool _unregistered;
 
-        private AutoResetEvent _callbacksComplete;
+        private AutoResetEvent? _callbacksComplete;
 
-        private AutoResetEvent _removed;
+        private AutoResetEvent? _removed;
 
-        /// <summary>
-        /// Unregisters this wait handle registration from the wait threads.
-        /// </summary>
-        /// <param name="waitObject">The event to signal when the handle is unregistered.</param>
-        /// <returns>If the handle was successfully marked to be removed and the provided wait handle was set as the user provided event.</returns>
-        /// <remarks>
-        /// This method will only return true on the first call.
-        /// Passing in a wait handle with a value of -1 will result in a blocking wait, where Unregister will not return until the full unregistration is completed.
-        /// </remarks>
-        public bool Unregister(WaitHandle waitObject)
+        private bool UnregisterPortable(WaitHandle waitObject)
         {
-            GC.SuppressFinalize(this);
-            _callbackLock.Acquire();
+            // The registered wait handle must have been registered by this time, otherwise the instance is not handed out to
+            // the caller of the public variants of RegisterWaitForSingleObject
+            Debug.Assert(WaitThread != null);
+
+            s_callbackLock.Acquire();
             bool needToRollBackRefCountOnException = false;
             try
             {
@@ -1082,7 +1071,6 @@ namespace System.Threading
                 {
                     _removed = RentEvent();
                 }
-                _unregisterCalled = true;
             }
             catch (Exception) // Rollback state on exception
             {
@@ -1109,10 +1097,11 @@ namespace System.Threading
             }
             finally
             {
-                _callbackLock.Release();
+                _unregisterCalled = true;
+                s_callbackLock.Release();
             }
 
-            WaitThread.UnregisterWait(this);
+            WaitThread!.UnregisterWait(this);
             return true;
         }
 
@@ -1121,14 +1110,14 @@ namespace System.Threading
         /// </summary>
         private void SignalUserWaitHandle()
         {
-            _callbackLock.VerifyIsLocked();
-            SafeWaitHandle handle = UserUnregisterWaitHandle;
+            s_callbackLock.VerifyIsLocked();
+            SafeWaitHandle? handle = UserUnregisterWaitHandle;
             IntPtr handleValue = UserUnregisterWaitHandleValue;
             try
             {
-                if (handleValue != IntPtr.Zero && handleValue != (IntPtr)(-1))
+                if (handleValue != IntPtr.Zero && handleValue != InvalidHandleValue)
                 {
-                    Debug.Assert(handleValue == handle.DangerousGetHandle());
+                    Debug.Assert(handleValue == handle!.DangerousGetHandle());
                     EventWaitHandle.Set(handle);
                 }
             }
@@ -1147,14 +1136,14 @@ namespace System.Threading
         internal void PerformCallback(bool timedOut)
         {
 #if DEBUG
-            _callbackLock.Acquire();
+            s_callbackLock.Acquire();
             try
             {
                 Debug.Assert(_numRequestedCallbacks != 0);
             }
             finally
             {
-                _callbackLock.Release();
+                s_callbackLock.Release();
             }
 #endif
             _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback, timedOut);
@@ -1166,14 +1155,14 @@ namespace System.Threading
         /// </summary>
         internal void RequestCallback()
         {
-            _callbackLock.Acquire();
+            s_callbackLock.Acquire();
             try
             {
                 _numRequestedCallbacks++;
             }
             finally
             {
-                _callbackLock.Release();
+                s_callbackLock.Release();
             }
         }
 
@@ -1183,7 +1172,7 @@ namespace System.Threading
         /// </summary>
         internal void OnRemoveWait()
         {
-            _callbackLock.Acquire();
+            s_callbackLock.Acquire();
             try
             {
                 _removed?.Set();
@@ -1198,7 +1187,7 @@ namespace System.Threading
             }
             finally
             {
-                _callbackLock.Release();
+                s_callbackLock.Release();
             }
         }
 
@@ -1207,7 +1196,7 @@ namespace System.Threading
         /// </summary>
         private void CompleteCallbackRequest()
         {
-            _callbackLock.Acquire();
+            s_callbackLock.Acquire();
             try
             {
                 --_numRequestedCallbacks;
@@ -1218,7 +1207,7 @@ namespace System.Threading
             }
             finally
             {
-                _callbackLock.Release();
+                s_callbackLock.Release();
             }
         }
 
@@ -1230,7 +1219,7 @@ namespace System.Threading
             Debug.Assert(IsBlocking);
             Debug.Assert(_unregisterCalled); // Should only be called when the wait is unregistered by the user.
 
-            _callbacksComplete.WaitOne();
+            _callbacksComplete!.WaitOne();
             ReturnEvent(_callbacksComplete);
             _callbacksComplete = null;
         }
@@ -1240,7 +1229,7 @@ namespace System.Threading
             Debug.Assert(!IsBlocking);
             Debug.Assert(_unregisterCalled); // Should only be called when the wait is unregistered by the user.
 
-            _removed.WaitOne();
+            _removed!.WaitOne();
             ReturnEvent(_removed);
             _removed = null;
         }
@@ -1384,6 +1373,29 @@ namespace System.Threading
             if (tm > (long)int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, false);
+        }
+
+        private static RegisteredWaitHandle RegisterWaitForSingleObject(
+             WaitHandle? waitObject,
+             WaitOrTimerCallback? callBack,
+             object? state,
+             uint millisecondsTimeOutInterval,
+             bool executeOnlyOnce,
+             bool flowExecutionContext)
+        {
+            if (waitObject == null)
+                throw new ArgumentNullException(nameof(waitObject));
+
+            if (callBack == null)
+                throw new ArgumentNullException(nameof(callBack));
+
+            RegisteredWaitHandle registeredHandle = new RegisteredWaitHandle(
+                waitObject,
+                new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
+                (int)millisecondsTimeOutInterval,
+                !executeOnlyOnce);
+            RegisterWaitForSingleObjectCore(waitObject, registeredHandle);
+            return registeredHandle;
         }
 
         public static bool QueueUserWorkItem(WaitCallback callBack) =>

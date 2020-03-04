@@ -29,127 +29,101 @@ namespace System.Threading
         internal static bool PerformWaitCallback() => ThreadPoolWorkQueue.Dispatch();
     }
 
-    internal sealed class RegisteredWaitHandleSafe : CriticalFinalizerObject
+    public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
-        private static IntPtr InvalidHandle => new IntPtr(-1);
-        private IntPtr registeredWaitHandle = InvalidHandle;
-        private WaitHandle? m_internalWaitObject;
-        private bool bReleaseNeeded;
-        private volatile int m_lock;
+        private IntPtr _nativeRegisteredWaitHandle = InvalidHandleValue;
+        private bool _releaseHandle;
 
-        internal IntPtr GetHandle() => registeredWaitHandle;
+        private static bool IsValidHandle(IntPtr handle) => handle != InvalidHandleValue && handle != IntPtr.Zero;
 
-        internal void SetHandle(IntPtr handle)
+        internal void SetNativeRegisteredWaitHandle(IntPtr nativeRegisteredWaitHandle)
         {
-            registeredWaitHandle = handle;
+            Debug.Assert(!ThreadPool.UsePortableThreadPool);
+            Debug.Assert(IsValidHandle(nativeRegisteredWaitHandle));
+            Debug.Assert(!IsValidHandle(_nativeRegisteredWaitHandle));
+
+            _nativeRegisteredWaitHandle = nativeRegisteredWaitHandle;
         }
 
-        internal void SetWaitObject(WaitHandle waitObject)
+        internal void OnBeforeRegister()
         {
-            m_internalWaitObject = waitObject;
-            if (waitObject != null)
+            if (ThreadPool.UsePortableThreadPool)
             {
-                m_internalWaitObject.SafeWaitHandle.DangerousAddRef(ref bReleaseNeeded);
+                GC.SuppressFinalize(this);
+                return;
             }
+
+            Handle.DangerousAddRef(ref _releaseHandle);
         }
 
-        internal bool Unregister(
-             WaitHandle? waitObject          // object to be notified when all callbacks to delegates have completed
-             )
+        /// <summary>
+        /// Unregisters this wait handle registration from the wait threads.
+        /// </summary>
+        /// <param name="waitObject">The event to signal when the handle is unregistered.</param>
+        /// <returns>If the handle was successfully marked to be removed and the provided wait handle was set as the user provided event.</returns>
+        /// <remarks>
+        /// This method will only return true on the first call.
+        /// Passing in a wait handle with a value of -1 will result in a blocking wait, where Unregister will not return until the full unregistration is completed.
+        /// </remarks>
+        public bool Unregister(WaitHandle waitObject)
         {
-            bool result = false;
-
-            // lock(this) cannot be used reliably in Cer since thin lock could be
-            // promoted to syncblock and that is not a guaranteed operation
-            bool bLockTaken = false;
-            do
+            if (ThreadPool.UsePortableThreadPool)
             {
-                if (Interlocked.CompareExchange(ref m_lock, 1, 0) == 0)
-                {
-                    bLockTaken = true;
-                    try
-                    {
-                        if (ValidHandle())
-                        {
-                            result = UnregisterWaitNative(GetHandle(), waitObject?.SafeWaitHandle);
-                            if (result)
-                            {
-                                if (bReleaseNeeded)
-                                {
-                                    Debug.Assert(m_internalWaitObject != null, "Must be non-null for bReleaseNeeded to be true");
-                                    m_internalWaitObject.SafeWaitHandle.DangerousRelease();
-                                    bReleaseNeeded = false;
-                                }
-                                // if result not true don't release/suppress here so finalizer can make another attempt
-                                SetHandle(InvalidHandle);
-                                m_internalWaitObject = null;
-                                GC.SuppressFinalize(this);
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        m_lock = 0;
-                    }
-                }
-                Thread.SpinWait(1);     // yield to processor
+                return UnregisterPortable(waitObject);
             }
-            while (!bLockTaken);
 
-            return result;
+            s_callbackLock.Acquire();
+            try
+            {
+                if (!IsValidHandle(_nativeRegisteredWaitHandle) ||
+                    !UnregisterWaitNative(_nativeRegisteredWaitHandle, waitObject?.SafeWaitHandle))
+                {
+                    return false;
+                }
+                _nativeRegisteredWaitHandle = InvalidHandleValue;
+
+                if (_releaseHandle)
+                {
+                    Handle.DangerousRelease();
+                    _releaseHandle = false;
+                }
+            }
+            finally
+            {
+                s_callbackLock.Release();
+            }
+
+            GC.SuppressFinalize(this);
+            return true;
         }
 
-        private bool ValidHandle() =>
-            registeredWaitHandle != InvalidHandle && registeredWaitHandle != IntPtr.Zero;
-
-        ~RegisteredWaitHandleSafe()
+        ~RegisteredWaitHandle()
         {
-            // if the app has already unregistered the wait, there is nothing to cleanup
-            // we can detect this by checking the handle. Normally, there is no race condition here
-            // so no need to protect reading of handle. However, if this object gets
-            // resurrected and then someone does an unregister, it would introduce a race condition
-            //
-            // PrepareConstrainedRegions call not needed since finalizer already in Cer
-            //
-            // lock(this) cannot be used reliably even in Cer since thin lock could be
-            // promoted to syncblock and that is not a guaranteed operation
-            //
-            // Note that we will not "spin" to get this lock.  We make only a single attempt;
-            // if we can't get the lock, it means some other thread is in the middle of a call
-            // to Unregister, which will do the work of the finalizer anyway.
-            //
-            // Further, it's actually critical that we *not* wait for the lock here, because
-            // the other thread that's in the middle of Unregister may be suspended for shutdown.
-            // Then, during the live-object finalization phase of shutdown, this thread would
-            // end up spinning forever, as the other thread would never release the lock.
-            // This will result in a "leak" of sorts (since the handle will not be cleaned up)
-            // but the process is exiting anyway.
-            //
-            // During AD-unload, we don't finalize live objects until all threads have been
-            // aborted out of the AD.  Since these locked regions are CERs, we won't abort them
-            // while the lock is held.  So there should be no leak on AD-unload.
-            //
-            if (Interlocked.CompareExchange(ref m_lock, 1, 0) == 0)
+            if (ThreadPool.UsePortableThreadPool)
             {
-                try
+                return;
+            }
+
+            s_callbackLock.Acquire();
+            try
+            {
+                if (!IsValidHandle(_nativeRegisteredWaitHandle))
                 {
-                    if (ValidHandle())
-                    {
-                        WaitHandleCleanupNative(registeredWaitHandle);
-                        if (bReleaseNeeded)
-                        {
-                            Debug.Assert(m_internalWaitObject != null, "Must be non-null for bReleaseNeeded to be true");
-                            m_internalWaitObject.SafeWaitHandle.DangerousRelease();
-                            bReleaseNeeded = false;
-                        }
-                        SetHandle(InvalidHandle);
-                        m_internalWaitObject = null;
-                    }
+                    return;
                 }
-                finally
+
+                WaitHandleCleanupNative(_nativeRegisteredWaitHandle);
+                _nativeRegisteredWaitHandle = InvalidHandleValue;
+
+                if (_releaseHandle)
                 {
-                    m_lock = 0;
+                    Handle.DangerousRelease();
+                    _releaseHandle = false;
                 }
+            }
+            finally
+            {
+                s_callbackLock.Release();
             }
         }
 
@@ -158,34 +132,6 @@ namespace System.Threading
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool UnregisterWaitNative(IntPtr handle, SafeHandle? waitObject);
-    }
-
-    [UnsupportedOSPlatform("browser")]
-    public sealed class RegisteredWaitHandle : MarshalByRefObject
-    {
-        private readonly RegisteredWaitHandleSafe internalRegisteredWait;
-
-        internal RegisteredWaitHandle()
-        {
-            internalRegisteredWait = new RegisteredWaitHandleSafe();
-        }
-
-        internal void SetHandle(IntPtr handle)
-        {
-            internalRegisteredWait.SetHandle(handle);
-        }
-
-        internal void SetWaitObject(WaitHandle waitObject)
-        {
-            internalRegisteredWait.SetWaitObject(waitObject);
-        }
-
-        public bool Unregister(
-             WaitHandle? waitObject          // object to be notified when all callbacks to delegates have completed
-             )
-        {
-            return internalRegisteredWait.Unregister(waitObject);
-        }
     }
 
     public static partial class ThreadPool
@@ -359,36 +305,24 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern long GetPendingUnmanagedWorkItemCount();
 
-        private static RegisteredWaitHandle RegisterWaitForSingleObject(
-             WaitHandle waitObject,
-             WaitOrTimerCallback callBack,
-             object? state,
-             uint millisecondsTimeOutInterval,
-             bool executeOnlyOnce,   // NOTE: we do not allow other options that allow the callback to be queued as an APC
-             bool compressStack
-             )
+        private static void RegisterWaitForSingleObjectCore(WaitHandle waitObject, RegisteredWaitHandle registeredWaitHandle)
         {
-            RegisteredWaitHandle registeredWaitHandle = new RegisteredWaitHandle();
+            registeredWaitHandle.OnBeforeRegister();
 
-            if (callBack != null)
+            if (UsePortableThreadPool)
             {
-                _ThreadPoolWaitOrTimerCallback callBackHelper = new _ThreadPoolWaitOrTimerCallback(callBack, state, compressStack);
-                state = (object)callBackHelper;
-                // call SetWaitObject before native call so that waitObject won't be closed before threadpoolmgr registration
-                // this could occur if callback were to fire before SetWaitObject does its addref
-                registeredWaitHandle.SetWaitObject(waitObject);
-                IntPtr nativeRegisteredWaitHandle = RegisterWaitForSingleObjectNative(waitObject,
-                                                                               state,
-                                                                               millisecondsTimeOutInterval,
-                                                                               executeOnlyOnce,
-                                                                               registeredWaitHandle);
-                registeredWaitHandle.SetHandle(nativeRegisteredWaitHandle);
+                PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredWaitHandle);
+                return;
             }
-            else
-            {
-                throw new ArgumentNullException(nameof(WaitOrTimerCallback));
-            }
-            return registeredWaitHandle;
+
+            IntPtr nativeRegisteredWaitHandle =
+                RegisterWaitForSingleObjectNative(
+                    waitObject,
+                    registeredWaitHandle.Callback,
+                    (uint)registeredWaitHandle.TimeoutDurationMs,
+                    !registeredWaitHandle.Repeating,
+                    registeredWaitHandle);
+            registeredWaitHandle.SetNativeRegisteredWaitHandle(nativeRegisteredWaitHandle);
         }
 
         internal static void RequestWorkerThread()
