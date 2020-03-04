@@ -9098,8 +9098,13 @@ REDO_RETURN_NODE:
     {
         GenTree* op1 = op->AsObj()->Addr();
 
-        // We will fold away OBJ/ADDR
-        if (op1->gtOper == GT_ADDR)
+        // We will fold away OBJ/ADDR, except for OBJ/ADDR/INDEX
+        //
+        // In the latter case the OBJ type may have a different type
+        // than the array element type, and we need to preserve the
+        // array element type for now.
+        //
+        if ((op1->gtOper == GT_ADDR) && (op1->AsOp()->gtOp1->gtOper != GT_INDEX))
         {
             // Change '*(&X)' to 'X' and see if we can do better
             op = op1->AsOp()->gtOp1;
