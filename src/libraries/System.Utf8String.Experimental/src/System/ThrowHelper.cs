@@ -9,9 +9,18 @@ namespace System
 {
     internal static class ThrowHelper
     {
+        [DoesNotReturn]
+        internal static void ThrowArgumentException(string resource, ExceptionArgument argument)
+        {
+            throw new ArgumentException(resource, argument.ToString());
+        }
+
         internal static void ThrowArgumentNullException(ExceptionArgument argument) { throw CreateArgumentNullException(argument); }
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateArgumentNullException(ExceptionArgument argument) { return new ArgumentNullException(argument.ToString()); }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRangeException() { throw new ArgumentOutOfRangeException(); }
 
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument) { throw CreateArgumentOutOfRangeException(argument); }
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -59,6 +68,7 @@ namespace System
     internal enum ExceptionArgument
     {
         ch,
+        comparisonType,
         culture,
         index,
         input,

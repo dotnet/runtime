@@ -135,7 +135,7 @@ namespace System
 
             if (Utf8Utility.IsUtf8ContinuationByte(text.DangerousGetMutableReference(start)))
             {
-                // TODO: eerhardt Utf8String.ThrowImproperStringSplit();
+                Utf8String.ThrowImproperStringSplit();
             }
 
             return Utf8Span.UnsafeCreateWithoutValidation(CreateSpan(text, start));
@@ -180,7 +180,7 @@ namespace System
             if (Utf8Utility.IsUtf8ContinuationByte(text.DangerousGetMutableReference(start))
                 || Utf8Utility.IsUtf8ContinuationByte(text.DangerousGetMutableReference(start + length)))
             {
-                // TODO: eerhardt Utf8String.ThrowImproperStringSplit();
+                Utf8String.ThrowImproperStringSplit();
             }
 
             return Utf8Span.UnsafeCreateWithoutValidation(CreateSpan(text, start, length));

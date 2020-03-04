@@ -3,9 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Numerics.Hashing;
 using System.Runtime.CompilerServices;
 using System.Text;
+
+#if !SYSTEM_PRIVATE_CORELIB && !NETCOREAPP
+using System.Numerics.Hashing;
+#endif
 
 namespace System
 {

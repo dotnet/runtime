@@ -14,26 +14,6 @@ namespace System
 {
     public sealed partial class Utf8String
     {
-        /*
-         * INDEXERS
-         */
-
-        public Utf8String this[Range range]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                // The two lines immediately below provide no bounds checking.
-                // The Substring method we call will both perform a bounds check
-                // and check for an improper split across a multi-byte subsequence.
-
-                int startIdx = range.Start.GetOffset(Length);
-                int endIdx = range.End.GetOffset(Length);
-
-                return Substring(startIdx, endIdx - startIdx);
-            }
-        }
-
         /// <summary>
         /// Creates a new <see cref="Utf8String"/> instance, allowing the provided delegate to populate the
         /// instance data of the returned object.

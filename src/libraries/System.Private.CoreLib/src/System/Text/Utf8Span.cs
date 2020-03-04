@@ -71,6 +71,35 @@ namespace System.Text
         /// </summary>
         public int Length => Bytes.Length;
 
+        public Utf8Span this[Range range]
+        {
+            get
+            {
+                (int offset, int length) = range.GetOffsetAndLength(Length);
+
+                // Check for a split across a multi-byte subsequence on the way out.
+                // Reminder: Unlike Utf8String, we can't safely dereference past the end of the span.
+
+                ref byte newRef = ref DangerousGetMutableReference(offset);
+                if (length > 0 && Utf8Utility.IsUtf8ContinuationByte(newRef))
+                {
+                    Utf8String.ThrowImproperStringSplit();
+                }
+
+                int endIdx = offset + length;
+                if (endIdx < Length && Utf8Utility.IsUtf8ContinuationByte(DangerousGetMutableReference(endIdx)))
+                {
+                    Utf8String.ThrowImproperStringSplit();
+                }
+
+#if SYSTEM_PRIVATE_CORELIB
+                return UnsafeCreateWithoutValidation(new ReadOnlySpan<byte>(ref newRef, length));
+#else
+                return UnsafeCreateWithoutValidation(Bytes.Slice(offset, length));
+#endif
+            }
+        }
+
         /// <summary>
         /// Returns a <em>mutable</em> reference to the first byte of this <see cref="Utf8Span"/>
         /// (or, if this <see cref="Utf8Span"/> is empty, to where the first byte would be).

@@ -14,29 +14,6 @@ namespace System.Text
 {
     public readonly ref partial struct Utf8Span
     {
-        public Utf8Span this[Range range]
-        {
-            get
-            {
-                (int offset, int length) = range.GetOffsetAndLength(Length);
-
-                // Check for a split across a multi-byte subsequence on the way out.
-                // Reminder: Unlike Utf8String, we can't safely dereference past the end of the span.
-
-                ref byte newRef = ref DangerousGetMutableReference(offset);
-                if (length > 0 && Utf8Utility.IsUtf8ContinuationByte(newRef))
-                {
-                    Utf8String.ThrowImproperStringSplit();
-                }
-
-                int endIdx = offset + length;
-                if (endIdx < Length && Utf8Utility.IsUtf8ContinuationByte(DangerousGetMutableReference(endIdx)))
-                {
-                    Utf8String.ThrowImproperStringSplit();
-                }
-
-                return UnsafeCreateWithoutValidation(new ReadOnlySpan<byte>(ref newRef, length));
-            }
-        }
+        // TODO: eerhardt delete me
     }
 }

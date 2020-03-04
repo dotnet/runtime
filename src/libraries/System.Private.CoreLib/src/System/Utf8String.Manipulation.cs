@@ -10,7 +10,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Unicode;
+
+#if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
+#endif
 
 namespace System
 {
@@ -62,7 +65,12 @@ namespace System
             }
 
             Utf8String newString = FastAllocateSkipZeroInit(length);
+#if SYSTEM_PRIVATE_CORELIB
             Buffer.Memmove(ref newString.DangerousGetMutableReference(), ref this.DangerousGetMutableReference(startIndex), (uint)length);
+#else
+            this.DangerousGetMutableSpan().Slice(startIndex, length).CopyTo(newString.DangerousGetMutableSpan());
+#endif
+
             return newString;
         }
 
@@ -90,7 +98,11 @@ namespace System
             else
             {
                 Utf8String newString = FastAllocateSkipZeroInit(length);
+#if SYSTEM_PRIVATE_CORELIB
                 Buffer.Memmove(ref newString.DangerousGetMutableReference(), ref this.DangerousGetMutableReference(startIndex), (uint)length);
+#else
+                this.DangerousGetMutableSpan().Slice(startIndex, length).CopyTo(newString.DangerousGetMutableSpan());
+#endif
                 return newString;
             }
         }
@@ -739,3 +751,14 @@ namespace System
         }
     }
 }
+
+#if !SYSTEM_PRIVATE_CORELIB
+namespace System.Diagnostics
+{
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Struct, Inherited = false)]
+    internal sealed class StackTraceHiddenAttribute : Attribute
+    {
+        public StackTraceHiddenAttribute() { }
+    }
+}
+#endif

@@ -40,6 +40,9 @@
     <Compile Include="$(CoreLibSharedDir)\System\Range.cs">
       <Link>System\Range.cs</Link>
     </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\TrimType.cs">
+      <Link>System\Text\TrimType.cs</Link>
+    </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\UnicodeDebug.cs">
       <Link>System\Text\UnicodeDebug.cs</Link>
     </Compile>
@@ -91,11 +94,6 @@
     <Compile Include="$(CoreLibSharedDir)\System\Utf8StringSplitOptions.cs">
       <Link>System\Utf8StringSplitOptions.cs</Link>
     </Compile>
-
-    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.cs">
-      <Link>System\Text\Utf8Span.cs</Link>
-    </Compile>
-
     <Compile Include="$(CoreLibSharedDir)\System\Utf8Extensions.cs">
       <Link>System\Utf8Extensions.cs</Link>
     </Compile>
@@ -114,14 +112,15 @@
     <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Enumeration.cs">
       <Link>System\Utf8String.Enumeration.cs</Link>
     </Compile>
-    <!--<Compile Include="$(CoreLibSharedDir)\System\Utf8String.Manipulation.cs">
+    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Manipulation.cs">
       <Link>System\Utf8String.Manipulation.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Utf8String.Searching.cs">
       <Link>System\Utf8String.Searching.cs</Link>
-    </Compile>-->
-    
-    
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.cs">
+      <Link>System\Text\Utf8Span.cs</Link>
+    </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Comparison.cs">
       <Link>System\Text\Utf8Span.Comparison.cs</Link>
     </Compile>
@@ -131,16 +130,12 @@
     <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Enumeration.cs">
       <Link>System\Text\Utf8Span.Enumeration.cs</Link>
     </Compile>
-    <!--<Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Manipulation.cs">
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Manipulation.cs">
       <Link>System\Text\Utf8Span.Manipulation.cs</Link>
     </Compile>
-      <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Searching.cs">
-        <Link>System\Text\Utf8Span.Searching.cs</Link>
-      </Compile>-->
-
-
-
-
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8Span.Searching.cs">
+      <Link>System\Text\Utf8Span.Searching.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <Reference Include="System.Buffers" />
