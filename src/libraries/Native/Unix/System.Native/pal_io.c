@@ -1412,7 +1412,7 @@ static bool CopyFile_CopyFileRange(int inFd, int outFd, const struct stat_ *sour
     {
         ssize_t copied = syscall(PAL_COPY_FILE_RANGE_SYSCALL, inFd, NULL, outFd, NULL, (size_t)size, 0);
 
-        if (size < 0)
+        if (copied < 0)
         {
             if (errno == ENOSYS)
             {
@@ -1422,6 +1422,10 @@ static bool CopyFile_CopyFileRange(int inFd, int outFd, const struct stat_ *sour
             // No possible error codes other than ENOSYS can be handled here,
             // so return false to try a legacy read(2)/write(2) copy.
             return false;
+        }
+        else if (copied == 0)
+        {
+            break;
         }
 
         size -= copied;
