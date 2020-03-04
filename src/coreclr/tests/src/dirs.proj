@@ -88,9 +88,6 @@
       <_GroupStartsWith Include="Loader\classloader\generics\VSD\Class2_ImplicitOverrideVirtualNewslot.csproj">
         <GroupNumber>10</GroupNumber>
       </_GroupStartsWith>
-
-
-
     </ItemGroup>
 
     <Error Condition=" '$(CLRTestPriorityToBuild)' == '1' And ($(__TestGroupToBuild) &lt; 1 Or $(__TestGroupToBuild) &gt; 10)" Text="__TestGroupToBuild property must be between 1 and 10 for Pri1." />
@@ -120,6 +117,7 @@
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
     </ItemGroup>
+
   </Target>
 
   <Import Project="..\dir.traversal.targets" />
