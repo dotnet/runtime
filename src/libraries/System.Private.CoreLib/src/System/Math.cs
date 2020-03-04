@@ -674,17 +674,24 @@ namespace System
             // otherwise returns the larger of the inputs. It
             // treats +0 as larger than -0 as per the specification.
 
-            if ((val1 < val2) || double.IsNaN(val1))
-            {
-                return val1;
-            }
+            return val1 < val2
+                ? val1
+                : MinSlow(val1, val2);
 
-            if (val1 == val2)
+            static double MinSlow(double val1, double val2)
             {
-                return double.IsNegative(val1) ? val1 : val2;
-            }
+                if (val1 < val2 || IsNaN(val1))
+                {
+                    return val1;
+                }
 
-            return val2;
+                if (val1 == val2)
+                {
+                    return IsNegative(val1) ? val1 : val2;
+                }
+
+                return val2;
+            }
         }
 
         [NonVersionable]
