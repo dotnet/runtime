@@ -126,7 +126,7 @@ jobs:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg)
         displayName: Build CoreCLR Runtime
 
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(parameters.archType, 'x86')) }}:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac $(officialBuildIdArg)
         displayName: Build Cross OS Linux DAC for Windows
 
