@@ -2,7 +2,7 @@
 <Project DefaultTargets = "GetListOfTestCmds" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <!-- All OS/Arch common excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
-       <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/generics/threadstart/GThread23/*">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/generics/threadstart/GThread23/*">
             <Issue>https://github.com/dotnet/runtime/issues/10847</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Coverage/271010/**">
@@ -101,6 +101,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/Interfaces/Interfaces001/*">
             <Issue>https://github.com/dotnet/runtime/issues/3893</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/readytorun/coreroot_determinism/coreroot_determinism/*">	
+            <Issue>32333</Issue>	
+        </ExcludeList> 
     </ItemGroup>
 
     <!-- All Unix targets -->
