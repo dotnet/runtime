@@ -12,10 +12,11 @@
 #include "diagnosticsipc.h"
 #include "processdescriptor.h"
 
-IpcStream::DiagnosticsIpc::DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress) :
+IpcStream::DiagnosticsIpc::DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress, ConnectionMode mode) :
     _serverSocket(serverSocket),
     _pServerAddress(new sockaddr_un),
-    _isClosed(false)
+    _isClosed(false),
+    _mode(mode)
 {
     _ASSERTE(_pServerAddress != nullptr);
     _ASSERTE(_serverSocket != -1);
@@ -32,24 +33,8 @@ IpcStream::DiagnosticsIpc::~DiagnosticsIpc()
     delete _pServerAddress;
 }
 
-IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const pIpcName, ErrorCallback callback)
+IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const pIpcName, ConnectionMode mode, ErrorCallback callback)
 {
-#ifdef __APPLE__
-    mode_t prev_mask = umask(~(S_IRUSR | S_IWUSR)); // This will set the default permission bit to 600
-#endif // __APPLE__
-
-    const int serverSocket = ::socket(AF_UNIX, SOCK_STREAM, 0);
-    if (serverSocket == -1)
-    {
-        if (callback != nullptr)
-            callback(strerror(errno), errno);
-#ifdef __APPLE__
-        umask(prev_mask);
-#endif // __APPLE__
-        _ASSERTE(!"Failed to create diagnostics IPC socket.");
-        return nullptr;
-    }
-
     sockaddr_un serverAddress{};
     serverAddress.sun_family = AF_UNIX;
 
@@ -71,6 +56,24 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
             "socket");
     }
 
+    if (mode == ConnectionMode::CLIENT)
+        return new IpcStream::DiagnosticsIpc(-1, &serverAddress, ConnectionMode::CLIENT);
+
+#ifdef __APPLE__
+    mode_t prev_mask = umask(~(S_IRUSR | S_IWUSR)); // This will set the default permission bit to 600
+#endif // __APPLE__
+
+    const int serverSocket = ::socket(AF_UNIX, SOCK_STREAM, 0);
+    if (serverSocket == -1)
+    {
+        if (callback != nullptr)
+            callback(strerror(errno), errno);
+#ifdef __APPLE__
+        umask(prev_mask);
+#endif // __APPLE__
+        _ASSERTE(!"Failed to create diagnostics IPC socket.");
+        return nullptr;
+    }
 
 #ifndef __APPLE__
     if (fchmod(serverSocket, S_IRUSR | S_IWUSR) == -1)
@@ -124,28 +127,24 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
     return new IpcStream::DiagnosticsIpc(serverSocket, &serverAddress);
 }
 
-IpcStream *IpcStream::DiagnosticsIpc::Connect(const char *const pIpcName, ErrorCallback callback) const
+IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback) const
 {
-    sockaddr_un serverAddress{};
-    serverAddress.sun_family = AF_UNIX;
+    sockaddr_un clientAddress{};
+    clientAddress.sun_family = AF_UNIX;
     const int clientSocket = ::socket(AF_UNIX, SOCK_STREAM, 0);
     if (clientSocket == -1)
     {
         if (callback != nullptr)
             callback(strerror(errno), errno);
+        return nullptr;
         // TODO: unlinks?
     }
 
-    if (pIpcName != nullptr)
-    {
-        int chars = snprintf(serverAddress.sun_path, sizeof(serverAddress.sun_path), "%s", pIpcName);
-        _ASSERTE(chars > 0 && (unsigned int)chars < sizeof(serverAddress.sun_path));
-    }
-
-    if (::connect(clientSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
+    if (::connect(clientSocket, (struct sockaddr *)_pServerAddress, sizeof(*_pServerAddress)) < 0)
     {
         if (callback != nullptr)
             callback(strerror(errno), errno);
+        return nullptr;
         // TODO: Anything else?
     }
 

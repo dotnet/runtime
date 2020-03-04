@@ -7,7 +7,10 @@
 #include <stdlib.h>
 #include "diagnosticsipc.h"
 
-IpcStream::DiagnosticsIpc::DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength])
+#define _ASSERTE assert
+
+IpcStream::DiagnosticsIpc::DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength], ConnectionMode mode)
+    : _mode(mode)
 {
     memcpy(_pNamedPipeName, namedPipeName, sizeof(_pNamedPipeName));
 }
@@ -17,7 +20,7 @@ IpcStream::DiagnosticsIpc::~DiagnosticsIpc()
     Close();
 }
 
-IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const pIpcName, ErrorCallback callback)
+IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const pIpcName, ConnectionMode mode, ErrorCallback callback)
 {
     char namedPipeName[MaxNamedPipeNameLength]{};
     int nCharactersWritten = -1;
@@ -39,26 +42,40 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
             ::GetCurrentProcessId());
     }
 
+    if (mode == ConnectionMode::CLIENT)
+    {
+        // TODO: block here till the socket exists?
+    }
+
     if (nCharactersWritten == -1)
     {
         if (callback != nullptr)
             callback("Failed to generate the named pipe name", nCharactersWritten);
-        assert(nCharactersWritten != -1);
+        _ASSERTE(nCharactersWritten != -1);
         return nullptr;
     }
 
-    return new IpcStream::DiagnosticsIpc(namedPipeName);
+    return new IpcStream::DiagnosticsIpc(namedPipeName, mode);
 }
 
 IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback callback) const
 {
+    _ASSERTE(_mode == ConnectionMode::SERVER);
+    if (_mode != ConnectionMode::SERVER)
+    {
+        if (callback != nullptr)
+            callback("Cannot call accept on a client connection", 0);
+        return nullptr;
+    }
+
     const uint32_t nInBufferSize = 16 * 1024;
     const uint32_t nOutBufferSize = 16 * 1024;
     HANDLE hPipe = ::CreateNamedPipeA(
         _pNamedPipeName,                                            // pipe name
-        PIPE_ACCESS_DUPLEX,                                         // read/write access
+        PIPE_ACCESS_DUPLEX |
+        FILE_FLAG_OVERLAPPED,                                       // read/write access
         PIPE_TYPE_BYTE | 
-        (shouldBlock ? PIPE_WAIT : PIPE_NOWAIT) | 
+        PIPE_WAIT | 
         PIPE_REJECT_REMOTE_CLIENTS,                                 // message type pipe, message-read and blocking mode
         PIPE_UNLIMITED_INSTANCES,                                   // max. instances
         nOutBufferSize,                                             // output buffer size
@@ -73,7 +90,11 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback cal
         return nullptr;
     }
 
-    const BOOL fSuccess = ::ConnectNamedPipe(hPipe, NULL) != 0;
+    // TODO: Find a better way to do this than
+    // mixing abstractions
+    IpcStream *pStream = new IpcStream(hPipe, _mode);
+
+    BOOL fSuccess = ::ConnectNamedPipe(hPipe, &pStream->_oOverlap) != 0;
     if (!fSuccess)
     {
         const DWORD errorCode = ::GetLastError();
@@ -82,6 +103,14 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback cal
             case ERROR_PIPE_LISTENING:
                 // Occurs when there isn't a pending client and we're
                 // in PIPE_NOWAIT mode
+            case ERROR_IO_PENDING:
+                if (shouldBlock)
+                {
+                    fSuccess = GetOverlappedResult(pStream->_hPipe,
+                                                   &pStream->_oOverlap,
+                                                   NULL,
+                                                   true);
+                }
             case ERROR_PIPE_CONNECTED:
                 // Occurs when a client connects before the function is called.
                 // In this case, there is a connection between client and
@@ -92,20 +121,26 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback cal
                 if (callback != nullptr)
                     callback("A client process failed to connect.", errorCode);
                 ::CloseHandle(hPipe);
+                delete pStream;
                 return nullptr;
         }
     }
 
-    return new IpcStream(hPipe);
+    return pStream;
 }
 
-IpcStream *IpcStream::DiagnosticsIpc::Connect(const char *const pIpcName, ErrorCallback callback)
+IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
 {
-    DiagnosticsIpc *diagnosticsIpc = DiagnosticsIpc::Create(pIpcName, callback);
-    const uint32_t nInBufferSize = 16 * 1024;
-    const uint32_t nOutBufferSize = 16 * 1024;
+    _ASSERTE(_mode == ConnectionMode::CLIENT);
+    if (_mode != ConnectionMode::CLIENT)
+    {
+        if (callback != nullptr)
+            callback("Cannot call connect on a client connection", 0);
+        return nullptr;
+    }
+
     HANDLE hPipe = ::CreateFileA( 
-        diagnosticsIpc->_pNamedPipeName,    // pipe name 
+        _pNamedPipeName,                    // pipe name 
         GENERIC_READ |                      // read and write access 
         GENERIC_WRITE, 
         0,                                  // no sharing 
@@ -121,11 +156,19 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(const char *const pIpcName, ErrorC
         return nullptr;
     }
 
-    return new IpcStream(hPipe, ConnectionMode::CLIENT);
+    return new IpcStream(hPipe, _mode);
 }
 
 void IpcStream::DiagnosticsIpc::Close(ErrorCallback)
 {
+}
+
+IpcStream::IpcStream(HANDLE hPipe, DiagnosticsIpc::ConnectionMode mode) :
+    _hPipe(hPipe), 
+    _mode(mode) 
+{
+    if (_mode == DiagnosticsIpc::ConnectionMode::SERVER)
+        _oOverlap.hEvent = CreateEvent(NULL, true, false, NULL);
 }
 
 IpcStream::~IpcStream()
@@ -134,14 +177,14 @@ IpcStream::~IpcStream()
     {
         Flush();
 
-        if (_mode == ConnectionMode::SERVER)
+        if (_mode == DiagnosticsIpc::ConnectionMode::SERVER)
         {
             const BOOL fSuccessDisconnectNamedPipe = ::DisconnectNamedPipe(_hPipe);
-            assert(fSuccessDisconnectNamedPipe != 0);
+            _ASSERTE(fSuccessDisconnectNamedPipe != 0);
         }
 
         const BOOL fSuccessCloseHandle = ::CloseHandle(_hPipe);
-        assert(fSuccessCloseHandle != 0);
+        _ASSERTE(fSuccessCloseHandle != 0);
     }
 }
 
@@ -150,7 +193,16 @@ IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallb
     // load up an array of handles
     HANDLE *pHandles = new HANDLE[nStreams];
     for (uint32_t i = 0; i < nStreams; i++)
-        pHandles[i] = pStreams[i]->_hPipe;
+    {
+        if (pStreams[i]->_mode == DiagnosticsIpc::ConnectionMode::SERVER)
+        {
+            pHandles[i] = pStreams[i]->_oOverlap.hEvent;
+        }
+        else
+        {
+            pHandles[i] = pStreams[i]->_hPipe;
+        }
+    }
 
     // call wait for multiple obj
     DWORD dwWait = WaitForMultipleObjects(
@@ -165,15 +217,26 @@ IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallb
     {
         if (callback != nullptr)
             callback("Failed to select to named pipe.", ::GetLastError());
+        delete pHandles;
         return nullptr;
     }
 
-    // set that stream's mode to blocking
-    bool result = SetNamedPipeHandleState(
-        pHandles[index],                // handle
-        PIPE_READMODE_BYTE | PIPE_WAIT, // read mode and wait mode
-        NULL,                           // no collecting
-        NULL);                          // no collecting
+    if (pStreams[index]->_mode == IpcStream::DiagnosticsIpc::ConnectionMode::SERVER)
+    {
+        // set that stream's mode to blocking
+        bool result = SetNamedPipeHandleState(
+            pHandles[index],                // handle
+            PIPE_READMODE_BYTE | PIPE_WAIT, // read mode and wait mode
+            NULL,                           // no collecting
+            NULL);                          // no collecting
+        if (!result)
+        {
+            if (callback != nullptr)
+                callback("Failed to convert handle to wait mode", ::GetLastError());
+            delete pHandles;
+            return nullptr;
+        }
+    }
 
     // cleanup and return that stream
     delete pHandles;
@@ -182,18 +245,29 @@ IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallb
 
 bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nBytesRead) const
 {
-    assert(lpBuffer != nullptr);
+    _ASSERTE(lpBuffer != nullptr);
 
     DWORD nNumberOfBytesRead = 0;
-    const bool fSuccess = ::ReadFile(
+    LPOVERLAPPED overlap = (_mode == DiagnosticsIpc::ConnectionMode::SERVER) ? 
+        const_cast<LPOVERLAPPED>(&_oOverlap) :
+        NULL;
+    bool fSuccess = ::ReadFile(
         _hPipe,                 // handle to pipe
         lpBuffer,               // buffer to receive data
         nBytesToRead,           // size of buffer
         &nNumberOfBytesRead,    // number of bytes read
-        NULL) != 0;             // not overlapped I/O
+        overlap) != 0;          // not overlapped I/O
 
     if (!fSuccess)
     {
+        DWORD dwError = GetLastError();
+        if (dwError == ERROR_IO_PENDING)
+        {
+            fSuccess = GetOverlappedResult(_hPipe,
+                                           overlap,
+                                           &nNumberOfBytesRead,
+                                           true) != 0;
+        }
         // TODO: Add error handling.
     }
 
@@ -203,18 +277,29 @@ bool IpcStream::Read(void *lpBuffer, const uint32_t nBytesToRead, uint32_t &nByt
 
 bool IpcStream::Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten) const
 {
-    assert(lpBuffer != nullptr);
+    _ASSERTE(lpBuffer != nullptr);
 
     DWORD nNumberOfBytesWritten = 0;
-    const bool fSuccess = ::WriteFile(
+    LPOVERLAPPED overlap = (_mode == DiagnosticsIpc::ConnectionMode::SERVER) ? 
+        const_cast<LPOVERLAPPED>(&_oOverlap) :
+        NULL;
+    bool fSuccess = ::WriteFile(
         _hPipe,                 // handle to pipe
         lpBuffer,               // buffer to write from
         nBytesToWrite,          // number of bytes to write
         &nNumberOfBytesWritten, // number of bytes written
-        NULL) != 0;             // not overlapped I/O
+        overlap) != 0;          // not overlapped I/O
 
     if (!fSuccess)
     {
+        DWORD dwError = GetLastError();
+        if (dwError == ERROR_IO_PENDING)
+        {
+            fSuccess = GetOverlappedResult(_hPipe,
+                                           overlap,
+                                           &nNumberOfBytesWritten,
+                                           true) != 0;
+        }
         // TODO: Add error handling.
     }
 

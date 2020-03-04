@@ -24,24 +24,24 @@ public:
     bool Flush() const;
     static IpcStream *Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallback callback = nullptr);
 
-    enum ConnectionMode
-    {
-        CLIENT,
-        SERVER
-    };
-
     class DiagnosticsIpc final
     {
     public:
+        enum ConnectionMode
+        {
+            CLIENT,
+            SERVER
+        };
+
         ~DiagnosticsIpc();
 
         //! Creates an IPC object
-        static DiagnosticsIpc *Create(const char *const pIpcName, ErrorCallback callback = nullptr);
+        static DiagnosticsIpc *Create(const char *const pIpcName, ConnectionMode mode, ErrorCallback callback = nullptr);
 
         //! Enables the underlaying IPC implementation to accept connection.
         IpcStream *Accept(bool shouldBlock, ErrorCallback callback = nullptr) const;
 
-        static IpcStream *Connect(const char *const pIpcName, ErrorCallback callback = nullptr);
+        IpcStream *Connect(ErrorCallback callback = nullptr);
 
         //! Closes an open IPC.
         void Close(ErrorCallback callback = nullptr);
@@ -53,7 +53,7 @@ public:
         sockaddr_un *const _pServerAddress;
         bool _isClosed;
 
-        DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress);
+        DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress, ConnectionMode mode = ConnectionMode::SERVER);
 
         //! Used to unlink the socket so it can be removed from the filesystem
         //! when the last reference to it is closed.
@@ -62,8 +62,10 @@ public:
         static const uint32_t MaxNamedPipeNameLength = 256;
         char _pNamedPipeName[MaxNamedPipeNameLength]; // https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-createnamedpipea
 
-        DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength]);
+        DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength], ConnectionMode mode = ConnectionMode::SERVER);
 #endif /* TARGET_UNIX */
+
+        ConnectionMode _mode;
 
         DiagnosticsIpc() = delete;
         DiagnosticsIpc(const DiagnosticsIpc &src) = delete;
@@ -79,10 +81,11 @@ private:
         : _clientSocket(clientSocket), _mode(mode) {}
 #else
     HANDLE _hPipe = INVALID_HANDLE_VALUE;
-    IpcStream(HANDLE hPipe, ConnectionMode mode = ConnectionMode::SERVER) : _hPipe(hPipe), _mode(mode) {}
+    OVERLAPPED _oOverlap = {};
+    IpcStream(HANDLE hPipe, DiagnosticsIpc::ConnectionMode mode = DiagnosticsIpc::ConnectionMode::SERVER);
 #endif /* TARGET_UNIX */
 
-    ConnectionMode _mode;
+    DiagnosticsIpc::ConnectionMode _mode;
 
     IpcStream() = delete;
     IpcStream(const IpcStream &src) = delete;
