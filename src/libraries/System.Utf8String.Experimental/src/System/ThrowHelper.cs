@@ -15,6 +15,7 @@ namespace System
             throw new ArgumentException(resource, argument.ToString());
         }
 
+        [DoesNotReturn]
         internal static void ThrowArgumentNullException(ExceptionArgument argument) { throw CreateArgumentNullException(argument); }
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateArgumentNullException(ExceptionArgument argument) { return new ArgumentNullException(argument.ToString()); }
@@ -30,6 +31,13 @@ namespace System
         internal static void ThrowValueArgumentOutOfRange_NeedNonNegNumException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.value,
+                                                    SR.ArgumentOutOfRange_NeedNonNegNum);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.length,
                                                     SR.ArgumentOutOfRange_NeedNonNegNum);
         }
 
@@ -67,6 +75,7 @@ namespace System
     //
     internal enum ExceptionArgument
     {
+        action,
         ch,
         comparisonType,
         culture,

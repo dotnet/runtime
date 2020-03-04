@@ -656,7 +656,11 @@ namespace System
                         int searchRune = SearchRune; // local copy so as to avoid struct tearing
                         if (searchRune >= 0)
                         {
+#if SYSTEM_PRIVATE_CORELIB || NETSTANDARD2_0
                             wasMatchFound = searchSpan.TryFind(Rune.UnsafeCreate((uint)searchRune), out matchRange);
+#else
+                            wasMatchFound = searchSpan.TryFind(new Rune((uint)searchRune), out matchRange);
+#endif
                         }
                         else
                         {

@@ -2,13 +2,16 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 <<<<<<< HEAD
+<<<<<<< HEAD
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <Nullable>enable</Nullable>
 =======
+=======
+    <NoWarn>$(NoWarn);3019</NoWarn>
+>>>>>>> Build for netcoreapp3.0.
     <IsPartialFacadeAssembly Condition="'$(TargetsNetCoreApp)' == 'true'">true</IsPartialFacadeAssembly>
-    <!--<TargetFrameworks>netstandard2.0;netcoreapp3.0;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>-->
-    <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.0;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <Nullable>enable</Nullable>
     <DefineConstants>$(DefineContants);FEATURE_UTF8STRING</DefineConstants>
 <<<<<<< HEAD
@@ -23,6 +26,28 @@
     <Compile Include="System\Net\Http\Utf8StringContent.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netstandard2.0'">
+    <Compile Include="$(CoreLibSharedDir)\System\Index.cs">
+      <Link>System\Index.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Numerics\BitOperations.cs">
+      <Link>System\Numerics\BitOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Range.cs">
+      <Link>System\Range.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Rune.cs">
+      <Link>System\Text\Rune.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8.cs">
+      <Link>System\Text\Unicode\Utf8.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netcoreapp3.0'">
+    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.netcoreapp.cs">
+      <Link>System\Utf8String.netcoreapp.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Compile Include="System\Globalization\GlobalizationMode.cs" />
     <Compile Include="System\Runtime\Intrinsics\Intrinsics.Shims.cs" />
     <Compile Include="System\ThrowHelper.cs" />
@@ -36,12 +61,6 @@
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Char8.cs">
       <Link>System\Char8.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Index.cs">
-      <Link>System\Index.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Range.cs">
-      <Link>System\Range.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\TrimType.cs">
       <Link>System\Text\TrimType.cs</Link>
@@ -58,14 +77,8 @@
     <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf16Utility.Validation.cs">
       <Link>System\Text\Unicode\Utf16Utility.Validation.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Text\Rune.cs">
-      <Link>System\Text\Rune.cs</Link>
-    </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8StringComparer.cs">
       <Link>System\Text\Utf8StringComparer.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Numerics\BitOperations.cs">
-      <Link>System\Numerics\BitOperations.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs">
       <Link>System\Numerics\Hashing\HashHelpers.cs</Link>
@@ -75,9 +88,6 @@
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\ASCIIUtility.Helpers.cs">
       <Link>System\Text\ASCIIUtility.Helpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8.cs">
-      <Link>System\Text\Unicode\Utf8.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.cs">
       <Link>System\Text\Unicode\Utf8Utility.cs</Link>
@@ -91,8 +101,8 @@
     <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.Transcoding.cs">
       <Link>System\Text\Unicode\Utf8Utility.Transcoding.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.WhiteSpace.netstandard.cs">
-      <Link>System\Text\Unicode\Utf8Utility.WhiteSpace.netstandard.cs</Link>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8Utility.WhiteSpace.NonCoreLib.cs">
+      <Link>System\Text\Unicode\Utf8Utility.WhiteSpace.NonCoreLib.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Utf8StringSplitOptions.cs">
       <Link>System\Utf8StringSplitOptions.cs</Link>
@@ -148,10 +158,17 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="netstandard" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Numerics.Vectors" />
+    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

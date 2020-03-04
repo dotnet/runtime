@@ -20,7 +20,12 @@ namespace System.Numerics
     /// The methods use hardware intrinsics when available on the underlying platform,
     /// otherwise they use optimized software fallbacks.
     /// </summary>
-    public static class BitOperations
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        static class BitOperations
     {
         // C# no-alloc optimization that directly wraps the data section of the dll (similar to string constants)
         // https://github.com/dotnet/roslyn/pull/24621
