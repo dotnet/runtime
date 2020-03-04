@@ -19,8 +19,8 @@
     </ItemGroup>
 
     <ItemGroup>
-       <AllProjects Include="*\**\*.csproj" Exclude="@(DisabledProjects)" />
-       <AllProjects Include="*\**\*.ilproj" Exclude="@(DisabledProjects)" />  
+      <AllProjects Include="*\**\*.csproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="*\**\*.ilproj" Exclude="@(DisabledProjects)" />  
     </ItemGroup>
 
     <!-- All the test projects are partitioned into the test groups as defined below.
