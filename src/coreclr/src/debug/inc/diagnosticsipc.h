@@ -77,8 +77,9 @@ public:
 private:
 #ifdef TARGET_UNIX
     int _clientSocket = -1;
-    IpcStream(int clientSocket, ConnectionMode mode = ConnectionMode::SERVER)
-        : _clientSocket(clientSocket), _mode(mode) {}
+    int _serverSocket = -1;
+    IpcStream(int clientSocket, int serverSocket, DiagnosticsIpc::ConnectionMode mode = DiagnosticsIpc::ConnectionMode::SERVER)
+        : _clientSocket(clientSocket), _serverSocket(serverSocket), _mode(mode) {}
 #else
     HANDLE _hPipe = INVALID_HANDLE_VALUE;
     OVERLAPPED _oOverlap = {};

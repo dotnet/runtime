@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <sys/un.h>
 #include <sys/stat.h>
 #include "diagnosticsipc.h"
@@ -127,7 +128,7 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
     return new IpcStream::DiagnosticsIpc(serverSocket, &serverAddress);
 }
 
-IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback) const
+IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
 {
     sockaddr_un clientAddress{};
     clientAddress.sun_family = AF_UNIX;
@@ -148,7 +149,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback) const
         // TODO: Anything else?
     }
 
-    return new IpcStream(clientSocket, ServerMode::CLIENT);
+    return new IpcStream(clientSocket, -1, ConnectionMode::CLIENT);
 }
 
 IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback callback) const
@@ -163,7 +164,86 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback cal
         return nullptr;
     }
 
-    return new IpcStream(shouldBlock ? clientSocket : _serverSocket);
+    return new IpcStream(clientSocket, _serverSocket);
+}
+
+IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallback callback)
+{
+    // build FD_SET
+    fd_set readSet;
+    FD_ZERO(&readSet);
+
+    int maxFd = -1;
+    for (int i = 0; i < nStreams; i++)
+    {
+        int fd = -1;
+        if (pStreams[i]->_mode == DiagnosticsIpc::ConnectionMode::SERVER && pStreams[i]->_clientSocket == -1)
+        {
+            fd = pStreams[i]->_serverSocket;
+        }
+        else
+        {
+            fd = pStreams[i]->_clientSocket;
+        }
+
+        maxFd = (maxFd > fd) ? maxFd : fd;
+        FD_SET(fd, &readSet);
+    }
+    maxFd++; // needs to be 1 more than max FD
+
+    // call select
+    int retval = select(maxFd, &readSet, NULL, NULL, NULL);
+
+    // check for errors
+    if (retval == -1)
+    {
+        if (callback != nullptr)
+            callback(strerror(errno), errno);
+        return nullptr;
+    }
+
+    // determine which FD signalled
+    // - decide on policy for which gets checked first so we don't starve one connection
+    IpcStream *pStream = nullptr;
+    for (int i = 0; i < nStreams; i++)
+    {
+        int fd = -1;
+        bool needToAccept = pStreams[i]->_mode == DiagnosticsIpc::ConnectionMode::SERVER && pStreams[i]->_clientSocket == -1;
+        if (needToAccept)
+        {
+            fd = pStreams[i]->_serverSocket;
+        }
+        else
+        {
+            fd = pStreams[i]->_clientSocket;
+        }
+
+        if (FD_ISSET(fd, &readSet))
+        {
+            if (needToAccept)
+            {
+                sockaddr_un from;
+                socklen_t fromlen = sizeof(from);
+                const int clientSocket = ::accept(pStreams[i]->_serverSocket, (sockaddr *)&from, &fromlen);
+                if (clientSocket == -1)
+                {
+                    if (callback != nullptr)
+                        callback(strerror(errno), errno);
+                    return nullptr;
+                }
+                pStream = new IpcStream(clientSocket, pStreams[i]->_serverSocket, pStreams[i]->_mode);
+            }
+            else
+            {
+                pStream = pStreams[i];
+            }
+            break;
+        }
+    }
+
+    // return the correct IpcStream
+    _ASSERTE(pStream != nullptr);
+    return pStream;
 }
 
 void IpcStream::DiagnosticsIpc::Close(ErrorCallback callback)
