@@ -2,11 +2,14 @@
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
   <Import Project="$(RepositoryEngineeringDir)coverage.props" Condition="'$(EnableCoverageSupport)' == 'true'" />
 
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(EnableCoverageSupport)' == 'true'">
     <CoverageReportInputPath>$(ArtifactsBinDir)*.Tests/**/coverage.xml</CoverageReportInputPath>
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
-    <SerializeProjects>true</SerializeProjects>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework> 
+    <SerializeProjects>true</SerializeProjects> 
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
