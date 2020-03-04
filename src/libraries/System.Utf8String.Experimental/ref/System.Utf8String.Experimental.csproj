@@ -14,7 +14,11 @@
     <Compile Include="System.Utf8String.Experimental.netstandard.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetsNetCoreApp)' == 'true'">
+    <Compile Include="System.Utf8String.Experimental.Forwards.cs" />
     <Compile Include="System.Utf8String.Experimental.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="System.Utf8String.Experimental.netcoreapp5.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <Reference Include="System.Memory" />

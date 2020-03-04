@@ -11,9 +11,12 @@
     <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
     <Nullable>enable</Nullable>
     <DefineConstants>$(DefineContants);FEATURE_UTF8STRING</DefineConstants>
+<<<<<<< HEAD
     <!--TODO Remove the below-->
     <RunApiCompat>false</RunApiCompat>
 >>>>>>> Get Rune working on netstandard2.0
+=======
+>>>>>>> Moving code around so it lines up with the ref assemblies.
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false'">
     <Compile Include="System\IO\Utf8StringStream.cs" />

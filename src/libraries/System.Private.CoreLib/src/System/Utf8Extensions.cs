@@ -185,109 +185,6 @@ namespace System
 
             return Utf8Span.UnsafeCreateWithoutValidation(CreateSpan(text, start, length));
         }
-/* // TODO eerhardt
-        /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
-        /// <param name="text">The target <see cref="Utf8String"/>.</param>
-        /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
-        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String? text)
-        {
-            if (text is null)
-                return default;
-
-            return new ReadOnlyMemory<Char8>(text, 0, text.Length);
-        }
-
-        /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
-        /// <param name="text">The target <see cref="Utf8String"/>.</param>
-        /// <param name="start">The index at which to begin this slice.</param>
-        /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;text.Length).
-        /// </exception>
-        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String? text, int start)
-        {
-            if (text is null)
-            {
-                if (start != 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-                return default;
-            }
-
-            if ((uint)start > (uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-
-            return new ReadOnlyMemory<Char8>(text, start, text.Length - start);
-        }
-
-        /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
-        /// <param name="text">The target <see cref="Utf8String"/>.</param>
-        /// <param name="startIndex">The index at which to begin this slice.</param>
-        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String? text, Index startIndex)
-        {
-            if (text is null)
-            {
-                if (!startIndex.Equals(Index.Start))
-                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
-
-                return default;
-            }
-
-            int actualIndex = startIndex.GetOffset(text.Length);
-            if ((uint)actualIndex > (uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-
-            return new ReadOnlyMemory<Char8>(text, actualIndex, text.Length - actualIndex);
-        }
-
-        /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
-        /// <param name="text">The target <see cref="Utf8String"/>.</param>
-        /// <param name="start">The index at which to begin this slice.</param>
-        /// <param name="length">The desired length for the slice (exclusive).</param>
-        /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="start"/> index or <paramref name="length"/> is not in range.
-        /// </exception>
-        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String? text, int start, int length)
-        {
-            if (text is null)
-            {
-                if (start != 0 || length != 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-                return default;
-            }
-
-#if TARGET_64BIT
-            // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-#else
-            if ((uint)start > (uint)text.Length || (uint)length > (uint)(text.Length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-#endif
-
-            return new ReadOnlyMemory<Char8>(text, start, length);
-        }
-
-        /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
-        /// <param name="text">The target <see cref="Utf8String"/>.</param>
-        /// <param name="range">The range used to indicate the start and length of the sliced string.</param>
-        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String? text, Range range)
-        {
-            if (text is null)
-            {
-                Index startIndex = range.Start;
-                Index endIndex = range.End;
-
-                if (!startIndex.Equals(Index.Start) || !endIndex.Equals(Index.Start))
-                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
-
-                return default;
-            }
-
-            (int start, int length) = range.GetOffsetAndLength(text.Length);
-            return new ReadOnlyMemory<Char8>(text, start, length);
-        }
-*/
 
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
@@ -321,7 +218,7 @@ namespace System
 
             return CreateMemoryBytes(text, start, text.Length - start);
         }
-/* // TODO eerhardt
+
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
         /// <param name="startIndex">The index at which to begin this slice.</param>
@@ -339,9 +236,8 @@ namespace System
             if ((uint)actualIndex > (uint)text.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new ReadOnlyMemory<byte>(text, actualIndex, text.Length - actualIndex);
+            return CreateMemoryBytes(text, actualIndex, text.Length - actualIndex);
         }
-*/
 
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
@@ -371,7 +267,7 @@ namespace System
 
             return CreateMemoryBytes(text, start, length);
         }
-/* // TODO eerhardt
+
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
         /// <param name="range">The range used to indicate the start and length of the sliced string.</param>
@@ -389,9 +285,9 @@ namespace System
             }
 
             (int start, int length) = range.GetOffsetAndLength(text.Length);
-            return new ReadOnlyMemory<byte>(text, start, length);
+            return CreateMemoryBytes(text, start, length);
         }
-*/
+
         /// <summary>
         /// Returns a <see cref="Utf8String"/> representation of this <see cref="Rune"/> instance.
         /// </summary>

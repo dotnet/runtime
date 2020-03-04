@@ -74,6 +74,7 @@ namespace System
         input,
         length,
         start,
+        text,
         value,
     }
 }
