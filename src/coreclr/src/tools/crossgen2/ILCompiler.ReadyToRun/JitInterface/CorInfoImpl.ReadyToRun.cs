@@ -172,9 +172,9 @@ namespace Internal.JitInterface
             throw new NotSupportedException();
         }
 
-        public static bool ShouldSkipCompilation(MethodDesc methodNeedingCode)
+        public static bool ShouldSkipCompilation(MethodDesc methodNeedingCode, AggressiveOptimizationBehavior optBehavior)
         {
-            if (methodNeedingCode.IsAggressiveOptimization)
+            if ((methodNeedingCode.IsAggressiveOptimization) && optBehavior == AggressiveOptimizationBehavior.DontCompile)
             {
                 return true;
             }
@@ -211,7 +211,7 @@ namespace Internal.JitInterface
 
             try
             {
-                if (!ShouldSkipCompilation(MethodBeingCompiled))
+                if (!ShouldSkipCompilation(MethodBeingCompiled, JitConfigProvider.Instance.AggressiveOptimizationBehavior))
                 {
                     CompileMethodInternal(methodCodeNodeNeedingCode);
                     codeGotPublished = true;

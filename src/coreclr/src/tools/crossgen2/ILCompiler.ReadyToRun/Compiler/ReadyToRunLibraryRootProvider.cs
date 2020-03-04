@@ -18,12 +18,14 @@ namespace ILCompiler
         private EcmaModule _module;
         private IEnumerable<MethodDesc> _profileData;
         private readonly bool _profileDrivenPartialNGen;
+        private readonly AggressiveOptimizationBehavior _aggressiveOptBehavior;
 
-        public ReadyToRunRootProvider(EcmaModule module, ProfileDataManager profileDataManager, bool profileDrivenPartialNGen)
+        public ReadyToRunRootProvider(EcmaModule module, ProfileDataManager profileDataManager, AggressiveOptimizationBehavior aggressiveOptBehavior, bool profileDrivenPartialNGen)
         {
             _module = module;
             _profileData = profileDataManager.GetMethodsForModuleDesc(module);
             _profileDrivenPartialNGen = profileDrivenPartialNGen;
+            _aggressiveOptBehavior = aggressiveOptBehavior;
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
@@ -61,7 +63,7 @@ namespace ILCompiler
                     if (containsSignatureVariables)
                         continue;
 
-                    if (!CorInfoImpl.ShouldSkipCompilation(method))
+                    if (!CorInfoImpl.ShouldSkipCompilation(method, _aggressiveOptBehavior))
                     {
                         CheckCanGenerateMethod(method);
                         rootProvider.AddCompilationRoot(method, "Profile triggered method");
@@ -114,7 +116,7 @@ namespace ILCompiler
 
                 try
                 {
-                    if (!CorInfoImpl.ShouldSkipCompilation(method))
+                    if (!CorInfoImpl.ShouldSkipCompilation(method, _aggressiveOptBehavior))
                     {
                         CheckCanGenerateMethod(methodToRoot);
                         rootProvider.AddCompilationRoot(methodToRoot, reason);

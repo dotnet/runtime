@@ -1,7 +1,10 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -35,29 +38,28 @@ namespace ILCompiler
 
         public bool IsSupportedInstructionSetIntrinsic(MethodDesc method)
         {
-            TargetDetails target = method.Context.Target;
             var owningType = (MetadataType)method.OwningType;
 
-            if (target.Architecture == TargetArchitecture.X64)
+            if (_targetArchitecture == TargetArchitecture.X64)
             {
                 if (owningType.Name == "X64")
                     owningType = (MetadataType)owningType.ContainingType;
                 if (owningType.Namespace != "System.Runtime.Intrinsics.X86")
                     return false;
             }
-            else if (target.Architecture == TargetArchitecture.X86)
+            else if (_targetArchitecture == TargetArchitecture.X86)
             {
                 if (owningType.Namespace != "System.Runtime.Intrinsics.X86")
                     return false;
             }
-            else if (target.Architecture == TargetArchitecture.ARM64)
+            else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
                 if (owningType.Name == "Arm64")
                     owningType = (MetadataType)owningType.ContainingType;
                 if (owningType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return false;
             }
-            else if (target.Architecture == TargetArchitecture.ARM)
+            else if (_targetArchitecture == TargetArchitecture.ARM)
             {
                 if (owningType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return false;
@@ -68,6 +70,31 @@ namespace ILCompiler
             }
 
             return IsInstructionSetSupported(owningType.Name);
+        }
+
+        public SimdVectorLength GetVectorTSimdVector()
+        {
+            if ((_targetArchitecture == TargetArchitecture.X64) || (_targetArchitecture == TargetArchitecture.X86))
+            {
+                if (IsInstructionSetSupported("Avx2"))
+                    return SimdVectorLength.Vector256Bit;
+                else if (IsInstructionSetExplicitlyUnsupported("Avx2") && IsInstructionSetSupported("Sse2"))
+                    return SimdVectorLength.Vector128Bit;
+                else
+                    return SimdVectorLength.None;
+            }
+            else if (_targetArchitecture == TargetArchitecture.ARM64)
+            {
+                return SimdVectorLength.Vector128Bit;
+            }
+            else if (_targetArchitecture == TargetArchitecture.ARM)
+            {
+                return SimdVectorLength.None;
+            }
+            else
+            {
+                throw new InternalCompilerErrorException("Unknown architecture");
+            }
         }
     }
 
@@ -191,7 +218,7 @@ namespace ILCompiler
         {
             foreach (string impliedInstructionSet in s_instructionSetSupport[_architecture][instructionSet])
             {
-                if (_supportedInstructionSets.Add(instructionSet))
+                if (_supportedInstructionSets.Add(impliedInstructionSet))
                 {
                     if (_unsupportedInstructionSets.Contains(impliedInstructionSet))
                     {
