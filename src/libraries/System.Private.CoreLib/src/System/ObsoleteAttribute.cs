@@ -48,5 +48,9 @@ namespace System
         public string? Message => _message;
 
         public bool IsError => _error;
+
+        public string? DiagnosticId { get; set; }
+
+        public string? UrlFormat { get; set; }
     }
 }

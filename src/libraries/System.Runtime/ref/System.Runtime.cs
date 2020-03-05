@@ -2899,6 +2899,8 @@ namespace System
         public ObsoleteAttribute(string? message, bool error) { }
         public bool IsError { get { throw null; } }
         public string? Message { get { throw null; } }
+        public string? DiagnosticId { get { throw null; } set { } }
+        public string? UrlFormat { get { throw null; } set { } }
     }
     public sealed partial class OperatingSystem : System.ICloneable, System.Runtime.Serialization.ISerializable
     {
