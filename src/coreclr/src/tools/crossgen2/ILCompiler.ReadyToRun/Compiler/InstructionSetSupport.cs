@@ -43,8 +43,13 @@ namespace ILCompiler
 
         public TargetArchitecture Architecture => _targetArchitecture;
 
-        public static string GetHardwareIntrinsicId(TargetArchitecture architecture, MetadataType potentialType)
+        public static string GetHardwareIntrinsicId(TargetArchitecture architecture, TypeDesc potentialTypeDesc)
         {
+            if (!(potentialTypeDesc is MetadataType))
+                return "";
+
+            MetadataType potentialType = (MetadataType)potentialTypeDesc;
+
             if (architecture == TargetArchitecture.X64)
             {
                 if (potentialType.Name == "X64")
@@ -79,9 +84,7 @@ namespace ILCompiler
 
         public bool IsSupportedInstructionSetIntrinsic(MethodDesc method)
         {
-            var owningType = (MetadataType)method.OwningType;
-
-            return IsInstructionSetSupported(GetHardwareIntrinsicId(_targetArchitecture, owningType));
+            return IsInstructionSetSupported(GetHardwareIntrinsicId(_targetArchitecture, method.OwningType));
         }
 
         public SimdVectorLength GetVectorTSimdVector()
@@ -163,7 +166,7 @@ namespace ILCompiler
         private static Dictionary<string, string[]> ComputeInstructSetSupportForX64()
         {
             var support = new Dictionary<string, string[]>();
-            support["Aes"] = new string[] { "Aes" };
+            support["Aes"] = new string[] { "Sse2" };
             support["Avx"] = new string[] { "Sse42" };
             support["Avx2"] = new string[] { "Avx" };
             support["Bmi1"] = new string[] { "Avx" };
@@ -237,6 +240,25 @@ namespace ILCompiler
             {
                 if (type.Namespace == @namespace)
                 {
+                    // Ignore the FloatComparisonMode type.
+                    if (@namespace == "System.Runtime.Intrinsics.X86" && type.Name == "FloatComparisonMode")
+                        continue;
+
+                    // Bmi1 implies Avx even though it doesn't in the api surface.
+                    if (type.Name == "Bmi1")
+                    {
+                        support.Add(type.Name, new string[] { "Avx" });
+                        continue;
+                    }
+
+                    // Bmi2 implies Avx even though it doesn't in the api surface.
+                    if (type.Name == "Bmi2")
+                    {
+                        support.Add(type.Name, new string[] { "Avx" });
+                        continue;
+                    }
+
+
                     if (type.BaseType == type.Context.GetWellKnownType(WellKnownType.Object))
                     {
                         support.Add(type.Name, Array.Empty<string>());

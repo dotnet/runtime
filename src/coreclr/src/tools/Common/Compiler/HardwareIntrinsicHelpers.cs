@@ -19,8 +19,7 @@ namespace ILCompiler
         /// </summary>
         public static bool IsHardwareIntrinsic(MethodDesc method)
         {
-            TypeDesc owningType = method.OwningType;
-            return !string.IsNullOrEmpty(InstructionSetSupport.GetHardwareIntrinsicId(owningType.Context.Target.Architecture, (MetadataType)owningType));
+            return !string.IsNullOrEmpty(InstructionSetSupport.GetHardwareIntrinsicId(method.Context.Target.Architecture, method.OwningType));
         }
 
 #if !READYTORUN
