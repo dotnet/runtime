@@ -17,13 +17,6 @@ namespace System
 
         // For values beyond U+FFFF, it's 4 UTF-8 bytes per 2 UTF-16 chars (2:1 ratio)
         private const int MAX_UTF8_BYTES_PER_UTF16_CHAR = 3;
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-#endif
->>>>>>> Get Utf8String building on netstandard2.0
-=======
->>>>>>> Build Utf8String Comparison and Enumeration for netstandard.
 
         /*
          * STATIC FACTORIES
