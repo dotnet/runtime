@@ -8690,7 +8690,7 @@ void Compiler::optBranchlessConditions()
     bool changed = false;
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
     {
-        if ((block->bbJumpKind != BBJ_COND) || block->isEmpty())
+        if ((block->bbJumpKind != BBJ_COND))
         {
             continue;
         }
