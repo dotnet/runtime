@@ -41,6 +41,7 @@
   <Import Project="$(RepositoryEngineeringDir)coverage.targets" Condition="'$(EnableCoverageSupport)' == 'true'" />
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
   
+  <!-- Ordering matters! Overwriting the Build and Test target after the Sdk.targets import. -->
   <Target Name="Build" DependsOnTargets="BuildAllProjects" />
   <Target Name="BuildAllProjects">
     <MSBuild Targets="Build"
