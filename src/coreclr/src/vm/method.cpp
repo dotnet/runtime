@@ -5325,7 +5325,7 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
 
     FARPROC pFunc = NULL;
 
-#ifndef TARGET_UNIX
+#ifdef TARGET_WINDOWS
     // Handle ordinals.
     if (funcName[0] == '#')
     {
@@ -5334,10 +5334,14 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
     }
 #endif
 
-    // Just look for the user-provided name without charset suffixes.  If it is unicode fcn, we are going
+    // Just look for the user-provided name without charset suffixes.
+    // If we are targetting Windows and it is unicode fcn, we are going
     // to need to check for the 'W' API because it takes precedence over the
     // unmangled one (on NT some APIs have unmangled ANSI exports).
     pFunc = FindEntryPointWithMangling(hMod, funcName);
+#ifndef TARGET_WINDOWS
+    return reinterpret_cast<LPVOID>(pFunc);
+#else
     if ((pFunc != NULL && IsNativeAnsi()) || IsNativeNoMangled())
     {
         return reinterpret_cast<LPVOID>(pFunc);
@@ -5369,6 +5373,7 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
     }
 
     return reinterpret_cast<LPVOID>(pFunc);
+#endif
 }
 #endif // CROSSGEN_COMPILE
 
