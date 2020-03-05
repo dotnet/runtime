@@ -27,7 +27,7 @@ namespace System.Tests
         [InlineData("message", "")]
         public void Ctor_String_Id(string message, string id)
         {
-            var attribute = new ObsoleteAttribute(message) { DiagnosticId = id};
+            var attribute = new ObsoleteAttribute(message) { DiagnosticId = id };
             Assert.Equal(message, attribute.Message);
             Assert.False(attribute.IsError);
             Assert.Equal(id, attribute.DiagnosticId);
@@ -40,7 +40,7 @@ namespace System.Tests
         [InlineData("message", true, "https://aka.ms/obsolete/{0}")]
         public void Ctor_String_Bool_Url(string message, bool error, string url)
         {
-            var attribute = new ObsoleteAttribute(message, error) { UrlFormat = url};
+            var attribute = new ObsoleteAttribute(message, error) { UrlFormat = url };
             Assert.Equal(message, attribute.Message);
             Assert.Equal(error, attribute.IsError);
             Assert.Null(attribute.DiagnosticId);
@@ -49,7 +49,8 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(TestData_Attributes))]
-        public void TestAttributeValuesWithReflection(Type testType, string message, bool error, string id, string url) {
+        public void TestAttributeValuesWithReflection(Type testType, string message, bool error, string id, string url)
+        {
 
             Attribute attribute = Attribute.GetCustomAttributes(testType, typeof(Attribute)).Where((e) => e.GetType() == typeof(ObsoleteAttribute)).SingleOrDefault();
 
@@ -73,13 +74,13 @@ namespace System.Tests
         [Obsolete("Don't use", DiagnosticId = "BCL0006")]
         private class ClassMessageAndDiagnosticIdPropertySet { }
 
-        [Obsolete( DiagnosticId = "BCL0003", UrlFormat = "https://aka.ms/obsolete3/{0}")]
-        private class ClassEmptyConstructorOptionalPropertiesSet { }
+        [Obsolete(DiagnosticId = "BCL0003", UrlFormat = "https://aka.ms/obsolete3/{0}")]
+        private interface ClassEmptyConstructorOptionalPropertiesSet { }
 
         [Obsolete("Obsolete", UrlFormat = "https://aka.ms/obsolete2/{0}")]
-        private class ClassMessageAndUrlFormatPropertySet { }
+        private delegate void ClassMessageAndUrlFormatPropertySet();
 
         [Obsolete("Deprecated", false, UrlFormat = "https://aka.ms/obsolete1/{0}", DiagnosticId = "BCL0001")]
-        private class ClassAllFieldPropertiesSet { }
-    }
+        private struct ClassAllFieldPropertiesSet { }
+    }   
 }
