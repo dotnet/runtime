@@ -381,11 +381,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                     throw new BadImageFormatException("The file is not a ReadyToRun image");
                 }
 
-                Debug.Assert(!Composite);
                 _assemblyCache.Add(metadata);
 
                 DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
                 _readyToRunHeaderRVA = r2rHeaderDirectory.RelativeVirtualAddress;
+                Debug.Assert(!Composite);
             }
             else if (!TryLocateNativeReadyToRunHeader())
             {
