@@ -1019,22 +1019,16 @@ namespace System.Net.WebSockets
 
             if (thisLockTaken || sessionHandleLockTaken)
             {
-                try
+                if (thisLockTaken)
                 {
+                    Monitor.Exit(_thisLock);
+                    thisLockTaken = false;
                 }
-                finally
-                {
-                    if (thisLockTaken)
-                    {
-                        Monitor.Exit(_thisLock);
-                        thisLockTaken = false;
-                    }
 
-                    if (sessionHandleLockTaken)
-                    {
-                        Monitor.Exit(SessionHandle);
-                        sessionHandleLockTaken = false;
-                    }
+                if (sessionHandleLockTaken)
+                {
+                    Monitor.Exit(SessionHandle);
+                    sessionHandleLockTaken = false;
                 }
             }
         }
