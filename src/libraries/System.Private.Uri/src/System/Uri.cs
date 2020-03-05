@@ -125,7 +125,7 @@ namespace System
             public Offset Offset;
             public string? DnsSafeHost;    // stores dns safe host when idn is on and we have unicode or idn host
             public MoreInfo? MoreInfo;     // Multi-threading: This field must be always accessed through a _local_
-                                           // stack copy of m_Info.
+                                           // stack copy of _info.
         };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -280,7 +280,7 @@ namespace System
                 {
                     /* Optimization for a canonical DNS name
                     *  ATTN: the host string won't be created,
-                    *  Hence ALL m_Info.Host callers first call EnsureHostString(false)
+                    *  Hence ALL _info.Host callers first call EnsureHostString(false)
                     *  For example IsLoopBack property is one of such callers.
                     */
                     return;
@@ -893,7 +893,7 @@ namespace System
                 Debug.Assert(_info.Host != null);
                 int start;
 
-                // Do we have a valid local path right in m_string?
+                // Do we have a valid local path right in _string?
                 if (NotAny(Flags.HostNotCanonical | Flags.PathNotCanonical | Flags.ShouldBeCompressed))
                 {
                     start = IsUncPath ? _info.Offset.Host - 2 : _info.Offset.Path;
@@ -1087,7 +1087,7 @@ namespace System
 
         //
         //  Gets the exact string passed by a user.
-        //  The original string will switched from m_String to m_OriginalUnicodeString if
+        //  The original string will switched from _string to _originalUnicodeString if
         //  iri is turned on and we have non-ascii chars
         //
         public string OriginalString => _originalUnicodeString ?? _string;
@@ -1498,7 +1498,7 @@ namespace System
                 return CalculateCaseInsensitiveHashCode(OriginalString);
             }
 
-            // Consider moving hash code storage from m_Info.MoreInfo to m_Info
+            // Consider moving hash code storage from _info.MoreInfo to _info
             UriInfo info = EnsureUriInfo();
             if ((object?)info.MoreInfo == null)
             {
@@ -1639,19 +1639,19 @@ namespace System
 
             if (NotAny(Flags.AllUriInfoSet) || obj.NotAny(Flags.AllUriInfoSet))
             {
-                // Try raw compare for m_Strings as the last chance to keep the working set small
+                // Try raw compare for _strings as the last chance to keep the working set small
                 if (!IsUncOrDosPath)
                 {
                     if (_string.Length == obj._string.Length)
                     {
                         unsafe
                         {
-                            // Try case sensitive compare on m_Strings
+                            // Try case sensitive compare on _strings
                             fixed (char* selfPtr = _string)
                             {
                                 fixed (char* otherPtr = obj._string)
                                 {
-                                    // This will never go negative since m_String is checked to be a valid URI
+                                    // This will never go negative since _string is checked to be a valid URI
                                     int i = (_string.Length - 1);
                                     for (; i >= 0; --i)
                                     {
@@ -1676,7 +1676,7 @@ namespace System
             }
 
             // Note that equality test will bring the working set of both
-            // objects up to creation of m_Info.MoreInfo member
+            // objects up to creation of _info.MoreInfo member
             EnsureUriInfo();
             obj.EnsureUriInfo();
 
@@ -1776,7 +1776,7 @@ namespace System
                 }
                 unsafe
                 {
-                    // Try case sensitive compare on m_Strings
+                    // Try case sensitive compare on _strings
                     fixed (char* seltPtr = selfUrl)
                     {
                         fixed (char* otherPtr = otherUrl)
@@ -2149,15 +2149,15 @@ namespace System
 
         //
         //
-        // The method is called when we have to access m_Info members.
-        // This will create the m_Info based on the copied parser context.
+        // The method is called when we have to access _info members.
+        // This will create the _info based on the copied parser context.
         // If multi-threading, this method may do duplicated yet harmless work.
         //
         private unsafe void CreateUriInfo(Flags cF)
         {
             UriInfo info = new UriInfo();
 
-            // This will be revisited in ParseRemaining but for now just have it at least m_String.Length
+            // This will be revisited in ParseRemaining but for now just have it at least _string.Length
             info.Offset.End = (ushort)_string.Length;
 
             if (UserDrivenParsing)
@@ -2166,7 +2166,7 @@ namespace System
             int idx;
             bool notCanonicalScheme = false;
 
-            // The m_String may have leading spaces, figure that out
+            // The _string may have leading spaces, figure that out
             // plus it will set idx value for next steps
             if ((cF & Flags.ImplicitFile) != 0)
             {
@@ -2288,7 +2288,7 @@ namespace System
             // Note we already checked on general port syntax in ParseMinimal()
 
             // If iri parsing is on with unicode chars then the end of parsed host
-            // points to m_orig string and not m_String
+            // points to _originalUnicodeString and not _string
 
             if ((cF & Flags.HasUnicode) != 0)
                 info.Offset.End = (ushort)_originalUnicodeString.Length;
@@ -2407,7 +2407,7 @@ namespace System
 
                     if ((result & (Check.EscapedCanonical | Check.BackslashInPath)) != Check.EscapedCanonical)
                     {
-                        // we will make a canonical host in m_Info.Host, but mark that m_String holds wrong data
+                        // we will make a canonical host in _info.Host, but mark that _string holds wrong data
                         flags |= Flags.E_HostNotCanonical;
                         if (NotAny(Flags.UserEscaped))
                         {
@@ -2421,7 +2421,7 @@ namespace System
                 }
                 else if (NotAny(Flags.CanonicalDnsHost))
                 {
-                    // Check to see if we can take the canonical host string out of m_String
+                    // Check to see if we can take the canonical host string out of _string
                     if ((object?)_info.ScopeId != null)
                     {
                         // IPv6 ScopeId is included when serializing a Uri
@@ -2675,7 +2675,7 @@ namespace System
             EnsureHostString(false);
             string stemp = (parts & UriComponents.Host) == 0 ? string.Empty : _info.Host!;
             // we reserve more space than required because a canonical Ipv6 Host
-            // may take more characters than in original m_String
+            // may take more characters than in original _string
             // Also +3 is for :// and +1 is for absent first slash
             // Also we may escape every character, hence multiplying by 12
             // UTF-8 can use up to 4 bytes per char * 3 chars per byte (%A4) = 12 encoded chars
@@ -2812,7 +2812,7 @@ namespace System
             {
                 if ((nonCanonical & (ushort)UriComponents.Port) == 0)
                 {
-                    //take it from m_String
+                    //take it from _string
                     if (InFact(Flags.NotDefaultPort))
                     {
                         int start = _info.Offset.Path;
@@ -3163,7 +3163,7 @@ namespace System
 
         //
         //This method does:
-        //  - Creates m_Info member
+        //  - Creates _info member
         //  - checks all components up to path on their canonical representation
         //  - continues parsing starting the path position
         //  - Sets the offsets of remaining components
@@ -3189,7 +3189,7 @@ namespace System
             Check result = Check.None;
             UriSyntaxFlags syntaxFlags = _syntax.Flags;
 
-            // m_Info.Offset values may be parsed twice but we lock only on m_Flags update.
+            // _info.Offset values may be parsed twice but we lock only on _flags update.
 
             fixed (char* str = _string)
             {
@@ -3253,8 +3253,8 @@ namespace System
             // Parsing the Path if any
             //
 
-            // For iri parsing if we found unicode the idx has offset into m_orig string..
-            // so restart parsing from there and make m_Info.Offset.Path as m_string.length
+            // For iri parsing if we found unicode the idx has offset into _originalUnicodeString..
+            // so restart parsing from there and make _info.Offset.Path as _string.Length
 
             idx = _info.Offset.Path;
             origIdx = _info.Offset.Path;
@@ -3264,7 +3264,7 @@ namespace System
             //    so both '?' and '#' will work as delimiters
             if (buildIriStringFromPath)
             {
-                // Dos paths have no host.  Other schemes cleared/set m_String with host information in PrivateParseMinimal.
+                // Dos paths have no host.  Other schemes cleared/set _string with host information in PrivateParseMinimal.
                 if (IsDosPath)
                 {
                     if (IsImplicitFile)
@@ -3968,7 +3968,7 @@ namespace System
         //
         // Checks the syntax of an authority component. It may also get a userInfo if present
         // Returns an error if no/mailformed authority found
-        // Does not NOT touch m_Info
+        // Does not NOT touch _info
         // Returns position of the Path component
         //
         // Must be called in the ctor only
