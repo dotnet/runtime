@@ -25,17 +25,16 @@ namespace System.Runtime.Tests
 
             }, profileFile).Dispose();
 
-            // profileFile should deterministically exist now -- if not, wait 5 seconds
+            // wait few seconds, then forcibly stop profiling, profileFile should deterministically exist now.
+            const int DelaySec = 5;
+            Thread.Sleep(DelaySec * 1000);
+            ProfileOptimization.StopProfile();
             bool existed = File.Exists(profileFile);
-            if (!existed)
-            {
-                Thread.Sleep(5000);
-            }
 
             Assert.True(File.Exists(profileFile), $"'{profileFile}' does not exist");
             Assert.True(new FileInfo(profileFile).Length > 0, $"'{profileFile}' is empty");
 
-            Assert.True(existed, $"'{profileFile}' did not immediately exist, but did exist 5 seconds later");
+            Assert.True(existed, $"'{profileFile}' did not immediately exist, but did exist {DelaySec} seconds later");
         }
     }
 }

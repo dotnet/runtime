@@ -27,6 +27,9 @@ namespace System.Runtime.Loader
         internal static extern void InternalStartProfile(string profile, IntPtr ptrNativeAssemblyLoadContext);
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        internal static extern void InternalStopProfile();
+
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void LoadFromPath(IntPtr ptrNativeAssemblyLoadContext, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -176,6 +179,12 @@ namespace System.Runtime.Loader
         public void StartProfileOptimization(string profile)
         {
             InternalStartProfile(profile, _nativeAssemblyLoadContext);
+        }
+
+        // Stop profile optimization.
+        public void StopProfileOptimization()
+        {
+            InternalStopProfile();
         }
 
         private static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)

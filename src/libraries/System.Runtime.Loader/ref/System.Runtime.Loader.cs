@@ -50,6 +50,7 @@ namespace System.Runtime.Loader
         protected System.IntPtr LoadUnmanagedDllFromPath(string unmanagedDllPath) { throw null; }
         public void SetProfileOptimizationRoot(string directoryPath) { }
         public void StartProfileOptimization(string profile) { }
+        public void StopProfileOptimization() { }
         public override string ToString() { throw null; }
         public void Unload() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]

@@ -203,7 +203,14 @@ public:
     // Multicore JIT API function (internal): AbortProfile
     void AbortProfile();
 
-    // Called at AppDomain shut down to automatically shut down remaining profiling
+    // Multicore Jit API function: StopProfile
+    void StopProfile();
+
+    // Called at AppDomain shut down to automatically shut down remaining profiling.
+    //
+    // Also called by timer thread to automatically stop profile after timeout specified by
+    // environment variable "MultiCoreJitProfileWriteDelay" (default is 12 sec).
+    //
     void StopProfile(bool appDomainShutdown);
 
     static void StopProfileAll();
@@ -251,6 +258,8 @@ public:
     static void QCALLTYPE InternalSetProfileRoot(__in_z LPCWSTR directoryPath);
 
     static void QCALLTYPE InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyLoadContext);
+
+    static void QCALLTYPE InternalStopProfile();
 };
 
 #endif // __MULTICORE_JIT_H__

@@ -17,5 +17,10 @@ namespace System.Runtime
         {
             AssemblyLoadContext.Default.StartProfileOptimization(profile);
         }
+
+        public static void StopProfile()
+        {
+            AssemblyLoadContext.Default.StopProfileOptimization();
+        }
     }
 }

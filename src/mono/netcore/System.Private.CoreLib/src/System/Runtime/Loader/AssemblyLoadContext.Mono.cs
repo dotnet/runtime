@@ -85,6 +85,10 @@ namespace System.Runtime.Loader
 		{
 		}
 
+		public void StopProfileOptimization ()
+		{
+		}
+
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern static Assembly InternalLoadFile (IntPtr nativeAssemblyLoadContext, string assemblyFile, ref StackCrawlMark stackMark);
 

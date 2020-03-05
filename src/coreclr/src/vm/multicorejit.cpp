@@ -1190,6 +1190,14 @@ void MulticoreJitManager::StopProfile(bool appDomainShutdown)
     MulticoreJitTrace(("StopProfile(%d) returns", appDomainShutdown));
 }
 
+// Stop current profiling: API call.
+void MulticoreJitManager::StopProfile()
+{
+    STANDARD_VM_CONTRACT;
+
+    StopProfile(true);  // need to held m_playerLock when accessing m_pMulticoreJitRecorder
+}
+
 
 LONG g_nMulticoreAutoStart = 0;
 
@@ -1429,6 +1437,17 @@ void QCALLTYPE MultiCoreJITNative::InternalStartProfile(__in_z LPCWSTR wszProfil
     END_QCALL;
 }
 
+
+void QCALLTYPE MultiCoreJITNative::InternalStopProfile()
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GetAppDomain()->GetMulticoreJitManager().StopProfile();
+
+    END_QCALL;
+}
 
 void QCALLTYPE MultiCoreJITNative::InternalSetProfileRoot(__in_z LPCWSTR wszProfilePath)
 {

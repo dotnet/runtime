@@ -8592,6 +8592,7 @@ namespace System.Runtime
     {
         public static void SetProfileRoot(string directoryPath) { }
         public static void StartProfile(string profile) { }
+        public static void StopProfile() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
     public sealed partial class TargetedPatchingOptOutAttribute : System.Attribute
