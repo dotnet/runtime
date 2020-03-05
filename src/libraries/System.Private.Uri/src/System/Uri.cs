@@ -4363,8 +4363,9 @@ namespace System
             Check res = Check.None;
             bool needsEscaping = false;
             bool foundEscaping = false;
+            bool iriParsing = IriParsing;
 
-            char c = c_DummyChar;
+            char c;
             int i = idx;
             for (; i < end; ++i)
             {
@@ -4378,7 +4379,7 @@ namespace System
                 }
                 else if (c > '~')
                 {
-                    if (IriParsing)
+                    if (iriParsing)
                     {
                         bool valid = false;
                         res |= Check.FoundNonAscii;
