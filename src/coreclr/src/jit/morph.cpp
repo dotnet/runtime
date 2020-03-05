@@ -17224,6 +17224,10 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZ
     bool          fieldSeqRecorded = false;
     bool          isMapAnnotation  = false;
 
+    // Tunnel through any commas.
+    const bool commaOnly = true;
+    fieldSeqZero         = fieldSeqZero->gtEffectiveVal(commaOnly);
+
 #ifdef DEBUG
     if (verbose)
     {
