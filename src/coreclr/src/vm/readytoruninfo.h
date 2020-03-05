@@ -18,29 +18,7 @@
 
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
-class NativeImage;
 class PrepareCodeConfig;
-
-typedef DPTR(class ReadyToRunCoreInfo) PTR_ReadyToRunCoreInfo;
-class ReadyToRunCoreInfo
-{
-private:
-    PTR_PEImageLayout               m_pLayout;
-    PTR_READYTORUN_CORE_HEADER      m_pCoreHeader;
-    
-public:
-    ReadyToRunCoreInfo();
-    ReadyToRunCoreInfo(PEImageLayout * pLayout, READYTORUN_CORE_HEADER * pCoreHeader);
-
-    PEImageLayout * GetLayout() const { return m_pLayout; }
-    IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const;
-
-    PTR_PEImageLayout GetImage() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pLayout;
-    }
-};
 
 typedef DPTR(class ReadyToRunInfo) PTR_ReadyToRunInfo;
 class ReadyToRunInfo
@@ -48,13 +26,9 @@ class ReadyToRunInfo
     friend class ReadyToRunJitManager;
 
     PTR_Module                      m_pModule;
-    PTR_READYTORUN_HEADER           m_pHeader;
-    bool                            m_isComponentAssembly;
-    NativeImage*                    m_pNativeImage;
-    ReadyToRunInfo*                 m_pCompositeInfo;
 
-    ReadyToRunCoreInfo              m_component;
-    const ReadyToRunCoreInfo*       m_pComposite;
+    PTR_PEImageLayout               m_pLayout;
+    PTR_READYTORUN_HEADER           m_pHeader;
 
     PTR_RUNTIME_FUNCTION            m_pRuntimeFunctions;
     DWORD                           m_nRuntimeFunctions;
@@ -66,7 +40,6 @@ class ReadyToRunInfo
     NativeFormat::NativeArray       m_methodDefEntryPoints;
     NativeFormat::NativeHashtable   m_instMethodEntryPoints;
     NativeFormat::NativeHashtable   m_availableTypesHashtable;
-
     NativeFormat::NativeHashtable   m_pMetaDataHashtable;
     NativeFormat::NativeCuckooFilter m_attributesPresence;
 
@@ -75,18 +48,12 @@ class ReadyToRunInfo
 
     PTR_PersistentInlineTrackingMapR2R m_pPersistentInlineTrackingMap;
 
-public:
-    ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, AllocMemTracker *pamTracker);
+    ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, AllocMemTracker *pamTracker);
 
+public:
     static BOOL IsReadyToRunEnabled();
 
     static PTR_ReadyToRunInfo Initialize(Module * pModule, AllocMemTracker *pamTracker);
-
-    bool IsComponentAssembly() const { return m_isComponentAssembly; }
-    NativeImage * GetNativeImage() const { return m_pNativeImage; }
-
-    PTR_PEImageLayout GetImage() const { return m_pComposite->GetImage(); }
-    IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const { return m_pComposite->FindSection(type); }
 
     PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups);
 
@@ -98,20 +65,28 @@ public:
     BOOL SkipTypeValidation()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_SKIP_TYPE_VALIDATION;
+        return m_pHeader->Flags & READYTORUN_FLAG_SKIP_TYPE_VALIDATION;
     }
 
     BOOL IsPartial()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_PARTIAL;
+        return m_pHeader->Flags & READYTORUN_FLAG_PARTIAL;
     }
 
     BOOL HasNonShareablePInvokeStubs()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS;
+        return m_pHeader->Flags & READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS;
     }
+
+    PTR_PEImageLayout GetImage()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pLayout;
+    }
+
+    IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type);
 
     PTR_CORCOMPILE_IMPORT_SECTION GetImportSections(COUNT_T * pCount)
     {
@@ -196,12 +171,7 @@ private:
     BOOL GetTypeNameFromToken(IMDInternalImport * pImport, mdToken mdType, LPCUTF8 * ppszName, LPCUTF8 * ppszNameSpace);
     BOOL GetEnclosingToken(IMDInternalImport * pImport, mdToken mdType, mdToken * pEnclosingToken);
     BOOL CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, mdToken mdToken2, IMDInternalImport * pImport2);
-    BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
-
-    MethodDesc *TryGetMethodDescForEntryPoint(TADDR entryPointRVA);
-    void SetMethodDescForEntryPoint(TADDR entryPointRVA, MethodDesc *methodDesc);
-    
-    ReadyToRunCoreInfo *GetComponentInfo() { return &m_component; }
+	BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
 };
 
 class DynamicHelpers

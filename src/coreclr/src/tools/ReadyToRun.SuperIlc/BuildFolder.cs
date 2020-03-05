@@ -21,13 +21,9 @@ namespace ReadyToRun.SuperIlc
         {
             "coreclr",
             "clrjit",
+            "mscorrc",
             "mscordaccore",
             "mscordbi",
-        };
-
-        private static string[] s_runtimeWindowsOnlyLibraries =
-        {
-            "mscorrc",
         };
 
         private List<string> _compilationInputFiles;
@@ -161,17 +157,9 @@ namespace ReadyToRun.SuperIlc
                 {
                     passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, exe.AppendOSExeSuffix()));
                 }
-                string libraryPrefix = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "" : "lib");
                 foreach (string lib in s_runtimeLibraries)
                 {
-                    passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, (libraryPrefix + lib).AppendOSDllSuffix()));
-                }
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    foreach (string lib in s_runtimeWindowsOnlyLibraries)
-                    {
-                        passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, lib.AppendOSDllSuffix()));
-                    }
+                    passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, lib.AppendOSDllSuffix()));
                 }
             }
 

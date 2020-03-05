@@ -54,7 +54,6 @@ public:
     static PEImageLayout* LoadFromFlat(PEImageLayout* pflatimage);
     static PEImageLayout* Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThrowOnError = TRUE);
     static PEImageLayout* LoadFlat(PEImage* pOwner);
-    static PEImageLayout* LoadNative(LPCWSTR fullPath);
     static PEImageLayout* Map(PEImage* pOwner);
 #endif
     PEImageLayout();
@@ -169,15 +168,7 @@ public:
 
 };
 
-#ifndef DACCESS_COMPILE
-class NativeImageLayout : public PEImageLayout
-{
-    VPTR_VTABLE_CLASS(NativeImageLayout, PEImageLayout)
 
-public:
-    NativeImageLayout(LPCWSTR fullPath);
-};
-#endif
 
 #endif  // PEIMAGELAYOUT_H_
 
