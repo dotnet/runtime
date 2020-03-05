@@ -6,7 +6,7 @@
     Installer uses Unix when applicable, but others go straight to Linux.
   -->
   <PropertyGroup>
-    <CoreCLRTargetOS Condition="'$(TargetsWindows)' == 'true'">Windows_NT</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsWindows)' == 'true'">win</CoreCLRTargetOS>
     <CoreCLRTargetOS Condition="'$(TargetsLinux)' == 'true'">Linux</CoreCLRTargetOS>
     <CoreCLRTargetOS Condition="'$(TargetsOSX)' == 'true'">OSX</CoreCLRTargetOS>
     <CoreCLRTargetOS Condition="'$(TargetsFreeBSD)' == 'true'">FreeBSD</CoreCLRTargetOS>

@@ -51,7 +51,7 @@
     <TargetArchitecture  Condition="'$(TargetArchitecture)' == '' AND '$(BuildArchitecture)' == 'arm64'">$(BuildArchitecture)</TargetArchitecture>
     <TargetArchitecture  Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)'==''">$(TargetArchitecture)</Platform>
-    <TargetOS Condition="'$(TargetOS)' == 'Linux'">Unix</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == 'linux'">unix</TargetOS>
   </PropertyGroup>
 
 
@@ -79,7 +79,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ExeSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.exe</ExeSuffix>
+    <ExeSuffix Condition="'$(TargetOS)' == 'win'">.exe</ExeSuffix>
   </PropertyGroup>
 
   <Import Project="$(HostMachineInfoProps)"
@@ -91,10 +91,8 @@
 
   <!-- Portable -->
   <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
-    <OutputRid Condition="'$(TargetOS)' == 'Windows_NT'">win-$(TargetArchitecture)</OutputRid>
-    <OutputRid Condition="'$(TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</OutputRid>
-    <OutputRid Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Unix'">linux-$(TargetArchitecture)</OutputRid>
-    <OutputRid Condition="'$(TargetOS)' == 'FreeBSD' or $([MSBuild]::IsOSPlatform('FREEBSD'))">freebsd-$(TargetArchitecture)</OutputRid>
+    <OutputRid>$(TargetOS)-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(TargetOS)' == 'unix'">linux-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -273,14 +271,14 @@
   </Choose>
 
   <PropertyGroup>
-    <CompressedFileExtension Condition="'$(TargetOS)' == 'Windows_NT'">.zip</CompressedFileExtension>
-    <CompressedFileExtension Condition="'$(TargetOS)' != 'Windows_NT'">.tar.gz</CompressedFileExtension>
-    <InstallerExtension Condition="'$(TargetOS)' == 'Windows_NT'">.msi</InstallerExtension>
-    <InstallerExtension Condition="'$(TargetOS)' == 'OSX'">.pkg</InstallerExtension>
+    <CompressedFileExtension Condition="'$(TargetOS)' == 'win'">.zip</CompressedFileExtension>
+    <CompressedFileExtension Condition="'$(TargetOS)' != 'win'">.tar.gz</CompressedFileExtension>
+    <InstallerExtension Condition="'$(TargetOS)' == 'win'">.msi</InstallerExtension>
+    <InstallerExtension Condition="'$(TargetOS)' == 'osx'">.pkg</InstallerExtension>
     <InstallerExtension Condition="'$(TargetsDebian)' == 'true' or '$(TargetsUbuntu)' == 'true' or '$(TargetsLinuxMint)' == 'true' or '$(HostMachineRidTargetsDebianPackages)' == 'true'">.deb</InstallerExtension>
     <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true' or '$(TargetsOpensuse)' == 'true' or '$(TargetsFedora)' == 'true' or '$(TargetsOracle)' == 'true' or '$(TargetsSles)' == 'true' or '$(HostMachineRidTargetsRpmPackages)' == 'true'">.rpm</InstallerExtension>
-    <CombinedInstallerExtension Condition="'$(TargetOS)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
-    <CombinedInstallerExtension Condition="'$(TargetOS)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>
+    <CombinedInstallerExtension Condition="'$(TargetOS)' == 'win'">.exe</CombinedInstallerExtension>
+    <CombinedInstallerExtension Condition="'$(TargetOS)' != 'win'">$(InstallerExtension)</CombinedInstallerExtension>
   </PropertyGroup>
 
   <!-- Use actual publishable (non-dummy) package name produced by the build system for this RID -->
@@ -317,20 +315,20 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <LibPrefix Condition="'$(TargetOS)' != 'Windows_NT'">lib</LibPrefix>
+    <LibPrefix Condition="'$(TargetOS)' != 'win'">lib</LibPrefix>
     <LibSuffix>.so</LibSuffix>
-    <LibSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.dll</LibSuffix>
-    <LibSuffix Condition="'$(TargetOS)' == 'OSX'">.dylib</LibSuffix>
+    <LibSuffix Condition="'$(TargetOS)' == 'win'">.dll</LibSuffix>
+    <LibSuffix Condition="'$(TargetOS)' == 'osx'">.dylib</LibSuffix>
     <StaticLibPrefix>lib</StaticLibPrefix>
     <StaticLibSuffix>.a</StaticLibSuffix>
-    <StaticLibSuffix Condition="'$(TargetOS)' == 'Windows_NT'">.lib</StaticLibSuffix>
+    <StaticLibSuffix Condition="'$(TargetOS)' == 'win'">.lib</StaticLibSuffix>
   </PropertyGroup>
 
   <PropertyGroup>
     <CrossGenSymbolExtension>.map</CrossGenSymbolExtension>
-    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'Windows_NT'">.ni.pdb</CrossGenSymbolExtension>
+    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'win'">.ni.pdb</CrossGenSymbolExtension>
     <!-- OSX doesn't have crossgen symbols, yet -->
-    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'OSX'"></CrossGenSymbolExtension>
+    <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'osx'"></CrossGenSymbolExtension>
   </PropertyGroup>
 
 </Project>

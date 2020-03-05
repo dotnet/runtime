@@ -52,59 +52,16 @@
     <BuildSettings Condition="'$(BuildSettings)' == ''">$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(ArchGroup)</BuildSettings>
   </PropertyGroup>
   
-  <Choose>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'win'">
-      <PropertyGroup>
-        <TargetsWindows>true</TargetsWindows>
-        <PackageTargetRuntime>win</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'unix'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <PackageTargetRuntime>unix</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'linux'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsLinux>true</TargetsLinux>
-        <PackageTargetRuntime>linux</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'osx'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsOSX>true</TargetsOSX>
-        <PackageTargetRuntime>osx</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'freebsd'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsFreeBSD>true</TargetsFreeBSD>
-        <PackageTargetRuntime>freebsd</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'netbsd'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsNetBSD>true</TargetsNetBSD>
-        <PackageTargetRuntime>netbsd</PackageTargetRuntime>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'WebAssembly'">
-      <PropertyGroup>
-        <TargetsLinux>true</TargetsLinux>
-        <TargetsWebAssembly>true</TargetsWebAssembly>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == ''">
-      <PropertyGroup>
-        <TargetsAnyOS>true</TargetsAnyOS>
-      </PropertyGroup>
-    </When>
-  </Choose>
+  <PropertyGroup>
+    <TargetsFreeBSD Condition="'$(TargetFrameworkSuffix)' == 'freebsd'">true</TargetsFreeBSD>
+    <TargetsLinux Condition="'$(TargetFrameworkSuffix)' == 'linux'">true</TargetsLinux>
+    <TargetsNetBSD Condition="'$(TargetFrameworkSuffix)' == 'netbsd'">true</TargetsNetBSD>
+    <TargetsOSX Condition="'$(TargetFrameworkSuffix)' == 'osx'">true</TargetsOSX>
+    <TargetsWindows Condition="'$(TargetFrameworkSuffix)' == 'win'">true</TargetsWindows>
+    <TargetsUnix Condition="'$(TargetFrameworkSuffix)' == 'unix' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true'">true</TargetsUnix>
+    <TargetsAnyOS Condition="'$(TargetFrameworkSuffix)' == ''">true</TargetsAnyOS>  
+    <PackageTargetRuntime Condition="'$(TargetFrameworkSuffix)' != ''">$(TargetFrameworkSuffix)</PackageTargetRuntime>
+  </PropertyGroup>
 
   <!-- Define test projects and companions -->
   <PropertyGroup>

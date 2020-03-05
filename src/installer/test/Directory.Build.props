@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetOSTrait Condition="'$(TargetOS)' == 'Windows_NT'">nonwindowstests</TargetOSTrait>
+    <TargetOSTrait Condition="'$(TargetOS)' == 'win'">nonwindowstests</TargetOSTrait>
     <TargetOSTrait Condition="'$(TargetOS)' == 'Linux'">nonlinuxtests</TargetOSTrait>
     <TargetOSTrait Condition="'$(TargetOS)' == 'OSX'">nonosxtests</TargetOSTrait>
     <TargetOSTrait Condition="'$(TargetOS)' == 'FreeBSD'">nonfreebsdtests</TargetOSTrait>
