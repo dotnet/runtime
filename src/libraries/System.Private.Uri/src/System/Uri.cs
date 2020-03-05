@@ -4217,8 +4217,23 @@ namespace System
                             break;
                         }
                     }
-                    CheckAuthorityHelperHandleAnyHostIri(pString, startInput, end, iriParsing, hasUnicode,
-                                                            ref flags, ref newHost, ref err);
+
+                    if (hostNotUnicodeNormalized)
+                    {
+                        // Normalize any other host or do idn
+                        string user = new string(pString, startInput, end - startInput);
+
+                        try
+                        {
+                            newHost += user.Normalize(NormalizationForm.FormC);
+                        }
+                        catch (ArgumentException)
+                        {
+                            err = ParsingError.BadHostName;
+                        }
+
+                        flags |= Flags.HostUnicodeNormalized;
+                    }
                 }
                 else
                 {
@@ -4302,28 +4317,6 @@ namespace System
                 justNormalized = true;
             }
             flags |= Flags.HostUnicodeNormalized;
-        }
-
-        private unsafe void CheckAuthorityHelperHandleAnyHostIri(char* pString, int startInput, int end,
-                                            bool iriParsing, bool hasUnicode,
-                                            ref Flags flags, ref string? newHost, ref ParsingError err)
-        {
-            if (StaticNotAny(flags, Flags.HostUnicodeNormalized) && (iriParsing && hasUnicode))
-            {
-                // Normalize any other host or do idn
-                string user = new string(pString, startInput, end - startInput);
-
-                try
-                {
-                    newHost += user.Normalize(NormalizationForm.FormC);
-                }
-                catch (ArgumentException)
-                {
-                    err = ParsingError.BadHostName;
-                }
-
-                flags |= Flags.HostUnicodeNormalized;
-            }
         }
 
         //
@@ -4460,7 +4453,7 @@ namespace System
                     // conclude that we have a valid canonical IRI.
                     // If we have an IRI with Flags.HasUnicode, we need to set Check.NotIriCanonical so that the
                     // path, query, and fragment will be validated.
-                    if ((_flags & Flags.HasUnicode) != 0 && IriParsing)
+                    if ((_flags & Flags.HasUnicode) != 0)
                     {
                         res |= Check.NotIriCanonical;
                     }
