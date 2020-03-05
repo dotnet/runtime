@@ -445,15 +445,8 @@ namespace Microsoft.CSharp.RuntimeBinder
 #if ENABLECOMBINDER
             else if (obj != null && ComObjectType.IsAssignableFrom(obj.GetType()))
             {
-                var comExclusionList = new string[] { "MailEnvelope" }; //add any com names to be excluded from dynamic view here
-
-                IEnumerable<string> names = ComInterop.ComBinder.GetDynamicDataMemberNames(obj);
-                names = from name in names
-                        where !comExclusionList.Contains(name)
-                        select name;
-                var sortedNames = new List<string>(names);
-                sortedNames.Sort();
-                return ComInterop.ComBinder.GetDynamicDataMembers(obj, sortedNames);
+                IList<string> names = ComInterop.ComBinder.GetDynamicDataMemberNames(obj);
+                return ComInterop.ComBinder.GetDynamicDataMembers(obj, names.OrderBy(n => n));
             }
 #endif
             return Array.Empty<KeyValuePair<string, object>>();

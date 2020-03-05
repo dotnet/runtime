@@ -73,12 +73,10 @@ namespace System.Runtime.InteropServices
                 ParameterInfo[] parameters = Delegate.Method.GetParameters();
                 _expectedParamsCount = parameters.Length;
 
-                bool needToHandleCoercion = false;
-
-                var targetTypes = new List<Type?>();
-                foreach (ParameterInfo pi in parameters)
+                Type?[]? targetTypes = null;
+                for (int i = 0; i < _expectedParamsCount; i++)
                 {
-                    Type? targetType = null;
+                    ParameterInfo pi = parameters[i];
 
                     // recognize only 'ref Enum' signatures and cache
                     // both enum type and the underlying type.
@@ -86,16 +84,18 @@ namespace System.Runtime.InteropServices
                         && pi.ParameterType.HasElementType
                         && pi.ParameterType.GetElementType()!.IsEnum)
                     {
-                        needToHandleCoercion = true;
-                        targetType = pi.ParameterType.GetElementType();
-                    }
+                        if (targetTypes == null)
+                        {
+                            targetTypes = new Type?[_expectedParamsCount];
+                        }
 
-                    targetTypes.Add(targetType);
+                        targetTypes[i] = pi.ParameterType.GetElementType();
+                    }
                 }
 
-                if (needToHandleCoercion)
+                if (targetTypes != null)
                 {
-                    _cachedTargetTypes = targetTypes.ToArray();
+                    _cachedTargetTypes = targetTypes;
                 }
             }
         }
