@@ -197,11 +197,11 @@ class AsyncSubprocessHelper:
 
         # Create a queue with a chunk size of the cpu count
         #
-        # Each run_pmi invocation will remove an item from the
+        # Each run_crossgen invocation will remove an item from the
         # queue before running a potentially long running pmi run.
         #
         # When the queue is drained, we will wait queue.get which
-        # will wait for when a run_pmi instance has added back to the
+        # will wait for when a run_crossgen instance has added back to the
         subproc_count_queue = asyncio.Queue(chunk_size)
         diff_queue = asyncio.Queue()
 
@@ -648,7 +648,7 @@ def crossgen_framework(args):
         save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
 
     helper = AsyncSubprocessHelper(g_Framework_Assemblies)
-    helper.run_to_completion(run_pmi)
+    helper.run_to_completion(run_crossgen)
 
     shutil.rmtree(ni_files_dirname, ignore_errors=True)
 
