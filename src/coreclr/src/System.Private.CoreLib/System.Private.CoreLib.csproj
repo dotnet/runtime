@@ -416,8 +416,8 @@
     </Compile>
   </ItemGroup>
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
-  <PropertyGroup Condition="'$(BuildOS)' == 'Windows_NT'">
-    <OSGroup>Windows_NT</OSGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'Windows_NT'">
+    <TargetOS>Windows_NT</TargetOS>
   </PropertyGroup>
   <PropertyGroup>
     <FeatureAsyncCausalityTracer Condition="'$(FeatureCominterop)' == 'true'">true</FeatureAsyncCausalityTracer>

@@ -18,15 +18,15 @@ build_test_wrappers()
 
         # Set up directories and file names
         __BuildLogRootName="$subDirectoryName"
-        __BuildLog="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.log"
-        __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.wrn"
-        __BuildErr="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.err"
+        __BuildLog="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.log"
+        __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.wrn"
+        __BuildErr="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.err"
         __MsbuildLog="/fileloggerparameters:\"Verbosity=normal;LogFile=${__BuildLog}\""
         __MsbuildWrn="/fileloggerparameters1:\"WarningsOnly;LogFile=${__BuildWrn}\""
         __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
         __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
 
-        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch"
+        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/src/runtest.proj\" /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=$__TestBuildMode /p:TargetsWindows=false $__Logging /p:__TargetOS=$__TargetOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch"
         eval $nextCommand
 
         local exitCode="$?"
@@ -35,7 +35,7 @@ build_test_wrappers()
             exit "$exitCode"
         else
             echo "XUnit Wrappers have been built."
-            echo { "\"build_os\"": "\"${__BuildOS}\"", "\"build_arch\"": "\"${__BuildArch}\"", "\"build_type\"": "\"${__BuildType}\"" } > "${__TestWorkingDir}/build_info.json"
+            echo { "\"build_os\"": "\"${__TargetOS}\"", "\"build_arch\"": "\"${__BuildArch}\"", "\"build_type\"": "\"${__BuildType}\"" } > "${__TestWorkingDir}/build_info.json"
 
         fi
     fi
@@ -59,10 +59,10 @@ generate_layout()
     __CMakeBinDir="${__TestBinDir}"
 
     if [[ -z "$__TestIntermediateDir" ]]; then
-        __TestIntermediateDir="tests/obj/${__BuildOS}.${__BuildArch}.${__BuildType}"
+        __TestIntermediateDir="tests/obj/${__TargetOS}.${__BuildArch}.${__BuildType}"
     fi
 
-    echo "__BuildOS: ${__BuildOS}"
+    echo "__TargetOS: ${__TargetOS}"
     echo "__BuildArch: ${__BuildArch}"
     echo "__BuildType: ${__BuildType}"
     echo "__TestIntermediateDir: ${__TestIntermediateDir}"
@@ -84,7 +84,7 @@ generate_layout()
     MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
     export MSBUILDDEBUGPATH
 
-    __BuildProperties="-p:OSGroup=${__BuildOS} -p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
+    __BuildProperties="-p:TargetOS=${__TargetOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
 
     # =========================================================================================
     # ===
@@ -121,7 +121,7 @@ generate_layout()
     # Make sure to copy over the pulled down packages
     cp -r "$__BinDir"/* "$CORE_ROOT/" > /dev/null
 
-    if [[ "$__BuildOS" != "OSX" ]]; then
+    if [[ "$__TargetOS" != "OSX" ]]; then
         nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
         echo "Resolve runtime dependences via $nextCommand"
         eval $nextCommand
@@ -281,7 +281,7 @@ build_Tests()
         mkdir -p "${__ManagedTestIntermediatesDir}"
     fi
 
-    echo "__BuildOS: ${__BuildOS}"
+    echo "__TargetOS: ${__TargetOS}"
     echo "__BuildArch: ${__BuildArch}"
     echo "__BuildType: ${__BuildType}"
     echo "__TestIntermediatesDir: ${__TestIntermediatesDir}"
@@ -305,7 +305,7 @@ build_Tests()
     MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
     export MSBUILDDEBUGPATH
 
-    __BuildProperties="-p:OSGroup=${__BuildOS} -p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
+    __BuildProperties="-p:TargetOS=${__TargetOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
 
     # =========================================================================================
     # ===
@@ -387,9 +387,9 @@ build_MSBuild_projects()
 
     # Set up directories and file names
     __BuildLogRootName="$subDirectoryName"
-    __BuildLog="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.log"
-    __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.wrn"
-    __BuildErr="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.err"
+    __BuildLog="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.log"
+    __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.wrn"
+    __BuildErr="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.err"
 
     if [[ "$subDirectoryName" == "Tests_Managed" ]]; then
         # Execute msbuild managed test build in stages - workaround for excessive data retention in MSBuild ConfigCache
@@ -613,12 +613,12 @@ __LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
-__BinDir="$__RootBinDir/bin/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
+__BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
 __TestDir="$__ProjectDir/tests"
-__TestWorkingDir="$__RootBinDir/tests/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
-__IntermediatesDir="$__RootBinDir/obj/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
-__TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__BuildOS.$__BuildArch.$__BuildType"
+__TestWorkingDir="$__RootBinDir/tests/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
+__IntermediatesDir="$__RootBinDir/obj/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
+__TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__TargetOS.$__BuildArch.$__BuildType"
 __CrossComponentBinDir="$__BinDir"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
 
@@ -626,7 +626,7 @@ __CrossArch="$__HostArch"
 if [[ "$__CrossBuild" == 1 ]]; then
     __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
 fi
-__CrossgenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__BuildOS.$BuildArch.$__BuildType.log"
+__CrossgenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__TargetOS.$BuildArch.$__BuildType.log"
 __CrossgenExe="$__CrossComponentBinDir/crossgen"
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to it.

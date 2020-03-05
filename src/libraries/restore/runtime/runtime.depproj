@@ -5,9 +5,9 @@
     <RuntimeIdentifier Condition="'$(RuntimeOS)' == 'webassembly'">$(ToolRuntimeRID)</RuntimeIdentifier>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
     <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
-    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(OSGroup)</CoreCLROSGroup>
+    <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
-    <MonoOSGroup Condition="'$(MonoOSGroup)' == ''">$(DefaultOSGroup)</MonoOSGroup>
+    <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(DefaultOSGroup)</MonoTargetOS>
     <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(Configuration)</MonoConfiguration>
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
     <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0-Unix;$(netcoreappCurrent)-Windows_NT;$(netcoreappCurrent)-Unix</TargetFrameworks>
@@ -70,7 +70,7 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
-    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(OSGroup)' != 'Windows_NT'"/>
+    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'Windows_NT'"/>
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"

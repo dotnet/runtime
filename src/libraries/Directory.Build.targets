@@ -1,8 +1,8 @@
 <Project InitialTargets="AddSkipGetTargetFrameworkToProjectReferences">
   <PropertyGroup>
-    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(OSGroup)</CoreCLROSGroup>
+    <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
-    <MonoOSGroup Condition="'$(MonoCLROSGroup)' == ''">$(OSGroup)</MonoOSGroup>
+    <MonoTargetOS Condition="'$(MonoCLROSGroup)' == ''">$(TargetOS)</MonoTargetOS>
     <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(Configuration)</MonoConfiguration>
   </PropertyGroup>
 
@@ -53,15 +53,15 @@
     
   <ItemGroup Condition="'@(BinPlaceTargetFrameworks)' == ''">
     <!-- binplace to directories for the target vertical -->
-    <BinPlaceTargetFrameworks Include="$(BuildTargetFramework)-$(OSGroup)" Condition="'$(BinPlaceForTargetVertical)' == 'true'">
+    <BinPlaceTargetFrameworks Include="$(BuildTargetFramework)-$(TargetOS)" Condition="'$(BinPlaceForTargetVertical)' == 'true'">
       <RefPath>$(BuildTargetFrameworkRefPath)</RefPath>
       <RuntimePath>$(RuntimePath)</RuntimePath>
     </BinPlaceTargetFrameworks>
     <!-- binplace to directories for packages -->
-    <BinPlaceTargetFrameworks Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="$(NetCoreAppCurrent)-$(OSGroup)">
+    <BinPlaceTargetFrameworks Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
       <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
-      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(OSGroup)-$(Configuration)-$(ArchGroup)</RuntimePath>
+      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(TargetOS)-$(Configuration)-$(ArchGroup)</RuntimePath>
       <RefPath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true' and '$(IsNETCoreAppRef)' == 'true'">$(RefRootPath)microsoft.netcore.app\$(Configuration)</RefPath>
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
       <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' and '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
@@ -72,7 +72,7 @@
     </BinPlaceTargetFrameworks>
 
     <!-- Setup the shared framework directory for testing -->
-    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(NetCoreAppCurrent)-$(OSGroup)">
+    <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
     <BinPlaceTargetFrameworks Condition="'$(BinPlaceNETFXRuntime)' == 'true'" Include="$(NetFrameworkCurrent)-Windows_NT">
@@ -96,7 +96,7 @@
       <RefPath>$(RefRootPath)%(Identity)/</RefPath>
     </BinPlaceTargetFrameworks>
     <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical target frameworks. -->
-    <BinPlaceTargetFrameworks Condition="'$(BuildAllConfigurations)' == 'true' and ('$(BinPlaceForTargetVertical)' == 'true' or ('$(TargetFramework)' != '$(NetCoreAppCurrent)' and '$(TargetFrameworkSuffix)' == ''))" Include="$(NetCoreAppCurrent)-$(OSGroup)">
+    <BinPlaceTargetFrameworks Condition="'$(BuildAllConfigurations)' == 'true' and ('$(BinPlaceForTargetVertical)' == 'true' or ('$(TargetFramework)' != '$(NetCoreAppCurrent)' and '$(TargetFrameworkSuffix)' == ''))" Include="$(NetCoreAppCurrent)-$(TargetOS)">
       <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(Configuration)-$(ArchGroup)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
