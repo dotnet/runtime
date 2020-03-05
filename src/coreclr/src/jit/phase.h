@@ -19,9 +19,9 @@ protected:
         m_name = PhaseNames[_phase];
     }
 
-    virtual void PrePhase();
-    virtual void DoPhase() = 0;
-    virtual void PostPhase();
+    virtual void        PrePhase();
+    virtual PhaseStatus DoPhase() = 0;
+    virtual void PostPhase(PhaseStatus status);
 
     Compiler*   comp;
     const char* m_name;
@@ -39,9 +39,10 @@ public:
     }
 
 protected:
-    virtual void DoPhase() override
+    virtual PhaseStatus DoPhase() override
     {
         action();
+        return PhaseStatus::PS_MODIFIED_EVERYTHING;
     }
 
 private:
@@ -68,9 +69,10 @@ public:
     }
 
 protected:
-    virtual void DoPhase() override
+    virtual PhaseStatus DoPhase() override
     {
         (comp->*action)();
+        return PhaseStatus::PS_MODIFIED_EVERYTHING;
     }
 
 private:
@@ -82,6 +84,35 @@ private:
 inline void DoPhase(Compiler* _compiler, Phases _phase, void (Compiler::*_action)())
 {
     CompilerPhase phase(_compiler, _phase, _action);
+    phase.Run();
+}
+
+// A simple phase that just invokes a method on the compiler instance
+// where the method being invoked returns a PhaseStatus
+//
+class CompilerPhaseWithStatus final : public Phase
+{
+public:
+    CompilerPhaseWithStatus(Compiler* _compiler, Phases _phase, PhaseStatus (Compiler::*_action)())
+        : Phase(_compiler, _phase), action(_action)
+    {
+    }
+
+protected:
+    virtual PhaseStatus DoPhase() override
+    {
+        return (comp->*action)();
+    }
+
+private:
+    PhaseStatus (Compiler::*action)();
+};
+
+// Wrapper for using CompilePhaseWithStatus
+//
+inline void DoPhase(Compiler* _compiler, Phases _phase, PhaseStatus (Compiler::*_action)())
+{
+    CompilerPhaseWithStatus phase(_compiler, _phase, _action);
     phase.Run();
 }
 

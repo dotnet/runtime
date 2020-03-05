@@ -1535,9 +1535,10 @@ public:
     }
 
 protected:
-    virtual void DoPhase() override
+    virtual PhaseStatus DoPhase() override
     {
         (codeGen->*action)();
+        return PhaseStatus::PS_MODIFIED_EVERYTHING;
     }
 
 private:
