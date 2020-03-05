@@ -112,7 +112,7 @@
     <!-- System.Data.SqlClient -->
     <SystemDataSqlClientVersion>4.8.0</SystemDataSqlClientVersion>
     <!-- Testing -->
-    <MicrosoftNETTestSdkVersion>16.6.0-preview-20200226-03</MicrosoftNETTestSdkVersion>
+    <MicrosoftNETTestSdkVersion>16.6.0-preview-20200305-01</MicrosoftNETTestSdkVersion>
     <XUnitVersion>2.4.1</XUnitVersion>
     <TraceEventVersion>2.0.5</TraceEventVersion>
     <NewtonsoftJsonVersion>12.0.3</NewtonsoftJsonVersion>
