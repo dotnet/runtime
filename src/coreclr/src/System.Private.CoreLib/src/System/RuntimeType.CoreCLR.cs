@@ -367,7 +367,6 @@ namespace System
                 {
                     bool lockTaken = false;
 
-                    RuntimeHelpers.PrepareConstrainedRegions();
                     try
                     {
                         Monitor.Enter(this, ref lockTaken);
@@ -1576,7 +1575,6 @@ namespace System
                     Interlocked.CompareExchange(ref s_methodInstantiationsLock!, new object(), null);
 
                 bool lockTaken = false;
-                RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
                     Monitor.Enter(s_methodInstantiationsLock, ref lockTaken);
