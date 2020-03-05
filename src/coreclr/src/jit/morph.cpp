@@ -6653,12 +6653,6 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #if FEATURE_FASTTAILCALL
     // To reach here means that the return types of the caller and callee are tail call compatible.
     // In the case of structs that can be returned in a register, compRetNativeType is set to the actual return type.
-    //
-    // In an implicit tail call case callInfo may not be available but it is guaranteed to be available
-    // for explicit tail call cases.  The reason implicit tail case callInfo may not be available is that
-    // a call node might be marked as an in-line candidate and could fail to be in-lined. In which case
-    // fgInline() will replace return value place holder with call node using gtCloneExpr() which is
-    // currently not copying/setting callInfo.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
@@ -7403,34 +7397,34 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         call->fgArgInfo = nullptr;
     }
 
-    // If asked to store target and we have a type arg we will store
-    // instantiating stub, so in that case we should not pass the type arg.
-    if ((help.flags & CORINFO_TAILCALL_STORE_TARGET) && call->tailCallInfo->GetSig()->hasTypeArg())
-    {
-        JITDUMP("Removing type arg");
-
-        assert(call->gtCallArgs != nullptr);
-        if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
-        {
-            // Generic context is first arg
-            call->gtCallArgs = call->gtCallArgs->GetNext();
-        }
-        else
-        {
-            // Generic context is last arg
-            GenTreeCall::Use** lastArgSlot = &call->gtCallArgs;
-            while ((*lastArgSlot)->GetNext() != nullptr)
-                lastArgSlot = &(*lastArgSlot)->NextRef();
-
-            *lastArgSlot = nullptr;
-        }
-        call->fgArgInfo = nullptr;
-    }
-
     // We may need to pass the target, for instance for calli or generic methods
     // where we pass instantiating stub.
-    if (help.flags & CORINFO_TAILCALL_STORE_TARGET)
+    if ((help.flags & CORINFO_TAILCALL_STORE_TARGET) != 0)
     {
+        // If asked to store target and we have a type arg we will store
+        // instantiating stub, so in that case we should not pass the type arg.
+        if (call->tailCallInfo->GetSig()->hasTypeArg())
+        {
+            JITDUMP("Removing type arg");
+
+            assert(call->gtCallArgs != nullptr);
+            if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
+            {
+                // Generic context is first arg
+                call->gtCallArgs = call->gtCallArgs->GetNext();
+            }
+            else
+            {
+                // Generic context is last arg
+                GenTreeCall::Use** lastArgSlot = &call->gtCallArgs;
+                while ((*lastArgSlot)->GetNext() != nullptr)
+                    lastArgSlot = &(*lastArgSlot)->NextRef();
+
+                *lastArgSlot = nullptr;
+            }
+            call->fgArgInfo = nullptr;
+        }
+
         JITDUMP("Adding target since VM requested it\n");
         GenTree* target;
         if (call->tailCallInfo->IsCalli())
@@ -7455,8 +7449,8 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
             assert(!opts.IsReadyToRun());
 
             if (!call->tailCallInfo->IsCallvirt() ||
-                (callInfo.methodFlags & (CORINFO_FLG_FINAL | CORINFO_FLG_STATIC)) ||
-                !(callInfo.methodFlags & CORINFO_FLG_VIRTUAL))
+                ((callInfo.methodFlags & (CORINFO_FLG_FINAL | CORINFO_FLG_STATIC)) != 0) ||
+                ((callInfo.methodFlags & CORINFO_FLG_VIRTUAL) == 0))
             {
                 target = getMethodPointerTree(call->tailCallInfo->GetToken(), &callInfo);
             }
@@ -7492,7 +7486,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         if (call->NeedsNullCheck())
         {
             // clone "this" if "this" has no side effects.
-            if ((thisPtr == nullptr) && !(objp->gtFlags & GTF_SIDE_EFFECT))
+            if ((objp->gtFlags & GTF_SIDE_EFFECT) == 0)
             {
                 thisPtr = gtClone(objp, true);
             }
@@ -7507,9 +7501,9 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
                 GenTree* asg    = gtNewTempAssign(lclNum, objp);
 
                 // COMMA(tmp = "this", deref(tmp))
-                GenTree* tmp = gtNewLclvNode(lclNum, vt);
-                GenTree* ind = gtNewOperNode(GT_IND, TYP_INT, tmp);
-                asg          = gtNewOperNode(GT_COMMA, TYP_VOID, asg, ind);
+                GenTree* tmp       = gtNewLclvNode(lclNum, vt);
+                GenTree* nullcheck = gtNewNullCheck(tmp, compCurBB);
+                asg                = gtNewOperNode(GT_COMMA, TYP_VOID, asg, nullcheck);
 
                 // COMMA(COMMA(tmp = "this", deref(tmp)), tmp)
                 thisPtr = gtNewOperNode(GT_COMMA, vt, asg, gtNewLclvNode(lclNum, vt));
@@ -7517,8 +7511,8 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
             else
             {
                 // thisPtr = COMMA(deref("this"), "this")
-                GenTree* ind = gtNewOperNode(GT_IND, TYP_INT, thisPtr);
-                thisPtr      = gtNewOperNode(GT_COMMA, vt, ind, gtClone(objp, true));
+                GenTree* nullcheck = gtNewNullCheck(thisPtr, compCurBB);
+                thisPtr            = gtNewOperNode(GT_COMMA, vt, nullcheck, gtClone(objp, true));
             }
 
             call->gtFlags &= ~GTF_CALL_NULLCHECK;
@@ -8031,9 +8025,9 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
                 GenTree* asg    = gtNewTempAssign(lclNum, objp);
 
                 // COMMA(tmp = "this", deref(tmp))
-                GenTree* tmp = gtNewLclvNode(lclNum, vt);
-                GenTree* ind = gtNewOperNode(GT_IND, TYP_INT, tmp);
-                asg          = gtNewOperNode(GT_COMMA, TYP_VOID, asg, ind);
+                GenTree* tmp       = gtNewLclvNode(lclNum, vt);
+                GenTree* nullcheck = gtNewNullCheck(tmp, compCurBB);
+                asg                = gtNewOperNode(GT_COMMA, TYP_VOID, asg, nullcheck);
 
                 // COMMA(COMMA(tmp = "this", deref(tmp)), tmp)
                 thisPtr = gtNewOperNode(GT_COMMA, vt, asg, gtNewLclvNode(lclNum, vt));
@@ -8041,8 +8035,8 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
             else
             {
                 // thisPtr = COMMA(deref("this"), "this")
-                GenTree* ind = gtNewOperNode(GT_IND, TYP_INT, thisPtr);
-                thisPtr      = gtNewOperNode(GT_COMMA, vt, ind, gtClone(objp, true));
+                GenTree* nullcheck = gtNewNullCheck(thisPtr, compCurBB);
+                thisPtr            = gtNewOperNode(GT_COMMA, vt, nullcheck, gtClone(objp, true));
             }
 
             call->gtFlags &= ~GTF_CALL_NULLCHECK;
@@ -15654,7 +15648,7 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw)
             //   case there will not be any tailcall and the block will be ending
             //   with BBJ_RETURN (as normal control flow)
             noway_assert((call->IsFastTailCall() && (compCurBB->bbJumpKind == BBJ_RETURN) &&
-                          (compCurBB->bbFlags & BBF_HAS_JMP)) ||
+                          ((compCurBB->bbFlags & BBF_HAS_JMP)) != 0) ||
                          (call->IsTailCallViaJitHelper() && (compCurBB->bbJumpKind == BBJ_THROW)) ||
                          (!call->IsTailCall() && (compCurBB->bbJumpKind == BBJ_RETURN)));
         }
