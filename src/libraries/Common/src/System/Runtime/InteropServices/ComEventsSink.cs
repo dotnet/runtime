@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System.Diagnostics;
 
 namespace System.Runtime.InteropServices
@@ -10,7 +12,7 @@ namespace System.Runtime.InteropServices
     /// Part of ComEventHelpers APIs which allow binding
     /// managed delegates to COM's connection point based events.
     /// </summary>
-    internal class ComEventsSink : IDispatch, ICustomQueryInterface
+    internal partial class ComEventsSink : IDispatch, ICustomQueryInterface
     {
         private Guid _iidSourceItf;
         private ComTypes.IConnectionPoint? _connectionPoint;
@@ -245,14 +247,13 @@ namespace System.Runtime.InteropServices
 
         private void Advise(object rcw)
         {
-            Debug.Assert(_connectionPoint == null, "comevent sink is already advised");
+            Debug.Assert(_connectionPoint == null, "COM event sink is already advised");
 
             ComTypes.IConnectionPointContainer cpc = (ComTypes.IConnectionPointContainer)rcw;
             ComTypes.IConnectionPoint cp;
             cpc.FindConnectionPoint(ref _iidSourceItf, out cp!);
 
             object sinkObject = this;
-
             cp.Advise(sinkObject, out _cookie);
 
             _connectionPoint = cp;
@@ -260,7 +261,9 @@ namespace System.Runtime.InteropServices
 
         private void Unadvise()
         {
-            Debug.Assert(_connectionPoint != null, "can not unadvise from empty connection point");
+            Debug.Assert(_connectionPoint != null, "Can not unadvise from empty connection point");
+            if (_connectionPoint == null)
+                return;
 
             try
             {
