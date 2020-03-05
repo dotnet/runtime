@@ -113,7 +113,7 @@ namespace Internal.JitInterface
                             jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_AVX2);
                             break;
                         case "Avx512":
-                            jitFlagBuilder.Add(CORJIT_FLAG_USE_AVX_512);
+                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_AVX_512);
                             break;
                         case "Bmi1":
                             jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_BMI1);
@@ -134,7 +134,7 @@ namespace Internal.JitInterface
                             jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_POPCNT);
                             break;
                         default:
-                            throw new InternalCompilerException("Unknown instruction set");
+                            throw new Exception("Unknown instruction set");
                     }
                 }
                 if (instructionSetSupport.Architecture == TypeSystem.TargetArchitecture.ARM64)
@@ -160,7 +160,7 @@ namespace Internal.JitInterface
                             jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_HAS_ARM64_SHA256);
                             break;
                         default:
-                            throw new InternalCompilerException("Unknown instruction set");
+                            throw new Exception("Unknown instruction set");
                     }
                 }
             }

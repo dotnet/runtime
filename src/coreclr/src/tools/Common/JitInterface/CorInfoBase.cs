@@ -314,6 +314,8 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool __convertPInvokeCalliToCall(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, [MarshalAs(UnmanagedType.I1)]bool mustConvert);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
+        delegate void __notifyInstructionSetUsage(IntPtr _this, IntPtr* ppException, char* instructionSetName, [MarshalAs(UnmanagedType.I1)]bool supportEnabled);
+        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __allocMem(IntPtr _this, IntPtr* ppException, uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __reserveUnwindInfo(IntPtr _this, IntPtr* ppException, [MarshalAs(UnmanagedType.Bool)]bool isFunclet, [MarshalAs(UnmanagedType.Bool)]bool isColdCode, uint unwindSize);
@@ -2424,6 +2426,19 @@ namespace Internal.JitInterface
             }
         }
 
+        static void _notifyInstructionSetUsage(IntPtr thisHandle, IntPtr* ppException, char* instructionSetName, [MarshalAs(UnmanagedType.I1)]bool supportEnabled)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                _this.notifyInstructionSetUsage(instructionSetName, supportEnabled);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+            }
+        }
+
         static void _allocMem(IntPtr thisHandle, IntPtr* ppException, uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock)
         {
             var _this = GetThis(thisHandle);
@@ -2643,8 +2658,8 @@ namespace Internal.JitInterface
 
         static IntPtr GetUnmanagedCallbacks(out Object keepAlive)
         {
-            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 167);
-            Object[] delegates = new Object[167];
+            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 168);
+            Object[] delegates = new Object[168];
 
             var d0 = new __getMethodAttribs(_getMethodAttribs);
             callbacks[0] = Marshal.GetFunctionPointerForDelegate(d0);
@@ -3099,54 +3114,57 @@ namespace Internal.JitInterface
             var d150 = new __convertPInvokeCalliToCall(_convertPInvokeCalliToCall);
             callbacks[150] = Marshal.GetFunctionPointerForDelegate(d150);
             delegates[150] = d150;
-            var d151 = new __allocMem(_allocMem);
+            var d151 = new __notifyInstructionSetUsage(_notifyInstructionSetUsage);
             callbacks[151] = Marshal.GetFunctionPointerForDelegate(d151);
             delegates[151] = d151;
-            var d152 = new __reserveUnwindInfo(_reserveUnwindInfo);
+            var d152 = new __allocMem(_allocMem);
             callbacks[152] = Marshal.GetFunctionPointerForDelegate(d152);
             delegates[152] = d152;
-            var d153 = new __allocUnwindInfo(_allocUnwindInfo);
+            var d153 = new __reserveUnwindInfo(_reserveUnwindInfo);
             callbacks[153] = Marshal.GetFunctionPointerForDelegate(d153);
             delegates[153] = d153;
-            var d154 = new __allocGCInfo(_allocGCInfo);
+            var d154 = new __allocUnwindInfo(_allocUnwindInfo);
             callbacks[154] = Marshal.GetFunctionPointerForDelegate(d154);
             delegates[154] = d154;
-            var d155 = new __setEHcount(_setEHcount);
+            var d155 = new __allocGCInfo(_allocGCInfo);
             callbacks[155] = Marshal.GetFunctionPointerForDelegate(d155);
             delegates[155] = d155;
-            var d156 = new __setEHinfo(_setEHinfo);
+            var d156 = new __setEHcount(_setEHcount);
             callbacks[156] = Marshal.GetFunctionPointerForDelegate(d156);
             delegates[156] = d156;
-            var d157 = new __logMsg(_logMsg);
+            var d157 = new __setEHinfo(_setEHinfo);
             callbacks[157] = Marshal.GetFunctionPointerForDelegate(d157);
             delegates[157] = d157;
-            var d158 = new __doAssert(_doAssert);
+            var d158 = new __logMsg(_logMsg);
             callbacks[158] = Marshal.GetFunctionPointerForDelegate(d158);
             delegates[158] = d158;
-            var d159 = new __reportFatalError(_reportFatalError);
+            var d159 = new __doAssert(_doAssert);
             callbacks[159] = Marshal.GetFunctionPointerForDelegate(d159);
             delegates[159] = d159;
-            var d160 = new __allocMethodBlockCounts(_allocMethodBlockCounts);
+            var d160 = new __reportFatalError(_reportFatalError);
             callbacks[160] = Marshal.GetFunctionPointerForDelegate(d160);
             delegates[160] = d160;
-            var d161 = new __getMethodBlockCounts(_getMethodBlockCounts);
+            var d161 = new __allocMethodBlockCounts(_allocMethodBlockCounts);
             callbacks[161] = Marshal.GetFunctionPointerForDelegate(d161);
             delegates[161] = d161;
-            var d162 = new __recordCallSite(_recordCallSite);
+            var d162 = new __getMethodBlockCounts(_getMethodBlockCounts);
             callbacks[162] = Marshal.GetFunctionPointerForDelegate(d162);
             delegates[162] = d162;
-            var d163 = new __recordRelocation(_recordRelocation);
+            var d163 = new __recordCallSite(_recordCallSite);
             callbacks[163] = Marshal.GetFunctionPointerForDelegate(d163);
             delegates[163] = d163;
-            var d164 = new __getRelocTypeHint(_getRelocTypeHint);
+            var d164 = new __recordRelocation(_recordRelocation);
             callbacks[164] = Marshal.GetFunctionPointerForDelegate(d164);
             delegates[164] = d164;
-            var d165 = new __getExpectedTargetArchitecture(_getExpectedTargetArchitecture);
+            var d165 = new __getRelocTypeHint(_getRelocTypeHint);
             callbacks[165] = Marshal.GetFunctionPointerForDelegate(d165);
             delegates[165] = d165;
-            var d166 = new __getJitFlags(_getJitFlags);
+            var d166 = new __getExpectedTargetArchitecture(_getExpectedTargetArchitecture);
             callbacks[166] = Marshal.GetFunctionPointerForDelegate(d166);
             delegates[166] = d166;
+            var d167 = new __getJitFlags(_getJitFlags);
+            callbacks[167] = Marshal.GetFunctionPointerForDelegate(d167);
+            delegates[167] = d167;
 
             keepAlive = delegates;
             return (IntPtr)callbacks;

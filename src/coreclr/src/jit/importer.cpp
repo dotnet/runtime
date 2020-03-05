@@ -19730,7 +19730,7 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
         case CORINFO_INTRINSIC_Round:
         case CORINFO_INTRINSIC_Ceiling:
         case CORINFO_INTRINSIC_Floor:
-            return compSupports(InstructionSet_SSE41);
+            return compSupportsOptional(InstructionSet_SSE41);
 
         default:
             return false;

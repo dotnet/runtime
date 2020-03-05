@@ -2195,6 +2195,7 @@ void Compiler::compSetProcessor()
 // Instruction set flags for Intel hardware intrinsics
 #ifdef TARGET_XARCH
     opts.compSupportsISA = 0;
+    opts.compSupportsISAReported = 0;
 
     if (JitConfig.EnableHWIntrinsic())
     {
@@ -2290,7 +2291,7 @@ void Compiler::compSetProcessor()
 
     // We currently need to also check that AVX is supported as that controls the support for the VEX encoding
     // in the emitter.
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI1) && JitConfig.EnableBMI1() && compSupports(InstructionSet_AVX))
+    if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI1) && JitConfig.EnableBMI1() && compSupportsNoReporting(InstructionSet_AVX))
     {
         opts.setSupportedISA(InstructionSet_BMI1);
 #ifdef TARGET_AMD64
@@ -2300,7 +2301,7 @@ void Compiler::compSetProcessor()
 
     // We currently need to also check that AVX is supported as that controls the support for the VEX encoding
     // in the emitter.
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI2) && JitConfig.EnableBMI2() && compSupports(InstructionSet_AVX))
+    if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI2) && JitConfig.EnableBMI2() && compSupportsNoReporting(InstructionSet_AVX))
     {
         opts.setSupportedISA(InstructionSet_BMI2);
 #ifdef TARGET_AMD64
@@ -2310,7 +2311,7 @@ void Compiler::compSetProcessor()
 
     if (!compIsForInlining())
     {
-        if (canUseVexEncoding())
+        if (compSupportsNoReporting(InstructionSet_AVX))
         {
             codeGen->GetEmitter()->SetUseVEXEncoding(true);
             // Assume each JITted method does not contain AVX instruction at first
@@ -2436,6 +2437,106 @@ void Compiler::compSetProcessor()
         opts.setSupportedISA(InstructionSet_Sve);
     }
 #endif
+}
+
+void Compiler::notifyInstructionSetUsage(InstructionSet isa, bool supported) const
+{
+    switch (isa)
+    {
+#ifdef TARGET_XARCH
+    case InstructionSet_Vector128:
+    case InstructionSet_Vector256:
+        break;
+    case InstructionSet_SSE:
+    case InstructionSet_SSE_X64:
+        info.compCompHnd->notifyInstructionSetUsage(W("Sse"), supported);
+        break;
+    case InstructionSet_SSE2:
+    case InstructionSet_SSE2_X64:
+        info.compCompHnd->notifyInstructionSetUsage(W("Sse2"), supported);
+        break;
+    case InstructionSet_SSE3:
+        info.compCompHnd->notifyInstructionSetUsage(W("Sse3"), supported);
+        break;
+    case InstructionSet_SSSE3:
+        info.compCompHnd->notifyInstructionSetUsage(W("Ssse3"), supported);
+        break;
+    case InstructionSet_SSE41:
+    case InstructionSet_SSE41_X64:
+        info.compCompHnd->notifyInstructionSetUsage(W("Sse41"), supported);
+        break;
+    case InstructionSet_SSE42:
+    case InstructionSet_SSE42_X64:
+        info.compCompHnd->notifyInstructionSetUsage(W("Sse42"), supported);
+        break;
+    case InstructionSet_AVX:
+        info.compCompHnd->notifyInstructionSetUsage(W("Avx"), supported);
+        break;
+    case InstructionSet_AVX2:
+        info.compCompHnd->notifyInstructionSetUsage(W("Avx2"), supported);
+        break;
+    // End linear order SIMD instruction sets.
+    case InstructionSet_AES:
+        info.compCompHnd->notifyInstructionSetUsage(W("Aes"), supported);
+        break;
+    case InstructionSet_BMI1:
+    case InstructionSet_BMI1_X64:
+        info.compCompHnd->notifyInstructionSetUsage(W("Bmi1"), supported);
+        break;
+    case InstructionSet_BMI2:
+    case InstructionSet_BMI2_X64:
+        info.compCompHnd->notifyInstructionSetUsage(W("Bmi2"), supported);
+        break;
+    case InstructionSet_FMA:
+        info.compCompHnd->notifyInstructionSetUsage(W("Fma"), supported);
+        break;
+    case InstructionSet_LZCNT:
+    case InstructionSet_LZCNT_X64:
+        info.compCompHnd->notifyInstructionSetUsage(W("Lzcnt"), supported);
+        break;
+    case InstructionSet_PCLMULQDQ:
+        info.compCompHnd->notifyInstructionSetUsage(W("Pclmulqdq"), supported);
+        break;
+    case InstructionSet_POPCNT:
+    case InstructionSet_POPCNT_X64:
+        info.compCompHnd->notifyInstructionSetUsage(W("Popcnt"), supported);
+        break;
+#elif defined(TARGET_ARM64)
+    case InstructionSet_AdvSimd:
+        info.compCompHnd->notifyInstructionSetUsage(W("AdvSimd"), supported);
+        break;
+    case InstructionSet_Aes:
+        info.compCompHnd->notifyInstructionSetUsage(W("Aes"), supported);
+        break;
+    case InstructionSet_ArmBase:
+    case InstructionSet_ArmBase_Arm64:
+        info.compCompHnd->notifyInstructionSetUsage(W("ArmBase"), supported);
+        break;
+    case InstructionSet_Atomics:
+        info.compCompHnd->notifyInstructionSetUsage(W("Atomics"), supported);
+        break;
+    case InstructionSet_Crc32:
+    case InstructionSet_Crc32_Arm64:
+        info.compCompHnd->notifyInstructionSetUsage(W("Crc32"), supported);
+        break;
+    case InstructionSet_Sha1:
+        info.compCompHnd->notifyInstructionSetUsage(W("Sha1"), supported);
+        break;
+    case InstructionSet_Sha256:
+        info.compCompHnd->notifyInstructionSetUsage(W("Sha256"), supported);
+        break;
+    case InstructionSet_Sha512:
+        info.compCompHnd->notifyInstructionSetUsage(W("Sha512"), supported);
+        break;
+
+    case InstructionSet_Vector64:
+    case InstructionSet_Vector128:
+        break;
+#endif
+    default:
+        noway_assert(!"Unknown instruction set");
+        break;
+    }
 }
 
 #ifdef PROFILING_SUPPORTED

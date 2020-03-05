@@ -874,7 +874,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 case TYP_FLOAT:
                 {
-                    if (!compSupports(InstructionSet_SSE41))
+                    if (!compSupportsOptional(InstructionSet_SSE41))
                     {
                         // Emulate Vector128<float>.WithElement by SSE instructions
                         if (imm8 == 0)
@@ -1121,7 +1121,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 case TYP_FLOAT:
                 {
-                    if (!compSupports(InstructionSet_SSE41))
+                    if (!compSupportsOptional(InstructionSet_SSE41))
                     {
                         assert(imm8 >= 1);
                         assert(imm8 <= 3);

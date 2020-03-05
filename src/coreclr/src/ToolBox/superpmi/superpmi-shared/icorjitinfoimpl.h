@@ -1016,4 +1016,5 @@ DWORD getJitFlags(CORJIT_FLAGS* flags,      /* IN: Points to a buffer that will 
                                                    version number for the CORJIT_FLAGS value. */
                   );
 
+void notifyInstructionSetUsage(const WCHAR * instructionSetName, bool supported);
 #endif // _ICorJitInfoImpl

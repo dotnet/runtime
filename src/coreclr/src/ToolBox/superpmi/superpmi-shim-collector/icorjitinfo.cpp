@@ -2070,3 +2070,8 @@ DWORD interceptor_ICJI::getExpectedTargetArchitecture()
 {
     return original_ICorJitInfo->getExpectedTargetArchitecture();
 }
+
+void interceptor_ICJI::notifyInstructionSetUsage(const WCHAR *instructionSetName, bool supported)
+{
+    original_ICorJitInfo->notifyInstructionSetUsage(instructionSetName, supported);
+}

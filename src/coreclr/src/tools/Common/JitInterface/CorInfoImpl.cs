@@ -263,6 +263,37 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
 #if READYTORUN
             _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray());
+
+            // Detect cases where the instruction set support used is a superset of the baseline instruction set specification
+            {
+                var baselineSupport = JitConfigProvider.Instance.InstructionSetSupport;
+                var actualSupport = _actualInstructionSetSupport.CreateInstructionSetSupport(null);
+                bool needPerMethodInstructionSetFixup = false;
+
+                foreach (string instructionSet in actualSupport.SupportedInstructionSets)
+                {
+                    if (!baselineSupport.IsInstructionSetSupported(instructionSet))
+                    {
+                        needPerMethodInstructionSetFixup = true;
+                        break;
+                    }
+                }
+
+                foreach (string instructionSet in actualSupport.ExplicitlyUnsupportedInstructionSets)
+                {
+                    if (!baselineSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
+                    {
+                        needPerMethodInstructionSetFixup = true;
+                        break;
+                    }
+                }
+
+                if (needPerMethodInstructionSetFixup)
+                {
+                    var node = _compilation.SymbolNodeFactory.PerMethodInstructionSetSupportFixup(actualSupport);
+                    ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
+                }
+            }
 #endif
             PublishProfileData();
         }
@@ -345,6 +376,7 @@ namespace Internal.JitInterface
             _profileDataNode = null;
             _inlinedMethods = new ArrayBuilder<MethodDesc>();
 #endif
+            _actualInstructionSetSupport = null;
         }
 
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
@@ -687,7 +719,7 @@ namespace Internal.JitInterface
             {
 #if READYTORUN
                 if (!isMethodDefinedInCoreLib() &&
-                    JitConfigProvider.Instance.InstructionSetSupport.IsSupportedInstructionSetIntrinsic(method))
+                    !JitConfigProvider.Instance.InstructionSetSupport.IsSupportedInstructionSetIntrinsic(method))
                 {
                     throw new RequiresRuntimeJitException("This function is not defined in CoreLib and it is using hardware intrinsics.");
                 }
@@ -2863,6 +2895,27 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_MIN_OPT);
 
             return (uint)sizeof(CORJIT_FLAGS);
+        }
+
+
+        InstructionSetSupportBuilder _actualInstructionSetSupport;
+
+        private void notifyInstructionSetUsage(char* instructionSetName, bool supportEnabled)
+        {
+            if (_actualInstructionSetSupport == null)
+            {
+                _actualInstructionSetSupport = new InstructionSetSupportBuilder(JitConfigProvider.Instance.InstructionSetSupport.Architecture);
+            }
+
+            string instructionSetNameString = new string(instructionSetName);
+            if (supportEnabled)
+            {
+                _actualInstructionSetSupport.AddSupportedInstructionSet(instructionSetNameString);
+            }
+            else
+            {
+                _actualInstructionSetSupport.RemoveInstructionSetSupport(instructionSetNameString);
+            }
         }
     }
 }

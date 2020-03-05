@@ -3107,6 +3107,11 @@ public:
                     CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     bool fMustConvert
                     ) = 0;
+
+    virtual void notifyInstructionSetUsage(
+                const WCHAR* instructionSetName,
+                bool supportEnabled
+            ) = 0;
 };
 
 /**********************************************************************************/

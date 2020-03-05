@@ -161,6 +161,7 @@ struct JitInterfaceCallbacks
     void (* MethodCompileComplete)(void * thisHandle, CorInfoException** ppException, void* methHnd);
     void* (* getTailCallCopyArgsThunk)(void * thisHandle, CorInfoException** ppException, void* pSig, int flags);
     bool (* convertPInvokeCalliToCall)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, bool mustConvert);
+    void (* notifyInstructionSetUsage)(void * thisHandle, CorInfoException** ppException, const wchar_t* instructionSetName, bool supportEnabled);
     void (* allocMem)(void * thisHandle, CorInfoException** ppException, unsigned int hotCodeSize, unsigned int coldCodeSize, unsigned int roDataSize, unsigned int xcptnsCount, int flag, void** hotCodeBlock, void** coldCodeBlock, void** roDataBlock);
     void (* reserveUnwindInfo)(void * thisHandle, CorInfoException** ppException, int isFunclet, int isColdCode, unsigned int unwindSize);
     void (* allocUnwindInfo)(void * thisHandle, CorInfoException** ppException, unsigned char* pHotCode, unsigned char* pColdCode, unsigned int startOffset, unsigned int endOffset, unsigned int unwindSize, unsigned char* pUnwindBlock, int funcKind);
@@ -1489,6 +1490,14 @@ public:
         if (pException != nullptr)
             throw pException;
         return _ret;
+    }
+
+    virtual void notifyInstructionSetUsage(const wchar_t* instructionSetName, bool supportEnabled)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->notifyInstructionSetUsage(_thisHandle, &pException, instructionSetName, supportEnabled);
+        if (pException != nullptr)
+            throw pException;
     }
 
     virtual void allocMem(unsigned int hotCodeSize, unsigned int coldCodeSize, unsigned int roDataSize, unsigned int xcptnsCount, int flag, void** hotCodeBlock, void** coldCodeBlock, void** roDataBlock)

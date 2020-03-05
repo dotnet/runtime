@@ -1470,8 +1470,6 @@ namespace Internal.JitInterface
             return attribs;
         }
 
-        private static InstructionSetSupport 
-
         private uint FilterNamedIntrinsicMethodAttribs(uint attribs, MethodDesc method)
         {
             bool _TARGET_X86_ = _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86;

@@ -919,6 +919,8 @@ public:
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                    bool fMustConvert);
 
+    void notifyInstructionSetUsage(LPCWSTR instructionSetName,bool supportEnabled) {}
+
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE   ftn,                 /* IN  */
                                CORINFO_CONST_LOOKUP *  pResult,             /* OUT */
                                CORINFO_ACCESS_FLAGS    accessFlags = CORINFO_ACCESS_ANY);
