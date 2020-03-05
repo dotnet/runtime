@@ -6,10 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Microsoft.Extensions.FileSystemGlobbing.Tests" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="$(CommonPath)Extensions\HashCodeCombiner\HashCodeCombiner.cs">
       <Link>Common\src\Extensions\HashCodeCombiner\HashCodeCombiner.cs</Link>
     </Compile>

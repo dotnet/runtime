@@ -102,7 +102,7 @@
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.Extensions.FileSystemGlobbing.",
+    "Name": "Microsoft.Extensions.FileSystemGlobbing",
     "Description": "File system globbing to find files matching a specified pattern.",
     "CommonTypes": []
   },
