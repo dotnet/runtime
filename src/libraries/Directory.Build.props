@@ -337,6 +337,12 @@
   <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" />
 
   <PropertyGroup>
+    <EnableProjectRestore Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssembly)' == 'true' or '$(IsTestProject)' == 'true'">true</EnableProjectRestore>
+  </PropertyGroup>
+
+  <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.props" />
+
+  <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
 
