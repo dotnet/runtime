@@ -60,7 +60,7 @@
     <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <EnableAnalyzers>true</EnableAnalyzers>
+    <EnableAnalyzers Condition="'$(EnableAnalyzers)' == ''">true</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- Platform specific properties -->

@@ -119,12 +119,6 @@
     <IsShipping Condition="'$(IsTestProject)' == 'true'">false</IsShipping>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <EnableProjectRestore Condition="'$(IsTestProject)' == 'true'">true</EnableProjectRestore>
-  </PropertyGroup>
-
-  <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.props" />
-
   <!-- Common repo directories -->
   <PropertyGroup>
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
@@ -145,6 +139,13 @@
     <RunMatchingRefApiCompat>$(IsSourceProject)</RunMatchingRefApiCompat>
     <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</ApiCompatExcludeAttributeList>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.DotNet.ApiCompat" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetApiCompatVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.DotNet.GenAPI" Condition="'$(DotNetBuildOffline)' != 'true'" Version="$(MicrosoftDotNetGenApiVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
 
   <PropertyGroup>
     <_runtimeOSVersionIndex>$(RuntimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
@@ -271,7 +272,7 @@
     <!-- We decided to keep this disabled by default to see some history of way have a look at https://github.com/dotnet/corefx/issues/3140 -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
-    <EnableAnalyzers Condition="'$(EnableProjectRestore)' == 'true' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.ilproj'">true</EnableAnalyzers>
+    <EnableAnalyzers Condition="'$(EnableAnalyzers)' == '' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.ilproj'">true</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- Set up some common paths -->
@@ -348,6 +349,10 @@
     <!-- Clear the init locals flag on all src projects, except those in VB, where we can't use spans. -->
     <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' and '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="illink.tasks" Version="$(ILLinkTasksVersion)" PrivateAssets="all" IsImplicitlyDefined="true" ExcludeAssets="build" GeneratePathProperty="true" />
+  </ItemGroup>
 
   <PropertyGroup>
     <MonoRspFileName>mono.issues.rsp</MonoRspFileName>

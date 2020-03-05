@@ -2,9 +2,6 @@
   <Import Project="Directory.Build.props" />
 
   <ItemGroup>
-    <Project Condition="'$(DotNetBuildFromSource)' != 'true'" Include="analyzers/analyzers.depproj" />
-
-    <!-- Build for all configurations -->
     <Project Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp/netcoreapp.depproj" />
     <Project Include="netstandard/netstandard.depproj" />
     <Project Include="netfx/netfx.depproj" />
