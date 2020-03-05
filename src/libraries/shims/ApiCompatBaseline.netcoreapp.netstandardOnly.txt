@@ -11,11 +11,6 @@ CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exi
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerReportsProgress' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerSupportsCancellation' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.ComponentModel.RunWorkerCompletedEventArgs.UserState' in the contract but not the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Data.DataTableReader' does not implement interface 'System.IAsyncDisposable' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Data.Common.DbCommand' does not implement interface 'System.IAsyncDisposable' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Data.Common.DbConnection' does not implement interface 'System.IAsyncDisposable' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Data.Common.DbDataReader' does not implement interface 'System.IAsyncDisposable' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Data.Common.DbTransaction' does not implement interface 'System.IAsyncDisposable' in the implementation but it does in the contract.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultPropertyAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.BasePriority' in the contract but not the implementation.
