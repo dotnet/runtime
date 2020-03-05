@@ -4708,8 +4708,6 @@ private:
 
     // By the time a frame is scanned by the runtime, m_pHijackReturnKind always
     // identifies the gc-ness of the return register(s)
-    // If the ReturnKind information is not available from the GcInfo, the runtime
-    // computes it using the return types's class handle.
 
     ReturnKind m_HijackReturnKind;
 

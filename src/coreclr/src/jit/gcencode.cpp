@@ -924,7 +924,7 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         goto DO_RETURN;
     }
 
-    if (GCInfoEncodesReturnKind() && (state->returnKind != header.returnKind))
+    if (state->returnKind != header.returnKind)
     {
         state->returnKind = header.returnKind;
         codeSet           = 2; // Two byte encoding
@@ -973,7 +973,7 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         }
     }
 
-    if (GCInfoEncodesRevPInvokeFrame() && (state->revPInvokeOffset != header.revPInvokeOffset))
+    if (state->revPInvokeOffset != header.revPInvokeOffset)
     {
         assert(state->revPInvokeOffset == INVALID_REV_PINVOKE_OFFSET ||
                state->revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET);
@@ -1587,14 +1587,11 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->genericsContextIsMethodDesc =
         header->genericsContext && (compiler->info.compMethodInfo->options & (CORINFO_GENERICS_CTXT_FROM_METHODDESC));
 
-    if (GCInfoEncodesReturnKind())
-    {
-        ReturnKind returnKind = getReturnKind();
-        _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
-        _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
-        _ASSERTE(((int)returnKind < (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
-        header->returnKind = returnKind;
-    }
+    ReturnKind returnKind = getReturnKind();
+    _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
+    _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
+    _ASSERTE(((int)returnKind < (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
+    header->returnKind = returnKind;
 
     header->gsCookieOffset = INVALID_GS_COOKIE_OFFSET;
     if (compiler->getNeedsGSSecurityCookie())
