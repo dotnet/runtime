@@ -17219,14 +17219,17 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZ
     // We expect 'addr' to be an address at this point.
     assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_REF);
 
+    // Tunnel through any commas.
+    const bool commaOnly = true;
+    addr                 = addr->gtEffectiveVal(commaOnly);
+
+    // We still expect 'addr' to be an address at this point.
+    assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_REF);
+
     FieldSeqNode* fieldSeqUpdate   = fieldSeqZero;
     GenTree*      fieldSeqNode     = addr;
     bool          fieldSeqRecorded = false;
     bool          isMapAnnotation  = false;
-
-    // Tunnel through any commas.
-    const bool commaOnly = true;
-    fieldSeqZero         = fieldSeqZero->gtEffectiveVal(commaOnly);
 
 #ifdef DEBUG
     if (verbose)
