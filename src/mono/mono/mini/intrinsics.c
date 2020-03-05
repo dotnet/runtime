@@ -1193,7 +1193,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			guint32 opcode = 0;
 			guint32 opcode_i4 = 0;
 			guint32 opcode_i8 = 0;
-			gboolean llvm_only = FALSE;
 
 			if (strcmp (cmethod->name, "Add") == 0) {
 				opcode_i4 = OP_ATOMIC_ADD_I4;
@@ -1201,11 +1200,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			} else if (strcmp (cmethod->name, "And") == 0) {
 				opcode_i4 = OP_ATOMIC_AND_I4;
 				opcode_i8 = OP_ATOMIC_AND_I8;
-				llvm_only = TRUE;
 			} else if (strcmp (cmethod->name, "Or") == 0) {
 				opcode_i4 = OP_ATOMIC_OR_I4;
 				opcode_i8 = OP_ATOMIC_OR_I8;
-				llvm_only = TRUE;
 			} else {
 				g_assert_not_reached ();
 			}
@@ -1217,7 +1214,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				opcode = opcode_i8;
 			}
 
-			if (opcode && (mono_arch_opcode_supported (opcode) || llvm_only)) {
+			// For now, only Add is supported in non-LLVM back-ends
+			if (opcode && (COMPILE_LLVM (cfg) || mono_arch_opcode_supported (opcode))) {
 				MONO_INST_NEW (cfg, ins, opcode);
 				ins->dreg = mono_alloc_ireg (cfg);
 				ins->inst_basereg = args [0]->dreg;
