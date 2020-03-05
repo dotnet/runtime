@@ -1935,9 +1935,7 @@ namespace System
 
             //STEP2: Parse up to the port
 
-            fixed (char* pUriString = ((IriParsing &&
-                                        ((_flags & Flags.HasUnicode) != 0) &&
-                                        ((_flags & Flags.HostUnicodeNormalized) == 0)) ? _originalUnicodeString : _string))
+            fixed (char* pUriString = (_flags & Flags.HostUnicodeNormalized) == 0 ? OriginalString : _string)
             {
                 // Cut trailing spaces in _string
                 if (length > idx && UriHelper.IsLWS(pUriString[length - 1]))
@@ -2066,7 +2064,7 @@ namespace System
                     else if (_syntax.NotAny(UriSyntaxFlags.MailToLikeUri))
                     {
                         // By now we know the URI has no Authority, so if the URI must be normalized, initialize it without one.
-                        if (IriParsing && (_flags & Flags.HasUnicode) != 0 && (_flags & Flags.HostUnicodeNormalized) == 0)
+                        if ((_flags & (Flags.HasUnicode | Flags.HostUnicodeNormalized)) == Flags.HasUnicode)
                         {
                             _string = _string.Substring(0, idx);
                         }
@@ -2084,7 +2082,7 @@ namespace System
                 else if (_syntax.NotAny(UriSyntaxFlags.MailToLikeUri))
                 {
                     // By now we know the URI has no Authority, so if the URI must be normalized, initialize it without one.
-                    if (IriParsing && (_flags & Flags.HasUnicode) != 0 && (_flags & Flags.HostUnicodeNormalized) == 0)
+                    if ((_flags & (Flags.HasUnicode | Flags.HostUnicodeNormalized)) == Flags.HasUnicode)
                     {
                         _string = _string.Substring(0, idx);
                     }
@@ -2148,7 +2146,11 @@ namespace System
                     _string = newHost;
 
                 // Indicate to createuriinfo that offset is in m_originalUnicodeString
+<<<<<<< HEAD
                 if (_iriParsing && ((_flags & Flags.HasUnicode) != 0))
+=======
+                if ((_flags & Flags.HasUnicode) != 0)
+>>>>>>> Remove duplicate IriParsing checks
                 {
                     // offset in Flags.IndexMask refers to m_originalUnicodeString
                     _flags |= Flags.UseOrigUncdStrOffset;
@@ -3196,7 +3198,7 @@ namespace System
                 goto Done;
 
             // Do we have to continue building Iri'zed string from original string
-            bool buildIriStringFromPath = IriParsing && ((_flags & Flags.HasUnicode) != 0) && ((_flags & Flags.RestUnicodeNormalized) == 0);
+            bool buildIriStringFromPath = (_flags & (Flags.HasUnicode | Flags.RestUnicodeNormalized)) == Flags.HasUnicode;
 
             int origIdx; // stores index to switched original string
             int idx = _info.Offset.Scheme;
@@ -3998,7 +4000,7 @@ namespace System
             bool justNormalized = false;
             bool iriParsing = IriParsingStatic(syntax);
             bool hasUnicode = ((flags & Flags.HasUnicode) != 0);
-            bool hostNotUnicodeNormalized = ((flags & Flags.HostUnicodeNormalized) == 0);
+            bool hostNotUnicodeNormalized = hasUnicode && ((flags & Flags.HostUnicodeNormalized) == 0);
             UriSyntaxFlags syntaxFlags = syntax.Flags;
 
             //Special case is an empty authority
@@ -4015,7 +4017,7 @@ namespace System
                 else
                     err = ParsingError.BadHostName;
 
-                if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
+                if (hostNotUnicodeNormalized)
                 {
                     flags |= Flags.HostUnicodeNormalized; // no host
                 }
@@ -4024,7 +4026,7 @@ namespace System
             }
 
             // need to build new Iri'zed string
-            if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
+            if (hostNotUnicodeNormalized)
             {
                 newHost = _originalUnicodeString.Substring(0, startInput);
             }
@@ -4049,7 +4051,7 @@ namespace System
                         // Iri'ze userinfo
                         if (iriParsing)
                         {
-                            if (iriParsing && hasUnicode && hostNotUnicodeNormalized)
+                            if (hostNotUnicodeNormalized)
                             {
                                 // Normalize user info
                                 userInfoString = IriHelper.EscapeUnescapeIri(pString, startInput, start + 1, UriComponents.UserInfo);
@@ -4082,7 +4084,7 @@ namespace System
             {
                 flags |= Flags.IPv6HostType;
 
-                if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
+                if (hostNotUnicodeNormalized)
                 {
                     newHost += new string(pString, start, end - start);
                     flags |= Flags.HostUnicodeNormalized;
@@ -4094,7 +4096,7 @@ namespace System
             {
                 flags |= Flags.IPv4HostType;
 
-                if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
+                if (hostNotUnicodeNormalized)
                 {
                     newHost += new string(pString, start, end - start);
                     flags |= Flags.HostUnicodeNormalized;
@@ -4113,8 +4115,7 @@ namespace System
                 }
             }
             else if (((syntaxFlags & UriSyntaxFlags.AllowDnsHost) != 0)
-                    && ((syntax.InFact(UriSyntaxFlags.AllowIriParsing) && hostNotUnicodeNormalized)
-                            || syntax.InFact(UriSyntaxFlags.AllowIdn))
+                    && (hostNotUnicodeNormalized || syntax.InFact(UriSyntaxFlags.AllowIdn))
                     && DomainNameHelper.IsValidByIri(pString, start, ref end, ref dnsNotCanonical,
                                             StaticNotAny(flags, Flags.ImplicitFile)))
             {
@@ -4131,7 +4132,7 @@ namespace System
                     if (end - start <= UncNameHelper.MaximumInternetNameLength)
                     {
                         flags |= Flags.UncHostType;
-                        if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
+                        if (hostNotUnicodeNormalized)
                         {
                             newHost += new string(pString, start, end - start);
                             flags |= Flags.HostUnicodeNormalized;
@@ -4205,7 +4206,7 @@ namespace System
                         }
                     }
 
-                    if (iriParsing && hasUnicode && justNormalized)
+                    if (hasUnicode && justNormalized)
                     {
                         newHost += new string(pString, startPort, idx - startPort);
                     }
@@ -4267,8 +4268,7 @@ namespace System
                         //success
                         flags |= Flags.BasicHostType;
 
-                        if (iriParsing && hasUnicode
-                            && StaticNotAny(flags, Flags.HostUnicodeNormalized))
+                        if (hostNotUnicodeNormalized)
                         {
                             // Normalize any other host
                             string user = new string(pString, startOtherHost, end - startOtherHost);

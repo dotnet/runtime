@@ -116,7 +116,7 @@ namespace System
                         e = null;
                     // will return from here
 
-                    if (IriParsing && hasUnicode)
+                    if (hasUnicode)
                     {
                         // In this scenario we need to parse the whole string
                         try
@@ -166,7 +166,7 @@ namespace System
                             e = GetException(ParsingError.CannotCreateRelative);
                         }
 
-                        if (IriParsing && hasUnicode)
+                        if (hasUnicode)
                         {
                             // In this scenario we need to parse the whole string
                             try
@@ -190,7 +190,7 @@ namespace System
             {
                 e = null;
                 _flags &= (Flags.UserEscaped | Flags.HasUnicode); // the only flags that makes sense for a relative uri
-                if (IriParsing && hasUnicode)
+                if (hasUnicode)
                 {
                     // Iri'ze and then normalize relative uris
                     _string = EscapeUnescapeIri(_originalUnicodeString, 0, _originalUnicodeString.Length,
@@ -511,9 +511,8 @@ namespace System
                     Check result = CheckCanonical(str, ref idx, _info.Offset.Path, '/');
                     if (((result & (Check.ReservedFound | Check.BackslashInPath | Check.EscapedCanonical))
                         != Check.EscapedCanonical)
-                        && (!IriParsing || (IriParsing
-                            && ((result & (Check.DisplayCanonical | Check.FoundNonAscii | Check.NotIriCanonical))
-                                != (Check.DisplayCanonical | Check.FoundNonAscii)))))
+                        && (!IriParsing || (result & (Check.DisplayCanonical | Check.FoundNonAscii | Check.NotIriCanonical))
+                                != (Check.DisplayCanonical | Check.FoundNonAscii)))
                     {
                         return false;
                     }
