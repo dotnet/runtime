@@ -7,18 +7,18 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
-    <Project Include="ref.builds" />
+    <Project Include="ref.proj" />
     <Project Include="shims\generated\*.csproj" />
     <Project Include="Native\native-binplace.proj" />
-    <Project Include="src.builds" />
+    <Project Include="src.proj" />
     <Project Include="shims\manual\*.csproj" />
     <Project Include="shims\ApiCompat.proj" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Project Include="pretest.proj" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(DirectoryToBuild)' != ''">
-    <Project Include="ref.builds" />
-    <Project Include="src.builds" />
+    <Project Include="ref.proj" />
+    <Project Include="src.proj" />
   </ItemGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)dir.traversal.targets" />

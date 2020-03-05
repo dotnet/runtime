@@ -19,6 +19,11 @@
     <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
       <_RestoreProjects Include="$(MSBuildThisFileDirectory)restore\dirs.proj" Build="true" />
     </ItemGroup>
+
+    <ItemGroup>
+      <_RestoreProjects Include="$(MSBuildThisFileDirectory)ref.proj" Build="false" />
+      <_RestoreProjects Include="$(MSBuildThisFileDirectory)src.proj" Build="false" />
+    </ItemGroup>
     
     <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
       <_RestoreProjects Include="$(MSBuildThisFileDirectory)tests.proj" Build="false" />
