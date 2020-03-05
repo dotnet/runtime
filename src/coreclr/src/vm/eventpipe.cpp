@@ -101,9 +101,7 @@ void EventPipe::Initialize()
         if (tracingInitialized)
             s_state = EventPipeState::Initialized;
     }
-#ifdef FEATURE_EVENTPIPE_STARTUP
     EnableViaEnvironmentVariables();
-#endif // FEATURE_EVENTPIPE_STARTUP
 }
 
 // Finish setting up the rest of EventPipe.
