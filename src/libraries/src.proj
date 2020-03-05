@@ -2,7 +2,7 @@
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp5.0</TargetFramework>
+    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'"> 
