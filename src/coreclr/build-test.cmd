@@ -26,7 +26,7 @@ if defined VS160COMNTOOLS (
 :: Set the default arguments for build
 set __BuildArch=x64
 set __BuildType=Debug
-set __TargetOS=Windows_NT
+set __TargetOS=win
 
 set "__ProjectDir=%~dp0"
 :: remove trailing slash

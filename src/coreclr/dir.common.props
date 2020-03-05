@@ -65,7 +65,7 @@
     <TargetsLinux Condition="'$(TargetOS)' == 'Linux'">true</TargetsLinux>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
-    <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsWindows Condition="'$(TargetOS)' == 'win'">true</TargetsWindows>
 
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
 

@@ -28,7 +28,7 @@ if defined VS160COMNTOOLS (
 :: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
 ::      __BuildArch         -- default: x64
 ::      __BuildType         -- default: Debug
-::      __TargetOS           -- default: Windows_NT
+::      __TargetOS           -- default: win
 ::      __ProjectDir        -- default: directory of the dir.props file
 ::      __RepoRootDir       -- default: directory two levels above the dir.props file
 ::      __SourceDir         -- default: %__ProjectDir%\src\
@@ -42,7 +42,7 @@ if defined VS160COMNTOOLS (
 :: Set the default arguments for build
 set __BuildArch=x64
 set __BuildType=Debug
-set __TargetOS=Windows_NT
+set __TargetOS=win
 
 :: Set the various build properties here so that CMake and MSBuild can pick them up
 set "__ProjectDir=%~dp0"
@@ -167,7 +167,7 @@ if /i "%1" == "-freebsdmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNati
 if /i "%1" == "-linuxmscorlib"       (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __TargetOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-netbsdmscorlib"      (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __TargetOS=NetBSD&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-osxmscorlib"         (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __TargetOS=OSX&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-windowsmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __TargetOS=Windows_NT&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-windowsmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __TargetOS=win&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-nativemscorlib"      (set __BuildNativeCoreLib=1&set __BuildCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -194,7 +194,7 @@ if /i "%1" == "freebsdmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNativ
 if /i "%1" == "linuxmscorlib"       (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __TargetOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "netbsdmscorlib"      (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __TargetOS=NetBSD&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "osxmscorlib"         (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __TargetOS=OSX&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "windowsmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __TargetOS=Windows_NT&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "windowsmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __TargetOS=win&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "nativemscorlib"      (set __BuildNativeCoreLib=1&set __BuildCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
