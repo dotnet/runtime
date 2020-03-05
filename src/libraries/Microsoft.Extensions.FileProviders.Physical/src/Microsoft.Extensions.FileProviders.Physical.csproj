@@ -2,12 +2,8 @@
 
   <PropertyGroup>
     <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
-    <Description>File provider for physical files for Microsoft.Extensions.FileProviders.</Description>
-    <TargetFrameworks>netstandard2.0;$(DefaultNetCoreTargetFramework)</TargetFrameworks>
-    <TargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(DefaultNetCoreTargetFramework)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPackable>true</IsPackable>
-    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,13 +12,31 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(SharedSourceRoot)EmptyDisposable.cs" />
-    <Compile Include="$(SharedSourceRoot)NonCapturingTimer\*.cs" />
+    <Compile Include="$(CommonPath)Extensions\EmptyDisposable.cs">
+      <Link>Common\src\Extensions\EmptyDisposable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\NonCapturingTimer\NonCapturingTimer.cs">
+      <Link>Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs">
+      <Link>Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\ProviderAliasUtilities\ProviderAliasUtilities.cs">
+      <Link>Common\src\Extensions\NonCapturingTimer\ProviderAliasUtilities.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\TypeNameHelper\*.cs">
+      <Link>Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\ValueStopWatch\*.cs">
+      <Link>Common\src\Extensions\ValueStopWatch\ValueStopWatch.cs</Link>
+    </Compile>
+    <Compile Include="**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.FileProviders.Abstractions" />
     <Reference Include="Microsoft.Extensions.FileSystemGlobbing" />
+    <Reference Include="Microsoft.Extensions.Primitives"  />
   </ItemGroup>
 
 </Project>
