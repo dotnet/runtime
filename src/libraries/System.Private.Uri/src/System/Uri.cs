@@ -1532,13 +1532,13 @@ namespace System
         {
             if (_syntax == null)
             {
-                return (IriParsing && InFact(Flags.HasUnicode)) ? _string : OriginalString;
+                return _string;
             }
 
             EnsureUriInfo();
-            if ((object?)_info.String == null)
+            if (_info.String is null)
             {
-                if (Syntax!.IsSimple)
+                if (_syntax.IsSimple)
                     _info.String = GetComponentsHelper(UriComponents.AbsoluteUri, V1ToStringUnescape);
                 else
                     _info.String = GetParts(UriComponents.AbsoluteUri, UriFormat.SafeUnescaped);
