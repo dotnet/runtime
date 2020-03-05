@@ -534,16 +534,23 @@ if %__BuildNative% EQU 1 (
         goto ExitWithCode
     )
 
-    if not "%__BuildArch%" == "arm64" (
-        mkdir "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
-        copy /Y "%UniversalCRTSDKDIR%Redist\ucrt\DLLs\%__BuildArch%\*.dll" "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
-        if not !errorlevel! == 0 (
-            echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to copy the CRT to the output.
-            set __exitCode=!errorlevel!
-            goto ExitWithCode
-        )
+    if /i "%__BuildArch%" == "arm64" goto SkipCopyUcrt
+
+    set "__UCRTDir=%UniversalCRTSDKDIR%Redist\ucrxxxt\DLLs\%__BuildArch%\"
+    if not exist "!__UCRTDir!" set "__UCRTDir=%UniversalCRTSDKDIR%Redist\%UCRTVersion%\ucrt\DLLs\%__BuildArch%\"
+    if not exist "!__UCRTDir!" (
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Please install the Redistributable Universal C Runtime.
+        goto ExitWithError
     )
 
+    xcopy /Y/I/E/D/F "!__UCRTDir!*.dll" "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
+    if not !errorlevel! == 0 (
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to copy the CRT to the output.
+        set __exitCode=!errorlevel!
+        goto ExitWithCode
+    )
+
+:SkipCopyUcrt
     if %__EnforcePgo% EQU 1 (
         "%PYTHON%" "%__ProjectDir%\src\scripts\pgocheck.py" "%__BinDir%\coreclr.dll" "%__BinDir%\clrjit.dll"
     )
