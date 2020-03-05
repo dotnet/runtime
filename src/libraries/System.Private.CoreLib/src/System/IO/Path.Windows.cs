@@ -85,8 +85,7 @@ namespace System.IO
                 return basePath;
 
             int length = path.Length;
-            string? combinedPath = null;
-
+            string combinedPath;
             if (length >= 1 && PathInternal.IsDirectorySeparator(path[0]))
             {
                 // Path is current drive rooted i.e. starts with \:

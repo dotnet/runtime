@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(DefaultNetCoreTargetFramework);net472</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\src\**\*.cs"
+             Exclude="
+              ..\src\ReferenceAssemblyInfo.cs;
+              ..\src\BenchmarkRunner\**\*.cs;
+              ..\src\StackTrace\ExceptionDetails\**\*.cs;
+              " />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\testassets\BuildWebHostInvalidSignature\BuildWebHostInvalidSignature.csproj" />
+    <ProjectReference Include="..\testassets\BuildWebHostPatternTestSite\BuildWebHostPatternTestSite.csproj" />
+    <ProjectReference Include="..\testassets\CreateHostBuilderInvalidSignature\CreateHostBuilderInvalidSignature.csproj" />
+    <ProjectReference Include="..\testassets\CreateHostBuilderPatternTestSite\CreateHostBuilderPatternTestSite.csproj" />
+    <ProjectReference Include="..\testassets\CreateWebHostBuilderInvalidSignature\CreateWebHostBuilderInvalidSignature.csproj" />
+    <ProjectReference Include="..\testassets\CreateWebHostBuilderPatternTestSite\CreateWebHostBuilderPatternTestSite.csproj" />
+    <ProjectReference Include="..\testassets\MockHostTypes\MockHostTypes.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Threading.Tasks.Extensions" />
+    <Reference Include="System.Security.Cryptography.Cng" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+    <Reference Include="System.IO.Pipelines" />
+  </ItemGroup>
+
+</Project>

@@ -899,6 +899,82 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Fact]
+        public static void TestMultiSegmentStringConversionToDateTime()
+        {
+            string jsonString = "\"1997-07-16\"";
+            string expectedString = "1997-07-16";
+            int expectedTokenLength = 10;
+            DateTime expectedDateTime = DateTime.Parse(expectedString);
+
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            ReadOnlySequence<byte> sequence = JsonTestHelper.CreateSegments(utf8);
+
+            for (int j = 0; j < utf8.Length; j++)
+            {
+                var utf8JsonReader = new Utf8JsonReader(sequence.Slice(0, j), isFinalBlock: false, default);
+                ReadDateTimeHelper(ref utf8JsonReader, expectedDateTime, expectedTokenLength);
+
+                Assert.Equal(0, utf8JsonReader.TokenStartIndex);
+
+                long consumed = utf8JsonReader.BytesConsumed;
+                utf8JsonReader = new Utf8JsonReader(sequence.Slice(consumed), isFinalBlock: true, utf8JsonReader.CurrentState);
+                ReadDateTimeHelper(ref utf8JsonReader, expectedDateTime, expectedTokenLength);
+            }
+        }
+
+        private static void ReadDateTimeHelper(ref Utf8JsonReader jsonReader, DateTime expectedValue, long expectedTokenLength)
+        {
+            while (jsonReader.Read())
+            {
+                if (jsonReader.TokenType == JsonTokenType.String)
+                {
+                    long tokenLength = jsonReader.HasValueSequence ? jsonReader.ValueSequence.Length : jsonReader.ValueSpan.Length;
+                    Assert.Equal(expectedTokenLength, tokenLength);
+                    Assert.Equal(expectedValue, jsonReader.GetDateTime());
+                }
+            }
+        }
+
+        [Fact]
+        public static void TestMultiSegmentStringConversionToDateTimeOffset()
+        {
+            string jsonString = "\"1997-07-16\"";
+            string expectedString = "1997-07-16";
+            int expectedTokenLength = 10;
+            DateTimeOffset expectedDateTimeOffset = DateTimeOffset.Parse(expectedString);
+
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            ReadOnlySequence<byte> sequence = JsonTestHelper.CreateSegments(utf8);
+
+            for (int j = 0; j < utf8.Length; j++)
+            {
+                var utf8JsonReader = new Utf8JsonReader(sequence.Slice(0, j), isFinalBlock: false, default);
+                ReadDateTimeOffsetHelper(ref utf8JsonReader, expectedDateTimeOffset, expectedTokenLength);
+
+                Assert.Equal(0, utf8JsonReader.TokenStartIndex);
+
+                long consumed = utf8JsonReader.BytesConsumed;
+                utf8JsonReader = new Utf8JsonReader(sequence.Slice(consumed), isFinalBlock: true, utf8JsonReader.CurrentState);
+                ReadDateTimeOffsetHelper(ref utf8JsonReader, expectedDateTimeOffset, expectedTokenLength);
+            }
+        }
+
+        private static void ReadDateTimeOffsetHelper(ref Utf8JsonReader jsonReader, DateTimeOffset expectedValue, long expectedTokenLength)
+        {
+            while (jsonReader.Read())
+            {
+                if (jsonReader.TokenType == JsonTokenType.String)
+                {
+                    long tokenLength = jsonReader.HasValueSequence ? jsonReader.ValueSequence.Length : jsonReader.ValueSpan.Length;
+                    Assert.Equal(expectedTokenLength, tokenLength);
+                    Assert.Equal(expectedValue, jsonReader.GetDateTimeOffset());
+                }
+            }
+        }
+
         private static void SpanSequenceStatesAreEqualInvalidJson(byte[] dataUtf8, ReadOnlySequence<byte> sequence, int maxDepth, JsonCommentHandling commentHandling)
         {
             var stateSpan = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling, MaxDepth = maxDepth });

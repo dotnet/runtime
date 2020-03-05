@@ -67,58 +67,10 @@ ProjectRoot="$(dirname "$(dirname "$(realpath ${BASH_SOURCE[0]})")")"
 # Location parameters
 # OS/Configuration defaults
 Configuration="Debug"
-OSName=$(uname -s)
-case $OSName in
-    FreeBSD)
-        OS=FreeBSD
-        ;;
+source $ProjectRoot/eng/native/init-os-and-arch.sh
 
-    NetBSD)
-        OS=NetBSD
-        ;;
-
-    Linux)
-        OS=Linux
-        ;;
-
-    *)
-        echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        OS=Linux
-        ;;
-esac
-
-# Use uname to determine what the CPU is.
-CPUName=$(uname -p)
-# Some Linux platforms report unknown for platform, but the arch for machine.
-if [ "$CPUName" == "unknown" ]; then
-    CPUName=$(uname -m)
-fi
-
-case $CPUName in
-    i686)
-        echo "Unsupported CPU $CPUName detected, test might not succeed!"
-        __Arch=x86
-        ;;
-
-    x86_64)
-        __Arch=x64
-        ;;
-
-    armv7l)
-        __Arch=armel
-        ;;
-
-    aarch64)
-        __Arch=arm64
-        ;;
-    amd64)
-        __Arch=x64
-        ;;
-    *)
-        echo "Unknown CPU $CPUName detected, configuring as if for x64"
-        __Arch=x64
-        ;;
-esac
+OS=$os
+__Arch=$arch
 
 # Misc defaults
 TestSelection=".*"

@@ -27,7 +27,6 @@
 #include "dllimport.h"
 #include "gcheaputilities.h"
 #include "comdelegate.h"
-#include "jitperf.h" // to track jit perf
 #include "corprof.h"
 #include "eeprofinterfaces.h"
 #ifdef PROFILING_SUPPORTED
@@ -48,6 +47,7 @@
 #include "runtimehandles.h"
 #include "sigbuilder.h"
 #include "openum.h"
+#include "fieldmarshaler.h"
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
@@ -73,10 +73,8 @@
                                         _ASSERTE(CURRENT_THREAD == GetThread());                    \
                                         INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;               \
                                         COOPERATIVE_TRANSITION_BEGIN();                             \
-                                        START_NON_JIT_PERF();
 
-#define EE_TO_JIT_TRANSITION()          STOP_NON_JIT_PERF();                                        \
-                                        COOPERATIVE_TRANSITION_END();                               \
+#define EE_TO_JIT_TRANSITION()          COOPERATIVE_TRANSITION_END();                               \
                                         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
 
 #define JIT_TO_EE_TRANSITION_LEAF()
@@ -1895,8 +1893,8 @@ CEEInfo::getClassSize(
     CORINFO_CLASS_HANDLE clsHnd)
 {
     CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
@@ -2036,22 +2034,14 @@ unsigned CEEInfo::getClassAlignmentRequirementStatic(TypeHandle clsHnd)
         if (clsHnd.IsNativeValueType())
         {
             // if it's the unmanaged view of the managed type, we always use the unmanaged alignment requirement
-            result = pInfo->m_LargestAlignmentRequirementOfAllMembers;
+            result = pMT->GetNativeLayoutInfo()->GetLargestAlignmentRequirement();
         }
-        else
-        if (pInfo->IsManagedSequential())
+        else if (pInfo->IsManagedSequential() || pInfo->IsBlittable())
         {
             _ASSERTE(!pMT->ContainsPointers());
 
             // if it's managed sequential, we use the managed alignment requirement
             result = pInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
-        }
-        else if (pInfo->IsBlittable())
-        {
-            _ASSERTE(!pMT->ContainsPointers());
-
-            // if it's blittable, we use the unmanaged alignment requirement
-            result = pInfo->m_LargestAlignmentRequirementOfAllMembers;
         }
     }
 
@@ -2331,7 +2321,7 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
         // MethodTable construction. Otherwise, we are just building in the interface, and we haven't
         // computed or cached anything, so we need to compute it now.
 #if defined(UNIX_AMD64_ABI)
-        bool canPassInRegisters = useNativeLayout ? methodTablePtr->GetLayoutInfo()->IsNativeStructPassedInRegisters()
+        bool canPassInRegisters = useNativeLayout ? methodTablePtr->GetNativeLayoutInfo()->IsNativeStructPassedInRegisters()
                                                   : methodTablePtr->IsRegPassedStruct();
 #else // !defined(UNIX_AMD64_ABI)
         bool canPassInRegisters = false;
@@ -8017,7 +8007,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         if (CORProfilerEnableRejit())
         {
             CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
-            CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
             ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
             if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
             {
@@ -8230,7 +8220,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
             // If we end up reporting an inlining on a method with non-default IL it means the race
             // happened and we need to manually request ReJIT for it since it was missed.
             CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
-            CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
             ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
             if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
             {
@@ -14019,7 +14009,7 @@ NativeCodeVersion EECodeInfo::GetNativeCodeVersion()
     if (pMD->IsVersionable())
     {
         CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
-        CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
         return pCodeVersionManager->GetNativeCodeVersion(pMD, PINSTRToPCODE(GetStartAddress()));
     }
 #endif

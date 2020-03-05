@@ -114,7 +114,7 @@
 
     <ItemGroup>
       <Project Include="@(AllProjects->WithMetadataValue('InGroup', 'True'))">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
+        <AdditionalProperties>TargetOS=$(TargetOS)</AdditionalProperties>
       </Project>
     </ItemGroup>
 

@@ -10,7 +10,7 @@ generated per theory input.
 ## Prereqs
 
 - Build runtime from root to ensure that the testhost directory of assemblies is published, e.g. `cd d:\repos\runtime & .\build.cmd -subsetCategory libraries`.
-- Build the test assembly desired, e.g `cd src\libraries\System.Runtime\tests & dotnet msbuild`.
+- Build the test assembly desired, e.g `cd src\libraries\System.Runtime\tests & dotnet build`.
 
 ## Running the StaticTestGenerator utility
 

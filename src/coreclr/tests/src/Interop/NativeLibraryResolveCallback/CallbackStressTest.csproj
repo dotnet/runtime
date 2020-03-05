@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
-    <DefineConstants Condition="$(OSGroup) == 'Windows_NT'">WINDOWS</DefineConstants>
+    <DefineConstants Condition="$(TargetOS) == 'Windows_NT'">WINDOWS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CallbackStressTest.cs" />

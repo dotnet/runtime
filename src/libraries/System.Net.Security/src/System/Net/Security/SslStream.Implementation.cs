@@ -327,7 +327,7 @@ namespace System.Net.Security
                 _framing = DetectFraming(_handshakeBuffer.ActiveReadOnlySpan);
             }
 
-            int frameSize= GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
+            int frameSize = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
             if (frameSize < 0)
             {
                 throw new IOException(SR.net_frame_read_size);
@@ -337,11 +337,42 @@ namespace System.Net.Security
             {
                 await FillHandshakeBufferAsync(adapter, frameSize).ConfigureAwait(false);
             }
+            // At this point, we have at least one TLS frame.
 
-            ProtocolToken token = _context!.NextMessage(_handshakeBuffer.ActiveReadOnlySpan.Slice(0, frameSize));
+            return ProcessBlob(frameSize);
+        }
+
+        // Calls crypto on received data. No IO inside.
+        private ProtocolToken ProcessBlob(int frameSize)
+        {
+            int chunkSize = frameSize;
+
+            ReadOnlySpan<byte> availableData = _handshakeBuffer.ActiveReadOnlySpan;
+            // Discard() does not touch data, it just increases start index so next
+            // ActiveSpan will exclude the "discarded" data.
             _handshakeBuffer.Discard(frameSize);
 
-            return token;
+            // Often more TLS messages fit into same packet. Get as many complete frames as we can.
+            while (_handshakeBuffer.ActiveLength > SecureChannel.ReadHeaderSize)
+            {
+                ReadOnlySpan<byte> remainingData = _handshakeBuffer.ActiveReadOnlySpan;
+                if (remainingData[0] >= (int)FrameType.AppData)
+                {
+                    break;
+                }
+
+                frameSize = GetFrameSize(remainingData);
+                if (_handshakeBuffer.ActiveLength >= frameSize)
+                {
+                    chunkSize += frameSize;
+                    _handshakeBuffer.Discard(frameSize);
+                    continue;
+                }
+
+                break;
+            }
+
+            return _context!.NextMessage(availableData.Slice(0, chunkSize));
         }
 
         //

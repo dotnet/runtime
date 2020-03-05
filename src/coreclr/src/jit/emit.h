@@ -191,8 +191,6 @@ public:
 
     UNATIVE_OFFSET GetFuncletPrologOffset(emitter* emit) const;
 
-    bool emitLocation::IsPreviousInsNum(const emitter* emit) const;
-
 #ifdef DEBUG
     void Print(LONG compMethodID) const;
 #endif // DEBUG
@@ -810,8 +808,6 @@ protected:
             bool iiaIsJitDataOffset() const;
             int  iiaGetJitDataOffset() const;
 
-#ifdef TARGET_ARMARCH
-
             // iiaEncodedInstrCount and its accessor functions are used to specify an instruction
             // count for jumps, instead of using a label and multiple blocks. This is used in the
             // prolog as well as for IF_LARGEJMP pseudo-branch instructions.
@@ -831,6 +827,8 @@ protected:
                 assert(abs(count) < 10);
                 iiaEncodedInstrCount = (count << iaut_SHIFT) | iaut_INST_COUNT;
             }
+
+#ifdef TARGET_ARMARCH
 
             struct
             {
@@ -2391,7 +2389,7 @@ inline unsigned emitGetInsOfsFromCodePos(unsigned codePos)
     return (codePos >> 16);
 }
 
-inline unsigned emitter::emitCurOffset() const
+inline unsigned emitter::emitCurOffset()
 {
     unsigned codePos = emitCurIGinsCnt + (emitCurIGsize << 16);
 

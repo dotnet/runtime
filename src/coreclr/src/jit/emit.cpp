@@ -65,21 +65,6 @@ UNATIVE_OFFSET emitLocation::GetFuncletPrologOffset(emitter* emit) const
     return emit->emitCurIGsize;
 }
 
-//------------------------------------------------------------------------
-// IsPreviousInsNum: Returns true if the emitter is on the next instruction
-//  of the same group as this emitLocation.
-//
-// Arguments:
-//  emit - an emitter* instance
-//
-bool emitLocation::IsPreviousInsNum(const emitter* emit) const
-{
-    assert(Valid());
-    bool isSameGroup  = (ig == emit->emitCurIG);
-    bool isSameInsNum = (emitGetInsNumFromCodePos(codePos) == emitGetInsNumFromCodePos(emit->emitCurOffset()) - 1);
-    return isSameGroup && isSameInsNum;
-}
-
 #ifdef DEBUG
 void emitLocation::Print(LONG compMethodID) const
 {
@@ -1146,18 +1131,17 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
 //              if we return these are updated with default values
 //
 // Notes:
-//     When validating that the PerfScore handles every instruction.
-//     the #if 0 block is changed into a #ifdef DEBUG
-//     We will print the instruction and instruction group
+//     We print the instruction and instruction group
 //     and instead of returning we will assert
 //
-//     Otherwise we will return default latencies of 1 cycle.
+//     This method asserts with a debug/checked build
+//     and returns default latencies of 1 cycle otherwise.
 //
 void emitter::perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacteristics* pResult)
 {
-// Change this to #ifdef DEBUG to assert on any unhandled instructions
-#if 0
-    printf("PerfScore: unhandled instruction: %s, format %s", codeGen->genInsName(id->idIns()), emitIfName(id->idInsFmt()));
+#ifdef DEBUG
+    printf("PerfScore: unhandled instruction: %s, format %s", codeGen->genInsName(id->idIns()),
+           emitIfName(id->idInsFmt()));
     assert(!"PerfScore: unhandled instruction");
 #endif
     pResult->insThroughput = PERFSCORE_THROUGHPUT_1C;
@@ -4337,14 +4321,12 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
     }
 #endif
 
-#ifdef TARGET_ARMARCH
     if (jmp->idAddr()->iiaHasInstrCount())
     {
         // Too hard to figure out funclets from just an instruction count
         // You're on your own!
         return;
     }
-#endif // TARGET_ARMARCH
 
 #ifdef TARGET_ARM64
     // No interest if it's not jmp.

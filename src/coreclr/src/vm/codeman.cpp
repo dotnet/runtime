@@ -26,7 +26,6 @@
 
 #include "rtlfunctions.h"
 
-#include "jitperf.h"
 #include "shimload.h"
 #include "debuginfostore.h"
 #include "strsafe.h"
@@ -2616,8 +2615,6 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t re
 
         _ASSERTE(IS_ALIGNED(pCode, alignment));
 
-        JIT_PERF_UPDATE_X86_CODE_SIZE(totalSize);
-
         // Initialize the CodeHeader *BEFORE* we publish this code range via the nibble
         // map so that we don't have to harden readers against uninitialized data.
         // However because we hold the lock, this initialization should be fast and cheap!
@@ -2842,7 +2839,6 @@ BYTE* EEJitManager::allocGCInfo(CodeHeader* pCodeHeader, DWORD blockSize, size_t
         pCodeHeader->SetGCInfo((BYTE*) (void*)GetJitMetaHeap(pMD)->AllocMem(S_SIZE_T(blockSize)));
     }
     _ASSERTE(pCodeHeader->GetGCInfo()); // AllocMem throws if there's not enough memory
-    JIT_PERF_UPDATE_X86_CODE_SIZE(blockSize);
 
     * pAllocationSize = blockSize;  // Store the allocation size so we can backout later.
 
@@ -2870,8 +2866,6 @@ void* EEJitManager::allocEHInfoRaw(CodeHeader* pCodeHeader, DWORD blockSize, siz
         mem = (void*)GetJitMetaHeap(pMD)->AllocMem(S_SIZE_T(blockSize));
     }
     _ASSERTE(mem);   // AllocMem throws if there's not enough memory
-
-    JIT_PERF_UPDATE_X86_CODE_SIZE(blockSize);
 
     * pAllocationSize = blockSize; // Store the allocation size so we can backout later.
 
@@ -2945,8 +2939,6 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
         pBlock = (JumpStubBlockHeader *)mem;
 
         _ASSERTE(IS_ALIGNED(pBlock, CODE_SIZE_ALIGN));
-
-        JIT_PERF_UPDATE_X86_CODE_SIZE(blockSize);
     }
 
     pBlock->m_next            = NULL;

@@ -102,7 +102,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 else()
     list(APPEND ILASM_LINK_LIBRARIES
         coreclrpal
-        mscorrc_debug
+        mscorrc
         palrt
     )
 endif(CLR_CMAKE_TARGET_WIN32)
@@ -112,7 +112,7 @@ if(CLR_CMAKE_HOST_UNIX)
   target_link_libraries(ilasm
     ${ILASM_LINK_LIBRARIES}
     utilcodestaticnohost
-    mscorrc_debug
+    mscorrc
     coreclrpal
     palrt
   )

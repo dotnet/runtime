@@ -128,7 +128,7 @@ else()
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
         ${END_WHOLE_ARCHIVE}
-        mscorrc_debug
+        mscorrc
         palrt
         System.Globalization.Native-Static
     )

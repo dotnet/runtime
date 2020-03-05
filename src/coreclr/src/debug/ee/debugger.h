@@ -2539,7 +2539,6 @@ public:
     HRESULT UpdateAppDomainEntryInIPC (AppDomain *pAppDomain);
 
     void SendCreateAppDomainEvent(AppDomain * pAppDomain);
-    void SendExitAppDomainEvent (AppDomain *pAppDomain);
 
     // Notify the debugger that an assembly has been loaded
     void LoadAssembly(DomainAssembly * pDomainAssembly);
