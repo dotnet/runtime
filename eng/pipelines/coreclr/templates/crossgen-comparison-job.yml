@@ -117,6 +117,15 @@ jobs:
           mkdir $(workItemDirectory)\log\$(crossFlavor)
         displayName: Create directories
 
+
+    # Populate Core_Root
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
+      displayName: Populate Core_Root
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: 3.x
+
     # Create baseline output on the host (x64) machine
     - task: PythonScript@0
       displayName: Create cross-platform crossgen baseline
@@ -169,23 +178,23 @@ jobs:
           WorkItemCommand:
             chmod +x     $HELIX_WORKITEM_PAYLOAD/crossgen;
             mkdir -p     $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
-            python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py crossgen_framework
+            python3 -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py crossgen_framework
             --crossgen   $HELIX_WORKITEM_PAYLOAD/crossgen
             --il_corelib $HELIX_WORKITEM_PAYLOAD/IL/System.Private.CoreLib.dll
             --core_root  $HELIX_WORKITEM_PAYLOAD
             --result_dir $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
-            python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py compare
+            python3 -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py compare
             --base_dir   $HELIX_WORKITEM_PAYLOAD/log/$(crossFlavor)
             --diff_dir   $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor)
         ${{ if eq(parameters.osName, 'Windows_NT') }}:
           WorkItemCommand:
             mkdir        %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor);
-            python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py crossgen_framework
+            python3 -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py crossgen_framework
             --crossgen   %HELIX_WORKITEM_PAYLOAD%\crossgen
             --il_corelib %HELIX_WORKITEM_PAYLOAD%\IL\System.Private.CoreLib.dll
             --core_root  %HELIX_WORKITEM_PAYLOAD%
             --result_dir %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor);
-            python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py compare
+            python3 -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py compare
             --base_dir   %HELIX_WORKITEM_PAYLOAD%\log\$(crossFlavor)
             --diff_dir   %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor)
 
