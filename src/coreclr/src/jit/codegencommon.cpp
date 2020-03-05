@@ -4770,9 +4770,16 @@ void CodeGen::genCheckUseBlockInit()
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_64BIT
+#if defined(TARGET_AMD64)
+
+    // We can clear using aligned SIMD so the threshold is lower,
+    // and clears in order which is better for auto-prefetching
+    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4));
+
+#else // !defined(TARGET_AMD64)
 
     genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 8));
-
+#endif
 #else
 
     genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4));
@@ -4790,39 +4797,6 @@ void CodeGen::genCheckUseBlockInit()
             maskCalleeRegArgMask &= ~RBM_SECRET_STUB_PARAM;
         }
 
-#ifdef TARGET_XARCH
-        // If we're going to use "REP STOS", remember that we will trash EDI
-        // For fastcall we will have to save ECX, EAX
-        // so reserve two extra callee saved
-        // This is better than pushing eax, ecx, because we in the later
-        // we will mess up already computed offsets on the stack (for ESP frames)
-        regSet.rsSetRegsModified(RBM_EDI);
-
-#ifdef UNIX_AMD64_ABI
-        // For register arguments we may have to save ECX (and RDI on Amd64 System V OSes.)
-        // In such case use R12 and R13 registers.
-        if (maskCalleeRegArgMask & RBM_RCX)
-        {
-            regSet.rsSetRegsModified(RBM_R12);
-        }
-
-        if (maskCalleeRegArgMask & RBM_RDI)
-        {
-            regSet.rsSetRegsModified(RBM_R13);
-        }
-#else  // !UNIX_AMD64_ABI
-        if (maskCalleeRegArgMask & RBM_ECX)
-        {
-            regSet.rsSetRegsModified(RBM_ESI);
-        }
-#endif // !UNIX_AMD64_ABI
-
-        if (maskCalleeRegArgMask & RBM_EAX)
-        {
-            regSet.rsSetRegsModified(RBM_EBX);
-        }
-
-#endif // TARGET_XARCH
 #ifdef TARGET_ARM
         //
         // On the Arm if we are using a block init to initialize, then we
@@ -6138,18 +6112,17 @@ regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegZeroed)
 #endif // !TARGET_ARM64
 }
 
-/*-----------------------------------------------------------------------------
- *
- * Do we have any untracked pointer locals at all,
- * or do we need to initialize memory for locspace?
- *
- * untrLclHi      - (Untracked locals High-Offset)   The upper bound offset at which the zero init code will end
- * initializing memory (not inclusive).
- * untrLclLo      - (Untracked locals Low-Offset)    The lower bound at which the zero init code will start zero
- * initializing memory.
- * initReg        - A scratch register (that gets set to zero on some platforms).
- * pInitRegZeroed - Sets a flag that tells the callee whether or not the initReg register got zeroed.
- */
+//-----------------------------------------------------------------------------
+// genZeroInitFrame: Zero any untracked pointer locals and/or initialize memory for locspace
+//
+// Arguments:
+//    untrLclHi      - (Untracked locals High-Offset)  The upper bound offset at which the zero init
+//                                                     code will end initializing memory (not inclusive).
+//    untrLclLo      - (Untracked locals Low-Offset)   The lower bound at which the zero init code will
+//                                                     start zero initializing memory.
+//    initReg        - A scratch register (that gets set to zero on some platforms).
+//    pInitRegZeroed - Sets a flag that tells the callee whether or not the initReg register got zeroed.
+//
 void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
     assert(compiler->compGeneratingProlog);
@@ -6338,71 +6311,234 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         noway_assert(uCntBytes == 0);
 
 #elif defined(TARGET_XARCH)
-        /*
-            Generate the following code:
+        assert(compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported);
+        emitter*  emit        = GetEmitter();
+        regNumber frameReg    = genFramePointerReg();
+        regNumber zeroReg     = REG_NA;
+        int       blkSize     = untrLclHi - untrLclLo;
+        int       minSimdSize = XMM_REGSIZE_BYTES;
 
-                lea     edi, [ebp/esp-OFFS]
-                mov     ecx, <size>
-                xor     eax, eax
-                rep     stosd
-         */
+        assert(blkSize >= 0);
+        noway_assert((blkSize % sizeof(int)) == 0);
+        // initReg is not a live incoming argument reg
+        assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
+#if defined(TARGET_AMD64)
+        // We will align on x64 so can use the aligned mov
+        instruction simdMov = simdAlignedMovIns();
+        // Aligning low we want to move up to next boundary
+        int alignedLclLo = (untrLclLo + (XMM_REGSIZE_BYTES - 1)) & -XMM_REGSIZE_BYTES;
 
-        noway_assert(regSet.rsRegsModified(RBM_EDI));
+        if ((untrLclLo != alignedLclLo) && (blkSize < 2 * XMM_REGSIZE_BYTES))
+        {
+            // If unaligned and smaller then 2 x SIMD size we won't bother trying to align
+            assert((alignedLclLo - untrLclLo) < XMM_REGSIZE_BYTES);
+            simdMov = simdUnalignedMovIns();
+        }
+#else // !defined(TARGET_AMD64)
+        // We aren't going to try and align on x86
+        instruction simdMov      = simdUnalignedMovIns();
+        int         alignedLclLo = untrLclLo;
+#endif
+        if (blkSize < minSimdSize)
+        {
+            zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
 
+            int i = 0;
+            for (; i + REGSIZE_BYTES <= blkSize; i += REGSIZE_BYTES)
+            {
+                emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
+            }
+#if defined(TARGET_AMD64)
+            assert((i == blkSize) || (i + sizeof(int) == blkSize));
+            if (i != blkSize)
+            {
+                emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
+                i += sizeof(int);
+            }
+#endif // defined(TARGET_AMD64)
+            assert(i == blkSize);
+        }
+        else
+        {
+            // Grab a non-argument, non-callee saved XMM reg
+            CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef UNIX_AMD64_ABI
-        // For register arguments we may have to save ECX and RDI on Amd64 System V OSes
-        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RCX)
-        {
-            noway_assert(regSet.rsRegsModified(RBM_R12));
-            inst_RV_RV(INS_mov, REG_R12, REG_RCX);
-            regSet.verifyRegUsed(REG_R12);
+            // System V x64 first temp reg is xmm8
+            regNumber zeroSIMDReg = genRegNumFromMask(RBM_XMM8);
+#else
+            // Windows first temp reg is xmm4
+            regNumber zeroSIMDReg = genRegNumFromMask(RBM_XMM4);
+#endif // UNIX_AMD64_ABI
+
+#if defined(TARGET_AMD64)
+            int       alignedLclHi;
+            int       alignmentHiBlkSize;
+
+            if ((blkSize < 2 * XMM_REGSIZE_BYTES) || (untrLclLo == alignedLclLo))
+            {
+                // Either aligned or smaller then 2 x SIMD size so we won't try to align
+                // However, we still want to zero anything that is not in a 16 byte chunk at end
+                int alignmentBlkSize = blkSize & -XMM_REGSIZE_BYTES;
+                alignmentHiBlkSize   = blkSize - alignmentBlkSize;
+                alignedLclHi         = untrLclLo + alignmentBlkSize;
+                alignedLclLo         = untrLclLo;
+                blkSize              = alignmentBlkSize;
+
+                assert((blkSize + alignmentHiBlkSize) == (untrLclHi - untrLclLo));
+            }
+            else
+            {
+                // We are going to align
+
+                // Aligning high we want to move down to previous boundary
+                alignedLclHi = untrLclHi & -XMM_REGSIZE_BYTES;
+                // Zero out the unaligned portions
+                alignmentHiBlkSize     = untrLclHi - alignedLclHi;
+                int alignmentLoBlkSize = alignedLclLo - untrLclLo;
+                blkSize                = alignedLclHi - alignedLclLo;
+
+                assert((blkSize + alignmentLoBlkSize + alignmentHiBlkSize) == (untrLclHi - untrLclLo));
+
+                assert(alignmentLoBlkSize > 0);
+                assert(alignmentLoBlkSize < XMM_REGSIZE_BYTES);
+                assert((alignedLclLo - alignmentLoBlkSize) == untrLclLo);
+
+                zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
+
+                int i = 0;
+                for (; i + REGSIZE_BYTES <= alignmentLoBlkSize; i += REGSIZE_BYTES)
+                {
+                    emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
+                }
+                assert((i == alignmentLoBlkSize) || (i + sizeof(int) == alignmentLoBlkSize));
+                if (i != alignmentLoBlkSize)
+                {
+                    emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
+                    i += sizeof(int);
+                }
+
+                assert(i == alignmentLoBlkSize);
+            }
+#else // !defined(TARGET_AMD64)
+            // While we aren't aligning the start, we still want to
+            // zero anything that is not in a 16 byte chunk at end
+            int alignmentBlkSize   = blkSize & -XMM_REGSIZE_BYTES;
+            int alignmentHiBlkSize = blkSize - alignmentBlkSize;
+            int alignedLclHi       = untrLclLo + alignmentBlkSize;
+            blkSize                = alignmentBlkSize;
+
+            assert((blkSize + alignmentHiBlkSize) == (untrLclHi - untrLclLo));
+#endif
+            // The loop is unrolled 3 times so we do not move to the loop block until it
+            // will loop at least once so the threshold is 6.
+            if (blkSize < (6 * XMM_REGSIZE_BYTES))
+            {
+                // Generate the following code:
+                //
+                //   xorps   xmm4, xmm4
+                //   movups  xmmword ptr [ebp/esp-OFFS], xmm4
+                //   ...
+                //   movups  xmmword ptr [ebp/esp-OFFS], xmm4
+                //   mov      qword ptr [ebp/esp-OFFS], rax
+
+                emit->emitIns_R_R(INS_xorps, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, zeroSIMDReg);
+
+                int i = 0;
+                for (; i < blkSize; i += XMM_REGSIZE_BYTES)
+                {
+                    emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, alignedLclLo + i);
+                }
+
+                assert(i == blkSize);
+            }
+            else
+            {
+                // Generate the following code:
+                //
+                //    xorps    xmm4, xmm4
+                //    ;movaps xmmword ptr[ebp/esp-loOFFS], xmm4          ; alignment to 3x
+                //    ;movaps xmmword ptr[ebp/esp-loOFFS + 10H], xmm4    ;
+                //    mov rax, - <size>                                  ; start offset from hi
+                //    movaps xmmword ptr[rbp + rax + hiOFFS      ], xmm4 ; <--+
+                //    movaps xmmword ptr[rbp + rax + hiOFFS + 10H], xmm4 ;    |
+                //    movaps xmmword ptr[rbp + rax + hiOFFS + 20H], xmm4 ;    | Loop
+                //    add rax, 48                                        ;    |
+                //    jne SHORT  -5 instr                                ; ---+
+
+                emit->emitIns_R_R(INS_xorps, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, zeroSIMDReg);
+
+                // How many extra don't fit into the 3x unroll
+                int extraSimd = (blkSize % (XMM_REGSIZE_BYTES * 3)) / XMM_REGSIZE_BYTES;
+                if (extraSimd != 0)
+                {
+                    blkSize -= XMM_REGSIZE_BYTES;
+                    // Not a multiple of 3 so add stores at low end of block
+                    emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, alignedLclLo);
+                    if (extraSimd == 2)
+                    {
+                        blkSize -= XMM_REGSIZE_BYTES;
+                        // one more store needed
+                        emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg,
+                                           alignedLclLo + XMM_REGSIZE_BYTES);
+                    }
+                }
+
+                // Exact multiple of 3 simd lengths (or loop end condition will not be met)
+                noway_assert((blkSize % (3 * XMM_REGSIZE_BYTES)) == 0);
+
+                // At least 3 simd lengths remain (as loop is 3x unrolled and we want it to loop at least once)
+                assert(blkSize >= (3 * XMM_REGSIZE_BYTES));
+                // In range at start of loop
+                assert((alignedLclHi - blkSize) >= untrLclLo);
+                assert(((alignedLclHi - blkSize) + (XMM_REGSIZE_BYTES * 2)) < (untrLclHi - XMM_REGSIZE_BYTES));
+                // In range at end of loop
+                assert((alignedLclHi - (3 * XMM_REGSIZE_BYTES) + (2 * XMM_REGSIZE_BYTES)) <=
+                       (untrLclHi - XMM_REGSIZE_BYTES));
+                assert((alignedLclHi - (blkSize + extraSimd * XMM_REGSIZE_BYTES)) == alignedLclLo);
+
+                // Set loop counter
+                emit->emitIns_R_I(INS_mov, EA_PTRSIZE, initReg, -(ssize_t)blkSize);
+                // Loop start
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, initReg, 1,
+                                    alignedLclHi);
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, initReg, 1,
+                                    alignedLclHi + XMM_REGSIZE_BYTES);
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, initReg, 1,
+                                    alignedLclHi + 2 * XMM_REGSIZE_BYTES);
+
+                emit->emitIns_R_I(INS_add, EA_PTRSIZE, initReg, XMM_REGSIZE_BYTES * 3);
+                // Loop until counter is 0
+                emit->emitIns_J(INS_jne, nullptr, -5);
+
+                // initReg will be zero at end of the loop
+                *pInitRegZeroed = true;
+            }
+
+            if (untrLclHi != alignedLclHi)
+            {
+                assert(alignmentHiBlkSize > 0);
+                assert(alignmentHiBlkSize < XMM_REGSIZE_BYTES);
+                assert((alignedLclHi + alignmentHiBlkSize) == untrLclHi);
+
+                zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
+
+                int i = 0;
+                for (; i + REGSIZE_BYTES <= alignmentHiBlkSize; i += REGSIZE_BYTES)
+                {
+                    emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, alignedLclHi + i);
+                }
+#if defined(TARGET_AMD64)
+                assert((i == alignmentHiBlkSize) || (i + sizeof(int) == alignmentHiBlkSize));
+                if (i != alignmentHiBlkSize)
+                {
+                    emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, alignedLclHi + i);
+                    i += sizeof(int);
+                }
+#endif // defined(TARGET_AMD64)
+                assert(i == alignmentHiBlkSize);
+            }
         }
-
-        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RDI)
-        {
-            noway_assert(regSet.rsRegsModified(RBM_R13));
-            inst_RV_RV(INS_mov, REG_R13, REG_RDI);
-            regSet.verifyRegUsed(REG_R13);
-        }
-#else  // !UNIX_AMD64_ABI
-        // For register arguments we may have to save ECX
-        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
-        {
-            noway_assert(regSet.rsRegsModified(RBM_ESI));
-            inst_RV_RV(INS_mov, REG_ESI, REG_ECX);
-            regSet.verifyRegUsed(REG_ESI);
-        }
-#endif // !UNIX_AMD64_ABI
-
-        noway_assert((intRegState.rsCalleeRegArgMaskLiveIn & RBM_EAX) == 0);
-
-        GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_EDI, genFramePointerReg(), untrLclLo);
-        regSet.verifyRegUsed(REG_EDI);
-
-        inst_RV_IV(INS_mov, REG_ECX, (untrLclHi - untrLclLo) / sizeof(int), EA_4BYTE);
-        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EAX);
-        instGen(INS_r_stosd);
-
-#ifdef UNIX_AMD64_ABI
-        // Move back the argument registers
-        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RCX)
-        {
-            inst_RV_RV(INS_mov, REG_RCX, REG_R12);
-        }
-
-        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RDI)
-        {
-            inst_RV_RV(INS_mov, REG_RDI, REG_R13);
-        }
-#else  // !UNIX_AMD64_ABI
-        // Move back the argument registers
-        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
-        {
-            inst_RV_RV(INS_mov, REG_ECX, REG_ESI);
-        }
-#endif // !UNIX_AMD64_ABI
-
-#else // TARGET*
+#else  // TARGET*
 #error Unsupported or unset target architecture
 #endif // TARGET*
     }
