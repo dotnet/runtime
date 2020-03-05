@@ -193,92 +193,12 @@ usage()
     exit 1
 }
 
-# Use uname to determine what the CPU is.
-CPUName=$(uname -p)
+source "$__RepoRootDir/eng/native/init-os-and-arch.sh"
 
-# Some Linux platforms report unknown for platform, but the arch for machine.
-if [[ "$CPUName" == "unknown" ]]; then
-    CPUName=$(uname -m)
-fi
-
-case "$CPUName" in
-    aarch64)
-        __BuildArch=arm64
-        __HostArch=arm64
-        ;;
-
-    amd64)
-        __BuildArch=x64
-        __HostArch=x64
-        ;;
-
-    armv7l)
-        if (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
-            __BuildArch=armel
-            __HostArch=armel
-        else
-            __BuildArch=arm
-            __HostArch=arm
-        fi
-        ;;
-
-    i686)
-        echo "Unsupported CPU $CPUName detected, build might not succeed!"
-        __BuildArch=x86
-        __HostArch=x86
-        ;;
-
-    x86_64)
-        __BuildArch=x64
-        __HostArch=x64
-        ;;
-
-    *)
-        echo "Unknown CPU $CPUName detected, configuring as if for x64"
-        __BuildArch=x64
-        __HostArch=x64
-        ;;
-esac
-
-# Use uname to determine what the OS is.
-OSName=$(uname -s)
-case "$OSName" in
-    Darwin)
-        __BuildOS=OSX
-        __HostOS=OSX
-        ;;
-
-    FreeBSD)
-        __BuildOS=FreeBSD
-        __HostOS=FreeBSD
-        ;;
-
-    Linux)
-        __BuildOS=Linux
-        __HostOS=Linux
-        ;;
-
-    NetBSD)
-        __BuildOS=NetBSD
-        __HostOS=NetBSD
-        ;;
-
-    OpenBSD)
-        __BuildOS=OpenBSD
-        __HostOS=OpenBSD
-        ;;
-
-    SunOS)
-        __BuildOS=SunOS
-        __HostOS=SunOS
-        ;;
-
-    *)
-        echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        __BuildOS=Linux
-        __HostOS=Linux
-        ;;
-esac
+__BuildArch=$arch
+__HostArch=$arch
+__BuildOS=$os
+__HostOS=$os
 
 __msbuildonunsupportedplatform=0
 

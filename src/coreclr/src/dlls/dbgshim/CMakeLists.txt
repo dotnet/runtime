@@ -75,7 +75,7 @@ if(CLR_CMAKE_HOST_WIN32)
 else()
     list(APPEND DBGSHIM_LIBRARIES
         coreclrpal
-        mscorrc_debug
+        mscorrc
         palrt
     )
 endif(CLR_CMAKE_HOST_WIN32)

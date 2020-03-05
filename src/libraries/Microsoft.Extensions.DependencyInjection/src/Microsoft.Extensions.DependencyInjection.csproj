@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.</Description>
+    <TargetFrameworks>$(DefaultNetCoreTargetFramework);net461;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageTags>dependencyinjection;di</PackageTags>
+    <IsPackable>true</IsPackable>
+    <IsShipping>true</IsShipping>
+
+    <ILEmitBackend Condition="$(TargetFramework) != 'netstandard2.0'">True</ILEmitBackend>
+    <DefineConstants Condition="'$(ILEmitBackend)' == 'True'">$(DefineConstants);IL_EMIT</DefineConstants>
+
+    <!-- Debug IL generation -->
+    <ILEmitBackendSaveAssemblies>False</ILEmitBackendSaveAssemblies>
+    <DefineConstants Condition="'$(TargetFramework)' == 'net461' AND '$(ILEmitBackendSaveAssemblies)' == 'True'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyInjection.Tests" />
+    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyInjection.Performance" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'netstandard2.0'">
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="ServiceLookup\ILEmit\**\*.cs" />
+
+    <Compile Condition="'$(ILEmitBackend)' == 'True'" Include="ServiceLookup\ILEmit\*.cs" />
+
+    <Compile Include="$(SharedSourceRoot)ParameterDefaultValue\*.cs" />
+    <Compile Include="$(SharedSourceRoot)TypeNameHelper\*.cs" />
+  </ItemGroup>
+
+</Project>

@@ -7,7 +7,6 @@
 #define _ICorJitCompiler
 
 #include "runtimedetails.h"
-#include "ieememorymanager.h"
 
 class interceptor_ICJC : public ICorJitCompiler
 {
@@ -18,8 +17,5 @@ public:
     // Added to help us track the original icjc and be able to easily indirect to it.
     ICorJitCompiler* original_ICorJitCompiler;
 };
-
-extern interceptor_IEEMM* current_IEEMM; // we want a pointer to the memory manager to live beyond the scope of a single
-                                         // compileMethodCall (jit32 expects this)
 
 #endif

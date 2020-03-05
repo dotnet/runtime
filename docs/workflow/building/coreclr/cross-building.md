@@ -6,7 +6,7 @@ Building ARM for Windows can be done using cross compilation.
 Requirements
 ------------
 
-Install the ARM tools and Windows SDK, as described [here](https://github.com/dotnet/coreclr/blob/master/Documentation/building/windows-instructions.md).
+Install the ARM tools and Windows SDK, as described [here](https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md).
 
 Cross compiling CoreCLR
 -----------------------

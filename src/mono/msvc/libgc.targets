@@ -5,7 +5,7 @@
     <ExcludeBoehmGCFromBuild>true</ExcludeBoehmGCFromBuild>
     <ExcludeBoehmGCFromBuild Condition="'$(MONO_TARGET_GC)'=='boehm'">false</ExcludeBoehmGCFromBuild>
   </PropertyGroup>
-  <ItemGroup Label="libmonogc_la_sources">
+  <ItemGroup Label="libmonogc_sources">
     <ClCompile Include="$(MonoSourceLocation)\external\bdwgc\extra\gc.c">
       <ExcludedFromBuild>$(ExcludeBoehmGCFromBuild)</ExcludedFromBuild>
     </ClCompile>

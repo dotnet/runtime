@@ -208,7 +208,7 @@ namespace System.Net.NetworkInformation
                 throw new ArgumentNullException(nameof(hostNameOrAddress));
             }
 
-            if (IPAddress.TryParse(hostNameOrAddress, out IPAddress address))
+            if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
             {
                 return Send(address, timeout, buffer, options);
             }
@@ -357,7 +357,7 @@ namespace System.Net.NetworkInformation
                 throw new ArgumentNullException(nameof(hostNameOrAddress));
             }
 
-            if (IPAddress.TryParse(hostNameOrAddress, out IPAddress address))
+            if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
             {
                 return SendPingAsync(address, timeout, buffer, options);
             }

@@ -548,7 +548,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
                 case SubjectIdentifierType.SubjectKeyIdentifier:
                 {
-                    filtered = extraStore.Find(X509FindType.FindBySubjectKeyIdentifier, signerIdentifier.Value, false);
+                    filtered = extraStore.Find(X509FindType.FindBySubjectKeyIdentifier, signerIdentifier.Value!, false);
 
                     if (filtered.Count > 0)
                     {

@@ -24,12 +24,12 @@ namespace System.Drawing
         private IntPtr _nativeFont;
         private float _fontSize;
         private FontStyle _fontStyle;
-        private FontFamily _fontFamily;
+        private FontFamily _fontFamily = null!;
         private GraphicsUnit _fontUnit;
         private byte _gdiCharSet = SafeNativeMethods.DEFAULT_CHARSET;
         private bool _gdiVerticalFont;
         private string _systemFontName = "";
-        private string _originalFontName;
+        private string _originalFontName = null!;
 
         // Return value is in Unit (the unit the font was created in)
         /// <summary>
@@ -140,9 +140,9 @@ namespace System.Drawing
 
         private Font(SerializationInfo info, StreamingContext context)
         {
-            string name = info.GetString("Name"); // Do not rename (binary serialization)
-            FontStyle style = (FontStyle)info.GetValue("Style", typeof(FontStyle)); // Do not rename (binary serialization)
-            GraphicsUnit unit = (GraphicsUnit)info.GetValue("Unit", typeof(GraphicsUnit)); // Do not rename (binary serialization)
+            string name = info.GetString("Name")!; // Do not rename (binary serialization)
+            FontStyle style = (FontStyle)info.GetValue("Style", typeof(FontStyle))!; // Do not rename (binary serialization)
+            GraphicsUnit unit = (GraphicsUnit)info.GetValue("Unit", typeof(GraphicsUnit))!; // Do not rename (binary serialization)
             float size = info.GetSingle("Size"); // Do not rename (binary serialization)
 
             Initialize(name, size, style, unit, SafeNativeMethods.DEFAULT_CHARSET, IsVerticalName(name));
@@ -221,7 +221,7 @@ namespace System.Drawing
         /// Returns a value indicating whether the specified object is a <see cref='Font'/> equivalent to this
         /// <see cref='Font'/>.
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == this)
             {

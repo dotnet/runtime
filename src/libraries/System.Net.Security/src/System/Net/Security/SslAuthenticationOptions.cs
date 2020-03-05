@@ -10,7 +10,7 @@ namespace System.Net.Security
 {
     internal class SslAuthenticationOptions
     {
-        internal SslAuthenticationOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback localCallback)
+        internal SslAuthenticationOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback? localCallback)
         {
             // Common options.
             AllowRenegotiation = sslClientAuthenticationOptions.AllowRenegotiation;
@@ -68,19 +68,19 @@ namespace System.Net.Security
         }
 
         internal bool AllowRenegotiation { get; set; }
-        internal string TargetHost { get; set; }
-        internal X509CertificateCollection ClientCertificates { get; set; }
-        internal List<SslApplicationProtocol> ApplicationProtocols { get; }
+        internal string? TargetHost { get; set; }
+        internal X509CertificateCollection? ClientCertificates { get; set; }
+        internal List<SslApplicationProtocol>? ApplicationProtocols { get; }
         internal bool IsServer { get; set; }
-        internal X509Certificate ServerCertificate { get; set; }
+        internal X509Certificate? ServerCertificate { get; set; }
         internal SslProtocols EnabledSslProtocols { get; set; }
         internal X509RevocationMode CertificateRevocationCheckMode { get; set; }
         internal EncryptionPolicy EncryptionPolicy { get; set; }
         internal bool RemoteCertRequired { get; set; }
         internal bool CheckCertName { get; set; }
-        internal RemoteCertValidationCallback CertValidationDelegate { get; set; }
-        internal LocalCertSelectionCallback CertSelectionDelegate { get; set; }
-        internal ServerCertSelectionCallback ServerCertSelectionDelegate { get; set; }
-        internal CipherSuitesPolicy CipherSuitesPolicy { get; set; }
+        internal RemoteCertValidationCallback? CertValidationDelegate { get; set; }
+        internal LocalCertSelectionCallback? CertSelectionDelegate { get; set; }
+        internal ServerCertSelectionCallback? ServerCertSelectionDelegate { get; set; }
+        internal CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
     }
 }

@@ -4,6 +4,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Internal;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
@@ -361,7 +362,8 @@ namespace System.Drawing
             GC.SuppressFinalize(_fontFamily);
         }
 
-        private static string StripVerticalName(string familyName)
+        [return: NotNullIfNotNull("familyName")]
+        private static string? StripVerticalName(string? familyName)
         {
             if (familyName?.Length > 1 && familyName[0] == '@')
             {

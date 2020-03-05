@@ -1774,8 +1774,7 @@ namespace System.Reflection.Emit
                 parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
 
             // get the signature in byte form
-            int sigLength;
-            sigBytes = sigHelper.InternalGetSignature(out sigLength);
+            sigBytes = sigHelper.InternalGetSignature(out int sigLength);
 
             ModuleBuilder module = m_module;
 

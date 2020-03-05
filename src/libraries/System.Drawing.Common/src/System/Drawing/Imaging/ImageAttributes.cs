@@ -200,17 +200,17 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Sets a color adjust matrix for image colors and a separate gray scale adjust matrix for gray scale values.
         /// </summary>
-        public void SetColorMatrices(ColorMatrix newColorMatrix, ColorMatrix grayMatrix)
+        public void SetColorMatrices(ColorMatrix newColorMatrix, ColorMatrix? grayMatrix)
         {
             SetColorMatrices(newColorMatrix, grayMatrix, ColorMatrixFlag.Default, ColorAdjustType.Default);
         }
 
-        public void SetColorMatrices(ColorMatrix newColorMatrix, ColorMatrix grayMatrix, ColorMatrixFlag flags)
+        public void SetColorMatrices(ColorMatrix newColorMatrix, ColorMatrix? grayMatrix, ColorMatrixFlag flags)
         {
             SetColorMatrices(newColorMatrix, grayMatrix, flags, ColorAdjustType.Default);
         }
 
-        public void SetColorMatrices(ColorMatrix newColorMatrix, ColorMatrix grayMatrix, ColorMatrixFlag mode,
+        public void SetColorMatrices(ColorMatrix newColorMatrix, ColorMatrix? grayMatrix, ColorMatrixFlag mode,
                                      ColorAdjustType type)
         {
             int status = Gdip.GdipSetImageAttributesColorMatrix(

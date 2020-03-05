@@ -669,11 +669,7 @@ BaseDomain::BaseDomain()
     m_JITLock.PreInit();
     m_ClassInitLock.PreInit();
     m_ILStubGenLock.PreInit();
-
-#ifdef FEATURE_CODE_VERSIONING
-    m_codeVersionManager.PreInit();
-#endif
-
+    m_NativeTypeLoadLock.PreInit();
 } //BaseDomain::BaseDomain
 
 //*****************************************************************************
@@ -724,6 +720,7 @@ void BaseDomain::Init()
     m_ClassInitLock.Init(CrstClassInit, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_SAMELEVEL), TRUE);
 
     m_ILStubGenLock.Init(CrstILStubGen, CrstFlags(CRST_REENTRANCY), TRUE);
+    m_NativeTypeLoadLock.Init(CrstInteropData, CrstFlags(CRST_REENTRANCY), TRUE);
 
     // Large heap handle table CRST.
     m_LargeHeapHandleTableCrst.Init(CrstAppDomainHandleTable);
@@ -1567,10 +1564,11 @@ void SystemDomain::Attach()
     ILStubManager::Init();
     InteropDispatchStubManager::Init();
     StubLinkStubManager::Init();
-
     ThunkHeapStubManager::Init();
-
     TailCallStubManager::Init();
+#ifdef FEATURE_TIERED_COMPILATION
+    CallCountingStubManager::Init();
+#endif
 
     PerAppDomainTPCountList::InitAppDomainIndexList();
 #endif // CROSSGEN_COMPILE
@@ -1988,13 +1986,6 @@ void SystemDomain::LoadBaseSystemClasses()
 
     g_TypedReferenceMT = MscorlibBinder::GetClass(CLASS__TYPED_REFERENCE);
 
-    // further loading of nonprimitive types may need casting support.
-    // initialize cast cache here.
-#ifndef CROSSGEN_COMPILE
-    CastCache::Initialize();
-    ECall::PopulateManagedCastHelpers();
-#endif // CROSSGEN_COMPILE
-
     // unfortunately, the following cannot be delay loaded since the jit
     // uses it to compute method attributes within a function that cannot
     // handle Complus exception and the following call goes through a path
@@ -2003,6 +1994,17 @@ void SystemDomain::LoadBaseSystemClasses()
     // guaranteed to be found.
     g_pDelegateClass = MscorlibBinder::GetClass(CLASS__DELEGATE);
     g_pMulticastDelegateClass = MscorlibBinder::GetClass(CLASS__MULTICAST_DELEGATE);
+
+#ifndef CROSSGEN_COMPILE
+    CrossLoaderAllocatorHashSetup::EnsureTypesLoaded();
+#endif
+
+    // further loading of nonprimitive types may need casting support.
+    // initialize cast cache here.
+#ifndef CROSSGEN_COMPILE
+    CastCache::Initialize();
+    ECall::PopulateManagedCastHelpers();
+#endif // CROSSGEN_COMPILE
 
     // used by IsImplicitInterfaceOfSZArray
     MscorlibBinder::GetClass(CLASS__IENUMERABLEGENERIC);
@@ -2018,10 +2020,6 @@ void SystemDomain::LoadBaseSystemClasses()
     // Load Utf8String
     g_pUtf8StringClass = MscorlibBinder::GetClass(CLASS__UTF8_STRING);
 #endif // FEATURE_UTF8STRING
-
-#ifndef CROSSGEN_COMPILE
-    CrossLoaderAllocatorHashSetup::EnsureTypesLoaded();
-#endif
 
 #ifndef CROSSGEN_COMPILE
     ECall::PopulateManagedStringConstructors();

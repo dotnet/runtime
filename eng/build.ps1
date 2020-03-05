@@ -11,7 +11,7 @@ Param(
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
-  [string]$arch,
+  [string]$arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant(),
   [string]$subsetCategory,
   [string]$subset,
   [ValidateSet("Debug","Release","Checked")][string]$runtimeConfiguration,
@@ -39,7 +39,7 @@ function Get-Help() {
   Write-Host "  -build                  Build all source projects (short: -b)"
   Write-Host "  -buildtests             Build all test projects"
   Write-Host "  -rebuild                Rebuild all source projects"
-  Write-Host "  -test                   Run all unit tests (short: -t)"
+  Write-Host "  -test                   Build and run tests (short: -t)"
   Write-Host "  -pack                   Package build outputs into NuGet packages"
   Write-Host "  -sign                   Sign build outputs"
   Write-Host "  -publish                Publish artifacts (e.g. symbols)"
@@ -70,8 +70,11 @@ if ($vs) {
 
   # Microsoft.DotNet.CoreSetup.sln is special - hosting tests are currently meant to run on the
   # bootstrapped .NET Core, not on the live-built runtime.
-  if ([System.IO.Path]::GetFileName($vs) -ieq "Microsoft.DotNet.CoreSetup.sln") {
+  if (([System.IO.Path]::GetFileName($vs) -ieq "Microsoft.DotNet.CoreSetup.sln") -or ($vs -ieq "Microsoft.DotNet.CoreSetup")) {
     if (-Not (Test-Path $vs)) {
+      if (-Not ( $vs.endswith(".sln"))) {
+          $vs = "$vs.sln"
+      }
       $vs = Join-Path "$PSScriptRoot\..\src\installer" $vs
     }
 
@@ -143,11 +146,13 @@ foreach ($argument in $PSBoundParameters.Keys)
     "framework"            { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                   { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }
     "allconfigurations"    { $arguments += " /p:BuildAllConfigurations=true" }
-    "arch"                 { $arguments += " /p:ArchGroup=$($PSBoundParameters[$argument]) /p:TargetArchitecture=$($PSBoundParameters[$argument])" }
+    "arch"                 { $arch = $PSBoundParameters[$argument]; $arguments += " /p:ArchGroup=$arch /p:TargetArchitecture=$arch" }
     "properties"           { $arguments += " " + $properties }
     default                { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }
+
+$env:__DistroRid="win-$arch"
 
 Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $arguments"
 exit $lastExitCode

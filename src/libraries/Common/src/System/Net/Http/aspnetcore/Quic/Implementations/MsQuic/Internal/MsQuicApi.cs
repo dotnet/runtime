@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -143,12 +143,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             OperatingSystem ver = Environment.OSVersion;
 
-            if (ver.Platform == PlatformID.Win32NT && ver.Version < new Version(10, 0, 19041, 0))
-            {
-                IsQuicSupported = false;
-                return;
-            }
-
             // TODO: try to initialize TLS 1.3 in SslStream.
 
             try
@@ -242,8 +236,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 {
                     fileParams = new MsQuicNativeMethods.CertFileParams
                     {
-                        CertificateFilePath = Marshal.StringToCoTaskMemUTF8(certFilePath),
-                        PrivateKeyFilePath = Marshal.StringToCoTaskMemUTF8(privateKeyFilePath)
+                        PrivateKeyFilePath = Marshal.StringToCoTaskMemUTF8(privateKeyFilePath),
+                        CertificateFilePath = Marshal.StringToCoTaskMemUTF8(certFilePath)
                     };
 
                     unmanagedAddr = Marshal.AllocHGlobal(Marshal.SizeOf(fileParams));
@@ -252,7 +246,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     createConfigStatus = SecConfigCreateDelegate(
                         _registrationContext,
                         (uint)QUIC_SEC_CONFIG_FLAG.CERT_FILE,
-                        certificate.Handle,
+                        unmanagedAddr,
                         null,
                         IntPtr.Zero,
                         SecCfgCreateCallbackHandler);

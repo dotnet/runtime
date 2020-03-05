@@ -117,6 +117,8 @@ add_definitions(-DFEATURE_DEFAULT_INTERFACES)
 if(FEATURE_EVENT_TRACE)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:FEATURE_EVENT_TRACE>)
     add_definitions(-DFEATURE_PERFTRACING)
+else(FEATURE_EVENT_TRACE)
+    add_custom_target(eventing_headers) # add a dummy target to avoid checking for FEATURE_EVENT_TRACE in multiple places
 endif(FEATURE_EVENT_TRACE)
 if(FEATURE_GDBJIT)
     add_definitions(-DFEATURE_GDBJIT)

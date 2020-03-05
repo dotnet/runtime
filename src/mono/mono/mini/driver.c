@@ -242,8 +242,8 @@ parse_debug_options (const char* p)
 }
 
 typedef struct {
-	const char name [6];
-	const char desc [18];
+	char name [6];
+	char desc [18];
 	MonoGraphOptions value;
 } GraphName;
 

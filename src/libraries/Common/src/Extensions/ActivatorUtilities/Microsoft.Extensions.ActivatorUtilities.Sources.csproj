@@ -1,0 +1,14 @@
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)..\ParameterDefaultValue\ParameterDefaultValue.cs">
+      <Pack>true</Pack>
+      <PackagePath>$(ContentTargetFolders)\cs\netstandard1.0\</PackagePath>
+    </Compile>
+  </ItemGroup>
+
+  <Target Name="Compile" />
+  <Target Name="CopyFilesToOutputDirectory" />
+</Project>

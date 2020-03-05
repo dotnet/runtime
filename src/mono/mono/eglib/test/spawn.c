@@ -16,6 +16,7 @@
 static RESULT
 test_spawn_sync (void)
 {
+#if HAVE_G_SPAWN
 	gchar *out;
 	gchar *err;
 	gint status = -1;
@@ -32,12 +33,14 @@ test_spawn_sync (void)
 
 	g_free (out);
 	g_free (err);
+#endif
 	return OK;
 }
 
 static RESULT
 test_spawn_async (void)
 {
+#if HAVE_G_SPAWN
 	/*
 gboolean
 g_spawn_async_with_pipes (const gchar *working_directory,
@@ -54,7 +57,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 	char *argv [15];
 	int stdout_fd = -1;
 	char buffer [512];
-	pid_t child_pid = 0;
+	GPid child_pid = 0;
 
 	memset (argv, 0, 15 * sizeof (char *));
 	argv [0] = (char*)"ls";
@@ -67,7 +70,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 
 	while (read (stdout_fd, buffer, 512) > 0);
 	close (stdout_fd);
-
+#endif
 	return OK;
 }
 

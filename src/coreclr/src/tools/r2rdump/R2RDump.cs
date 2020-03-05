@@ -142,9 +142,9 @@ namespace R2RDump
             _options = options;
         }
 
-        public IEnumerable<ReadyToRunSection> NormalizedSections()
+        public IEnumerable<ReadyToRunSection> NormalizedSections(ReadyToRunCoreHeader header)
         {
-            IEnumerable<ReadyToRunSection> sections = _r2r.ReadyToRunHeader.Sections.Values;
+            IEnumerable<ReadyToRunSection> sections = header.Sections.Values;
             if (_options.Normalize)
             {
                 sections = sections.OrderBy((s) => s.Type);
@@ -154,7 +154,7 @@ namespace R2RDump
 
         public IEnumerable<ReadyToRunMethod> NormalizedMethods()
         {
-            IEnumerable<ReadyToRunMethod> methods = _r2r.Methods;
+            IEnumerable<ReadyToRunMethod> methods = _r2r.Methods.Values.SelectMany(sectionMethods => sectionMethods);
             if (_options.Normalize)
             {
                 methods = methods.OrderBy((m) => m.SignatureString);
@@ -441,7 +441,7 @@ namespace R2RDump
         public IList<ReadyToRunMethod> FindMethod(ReadyToRunReader r2r, string query, bool exact)
         {
             List<ReadyToRunMethod> res = new List<ReadyToRunMethod>();
-            foreach (ReadyToRunMethod method in r2r.Methods)
+            foreach (ReadyToRunMethod method in r2r.Methods.Values.SelectMany(sectionMethods => sectionMethods))
             {
                 if (Match(method, query, exact))
                 {
@@ -478,7 +478,7 @@ namespace R2RDump
         /// <param name="rtfQuery">The name or value to search for</param>
         public RuntimeFunction FindRuntimeFunction(ReadyToRunReader r2r, int rtfQuery)
         {
-            foreach (ReadyToRunMethod m in r2r.Methods)
+            foreach (ReadyToRunMethod m in r2r.Methods.Values.SelectMany(sectionMethods => sectionMethods))
             {
                 foreach (RuntimeFunction rtf in m.RuntimeFunctions)
                 {

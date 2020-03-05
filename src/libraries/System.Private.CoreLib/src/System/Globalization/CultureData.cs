@@ -337,8 +337,7 @@ namespace System.Globalization
             if (retVal == null || retVal.IsNeutralCulture)
             {
                 // Not a valid mapping, try the hard coded table
-                string? name;
-                if (RegionNames.TryGetValue(cultureName, out name))
+                if (RegionNames.TryGetValue(cultureName, out string? name))
                 {
                     // Make sure we can get culture data for it
                     retVal = GetCultureData(name, useUserOverride);

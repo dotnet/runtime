@@ -15,7 +15,6 @@
   <!-- Redistribute package content from other nuget packages. -->
   <ItemGroup Condition="
     '$(FrameworkPackType)' != 'apphost' AND
-    '$(FrameworkPackType)' != 'crossgen2' AND
     '$(ExcludeDepprojReference)' != 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\src\netcoreapp.depproj">
       <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">RuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>

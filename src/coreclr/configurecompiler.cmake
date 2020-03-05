@@ -391,6 +391,10 @@ if(CLR_CMAKE_HOST_UNIX_ARM)
    endif(ARM_SOFTFP)
 endif(CLR_CMAKE_HOST_UNIX_ARM)
 
+if(CLR_CMAKE_HOST_UNIX_X86)
+  add_compile_options(-msse2)
+endif()
+
 if(CLR_CMAKE_HOST_UNIX)
   add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
 endif(CLR_CMAKE_HOST_UNIX)

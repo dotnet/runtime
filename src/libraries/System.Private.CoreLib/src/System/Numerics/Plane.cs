@@ -162,8 +162,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Plane Transform(Plane plane, Matrix4x4 matrix)
         {
-            Matrix4x4 m;
-            Matrix4x4.Invert(matrix, out m);
+            Matrix4x4.Invert(matrix, out Matrix4x4 m);
 
             float x = plane.Normal.X, y = plane.Normal.Y, z = plane.Normal.Z, w = plane.D;
 

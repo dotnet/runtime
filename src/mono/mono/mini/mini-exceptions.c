@@ -741,7 +741,6 @@ unwinder_unwind_frame (Unwinder *unwinder,
 					   host_mgreg_t **save_locations,
 					   StackFrameInfo *frame)
 {
-	gpointer parent;
 	if (unwinder->in_interp) {
 		memcpy (new_ctx, ctx, sizeof (MonoContext));
 
@@ -760,12 +759,10 @@ unwinder_unwind_frame (Unwinder *unwinder,
 
 		unwinder->in_interp = mini_get_interp_callbacks ()->frame_iter_next (&unwinder->interp_iter, frame);
 		if (frame->type == FRAME_TYPE_INTERP) {
-			parent = mini_get_interp_callbacks ()->frame_get_parent (frame->interp_frame);
-			if (parent)
-				unwinder->last_frame_addr = mini_get_interp_callbacks ()->frame_get_native_stack_addr (parent);
-			else
-				unwinder->last_frame_addr = NULL;
+			const gpointer parent = mini_get_interp_callbacks ()->frame_get_parent (frame->interp_frame);
+			unwinder->last_frame_addr = parent;
 		}
+
 		if (!unwinder->in_interp)
 			return unwinder_unwind_frame (unwinder, domain, jit_tls, prev_ji, ctx, new_ctx, trace, lmf, save_locations, frame);
 		return TRUE;
@@ -1786,6 +1783,9 @@ mono_summarize_unmanaged_stack (MonoThreadSummary *out)
 
 		if (out->unmanaged_frames [i].str_descr [0] != '\0')
 			out->unmanaged_frames [i].unmanaged_data.has_name = TRUE;
+
+		out->hashes.offset_free_hash = summarize_offset_free_hash (out->hashes.offset_free_hash, frame);
+		out->hashes.offset_rich_hash = summarize_offset_rich_hash (out->hashes.offset_rich_hash, frame);
 	}
 #endif
 
@@ -2176,12 +2176,12 @@ setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trac
 			MonoMList *list = (MonoMList*)mono_ex->dynamic_methods;
 
 			for (l = *dynamic_methods; l; l = l->next) {
-				guint32 dis_link;
+				MonoGCHandle dis_link;
 				MonoDomain *domain = mono_domain_get ();
 
 				if (domain->method_to_dyn_method) {
 					mono_domain_lock (domain);
-					dis_link = (guint32)(size_t)g_hash_table_lookup (domain->method_to_dyn_method, l->data);
+					dis_link = (MonoGCHandle)g_hash_table_lookup (domain->method_to_dyn_method, l->data);
 					mono_domain_unlock (domain);
 					if (dis_link) {
 						MonoObject *o = mono_gchandle_get_target_internal (dis_link);
@@ -2684,7 +2684,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 					msg = g_strdup ("(System.Exception.Message property not available)");
 				}
 			}
-			g_print ("[%p:] EXCEPTION handling: %s.%s: %s\n", (void*)mono_native_thread_id_get (), m_class_get_name_space (mono_object_class (obj)), m_class_get_name (mono_object_class (obj)), msg);
+			g_print ("[%p:] EXCEPTION handling: %s.%s: %s\n", (void*)(gsize)mono_native_thread_id_get (), m_class_get_name_space (mono_object_class (obj)), m_class_get_name (mono_object_class (obj)), msg);
 			g_free (msg);
 			if (mono_ex && mono_trace_eval_exception (mono_object_class (mono_ex)))
 				mono_print_thread_dump_from_ctx (ctx);
@@ -2815,7 +2815,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		}
 
 		if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && ftnptr_eh_callback) {
-			guint32 handle = mono_gchandle_new_internal (obj, FALSE);
+			MonoGCHandle handle = mono_gchandle_new_internal (obj, FALSE);
 			MONO_STACKDATA (stackptr);
 
 			mono_threads_enter_gc_safe_region_unbalanced_internal (&stackptr);

@@ -94,7 +94,7 @@ if(CLR_CMAKE_HOST_WIN32)
 else()
     list(APPEND ILDASM_LINK_LIBRARIES
         coreclrpal
-        mscorrc_debug
+        mscorrc
         palrt
     )
 endif(CLR_CMAKE_HOST_WIN32)
@@ -102,7 +102,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(ildasm
         ${ILDASM_LINK_LIBRARIES}
-        mscorrc_debug
+        mscorrc
         coreclrpal
         palrt
     )

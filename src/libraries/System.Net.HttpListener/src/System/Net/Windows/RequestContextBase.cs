@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Net
 {
@@ -49,10 +50,10 @@ namespace System.Net
 
         protected virtual void Dispose(bool disposing)
         {
-            if (_backingBuffer != IntPtr.Zero)
+            IntPtr backingBuffer = Interlocked.Exchange(ref _backingBuffer, IntPtr.Zero);
+            if (backingBuffer != IntPtr.Zero)
             {
-                Marshal.FreeHGlobal(_backingBuffer);
-                _backingBuffer = IntPtr.Zero;
+                Marshal.FreeHGlobal(backingBuffer);
             }
         }
 

@@ -19,7 +19,7 @@ namespace System.Net.Http
         {
         }
 
-        public Utf8StringContent(Utf8String content, string mediaType)
+        public Utf8StringContent(Utf8String content, string? mediaType)
         {
             if (content is null)
             {
@@ -41,7 +41,7 @@ namespace System.Net.Http
             return Task.FromResult<Stream>(new Utf8StringStream(_content));
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
         {
             return stream.WriteAsync(_content.AsMemoryBytes()).AsTask();
         }

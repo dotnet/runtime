@@ -186,6 +186,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     unwind.h
     utils.h
     valuenum.h
+    valuenumfuncs.h
     valuenumtype.h
     varset.h
     vartype.h
@@ -334,7 +335,7 @@ set(JIT_ARCH_LINK_LIBRARIES
 
 if(CLR_CMAKE_HOST_UNIX)
     list(APPEND JIT_LINK_LIBRARIES
-       mscorrc_debug
+       mscorrc
        coreclrpal
        palrt
     )

@@ -848,8 +848,6 @@ void DestroyThread(Thread *th)
 
     _ASSERTE (th == GetThread());
 
-    _ASSERTE(g_fEEShutDown || th->m_dwLockCount == 0 || th->m_fRudeAborted);
-
     GCX_PREEMP_NO_DTOR();
 
     if (th->IsAbortRequested()) {
@@ -934,7 +932,6 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 #endif // FEATURE_COMINTEROP
 
     _ASSERTE(!PreemptiveGCDisabled());
-    _ASSERTE(g_fEEShutDown || m_dwLockCount == 0 || m_fRudeAborted);
 
     _ASSERTE ((m_State & Thread::TS_Detached) == 0);
 
@@ -1088,7 +1085,7 @@ void InitThreadManager()
 
     memcpy(s_barrierCopy, (BYTE*)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
 
-    // Store the JIT_WriteBarrier copy location to a global variable so that the JIT_Stelem_Ref and its helpers
+    // Store the JIT_WriteBarrier copy location to a global variable so that helpers
     // can jump to it.
     JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
 
@@ -1324,9 +1321,6 @@ Thread::Thread()
     m_pClrDebugState = NULL;
     m_ulEnablePreemptiveGCCount  = 0;
 #endif
-
-    m_dwLockCount = 0;
-    m_dwBeginLockCount = 0;
 
 #ifdef _DEBUG
     dbg_m_cSuspendedThreads = 0;
@@ -7240,7 +7234,6 @@ BOOL Thread::HaveExtraWorkForFinalizer()
 
     return m_ThreadTasks
         || ThreadpoolMgr::HaveTimerInfosToFlush()
-        || ExecutionManager::IsCacheCleanupRequired()
         || Thread::CleanupNeededForFinalizedThread()
         || (m_DetachCount > 0)
         || SystemDomain::System()->RequireAppDomainCleanup()
@@ -7285,11 +7278,6 @@ void Thread::DoExtraWorkForFinalizer()
     if(m_DetachCount > 0 || Thread::CleanupNeededForFinalizedThread())
     {
         Thread::CleanupDetachedThreads();
-    }
-
-    if(ExecutionManager::IsCacheCleanupRequired() && GCHeapUtilities::GetGCHeap()->GetCondemnedGeneration()>=1)
-    {
-        ExecutionManager::ClearCaches();
     }
 
     // If there were any TimerInfos waiting to be released, they'll get flushed now

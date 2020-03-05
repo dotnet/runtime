@@ -92,6 +92,13 @@ typedef DPTR(DictionaryEntryLayout) PTR_DictionaryEntryLayout;
 class DictionaryLayout;
 typedef DPTR(DictionaryLayout) PTR_DictionaryLayout;
 
+// Number of slots to initially allocate in a generic method dictionary layout.
+#if _DEBUG
+#define NUM_DICTIONARY_SLOTS 1  // Smaller number to stress the dictionary expansion logic
+#else
+#define NUM_DICTIONARY_SLOTS 4
+#endif
+
 // The type of dictionary layouts. We don't include the number of type
 // arguments as this is obtained elsewhere
 class DictionaryLayout
@@ -101,53 +108,69 @@ class DictionaryLayout
     friend class NativeImageDumper;
 #endif
 private:
-    // Next bucket of slots (only used to track entries that won't fit in the dictionary)
-    DictionaryLayout* m_pNext;
-
-    // Number of non-type-argument slots in this bucket
+    // Current number of non-type-argument slots
     WORD m_numSlots;
+
+    // Number of non-type-argument slots of the initial layout before any expansion
+    WORD m_numInitialSlots;
 
     // m_numSlots of these
     DictionaryEntryLayout m_slots[1];
 
-    static BOOL FindTokenWorker(LoaderAllocator *pAllocator,
-                                DWORD numGenericArgs,
-                                DictionaryLayout *pDictLayout,
-                                CORINFO_RUNTIME_LOOKUP *pResult,
-                                SigBuilder * pSigBuilder,
-                                BYTE * pSig,
-                                DWORD cbSig,
-                                int nFirstOffset,
-                                DictionaryEntrySignatureSource signatureSource,
-                                WORD * pSlotOut);
+    static BOOL FindTokenWorker(LoaderAllocator*                    pAllocator,
+                                DWORD                               numGenericArgs,
+                                DictionaryLayout*                   pDictLayout,
+                                SigBuilder*                         pSigBuilder,
+                                BYTE*                               pSig,
+                                DWORD                               cbSig,
+                                int                                 nFirstOffset,
+                                DictionaryEntrySignatureSource      signatureSource,
+                                CORINFO_RUNTIME_LOOKUP*             pResult,
+                                WORD*                               pSlotOut,
+                                DWORD                               scanFromSlot,
+                                BOOL                                useEmptySlotIfFound);
 
+
+    static DictionaryLayout* ExpandDictionaryLayout(LoaderAllocator*                pAllocator,
+                                                    DictionaryLayout*               pCurrentDictLayout,
+                                                    DWORD                           numGenericArgs,
+                                                    SigBuilder*                     pSigBuilder,
+                                                    BYTE*                           pSig,
+                                                    int                             nFirstOffset,
+                                                    DictionaryEntrySignatureSource  signatureSource,
+                                                    CORINFO_RUNTIME_LOOKUP*         pResult,
+                                                    WORD*                           pSlotOut);
+     
+    static PVOID CreateSignatureWithSlotData(SigBuilder* pSigBuilder, LoaderAllocator* pAllocator, WORD slot);
 
 public:
-    // Create an initial dictionary layout with a single bucket containing numSlots slots
+    // Create an initial dictionary layout containing numSlots slots
     static DictionaryLayout* Allocate(WORD numSlots, LoaderAllocator *pAllocator, AllocMemTracker *pamTracker);
 
-    // Bytes used for the first bucket of this dictionary, which might be stored inline in
+    // Bytes used for this dictionary, which might be stored inline in
     // another structure (e.g. MethodTable)
-    static DWORD GetFirstDictionaryBucketSize(DWORD numGenericArgs, PTR_DictionaryLayout pDictLayout);
+    static DWORD GetDictionarySizeFromLayout(DWORD numGenericArgs, PTR_DictionaryLayout pDictLayout);
 
-    static BOOL FindToken(LoaderAllocator *pAllocator,
-                          DWORD numGenericArgs,
-                          DictionaryLayout *pDictLayout,
-                          CORINFO_RUNTIME_LOOKUP *pResult,
-                          SigBuilder * pSigBuilder,
-                          int nFirstOffset,
-                          DictionaryEntrySignatureSource signatureSource);
+    static BOOL FindToken(MethodTable*                      pMT,
+                          LoaderAllocator*                  pAllocator,
+                          int                               nFirstOffset,
+                          SigBuilder*                       pSigBuilder,
+                          BYTE*                             pSig,
+                          DictionaryEntrySignatureSource    signatureSource,
+                          CORINFO_RUNTIME_LOOKUP*           pResult,
+                          WORD*                             pSlotOut);
 
-    static BOOL FindToken(LoaderAllocator * pAllocator,
-                          DWORD numGenericArgs,
-                          DictionaryLayout * pDictLayout,
-                          CORINFO_RUNTIME_LOOKUP * pResult,
-                          BYTE * signature,
-                          int nFirstOffset,
-                          DictionaryEntrySignatureSource signatureSource,
-                          WORD * pSlotOut);
+    static BOOL FindToken(MethodDesc*                       pMD,
+                          LoaderAllocator*                  pAllocator,
+                          int                               nFirstOffset,
+                          SigBuilder*                       pSigBuilder,
+                          BYTE*                             pSig,
+                          DictionaryEntrySignatureSource    signatureSource,
+                          CORINFO_RUNTIME_LOOKUP*           pResult,
+                          WORD*                             pSlotOut);
 
     DWORD GetMaxSlots();
+    DWORD GetNumInitialSlots();
     DWORD GetNumUsedSlots();
 
     PTR_DictionaryEntryLayout GetEntryLayout(DWORD i)
@@ -158,7 +181,6 @@ public:
             dac_cast<TADDR>(this) + offsetof(DictionaryLayout, m_slots) + sizeof(DictionaryEntryLayout) * i);
     }
 
-    DictionaryLayout* GetNextLayout() { LIMITED_METHOD_CONTRACT; return m_pNext; }
 
 #ifdef FEATURE_PREJIT
     DWORD GetObjectSize();
@@ -194,7 +216,7 @@ class Dictionary
 #ifdef DACCESS_COMPILE
     friend class NativeImageDumper;
 #endif
-  private:
+private:
     // First N entries are generic instantiations arguments. They are stored as FixupPointers
     // in NGen images. It means that the lowest bit is used to mark optional indirection (see code:FixupPointer).
     // The rest of the open array are normal pointers (no optional indirection).
@@ -208,7 +230,7 @@ class Dictionary
             idx * sizeof(m_pEntries[0]);
     }
 
-  public:
+public:
     inline DPTR(FixupPointer<TypeHandle>) GetInstantiation()
     {
         LIMITED_METHOD_CONTRACT;
@@ -220,11 +242,11 @@ class Dictionary
     inline void* AsPtr()
     {
         LIMITED_METHOD_CONTRACT;
-        return (void*) m_pEntries;
+        return (void*)m_pEntries;
     }
 #endif // #ifndef DACCESS_COMPILE
 
-  private:
+private:
 
 #ifndef DACCESS_COMPILE
 
@@ -233,50 +255,50 @@ class Dictionary
         LIMITED_METHOD_CONTRACT;
         return *GetTypeHandleSlotAddr(numGenericArgs, i);
     }
-    inline MethodDesc *GetMethodDescSlot(DWORD numGenericArgs, DWORD i)
+    inline MethodDesc* GetMethodDescSlot(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return *GetMethodDescSlotAddr(numGenericArgs,i);
+        return *GetMethodDescSlotAddr(numGenericArgs, i);
     }
-    inline FieldDesc *GetFieldDescSlot(DWORD numGenericArgs, DWORD i)
+    inline FieldDesc* GetFieldDescSlot(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return *GetFieldDescSlotAddr(numGenericArgs,i);
+        return *GetFieldDescSlotAddr(numGenericArgs, i);
     }
-    inline TypeHandle *GetTypeHandleSlotAddr(DWORD numGenericArgs, DWORD i)
+    inline TypeHandle* GetTypeHandleSlotAddr(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((TypeHandle *) &m_pEntries[numGenericArgs + i]);
+        return ((TypeHandle*)&m_pEntries[numGenericArgs + i]);
     }
-    inline MethodDesc **GetMethodDescSlotAddr(DWORD numGenericArgs, DWORD i)
+    inline MethodDesc** GetMethodDescSlotAddr(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((MethodDesc **) &m_pEntries[numGenericArgs + i]);
+        return ((MethodDesc**)&m_pEntries[numGenericArgs + i]);
     }
-    inline FieldDesc **GetFieldDescSlotAddr(DWORD numGenericArgs, DWORD i)
+    inline FieldDesc** GetFieldDescSlotAddr(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((FieldDesc **) &m_pEntries[numGenericArgs + i]);
+        return ((FieldDesc**)&m_pEntries[numGenericArgs + i]);
     }
-    inline DictionaryEntry *GetSlotAddr(DWORD numGenericArgs, DWORD i)
+    inline DictionaryEntry* GetSlotAddr(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((void **) &m_pEntries[numGenericArgs + i]);
+        return ((void**)&m_pEntries[numGenericArgs + i]);
     }
     inline DictionaryEntry GetSlot(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return *GetSlotAddr(numGenericArgs,i);
+        return *GetSlotAddr(numGenericArgs, i);
     }
     inline BOOL IsSlotEmpty(DWORD numGenericArgs, DWORD i)
     {
         LIMITED_METHOD_CONTRACT;
-        return GetSlot(numGenericArgs,i) == NULL;
+        return GetSlot(numGenericArgs, i) == NULL;
     }
 
 #endif // #ifndef DACCESS_COMPILE
 
-  public:
+public:
 
 #ifndef DACCESS_COMPILE
 
@@ -292,9 +314,16 @@ class Dictionary
                                MethodTable * pMT,
                                BOOL nonExpansive);
 
+private:
+    static DWORD GetDictionarySlotsSizeForType(MethodTable* pMT);
+    static DWORD GetDictionarySlotsSizeForMethod(MethodDesc* pMD);
+
+    static Dictionary* GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG slotIndex);
+    static Dictionary* GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG slotIndex);
+
 #endif // #ifndef DACCESS_COMPILE
 
-  public:
+public:
 
 #ifdef FEATURE_PREJIT
 
@@ -312,13 +341,13 @@ class Dictionary
                BOOL canSaveInstantiation,
                BOOL canSaveSlots,
                DWORD numGenericArgs,            // Must be non-zero
-               Module *pModule, // module of the generic code
+               Module *pModule,                 // module of the generic code
                DictionaryLayout *pDictLayout);  // If NULL, then only type arguments are present
 
     BOOL IsWriteable(DataImage *image,
                BOOL canSaveSlots,
                DWORD numGenericArgs,            // Must be non-zero
-               Module *pModule, // module of the generic code
+               Module *pModule,                 // module of the generic code
                DictionaryLayout *pDictLayout);  // If NULL, then only type arguments are present
 
     BOOL ComputeNeedsRestore(DataImage *image,

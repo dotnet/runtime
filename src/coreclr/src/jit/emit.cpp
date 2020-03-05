@@ -66,11 +66,11 @@ UNATIVE_OFFSET emitLocation::GetFuncletPrologOffset(emitter* emit) const
 }
 
 #ifdef DEBUG
-void emitLocation::Print() const
+void emitLocation::Print(LONG compMethodID) const
 {
     unsigned insNum = emitGetInsNumFromCodePos(codePos);
     unsigned insOfs = emitGetInsOfsFromCodePos(codePos);
-    printf("(G_M%03u_IG%02u,ins#%d,ofs#%d)", Compiler::s_compMethodsCount, ig->igNum, insNum, insOfs);
+    printf("(G_M%03u_IG%02u,ins#%d,ofs#%d)", compMethodID, ig->igNum, insNum, insOfs);
 }
 #endif // DEBUG
 
@@ -809,7 +809,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 #ifdef DEBUG
     if (emitComp->opts.dspCode)
     {
-        printf("\n      G_M%03u_IG%02u:", Compiler::s_compMethodsCount, ig->igNum);
+        printf("\n      G_M%03u_IG%02u:", emitComp->compMethodID, ig->igNum);
         if (emitComp->verbose)
         {
             printf("        ; offs=%06XH, funclet=%02u, bbWeight=%s", ig->igOffs, ig->igFuncIdx,
@@ -1131,18 +1131,17 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
 //              if we return these are updated with default values
 //
 // Notes:
-//     When validating that the PerfScore handles every instruction.
-//     the #if 0 block is changed into a #ifdef DEBUG
-//     We will print the instruction and instruction group
+//     We print the instruction and instruction group
 //     and instead of returning we will assert
 //
-//     Otherwise we will return default latencies of 1 cycle.
+//     This method asserts with a debug/checked build
+//     and returns default latencies of 1 cycle otherwise.
 //
 void emitter::perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacteristics* pResult)
 {
-// Change this to #ifdef DEBUG to assert on any unhandled instructions
-#if 0
-    printf("PerfScore: unhandled instruction: %s, format %s", codeGen->genInsName(id->idIns()), emitIfName(id->idInsFmt()));
+#ifdef DEBUG
+    printf("PerfScore: unhandled instruction: %s, format %s", codeGen->genInsName(id->idIns()),
+           emitIfName(id->idInsFmt()));
     assert(!"PerfScore: unhandled instruction");
 #endif
     pResult->insThroughput = PERFSCORE_THROUGHPUT_1C;
@@ -3228,7 +3227,7 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
     const int TEMP_BUFFER_LEN = 40;
     char      buff[TEMP_BUFFER_LEN];
 
-    sprintf_s(buff, TEMP_BUFFER_LEN, "G_M%03u_IG%02u:        ", Compiler::s_compMethodsCount, ig->igNum);
+    sprintf_s(buff, TEMP_BUFFER_LEN, "G_M%03u_IG%02u:        ", emitComp->compMethodID, ig->igNum);
     printf("%s; ", buff);
     if ((igPrev == nullptr) || (igPrev->igFuncIdx != ig->igFuncIdx))
     {
@@ -3858,7 +3857,7 @@ AGAIN:
             {
                 printf("Binding: ");
                 emitDispIns(jmp, false, false, false);
-                printf("Binding L_M%03u_" FMT_BB, Compiler::s_compMethodsCount, jmp->idAddr()->iiaBBlabel->bbNum);
+                printf("Binding L_M%03u_" FMT_BB, emitComp->compMethodID, jmp->idAddr()->iiaBBlabel->bbNum);
             }
 #endif // DEBUG
 
@@ -3869,7 +3868,7 @@ AGAIN:
             {
                 if (tgtIG)
                 {
-                    printf("to G_M%03u_IG%02u\n", Compiler::s_compMethodsCount, tgtIG->igNum);
+                    printf("to G_M%03u_IG%02u\n", emitComp->compMethodID, tgtIG->igNum);
                 }
                 else
                 {
@@ -4322,14 +4321,12 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
     }
 #endif
 
-#ifdef TARGET_ARMARCH
     if (jmp->idAddr()->iiaHasInstrCount())
     {
         // Too hard to figure out funclets from just an instruction count
         // You're on your own!
         return;
     }
-#endif // TARGET_ARMARCH
 
 #ifdef TARGET_ARM64
     // No interest if it's not jmp.
@@ -4914,7 +4911,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             }
             else
             {
-                printf("\nG_M%03u_IG%02u:\n", Compiler::s_compMethodsCount, ig->igNum);
+                printf("\nG_M%03u_IG%02u:\n", emitComp->compMethodID, ig->igNum);
             }
         }
 #endif // DEBUG
@@ -5758,9 +5755,8 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                 const char* blockLabelFormat = "G_M%03u_IG%02u";
                 char        blockLabel[64];
                 char        firstLabel[64];
-                sprintf_s(blockLabel, _countof(blockLabel), blockLabelFormat, Compiler::s_compMethodsCount, ig->igNum);
-                sprintf_s(firstLabel, _countof(firstLabel), blockLabelFormat, Compiler::s_compMethodsCount,
-                          igFirst->igNum);
+                sprintf_s(blockLabel, _countof(blockLabel), blockLabelFormat, emitComp->compMethodID, ig->igNum);
+                sprintf_s(firstLabel, _countof(firstLabel), blockLabelFormat, emitComp->compMethodID, igFirst->igNum);
 
                 if (isRelative)
                 {
@@ -7576,7 +7572,7 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
         if (ig->igOffs == offs)
         {
             // Found it!
-            sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "G_M%03u_IG%02u", Compiler::s_compMethodsCount, ig->igNum);
+            sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "G_M%03u_IG%02u", emitComp->compMethodID, ig->igNum);
             retbuf = buf[curBuf];
             curBuf = (curBuf + 1) % 4;
             return retbuf;

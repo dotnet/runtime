@@ -794,3 +794,11 @@ mono_thread_get_coop_aware (void)
 
 	return result;
 }
+
+char mono_threads_is_runtime_startup_finished_hidden_do_not_modify;
+
+void
+mono_threads_set_runtime_startup_finished (void)
+{
+	mono_threads_is_runtime_startup_finished_hidden_do_not_modify = 1;
+}
