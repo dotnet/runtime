@@ -42,7 +42,7 @@ namespace System.Text.Tests
             {
                 byte[] dest = new byte[bufferLength];
                 Assert.Equal(utf8Normalized.Length, utf8Source.Normalize(dest, normalizationForm));
-                Utf8Span normalizedSpan = Utf8Span.UnsafeCreateWithoutValidation(dest[..utf8Normalized.Length]);
+                Utf8Span normalizedSpan = Utf8Span.UnsafeCreateWithoutValidation(dest.AsSpan().Slice(0, utf8Normalized.Length));
                 Assert.True(utf8Normalized.AsSpan() == normalizedSpan); // ordinal equality
                 Assert.True(normalizedSpan.IsNormalized(normalizationForm));
             }

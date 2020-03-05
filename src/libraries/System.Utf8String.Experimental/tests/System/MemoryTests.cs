@@ -24,15 +24,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void MemoryMarshal_TryGetArrayOfChar8_Utf8String()
-        {
-            ReadOnlyMemory<Char8> rom = u8("Hello").AsMemory();
-
-            Assert.False(MemoryMarshal.TryGetArray(rom, out ArraySegment<Char8> segment));
-            Assert.True(default(ArraySegment<Char8>).Equals(segment));
-        }
-
-        [Fact]
         public static unsafe void MemoryOfByte_WithUtf8String_Pin()
         {
             Utf8String theString = u8("Hello");
@@ -57,30 +48,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static unsafe void MemoryOfChar8_WithUtf8String_Pin()
-        {
-            Utf8String theString = u8("Hello");
-            ReadOnlyMemory<Char8> rom = theString.AsMemory();
-            MemoryHandle memHandle = default;
-            try
-            {
-                memHandle = Unsafe.As<ReadOnlyMemory<Char8>, Memory<Char8>>(ref rom).Pin();
-                Assert.True(memHandle.Pointer == Unsafe.AsPointer(ref Unsafe.AsRef(in theString.GetPinnableReference())));
-            }
-            finally
-            {
-                memHandle.Dispose();
-            }
-        }
-
-        [Fact]
-        public static void MemoryOfChar8_WithUtf8String_ToString()
-        {
-            ReadOnlyMemory<Char8> rom = u8("Hello").AsMemory();
-            Assert.Equal("Hello", Unsafe.As<ReadOnlyMemory<Char8>, Memory<Char8>>(ref rom).ToString());
-        }
-
-        [Fact]
         public static unsafe void ReadOnlyMemoryOfByte_WithUtf8String_Pin()
         {
             Utf8String theString = u8("Hello");
@@ -101,29 +68,6 @@ namespace System.Tests
         public static void ReadOnlyMemoryOfByte_WithUtf8String_ToString()
         {
             Assert.Equal("System.ReadOnlyMemory<Byte>[5]", u8("Hello").AsMemoryBytes().ToString());
-        }
-
-        [Fact]
-        public static unsafe void ReadOnlyMemoryOfChar8_WithUtf8String_Pin()
-        {
-            Utf8String theString = u8("Hello");
-            ReadOnlyMemory<Char8> rom = theString.AsMemory();
-            MemoryHandle memHandle = default;
-            try
-            {
-                memHandle = rom.Pin();
-                Assert.True(memHandle.Pointer == Unsafe.AsPointer(ref Unsafe.AsRef(in theString.GetPinnableReference())));
-            }
-            finally
-            {
-                memHandle.Dispose();
-            }
-        }
-
-        [Fact]
-        public static void ReadOnlyMemoryOfChar8_WithUtf8String_ToString()
-        {
-            Assert.Equal("Hello", u8("Hello").AsMemory().ToString());
         }
 
         [Fact]

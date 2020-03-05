@@ -256,75 +256,10 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Ctor_NonValidating_FromDelegate()
-        {
-            object expectedState = new object();
-            SpanAction<byte, object> spanAction = (span, actualState) =>
-            {
-                Assert.Same(expectedState, actualState);
-                Assert.NotEqual(0, span.Length); // shouldn't have been called for a zero-length span
-
-                for (int i = 0; i < span.Length; i++)
-                {
-                    Assert.Equal(0, span[i]); // should've been zero-inited
-                    span[i] = (byte)('a' + (i % 26)); // writes "abc...xyzabc...xyz..."
-                }
-            };
-
-            ArgumentException exception = Assert.Throws<ArgumentOutOfRangeException>(() => Utf8String.UnsafeCreateWithoutValidation(-1, expectedState, spanAction));
-            Assert.Equal("length", exception.ParamName);
-
-            exception = Assert.Throws<ArgumentNullException>(() => Utf8String.UnsafeCreateWithoutValidation(10, expectedState, action: null));
-            Assert.Equal("action", exception.ParamName);
-
-            Assert.Same(Utf8String.Empty, Utf8String.UnsafeCreateWithoutValidation(0, expectedState, spanAction));
-
-            Assert.Equal(u8("abcde"), Utf8String.UnsafeCreateWithoutValidation(5, expectedState, spanAction));
-        }
-
-        [Fact]
-        public static void Ctor_Validating_FromDelegate()
-        {
-            object expectedState = new object();
-            SpanAction<byte, object> spanAction = (span, actualState) =>
-            {
-                Assert.Same(expectedState, actualState);
-                Assert.NotEqual(0, span.Length); // shouldn't have been called for a zero-length span
-
-                for (int i = 0; i < span.Length; i++)
-                {
-                    Assert.Equal(0, span[i]); // should've been zero-inited
-                    span[i] = (byte)('a' + (i % 26)); // writes "abc...xyzabc...xyz..."
-                }
-            };
-
-            ArgumentException exception = Assert.Throws<ArgumentOutOfRangeException>(() => Utf8String.Create(-1, expectedState, spanAction));
-            Assert.Equal("length", exception.ParamName);
-
-            exception = Assert.Throws<ArgumentNullException>(() => Utf8String.Create(10, expectedState, action: null));
-            Assert.Equal("action", exception.ParamName);
-
-            Assert.Same(Utf8String.Empty, Utf8String.Create(0, expectedState, spanAction));
-
-            Assert.Equal(u8("abcde"), Utf8String.Create(5, expectedState, spanAction));
-        }
-
-        [Fact]
-        public static void Ctor_Validating_FromDelegate_ThrowsIfDelegateProvidesInvalidData()
-        {
-            SpanAction<byte, object> spanAction = (span, actualState) =>
-            {
-                span[0] = 0xFF; // never a valid UTF-8 byte
-            };
-
-            Assert.Throws<ArgumentException>(() => Utf8String.Create(10, new object(), spanAction));
-        }
-
-        [Fact]
         public static void Ctor_CreateFromRelaxed_Utf16()
         {
             Assert.Same(Utf8String.Empty, Utf8String.CreateFromRelaxed(ReadOnlySpan<char>.Empty));
-            Assert.Equal(u8("xy\uFFFDz"), Utf8String.CreateFromRelaxed("xy\ud800z"));
+            Assert.Equal(u8("xy\uFFFDz"), Utf8String.CreateFromRelaxed("xy\ud800z".AsSpan()));
         }
 
         [Fact]
@@ -332,33 +267,6 @@ namespace System.Tests
         {
             Assert.Same(Utf8String.Empty, Utf8String.CreateFromRelaxed(ReadOnlySpan<byte>.Empty));
             Assert.Equal(u8("xy\uFFFDz"), Utf8String.CreateFromRelaxed(new byte[] { (byte)'x', (byte)'y', 0xF4, 0x80, 0x80, (byte)'z' }));
-        }
-
-        [Fact]
-        public static void Ctor_CreateRelaxed_FromDelegate()
-        {
-            object expectedState = new object();
-            SpanAction<byte, object> spanAction = (span, actualState) =>
-            {
-                Assert.Same(expectedState, actualState);
-                Assert.NotEqual(0, span.Length); // shouldn't have been called for a zero-length span
-
-                for (int i = 0; i < span.Length; i++)
-                {
-                    Assert.Equal(0, span[i]); // should've been zero-inited
-                    span[i] = 0xFF; // never a valid UTF-8 byte
-                }
-            };
-
-            ArgumentException exception = Assert.Throws<ArgumentOutOfRangeException>(() => Utf8String.CreateRelaxed(-1, expectedState, spanAction));
-            Assert.Equal("length", exception.ParamName);
-
-            exception = Assert.Throws<ArgumentNullException>(() => Utf8String.CreateRelaxed(10, expectedState, action: null));
-            Assert.Equal("action", exception.ParamName);
-
-            Assert.Same(Utf8String.Empty, Utf8String.CreateRelaxed(0, expectedState, spanAction));
-
-            Assert.Equal(u8("\uFFFD\uFFFD"), Utf8String.CreateRelaxed(2, expectedState, spanAction));
         }
 
         [Fact]
@@ -399,17 +307,17 @@ namespace System.Tests
 
             // Well-formed ASCII contents
 
-            Assert.True(Utf8String.TryCreateFrom("Hello", out value));
+            Assert.True(Utf8String.TryCreateFrom("Hello".AsSpan(), out value));
             Assert.Equal(u8("Hello"), value);
 
             // Well-formed non-ASCII contents
 
-            Assert.True(Utf8String.TryCreateFrom("\U0001F47D", out value)); // U+1F47D EXTRATERRESTRIAL ALIEN
+            Assert.True(Utf8String.TryCreateFrom("\U0001F47D".AsSpan(), out value)); // U+1F47D EXTRATERRESTRIAL ALIEN
             Assert.Equal(u8("\U0001F47D"), value);
 
             // Ill-formed contents
 
-            Assert.False(Utf8String.TryCreateFrom("\uD800x", out value));
+            Assert.False(Utf8String.TryCreateFrom("\uD800x".AsSpan(), out value));
             Assert.Null(value);
         }
     }
