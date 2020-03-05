@@ -122,16 +122,13 @@ jobs:
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
       displayName: Populate Core_Root
 
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: 3.x
-
     # Create baseline output on the host (x64) machine
     - task: PythonScript@0
       displayName: Create cross-platform crossgen baseline
       inputs:
         scriptSource: 'filePath'
         scriptPath: $(coreClrRepoRoot)/tests/scripts/crossgen_comparison.py
+        pythonInterpreter: /usr/bin/python3
         ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
           arguments:
             crossgen_framework
