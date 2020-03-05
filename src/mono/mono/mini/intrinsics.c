@@ -1190,20 +1190,19 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 					((strcmp (cmethod->name, "Add") == 0) ||
 					 (strcmp (cmethod->name, "And") == 0) ||
 					 (strcmp (cmethod->name, "Or") == 0))) {
-
 			guint32 opcode = 0;
 			guint32 opcode_i4 = 0;
 			guint32 opcode_i8 = 0;
 			gboolean llvm_only = FALSE;
 
-			if (strcmp(cmethod->name, "Add") == 0) {
+			if (strcmp (cmethod->name, "Add") == 0) {
 				opcode_i4 = OP_ATOMIC_ADD_I4;
 				opcode_i8 = OP_ATOMIC_ADD_I8;
-			} else if (strcmp(cmethod->name, "And") == 0) {
+			} else if (strcmp (cmethod->name, "And") == 0) {
 				opcode_i4 = OP_ATOMIC_AND_I4;
 				opcode_i8 = OP_ATOMIC_AND_I8;
 				llvm_only = TRUE;
-			} else if (strcmp(cmethod->name, "And") == 0) {
+			} else if (strcmp (cmethod->name, "Or") == 0) {
 				opcode_i4 = OP_ATOMIC_OR_I4;
 				opcode_i8 = OP_ATOMIC_OR_I8;
 				llvm_only = TRUE;
@@ -1214,14 +1213,11 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			if (fsig->params [0]->type == MONO_TYPE_I4) {
 				opcode = opcode_i4;
 				cfg->has_atomic_add_i4 = TRUE;
-			}
-			else if (fsig->params [0]->type == MONO_TYPE_I8 && SIZEOF_REGISTER == 8) {
+			} else if (fsig->params [0]->type == MONO_TYPE_I8 && SIZEOF_REGISTER == 8) {
 				opcode = opcode_i8;
 			}
 
-			if (opcode) {
-				if (!mono_arch_opcode_supported (opcode) && !llvm_only)
-					return NULL;
+			if (opcode && (mono_arch_opcode_supported (opcode) || llvm_only)) {
 				MONO_INST_NEW (cfg, ins, opcode);
 				ins->dreg = mono_alloc_ireg (cfg);
 				ins->inst_basereg = args [0]->dreg;
