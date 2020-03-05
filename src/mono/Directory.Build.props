@@ -4,17 +4,11 @@
   </PropertyGroup>
   <Import Project="..\..\Directory.Build.props" />
   
-  <!-- Set default Configuration and Platform -->
+  <!-- Set default Platform -->
   <PropertyGroup>
-    <TargetOS Condition="'$(TargetOS)' == '' and '$([MSBuild]::IsOSPlatform(Windows))' == 'true'">Windows_NT</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and '$([MSBuild]::IsOSPlatform(Linux))' == 'true'">Linux</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and '$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>
-
     <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
     <Platform>$(ArchGroup)</Platform>
     <TargetArchitecture>$(ArchGroup)</TargetArchitecture>
-
-    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
 
     <PlatformConfigPathPart>$(TargetOS).$(Platform).$(Configuration)</PlatformConfigPathPart>
   </PropertyGroup>
