@@ -266,6 +266,7 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray());
 
             // Detect cases where the instruction set support used is a superset of the baseline instruction set specification
+            if (_actualInstructionSetSupport != null)
             {
                 var baselineSupport = JitConfigProvider.Instance.InstructionSetSupport;
                 var actualSupport = _actualInstructionSetSupport.CreateInstructionSetSupport(null);

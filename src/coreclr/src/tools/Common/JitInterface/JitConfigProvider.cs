@@ -91,6 +91,10 @@ namespace Internal.JitInterface
                 {
                     switch (instructionSet)
                     {
+                        case "Sse":
+                        case "Sse2":
+                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
+                            break;
                         case "Sse3":
                             jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_USE_SSE3);
                             break;
@@ -145,6 +149,7 @@ namespace Internal.JitInterface
                             // No flag to enable this
                             break;
                         case "AdvSimd":
+                            jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
                             jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_HAS_ARM64_SIMD);
                             break;
                         case "Aes":

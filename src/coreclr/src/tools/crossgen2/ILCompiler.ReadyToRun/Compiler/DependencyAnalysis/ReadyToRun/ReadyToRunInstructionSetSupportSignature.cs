@@ -65,8 +65,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             string[] supportedAndUnsupportedSplit = _instructionSetsSupport.Split(',');
 
-            string[] instructionSetsSupported = supportedAndUnsupportedSplit[0].Split('+');
-            string[] instructionSetsExplicitlyUnsupported = supportedAndUnsupportedSplit[1].Split('-');
+            string[] instructionSetsSupported = supportedAndUnsupportedSplit[0] == "" ? Array.Empty<string>() : supportedAndUnsupportedSplit[0].Split('+');
+            string[] instructionSetsExplicitlyUnsupported = supportedAndUnsupportedSplit[1] == "" ? Array.Empty<string>() : supportedAndUnsupportedSplit[1].Split('-');
             builder.EmitInt(instructionSetsSupported.Length + instructionSetsExplicitlyUnsupported.Length);
 
             foreach (string instructionSetString in instructionSetsSupported)
