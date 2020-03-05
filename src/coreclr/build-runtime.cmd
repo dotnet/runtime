@@ -324,8 +324,8 @@ powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng
     /t:GenerateNativeVersionFile /restore^
     %__CommonMSBuildArgs% %__UnprocessedBuildArgs% /bl:!__BinLog!
 if not !errorlevel! == 0 (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to generate version headers.
     set __exitCode=!errorlevel!
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to generate version headers.
     goto ExitWithCode
 )
 
@@ -344,8 +344,8 @@ if %__RestoreOptData% EQU 1 (
         %__CommonMSBuildArgs% %__UnprocessedBuildArgs%^
         /nodereuse:false /bl:!__BinLog!
     if not !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to restore the optimization data package.
         set __exitCode=!errorlevel!
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to restore the optimization data package.
         goto ExitWithCode
     )
 )
@@ -360,8 +360,8 @@ if %__PgoOptimize% EQU 1 (
         /bl:!__BinLog!
 
     if not !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%Failed to get PGO data package path.
         set __exitCode=!errorlevel!
+        echo %__ErrMsgPrefix%Failed to get PGO data package path.
         goto ExitWithCode
     )
     if not exist "!PgoDataPackagePathOutputFile!" (
@@ -449,8 +449,11 @@ if %__BuildCrossArchNative% EQU 1 (
     "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
     if not !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: cross-arch components build failed.
         set __exitCode=!errorlevel!
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: cross-arch components build failed. Refer to the build log files for details.
+        echo     !__BuildLog!
+        echo     !__BuildWrn!
+        echo     !__BuildErr!
         goto ExitWithCode
     )
 
@@ -529,17 +532,20 @@ if %__BuildNative% EQU 1 (
     "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
     if not !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: native component build failed.
         set __exitCode=!errorlevel!
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: native component build failed. Refer to the build log files for details.
+        echo     !__BuildLog!
+        echo     !__BuildWrn!
+        echo     !__BuildErr!
         goto ExitWithCode
     )
 
     if not "%__BuildArch%" == "arm64" (
-        mkdir "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
-        copy /Y "%UniversalCRTSDKDIR%Redist\ucrt\DLLs\%__BuildArch%\*.dll" "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
+        if not exist "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%" mkdir "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
+        xcopy /F /Y "%UniversalCRTSDKDIR%Redist\ucrt\DLLs\%__BuildArch%\*.dll" "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
         if not !errorlevel! == 0 (
-            echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to copy the CRT to the output.
             set __exitCode=!errorlevel!
+            echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to copy the CRT to the output.
             goto ExitWithCode
         )
     )
