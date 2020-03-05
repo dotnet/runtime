@@ -3140,7 +3140,7 @@ public:
     //
     LPVOID FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const;
 
-#ifndef TARGET_UNIX
+#ifdef TARGET_WINDOWS
 private:
     FARPROC FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE mod, PTR_CUTF8 entryPointName) const;
 #endif

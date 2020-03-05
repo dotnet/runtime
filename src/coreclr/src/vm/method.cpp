@@ -5254,7 +5254,8 @@ void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
 }
 
 #ifndef CROSSGEN_COMPILE
-#ifndef TARGET_UNIX
+
+#ifdef TARGET_WINDOWS
 FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName) const
 {
     CONTRACTL
@@ -5321,7 +5322,7 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
 
     char const * funcName = GetEntrypointName();
 
-#ifdef TARGET_UNIX
+#ifndef TARGET_WINDOWS
     return reinterpret_cast<LPVOID>(PAL_GetProcAddressDirect(hMod, funcName));
 #else
     // Handle ordinals.
