@@ -701,7 +701,7 @@ public:
         m_nHashSize = 0;
         m_csMap = NULL;
         m_pResourceFile = NULL;
-#ifdef HOST_UNIX
+#ifdef TARGET_UNIX
         m_pResourceDomain = NULL;
 #endif // HOST_UNIX
 
@@ -775,11 +775,11 @@ private:
     CRITSEC_COOKIE m_csMap;
 
     LPCWSTR m_pResourceFile;
-#ifdef HOST_UNIX
+#ifdef TARGET_UNIX
     // Resource domain is an ANSI string identifying a native resources file
     static LPCSTR  m_pDefaultResourceDomain;
     LPCSTR m_pResourceDomain;
-#endif // HOST_UNIX
+#endif // TARGET_UNIX
 
     // Main accessors for hash
     HRESOURCEDLL LookupNode(LocaleID langId, BOOL &fMissing);
