@@ -856,7 +856,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                         uint instructionSetEncoded = ReadUIntAndEmitInlineSignatureBinary(builder);
                         ReadyToRunInstructionSet instructionSet = (ReadyToRunInstructionSet)(instructionSetEncoded >> 1);
                         bool supported = (instructionSetEncoded & 1) == 1;
-                        builder.Append($" {instructionSet}{supported ? "+" : "-"}");
+                        builder.Append($" {instructionSet}{(supported ? "+" : "-")}");
                     }
                     break;
 
