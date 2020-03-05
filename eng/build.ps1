@@ -4,14 +4,14 @@ Param(
   [switch][Alias('b')]$build,
   [switch][Alias('t')]$test,
   [switch]$buildtests,
-  [string][Alias('c')]$configuration = "Debug",
+  [string[]][Alias('c')]$configuration = @("Debug"),
   [string][Alias('f')]$framework,
   [string]$vs,
   [string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
-  [string]$arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant(),
+  [string[]]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
   [string]$subsetCategory,
   [string]$subset,
   [ValidateSet("Debug","Release","Checked")][string]$runtimeConfiguration,
@@ -141,18 +141,28 @@ foreach ($argument in $PSBoundParameters.Keys)
     "build"                { $arguments += " -build" }
     "buildtests"           { if ($build -eq $true) { $arguments += " /p:BuildTests=true" } else { $arguments += " -build /p:BuildTests=only" } }
     "test"                 { $arguments += " -test" }
-    "configuration"        { $arguments += " -configuration $((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "runtimeConfiguration" { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"            { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                   { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
     "allconfigurations"    { $arguments += " /p:BuildAllConfigurations=true" }
-    "arch"                 { $arch = $PSBoundParameters[$argument]; $arguments += " /p:ArchGroup=$arch /p:TargetArchitecture=$arch" }
     "properties"           { $arguments += " " + $properties }
+    # configuration and arch can be specified multiple times, so they should be no-ops here
+    "configuration"        {}
+    "arch"                 {}
     default                { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }
 
-$env:__DistroRid="win-$arch"
+foreach ($config in $configuration) {
+  $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
+  foreach ($singleArch in $arch) {
+    $argumentsWithArch = $argumentsWithConfig + " /p:ArchGroup=$singleArch /p:TargetArchitecture=$singleArch"
+    $env:__DistroRid="win-$singleArch"
+    Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
+    if ($lastExitCode -ne 0) {
+        exit $lastExitCode
+    }
+  }
+}
 
-Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $arguments"
-exit $lastExitCode
+exit 0
