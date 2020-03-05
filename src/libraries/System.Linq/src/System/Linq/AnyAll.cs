@@ -20,6 +20,10 @@ namespace System.Linq
             {
                 return collectionoft.Count != 0;
             }
+            
+            if (source is IReadOnlyCollection<TSource> readOnlyCollection)
+                return readOnlyCollection.Count != 0;
+
             else if (source is IIListProvider<TSource> listProv)
             {
                 // Note that this check differs from the corresponding check in
@@ -38,6 +42,7 @@ namespace System.Linq
             {
                 return collection.Count != 0;
             }
+           
 
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
