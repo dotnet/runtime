@@ -2758,7 +2758,6 @@ public:
                            PTR_CORCOMPILE_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
                            PEDecoder * pNativeImage);
     void RunEagerFixups();
-    void RunEagerFixupsUnlocked();
 
     Module *GetModuleFromIndex(DWORD ix);
     Module *GetModuleFromIndexIfLoaded(DWORD ix);
@@ -2913,7 +2912,7 @@ public:
 
 #endif  // FEATURE_PREJIT
 
-    BOOL IsReadyToRun() const
+    BOOL IsReadyToRun()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
@@ -2924,14 +2923,8 @@ public:
 #endif
     }
 
-    NativeImage *GetCompositeNativeImage() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_pReadyToRunInfo != NULL ? m_pReadyToRunInfo->GetNativeImage() : NULL);
-    }
-
 #ifdef FEATURE_READYTORUN
-    PTR_ReadyToRunInfo GetReadyToRunInfo() const
+    PTR_ReadyToRunInfo GetReadyToRunInfo()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pReadyToRunInfo;
@@ -3235,13 +3228,11 @@ public:
         if (NativeMetadataAssemblyRefMap == NULL)
             return NULL;
 
-        _ASSERTE(rid <= GetNativeMetadataAssemblyCount());
+        _ASSERTE(rid <= GetNativeAssemblyImport()->GetCountWithTokenKind(mdtAssemblyRef));
         return NativeMetadataAssemblyRefMap[rid - 1];
     }
 
     void SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssembly);
-
-    uint32_t GetNativeMetadataAssemblyCount();
 #endif // !defined(DACCESS_COMPILE)
 
     // For protecting dictionary layout slot expansions

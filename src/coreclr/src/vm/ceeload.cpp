@@ -41,7 +41,6 @@
 #include "metadataexports.h"
 #include "inlinetracking.h"
 #include "threads.h"
-#include "nativeimage.h"
 
 #ifdef FEATURE_PREJIT
 #include "exceptionhandling.h"
@@ -498,19 +497,6 @@ BOOL Module::IsPersistedObject(void *address)
 }
 #endif // FEATURE_PREJIT
 
-uint32_t Module::GetNativeMetadataAssemblyCount()
-{
-    NativeImage *compositeImage = GetCompositeNativeImage();
-    if (compositeImage != NULL)
-    {
-        return compositeImage->GetComponentAssemblyCount();
-    }
-    else
-    {
-        return GetNativeAssemblyImport()->GetCountWithTokenKind(mdtAssemblyRef);
-    }
-}
-
 void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssembly)
 {
     CONTRACTL
@@ -523,7 +509,8 @@ void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssemb
 
     if (m_NativeMetadataAssemblyRefMap == NULL)
     {
-        uint32_t dwMaxRid = GetNativeMetadataAssemblyCount();
+        IMDInternalImport* pImport = GetNativeAssemblyImport();
+        DWORD dwMaxRid = pImport->GetCountWithTokenKind(mdtAssemblyRef);
         _ASSERTE(dwMaxRid > 0);
 
         S_SIZE_T dwAllocSize = S_SIZE_T(sizeof(PTR_Assembly)) * S_SIZE_T(dwMaxRid);
@@ -538,7 +525,7 @@ void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssemb
     }
     _ASSERTE(m_NativeMetadataAssemblyRefMap != NULL);
 
-    _ASSERTE(rid <= GetNativeMetadataAssemblyCount());
+    _ASSERTE(rid <= GetNativeAssemblyImport()->GetCountWithTokenKind(mdtAssemblyRef));
     m_NativeMetadataAssemblyRefMap[rid - 1] = pAssembly;
 }
 
@@ -10516,34 +10503,6 @@ void Module::RunEagerFixups()
     // TODO: Verify that eager fixup dependency graphs can contain no cycles
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-    NativeImage *compositeNativeImage = GetCompositeNativeImage();
-    if (compositeNativeImage != NULL)
-    {
-        // For composite images, multiple modules may request initializing eager fixups
-        // from multiple threads so we need to lock their resolution.
-        if (compositeNativeImage->EagerFixupsHaveRun())
-        {
-            return;
-        }
-        CrstHolder compositeEagerFixups(compositeNativeImage->EagerFixupsLock());
-        if (compositeNativeImage->EagerFixupsHaveRun())
-        {
-            return;
-        }
-        RunEagerFixupsUnlocked();
-        compositeNativeImage->SetEagerFixupsHaveRun();
-    }
-    else
-    {
-        // Per-module eager fixups don't need locking
-        RunEagerFixupsUnlocked();
-    }
-}
-
-void Module::RunEagerFixupsUnlocked()
-{
-    COUNT_T nSections;
-    PTR_CORCOMPILE_IMPORT_SECTION pSections = GetImportSections(&nSections);
     PEImageLayout *pNativeImage = GetNativeOrReadyToRunImage();
 
     for (COUNT_T iSection = 0; iSection < nSections; iSection++)

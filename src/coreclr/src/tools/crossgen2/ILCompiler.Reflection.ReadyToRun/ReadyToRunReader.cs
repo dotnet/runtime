@@ -381,7 +381,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     throw new BadImageFormatException("The file is not a ReadyToRun image");
                 }
 
-                Debug.Assert(!Composite);
                 _assemblyCache.Add(metadata);
 
                 DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
@@ -640,7 +639,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     if (ReadyToRunAssemblyHeaders[assemblyIndex].Sections.TryGetValue(ReadyToRunSectionType.MethodDefEntryPoints, out methodEntryPointSection))
                     {
-                        ParseMethodDefEntrypointsSection(methodEntryPointSection, OpenReferenceAssembly(assemblyIndex + 1), isEntryPoint);
+                        ParseMethodDefEntrypointsSection(methodEntryPointSection, OpenReferenceAssembly(assemblyIndex + 2), isEntryPoint);
                     }
                 }
             }
@@ -817,7 +816,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     if (_readyToRunAssemblyHeaders[assemblyIndex].Sections.TryGetValue(
                         ReadyToRunSectionType.AvailableTypes, out availableTypesSection))
                     {
-                        ParseAvailableTypesSection(availableTypesSection, OpenReferenceAssembly(assemblyIndex + 1));
+                        ParseAvailableTypesSection(availableTypesSection, OpenReferenceAssembly(assemblyIndex + 2));
                     }
                 }
             }
@@ -1058,9 +1057,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             Debug.Assert(refAsmIndex != 0);
 
-            int assemblyRefCount = (_composite ? 0 : _assemblyCache[0].GetTableRowCount(TableIndex.AssemblyRef) + 1);
+            int assemblyRefCount = (_composite ? 0 : _assemblyCache[0].GetTableRowCount(TableIndex.AssemblyRef));
             AssemblyReferenceHandle assemblyReferenceHandle;
-            if (refAsmIndex < assemblyRefCount)
+            if (refAsmIndex <= assemblyRefCount)
             {
                 metadataReader = _assemblyCache[0];
                 assemblyReferenceHandle = MetadataTokens.AssemblyReferenceHandle(refAsmIndex);
@@ -1068,7 +1067,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             else
             {
                 metadataReader = ManifestReader;
-                assemblyReferenceHandle = ManifestReferences[refAsmIndex - assemblyRefCount - 1];
+                assemblyReferenceHandle = ManifestReferences[refAsmIndex - assemblyRefCount - 2];
             }
 
             return assemblyReferenceHandle;
