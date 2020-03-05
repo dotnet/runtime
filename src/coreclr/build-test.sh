@@ -193,7 +193,7 @@ precompile_coreroot_fx()
         fi
 
         if [[ "$__DoCrossgen2" != 0 ]]; then
-            commandLine="$overlayDir/crossgen2/crossgen2 $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
+            commandLine="$overlayDir/corerun $overlayDir/crossgen2/crossgen2.dll $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
         fi
 
         echo Precompiling "$filename"
