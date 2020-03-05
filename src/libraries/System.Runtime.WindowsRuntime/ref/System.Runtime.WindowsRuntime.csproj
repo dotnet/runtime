@@ -24,7 +24,7 @@
     <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
   </ItemGroup>  
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
-    <PackageReference Include="Microsoft.TargetingPack.Private.WinRT" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" />
+    <PackageReference Include="Microsoft.TargetingPack.Private.WinRT" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" PrivateAssets="all" />
     <ProjectReference Include="..\..\mscorlib.WinRT-Facade\ref\mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
 </Project>

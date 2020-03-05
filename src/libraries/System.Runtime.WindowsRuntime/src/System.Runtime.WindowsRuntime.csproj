@@ -86,7 +86,7 @@
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
-    <PackageReference Include="Microsoft.TargetingPack.Private.WinRT" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" />
+    <PackageReference Include="Microsoft.TargetingPack.Private.WinRT" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
@@ -99,7 +99,7 @@
     <Reference Include="System.IO" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Resources.ResourceManager" />
-    <PackageReference Include="Microsoft.TargetingPack.Private.WinRT" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" />
+    <PackageReference Include="Microsoft.TargetingPack.Private.WinRT" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" PrivateAssets="all" />
     <ProjectReference Include="..\..\mscorlib.WinRT-Facade\ref\mscorlib.WinRT-Facade.csproj" />
   </ItemGroup>
 </Project>
