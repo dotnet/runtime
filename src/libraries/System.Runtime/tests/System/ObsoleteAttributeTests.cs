@@ -43,5 +43,5 @@ namespace System.Tests
             Assert.Null(attribute.DiagnosticId);
             Assert.Equal(url, attribute.UrlFormat);
         }
-    }   
+    }
 }
