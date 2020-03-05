@@ -10,7 +10,7 @@
     <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
     <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(Configuration)</MonoConfiguration>
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
-    <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0-Unix;$(netcoreappCurrent)-Windows_NT;$(netcoreappCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0-win;netcoreapp3.0-Unix;$(netcoreappCurrent)-win;$(netcoreappCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
@@ -70,7 +70,7 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
-    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'Windows_NT'"/>
+    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'win'"/>
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"

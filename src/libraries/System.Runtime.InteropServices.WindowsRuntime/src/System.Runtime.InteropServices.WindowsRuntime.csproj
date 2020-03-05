@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.InteropServices.WindowsRuntime</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <RunApiCompat Condition="'$(RuntimeFlavor)' == 'Mono'">false</RunApiCompat>
   </PropertyGroup>

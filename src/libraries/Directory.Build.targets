@@ -75,7 +75,7 @@
     <BinPlaceTargetFrameworks Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(NetCoreAppCurrent)-$(TargetOS)">
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
-    <BinPlaceTargetFrameworks Condition="'$(BinPlaceNETFXRuntime)' == 'true'" Include="$(NetFrameworkCurrent)-Windows_NT">
+    <BinPlaceTargetFrameworks Condition="'$(BinPlaceNETFXRuntime)' == 'true'" Include="$(NetFrameworkCurrent)-win">
       <RuntimePath>$(TestHostRootPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
