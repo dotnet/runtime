@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ILLinkKeepDepAttributes>false</ILLinkKeepDepAttributes> <!-- See comments in Cookie.cs -->
-    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-unix</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>

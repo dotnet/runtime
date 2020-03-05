@@ -10,7 +10,7 @@
     <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
     <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(Configuration)</MonoConfiguration>
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
-    <TargetFrameworks>netcoreapp3.0-win;netcoreapp3.0-Unix;$(netcoreappCurrent)-win;$(netcoreappCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0-win;netcoreapp3.0-unix;$(netcoreappCurrent)-win;$(netcoreappCurrent)-unix</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
@@ -52,7 +52,7 @@
 
       <UseHardlink>true</UseHardlink>
       <!-- workaround core-setup problem for hardlinking dotnet executable to testhost: core-setup #4742 -->
-      <UseHardlink Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">false</UseHardlink>
+      <UseHardlink Condition="'$(_runtimeOSFamily)' == 'freebsd'">false</UseHardlink>
     </PropertyGroup>
 
     <ItemGroup>

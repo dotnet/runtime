@@ -3,7 +3,7 @@
     <AssemblyName>System.Private.Uri</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">

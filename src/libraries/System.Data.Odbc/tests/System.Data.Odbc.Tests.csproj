@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);TargetsWindows</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetFrameworkCurrent)-win</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetFrameworkCurrent)-win</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DependencyCheckTest.cs" />

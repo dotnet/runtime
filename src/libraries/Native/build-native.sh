@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-usage_list=("-outconfig: Configuration, typically a quadruplet such as 'netcoreapp5.0-Linux-Release-x64', used to name output directory.")
+usage_list=("-outconfig: Configuration, typically a quadruplet such as 'netcoreapp5.0-linux-Release-x64', used to name output directory.")
 usage_list+=("-staticLibLink: Optional argument to statically link any native library.")
 
 __scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
@@ -63,7 +63,7 @@ else
 fi
 
 # set default OSX deployment target
-if [[ "$__TargetOS" == OSX ]]; then
+if [[ "$__TargetOS" == osx ]]; then
     __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
 fi
 

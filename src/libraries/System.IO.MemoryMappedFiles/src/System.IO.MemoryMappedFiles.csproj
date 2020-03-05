@@ -3,7 +3,7 @@
     <AssemblyName>System.IO.MemoryMappedFiles</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-unix</TargetFrameworks>
   </PropertyGroup>
   <!-- Compiled Source Files -->
   <ItemGroup>

@@ -23,12 +23,12 @@
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
     <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.depproj'">$(RepositoryEngineeringDir)depProj.common.targets</LanguageTargets>
     <RuntimePropsFile>$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'tmp', '$(Configuration)', 'RuntimeOS.props'))</RuntimePropsFile>
-    <RuntimeGraph>$(LibrariesProjectRoot)\OSGroups.json</RuntimeGraph>
+    <RuntimeGraph>$(LibrariesProjectRoot)\pkg\Microsoft.NETCore.Platforms\runtime.json</RuntimeGraph>
     <BuildTargetFramework>netcoreapp5.0</BuildTargetFramework>
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
     <!-- TargetOS can be removed after renaming the property in arcade repo-->
     <BuildOS>$(TargetOS)</BuildOS>
-    <AdditionalBuildTargetFrameworks Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(AdditionalBuildTargetFrameworks);$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-NetBSD;$(NetCoreAppCurrent)-FreeBSD</AdditionalBuildTargetFrameworks>  
+    <AdditionalBuildTargetFrameworks Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(AdditionalBuildTargetFrameworks);$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-netbsd;$(NetCoreAppCurrent)-freebsd</AdditionalBuildTargetFrameworks>  
   </PropertyGroup>
 
   <Import Project="$(RuntimePropsFile)" Condition="Exists('$(RuntimePropsFile)')"/>
@@ -59,34 +59,34 @@
         <PackageTargetRuntime>win</PackageTargetRuntime>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Unix'">
+    <When Condition="'$(TargetFrameworkSuffix)' == 'unix'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <PackageTargetRuntime>unix</PackageTargetRuntime>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'Linux'">
+    <When Condition="'$(TargetFrameworkSuffix)' == 'linux'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsLinux>true</TargetsLinux>
         <PackageTargetRuntime>linux</PackageTargetRuntime>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'OSX'">
+    <When Condition="'$(TargetFrameworkSuffix)' == 'osx'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsOSX>true</TargetsOSX>
         <PackageTargetRuntime>osx</PackageTargetRuntime>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'FreeBSD'">
+    <When Condition="'$(TargetFrameworkSuffix)' == 'freebsd'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsFreeBSD>true</TargetsFreeBSD>
         <PackageTargetRuntime>freebsd</PackageTargetRuntime>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetFrameworkSuffix)' == 'NetBSD'">
+    <When Condition="'$(TargetFrameworkSuffix)' == 'netbsd'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsNetBSD>true</TargetsNetBSD>
@@ -153,7 +153,7 @@
     <_portableOS Condition="'$(RuntimeOS)' == 'linux-musl'">linux-musl</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'win' or '$(TargetOS)' == 'win'">win</_portableOS>
     <_portableOS Condition="'$(_runtimeOSFamily)' == 'osx'">osx</_portableOS>
-    <_portableOS Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">freebsd</_portableOS>
+    <_portableOS Condition="'$(_runtimeOSFamily)' == 'freebsd'">freebsd</_portableOS>
     <_portableOS Condition="'$(RuntimeOS)' == 'WebAssembly'">webassembly</_portableOS>
 
     <_runtimeOS>$(RuntimeOS)</_runtimeOS>
@@ -172,10 +172,10 @@
     <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(TargetOS)' != 'win' and !$(_buildingInOSX)">linux-x64</ToolRuntimeRID>
 
     <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
-    <_portableOS Condition="'$(TargetOS)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
+    <_portableOS Condition="'$(TargetOS)' == 'unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'freebsd' and '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
 
     <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
-    <_portableOS Condition="'$(TargetOS)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
+    <_portableOS Condition="'$(TargetOS)' == 'unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'freebsd' and '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
 
     <_packageRID />
     <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(ArchGroup)</_packageRID>
@@ -301,7 +301,7 @@
     <!-- Helix properties -->
     <OSPlatformConfig>$(TargetOS).$(Platform).$(Configuration)</OSPlatformConfig>
     <AnyOSPlatformConfig>AnyOS.AnyCPU.$(Configuration)</AnyOSPlatformConfig>
-    <UnixPlatformConfig>Unix.$(Platform).$(Configuration)</UnixPlatformConfig>
+    <UnixPlatformConfig>unix.$(Platform).$(Configuration)</UnixPlatformConfig>
     <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>
     <TestArchiveTestsRoot>$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>

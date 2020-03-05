@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(TargetsNetFx)' == 'true'">true</OmitResources>
-    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-Unix;netstandard2.0;netcoreapp2.0-win;netcoreapp2.0-Unix;netcoreapp2.1-win;netcoreapp2.1-Unix;net461-win;$(NetFrameworkCurrent)-win</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-unix;netstandard2.0;netcoreapp2.0-win;netcoreapp2.0-unix;netcoreapp2.1-win;netcoreapp2.1-unix;net461-win;$(NetFrameworkCurrent)-win</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <Nullable>enable</Nullable>

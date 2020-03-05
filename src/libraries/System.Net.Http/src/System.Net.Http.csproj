@@ -7,7 +7,7 @@
     <NoWarn>$(NoWarn);0436;CS1573</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);HTTP_DLL</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>

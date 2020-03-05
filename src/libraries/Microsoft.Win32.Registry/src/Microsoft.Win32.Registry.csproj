@@ -6,7 +6,7 @@
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true' and '$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_Registry</GeneratePlatformNotSupportedAssemblyMessage>
     <NoWarn Condition="'$(TargetsUnix)' == 'true'">$(NoWarn);CA1823</NoWarn> <!-- Avoid unused fields warnings in Unix build -->
-    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-Unix;$(NetFrameworkCurrent)-win;netstandard2.0-win;netstandard2.0-Unix;netstandard2.0;net461-win</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-unix;$(NetFrameworkCurrent)-win;netstandard2.0-win;netstandard2.0-unix;netstandard2.0;net461-win</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <Nullable>enable</Nullable>

@@ -4,7 +4,7 @@
     <RootNamespace>System.Drawing</RootNamespace>
     <AssemblyName>System.Drawing.Primitives</AssemblyName>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);FEATURE_WINDOWS_SYSTEM_COLORS</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-win;$(NetCoreAppCurrent)-unix</TargetFrameworks>
     <nullable>enable</nullable>
   </PropertyGroup>
   <ItemGroup>

@@ -6,7 +6,7 @@
     <DefineConstants>$(DefineConstants);NOSPAN</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Nullable>annotations</Nullable>
-    <TargetFrameworks>netstandard2.0-win;netstandard2.0-Linux;netstandard2.0-OSX;netstandard2.0;net461-win;netstandard2.0-FreeBSD;$(NetFrameworkCurrent)-win</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0-win;netstandard2.0-linux;netstandard2.0-osx;netstandard2.0;net461-win;netstandard2.0-FreeBSD;$(NetFrameworkCurrent)-win</TargetFrameworks>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0' AND '$(TargetsFreeBSD)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
