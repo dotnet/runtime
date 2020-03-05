@@ -8680,6 +8680,10 @@ bool Compiler::optIsRangeCheckRemovable(GenTree* tree)
 //              \
 //               C2
 //
+//  Note:
+//      At the moment, the optimization works only for simple BBJ_RETURN blocks
+//      and returned values are of difference of 1.
+//
 void Compiler::optBranchlessConditions()
 {
     JITDUMP("\n*************** In optBranchlessConditions()\n");
@@ -8691,13 +8695,13 @@ void Compiler::optBranchlessConditions()
             continue;
         }
 
-        Statement* fistStmt = block->lastStmt();
-        if ((fistStmt == nullptr) || !fistStmt->GetRootNode()->OperIs(GT_JTRUE))
+        Statement* firstStmt = block->lastStmt();
+        if ((firstStmt == nullptr) || !firstStmt->GetRootNode()->OperIs(GT_JTRUE))
         {
             continue;
         }
 
-        GenTree*  rootNode    = fistStmt->GetRootNode();
+        GenTree*  rootNode    = firstStmt->GetRootNode();
         GenTree*  rootSubNode = rootNode->gtGetOp1();
         var_types typ         = rootSubNode->TypeGet();
 
@@ -8763,7 +8767,7 @@ void Compiler::optBranchlessConditions()
         if (cnsForFalse > cnsForTrue)
         {
             addValue = cnsForTrue;
-            // cns for true-branch must be greater that cns for false-branch
+            // cns for true-branch must be greater than cns for false-branch
             // we need to flip the comparision operator in this case, e.g. `>` -> `<=`
             assert(rootSubNode->OperIsCompare());
             gtReverseCond(rootSubNode);
@@ -8774,13 +8778,14 @@ void Compiler::optBranchlessConditions()
         }
 
         // unlink both blocks
-        fgRemoveRefPred(block->bbJumpDest, block);
-        fgRemoveRefPred(block->bbNext, block);
+        fgRemoveRefPred(trueBb, block);
+        fgRemoveRefPred(falseBb, block);
 
         // convert current block from BBJ_COND to BBJ_RETURN
         block->bbJumpKind = BBJ_RETURN;
         rootNode->ChangeOperUnchecked(GT_RETURN);
         rootNode->AsOp()->gtOp1 = gtNewOperNode(GT_ADD, typ, rootSubNode, gtNewIconNode(addValue, typ));
+        // change type from TYP_VOID to actual type
         rootNode->ChangeType(typ);
         block->bbJumpDest = nullptr;
         changed           = true;
