@@ -16,7 +16,8 @@ esac
 CPUName=$(uname -p)
 
 # Some Linux platforms report unknown for platform, but the arch for machine.
-if [[ "$CPUName" == "unknown" ]]; then
+# On macOS, -p prints the generic processor type, which is i386 and -m prints the machine hardware name.
+if [[ "$CPUName" == "unknown" || "$OSName" == "Darwin" ]]; then
     CPUName=$(uname -m)
 fi
 
