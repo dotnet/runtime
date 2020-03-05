@@ -105,7 +105,6 @@ namespace System
             RestUnicodeNormalized = 0x800000000,
             UnicodeHost = 0x1000000000,
             IntranetUri = 0x2000000000,
-            UseOrigUncdStrOffset = 0x4000000000,
             // Is this component Iri canonical
             UserIriCanonical = 0x8000000000,
             PathIriCanonical = 0x10000000000,
@@ -2138,23 +2137,11 @@ namespace System
                 // The Host/Authority is all checked, the type is known but the host value string
                 // is not created/canonicalized at this point.
             }
-			
-            if (IriParsing)
+
+            if (IriParsing && newHost != null)
             {
                 // we have a new host!
-                if (newHost != null)
-                    _string = newHost;
-
-                // Indicate to createuriinfo that offset is in m_originalUnicodeString
-<<<<<<< HEAD
-                if (_iriParsing && ((_flags & Flags.HasUnicode) != 0))
-=======
-                if ((_flags & Flags.HasUnicode) != 0)
->>>>>>> Remove duplicate IriParsing checks
-                {
-                    // offset in Flags.IndexMask refers to m_originalUnicodeString
-                    _flags |= Flags.UseOrigUncdStrOffset;
-                }
+                _string = newHost;
             }
 
             return ParsingError.None;
@@ -2303,16 +2290,12 @@ namespace System
             // If iri parsing is on with unicode chars then the end of parsed host
             // points to m_orig string and not m_String
 
-            bool UseOrigUnicodeStrOffset = ((cF & Flags.UseOrigUncdStrOffset) != 0);
-            // This should happen only once. Reset it
-            cF &= ~Flags.UseOrigUncdStrOffset;
-
-            if (UseOrigUnicodeStrOffset)
+            if ((cF & Flags.HasUnicode) != 0)
                 info.Offset.End = (ushort)_originalUnicodeString.Length;
 
             if (idx < info.Offset.End)
             {
-                fixed (char* userString = UseOrigUnicodeStrOffset ? _originalUnicodeString : _string)
+                fixed (char* userString = OriginalString)
                 {
                     if (userString[idx] == ':')
                     {
