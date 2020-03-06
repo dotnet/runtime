@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -34,14 +33,6 @@ namespace System
         public static readonly Utf8String Empty = FastAllocate(0);
 
         /*
-         * INSTANCE FIELDS
-         * Do not reorder these fields. They must match the layout of Utf8StringObject in object.h.
-         */
-
-        private readonly int _length;
-        private readonly byte _firstByte;
-
-        /*
          * OPERATORS
          */
 
@@ -60,15 +51,6 @@ namespace System
         /// </summary>
         /// <param name="value"></param>
         public static implicit operator Utf8Span(Utf8String? value) => new Utf8Span(value);
-
-        /*
-         * INSTANCE PROPERTIES
-         */
-
-        /// <summary>
-        /// Returns the length (in UTF-8 code units, or <see cref="byte"/>s) of this instance.
-        /// </summary>
-        public int Length => _length;
 
         /*
          * INDEXERS
@@ -95,20 +77,6 @@ namespace System
          */
 
         /// <summary>
-        /// Similar to <see cref="Utf8Extensions.AsBytes(Utf8String)"/>, but skips the null check on the input.
-        /// Throws a <see cref="NullReferenceException"/> if the input is null.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ReadOnlySpan<byte> AsBytesSkipNullCheck()
-        {
-            // By dereferencing Length first, the JIT will skip the null check that normally precedes
-            // most instance method calls, and it'll use the field dereference as the null check.
-
-            int length = Length;
-            return new ReadOnlySpan<byte>(ref DangerousGetMutableReference(), length);
-        }
-
-        /// <summary>
         /// Similar to <see cref="Utf8Extensions.AsSpan(Utf8String)"/>, but skips the null check on the input.
         /// Throws a <see cref="NullReferenceException"/> if the input is null.
         /// </summary>
@@ -132,28 +100,6 @@ namespace System
 
             return Utf8StringComparer.FromComparison(comparison).Compare(this, other);
         }
-
-        /// <summary>
-        /// Returns a <em>mutable</em> <see cref="Span{Byte}"/> that can be used to populate this
-        /// <see cref="Utf8String"/> instance. Only to be used during construction.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal Span<byte> DangerousGetMutableSpan()
-        {
-            // By dereferencing Length first, the JIT will skip the null check that normally precedes
-            // most instance method calls, and it'll use the field dereference as the null check.
-
-            int length = Length;
-            return new Span<byte>(ref DangerousGetMutableReference(), length);
-        }
-
-        /// <summary>
-        /// Returns a <em>mutable</em> reference to the first byte of this <see cref="Utf8String"/>
-        /// (or the null terminator if the string is empty).
-        /// </summary>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ref byte DangerousGetMutableReference() => ref Unsafe.AsRef(in _firstByte);
 
         /// <summary>
         /// Returns a <em>mutable</em> reference to the element at index <paramref name="index"/>
@@ -263,16 +209,6 @@ namespace System
 
             return Utf8StringComparer.FromComparison(comparison).GetHashCode(this);
         }
-
-        /// <summary>
-        /// Gets an immutable reference that can be used in a <see langword="fixed"/> statement. The resulting
-        /// reference can be pinned and used as a null-terminated <em>LPCUTF8STR</em>.
-        /// </summary>
-        /// <remarks>
-        /// If this <see cref="Utf8String"/> instance is empty, returns a reference to the null terminator.
-        /// </remarks>
-        [EditorBrowsable(EditorBrowsableState.Never)] // for compiler use only
-        public ref readonly byte GetPinnableReference() => ref _firstByte;
 
         /// <summary>
         /// Returns <see langword="true"/> if this UTF-8 text consists of all-ASCII data,
