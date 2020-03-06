@@ -8029,19 +8029,9 @@ private:
 
     GenTree* getOp1ForConstructor(OPCODE opcode, GenTree* newobjThis, CORINFO_CLASS_HANDLE clsHnd);
 
-    // Whether SIMD vector occupies part of SIMD register.
-    // SSE2: vector2f/3f are considered sub register SIMD types.
-    // AVX: vector2f, 3f and 4f are all considered sub register SIMD types.
-    bool isSubRegisterSIMDType(CORINFO_CLASS_HANDLE typeHnd)
-    {
-        unsigned  sizeBytes = 0;
-        var_types baseType  = getBaseTypeAndSizeOfSIMDType(typeHnd, &sizeBytes);
-        return (baseType == TYP_FLOAT) && (sizeBytes < getSIMDVectorRegisterByteLength());
-    }
-
     bool isSubRegisterSIMDType(GenTreeSIMD* simdNode)
     {
-        return (simdNode->gtSIMDSize < getSIMDVectorRegisterByteLength());
+        return (simdNode->gtSIMDSize < maxSIMDStructBytes());
     }
 
     // Get the type for the hardware SIMD vector.
@@ -8188,7 +8178,7 @@ public:
     unsigned largestEnregisterableStructSize()
     {
 #ifdef FEATURE_SIMD
-        unsigned vectorRegSize = getSIMDVectorRegisterByteLength();
+        unsigned vectorRegSize = maxSIMDStructBytes();
         assert(vectorRegSize >= TARGET_POINTER_SIZE);
         return vectorRegSize;
 #else  // !FEATURE_SIMD
