@@ -35,7 +35,7 @@ usage()
   echo "  --build                    Build all source projects (short: -b)"
   echo "  --buildtests               Build all test projects"
   echo "  --rebuild                  Rebuild all source projects"
-  echo "  --test                     Run all unit tests (short: -t)"
+  echo "  --test                     Build and run tests (short: -t)"
   echo "  --pack                     Package build outputs into NuGet packages"
   echo "  --sign                     Sign build outputs"
   echo "  --publish                  Publish artifacts (e.g. symbols)"
@@ -65,7 +65,7 @@ initDistroRid()
     source $scriptroot/native/init-distro-rid.sh
 
     local passedRootfsDir=""
-    local buildOs="$1"
+    local targetOs="$1"
     local buildArch="$2"
     local isCrossBuild="$3"
     # For RID calculation purposes, say we are always a portable build
@@ -76,7 +76,7 @@ initDistroRid()
     if (( isCrossBuild == 1 )); then
         passedRootfsDir=${ROOTFS_DIR}
     fi
-    initDistroRidGlobal ${buildOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}
+    initDistroRidGlobal ${targetOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}
 }
 
 arguments=''
@@ -127,7 +127,7 @@ while [[ $# > 0 ]]; do
       ;;
      -os)
       os=$2
-      arguments="$arguments /p:OSGroup=$2"
+      arguments="$arguments /p:TargetOS=$2"
       shift 2
       ;;
      -allconfigurations)

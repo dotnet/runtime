@@ -2806,32 +2806,6 @@ HCIMPL3(Object*, JIT_NewMDArrNonVarArg, CORINFO_CLASS_HANDLE classHnd, unsigned 
 }
 HCIMPLEND
 
-/*************************************************************/
-/* returns '&array[idx], after doing all the proper checks */
-
-#include <optsmallperfcritical.h>
-HCIMPL3(void*, JIT_Ldelema_Ref, PtrArray* array, unsigned idx, CORINFO_CLASS_HANDLE type)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind except;
-       // This has been carefully arranged to ensure that in the common
-        // case the branches are predicted properly (fall through).
-        // and that we dont spill registers unnecessarily etc.
-    if (array != 0)
-        if (idx < array->GetNumComponents())
-            if (array->GetArrayElementTypeHandle() == TypeHandle(type))
-                return(&array->m_Array[idx]);
-            else
-                except = kArrayTypeMismatchException;
-        else
-            except = kIndexOutOfRangeException;
-    else
-        except = kNullReferenceException;
-
-    FCThrow(except);
-}
-HCIMPLEND
 #include <optdefault.h>
 
 //===========================================================================
@@ -2856,66 +2830,6 @@ HCIMPL2(LPVOID, ArrayStoreCheck, Object** pElement, PtrArray** pArray)
     return (LPVOID)0; // Used to aid epilog walker
 }
 HCIMPLEND
-
-/****************************************************************************/
-/* assigns 'val to 'array[idx], after doing all the proper checks */
-
-HCIMPL3(void, JIT_Stelem_Ref_Portable, PtrArray* array, unsigned idx, Object *val)
-{
-    FCALL_CONTRACT;
-
-    if (!array)
-    {
-        FCThrowVoid(kNullReferenceException);
-    }
-    if (idx >= array->GetNumComponents())
-    {
-        FCThrowVoid(kIndexOutOfRangeException);
-    }
-
-    if (val)
-    {
-        MethodTable *valMT = val->GetMethodTable();
-        TypeHandle arrayElemTH = array->GetArrayElementTypeHandle();
-
-        if (arrayElemTH != TypeHandle(valMT) && arrayElemTH != TypeHandle(g_pObjectClass))
-        {
-            TypeHandle::CastResult result = ObjIsInstanceOfCached(val, arrayElemTH);
-            if (result != TypeHandle::CanCast)
-            {
-                // FCALL_CONTRACT increase ForbidGC count.  Normally, HELPER_METHOD_FRAME macros decrease the count.
-                // But to avoid perf hit, we manually decrease the count here before calling another HCCALL.
-                ENDFORBIDGC();
-
-                if (HCCALL2(ArrayStoreCheck,(Object**)&val, (PtrArray**)&array) != NULL)
-                {
-                    // This return is never executed. It helps epilog walker to find its way out.
-                    return;
-                }
-            }
-        }
-
-#ifdef TARGET_ARM64
-        SetObjectReference((OBJECTREF*)&array->m_Array[idx], ObjectToOBJECTREF(val));
-#else
-        // The performance gain of the optimized JIT_Stelem_Ref in
-        // jitinterfacex86.cpp is mainly due to calling JIT_WriteBarrier
-        // By calling write barrier directly here,
-        // we can avoid translating in-line assembly from MSVC to gcc
-        // while keeping most of the performance gain.
-        HCCALL2(JIT_WriteBarrier, (Object **)&array->m_Array[idx], val);
-#endif
-
-    }
-    else
-    {
-        // no need to go through write-barrier for NULL
-        ClearObjectReference(&array->m_Array[idx]);
-    }
-}
-HCIMPLEND
-
-
 
 //========================================================================
 //

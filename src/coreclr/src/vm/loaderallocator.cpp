@@ -1802,6 +1802,31 @@ void AssemblyLoaderAllocator::RegisterHandleForCleanup(OBJECTHANDLE objHandle)
     m_handleCleanupList.InsertTail(new (pItem) HandleCleanupListItem(objHandle));
 }
 
+void AssemblyLoaderAllocator::UnregisterHandleFromCleanup(OBJECTHANDLE objHandle)
+{
+    CONTRACTL
+    {
+        MODE_ANY;
+        CAN_TAKE_LOCK;
+        PRECONDITION(CheckPointer(objHandle));
+    }
+    CONTRACTL_END;
+
+    // FindAndRemove must be protected by a lock. Just use the loader allocator lock
+    CrstHolder ch(&m_crstLoaderAllocator);
+
+    for (HandleCleanupListItem* item = m_handleCleanupList.GetHead(); item != NULL; item = SList<HandleCleanupListItem>::GetNext(item))
+    {
+        if (item->m_handle == objHandle)
+        {
+            m_handleCleanupList.FindAndRemove(item);
+            return;
+        }
+    }
+
+    _ASSERTE(!"Trying to unregister a handle that was never registered");
+}
+
 void AssemblyLoaderAllocator::CleanupHandles()
 {
     CONTRACTL

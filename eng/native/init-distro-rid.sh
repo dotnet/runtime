@@ -3,7 +3,7 @@
 # initNonPortableDistroRid
 #
 # Input:
-#   buildOs: (str)
+#   targetOs: (str)
 #   buildArch: (str)
 #   isPortable: (int)
 #   rootfsDir: (str)
@@ -36,13 +36,13 @@ initNonPortableDistroRid()
     # Make sure out parameter is cleared.
     __DistroRid=
 
-    local buildOs="$1"
+    local targetOs="$1"
     local buildArch="$2"
     local isPortable="$3"
     local rootfsDir="$4"
     local nonPortableBuildID=""
 
-    if [ "$buildOs" = "Linux" ]; then
+    if [ "$targetOs" = "Linux" ]; then
         if [ -e "${rootfsDir}/etc/os-release" ]; then
             source "${rootfsDir}/etc/os-release"
 
@@ -69,7 +69,7 @@ initNonPortableDistroRid()
         fi
     fi
 
-    if [ "$buildOs" = "FreeBSD" ]; then
+    if [ "$targetOs" = "FreeBSD" ]; then
         __freebsd_major_version=$(freebsd-version | { read v; echo "${v%%.*}"; })
         nonPortableBuildID="freebsd.$__freebsd_major_version-${buildArch}"
     fi
@@ -113,7 +113,7 @@ initDistroRidGlobal()
     # deprecated. Now only __DistroRid is supported. It will be used for both
     # portable and non-portable rids and will be used in build-packages.sh
 
-    local buildOs="$1"
+    local targetOs="$1"
     local buildArch="$2"
     local isPortable="$3"
     local rootfsDir=""
@@ -136,7 +136,7 @@ initDistroRidGlobal()
         isPortable=0
     fi
 
-    initNonPortableDistroRid "${buildOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
+    initNonPortableDistroRid "${targetOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
 
     if [ "$buildArch" = "wasm" ]; then
         __DistroRid=WebAssembly-wasm
@@ -157,11 +157,11 @@ initDistroRidGlobal()
         fi
 
         if [ -z "${distroRid}" ]; then
-            if [ "$buildOs" = "Linux" ]; then
+            if [ "$targetOs" = "Linux" ]; then
                 distroRid="linux-$buildArch"
-            elif [ "$buildOs" = "OSX" ]; then
+            elif [ "$targetOs" = "OSX" ]; then
                 distroRid="osx-$buildArch"
-            elif [ "$buildOs" = "FreeBSD" ]; then
+            elif [ "$targetOs" = "FreeBSD" ]; then
                 distroRid="freebsd-$buildArch"
             fi
         fi

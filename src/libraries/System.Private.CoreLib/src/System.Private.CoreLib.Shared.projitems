@@ -1808,4 +1808,23 @@
   <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true' or '$(FeatureThreadInt64PersistentCounter)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadInt64PersistentCounter.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(FeatureUtf8String)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Char8.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Comparison.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Construction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Conversion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Enumeration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Manipulation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Searching.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8StringSplitOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8Span.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8Span.Comparison.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8Span.Conversion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8Span.Enumeration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8Span.Manipulation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8Span.Searching.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Utf8StringComparer.cs" />
+  </ItemGroup>
 </Project>

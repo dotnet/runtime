@@ -1986,6 +1986,26 @@ int32_t SystemNative_GetSockOpt(
     return Error_SUCCESS;
 }
 
+int32_t SystemNative_GetRawSockOpt(
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen)
+{
+    if (optionLen == NULL || *optionLen < 0)
+    {
+        return Error_EFAULT;
+    }
+
+    socklen_t optLen = (socklen_t)*optionLen;
+    int err = getsockopt(ToFileDescriptor(socket), socketOptionLevel, socketOptionName, optionValue, &optLen);
+    if (err != 0)
+    {
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    assert(optLen <= (socklen_t)*optionLen);
+    *optionLen = (int32_t)optLen;
+    return Error_SUCCESS;
+}
+
 int32_t
 SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen)
 {
@@ -2062,6 +2082,18 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
     }
 
     int err = setsockopt(fd, optLevel, optName, optionValue, (socklen_t)optionLen);
+    return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+}
+
+int32_t SystemNative_SetRawSockOpt(
+    intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen)
+{
+    if (optionLen < 0 || optionValue == NULL)
+    {
+        return Error_EFAULT;
+    }
+
+    int err = setsockopt(ToFileDescriptor(socket), socketOptionLevel, socketOptionName, optionValue, (socklen_t)optionLen);
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 

@@ -182,6 +182,14 @@ namespace ILCompiler.PEWriter
                         delta = unchecked(targetRVA + (int)_defaultImageBase);
                         break;
                     }
+
+                case RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL:
+                    {
+                        relocationLength = 8;
+                        const uint offsetCorrection = 12;
+                        delta = unchecked(targetRVA - (sourceRVA + offsetCorrection));
+                        break;
+                    }
                     
                 case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
                     {

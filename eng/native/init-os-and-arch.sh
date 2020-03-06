@@ -13,12 +13,7 @@ Darwin)
 esac
 
 # Use uname to determine what the CPU is.
-CPUName=$(uname -p)
-
-# Some Linux platforms report unknown for platform, but the arch for machine.
-if [[ "$CPUName" == "unknown" ]]; then
-    CPUName=$(uname -m)
-fi
+CPUName=$(uname -m)
 
 case "$CPUName" in
     aarch64)

@@ -8387,9 +8387,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	/* The code below might acquire the loader lock, so use it for global locking */
 	mono_loader_lock ();
 
-	/* Used to communicate with the callbacks */
-	mono_llvm_jit_set_tls_cfg (cfg);
-
 	ctx = g_new0 (EmitContext, 1);
 	ctx->cfg = cfg;
 	ctx->mempool = cfg->mempool;
@@ -8488,8 +8485,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	}
 
 	free_ctx (ctx);
-
-	mono_llvm_jit_set_tls_cfg (NULL);
 
 	mono_loader_unlock ();
 }
@@ -11213,7 +11208,7 @@ llvm_jit_finalize_method (EmitContext *ctx)
 	while (g_hash_table_iter_next (&iter, NULL, (void**)&var))
 		callee_vars [i ++] = var;
 
-	cfg->native_code = (guint8*)mono_llvm_compile_method (ctx->module->mono_ee, ctx->lmethod, nvars, callee_vars, callee_addrs, &eh_frame);
+	cfg->native_code = (guint8*)mono_llvm_compile_method (ctx->module->mono_ee, cfg, ctx->lmethod, nvars, callee_vars, callee_addrs, &eh_frame);
 	mono_llvm_remove_gc_safepoint_poll (ctx->lmodule);
 	if (cfg->verbose_level > 1) {
 		g_print ("\n*** Optimized LLVM IR for %s ***\n", mono_method_full_name (cfg->method, TRUE));

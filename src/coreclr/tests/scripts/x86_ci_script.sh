@@ -32,7 +32,7 @@ elif [[ "$__buildConfig" == "checked" ]]; then
 else
     __buildConfig="Debug"
 fi
-__buildDirName="$__buildOS.$__buildArch.$__buildConfig"
+__buildDirName="$__targetOS.$__buildArch.$__buildConfig"
 
 set -x
 set -e

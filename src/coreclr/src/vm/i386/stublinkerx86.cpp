@@ -4398,7 +4398,6 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
 
             // Try to call the fast helper first ( ObjIsInstanceOfCached ).
             // If that fails we will fall back to calling the slow helper ( ArrayStoreCheck ) that erects a frame.
-            // See also JitInterfaceX86::JIT_Stelem_Ref
 
 #ifdef TARGET_AMD64
             // RCX contains pointer to object to check (Object*)
