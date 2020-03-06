@@ -95,7 +95,7 @@ public:
 
     PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups);
 
-    MethodDesc * GetMethodDescForEntryPoint(PCODE entryPoint);
+    PTR_MethodDesc GetMethodDescForEntryPoint(PCODE entryPoint);
 
     BOOL HasHashtableOfTypes();
     BOOL TryLookupTypeTokenFromName(const NameHandle *pName, mdToken * pFoundTypeToken);
@@ -203,8 +203,8 @@ private:
     BOOL CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, mdToken mdToken2, IMDInternalImport * pImport2);
     BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
 
-    PTR_MethodDesc TryGetMethodDescForEntryPoint(PCODE entryPoint);
-    void SetMethodDescForEntryPoint(PCODE entryPoint, PTR_MethodDesc methodDesc);
+    PTR_MethodDesc GetMethodDescForEntryPointInNativeImage(PCODE entryPoint);
+    void SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, PTR_MethodDesc methodDesc);
     
     PTR_ReadyToRunCoreInfo GetComponentInfo() { return dac_cast<PTR_ReadyToRunCoreInfo>(&m_component); }
 };

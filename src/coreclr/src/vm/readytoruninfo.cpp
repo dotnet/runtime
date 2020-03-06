@@ -53,7 +53,7 @@ IMAGE_DATA_DIRECTORY * ReadyToRunCoreInfo::FindSection(ReadyToRunSectionType typ
     return NULL;
 }
 
-MethodDesc * ReadyToRunInfo::GetMethodDescForEntryPoint(PCODE entryPoint)
+PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPoint(PCODE entryPoint)
 {
     CONTRACTL
     {
@@ -63,14 +63,7 @@ MethodDesc * ReadyToRunInfo::GetMethodDescForEntryPoint(PCODE entryPoint)
     }
     CONTRACTL_END;
 
-#if defined(TARGET_AMD64) || (defined(TARGET_X86) && defined(TARGET_UNIX))
-    // A normal method entry point is always 8 byte aligned, but a funclet can start at an odd address.
-    // Since PtrHashMap can't handle odd pointers, check for this case and return NULL.
-    if ((entryPoint & 0x1) != 0)
-        return NULL;
-#endif
-
-    return m_pCompositeInfo->TryGetMethodDescForEntryPoint(entryPoint);
+    return m_pCompositeInfo->GetMethodDescForEntryPointInNativeImage(entryPoint);
 }
 
 BOOL ReadyToRunInfo::HasHashtableOfTypes()
@@ -342,7 +335,7 @@ PTR_BYTE ReadyToRunInfo::GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction)
     return dac_cast<PTR_BYTE>(m_pComposite->GetLayout()->GetBase()) + debugInfoOffset;
 }
 
-PTR_MethodDesc ReadyToRunInfo::TryGetMethodDescForEntryPoint(PCODE entryPoint)
+PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage(PCODE entryPoint)
 {
     CONTRACTL
     {
@@ -353,15 +346,23 @@ PTR_MethodDesc ReadyToRunInfo::TryGetMethodDescForEntryPoint(PCODE entryPoint)
     }
     CONTRACTL_END;
 
+#if defined(TARGET_AMD64) || (defined(TARGET_X86) && defined(TARGET_UNIX))
+    // A normal method entry point is always 8 byte aligned, but a funclet can start at an odd address.
+    // Since PtrHashMap can't handle odd pointers, check for this case and return NULL.
+    if ((entryPoint & 0x1) != 0)
+        return NULL;
+#endif
+
     TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint));
     if (val == (TADDR)INVALIDENTRY)
         return NULL;
+
     return dac_cast<PTR_MethodDesc>(val);
 }
 
 #ifndef DACCESS_COMPILE
 
-void ReadyToRunInfo::SetMethodDescForEntryPoint(PCODE entryPoint, MethodDesc *methodDesc)
+void ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, MethodDesc *methodDesc)
 {
     CONTRACTL
     {
@@ -901,7 +902,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 
     _ASSERTE(id < m_nRuntimeFunctions);
     pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
-    m_pCompositeInfo->SetMethodDescForEntryPoint(pEntryPoint, pMD);
+    m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(pEntryPoint, pMD);
 
 #ifndef CROSSGEN_COMPILE
 #ifdef PROFILING_SUPPORTED
