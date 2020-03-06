@@ -18,7 +18,7 @@ namespace System.Text.Json
         /// </remarks>
         public static string Serialize<TValue>(TValue value, JsonSerializerOptions? options = null)
         {
-            return WriteCoreString(value, typeof(TValue), options);
+            return Serialize<TValue>(value, typeof(TValue), options);
         }
 
         /// <summary>
@@ -34,8 +34,35 @@ namespace System.Text.Json
         /// </remarks>
         public static string Serialize(object? value, Type inputType, JsonSerializerOptions? options = null)
         {
-            VerifyValueAndType(value, inputType);
-            return WriteCoreString(value, inputType, options);
+            if (inputType == null)
+            {
+                throw new ArgumentNullException(nameof(inputType));
+            }
+
+            if (value != null && !inputType.IsAssignableFrom(value.GetType()))
+            {
+                ThrowHelper.ThrowArgumentException_DeserializeWrongType(inputType, value);
+            }
+
+            return Serialize<object?>(value, inputType, options);
+        }
+
+        private static string Serialize<TValue>(TValue value, Type inputType, JsonSerializerOptions? options)
+        {
+            if (options == null)
+            {
+                options = JsonSerializerOptions.s_defaultOptions;
+            }
+
+            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
+            {
+                using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
+                {
+                    WriteCore(writer, value, inputType, options);
+                }
+
+                return JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);
+            }
         }
     }
 }
