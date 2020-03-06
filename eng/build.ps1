@@ -11,7 +11,7 @@ Param(
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
-  [string[]]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
+  [string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
   [string]$subsetCategory,
   [string]$subset,
   [ValidateSet("Debug","Release","Checked")][string]$runtimeConfiguration,
@@ -25,8 +25,8 @@ function Get-Help() {
   Write-Host "  -subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
   Write-Host "  -vs                       Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
   Write-Host "  -os                       Build operating system: Windows_NT or Unix"
-  Write-Host "  -arch                     Build platform: x86, x64, arm or arm64"
-  Write-Host "  -configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
+  Write-Host "  -arch                     Build platform: x86, x64, arm or arm64 (short: -r). Pass a comma-separated list to build for multiple architectures."
+  Write-Host "  -configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c). Pass a comma-separated list to build for multiple configurations"
   Write-Host "  -runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked"
   Write-Host "  -librariesConfiguration   Libraries build configuration: Debug or Release"
   Write-Host "  -verbosity                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
@@ -168,9 +168,9 @@ foreach ($config in $configuration) {
 }
 
 if ($failedBuilds.Count -ne 0) {
-    echo "Some builds failed:"
+    Write-Host "Some builds failed:"
     foreach ($failedBuild in $failedBuilds) {
-        echo "`t$failedBuild"
+        Write-Host "`t$failedBuild"
     }
     exit 1
 }
