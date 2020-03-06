@@ -8,25 +8,25 @@ namespace System.IO.Tests
 {
     public class EncryptDecrypt : FileSystemTest
     {
-        [Fact]
+        // On Windows Nano Server and Home Edition, file encryption with File.Encrypt(string path) throws an IOException
+        // because EFS (Encrypted File System), its underlying technology, is not available on these operating systems.
+        private static bool IsEncryptionSupported => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsNotWindowsHomeEdition;
+
+        [ConditionalFact(typeof(EncryptDecrypt), nameof(IsEncryptionSupported))]
         public static void NullArg_ThrowsException()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => File.Encrypt(null));
             AssertExtensions.Throws<ArgumentNullException>("path", () => File.Decrypt(null));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
-        [Fact]
-        public static void EncryptDecrypt_NotSupported()
+        [ConditionalFact(typeof(EncryptDecrypt), nameof(IsEncryptionSupported))]
+        public static void EncryptDecrypt_NotFound()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => File.Encrypt("path"));
-            Assert.Throws<PlatformNotSupportedException>(() => File.Decrypt("path"));
+            Assert.Throws<FileNotFoundException>(() => File.Encrypt("path"));
+            Assert.Throws<FileNotFoundException>(() => File.Decrypt("path"));
         }
 
-        // On Windows Nano Server and Home Edition, file encryption with File.Encrypt(string path) throws an IOException
-        // because EFS (Encrypted File System), its underlying technology, is not available on these operating systems.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsHomeEdition))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(EncryptDecrypt), nameof(IsEncryptionSupported))]
         public static void EncryptDecrypt_Read()
         {
             string tmpFileName = Path.GetTempFileName();

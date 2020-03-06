@@ -23,7 +23,6 @@
     <Compile Include="FileStream\EndWrite.cs" />
     <Compile Include="FileStream\LockUnlock.cs" />
     <Compile Include="FileSystemTest.cs" />
-    <Compile Include="File\EncryptDecrypt.cs" />
     <Compile Include="File\GetSetAttributesCommon.cs" />
     <Compile Include="File\Replace.cs" />
   </ItemGroup>
@@ -59,11 +58,12 @@
     <Compile Include="FileStream\ReadWriteSpan.cs" />
     <Compile Include="FileStream\WriteAsync.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
+    <Compile Include="File\EncryptDecrypt.cs" />
+    <Compile Include="FileSystemTest.Windows.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="FileSystemTest.Unix.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(TargetFramework)' == '$(NetFrameworkCurrent)'">
-    <Compile Include="FileSystemTest.Windows.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->
@@ -167,7 +167,9 @@
     <Compile Include="PortedCommon\PathInfo.cs" />
     <Compile Include="PortedCommon\ReparsePointUtilities.cs" />
     <!-- Helpers -->
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Interop\Windows\Interop.GenericOperations.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs">
+      <Link>Interop\Windows\Interop.GenericOperations.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs">
       <Link>Common\System\Buffers\NativeMemoryManager.cs</Link>
     </Compile>

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Drawing;
 
 namespace System.IO.Tests
 {
@@ -62,6 +63,7 @@ namespace System.IO.Tests
                     disposeMethod(disposing);
 
                 base.Dispose(disposing);
+
             }
         }
 
