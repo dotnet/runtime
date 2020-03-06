@@ -3,29 +3,27 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class BlobNode : ObjectNode, ISymbolDefinitionNode
+    public class SettableReadOnlyDataBlob : ObjectNode, ISymbolDefinitionNode
     {
         private Utf8String _name;
         private ObjectNodeSection _section;
-        private byte[] _data;
-        private int _alignment;
+        private ObjectData _data;
 
-        public BlobNode(Utf8String name, ObjectNodeSection section, byte[] data, int alignment)
+        public SettableReadOnlyDataBlob(Utf8String name, ObjectNodeSection section)
         {
             _name = name;
             _section = section;
-            _data = data;
-            _alignment = alignment;
         }
 
         public override ObjectNodeSection Section => _section;
-        public override bool StaticDependenciesAreComputed => true;
+        public override bool StaticDependenciesAreComputed => _data != null;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -34,20 +32,27 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => true;
 
+        public void InitializeData(ObjectData data)
+        {
+            Debug.Assert(_data == null);
+            _data = data;
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            return new ObjectData(_data, Array.Empty<Relocation>(), _alignment, new ISymbolDefinitionNode[] { this });
+            return _data;
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
 #if !SUPPORT_JIT
-        public override int ClassCode => -470351029;
+        public override int ClassCode => 674507768;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _name.CompareTo(((BlobNode)other)._name);
+            return _name.CompareTo(((SettableReadOnlyDataBlob)other)._name);
         }
 #endif
     }
 }
+
