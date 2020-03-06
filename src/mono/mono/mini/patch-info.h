@@ -69,3 +69,8 @@ PATCH_INFO(PROFILER_CLAUSE_COUNT, "profiler_clause_count")
 PATCH_INFO(METHOD_FTNDESC, "method_ftndesc")
 
 PATCH_INFO(SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR, "specific_trampoline_lazy_fetch_addr")
+
+/* mscorlib_amodule->info.specific_trampolines */
+PATCH_INFO(SPECIFIC_TRAMPOLINES, "specific_trampolines")
+/* Address of got slot block in mscorlib_amodule->got belonging to specific trampolines */
+PATCH_INFO(SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE, "specific_trampolines_got_slots_base")

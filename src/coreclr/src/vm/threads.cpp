@@ -1085,7 +1085,7 @@ void InitThreadManager()
 
     memcpy(s_barrierCopy, (BYTE*)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
 
-    // Store the JIT_WriteBarrier copy location to a global variable so that the JIT_Stelem_Ref and its helpers
+    // Store the JIT_WriteBarrier copy location to a global variable so that helpers
     // can jump to it.
     JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
 

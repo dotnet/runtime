@@ -44,7 +44,6 @@
 #include "perfmap.h"
 #endif
 
-#include "callcounter.h"
 #include "methoddescbackpatchinfo.h"
 
 #if defined(FEATURE_GDBJIT)
@@ -97,7 +96,7 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
 
     // Only take the lock if the method is versionable with vtable slot backpatch, for recording slots and synchronizing with
     // backpatching slots
-    MethodDescBackpatchInfoTracker::ConditionalLockHolder lockHolder(isVersionableWithVtableSlotBackpatch);
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(isVersionableWithVtableSlotBackpatch);
 
     // Get the method entry point inside the lock above to synchronize with backpatching in
     // MethodDesc::BackpatchEntryPointSlots()
@@ -1037,16 +1036,42 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
         }
 
         SetupGcCoverage(pConfig->GetCodeVersion(), (BYTE*)pCode);
+    }
+#endif // HAVE_GCCOVER
 
-        // This thread should always win the publishing race
-        // since we're under a lock.
-        if (!pConfig->SetNativeCode(pCode, &pOtherCode))
+#ifdef FEATURE_TIERED_COMPILATION
+    // Update the optimization tier if necessary before SetNativeCode() is called. As soon as SetNativeCode() is called, another
+    // thread may get the native code and the optimization tier for that code version, and it should have already been
+    // finalized.
+    bool shouldCountCalls = false;
+    if (pFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
+    {
+        _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+        _ASSERTE(pConfig->GetMethodDesc()->IsEligibleForTieredCompilation());
+        _ASSERTE(
+            pConfig
+                ->GetMethodDesc()
+                ->GetLoaderAllocator()
+                ->GetCallCountingManager()
+                ->IsCallCountingEnabled(pConfig->GetCodeVersion()));
+
+        if (pConfig->JitSwitchedToOptimized())
         {
-            _ASSERTE(!"GC Cover native code publish failed");
+            // Update the tier in the code version. The JIT may have decided to switch from tier 0 to optimized, in which case
+            // call counting would have to be disabled for the method.
+            NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
+            if (codeVersion.IsDefaultVersion())
+            {
+                pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
+            }
+            codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
+        }
+        else
+        {
+            shouldCountCalls = true;
         }
     }
-    else
-#endif // HAVE_GCCOVER
+#endif
 
     // Aside from rejit, performing a SetNativeCodeInterlocked at this point
     // generally ensures that there is only one winning version of the native
@@ -1055,6 +1080,12 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
     // JITCachedFunctionSearchStarted)
     if (!pConfig->SetNativeCode(pCode, &pOtherCode))
     {
+#ifdef HAVE_GCCOVER
+        // When GCStress is enabled, this thread should always win the publishing race
+        // since we're under a lock.
+        _ASSERTE(!GCStress<cfg_instr_jit>::IsEnabled() || !"GC Cover native code publish failed");
+#endif
+
         // Another thread beat us to publishing its copy of the JITted code.
         return pOtherCode;
     }
@@ -1062,26 +1093,10 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
 #ifdef FEATURE_CODE_VERSIONING
     pConfig->SetGeneratedOrLoadedNewCode();
 #endif
-
 #ifdef FEATURE_TIERED_COMPILATION
-    if (pFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
+    if (shouldCountCalls)
     {
-        _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
-        _ASSERTE(pConfig->GetMethodDesc()->IsEligibleForTieredCompilation());
-        _ASSERTE(pConfig->GetMethodDesc()->GetCallCounter()->IsCallCountingEnabled(pConfig->GetMethodDesc()));
-
-        if (pConfig->JitSwitchedToOptimized())
-        {
-            // Update the tier in the code version. The JIT may have decided to switch from tier 0 to optimized, in which case
-            // call counting would have to be disabled for the method.
-            MethodDesc *methodDesc = pConfig->GetMethodDesc();
-            methodDesc->GetCallCounter()->DisableCallCounting(methodDesc);
-            pConfig->GetCodeVersion().SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
-        }
-        else
-        {
-            pConfig->SetShouldCountCalls();
-        }
+        pConfig->SetShouldCountCalls();
     }
 #endif
 
@@ -1172,12 +1187,12 @@ BOOL PrepareCodeConfig::SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (m_pMethodDesc->SetNativeCodeInterlocked(pCode, NULL))
+    if (m_nativeCodeVersion.SetNativeCodeInterlocked(pCode, NULL))
     {
         return TRUE;
     }
 
-    *ppAlternateCodeToUse = m_pMethodDesc->GetNativeCode();
+    *ppAlternateCodeToUse = m_nativeCodeVersion.GetNativeCode();
     return FALSE;
 }
 
@@ -1279,7 +1294,7 @@ VersionedPrepareCodeConfig::VersionedPrepareCodeConfig(NativeCodeVersion codeVer
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(!m_nativeCodeVersion.IsDefaultVersion());
-    _ASSERTE(m_pMethodDesc->GetCodeVersionManager()->LockOwnedByCurrentThread());
+    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     m_ilCodeVersion = m_nativeCodeVersion.GetILCodeVersion();
 }
 
@@ -1287,7 +1302,7 @@ HRESULT VersionedPrepareCodeConfig::FinishConfiguration()
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(!GetMethodDesc()->GetCodeVersionManager()->LockOwnedByCurrentThread());
+    _ASSERTE(!CodeVersionManager::IsLockOwnedByCurrentThread());
 
     // Any code build stages that do just in time configuration should
     // be configured now
@@ -1306,23 +1321,6 @@ PCODE VersionedPrepareCodeConfig::IsJitCancellationRequested()
 {
     LIMITED_METHOD_CONTRACT;
     return m_nativeCodeVersion.GetNativeCode();
-}
-
-BOOL VersionedPrepareCodeConfig::SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    //This isn't the default version so jumpstamp is never needed
-    _ASSERTE(!m_nativeCodeVersion.IsDefaultVersion());
-    if (m_nativeCodeVersion.SetNativeCodeInterlocked(pCode, NULL))
-    {
-        return TRUE;
-    }
-    else
-    {
-        *ppAlternateCodeToUse = m_nativeCodeVersion.GetNativeCode();
-        return FALSE;
-    }
 }
 
 COR_ILMETHOD* VersionedPrepareCodeConfig::GetILHeader()
@@ -1362,7 +1360,7 @@ PrepareCodeConfigBuffer::PrepareCodeConfigBuffer(NativeCodeVersion codeVersion)
     // a bit slower path (+1 usec?)
     VersionedPrepareCodeConfig *config;
     {
-        CodeVersionManager::TableLockHolder lock(codeVersion.GetMethodDesc()->GetCodeVersionManager());
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
         config = new(m_buffer) VersionedPrepareCodeConfig(codeVersion);
     }
     config->FinishConfiguration();

@@ -2102,7 +2102,7 @@ void ZapInfo::GetProfilingHandle(BOOL                      *pbHookFunction,
 //
 // This strips the CORINFO_FLG_JIT_INTRINSIC flag from some of the named intrinsic methods.
 //
-DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn, ICorDynamicInfo* pJitInfo)
+DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINFO_METHOD_HANDLE ftn, ICorDynamicInfo* pJitInfo)
 {
     if (attribs & CORINFO_FLG_JIT_INTRINSIC)
     {
@@ -2179,6 +2179,40 @@ DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn
                 fTreatAsRegularMethodCall = strcmp(methodName, "Round") == 0;
             }
         }
+        else if (strcmp(namespaceName, "System.Numerics") == 0)
+        {
+            if ((strcmp(className, "Vector3") == 0) || (strcmp(className, "Vector4") == 0))
+            {
+                // Vector3 and Vector4 have constructors which take a smaller Vector and create bolt on
+                // a larger vector. This uses insertps instruction when compiled with SSE4.1 instruction support
+                // which must not be generated inline in R2R images that actually support an SSE2 only mode.
+                if (strcmp(methodName, ".ctor") == 0)
+                {
+                    CORINFO_SIG_INFO sig;
+                    pZapInfo->getMethodSig(ftn, &sig, NULL);
+                    CORINFO_CLASS_HANDLE argClass;
+                    if ((CorInfoType)pZapInfo->getArgType(&sig, sig.args, &argClass) == CORINFO_TYPE_VALUECLASS)
+                    {
+                        fTreatAsRegularMethodCall = TRUE;
+                    }
+                }
+                else if (strcmp(methodName, "Dot") == 0)
+                {
+                    // The dot product operations uses the dpps instruction when compiled with SSE4.1 instruction
+                    // support. This must not be generated inline in R2R images that actually support an SSE2 only mode.
+                    fTreatAsRegularMethodCall = TRUE;
+                }
+            }
+            else if ((strcmp(className, "Vector2") == 0) || (strcmp(className, "Vector") == 0) || (strcmp(className, "Vector`1") == 0))
+            {
+                if (strcmp(methodName, "Dot") == 0)
+                {
+                    // The dot product operations uses the dpps instruction when compiled with SSE4.1 instruction
+                    // support. This must not be generated inline in R2R images that actually support an SSE2 only mode.
+                    fTreatAsRegularMethodCall = TRUE;
+                }
+            }
+        }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
         if (fTreatAsRegularMethodCall)
@@ -2216,7 +2250,7 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                               (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_KINDONLY),
                               pResult);
 
-    pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(pResult->methodFlags, pResult->hMethod, m_pEEJitInfo);
+    pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(this, pResult->methodFlags, pResult->hMethod, m_pEEJitInfo);
 
 #ifdef FEATURE_READYTORUN_COMPILER
     if (IsReadyToRunCompilation())
@@ -3766,7 +3800,7 @@ unsigned ZapInfo::getMethodHash(CORINFO_METHOD_HANDLE ftn)
 DWORD ZapInfo::getMethodAttribs(CORINFO_METHOD_HANDLE ftn)
 {
     DWORD result = m_pEEJitInfo->getMethodAttribs(ftn);
-    return FilterNamedIntrinsicMethodAttribs(result, ftn, m_pEEJitInfo);
+    return FilterNamedIntrinsicMethodAttribs(this, result, ftn, m_pEEJitInfo);
 }
 
 void ZapInfo::setMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs)

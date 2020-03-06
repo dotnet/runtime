@@ -3060,8 +3060,6 @@ public:
     // Self-initializing accessor for domain-independent IJW thunk heap
     LoaderHeap              *GetDllThunkHeap();
 
-    void            EnumRegularStaticGCRefs        (promote_func* fn, ScanContext* sc);
-
 protected:
 
     void            BuildStaticsOffsets     (AllocMemTracker *pamTracker);

@@ -255,6 +255,15 @@ OBJECTREF *LargeHeapHandleBucket::TryAllocateEmbeddedFreeHandle()
     return NULL;
 }
 
+// enumerate the handles in the bucket
+void LargeHeapHandleBucket::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
+{
+    for (int i = 0; i < m_CurrentPos; i++)
+    {
+        fn((Object**)&m_pArrayDataPtr[i], sc, 0);
+    }
+}
+
 
 // Maximum bucket size will be 64K on 32-bit and 128K on 64-bit.
 // We subtract out a small amount to leave room for the object
@@ -512,8 +521,14 @@ void LargeHeapHandleTable::ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased)
     m_cEmbeddedFree += nReleased;
 }
 
-
-
+// enumerate the handles in the handle table
+void LargeHeapHandleTable::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
+{
+    for (LargeHeapHandleBucket *pBucket = m_pHead; pBucket != nullptr; pBucket = pBucket->GetNext())
+    {
+        pBucket->EnumStaticGCRefs(fn, sc);
+    }
+}
 
 // Constructor for the ThreadStaticHandleBucket class.
 ThreadStaticHandleBucket::ThreadStaticHandleBucket(ThreadStaticHandleBucket *pNext, DWORD Size, BaseDomain *pDomain)
@@ -670,11 +685,6 @@ BaseDomain::BaseDomain()
     m_ClassInitLock.PreInit();
     m_ILStubGenLock.PreInit();
     m_NativeTypeLoadLock.PreInit();
-
-#ifdef FEATURE_CODE_VERSIONING
-    m_codeVersionManager.PreInit();
-#endif
-
 } //BaseDomain::BaseDomain
 
 //*****************************************************************************
@@ -1569,10 +1579,11 @@ void SystemDomain::Attach()
     ILStubManager::Init();
     InteropDispatchStubManager::Init();
     StubLinkStubManager::Init();
-
     ThunkHeapStubManager::Init();
-
     TailCallStubManager::Init();
+#ifdef FEATURE_TIERED_COMPILATION
+    CallCountingStubManager::Init();
+#endif
 
     PerAppDomainTPCountList::InitAppDomainIndexList();
 #endif // CROSSGEN_COMPILE
@@ -1990,13 +2001,6 @@ void SystemDomain::LoadBaseSystemClasses()
 
     g_TypedReferenceMT = MscorlibBinder::GetClass(CLASS__TYPED_REFERENCE);
 
-    // further loading of nonprimitive types may need casting support.
-    // initialize cast cache here.
-#ifndef CROSSGEN_COMPILE
-    CastCache::Initialize();
-    ECall::PopulateManagedCastHelpers();
-#endif // CROSSGEN_COMPILE
-
     // unfortunately, the following cannot be delay loaded since the jit
     // uses it to compute method attributes within a function that cannot
     // handle Complus exception and the following call goes through a path
@@ -2009,6 +2013,13 @@ void SystemDomain::LoadBaseSystemClasses()
 #ifndef CROSSGEN_COMPILE
     CrossLoaderAllocatorHashSetup::EnsureTypesLoaded();
 #endif
+
+    // further loading of nonprimitive types may need casting support.
+    // initialize cast cache here.
+#ifndef CROSSGEN_COMPILE
+    CastCache::Initialize();
+    ECall::PopulateManagedCastHelpers();
+#endif // CROSSGEN_COMPILE
 
     // used by IsImplicitInterfaceOfSZArray
     MscorlibBinder::GetClass(CLASS__IENUMERABLEGENERIC);
@@ -5958,14 +5969,12 @@ void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
              GCHeapUtilities::IsServerHeap()   &&
              IsGCSpecialThread());
 
-    AppDomain::AssemblyIterator asmIterator = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-    while (asmIterator.Next(pDomainAssembly.This()))
+#ifndef CROSSGEN_COMPILE
+    if (m_pLargeHeapHandleTable != nullptr)
     {
-        // @TODO: Review when DomainAssemblies get added.
-        _ASSERTE(pDomainAssembly != NULL);
-        pDomainAssembly->EnumStaticGCRefs(fn, sc);
+        m_pLargeHeapHandleTable->EnumStaticGCRefs(fn, sc);
     }
+#endif // CROSSGEN_COMPILE
 
     RETURN;
 }

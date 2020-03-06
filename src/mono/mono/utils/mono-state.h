@@ -57,7 +57,7 @@ gboolean
 mono_summarize_set_timeline_dir (const char *directory);
 
 void
-mono_summarize_timeline_start (void);
+mono_summarize_timeline_start (const char *dump_reason);
 
 void
 mono_summarize_timeline_phase_log (MonoSummaryStage stage);

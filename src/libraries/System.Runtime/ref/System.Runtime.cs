@@ -2898,7 +2898,9 @@ namespace System
         public ObsoleteAttribute(string? message) { }
         public ObsoleteAttribute(string? message, bool error) { }
         public bool IsError { get { throw null; } }
+        public string? DiagnosticId { get { throw null; } set { } }
         public string? Message { get { throw null; } }
+        public string? UrlFormat { get { throw null; } set { } }
     }
     public sealed partial class OperatingSystem : System.ICloneable, System.Runtime.Serialization.ISerializable
     {
@@ -5179,6 +5181,16 @@ namespace System.Collections.Generic
         bool Contains(T item);
         void CopyTo(T[] array, int arrayIndex);
         bool Remove(T item);
+    }
+    public partial interface IReadOnlySet<T> : IReadOnlyCollection<T>
+    {
+        bool Contains(T item);
+        bool IsProperSubsetOf(IEnumerable<T> other);
+        bool IsProperSupersetOf(IEnumerable<T> other);
+        bool IsSubsetOf(IEnumerable<T> other);
+        bool IsSupersetOf(IEnumerable<T> other);
+        bool Overlaps(IEnumerable<T> other);
+        bool SetEquals(IEnumerable<T> other);
     }
     public partial interface IComparer<in T>
     {

@@ -4,5 +4,7 @@
     <type fullname="Microsoft.CSharp.RuntimeBinder.DynamicMetaObjectProviderDebugView"/>
     <!-- Required by the Expression Evaluator -->
     <type fullname="Microsoft.CSharp.RuntimeBinder.DynamicMetaObjectProviderDebugView/DynamicDebugViewEmptyException"/>
+    <!-- Required for COM event dispatch -->
+    <type fullname="System.Runtime.InteropServices.ComEventsSink"/>
   </assembly>
 </linker>

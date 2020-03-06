@@ -4,6 +4,7 @@
     <AssemblyName>System.Diagnostics.TraceSource</AssemblyName>
     <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\BooleanSwitch.cs" />

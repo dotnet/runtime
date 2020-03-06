@@ -43,15 +43,6 @@ namespace Microsoft.NET.HostModel.Bundle
             writer.Write(RelativePath);
         }
 
-        public static FileEntry Read(BinaryReader reader)
-        {
-            long offset = reader.ReadInt64();
-            long size = reader.ReadInt64();
-            FileType type = (FileType)reader.ReadByte();
-            string fileName = reader.ReadString();
-            return new FileEntry(type, fileName, offset, size);
-        }
-
         public override string ToString()
         {
             return String.Format($"{RelativePath} [{Type}] @{Offset} Sz={Size}");

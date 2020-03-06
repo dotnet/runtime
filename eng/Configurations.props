@@ -8,5 +8,18 @@
     <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' != 'checked'">$(RuntimeConfiguration)</MonoConfiguration>
     <!-- There's no checked configuration on Mono. -->
     <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' == 'checked'">Debug</MonoConfiguration>
+    <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <__TargetOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">OSX</__TargetOS>
+    <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</__TargetOS>
+    <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</__TargetOS>
+    <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</__TargetOS>
+    <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">Windows_NT</__TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">$(__TargetOS)</TargetOS>
+    <CoreCLRTargetOS Condition="'$(CoreCLRTargetOS)' == ''">$(TargetOS)</CoreCLRTargetOS>
+    <MonoTargetOS Condition="'$(MonoTargetOS)' == ''">$(TargetOS)</MonoTargetOS>
+    <LibrariesTargetOS Condition="'$(LibrariesTargetOS)' == ''">$(TargetOS)</LibrariesTargetOS>
   </PropertyGroup>
 </Project>
