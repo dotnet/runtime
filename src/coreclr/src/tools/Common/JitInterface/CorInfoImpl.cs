@@ -737,13 +737,6 @@ namespace Internal.JitInterface
             // Check for hardware intrinsics
             if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
             {
-#if READYTORUN
-                if (!isMethodDefinedInCoreLib() &&
-                    !JitConfigProvider.Instance.InstructionSetSupport.IsSupportedInstructionSetIntrinsic(method))
-                {
-                    throw new RequiresRuntimeJitException("This function is not defined in CoreLib and it is using hardware intrinsics.");
-                }
-#endif
 #if !READYTORUN
                 // Do not report the get_IsSupported method as an intrinsic - RyuJIT would expand it to
                 // a constant depending on the code generation flags passed to it, but we would like to
@@ -2900,23 +2893,24 @@ namespace Internal.JitInterface
                 // This list needs to match the list of intrinsics we can generate detection code for
                 // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
 #else
-                // For ReadyToRun, this list needs to match up with the behavior of FilterNamedIntrinsicMethodAttribs
-                // In particular, that this list of supported hardware will not generate non-SSE2 safe instruction
-                // sequences when paired with the behavior in FilterNamedIntrinsicMethodAttribs
-                if (isMethodDefinedInCoreLib())
+                // For ReadyToRun we set these hardware features as enabled always, as the overwhelming majority
+                // of hardware in the wild supports them. Note that we do not indicate support for AVX, or any other
+                // instruction set which uses the VEX encodings as the presence of those makes otherwise acceptable
+                // code be unusable on hardware which does not support VEX encodings, as well as emulators that do not
+                // support AVX instructions. As the jit generates logic that depends on these features it will call
+                // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
+                // code.
 #endif
-                {
-                    flags.Set(InstructionSet.X86_AES);
-                    flags.Set(InstructionSet.X86_PCLMULQDQ);
-                    flags.Set(InstructionSet.X86_SSE3);
-                    flags.Set(InstructionSet.X86_SSSE3);
-                    flags.Set(InstructionSet.X86_LZCNT);
+                flags.Set(InstructionSet.X86_AES);
+                flags.Set(InstructionSet.X86_PCLMULQDQ);
+                flags.Set(InstructionSet.X86_SSE3);
+                flags.Set(InstructionSet.X86_SSSE3);
+                flags.Set(InstructionSet.X86_LZCNT);
 #if READYTORUN
-                    flags.Set(InstructionSet.X86_SSE41);
-                    flags.Set(InstructionSet.X86_SSE42);
-                    flags.Set(InstructionSet.X86_POPCNT);
+                flags.Set(InstructionSet.X86_SSE41);
+                flags.Set(InstructionSet.X86_SSE42);
+                flags.Set(InstructionSet.X86_POPCNT);
 #endif
-                }
             }
             else if (targetArchitecture == TargetArchitecture.X64)
             {
@@ -2926,23 +2920,24 @@ namespace Internal.JitInterface
                 // This list needs to match the list of intrinsics we can generate detection code for
                 // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
 #else
-                // For ReadyToRun, this list needs to match up with the behavior of FilterNamedIntrinsicMethodAttribs
-                // In particular, that this list of supported hardware will not generate non-SSE2 safe instruction
-                // sequences when paired with the behavior in FilterNamedIntrinsicMethodAttribs
-                if (isMethodDefinedInCoreLib())
+                // For ReadyToRun we set these hardware features as enabled always, as the overwhelming majority
+                // of hardware in the wild supports them. Note that we do not indicate support for AVX, or any other
+                // instruction set which uses the VEX encodings as the presence of those makes otherwise acceptable
+                // code be unusable on hardware which does not support VEX encodings, as well as emulators that do not
+                // support AVX instructions. As the jit generates logic that depends on these features it will call
+                // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
+                // code.
 #endif
-                {
-                    flags.Set(InstructionSet.X64_AES);
-                    flags.Set(InstructionSet.X64_PCLMULQDQ);
-                    flags.Set(InstructionSet.X64_SSE3);
-                    flags.Set(InstructionSet.X64_SSSE3);
-                    flags.Set(InstructionSet.X64_LZCNT);
+                flags.Set(InstructionSet.X64_AES);
+                flags.Set(InstructionSet.X64_PCLMULQDQ);
+                flags.Set(InstructionSet.X64_SSE3);
+                flags.Set(InstructionSet.X64_SSSE3);
+                flags.Set(InstructionSet.X64_LZCNT);
 #if READYTORUN
-                    flags.Set(InstructionSet.X64_SSE41);
-                    flags.Set(InstructionSet.X64_SSE42);
-                    flags.Set(InstructionSet.X64_POPCNT);
+                flags.Set(InstructionSet.X64_SSE41);
+                flags.Set(InstructionSet.X64_SSE42);
+                flags.Set(InstructionSet.X64_POPCNT);
 #endif
-                }
             }
             else if (targetArchitecture == TargetArchitecture.ARM64)
             {
@@ -2992,7 +2987,14 @@ namespace Internal.JitInterface
             }
             else
             {
-                _actualInstructionSetSupport.RemoveInstructionSetSupport(instructionSetNameString);
+#if READYTORUN
+                // By policy we code review all changes into corelib, such that failing to use an instruction
+                // set is not a reason to not support usage of it.
+                if (!isMethodDefinedInCoreLib())
+#endif
+                {
+                    _actualInstructionSetSupport.RemoveInstructionSetSupport(instructionSetNameString);
+                }
             }
         }
     }

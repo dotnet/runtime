@@ -1490,14 +1490,7 @@ namespace Internal.JitInterface
         private uint getMethodAttribs(CORINFO_METHOD_STRUCT_* ftn)
         {
             MethodDesc method = HandleToObject(ftn);
-            uint attribs = getMethodAttribsInternal(method);
-            attribs = FilterNamedIntrinsicMethodAttribs(attribs, method);
-            return attribs;
-        }
-
-        private uint FilterNamedIntrinsicMethodAttribs(uint attribs, MethodDesc method)
-        {
-            return attribs;
+            return getMethodAttribsInternal(method);
         }
 
         private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
@@ -1536,8 +1529,6 @@ namespace Internal.JitInterface
                 out callerMethod,
                 out callerModule,
                 out useInstantiatingStub);
-
-            pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(pResult->methodFlags, methodToCall);
 
             var targetDetails = _compilation.TypeSystemContext.Target;
             if (targetDetails.Architecture == TargetArchitecture.X86
