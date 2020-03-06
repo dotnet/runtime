@@ -99,8 +99,8 @@ LEAF_ENTRY ResetCurrentContext, _TEXT
     mov     ax, [esp - 2]
 
     fninit                // reset FPU
-    and     ax, 0f00h     // preserve precision and rounding control
-    or      ax, 007fh     // mask all exceptions
+    and     ax, 0x0f00     // preserve precision and rounding control
+    or      ax, 0x007f     // mask all exceptions
 
     // preserve precision control
     mov     ax, [esp - 2]
@@ -135,7 +135,7 @@ LEAF_ENTRY GetSpecificCpuTypeAsm, _TEXT
     pushfd
     pop     ecx           // Get the EFLAGS
     mov     eax, ecx      // Save for later testing
-    xor     ecx, 200000h  // Invert the ID bit
+    xor     ecx, 0x200000 // Invert the ID bit
     push    ecx
     popfd                 // Save the updated flags
     pushfd
@@ -144,7 +144,7 @@ LEAF_ENTRY GetSpecificCpuTypeAsm, _TEXT
     push    eax
     popfd                 // Restore the flags
 
-    test    ecx, 200000h
+    test    ecx, 0x200000
     jz      LOCAL_LABEL(Assume486)
 
     xor     eax, eax
@@ -158,12 +158,12 @@ LEAF_ENTRY GetSpecificCpuTypeAsm, _TEXT
 
     // filter out everything except family and model
     // Note that some multi-procs have different stepping number for each proc
-    and     eax, 0ff0h
+    and     eax, 0x0ff0
 
     jmp     LOCAL_LABEL(CpuTypeDone)
 
 LOCAL_LABEL(Assume486):
-    mov     eax, 0400h   // report 486
+    mov     eax, 0x0400  // report 486
 
 LOCAL_LABEL(CpuTypeDone):
     pop     ebx
@@ -178,7 +178,7 @@ LEAF_ENTRY GetSpecificCpuFeaturesAsm, _TEXT
     pushfd
     pop     ecx          // Get the EFLAGS
     mov     eax, ecx     // Save for later testing
-    xor     ecx, 200000h // Invert the ID bit.
+    xor     ecx, 0x200000// Invert the ID bit.
     push    ecx
     popfd                // Save the updated flags.
     pushfd
@@ -187,7 +187,7 @@ LEAF_ENTRY GetSpecificCpuFeaturesAsm, _TEXT
     push    eax
     popfd                // Restore the flags
 
-    test    ecx, 200000h
+    test    ecx, 0x200000
     jz      LOCAL_LABEL(CpuFeaturesFail)
 
     xor     eax, eax
@@ -1291,7 +1291,7 @@ NESTED_ENTRY ProfileLeaveNaked, _TEXT, NoHandler
 
     // Check if we need to save off any floating point registers
     fstsw   ax
-    and     ax, 3800h           // Check the top-of-fp-stack bits
+    and     ax, 0x3800          // Check the top-of-fp-stack bits
     cmp     ax, 0               // If non-zero, we have something to save
     jnz     LOCAL_LABEL(SaveFPReg)
 

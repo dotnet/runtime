@@ -808,8 +808,6 @@ protected:
             bool iiaIsJitDataOffset() const;
             int  iiaGetJitDataOffset() const;
 
-#ifdef TARGET_ARMARCH
-
             // iiaEncodedInstrCount and its accessor functions are used to specify an instruction
             // count for jumps, instead of using a label and multiple blocks. This is used in the
             // prolog as well as for IF_LARGEJMP pseudo-branch instructions.
@@ -829,6 +827,8 @@ protected:
                 assert(abs(count) < 10);
                 iiaEncodedInstrCount = (count << iaut_SHIFT) | iaut_INST_COUNT;
             }
+
+#ifdef TARGET_ARMARCH
 
             struct
             {

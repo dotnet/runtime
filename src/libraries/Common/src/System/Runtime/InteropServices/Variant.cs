@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System.Diagnostics;
 
 namespace System.Runtime.InteropServices
@@ -12,7 +14,7 @@ namespace System.Runtime.InteropServices
     /// to and from COM calls.
     /// </summary>
     [StructLayout(LayoutKind.Explicit)]
-    internal struct Variant
+    internal partial struct Variant
     {
 #if DEBUG
         static Variant()
@@ -104,9 +106,11 @@ namespace System.Runtime.InteropServices
                 case VarEnum.VT_INT:
                 case VarEnum.VT_UINT:
                 case VarEnum.VT_BOOL:
+                case VarEnum.VT_ERROR:
                 case VarEnum.VT_R4:
                 case VarEnum.VT_R8:
                 case VarEnum.VT_DECIMAL:
+                case VarEnum.VT_CY:
                 case VarEnum.VT_DATE:
                 case VarEnum.VT_BSTR:
                     return true;
@@ -170,9 +174,11 @@ namespace System.Runtime.InteropServices
                     *(uint*)this._typeUnion._unionTypes._byref = (uint)value;
                     break;
 
+#pragma warning disable 618 // ErrorWrapper is obsolete
                 case VarEnum.VT_ERROR:
                     *(int*)this._typeUnion._unionTypes._byref = ((ErrorWrapper)value).ErrorCode;
                     break;
+#pragma warning restore 618
 
                 case VarEnum.VT_I8:
                     *(long*)this._typeUnion._unionTypes._byref = (long)value;
@@ -199,7 +205,7 @@ namespace System.Runtime.InteropServices
                     break;
 
                 case VarEnum.VT_DISPATCH:
-                    *(IntPtr*)this._typeUnion._unionTypes._byref = Marshal.GetIDispatchForObject(value);
+                    *(IntPtr*)this._typeUnion._unionTypes._byref = Marshal.GetComInterfaceForObject<object, IDispatch>(value);
                     break;
 
                 case VarEnum.VT_BSTR:
@@ -691,7 +697,7 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    _typeUnion._unionTypes._dispatch = Marshal.GetIDispatchForObject(value);
+                    _typeUnion._unionTypes._dispatch = Marshal.GetComInterfaceForObject<object, IDispatch>(value);
                 }
             }
         }

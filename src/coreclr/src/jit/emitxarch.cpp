@@ -6604,6 +6604,8 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 /*****************************************************************************
  *
  *  Add a jmp instruction.
+ *  When dst is NULL, instrCount specifies number of instructions
+ *       to jump: positive is forward, negative is backward.
  */
 
 void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 */)
@@ -6611,11 +6613,21 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     UNATIVE_OFFSET sz;
     instrDescJmp*  id = emitNewInstrJmp();
 
-    assert(dst->bbFlags & BBF_JMP_TARGET);
+    if (dst != nullptr)
+    {
+        assert(dst->bbFlags & BBF_JMP_TARGET);
+        assert(instrCount == 0);
+    }
+    else
+    {
+        /* Only allow non-label jmps in prolog */
+        assert(emitPrologIG);
+        assert(emitPrologIG == emitCurIG);
+        assert(instrCount != 0);
+    }
 
     id->idIns(ins);
     id->idInsFmt(IF_LABEL);
-    id->idAddr()->iiaBBlabel = dst;
 
 #ifdef DEBUG
     // Mark the finally call
@@ -6625,10 +6637,21 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     }
 #endif // DEBUG
 
-    /* Assume the jump will be long */
-
-    id->idjShort    = 0;
-    id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+    id->idjShort = 0;
+    if (dst != nullptr)
+    {
+        /* Assume the jump will be long */
+        id->idAddr()->iiaBBlabel = dst;
+        id->idjKeepLong          = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+    }
+    else
+    {
+        id->idAddr()->iiaSetInstrCount(instrCount);
+        id->idjKeepLong = false;
+        /* This jump must be short */
+        emitSetShortJump(id);
+        id->idSetIsBound();
+    }
 
     /* Record the jump's IG and offset within it */
 
@@ -6663,15 +6686,19 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     }
     else
     {
-        insGroup* tgt;
+        insGroup* tgt = nullptr;
 
-        /* This is a jump - assume the worst */
-
-        sz = (ins == INS_jmp) ? JMP_SIZE_LARGE : JCC_SIZE_LARGE;
-
-        /* Can we guess at the jump distance? */
-
-        tgt = (insGroup*)emitCodeGetCookie(dst);
+        if (dst != nullptr)
+        {
+            /* This is a jump - assume the worst */
+            sz = (ins == INS_jmp) ? JMP_SIZE_LARGE : JCC_SIZE_LARGE;
+            /* Can we guess at the jump distance? */
+            tgt = (insGroup*)emitCodeGetCookie(dst);
+        }
+        else
+        {
+            sz = JMP_SIZE_SMALL;
+        }
 
         if (tgt)
         {
@@ -8961,7 +8988,14 @@ void emitter::emitDispIns(
 
             if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                if (id->idAddr()->iiaHasInstrCount())
+                {
+                    printf("%3d instr", id->idAddr()->iiaGetInstrCount());
+                }
+                else
+                {
+                    printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                }
             }
             else
             {
@@ -12052,10 +12086,12 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
  *  needs to get bound to an actual address and processed by branch shortening.
  */
 
-BYTE* emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
+BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 {
     unsigned srcOffs;
     unsigned dstOffs;
+    BYTE*    srcAddr;
+    BYTE*    dstAddr;
     ssize_t  distVal;
 
     instrDescJmp* id  = (instrDescJmp*)i;
@@ -12106,16 +12142,32 @@ BYTE* emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
 
     // Figure out the distance to the target
     srcOffs = emitCurCodeOffs(dst);
-    dstOffs = id->idAddr()->iiaIGlabel->igOffs;
+    srcAddr = emitOffsetToPtr(srcOffs);
 
-    if (relAddr)
+    if (id->idAddr()->iiaHasInstrCount())
     {
-        distVal = (ssize_t)(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(srcOffs));
+        assert(ig != nullptr);
+        int      instrCount = id->idAddr()->iiaGetInstrCount();
+        unsigned insNum     = emitFindInsNum(ig, id);
+        if (instrCount < 0)
+        {
+            // Backward branches using instruction count must be within the same instruction group.
+            assert(insNum + 1 >= (unsigned)(-instrCount));
+        }
+        dstOffs = ig->igOffs + emitFindOffset(ig, (insNum + 1 + instrCount));
+        dstAddr = emitOffsetToPtr(dstOffs);
     }
     else
     {
-        distVal = (ssize_t)emitOffsetToPtr(dstOffs);
+        dstOffs = id->idAddr()->iiaIGlabel->igOffs;
+        dstAddr = emitOffsetToPtr(dstOffs);
+        if (!relAddr)
+        {
+            srcAddr = nullptr;
+        }
     }
+
+    distVal = (ssize_t)(dstAddr - srcAddr);
 
     if (dstOffs <= srcOffs)
     {
@@ -12499,7 +12551,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(id->idIsBound());
 
             // TODO-XArch-Cleanup: handle IF_RWR_LABEL in emitOutputLJ() or change it to emitOutputAM()?
-            dst = emitOutputLJ(dst, id);
+            dst = emitOutputLJ(ig, dst, id);
             sz  = (id->idInsFmt() == IF_SWR_LABEL ? sizeof(instrDescLbl) : sizeof(instrDescJmp));
             break;
 

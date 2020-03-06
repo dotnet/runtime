@@ -19,7 +19,7 @@
     <_distroRidIndex>$(_parseDistroRid.IndexOfAny("-"))</_distroRidIndex>
     <_archRidIndex>$([MSBuild]::Add($(_distroRidIndex), 1))</_archRidIndex>
     <OSRid Condition="'$(OSRid)' == '' and '$(_distroRidIndex)' != '-1'">$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</OSRid>
-    <OSRid Condition="'$(OSRid)' == ''">$(MonoOSGroup)</OSRid>
+    <OSRid Condition="'$(OSRid)' == ''">$(MonoTargetOS)</OSRid>
 
     <RuntimeOS Condition="'$(RuntimeOS)' == ''">$(OSRid)</RuntimeOS>
 

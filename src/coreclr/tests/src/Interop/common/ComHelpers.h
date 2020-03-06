@@ -109,7 +109,7 @@ private:
     std::atomic<ULONG> _refCount = 1;
 };
 
-// Marco to use for defining ref counting impls
+// Macro to use for defining ref counting impls
 #define DEFINE_REF_COUNTING() \
     STDMETHOD_(ULONG, AddRef)(void) { return UnknownImpl::DoAddRef(); } \
     STDMETHOD_(ULONG, Release)(void) { return UnknownImpl::DoRelease(); }

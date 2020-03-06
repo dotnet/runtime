@@ -22,7 +22,7 @@
             BuildCoreHostWindows" />
 
   <Target Name="BuildCoreHostUnix"
-          Condition="'$(OSGroup)' != 'Windows_NT'"
+          Condition="'$(TargetOS)' != 'Windows_NT'"
           DependsOnTargets="GetLatestCommitHash;GenerateNativeVersionFile">
     <PropertyGroup>
       <CMakeBuildDir>$(IntermediateOutputRootPath)corehost\cmake\</CMakeBuildDir>
@@ -44,7 +44,7 @@
   </Target>
 
   <Target Name="BuildCoreHostWindows"
-          Condition="'$(OSGroup)' == 'Windows_NT'"
+          Condition="'$(TargetOS)' == 'Windows_NT'"
           DependsOnTargets="GetLatestCommitHash">
 
     <!-- Generate Version files -->
@@ -100,7 +100,7 @@
   </Target>
 
   <Target Name="PrependWindowsHeaderIncludeToVersionHeaderFile"
-          Condition="'$(OSGroup)' == 'Windows_NT'"
+          Condition="'$(TargetOS)' == 'Windows_NT'"
           AfterTargets="GenerateNativeVersionFile">
     <PropertyGroup>
       <IncludeStatementLine>#include &lt;Windows.h&gt;</IncludeStatementLine>

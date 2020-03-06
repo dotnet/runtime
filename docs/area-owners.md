@@ -32,7 +32,7 @@ Below table shows the combined area owners on this repository:
 | area-Tracing-coreclr | @sywhang @josalem | |
 | area-TypeSystem-coreclr | @davidwrighton @MichalStrehovsky @fadimounir | |
 | area-UWP | @nattress | UWP-specific issues including Microsoft.NETCore.UniversalWindowsPlatform and Microsoft.Net.UWPCoreRuntimeSdk |
-| area-VM-coreclr | @jeffschw | |
+| area-VM-coreclr | @jeffschwMSFT | |
 | area-AssemblyLoader-mono | @CoffeeFlux | |
 | area-Codegen-meta-mono | @vargaz | |
 | area-Codegen-JIT-mono | @SamMonoRT | |
@@ -88,7 +88,7 @@ Below table shows the combined area owners on this repository:
 | area-System.Runtime.Caching | @StephenMolloy @HongGit | |
 | area-System.Runtime.CompilerServices | @Anipik @steveharter | |
 | area-System.Runtime.InteropServices | @AaronRobinsonMSFT @jkoritzinsky | Excluded:<ul><li>System.Runtime.InteropServices.RuntimeInfo</li></ul> |
-| area-System.Runtime.Intrinsics | @tannergooding @CarolEidt @RussKeldorph | |
+| area-System.Runtime.Intrinsics | @tannergooding @CarolEidt @echesakovMSFT | |
 | area-System.Security | @bartonjs @GrabYourPitchforks @krwq | |
 | area-System.ServiceModel | @StephenBonikowsky @HongGit @mconnew | Repo: https://github.com/dotnet/WCF<br>Packages:<ul><li>System.ServiceModel.Primitives</li><li>System.ServiceModel.Http</li><li>System.ServiceModel.NetTcp</li><li>System.ServiceModel.Duplex</li><li>System.ServiceModel.Security</li></ul> |
 | area-System.ServiceModel.Syndication | @StephenMolloy @HongGit | |

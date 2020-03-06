@@ -9647,7 +9647,6 @@ void MethodTableBuilder::CheckForSystemTypes()
                 case ELEMENT_TYPE_R8:
                 {
                     EEClassLayoutInfo * pLayout = pClass->GetLayoutInfo();
-                    pLayout->m_LargestAlignmentRequirementOfAllMembers        = 4;
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 4;
                     break;
                 }

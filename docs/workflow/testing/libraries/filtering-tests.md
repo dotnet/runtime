@@ -26,13 +26,13 @@ Use this attribute on test methods to specify that this test may only be run on 
 
 **[Available Test Platforms](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/TestPlatforms.cs)**
 
-When running tests by building a test project, tests that don't apply to the `OSGroup` are not run. For example, to run Linux-specific tests on a Linux box, use the following command line:
+When running tests by building a test project, tests that don't apply to the `TargetOS` are not run. For example, to run Linux-specific tests on a Linux box, use the following command line:
 ```sh
-dotnet build <csproj_file> /t:Test /p:OSGroup=Linux
+dotnet build <csproj_file> /t:Test /p:TargetOS=Linux
 ```
 To run all Linux-compatible tests that are failing:
 ```sh
-dotnet build <csproj_file> /t:Test /p:OSGroup=Linux /p:WithCategories=failing
+dotnet build <csproj_file> /t:Test /p:TargetOS=Linux /p:WithCategories=failing
 ```
 
 #### ActiveIssueAttribute
@@ -148,9 +148,9 @@ _**A few common examples with the above attributes:**_
 
 - Run all tests acceptable on Windows that are not failing:
 ```cmd
-dotnet build <csproj_file> /t:Test /p:OSGroup=Windows_NT
+dotnet build <csproj_file> /t:Test /p:TargetOS=Windows_NT
 ```
 - Run all outer loop tests acceptable on OS X that are currently associated with active issues:
 ```sh
-dotnet build <csproj_file> /t:Test /p:OSGroup=OSX /p:WithCategories="OuterLoop;failing""
+dotnet build <csproj_file> /t:Test /p:TargetOS=OSX /p:WithCategories="OuterLoop;failing""
 ```

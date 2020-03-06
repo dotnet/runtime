@@ -255,6 +255,15 @@ OBJECTREF *LargeHeapHandleBucket::TryAllocateEmbeddedFreeHandle()
     return NULL;
 }
 
+// enumerate the handles in the bucket
+void LargeHeapHandleBucket::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
+{
+    for (int i = 0; i < m_CurrentPos; i++)
+    {
+        fn((Object**)&m_pArrayDataPtr[i], sc, 0);
+    }
+}
+
 
 // Maximum bucket size will be 64K on 32-bit and 128K on 64-bit.
 // We subtract out a small amount to leave room for the object
@@ -512,8 +521,14 @@ void LargeHeapHandleTable::ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased)
     m_cEmbeddedFree += nReleased;
 }
 
-
-
+// enumerate the handles in the handle table
+void LargeHeapHandleTable::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
+{
+    for (LargeHeapHandleBucket *pBucket = m_pHead; pBucket != nullptr; pBucket = pBucket->GetNext())
+    {
+        pBucket->EnumStaticGCRefs(fn, sc);
+    }
+}
 
 // Constructor for the ThreadStaticHandleBucket class.
 ThreadStaticHandleBucket::ThreadStaticHandleBucket(ThreadStaticHandleBucket *pNext, DWORD Size, BaseDomain *pDomain)
@@ -5954,14 +5969,12 @@ void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
              GCHeapUtilities::IsServerHeap()   &&
              IsGCSpecialThread());
 
-    AppDomain::AssemblyIterator asmIterator = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-    while (asmIterator.Next(pDomainAssembly.This()))
+#ifndef CROSSGEN_COMPILE
+    if (m_pLargeHeapHandleTable != nullptr)
     {
-        // @TODO: Review when DomainAssemblies get added.
-        _ASSERTE(pDomainAssembly != NULL);
-        pDomainAssembly->EnumStaticGCRefs(fn, sc);
+        m_pLargeHeapHandleTable->EnumStaticGCRefs(fn, sc);
     }
+#endif // CROSSGEN_COMPILE
 
     RETURN;
 }
