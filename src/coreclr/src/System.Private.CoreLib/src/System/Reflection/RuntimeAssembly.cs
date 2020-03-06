@@ -250,9 +250,8 @@ namespace System.Reflection
 
         public override unsafe Stream? GetManifestResourceStream(string name)
         {
-            uint length;
             RuntimeAssembly runtimeAssembly = this;
-            byte* pbInMemoryResource = GetResource(new QCallAssembly(ref runtimeAssembly), name, out length);
+            byte* pbInMemoryResource = GetResource(new QCallAssembly(ref runtimeAssembly), name, out uint length);
 
             if (pbInMemoryResource != null)
             {
@@ -466,9 +465,8 @@ namespace System.Reflection
 
         internal Version GetVersion()
         {
-            int majorVer, minorVer, build, revision;
             RuntimeAssembly runtimeAssembly = this;
-            GetVersion(new QCallAssembly(ref runtimeAssembly), out majorVer, out minorVer, out build, out revision);
+            GetVersion(new QCallAssembly(ref runtimeAssembly), out int majorVer, out int minorVer, out int build, out int revision);
             return new Version(majorVer, minorVer, build, revision);
         }
 

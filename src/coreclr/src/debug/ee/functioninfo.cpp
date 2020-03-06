@@ -13,7 +13,6 @@
 
 #include "stdafx.h"
 #include "../inc/common.h"
-#include "perflog.h"
 #include "eeconfig.h" // This is here even for retail & free builds...
 #include "vars.hpp"
 #include <limits.h>
@@ -933,7 +932,7 @@ void DebuggerJitInfo::LazyInitBounds()
         LOG((LF_CORDB,LL_EVERYTHING, "DJI::LazyInitBounds: this=0x%x GetBoundariesAndVars success=0x%x\n", this, fSuccess));
 
         // SetBoundaries uses the CodeVersionManager, need to take it now for lock ordering reasons
-        CodeVersionManager::TableLockHolder lockHolder(mdesc->GetCodeVersionManager());
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
         Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
 
         if (!m_fAttemptInit)
@@ -1059,7 +1058,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     // Pick a unique initial value (-10) so that the 1st doesn't accidentally match.
     int ilPrevOld = -10;
 
-    _ASSERTE(m_nativeCodeVersion.GetMethodDesc()->GetCodeVersionManager()->LockOwnedByCurrentThread());
+    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
 
     InstrumentedILOffsetMapping mapping;
 
@@ -1606,8 +1605,8 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     NativeCodeVersion nativeCodeVersion;
     if (fd->IsVersionable())
     {
-        CodeVersionManager::TableLockHolder lockHolder(fd->GetCodeVersionManager());
         CodeVersionManager *pCodeVersionManager = fd->GetCodeVersionManager();
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
         nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(fd, startAddr);
         if (nativeCodeVersion.IsNull())
         {
@@ -2087,7 +2086,7 @@ void DebuggerMethodInfo::CreateDJIsForMethodDesc(MethodDesc * pMethodDesc)
     CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
     // grab the code version lock to iterate available versions of the code
     {
-        CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
         NativeCodeVersionCollection nativeCodeVersions = pCodeVersionManager->GetNativeCodeVersions(pMethodDesc);
 
         for (NativeCodeVersionIterator itr = nativeCodeVersions.Begin(), end = nativeCodeVersions.End(); itr != end; itr++)

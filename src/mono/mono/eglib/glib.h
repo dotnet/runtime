@@ -1048,6 +1048,19 @@ gboolean  g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***a
 gchar    *g_shell_unquote    (const gchar *quoted_string, GError **gerror);
 gchar    *g_shell_quote      (const gchar *unquoted_string);
 
+#ifndef G_OS_WIN32 // Spawn could be implemented but is not.
+
+int eg_getdtablesize (void);
+
+#if !defined (HAVE_FORK) || !defined (HAVE_EXECVE)
+
+#define HAVE_G_SPAWN 0
+
+#else
+
+#define HAVE_G_SPAWN 1
+
+
 /*
  * Spawn
  */
@@ -1067,7 +1080,8 @@ gboolean g_spawn_command_line_sync (const gchar *command_line, gchar **standard_
 gboolean g_spawn_async_with_pipes  (const gchar *working_directory, gchar **argv, gchar **envp, GSpawnFlags flags, GSpawnChildSetupFunc child_setup,
 				gpointer user_data, GPid *child_pid, gint *standard_input, gint *standard_output, gint *standard_error, GError **gerror);
 
-int eg_getdtablesize (void);
+#endif
+#endif
 
 /*
  * Timer

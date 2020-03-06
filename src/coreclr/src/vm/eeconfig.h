@@ -284,8 +284,10 @@ public:
     bool          TieredCompilation_QuickJit() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_QuickJit; }
     bool          TieredCompilation_QuickJitForLoops() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_QuickJitForLoops; }
     bool          TieredCompilation_CallCounting()  const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_CallCounting; }
-    DWORD         TieredCompilation_CallCountThreshold() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountThreshold; }
+    UINT16        TieredCompilation_CallCountThreshold() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountThreshold; }
     DWORD         TieredCompilation_CallCountingDelayMs() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_CallCountingDelayMs; }
+    bool          TieredCompilation_UseCallCountingStubs() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_UseCallCountingStubs; }
+    DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
 #endif
 
 #ifndef CROSSGEN_COMPILE
@@ -1019,8 +1021,10 @@ private: //----------------------------------------------------------------
     bool fTieredCompilation_QuickJit;
     bool fTieredCompilation_QuickJitForLoops;
     bool fTieredCompilation_CallCounting;
-    DWORD tieredCompilation_CallCountThreshold;
+    bool fTieredCompilation_UseCallCountingStubs;
+    UINT16 tieredCompilation_CallCountThreshold;
     DWORD tieredCompilation_CallCountingDelayMs;
+    DWORD tieredCompilation_DeleteCallCountingStubsAfter;
 #endif
 
 #ifndef CROSSGEN_COMPILE

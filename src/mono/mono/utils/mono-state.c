@@ -145,18 +145,43 @@ static const char *configured_timeline_dir;
 static MonoSummaryTimeline log;
 
 static void
-file_for_summary_stage (const char *directory, MonoSummaryStage stage, gchar *buff, size_t sizeof_buff)
+file_for_stage_breadcrumb (const char *directory, MonoSummaryStage stage, gchar *buff, size_t sizeof_buff)
 {
 	g_snprintf (buff, sizeof_buff, "%s%scrash_stage_%d", directory, G_DIR_SEPARATOR_S, stage);
 }
 
 static void
-create_stage_mark_file (void)
+file_for_dump_reason_breadcrumb (const char *directory, const char *dump_reason, gchar *buff, size_t sizeof_buff)
+{
+	g_snprintf (buff, sizeof_buff, "%s%scrash_reason_%s", directory, G_DIR_SEPARATOR_S, dump_reason);
+}
+
+static void create_breadcrumb (const char *path)
+{
+	int handle = g_open (path, O_WRONLY | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+	if (handle < 0) {
+		g_async_safe_printf ("Failed to create breadcrumb file %s\n", path);
+		return;
+	}
+
+	if (close(handle) < 0)
+		g_async_safe_printf ("Failed to close breadcrumb file %s\n", path);
+}
+
+static void
+create_stage_breadcrumb (void)
 {
 	char out_file [200];
-	file_for_summary_stage (log.directory, log.level, out_file, sizeof(out_file));
-	int handle = g_open (out_file, O_WRONLY | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
-	close(handle);
+	file_for_stage_breadcrumb (log.directory, log.level, out_file, sizeof(out_file));
+	create_breadcrumb (out_file);
+}
+
+static void
+create_dump_reason_breadcrumb (const char *dump_reason)
+{
+	char out_file [200];
+	file_for_dump_reason_breadcrumb (log.directory, dump_reason, out_file, sizeof(out_file));
+	create_breadcrumb (out_file);
 }
 
 gboolean
@@ -172,7 +197,7 @@ mono_summarize_set_timeline_dir (const char *directory)
 }
 
 void
-mono_summarize_timeline_start (void)
+mono_summarize_timeline_start (const char *dump_reason)
 {
 	memset (&log, 0, sizeof (log));
 
@@ -180,6 +205,7 @@ mono_summarize_timeline_start (void)
 		return;
 
 	log.directory = configured_timeline_dir;
+	create_dump_reason_breadcrumb (dump_reason);
 	mono_summarize_timeline_phase_log (MonoSummarySetup);
 }
 
@@ -246,7 +272,7 @@ mono_summarize_timeline_phase_log (MonoSummaryStage next)
 	g_assertf(out_level == next || next == MonoSummaryDoubleFault, "Log Error: Log transition to %d, actual expected next step is %d\n", next, out_level);
 
 	log.level = out_level;
-	create_stage_mark_file ();
+	create_stage_breadcrumb ();
 	// To check, comment out normally
 	// DO NOT MERGE UNCOMMENTED
 	// As this does a lot of FILE io
@@ -323,7 +349,7 @@ static gboolean
 timeline_has_level (const char *directory, char *log_file, size_t log_file_size, gboolean clear, MonoSummaryStage stage)
 {
 	memset (log_file, 0, log_file_size);
-	file_for_summary_stage (directory, stage, log_file, log_file_size);
+	file_for_stage_breadcrumb (directory, stage, log_file, log_file_size);
 	gboolean exists = g_file_test (log_file, G_FILE_TEST_EXISTS);
 	if (clear && exists) 
 		remove (log_file);

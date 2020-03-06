@@ -196,7 +196,6 @@ PTR_CBYTE FASTCALL decodeHeader(PTR_CBYTE table, UINT32 version, InfoHdr* header
                 header->syncStartOffset ^= HAS_SYNC_OFFSET;
                 break;
             case FLIP_REV_PINVOKE_FRAME:
-                _ASSERTE(GCInfoEncodesRevPInvokeFrame(version));
                 header->revPInvokeOffset ^= HAS_REV_PINVOKE_FRAME_OFFSET;
                 break;
 
@@ -206,15 +205,8 @@ PTR_CBYTE FASTCALL decodeHeader(PTR_CBYTE table, UINT32 version, InfoHdr* header
                 encoding = nextByte & ADJ_ENCODING_MAX;
                 // encoding here always corresponds to codes in InfoHdrAdjust2 set
 
-                if (encoding < SET_RET_KIND_MAX)
-                {
-                    _ASSERTE(GCInfoEncodesReturnKind(version));
-                    header->returnKind = (ReturnKind)encoding;
-                }
-                else
-                {
-                    assert(!"Unexpected encoding");
-                }
+                _ASSERTE(encoding < SET_RET_KIND_MAX);
+                header->returnKind = (ReturnKind)encoding;
                 break;
             }
         }

@@ -47,8 +47,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             IVector<T> _this = Unsafe.As<IVector<T>>(this);
 
-            uint index;
-            bool exists = _this.IndexOf(item, out index);
+            bool exists = _this.IndexOf(item, out uint index);
 
             if (!exists)
                 return -1;

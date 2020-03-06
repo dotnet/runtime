@@ -42,7 +42,7 @@ namespace System.ServiceProcess.Tests
 
         // [Fact]
         // To cleanup lingering Test Services uncomment the Fact attribute, make it public and run the following command
-        //   msbuild /t:rebuildandtest /p:XunitMethodName=System.ServiceProcess.Tests.ServiceBaseTests.Cleanup /p:OuterLoop=true
+        // dotnet build /t:test /p:XunitMethodName=System.ServiceProcess.Tests.ServiceBaseTests.Cleanup /p:OuterLoop=true
         // Remember to comment out the Fact again before running tests otherwise it will cleanup tests running in parallel
         // and cause them to fail.
         private void Cleanup()

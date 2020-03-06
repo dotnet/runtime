@@ -1554,6 +1554,37 @@ namespace Internal.JitInterface
                             fTreatAsRegularMethodCall = (methodName == "Round");
                         }
                     }
+                    else if (namespaceName == "System.Numerics")
+                    {
+                        if ((className == "Vector3") || (className == "Vector4"))
+                        {
+                            if (methodName == ".ctor")
+                            {
+                                // Vector3 and Vector4 have constructors which take a smaller Vector and create bolt on
+                                // a larger vector. This uses insertps instruction when compiled with SSE4.1 instruction support
+                                // which must not be generated inline in R2R images that actually support an SSE2 only mode.
+                                if ((method.Signature.Length > 1) && (method.Signature[0].IsValueType && !method.Signature[0].IsPrimitive))
+                                {
+                                    fTreatAsRegularMethodCall = true;
+                                }
+                            }
+                            else if (methodName == "Dot")
+                            {
+                                // The dot product operations uses the dpps instruction when compiled with SSE4.1 instruction
+                                // support. This must not be generated inline in R2R images that actually support an SSE2 only mode.
+                                fTreatAsRegularMethodCall = true;
+                            }
+                        }
+                        else if ((className == "Vector2") || (className == "Vector") || (className == "Vector`1"))
+                        {
+                            if (methodName == "Dot")
+                            {
+                                // The dot product operations uses the dpps instruction when compiled with SSE4.1 instruction
+                                // support. This must not be generated inline in R2R images that actually support an SSE2 only mode.
+                                fTreatAsRegularMethodCall = true;
+                            }
+                        }
+                    }
                 }
 
                 if (fTreatAsRegularMethodCall)

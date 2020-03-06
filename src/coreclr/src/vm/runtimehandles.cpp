@@ -1118,6 +1118,21 @@ PVOID QCALLTYPE RuntimeTypeHandle::GetGCHandle(QCall::TypeHandle pTypeHandle, IN
     return objHandle;
 }
 
+void QCALLTYPE RuntimeTypeHandle::FreeGCHandle(QCall::TypeHandle pTypeHandle, OBJECTHANDLE objHandle)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    TypeHandle th = pTypeHandle.AsTypeHandle();
+    th.GetLoaderAllocator()->UnregisterHandleFromCleanup(objHandle);
+    DestroyTypedHandle(objHandle);
+
+    END_QCALL;
+}
+
 void QCALLTYPE RuntimeTypeHandle::VerifyInterfaceIsImplemented(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pIFaceHandle)
 {
     QCALL_CONTRACT;

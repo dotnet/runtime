@@ -6,7 +6,7 @@ Building ARM for Windows can be done using cross compilation.
 Requirements
 ------------
 
-Install the ARM tools and Windows SDK, as described [here](https://github.com/dotnet/coreclr/blob/master/Documentation/building/windows-instructions.md).
+Install the ARM tools and Windows SDK, as described [here](https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md).
 
 Cross compiling CoreCLR
 -----------------------
@@ -99,7 +99,7 @@ Cross compiling CoreCLR
 
     ~/runtime/ $ ROOTFS_DIR=/home/arm ./build.sh arm debug verbose cross
 
-As usual, the resulting binaries will be found in `artifacts/bin/coreclr/BuildOS.BuildArch.BuildType/`
+As usual, the resulting binaries will be found in `artifacts/bin/coreclr/TargetOS.BuildArch.BuildType/`
 
 Cross compiling CoreCLR for Other VFP configurations
 ----------------------------------------------------------
@@ -137,7 +137,7 @@ To build System.Private.CoreLib for Linux, run the following command:
     lgs@ubuntu ~/git/coreclr/ $ build.sh arm debug verbose
 ```
 
-The output is at artifacts/Product/<BuildOS>.arm.Debug/System.Private.CoreLib.dll.
+The output is at artifacts/Product/<TargetOS>.arm.Debug/System.Private.CoreLib.dll.
 
 ```
     lgs@ubuntu ~/git/coreclr/ $ file ./artifacts/Product/Linux.arm.Debug/System.Private.CoreLib.dll

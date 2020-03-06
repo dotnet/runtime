@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+    <__BuildType>$(Configuration)</__BuildType>
+  </PropertyGroup>
+
   <Import Project="../Directory.Build.props" />
 
   <!-- Properties that should be defined for all managed product assemblies -->

@@ -2,37 +2,37 @@ Below table shows the combined area owners on this repository:
 
 | Area        | Owners / experts | Description |
 |-------------|------------------|------------------|
-| area-AssemblyLoader | @jeffschwMSFT @vitek-karas | |
-| area-CodeGen | @BruceForstall @dotnet/jit-contrib | |
-| area-CrossGen/NGEN | @fadimounir | |
-| area-crossgen2 | @nattress @MichalStrehovsky @trylek @fadimounir | |
+| area-AssemblyLoader-coreclr | @jeffschwMSFT @vitek-karas | |
+| area-CodeGen-coreclr | @BruceForstall @dotnet/jit-contrib | |
+| area-CrossGen/NGEN-coreclr | @fadimounir | |
+| area-crossgen2-coreclr | @nattress @MichalStrehovsky @trylek @fadimounir | |
 | area-DependencyModel | @eerhardt | Microsoft.Extensions.DependencyModel |
-| area-Diagnostics | @tommcdon | |
-| area-ExceptionHandling | @janvorli | |
-| area-GC | @Maoni0 | |
+| area-Diagnostics-coreclr | @tommcdon | |
+| area-ExceptionHandling-coreclr | @janvorli | |
+| area-GC-coreclr | @Maoni0 | |
 | area-Host | @jeffschwMSFT @vitek-karas @swaroop-sridhar | Issues with dotnet.exe including bootstrapping, framework detection, hostfxr.dll and hostpolicy.dll |
 | area-HostModel | @vitek-karas @swaroop-sridhar | |
-| area-ILTools | @BruceForstall @dotnet/jit-contrib | |
+| area-ILTools-coreclr | @BruceForstall @dotnet/jit-contrib | |
 | area-Infrastructure-coreclr | @jeffschwMSFT @jashook @trylek | |
-| area-Infrastructure-installer | @dleeapho @wtgodbe @dagood | |
-| area-Infrastructure-libraries | @ViktorHofer @ericstj @wtgodbe @safern @Anipik | Covers:<ul><li>Packaging</li><li>Build and test infra for libraries in dotnet/runtime repo</li><li>VS integration</li></ul><br/> |
+| area-Infrastructure-installer | @dleeapho @dagood | |
+| area-Infrastructure-libraries | @ViktorHofer @ericstj @safern @Anipik | Covers:<ul><li>Packaging</li><li>Build and test infra for libraries in dotnet/runtime repo</li><li>VS integration</li></ul><br/> |
 | area-Infrastructure | @ViktorHofer @jeffschwMSFT @dleeapho | |
-| area-Interop | @jeffschwMSFT @AaronRobinsonMSFT | |
+| area-Interop-coreclr | @jeffschwMSFT @AaronRobinsonMSFT | |
 | area-Meta | @joperezr | Issues without clear association to any specific API/contract, e.g. <ul><li>new contract proposals</li><li>cross-cutting code/test pattern changes (e.g. FxCop failures)</li><li>project-wide docs</li></ul><br/> |
-| area-Meta-corelib | @joperezr | |
-| area-PAL | @janvorli | |
-| area-R2RDump | @nattress | |
-| area-ReadyToRun | @fadimounir | |
+| area-PAL-coreclr | @janvorli | |
+| area-R2RDump-coreclr | @nattress | |
+| area-ReadyToRun-coreclr | @nattress | |
 | area-Setup | @dagood @dleeapho | Distro-specific (Linux, Mac and Windows) setup packages and msi files  |
+| area-Single-File | @swaroop-sridhar | |
 | area-SDK | @janvorli | General development issues and overlap with the SDK and CLI |
 | area-Serialization | @StephenMolloy @HongGit | Packages:<ul><li>System.Runtime.Serialization.Xml</li><li>System.Runtime.Serialization.Json</li><li>System.Private.DataContractSerialization</li><li>System.Xml.XmlSerializer</li></ul> Excluded:<ul><li>System.Runtime.Serialization.Formatters</li></ul> |
 | area-Snap | @dleeapho @leecow @MichaelSimons | |
-| area-TieredCompilation | @kouvel | |
+| area-TieredCompilation-coreclr | @kouvel | |
 | area-Tizen | @alpencolt @gbalykov | |
-| area-Tracing | @sywhang @josalem | |
-| area-TypeSystem | @davidwrighton @MichalStrehovsky @fadimounir | |
+| area-Tracing-coreclr | @sywhang @josalem | |
+| area-TypeSystem-coreclr | @davidwrighton @MichalStrehovsky @fadimounir | |
 | area-UWP | @nattress | UWP-specific issues including Microsoft.NETCore.UniversalWindowsPlatform and Microsoft.Net.UWPCoreRuntimeSdk |
-| area-VM | @sergiy-k | |
+| area-VM-coreclr | @jeffschwMSFT | |
 | area-AssemblyLoader-mono | @CoffeeFlux | |
 | area-Codegen-meta-mono | @vargaz | |
 | area-Codegen-JIT-mono | @SamMonoRT | |
@@ -47,8 +47,8 @@ Below table shows the combined area owners on this repository:
 | area-Threading-mono | @lambdageek | |
 | area-Tracing-mono | @lambdageek | |
 | area-Performance-mono | @SamMonoRT | |
-| **System contract assemblies** | | |
-| area-System.Buffers | @layomia @JeremyKuhne | |
+| **System namespaces** | | |
+| area-System.Buffers | @tannergooding @JeremyKuhne | |
 | area-System.CodeDom | @buyaa-n @krwq | |
 | area-System.Collections | @eiriktsarpalis @layomia | </ul>Excluded:<ul><li>System.Array -> System.Runtime</li></ul> |
 | area-System.ComponentModel | @JeremyKuhne @safern | |
@@ -69,7 +69,7 @@ Below table shows the combined area owners on this repository:
 | area-System.IO | @JeremyKuhne @carlossanlop @jozkee | |
 | area-System.IO.Compression | @carlossanlop @ericstj | <ul><li>Also includes System.IO.Packaging</li></ul> |
 | area-System.IO.Pipelines | @davidfowl @halter73 @jkotalik @anurse | |
-| area-System.Linq | @eiriktsarpalis | |
+| area-System.Linq | @eiriktsarpalis @adamsitnik | |
 | area-System.Linq.Expressions | @cston @333fred | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
 | area-System.Linq.Parallel | @tarekgh @kouvel | |
 | area-System.Management | @Anipik | WMI |
@@ -88,7 +88,7 @@ Below table shows the combined area owners on this repository:
 | area-System.Runtime.Caching | @StephenMolloy @HongGit | |
 | area-System.Runtime.CompilerServices | @Anipik @steveharter | |
 | area-System.Runtime.InteropServices | @AaronRobinsonMSFT @jkoritzinsky | Excluded:<ul><li>System.Runtime.InteropServices.RuntimeInfo</li></ul> |
-| area-System.Runtime.Intrinsics | @tannergooding @CarolEidt @RussKeldorph | |
+| area-System.Runtime.Intrinsics | @tannergooding @CarolEidt @echesakovMSFT | |
 | area-System.Security | @bartonjs @GrabYourPitchforks @krwq | |
 | area-System.ServiceModel | @StephenBonikowsky @HongGit @mconnew | Repo: https://github.com/dotnet/WCF<br>Packages:<ul><li>System.ServiceModel.Primitives</li><li>System.ServiceModel.Http</li><li>System.ServiceModel.NetTcp</li><li>System.ServiceModel.Duplex</li><li>System.ServiceModel.Security</li></ul> |
 | area-System.ServiceModel.Syndication | @StephenMolloy @HongGit | |

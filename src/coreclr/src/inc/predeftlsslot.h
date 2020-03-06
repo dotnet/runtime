@@ -20,9 +20,9 @@
 enum PredefinedTlsSlots
 {
     TlsIdx_OwnedCrstsChain, // slot to store the Crsts owned by this thread
-    TlsIdx_JitPerf,
-    TlsIdx_JitX86Perf,
-    TlsIdx_JitLogEnv,
+    TlsIdx_Unused1,
+    TlsIdx_Unused2,
+    TlsIdx_Unused3,
     TlsIdx_AssertDlgStatus, // Whether the thread is displaying an assert dialog
     TlsIdx_StressLog,
     TlsIdx_CantStopCount, // Can't-stop counter for any thread

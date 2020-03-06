@@ -47,6 +47,6 @@
     </ItemGroup>
   </Target>
 
-  <Import Condition="'$(PackageTargetRuntime)' != ''" Project="$(MSBuildThisFileDirectory)runtime.$(OSGroup).$(MSBuildProjectName).props" />
+  <Import Condition="'$(PackageTargetRuntime)' != ''" Project="$(MSBuildThisFileDirectory)runtime.$(TargetOS).$(MSBuildProjectName).props" />
 
 </Project>

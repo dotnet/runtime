@@ -217,6 +217,13 @@ namespace System.Text.Json
             Debug.Assert(converter != null);
             if (!converter.CanConvert(typeToConvert))
             {
+                Type? underlyingType = Nullable.GetUnderlyingType(typeToConvert);
+                if (underlyingType != null && converter.CanConvert(underlyingType))
+                {
+                    // Allow nullable handling to forward to the underlying type's converter.
+                    return NullableConverterFactory.CreateValueConverter(underlyingType, converter);
+                }
+
                 ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(classTypeAttributeIsOn, propertyInfo, typeToConvert);
             }
 
