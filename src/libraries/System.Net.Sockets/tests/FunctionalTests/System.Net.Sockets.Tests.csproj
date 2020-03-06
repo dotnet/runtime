@@ -43,8 +43,6 @@
     <Compile Include="Shutdown.cs" />
     <Compile Include="SocketAsyncEventArgsTest.cs" />
     <Compile Include="SocketOptionNameTest.cs" />
-    <Compile Include="SocketOptionNameTest.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
-    <Compile Include="SocketOptionNameTest.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="MulticastOptionTest.cs" />
     <Compile Include="UdpClientTest.cs" />
     <Compile Include="UnixDomainSocketTest.cs" />

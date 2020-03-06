@@ -1156,7 +1156,7 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        private SocketError FinishOperationConnect()
+        private unsafe SocketError FinishOperationConnect()
         {
             try
             {

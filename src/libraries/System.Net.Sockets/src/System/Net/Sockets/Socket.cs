@@ -1818,6 +1818,20 @@ namespace System.Net.Sockets
             }
         }
 
+        public void SetRawSocketOption(int optionLevel, int optionName, ReadOnlySpan<byte> optionValue)
+        {
+            ThrowIfDisposed();
+
+            SocketError errorCode = SocketPal.SetRawSockOpt(_handle, optionLevel, optionName, optionValue);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetSockOpt optionLevel:{optionLevel} optionName:{optionName} returns errorCode:{errorCode}");
+
+            if (errorCode != SocketError.Success)
+            {
+                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+            }
+        }
+
         // Gets the value of a socket option.
         public object? GetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName)
         {
@@ -1894,7 +1908,7 @@ namespace System.Net.Sockets
                 optionValue,
                 ref realOptionLength);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.getsockopt returns errorCode:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetSockOpt returned errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1910,6 +1924,23 @@ namespace System.Net.Sockets
             }
 
             return optionValue;
+        }
+
+        public int GetRawSocketOption(int optionLevel, int optionName, Span<byte> optionValue)
+        {
+            ThrowIfDisposed();
+
+            int realOptionLength = optionValue.Length;
+            SocketError errorCode = SocketPal.GetRawSockOpt(_handle, optionLevel, optionName, optionValue, ref realOptionLength);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetRawSockOpt optionLevel:{optionLevel} optionName:{optionName} returned errorCode:{errorCode}");
+
+            if (errorCode != SocketError.Success)
+            {
+                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+            }
+
+            return realOptionLength;
         }
 
         public void SetIPProtectionLevel(IPProtectionLevel level)
