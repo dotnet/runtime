@@ -153,6 +153,8 @@ foreach ($argument in $PSBoundParameters.Keys)
   }
 }
 
+$failedBuilds = @()
+
 foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
   foreach ($singleArch in $arch) {
@@ -160,9 +162,17 @@ foreach ($config in $configuration) {
     $env:__DistroRid="win-$singleArch"
     Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
     if ($lastExitCode -ne 0) {
-        exit $lastExitCode
+        $failedBuilds += "Configuration: $config, Architecture: $singleArch"
     }
   }
+}
+
+if ($failedBuilds.Count -ne 0) {
+    echo "Some builds failed:"
+    foreach ($failedBuild in $failedBuilds) {
+        echo "`t$failedBuild"
+    }
+    exit 1
 }
 
 exit 0
