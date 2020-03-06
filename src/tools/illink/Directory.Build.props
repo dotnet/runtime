@@ -1,4 +1,7 @@
 <Project>
+  <PropertyGroup>
+    <MonoBuild Condition="'$(MonoBuild)' == '' and '$(SolutionName)' == 'monolinker'">true</MonoBuild>
+  </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(MonoBuild)' == ''" />
   <PropertyGroup>
     <IsPackable>false</IsPackable>
