@@ -229,7 +229,7 @@ public class Point
 The singular parameterized constructor is used:
 
 ```C#
-Point point = JsonSerializer.Deserialize<Point>(@"{""x"":1,""y"":2}");
+Point point = JsonSerializer.Deserialize<Point>(@"{""X"":1,""Y"":2}");
 Console.WriteLine(point.X); // 1
 Console.WriteLine(point.Y); // 2
 ```
@@ -255,7 +255,8 @@ public class Point
 }
 ```
 
-A `NotSupportedException` is thrown because it is not clear which constructor to use. This may be resolved by using the `[JsonConstructor]`.
+A `NotSupportedException` is thrown because it is not clear which constructor to use. This may be resolved by using the `[JsonConstructor]`, or by adding a
+public parameterless constructor.
 
 ```C#
 Point point = JsonSerializer.Deserialize<Point>(@"{""X"":1,""Y"":2,""Z"":3}"); // Throws `NotSupportedException`
@@ -384,6 +385,33 @@ C# guidelines for naming properties and method parameters.
 
 This proposal does not include an extension point for users to specify a policy to determine the match, but it can be considered in the future.
 
+Consider `Point`:
+
+```C#
+public class Point
+{
+  public int X { get; }
+
+  public int Y { get; }
+
+  public Point(int x, int y) => (X, Y) = (x, y);
+}
+```
+
+The `int X` property matches with the `int x` parameter, and the `int Y` property matches with the `int x` property.
+With default serializer options, the properties would normally match with their exact pascal case representations. The
+constructor arguments will be configured to bind with the JSON instead:
+
+```C#
+Point point = JsonSerializer.Deserialize<Point>(@"{""X"":1,""Y"":2}");
+
+Console.WriteLine(point.X); // 1
+Console.WriteLine(point.Y); // 2
+```
+
+This means that the JSON property name(s) specified for each property will be properly applied to each
+matching parameter constructor. ASP.NET default settings of `camelCase` casing (and case-insensitivity) will work fine without needing extra configuration.
+
 The benefit of this approach is that a `JsonPropertyName` attribute placed on a property would be honored by its matching constructor parameter on deserialziation,
 enabling roundtripping scenarios:
 
@@ -407,13 +435,13 @@ string json = JsonSerializer.Serialize(point);
 Console.WriteLine(json); // {"XValue":1,"YValue":2}
 
 point = JsonSerializer.Deserialize<Point>(json);
-Console.WriteLine(point.X);
-Console.WriteLine(point.Y);
+Console.WriteLine(point.X); // 1
+Console.WriteLine(point.Y); // 2
 ```
 
 **If a constructor parameter does not match with a property, then the `JsonNamingPolicy` specified in `options.PropertyNamingPolicy` will be used to assign a JSON property name**. The default value for `options.PropertyNamingPolicy` is `null`, so no naming policy is applied by default.
 
-**Parameter naming matching is case-sensitive by default**. This can be toggled by users with the `options.PropertyNameCaseInsensitive` option.
+**Parameter naming matching is case sensitive by default**. This can be toggled by users with the `options.PropertyNameCaseInsensitive` option.
 
 Consider a scenario where constructor parameters do not have matching properties:
 
@@ -730,10 +758,10 @@ We expect most users to have significantly less than 64 parameters, but we can r
 #### [`ReferenceHandling` semantics](https://github.com/dotnet/runtime/blob/13c1e65a9f7aab201fe77e3daba11946aeb7cbaa/src/libraries/System.Text.Json/docs/ReferenceHandling_spec.md) will not be applied to objects deserialized with parameterized constructors
 
 `NotSupportedException` will be thrown if any properties named "$id", "$ref", or "$values" are found in the payload, and `options.ReferenceHandling` is set to 
-`ReferenceHandling.Preserve`. If the feature is off, the these properties will be treated like any other. This behavior prevents us from breaking people if we
-implement this feature in the future.
+`ReferenceHandling.Preserve`. If the feature is off, these properties will be treated like any other (likely end up in extension data property).
+This behavior prevents us from breaking people if we implement this feature in the future.
 
-`Newtonsoft.Json` does not not honor reference metadata within objects deserialized with parameterized constructors.
+`Newtonsoft.Json` does not not honor reference metadata within objects deserialized with parameterized constructors. They are ignored and treated like any other property.
 
 Consider an `Employee` class:
 
