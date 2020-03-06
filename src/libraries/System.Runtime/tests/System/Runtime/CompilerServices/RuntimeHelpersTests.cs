@@ -264,6 +264,20 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => { int [] array = RuntimeHelpers.GetSubArray(a, range); });
         }
 
+        [Fact]
+        public void AllocateTypeAssociatedMemoryInvalidArguments()
+        {
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(null, 10); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(AllocateTypeAssociatedMemoryTest), -1); });
+        }
+
+        [Fact]
+        public void AllocateTypeAssociatedMemoryValidArguments()
+        {
+            IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(AllocateTypeAssociatedMemoryTest), 32);
+            Assert.AreNotEqual(memory, IntPtr.Zero);
+        }
+
         [StructLayoutAttribute(LayoutKind.Sequential)]
         private struct StructWithoutReferences
         {
