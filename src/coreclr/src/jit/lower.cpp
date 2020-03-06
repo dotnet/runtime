@@ -3172,7 +3172,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 #else  // !TARGET_X86
         // In case of helper dispatched tail calls, "thisptr" will be the third arg.
         // The first two args are: real call target and addr of args copy routine.
-        const unsigned argNum  = 2;
+        const unsigned    argNum  = 2;
 #endif // !TARGET_X86
 
         fgArgTabEntry* thisArgTabEntry = comp->gtArgEntryByArgNum(call, argNum);
