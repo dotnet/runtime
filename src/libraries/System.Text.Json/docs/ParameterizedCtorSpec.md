@@ -4,9 +4,8 @@
 
 `JsonSerializer` deserializes instances of objects (`class`es and `struct`s) using public parameterless
 constructors. If none is present, and deserialization is attempted, the serializer throws a `NotSupportedException`
-with a message stating that objects without public parameterless constructors, including `interfaces` and `abstract`
-types, are not supported for deserialization. There is no way to deserialize an instance of an object using a
-parameterized constructor.
+with a message stating that objects without public parameterless constructors, including `interface`s and `abstract`
+types, are not supported for deserialization. There is no way to deserialize an instance of an object using a parameterized constructor.
 
 A common pattern is to make data objects immutable for various reasons. For example, given `Point`:
 
@@ -21,25 +20,24 @@ public struct Point
 }
 ```
 
-It would be beneficial if `JsonSerializer` could deserialize `Point` instances using the parameterized constructor
-above, given that mapping JSON properties into readonly members is not supported.
+It would be beneficial if `JsonSerializer` could deserialize `Point` instances using the parameterized constructor above, given that mapping JSON properties into readonly members is not supported.
 
 Also consider `User`:
 
 ```C#
 public class User
 {
-    public string UserName { get; private set; }
-    
-    public bool Enabled { get; private set; }
+  public string UserName { get; private set; }
+  
+  public bool Enabled { get; private set; }
 
-    public User() { }
+  public User() { }
 
-    public User(string userName, bool enabled)
-    {
-        UserName = userName;
-        Enabled = enabled;
-    }
+  public User(string userName, bool enabled)
+  {
+    UserName = userName;
+    Enabled = enabled;
+  }
 }
 ```
 
@@ -51,43 +49,31 @@ increases the scope of support for customers with varying design needs.
 
 Deserializing with parameterized constructors also gives the opportunity to do JSON "argument" validation once on the creation of the instance.
 
-This feature also enables deserialization support for `Tuple<...>` instances, as `Tuple` types do not have parameterless constructors.
+This feature enables deserialization support for `Tuple<...>` instances, using their parameterized constructors.
 
-The implementation of this feature closes https://github.com/dotnet/runtime/issues/29895.
+This feature is designed to support round-tripping of such "immutable" types.
+
+There are no easy workarounds for the scenarios this feature enables:
+
+- Support for immutable classes and structs (https://github.com/dotnet/runtime/issues/29895)
+- Choosing which constructor to use
+- Enabling deserialization with non-`public` contructors
+- Support for `Tuple<...>` types
 
 ## New API Proposal
 
 ```C#
-namespace System.Text.Json
-{
-    public sealed partial class JsonSerializerOptions
-    {
-        /// <summary>
-        /// Determines whether a parameter's name uses a case-insensitive comparison during deserialization.
-        /// The default value is false.
-        /// </summary>
-        /// <remarks>There is a performance cost associated when the value is true.</remarks>
-        public bool ParameterNameCaseInsensitive { get { throw null; } set { } }
-
-        /// <summary>
-        /// Specifies the policy used to convert a parameter's name on an object to another format, such as camel-casing.
-        /// The resulting parameter name is expected to match the JSON payload during deserialization.
-        /// </summary>
-        public System.Text.Json.JsonNamingPolicy? ParameterNamingPolicy { get { throw null; } set { } }
-    }
-}
-
 namespace System.Text.Json.Serialization
 {
-    /// <summary>
-    /// When placed on a constructor, indicates that the constructor should be used to create
-    /// instances of the type on deserialization.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Constructor, AllowMultiple = false)]
-    public sealed partial class JsonConstructorAttribute : JsonAttribute
-    {
-        public JsonConstructorAttribute() { }
-    }
+  /// <summary>
+  /// When placed on a constructor, indicates that the constructor should be used to create
+  /// instances of the type on deserialization.
+  /// </summary>
+  [AttributeUsage(AttributeTargets.Constructor, AllowMultiple = false)]
+  public sealed partial class JsonConstructorAttribute : JsonAttribute
+  {
+    public JsonConstructorAttribute() { }
+  }
 }
 ```
 
@@ -98,14 +84,14 @@ Given an immutable class `Point`,
 ```C#
 public class Point
 {
-    public int X { get; }
+  public int X { get; }
 
-    public int Y { get; }
+  public int Y { get; }
 
-    public Point() {}
+  public Point() {}
 
-    [JsonConstructor]
-    public Point(int x, int y) => (X, Y) = (x, y);
+  [JsonConstructor]
+  public Point(int x, int y) => (X, Y) = (x, y);
 }
 ```
 
@@ -132,13 +118,12 @@ then to the non-`public` default constructor.
 `AllowNonPublicDefaultConstructor`: Newtonsoft.NET will use a non-`public` default constructor before falling back to a
 parameterized constructor.
 
-These options don't map well to how `JsonSerializer` should behave. Non-`public` support will not be provided by
-default, so configuring selection precedence involving non-`public` constructors is not applicable.
+Non-`public` support is not provided by `JsonSerializer` by default, so configuring selection precedence involving non-`public` constructors is not applicable.
 
 
 ### `Utf8Json`
 
-`Utf8Json` chooses the constructor with the most matched arguments by name (case insensitive). Such best-fit matching for may have a non-trivial performance impact, and may not always choose the constructor that the user wishes to be used.
+`Utf8Json` chooses the constructor with the most matched arguments by name (case insensitive). This best-fit matching approach can be considered by `JsonSerializer` in the future.
 
 The constructor to use can also be specified with a `[SerializationConstructor]` attribute.
 
@@ -146,7 +131,7 @@ The constructor to use can also be specified with a `[SerializationConstructor]`
 
 ### `Jil` (.NET)
 
-`Jil` only supports deserialization using a parameterless constructor (may be non-`public`), and doesn't provide options to configure the behavior.
+`Jil` supports deserialization exclusively by using a parameterless constructor (may be non-`public`), and doesn't provide options to configure the behavior.
 
 ### `Jackson` (Java)
 
@@ -282,8 +267,9 @@ This rule does not apply to `struct`s as there's always a public parameterless c
 
 ##### Non-`public` constructors will not be used unless specified with a `[JsonConstructor]` attribute
 
-The serializer doesn't offer non-`public` support by default. An attribute should be placed on any non-`public` constructor that is desired to be used during deserialization, even if they are
-parameterless. Ideally, people should not be able to deserialize instances of types they don't own using non-`public` constructors.
+The serializer doesn't offer non-`public` support by default. An attribute should be placed on any non-`public` constructor
+that is desired to be used during deserialization, even if they are parameterless.
+Ideally, people should not be able to deserialize instances of types they don't own using non-`public` constructors.
 This restriction of an attribute based opt-in, rather than a globally applied opt-in, dissuades the violation of constructor access modifiers.
 
 Given `Point`:
@@ -384,180 +370,127 @@ public class Point
 An `InvalidOperationException` is thrown:
 
 ```C#
-Point point = JsonSerializer.Deserialize<Point>(@"{""x"":1,""y"":2,""z"":3}"); // Throws `InvalidOperationException`
+Point point = JsonSerializer.Deserialize<Point>(@"{""X"":1,""Y"":2,""Z"":3}"); // Throws `InvalidOperationException`
 ```
 
 ### Parameter name matching
 
-#### Parameter name matching is case sensitive by default
+#### Constructor parameters that bind to object properties will use their Json property names for deserialization.
 
-C# guidance recommends that property names should be in `PascalCase`, and parameter names in `camelCase`.
+Each property's CLR name will be converted with the `camelCase` naming policy to find its matching constructor parameter. The constructor parameter will use the cached JSON property name to find a match on deserialization, and the object property will be ignored on deserialization.
 
-With default options, the matching behavior is to case-sensitively map constructor parameter names to JSON property names equal to the result of applying a `ToUpperInvariant` operation on the first character of the parameter name.
+This matching mechanism is optimized for object definitions that follow the
+C# guidelines for naming properties and method parameters.
 
-This table shows some examples:
+This proposal does not include an extension point for users to specify a policy to determine the match, but it can be considered in the future.
 
-| Parameter name | Expected JSON property name |
-|----------------|-----------------------------|
-| x              | X                           |
-| X              | X                           |
-| firstName      | FirstName                   |
-| first_name     | First_name                  |
-| 最初           | 最初                         |
-
-This behavior is optimized for the default C# scenario, and assumes that parameters are named with camel case
-notation, and map to JSON properties representing object members that were serialized with pascal case notation.
-
-For flexibility, and accounting for scenarios not covered with the default case, this proposal includes a
-new `ParameterNameCaseInsensitive` `bool` on `JsonSerializerOptions`. With this option turned on, the
-serializer is more flexible with constructor parameter-JSON property matching.
-
-This table shows some examples:
-
-| Parameter name | Possible JSON property name matches      |
-|----------------|------------------------------------------|
-| x              | X, x                                     |
-| X              | X, x                                     |
-| firstName      | FirstName, firstName, FiRsTNaMe, etc.    |
-| first_name     | First_name, first_name, FiRsT_NaMe, etc. |
-| 最初           | 最初                                      |
-
-Given class `Point`:
+The benefit of this approach is that a `JsonPropertyName` attribute placed on a property would be honored by its matching constructor parameter on deserialziation,
+enabling roundtripping scenarios:
 
 ```C#
 public class Point
 {
-    public int X { get; }
+  [JsonPropertyName("XValue")]
+  public int X { get; }
 
-    public int Y { get; }
+  [JsonPropertyName("YValue")]
+  public int Y { get; }
 
-    public Point(int x, int y) => (X, Y) = (x, y);
+  public Point(int x, int y) => (X, Y) = (x, y);
 }
 ```
 
-Here are some possible scenarios:
+```C#
+Point point = new Point(1,2);
+
+string json = JsonSerializer.Serialize(point);
+Console.WriteLine(json); // {"XValue":1,"YValue":2}
+
+point = JsonSerializer.Deserialize<Point>(json);
+Console.WriteLine(point.X);
+Console.WriteLine(point.Y);
+```
+
+**If a constructor parameter does not match with a property, then the `JsonNamingPolicy` specified in `options.PropertyNamingPolicy` will be used to assign a JSON property name**. The default value for `options.PropertyNamingPolicy` is `null`, so no naming policy is applied by default.
+
+**Parameter naming matching is case-sensitive by default**. This can be toggled by users with the `options.PropertyNameCaseInsensitive` option.
+
+Consider a scenario where constructor parameters do not have matching properties:
+
+```C#
+public struct Point
+{
+  private readonly int _x;
+  private readonly int _y;
+
+  [JsonConstructor]
+  public Point(int x, int y) => (_x, _y) = (x, y);
+
+  public void Deconstruct(out int x, out int y) => (x, y) => (_x, _y);
+}
+```
+
+Parameter name matching is case sensitive by default:
 
 ```C#
 Point point = JsonSerializer.Deserialize<Point>(@"{""X"":1,""Y"":2}");
-Console.WriteLine(point.X); // 1
-Console.WriteLine(point.Y); // 2
+var (x, y) = point;
+Console.WriteLine(x); // 0
+Console.WriteLine(y; // 0
 
 point = JsonSerializer.Deserialize<Point>(@"{""x"":1,""y"":2}");
-Console.WriteLine(point.X); // 0
-Console.WriteLine(point.Y); // 0
-
-JsonSerializerOptions options = new JsonSerializerOptions
-{
-    ParameterNameCaseInsensitive = true
-};
-
-point = JsonSerializer.Deserialize<Point>(@"{""x"":1,""y"":2}", options);
-Console.WriteLine(point.X); // 1
-Console.WriteLine(point.Y); // 2
-
-point = JsonSerializer.Deserialize<Point>(@"{""X"":1,""y"":2}", options);
-Console.WriteLine(point.X); // 1
-Console.WriteLine(point.Y); // 2
+(x, y) = point;
+Console.WriteLine(x); // 1
+Console.WriteLine(y; // 2
 ```
 
-These semantics permit allow the deserialization of
-[`Tuple`](https://docs.microsoft.com/dotnet/api/system.tuple-1.-ctor?view=netcore-3.1#System_Tuple_1__ctor__0_)
-instances where the `itemN` constructor arguments are camel case, but the `ItemN` properties are pascal case.
-
-`Newtonsoft.Json` uses case-insensitive parameter comparison. There is a performance cost associated with this.
-The proposed semantics (case sensitivity and the transformation operation described above)
-provides the best serializer performance in the default case, while accounting for C# naming guidelines.
-
-The `ParameterNameCaseInsensitive` options does not affect object property to JSON property matching with
-`PropertyNameCaseInsensitive`. For instance, one could perform performant case-sensitive matching for object properties, and case-insensitive matching for constructor parameters, as needed.
-
-##### Alternatives
-
-1. Do case insensitive matching and don't provide an opt-in for case sensitive matching.
-    
-    - More flexible.
-    - Unnecessary perf hit in the major scenario (`camelCase` parameters, `PascalCase` properties).
-
-2. Do case insensitive matching and provide an opt-in for case sensitive matching.
-
-    - More flexible.
-    - Unnecessary perf hit in the major scenario if option is not specified.
-
-3. Instead of adding the `ParameterCaseInsensitive` option, share the `PropertyCaseInsensitive` option
-
-    - Overloads the term `Property` which is understood to mean object `Property`, not JSON property.
-    - Because the default value is `false`, ioes not work for the major scenario, including for built in types like `Tuple<...>`, without setting the option.
-    - Could degrade performance significantly if turned on in the common scenario, where there are more object properties than constructor parameters.
-
-#### `ParameterNamingPolicy` can be used to facilitate matching
-
-A major scenario enabled by this feature is the round-trippability of "immutable" types that have read-only properties.
-
-For example, given `Point`:
+Case sensitivity can be controlled with `options.PropertyNameCaseInsensitive`:
 
 ```C#
-public class Point
+var options = new JsonSerializerOptions
 {
-    public int XValue { get; }
+  PropertyNameCaseInsensitive = true
+};
 
-    public int YValue { get; }
+Point point = JsonSerializer.Deserialize<Point>(@"{""X"":1,""Y"":2}", options);
+var (x, y) = point;
+Console.WriteLine(x); // 1
+Console.WriteLine(y; // 2
 
-    public Point(int xValue, int yValue) => (XValue, YValue) = (xValue, yValue);
+point = JsonSerializer.Deserialize<Point>(@"{""x"":1,""y"":2}");
+(x, y) = point;
+Console.WriteLine(x); // 1
+Console.WriteLine(y; // 2
+```
+
+**`options.PropertyNamingPolicy` will be used to determine the JSON name for a constructor parameter if there's no matching property**.
+
+Given another definition for `Point`:
+
+```C#
+public struct Point
+{
+  private readonly int _x;
+  private readonly int _y;
+
+  [JsonConstructor]
+  public Point(int xValue, int yValue) => (_x, _y) = (xValue, yValue);
+
+  public void Deconstruct(out int x, out int y) => (x, y) => (_x, _y);
 }
 ```
 
-Serializing a new instance of `Point` using a `SnakeCase` policy would yield something like the following:
-
 ```C#
-JsonSerializerOptions options = new JsonSerializerOptions
+var options = new JsonSerializerOptions
 {
-    PropertyNamingPolicy = new JsonSnakeCaseNamingPolicy()
+  PropertyNamingPolicy = new SnakeCaseNamingPolicy();
 };
 
-string serialized = JsonSerializer.Serialize(new Point(1, 2), options);
-Console.WriteLine(serialized); // {"x_value":1,"y_value":2}
-
-Point point = JsonSerializer.Deserialize<Point>(serialized, options);
-Console.WriteLine(point.XValue); // 0
-Console.WriteLine(point.YValue); // 0
+Point point = JsonSerializer.Deserialize<Point>(@"{""x_value"":1,""y_value"":2", options);
+var (x, y) = point;
+Console.WriteLine(x); // 1
+Console.WriteLine(y; // 2
 ```
-
-If there is no way to specify a `JsonNamingPolicy` for constructor parameters, matching on deserialization
-will be impossible.
-
-This proposal introduces a new `ParameterNamingPolicy` which can be used to facilitate such matching:
-
-```C#
-JsonNamingPolicy policy = new JsonSnakeCaseNamingPolicy(); 
-
-JsonSerializerOptions options = new JsonSerializerOptions
-{
-    ParameterNamingPolicy = policy,
-    PropertyNamingPolicy = policy
-};
-
-string serialized = JsonSerializer.Serialize(new Point(1, 2), options);
-Console.WriteLine(serialized); // {"x_value":1,"y_value":2}
-
-Point point = JsonSerializer.Deserialize<Point>(serialized, options);
-Console.WriteLine(point.XValue); // 1
-Console.WriteLine(point.YValue); // 2
-```
-
-An alternative solution is to share the `PropertyNamingPolicy` used by object properties.
-
-Upside to using a new `JsonNamingPolicy`
-
-1. Keep concepts consistently separate i.e. we shouldn't have different case sensitivity options,
-but a shared naming policy option between constructor parameters and object properties.
-2. Keep the use of the word `Property` specific to object properties.
-
-Downside
-
-1. Perhaps som extra friction wrt. user experience.
-2. Redundancy as the two option values would almost never be different.
-3. Means we would likely have to add new `FieldNameCaseInSensitivity` and `FieldNamingPolicy` options.
-Maybe this is not a bad thing.
 
 #### If no JSON maps to a constructor parameter, then default values are used.
 
@@ -597,9 +530,6 @@ Console.WriteLine(person.Point.X); 1
 Console.WriteLine(person.Point.Y); 2
 ```
 
-Another option is to throw an exception (perhaps `ArgumentException`), but this behavior would
-be unecessarily prohibitive for users.
-
 #### Members are never set with JSON properties that matched with constructor parameters
 
 Doing this can override modifications done in constructor. `Newtonsoft.Json` has the same behavior.
@@ -609,14 +539,12 @@ Given `Point`,
 ```C#
 public struct Point
 {
-    [JsonPropertyName("A")]
     public int X { get; set; }
 
-    [JsonPropertyName("B")]
     public int Y { get; set; }
 
     [JsonConstructor]
-    public Point_PropertiesHavePropertyNames(int a, int b)
+    public Point(int x, int y)
     {
         X = 40;
         Y = 60;
@@ -627,7 +555,7 @@ public struct Point
 We can expect the following behavior:
 
 ```C#
-Point obj = JsonSerializer.Deserialize<Point>(@"{""A"":1,""B"":2}");
+Point obj = JsonSerializer.Deserialize<Point>(@"{""X"":1,""Y"":2}");
 Assert.Equal(40, obj.X); // Would be 1 if property were set directly after object construction.
 Assert.Equal(60, obj.Y); // Would be 2 if property were set directly after object construction.
 ```
@@ -635,18 +563,17 @@ Assert.Equal(60, obj.Y); // Would be 2 if property were set directly after objec
 This behavior also applies to property name matches (from JSON properties to object properties) due
 to naming policy.
 
-#### JSON properties that don't map to constructor parameters or object properties, go to extension data, if present
+#### JSON properties that don't map to constructor parameters or object properties go to extension data, if present
 
 This is in keeping with the established serializer handling of extension data.
 
 #### Serializer uses "first one wins" semantics for constructor parameter names
 
 For performance, the serializer constructs objects with paramaterized constructors using the first arguments
-parsed from a guven JSON payload.
+parsed from a given JSON payload.
 
 ```C#
-// u0058 is "X"
-Point point = JsonSerializer.Deserialize<Point>(@"{""\u0058"":1,""\u0059"":2,""X"":4}");
+Point point = JsonSerializer.Deserialize<Point>(@"{""X"":1,""Y"":2,""X"":4}");
 Assert.Equal(1, point.X); // Note, the value isn't 4.
 Assert.Equal(2, point.Y);
 ```
@@ -692,7 +619,7 @@ Console.WriteLine(person.ExtensionData.ContainsKey("Id")); // False
 ```
 
 In contrast, `Newtonsoft.Json` has last-one-wins behavior, but will also not store extra constructor
-arguments in extension. We can expect the following behavior with `Newtonsoft.Json`'s `JsonConvert`:
+arguments in extension data. We can expect the following behavior with `Newtonsoft.Json`'s `JsonConvert`:
 
 ```C#
 string json = @"{
@@ -718,17 +645,23 @@ account to provide opt-in last-one-wins extension point in the futre.
 ### JSON property name collisions (JSON properties mapping to multiple constructor parameters) are not allowed
 
 With this design, the only way for there to be collisions between constructor parameters is if
-a `ParameterNamingPolicy` yields the same name.
+a `PropertyNamingPolicy` causes duplicates.
 
 Given `Point` and a dubious naming policy:
 
 ```C#
+public struct Point
+{
+  [JsonConstructor]
+  public Point(int x, int y) { }
+}
+
 public class ManyToOneNamingPolicy : JsonNamingPolicy
 {
-    public override string ConvertName(string name)
-    {
-        return "JsonName";
-    }
+  public override string ConvertName(string name)
+  {
+    return "JsonName";
+  }
 }
 ```
 
@@ -737,7 +670,7 @@ Deserialization scenarios which would lead to collisions will throw an `InvalidO
 ```C#
 var options = new JsonSerializerOptions
 {
-    ParameterNamingPolicy: new ManyToOneNamingPolicy()
+  PropertyNamingPolicy: new ManyToOneNamingPolicy()
 };
 
 Point point = JsonSerializer.Deserialize<Point>(@"{}", options); // throws `InvalidOperationException`
@@ -796,6 +729,12 @@ We expect most users to have significantly less than 64 parameters, but we can r
 
 #### [`ReferenceHandling` semantics](https://github.com/dotnet/runtime/blob/13c1e65a9f7aab201fe77e3daba11946aeb7cbaa/src/libraries/System.Text.Json/docs/ReferenceHandling_spec.md) will not be applied to objects deserialized with parameterized constructors
 
+`NotSupportedException` will be thrown if any properties named "$id", "$ref", or "$values" are found in the payload, and `options.ReferenceHandling` is set to 
+`ReferenceHandling.Preserve`. If the feature is off, the these properties will be treated like any other. This behavior prevents us from breaking people if we
+implement this feature in the future.
+
+`Newtonsoft.Json` does not not honor reference metadata within objects deserialized with parameterized constructors.
+
 Consider an `Employee` class:
 
 ```C#
@@ -829,11 +768,6 @@ Console.WriteLine(json); // {"$id":"1","Manager":{"$ref":"1"},"FullName":"Jet Do
 ```
 
 It might be non-trivial work to resolve such scenarios on deserialization and handle error cases.
-
-This feature work will not include honoring references within objects deserialized with parameterized constructors. It may be considered in the future.
-
-`Nestonsoft.Json` does not not honor reference metadata within objects deserialized with
-parameterized constructors.
 
 ### For performance, properties that may be deserialized through constructor arguments will be written first on deserialization.
 
@@ -895,6 +829,6 @@ Console.WriteLine(json);
 
 ### Deserialization with parameterized constructor does not apply to enumerables
 
-The semantics described in this document does not apply to any type that implements `IEnumerable`. This may
-change in the future, particularly if an
+The semantics described in this document does not apply to any type that implements `IEnumerable`.
+This may change in the future, particularly if an
 [option to treat enumerables as objects](https://github.com/dotnet/runtime/issues/1808) with members is provided.
