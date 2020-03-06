@@ -105,7 +105,7 @@ void EventPipe::Initialize()
 }
 
 // Finish setting up the rest of EventPipe.
-void EventPipe::FinishSetup()
+void EventPipe::FinishInitialize()
 {
     STANDARD_VM_CONTRACT;
 
@@ -181,19 +181,18 @@ void EventPipe::EnableViaEnvironmentVariables()
                 {
                     return;
                 }
+
                 if (wcscmp(W("Microsoft-DotNETCore-SampleProfiler"), configuration.GetProviderName()) == 0)
                 {
                     s_enableSampleProfilerAtStartup = true;
                 }
-                else
-                {
-                    pProviders[i++] = EventPipeProviderConfiguration(
-                        configuration.GetProviderName(),
-                        configuration.GetEnabledKeywordsMask(),
-                        configuration.GetLevel(),
-                        configuration.GetArgument()
-                    );
-                }
+
+                pProviders[i++] = EventPipeProviderConfiguration(
+                    configuration.GetProviderName(),
+                    configuration.GetEnabledKeywordsMask(),
+                    configuration.GetLevel(),
+                    configuration.GetArgument()
+                );
 
                 if (end == nullptr)
                 {
@@ -203,21 +202,18 @@ void EventPipe::EnableViaEnvironmentVariables()
             }
         }
 
-        if (providerCnt != 0)
-        {
-            uint64_t sessionID = EventPipe::Enable(
-                outputPath,
-                eventpipeCircularBufferMB,
-                pProviders,
-                providerCnt,
-                EventPipeSessionType::File,
-                EventPipeSerializationFormat::NetTraceV4,
-                true,
-                nullptr,
-                !s_enableSampleProfilerAtStartup
-            );
-            EventPipe::StartStreaming(sessionID);
-        }
+        uint64_t sessionID = EventPipe::Enable(
+            outputPath,
+            eventpipeCircularBufferMB,
+            pProviders,
+            providerCnt,
+            EventPipeSessionType::File,
+            EventPipeSerializationFormat::NetTraceV4,
+            true,
+            nullptr,
+            false
+        );
+        EventPipe::StartStreaming(sessionID);
     }
 }
 

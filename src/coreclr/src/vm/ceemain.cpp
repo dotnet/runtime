@@ -846,7 +846,6 @@ void EEStartupHelper(COINITIEE fFlags)
             IfFailGo(E_OUTOFMEMORY);
         }
 
-        // Initialize remoting
         g_pEEShutDownEvent = new CLREvent();
         g_pEEShutDownEvent->CreateManualEvent(FALSE);
 
@@ -946,8 +945,10 @@ void EEStartupHelper(COINITIEE fFlags)
         hr = g_pGCHeap->Initialize();
         IfFailGo(hr);
 
-        // Finish setting up rest of EventPipe
-        EventPipe::FinishSetup();
+        // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
+        // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
+        // EventPipe initialization, so this is done after the GC has been fully initialized.
+        EventPipe::FinishInitialize();
 
         // This isn't done as part of InitializeGarbageCollector() above because thread
         // creation requires AppDomains to have been set up.
