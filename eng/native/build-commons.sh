@@ -88,7 +88,7 @@ build_native()
         # Drop version.c file
         __versionSourceFile="$intermediatesDir/version.c"
 
-        if [[ ! -z __LogsDir ]]; then
+        if [[ ! -z "${__LogsDir}" ]]; then
             __binlogArg="-bl:\"$__LogsDir/GenNativeVersion_$__TargetOS.$__BuildArch.$__BuildType.binlog\""
         fi
 
