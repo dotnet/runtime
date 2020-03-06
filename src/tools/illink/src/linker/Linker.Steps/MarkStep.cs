@@ -404,16 +404,8 @@ namespace Mono.Linker.Steps {
 			Tracer.Push (provider);
 			try {
 				foreach (CustomAttribute ca in provider.CustomAttributes) {
-					if (IsUserDependencyMarker (ca.AttributeType) && provider is MemberReference mr) {
-						MarkUserDependency (mr, ca);
-
-						if (_context.KeepDependencyAttributes) {
-							MarkCustomAttribute (ca);
-							continue;
-						}
-
-						if (Annotations.GetAction (mr.Module.Assembly) == AssemblyAction.Link)
-							continue;
+					if (ProcessLinkerSpecialAttribute (ca, provider)) {
+						continue;
 					}
 
 					if (markOnUse) {
@@ -429,7 +421,22 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		static AssemblyDefinition GetAssemblyFromCustomAttributeProvider (ICustomAttributeProvider provider)
+		protected virtual bool ProcessLinkerSpecialAttribute (CustomAttribute ca, ICustomAttributeProvider provider)
+		{
+			if (IsUserDependencyMarker (ca.AttributeType) && provider is MemberReference mr) {
+				MarkUserDependency (mr, ca);
+
+				if (_context.KeepDependencyAttributes || Annotations.GetAction (mr.Module.Assembly) != AssemblyAction.Link) {
+					MarkCustomAttribute (ca);
+				}
+
+				return true;
+			}
+
+			return false;
+		}
+
+		protected static AssemblyDefinition GetAssemblyFromCustomAttributeProvider (ICustomAttributeProvider provider)
 		{
 			return provider switch {
 				MemberReference mr => mr.Module.Assembly,
