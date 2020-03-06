@@ -82,12 +82,12 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public void Add(string name, IEnumerable<string> values)
+        public void Add(string name, IEnumerable<string?> values)
         {
             Add(GetHeaderDescriptor(name), values);
         }
 
-        internal void Add(HeaderDescriptor descriptor, IEnumerable<string> values)
+        internal void Add(HeaderDescriptor descriptor, IEnumerable<string?> values)
         {
             if (values == null)
             {
@@ -101,7 +101,7 @@ namespace System.Net.Http.Headers
             {
                 // Note that if the first couple of values are valid followed by an invalid value, the valid values
                 // will be added to the store before the exception for the invalid value is thrown.
-                foreach (string value in values)
+                foreach (string? value in values)
                 {
                     ParseAndAddValue(descriptor, info, value);
                 }

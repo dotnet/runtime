@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -41,14 +42,14 @@ namespace System.Net.Http.Headers
             return new TransferCodingWithQualityHeaderValue(this);
         }
 
-        public static new TransferCodingWithQualityHeaderValue Parse(string input)
+        public static new TransferCodingWithQualityHeaderValue Parse(string? input)
         {
             int index = 0;
             return (TransferCodingWithQualityHeaderValue)TransferCodingHeaderParser.SingleValueWithQualityParser
                 .ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string input, out TransferCodingWithQualityHeaderValue? parsedValue)
+        public static bool TryParse(string? input, [NotNullWhen(true)] out TransferCodingWithQualityHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;

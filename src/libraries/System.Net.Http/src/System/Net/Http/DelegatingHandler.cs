@@ -12,7 +12,7 @@ namespace System.Net.Http
 {
     public abstract class DelegatingHandler : HttpMessageHandler
     {
-        private HttpMessageHandler? _innerHandler;
+        private HttpMessageHandler _innerHandler = null!; // empty constructor not used
         private volatile bool _operationStarted = false;
         private volatile bool _disposed = false;
 
@@ -20,7 +20,7 @@ namespace System.Net.Http
         {
             get
             {
-                return _innerHandler!;
+                return _innerHandler;
             }
             set
             {
@@ -51,7 +51,7 @@ namespace System.Net.Http
                 throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
             SetOperationStarted();
-            return _innerHandler!.SendAsync(request, cancellationToken);
+            return _innerHandler.SendAsync(request, cancellationToken);
         }
 
         protected override void Dispose(bool disposing)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -144,7 +145,7 @@ namespace System.Net.Http.Headers
             return (ViaHeaderValue)GenericHeaderParser.SingleValueViaParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string? input, out ViaHeaderValue? parsedValue)
+        public static bool TryParse(string? input, [NotNullWhen(true)] out ViaHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;

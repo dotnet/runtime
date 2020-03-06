@@ -13,13 +13,13 @@ namespace System.Net.Http
 {
     public class FormUrlEncodedContent : ByteArrayContent
     {
-        public FormUrlEncodedContent(IEnumerable<KeyValuePair<string, string>> nameValueCollection)
+        public FormUrlEncodedContent(IEnumerable<KeyValuePair<string?, string?>> nameValueCollection)
             : base(GetContentByteArray(nameValueCollection))
         {
             Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
         }
 
-        private static byte[] GetContentByteArray(IEnumerable<KeyValuePair<string, string>> nameValueCollection)
+        private static byte[] GetContentByteArray(IEnumerable<KeyValuePair<string?, string?>> nameValueCollection)
         {
             if (nameValueCollection == null)
             {
@@ -28,7 +28,7 @@ namespace System.Net.Http
 
             // Encode and concatenate data
             StringBuilder builder = new StringBuilder();
-            foreach (KeyValuePair<string, string> pair in nameValueCollection)
+            foreach (KeyValuePair<string?, string?> pair in nameValueCollection)
             {
                 if (builder.Length > 0)
                 {
@@ -43,7 +43,7 @@ namespace System.Net.Http
             return HttpRuleParser.DefaultHttpEncoding.GetBytes(builder.ToString());
         }
 
-        private static string Encode(string data)
+        private static string Encode(string? data)
         {
             if (string.IsNullOrEmpty(data))
             {

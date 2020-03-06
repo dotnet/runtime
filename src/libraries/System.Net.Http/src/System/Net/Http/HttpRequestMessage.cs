@@ -25,7 +25,7 @@ namespace System.Net.Http
         private Version _version = null!;
         private HttpContent? _content;
         private bool _disposed;
-        private IDictionary<string, object>? _properties;
+        private IDictionary<string, object?>? _properties;
 
         public Version Version
         {
@@ -112,13 +112,13 @@ namespace System.Net.Http
 
         internal bool HasHeaders => _headers != null;
 
-        public IDictionary<string, object> Properties
+        public IDictionary<string, object?> Properties
         {
             get
             {
                 if (_properties == null)
                 {
-                    _properties = new Dictionary<string, object>();
+                    _properties = new Dictionary<string, object?>();
                 }
                 return _properties;
             }

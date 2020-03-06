@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -93,7 +94,7 @@ namespace System.Net.Http.Headers
                 input, null, ref index);
         }
 
-        public static bool TryParse(string? input, out RetryConditionHeaderValue? parsedValue)
+        public static bool TryParse(string? input, [NotNullWhen(true)] out RetryConditionHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;

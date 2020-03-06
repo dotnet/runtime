@@ -212,7 +212,7 @@ namespace System.Net.Http
             }
         }
 
-        public IDictionary<string, object> Properties => _socketsHttpHandler.Properties;
+        public IDictionary<string, object?> Properties => _socketsHttpHandler.Properties;
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)

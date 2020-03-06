@@ -96,7 +96,7 @@ namespace System.Net.Http.Headers
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        public override bool Equals(object?obj)
+        public override bool Equals(object? obj)
         {
             WarningHeaderValue? other = obj as WarningHeaderValue;
 
@@ -137,13 +137,13 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static WarningHeaderValue Parse(string input)
+        public static WarningHeaderValue Parse(string? input)
         {
             int index = 0;
             return (WarningHeaderValue)GenericHeaderParser.SingleValueWarningParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string input, out WarningHeaderValue? parsedValue)
+        public static bool TryParse(string? input, [NotNullWhen(true)] out WarningHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;

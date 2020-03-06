@@ -86,13 +86,13 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static ProductHeaderValue Parse(string input)
+        public static ProductHeaderValue Parse(string? input)
         {
             int index = 0;
             return (ProductHeaderValue)GenericHeaderParser.SingleValueProductParser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string input, out ProductHeaderValue? parsedValue)
+        public static bool TryParse(string? input, out ProductHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;

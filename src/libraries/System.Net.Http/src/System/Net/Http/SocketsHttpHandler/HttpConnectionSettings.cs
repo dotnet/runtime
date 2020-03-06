@@ -53,7 +53,7 @@ namespace System.Net.Http
 
         internal SslClientAuthenticationOptions? _sslOptions;
 
-        internal IDictionary<string, object>? _properties;
+        internal IDictionary<string, object?>? _properties;
 
         public HttpConnectionSettings()
         {

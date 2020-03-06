@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Net.Http.Headers
@@ -110,7 +111,7 @@ namespace System.Net.Http.Headers
                 input, null, ref index);
         }
 
-        public static bool TryParse(string? input, out StringWithQualityHeaderValue? parsedValue)
+        public static bool TryParse(string? input, [NotNullWhen(true)] out StringWithQualityHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;

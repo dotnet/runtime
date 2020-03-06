@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
@@ -198,6 +199,7 @@ namespace System.Net.Http
             }
         }
 
+        [AllowNull]
         public SslClientAuthenticationOptions SslOptions
         {
             get => _settings._sslOptions ?? (_settings._sslOptions = new SslClientAuthenticationOptions());
@@ -270,8 +272,8 @@ namespace System.Net.Http
             }
         }
 
-        public IDictionary<string, object> Properties =>
-            _settings._properties ?? (_settings._properties = new Dictionary<string, object>());
+        public IDictionary<string, object?> Properties =>
+            _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
 
         protected override void Dispose(bool disposing)
         {

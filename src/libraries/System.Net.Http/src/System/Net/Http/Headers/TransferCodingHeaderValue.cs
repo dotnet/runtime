@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -64,7 +65,7 @@ namespace System.Net.Http.Headers
                 input, null, ref index);
         }
 
-        public static bool TryParse(string? input, out TransferCodingHeaderValue? parsedValue)
+        public static bool TryParse(string? input, [NotNullWhen(true)] out TransferCodingHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;
