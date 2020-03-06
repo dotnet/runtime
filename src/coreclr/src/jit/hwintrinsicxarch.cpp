@@ -402,11 +402,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case InstructionSet_BMI2:
         case InstructionSet_BMI2_X64:
             return impBMI1OrBMI2Intrinsic(intrinsic, method, sig);
-
-        case InstructionSet_FMA:
-            return impFMAIntrinsic(intrinsic, method, sig);
-        case InstructionSet_PCLMULQDQ:
-            return impPCLMULQDQIntrinsic(intrinsic, method, sig);
         default:
             return nullptr;
     }

@@ -2031,6 +2031,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 struct HWIntrinsicInfo;
+struct HWIntrinsicArgsInfo;
 
 class Compiler
 {
@@ -2057,6 +2058,7 @@ class Compiler
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct HWIntrinsicInfo;
+    friend struct HWIntrinsicArgsInfo;
 #endif // FEATURE_HW_INTRINSICS
 
 #ifndef TARGET_64BIT
@@ -3657,10 +3659,15 @@ protected:
                             CORINFO_METHOD_HANDLE method,
                             CORINFO_SIG_INFO*     sig,
                             bool                  mustExpand);
-    var_types getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
-                        CORINFO_CLASS_HANDLE clsHnd,
+   /* var_types getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
                         CORINFO_SIG_INFO*    sig,
                         var_types baseType);
+    HWIntrinsicArgsInfo getArgsInfoForHWIntrinsic(NamedIntrinsic      intrinsic,
+                                               HWIntrinsicCategory category,
+                                               CORINFO_SIG_INFO*   sig,
+                                               var_types           baseType,
+                                               bool                mustExpand);
+    GenTreeHWIntrinsic* gtNewHWIntrinsicNode(HWIntrinsicArgsInfo argsInfo, var_types retType, unsigned simdSize);*/
     GenTree* impUnsupportedHWIntrinsic(unsigned              helper,
                                        CORINFO_METHOD_HANDLE method,
                                        CORINFO_SIG_INFO*     sig,
