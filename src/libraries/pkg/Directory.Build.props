@@ -44,6 +44,12 @@
         <SymbolFileExtension>.dwarf</SymbolFileExtension>
       </PropertyGroup>
     </When>
+    <When Condition="$(PackageTargetRuntime.StartsWith('ios'))">
+      <PropertyGroup>
+        <LibraryFileExtension>.dylib</LibraryFileExtension>
+        <SymbolFileExtension>.dwarf</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
     <Otherwise>
       <PropertyGroup>
         <LibraryFileExtension>.so</LibraryFileExtension>

@@ -23,7 +23,7 @@
 
     <RuntimeOS Condition="'$(RuntimeOS)' == ''">$(OSRid)</RuntimeOS>
 
-    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">Windows_NT;OSX;Android;Linux;FreeBSD</SupportedPackageOSGroups>
+    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">Windows_NT;OSX;iOS;Android;Linux;FreeBSD</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>
 
     <!-- Identify OS family based upon the RuntimeOS, which could be distro specific (e.g. osx.10.12) or
@@ -38,6 +38,7 @@
   <!-- derive an OS Group based on the OS Family -->
   <PropertyGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'osx'">OSX</_derivedPackageTargetOSGroup>
+    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'ios'">iOS</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'android'">Android</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'win'">Windows_NT</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(TargetOS)' != ''">$(TargetOS)</_derivedPackageTargetOSGroup>
@@ -84,6 +85,11 @@
         <PackageRID Condition="'$(PortableBuild)' == 'true'">osx-$(ArchGroup)</PackageRID>
       </PropertyGroup>
     </When>
+    <When Condition="'$(_runtimeOSFamily)' == 'ios'">
+      <PropertyGroup>
+        <PackageRID>ios.$(iOSVersionMin.TrimEnd('.0'))-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(_runtimeOSFamily)' == 'freebsd'">
       <PropertyGroup>
         <PackageRID>freebsd.11-$(ArchGroup)</PackageRID>
@@ -117,7 +123,7 @@
   <!-- Determine per-platform native binary extensions. -->
   <Choose>
     <When Condition="'$(_runtimeOSFamily)' == 'win'" />
-    <When Condition="'$(_runtimeOSFamily)' == 'osx'">
+    <When Condition="'$(_runtimeOSFamily)' == 'osx' or '$(_runtimeOSFamily)' == 'ios'">
       <PropertyGroup>
         <LibraryFileExtension>.dylib</LibraryFileExtension>
         <SymbolFileExtension>.dwarf</SymbolFileExtension>
@@ -160,6 +166,15 @@
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';OSX;'))">
     <OfficialBuildRID Include="osx-x64" />
+  </ItemGroup>
+  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';iOS;'))">
+    <OfficialBuildRID Include="ios-x64" />
+    <OfficialBuildRID Include="ios-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="ios-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';FreeBSD;'))">
     <OfficialBuildRID Include="freebsd-x64" />
