@@ -265,6 +265,7 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Not presently implemented on Mono")]
         public static void AllocateTypeAssociatedMemoryInvalidArguments()
         {
             Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(null, 10); });
@@ -272,6 +273,7 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        [SkipOnMono("Not presently implemented on Mono")]
         public static void AllocateTypeAssociatedMemoryValidArguments()
         {
             IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(AllocateTypeAssociatedMemoryTest), 32);

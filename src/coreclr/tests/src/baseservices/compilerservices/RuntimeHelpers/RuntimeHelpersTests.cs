@@ -11,7 +11,6 @@ class RuntimeHelpersTests
         try
         {
             ExecuteCodeWithGuaranteedCleanupTest.Run();
-            AllocateTypeAssociatedMemoryTest.Run();
         }
         catch (Exception e)
         {
