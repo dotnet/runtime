@@ -718,13 +718,6 @@ namespace Internal.JitInterface
             // Check for hardware intrinsics
             if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
             {
-#if READYTORUN
-                if (!isMethodDefinedInCoreLib() &&
-                    !JitConfigProvider.Instance.InstructionSetSupport.IsSupportedInstructionSetIntrinsic(method))
-                {
-                    throw new RequiresRuntimeJitException("This function is not defined in CoreLib and it is using hardware intrinsics.");
-                }
-#endif
 #if !READYTORUN
                 // Do not report the get_IsSupported method as an intrinsic - RyuJIT would expand it to
                 // a constant depending on the code generation flags passed to it, but we would like to
@@ -2859,18 +2852,19 @@ namespace Internal.JitInterface
 
             if ((_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86
                 || _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64)
-#if READYTORUN
-                && isMethodDefinedInCoreLib()
-#endif
                )
             {
 #if !READYTORUN
                 // This list needs to match the list of intrinsics we can generate detection code for
                 // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
 #else
-                // For ReadyToRun, this list needs to match up with the behavior of FilterNamedIntrinsicMethodAttribs
-                // In particular, that this list of supported hardware will not generate non-SSE2 safe instruction
-                // sequences when paired with the behavior in FilterNamedIntrinsicMethodAttribs
+                // For ReadyToRun we set these hardware features as enabled always, as the overwhelming majority
+                // of hardware in the wild supports them. Note that we do not indicate support for AVX, or any other
+                // instruction set which uses the VEX encodings as the presence of those makes otherwise acceptable
+                // code be unusable on hardware which does not support VEX encodings, as well as emulators that do not
+                // support AVX instructions. As the jit generates logic that depends on these features it will call
+                // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
+                // code.
 #endif
                 flags.Set(CorJitFlag.CORJIT_FLAG_USE_AES);
                 flags.Set(CorJitFlag.CORJIT_FLAG_USE_PCLMULQDQ);
@@ -2915,7 +2909,14 @@ namespace Internal.JitInterface
             }
             else
             {
-                _actualInstructionSetSupport.RemoveInstructionSetSupport(instructionSetNameString);
+#if READYTORUN
+                // By policy we code review all changes into corelib, such that failing to use an instruction
+                // set is not a reason to not support usage of it.
+                if (!isMethodDefinedInCoreLib())
+#endif
+                {
+                    _actualInstructionSetSupport.RemoveInstructionSetSupport(instructionSetNameString);
+                }
             }
         }
     }
