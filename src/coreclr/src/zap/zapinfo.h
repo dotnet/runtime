@@ -475,7 +475,6 @@ public:
                  ICorDebugInfo::ILVarInfo **vars, bool *extendOthers);
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo*vars);
-    void setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo);
     void * allocateArray(size_t cBytes);
     void freeArray(void *array);
 
@@ -702,6 +701,10 @@ public:
 
     void getGSCookie(GSCookie * pCookieVal,
                      GSCookie** ppCookieVal);
+
+    void setPatchpointInfo(PatchpointInfo * patchpointInfo);
+    PatchpointInfo * getOSRInfo(unsigned * ilOffset);
+
     // ICorErrorInfo
 
     HRESULT GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers);

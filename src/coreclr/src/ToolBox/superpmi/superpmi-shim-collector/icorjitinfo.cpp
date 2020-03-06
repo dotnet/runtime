@@ -365,6 +365,23 @@ void interceptor_ICJI::getGSCookie(GSCookie*  pCookieVal, // OUT
     mc->recGetGSCookie(pCookieVal, ppCookieVal);
 }
 
+// Provide patchpoint info for the method currently being jitted.
+void interceptor_ICJI::setPatchpointInfo(PatchpointInfo* patchpointInfo)
+{
+    mc->cr->AddCall("setPatchpointInfo");
+    mc->cr->recSetPatchpointInfo(patchpointInfo); // Since the EE frees, we've gotta record before its sent to the EE.
+    original_ICorJitInfo->setPatchpointInfo(patchpointInfo);
+}
+
+// Get OSR info for the method currently being jitted
+PatchpointInfo* interceptor_ICJI::getOSRInfo(unsigned* ilOffset)
+{
+    mc->cr->AddCall("getOSRInfo");
+    PatchpointInfo* patchpointInfo = original_ICorJitInfo->getOSRInfo(ilOffset);
+    mc->recGetOSRInfo(patchpointInfo, ilOffset);
+    return patchpointInfo;
+}
+
 /**********************************************************************************/
 //
 // ICorModuleInfo
@@ -1163,14 +1180,6 @@ void interceptor_ICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] meth
     mc->cr->AddCall("setVars");
     mc->cr->recSetVars(ftn, cVars, vars); // Since the EE frees, we've gotta record before its sent to the EE.
     original_ICorJitInfo->setVars(ftn, cVars, vars);
-}
-
-// Provide patchpoint info for the method currently being jitted.
-void interceptor_ICJI::setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
-{
-    mc->cr->AddCall("setPatchpointInfo");
-    mc->cr->recSetPatchpointInfo(patchpointInfo); // Since the EE frees, we've gotta record before its sent to the EE.
-    original_ICorJitInfo->setPatchpointInfo(patchpointInfo);
 }
 
 /*-------------------------- Misc ---------------------------------------*/

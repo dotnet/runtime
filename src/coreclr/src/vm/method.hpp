@@ -2205,9 +2205,6 @@ public:
     virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
     virtual COR_ILMETHOD* GetILHeader();
     virtual CORJIT_FLAGS GetJitCompilationFlags();
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-    virtual CORINFO_OSR_INFO * GetOSRInfo();
-#endif
 private:
     ILCodeVersion m_ilCodeVersion;
 };

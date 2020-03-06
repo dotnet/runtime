@@ -338,13 +338,6 @@ private:
     }
 };
 
-// CORINFO_PATCHPOINT_INFO
-//
-// Communicates layout of the original method stack to the jit
-// for an On-Stack Replacement (OSR) jit request.
-
-struct CORINFO_PATCHPOINT_INFO;
-
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
 // These helpers can be called by native code which executes in the runtime.
 // Compilers can emit calls to these helpers.
@@ -1092,6 +1085,11 @@ inline bool dontInline(CorInfoInline val) {
     return(val < 0);
 }
 
+// Patchpoint info is passed back and forth across the interface
+// but is opaque.
+
+struct PatchpointInfo;
+
 // Cookie types consumed by the code generator (these are opaque values
 // not inspected by the code generator):
 
@@ -1171,12 +1169,6 @@ struct CORINFO_SIG_INFO
     unsigned            totalILArgs()       { return (numArgs + hasThis()); }
     bool                isVarArg()          { return ((getCallConv() == CORINFO_CALLCONV_VARARG) || (getCallConv() == CORINFO_CALLCONV_NATIVEVARARG)); }
     bool                hasTypeArg()        { return ((callConv & CORINFO_CALLCONV_PARAMTYPE) != 0); }
-};
-
-struct CORINFO_OSR_INFO
-{
-    unsigned ilOffset;                       // IL offset of the patchpoint
-    CORINFO_PATCHPOINT_INFO* patchpointInfo; // patchpoint info blob for the original method
 };
 
 struct CORINFO_METHOD_INFO
@@ -2160,6 +2152,16 @@ public:
             GSCookie ** ppCookieVal                    // OUT
             ) = 0;
 
+    // Provide patchpoint info for the method currently being jitted.
+    virtual void setPatchpointInfo(
+            PatchpointInfo* patchpointInfo
+            ) = 0;
+
+    // Get patchpoint info and il offset for the method currently being jitted.
+    virtual PatchpointInfo* getOSRInfo(
+            unsigned                       *ilOffset        // [OUT] il offset of OSR entry point
+            ) = 0;
+
     /**********************************************************************************/
     //
     // ICorModuleInfo
@@ -2672,16 +2674,6 @@ public:
             ) = 0;
 
     /*-------------------------- Misc ---------------------------------------*/
-
-    // Provide patchpoint info for the method currently being jitted.
-    virtual void setPatchpointInfo(
-            CORINFO_PATCHPOINT_INFO* patchpointInfo
-            ) = 0;
-
-    // Retrieve OSR info for the method currently being jitted.
-    virtual CORINFO_PATCHPOINT_INFO* getOSRInfo(
-            unsigned                       *ilOffset,       // [OUT] il offset of OSR entry point
-            ) = 0;
 
     // Used to allocate memory that needs to handed to the EE.
     // For eg, use this to allocated memory for reporting debug info,

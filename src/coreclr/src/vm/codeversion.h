@@ -42,6 +42,11 @@ class GCCoverageInfo;
 typedef DPTR(class GCCoverageInfo) PTR_GCCoverageInfo;
 #endif
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+struct PatchpointInfo;
+typedef DPTR(struct PatchpointInfo) PTR_PatchpointInfo;
+#endif
+
 class NativeCodeVersion
 {
 #ifdef FEATURE_CODE_VERSIONING
@@ -86,10 +91,7 @@ public:
 #endif // FEATURE_TIERED_COMPILATION
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    CORINFO_OSR_INFO * GetOSRInfo();
-#ifndef DACCESS_COMPILE
-    void SetOSRInfo(CORINFO_OSR_INFO* info);
-#endif
+    PatchpointInfo * GetOSRInfo(unsigned * iloffset);
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
 #ifdef HAVE_GCCOVER
@@ -175,7 +177,8 @@ public:
     void SetIL(COR_ILMETHOD* pIL);
     void SetJitFlags(DWORD flags);
     void SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap);
-    HRESULT AddNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, NativeCodeVersion* pNativeCodeVersion);
+    HRESULT AddNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, 
+        NativeCodeVersion* pNativeCodeVersion, PatchpointInfo* patchpointInfo = NULL, unsigned ilOffset = 0);
     HRESULT GetOrCreateActiveNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion* pNativeCodeVersion);
     HRESULT SetActiveNativeCodeVersion(NativeCodeVersion activeNativeCodeVersion, BOOL fEESuspended);
 #endif //DACCESS_COMPILE
@@ -254,7 +257,8 @@ class NativeCodeVersionNode
 
 public:
 #ifndef DACCESS_COMPILE
-    NativeCodeVersionNode(NativeCodeVersionId id, MethodDesc* pMethod, ReJITID parentId, NativeCodeVersion::OptimizationTier optimizationTier);
+    NativeCodeVersionNode(NativeCodeVersionId id, MethodDesc* pMethod, ReJITID parentId, NativeCodeVersion::OptimizationTier optimizationTier, 
+        PatchpointInfo* patchpointInfo, unsigned ilOffset);
 #endif
 
 #ifdef DEBUG
@@ -285,10 +289,7 @@ public:
 #endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    CORINFO_OSR_INFO * GetOSRInfo();
-#ifndef DACCESS_COMPILE
-    void SetOSRInfo(CORINFO_OSR_INFO * info);
-#endif
+    PatchpointInfo * GetOSRInfo(unsigned * ilOffset);
 #endif
 
 private:
@@ -308,7 +309,8 @@ private:
     PTR_GCCoverageInfo m_gcCover;
 #endif
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    CORINFO_OSR_INFO m_osrInfo;
+    PTR_PatchpointInfo m_patchpointInfo;
+    unsigned m_ilOffset;
 #endif
 
     enum NativeCodeVersionNodeFlags
@@ -613,7 +615,8 @@ public:
     };
 
     HRESULT AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ReJITID rejitId, ILCodeVersion* pILCodeVersion);
-    HRESULT AddNativeCodeVersion(ILCodeVersion ilCodeVersion, MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, NativeCodeVersion* pNativeCodeVersion);
+    HRESULT AddNativeCodeVersion(ILCodeVersion ilCodeVersion, MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, NativeCodeVersion* pNativeCodeVersion,
+        PatchpointInfo* patchpointInfo = NULL, unsigned ilOffset = 0);
     PCODE PublishVersionableCodeIfNecessary(MethodDesc* pMethodDesc, bool *doBackpatchRef, bool *doFullBackpatchRef);
     HRESULT PublishNativeCodeVersion(MethodDesc* pMethodDesc, NativeCodeVersion nativeCodeVersion, BOOL fEESuspended);
     HRESULT GetOrCreateMethodDescVersioningState(MethodDesc* pMethod, MethodDescVersioningState** ppMethodDescVersioningState);

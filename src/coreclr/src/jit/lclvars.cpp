@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "register_arg_convention.h"
 #include "jitstd/algorithm.h"
+#include "patchpointinfo.h"
 
 /*****************************************************************************/
 
@@ -5843,7 +5844,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     {
         if (lvaKeepAliveAndReportThis())
         {
-            CORINFO_PATCHPOINT_INFO* ppInfo = info.compPatchpointInfo;
+            PatchpointInfo* ppInfo = info.compPatchpointInfo;
             assert(ppInfo->HasKeptAliveThis());
             int originalOffset             = ppInfo->KeptAliveThisOffset();
             lvaCachedGenericContextArgOffs = originalFrameStkOffs + originalOffset;

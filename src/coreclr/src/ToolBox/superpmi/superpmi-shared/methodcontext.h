@@ -42,11 +42,6 @@ public:
         DWORDLONG scope;
         DWORD     token;
     };
-    struct Agnostic_CORINFO_OSR_INFO
-    {
-        DWORD     ilOffset;
-        DWORD     patchpointInfo_Index;
-    };
     struct Agnostic_CORINFO_METHOD_INFO
     {
         DWORDLONG                 ftn;
@@ -59,7 +54,6 @@ public:
         DWORD                     regionKind;
         Agnostic_CORINFO_SIG_INFO args;
         Agnostic_CORINFO_SIG_INFO locals;
-        Agnostic_CORINFO_OSR_INFO osrInfo;
     };
     struct Agnostic_CompileMethod
     {
@@ -181,6 +175,11 @@ public:
         DWORD maxUncheckedOffsetForNullObject;
         DWORD targetAbi;
         DWORD osType;
+    };
+    struct Agnostic_GetOSRInfo
+    {
+        DWORD index;
+        unsigned ilOffset;
     };
     struct Agnostic_GetFieldAddress
     {
@@ -992,6 +991,10 @@ public:
     void dmpGetGSCookie(DWORD key, DLDL value);
     void repGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
 
+    void recGetOSRInfo(PatchpointInfo* patchpointInfo, unsigned* ilOffset);
+    void dmpGetOSRInfo(DWORD key, const Agnostic_GetOSRInfo& value);
+    PatchpointInfo* repGetOSRInfo(unsigned* ilOffset);
+
     void recGetClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
                                        CORINFO_MODULE_HANDLE* pModule,
                                        void**                 ppIndirection,
@@ -1315,7 +1318,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 176
+// Highest packet number: 177
 // *************************************************************************************
 enum mcPackets
 {
@@ -1426,6 +1429,7 @@ enum mcPackets
     Packet_GetMethodVTableOffset                         = 78,
     Packet_GetNewArrHelper                               = 79,
     Packet_GetNewHelper                                  = 80,
+    Packet_GetOSRInfo                                    = 177, // Added 3/5/2020
     Packet_GetParentType                                 = 81,
     Packet_GetPInvokeUnmanagedTarget                     = 82, // Retired 2/18/2020
     Packet_GetProfilingHandle                            = 83,

@@ -83,7 +83,7 @@ public:
         IN ULONG            iOffsetMapping,
         IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
         IN ULONG            iNativeVarInfo,
-        IN CORINFO_PATCHPOINT_INFO * patchpointInfo,
+        IN PatchpointInfo * patchpointInfo,
         IN OUT SBuffer    * pDebugInfoBuffer,
         IN LoaderHeap     * pLoaderHeap
     );
@@ -99,9 +99,11 @@ public:
         OUT ICorDebugInfo::NativeVarInfo    **ppVars
     );
 
-    static CORINFO_PATCHPOINT_INFO * RestorePatchpointInfo(
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    static PatchpointInfo * RestorePatchpointInfo(
         IN PTR_BYTE pDebugInfo
     );
+#endif
 
 #ifdef DACCESS_COMPILE
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo);

@@ -526,6 +526,9 @@ public:
     CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId);
     void getGSCookie(GSCookie * pCookieVal, GSCookie ** ppCookieVal);
 
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo);
+    PatchpointInfo* getOSRInfo(unsigned* ilOffset);
+
     // "System.Int32" ==> CORINFO_TYPE_INT..
     CorInfoType getTypeForPrimitiveValueClass(
             CORINFO_CLASS_HANDLE        cls
@@ -823,8 +826,6 @@ public:
                  ICorDebugInfo::ILVarInfo **vars, bool *extendOthers);
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars);
-    void setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo);
-    CORINFO_PATCHPOINT_INFO* getOSRInfo(ULONG32* ilOffset);
 
     // ICorArgInfo stuff
 
@@ -1364,12 +1365,12 @@ public:
 #endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    void SetOSRInfo(CORINFO_OSR_INFO* info)
+    void SetOSRInfo(PatchpointInfo* patchpointInfo, unsigned ilOffset)
     {
         _ASSERTE(m_pPatchpointInfo == NULL);
-        _ASSERTE(info->patchpointInfo != NULL);
-        m_pPatchpointInfo = info->patchpointInfo;
-        m_ilOffset = info->ilOffset;
+        _ASSERTE(patchpointInfo != NULL);
+        m_pPatchpointInfo = patchpointInfo;
+        m_ilOffset = ilOffset;
         m_fOwnsPatchpointInfo = false;
     }
 #endif
@@ -1404,7 +1405,7 @@ public:
 #ifdef FEATURE_ON_STACK_REPLACEMENT
           m_fOwnsPatchpointInfo(false),
           m_pPatchpointInfo(NULL),
-          m_ilOffset(0)
+          m_ilOffset(0),
 #endif
           m_gphCache()
     {
@@ -1445,7 +1446,6 @@ public:
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap);
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars);
-    void setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo);
     void CompressDebugInfo();
 
     void* getHelperFtn(CorInfoHelpFunc    ftnNum,                 /* IN  */
@@ -1473,6 +1473,9 @@ public:
     void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection);
 
     void BackoutJitData(EEJitManager * jitMgr);
+
+    void setPatchpointInfo(PatchpointInfo* patchpointInfo);
+    PatchpointInfo* getOSRInfo(unsigned* ilOffset);
 
 protected :
     EEJitManager*           m_jitManager;   // responsible for allocating memory
@@ -1510,9 +1513,9 @@ protected :
     ICorDebugInfo::NativeVarInfo * m_pNativeVarInfo;
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    bool                      m_fOwnsPatchpointInfo;
-    CORINFO_PATCHPOINT_INFO * m_pPatchpointInfo;
-    unsigned                  m_ilOffset;
+    bool                    m_fOwnsPatchpointInfo;
+    PatchpointInfo        * m_pPatchpointInfo;
+    unsigned                m_ilOffset;
 #endif
 
     // The first time a call is made to CEEJitInfo::GetProfilingHandle() from this thread

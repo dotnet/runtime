@@ -204,9 +204,9 @@ public:
     void dmpSetVars(DWORD key, const Agnostic_SetVars& value);
     bool repSetVars(CORINFO_METHOD_HANDLE* ftn, ULONG32* cVars, ICorDebugInfo::NativeVarInfo** vars);
 
-    void recSetPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo);
+    void recSetPatchpointInfo(PatchpointInfo* patchpointInfo);
     void dmpSetPatchpointInfo(DWORD key, const Agnostic_SetPatchpointInfo& value);
-    bool repSetPatchpointInfo(CORINFO_PATCHPOINT_INFO** patchpointInfo);
+    bool repSetPatchpointInfo(PatchpointInfo** patchpointInfo);
 
     void recAllocGCInfo(size_t size, void* retval);
     void recAllocGCInfoCapture();

@@ -326,8 +326,8 @@ bool CompileResult::repSetVars(CORINFO_METHOD_HANDLE* ftn, ULONG32* cVars, ICorD
     return true;
 }
 
-// Note - Ownership of vars is transfered with this call. In replay icorjitinfo we should free it.
-void CompileResult::recSetPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
+// Note - Ownership of patchpointInfo is transfered with this call. In replay icorjitinfo we should free it.
+void CompileResult::recSetPatchpointInfo(PatchpointInfo* patchpointInfo)
 {
     if (SetPatchpointInfo == nullptr)
         SetPatchpointInfo = new LightWeightMap<DWORD, Agnostic_SetPatchpointInfo>();
@@ -338,13 +338,13 @@ void CompileResult::recSetPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo
 }
 void CompileResult::dmpSetPatchpointInfo(DWORD key, const Agnostic_SetPatchpointInfo& value)
 {
-    CORINFO_PATCHPOINT_INFO* patchpointInfo = (CORINFO_PATCHPOINT_INFO*)SetPatchpointInfo->GetBuffer(value.index);
+    PatchpointInfo* patchpointInfo = (PatchpointInfo*)SetPatchpointInfo->GetBuffer(value.index);
     printf("SetPatchpointInfo key %u, index %u{", key, value.index);
     // todo -- dump contents
     printf("}");
     SetPatchpointInfo->Unlock();
 }
-bool CompileResult::repSetPatchpointInfo(CORINFO_PATCHPOINT_INFO** patchpointInfo)
+bool CompileResult::repSetPatchpointInfo(PatchpointInfo** patchpointInfo)
 {
     if ((SetPatchpointInfo == nullptr) || (SetPatchpointInfo->GetCount() == 0))
     {
@@ -354,7 +354,7 @@ bool CompileResult::repSetPatchpointInfo(CORINFO_PATCHPOINT_INFO** patchpointInf
 
     Agnostic_SetPatchpointInfo value;
     value = SetPatchpointInfo->Get(0);
-    *patchpointInfo = (CORINFO_PATCHPOINT_INFO*)SetPatchpointInfo->GetBuffer(value.index);
+    *patchpointInfo = (PatchpointInfo*)SetPatchpointInfo->GetBuffer(value.index);
     return true;
 }
 

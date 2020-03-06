@@ -7731,10 +7731,6 @@ getMethodInfoHelper(
         ftn,
         true);
 
-    // Set these to default values. Will overwrite later if actually doing an OSR jit request.
-    methInfo->osrInfo.ilOffset = 0;
-    methInfo->osrInfo.patchpointInfo = NULL;
-
 } // getMethodInfoHelper
 
 //---------------------------------------------------------------------------------------
@@ -10948,7 +10944,7 @@ void CEEJitInfo::setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo
     EE_TO_JIT_TRANSITION();
 }
 
-void CEEJitInfo::setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
+void CEEJitInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
 {
     CONTRACTL {
         THROWS;
@@ -10970,7 +10966,7 @@ void CEEJitInfo::setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
     EE_TO_JIT_TRANSITION();
 }
 
-CORINFO_PATCHPOINT_INFO* CEEJitInfo::getPatchpointInfo(unsigned* ilOffset)
+PatchpointInfo* CEEJitInfo::getOSRInfo(unsigned* ilOffset)
 {
     CONTRACTL {
         THROWS;
@@ -10978,8 +10974,8 @@ CORINFO_PATCHPOINT_INFO* CEEJitInfo::getPatchpointInfo(unsigned* ilOffset)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    CORINFO_PATCHPONT_INFO* result = NULL;
-    *ilOffset = = 0;
+    PatchpointInfo* result = NULL;
+    *ilOffset = 0;
 
     JIT_TO_EE_TRANSITION();
 
@@ -11002,19 +10998,19 @@ void CEEJitInfo::CompressDebugInfo()
     } CONTRACTL_END;
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    CORINFO_PATCHPOINT_INFO* ppInfo = m_pPatchpointInfo;
+    PatchpointInfo* patchpointInfo = m_pPatchpointInfo;
 #else
-    CORINFO_PATCHPOINT_INFO* ppInfo = NULL;
+    PatchpointInfo* patchpointInfo = NULL;
 #endif
 
     // Don't track JIT info for DynamicMethods.
     if (m_pMethodBeingCompiled->IsDynamicMethod() && !g_pConfig->GetTrackDynamicMethodDebugInfo())
     {
-        _ASSERTE(ppInfo == NULL);
+        _ASSERTE(patchpointInfo == NULL);
         return;
     }
 
-    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (ppInfo == NULL))
+    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (patchpointInfo == NULL))
         return;
 
     JIT_TO_EE_TRANSITION();
@@ -11024,7 +11020,7 @@ void CEEJitInfo::CompressDebugInfo()
         PTR_BYTE pDebugInfo = CompressDebugInfo::CompressBoundariesAndVars(
             m_pOffsetMapping, m_iOffsetMapping,
             m_pNativeVarInfo, m_iNativeVarInfo,
-            ppInfo,
+            patchpointInfo,
             NULL,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
@@ -12771,10 +12767,12 @@ PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODE
 #endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
+        // If this is an OSR jit request, grab the OSR info so we can pass it to the jit
         if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR))
         {
-            CORINFO_OSR_INFO *osrInfo = nativeCodeVersion.GetOSRInfo();
-            jitInfo.SetOSRInfo(osrInfo);
+            unsigned ilOffset = 0;
+            PatchpointInfo* patchpointInfo = nativeCodeVersion.GetOSRInfo(&ilOffset);
+            jitInfo.SetOSRInfo(patchpointInfo, ilOffset);
         }
 #endif
 
@@ -13950,13 +13948,13 @@ void CEEInfo::setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars, ICorDebugInfo::N
     UNREACHABLE();      // only called on derived class.
 }
 
-void CEEInfo::setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
+void CEEInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.
 }
 
-CORINFO_PATCHPOINT_INFO* CEEInfo::getPatchpointInfo(unsigned* ilOffset)
+PatchpointInfo* CEEInfo::getOSRInfo(unsigned* ilOffset)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

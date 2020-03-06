@@ -42,14 +42,6 @@ void DumpMap(int index, MethodContext* mc)
     DumpSigToConsoleBare(mc, &cmi.args);
     printf(")\"");
 
-    // Todo: dump tier0/tier1/fullopt request
-
-    // Dump if this is an OSR request
-    if (cmi.osrInfo.patchpointInfo != nullptr)
-    {
-        printf(",Osr-%u", cmi.osrInfo.ilOffset);
-    }
-
     printf("\n");
 }
 

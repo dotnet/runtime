@@ -2943,7 +2943,13 @@ void ZapInfo::setVars(CORINFO_METHOD_HANDLE ftn,
     return;
 }
 
-void ZapInfo::setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
+void ZapInfo::setPatchpointInfo(PatchpointInfo* patchpointInfo)
+{
+    // No patchpoint info when prejitting
+    UNREACHABLE();
+}
+
+PatchpointInfo* ZapInfo::getOSRInfo(unsigned * ilOffset)
 {
     // No patchpoint info when prejitting
     UNREACHABLE();

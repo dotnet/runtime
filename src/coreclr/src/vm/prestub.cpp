@@ -1349,8 +1349,9 @@ CORJIT_FLAGS VersionedPrepareCodeConfig::GetJitCompilationFlags()
 #endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    CORINFO_OSR_INFO * osrInfo = GetOSRInfo();
-    if (osrInfo->patchpointInfo != NULL)
+    unsigned ilOffset = 0;
+    PatchpointInfo * patchpointInfo = m_nativeCodeVersion.GetOSRInfo(&ilOffset);
+    if (patchpointInfo != NULL)
     {
         flags.Add(CORJIT_FLAGS::CORJIT_FLAG_OSR);
     }
@@ -1378,13 +1379,6 @@ PrepareCodeConfigBuffer::PrepareCodeConfigBuffer(NativeCodeVersion codeVersion)
     }
     config->FinishConfiguration();
 }
-
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-CORINFO_OSR_INFO * VersionedPrepareCodeConfig::GetOSRInfo()
-{
-    return m_nativeCodeVersion.GetOSRInfo();
-}
-#endif
 
 #endif //FEATURE_CODE_VERSIONING
 

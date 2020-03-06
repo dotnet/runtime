@@ -288,6 +288,21 @@ void MyICJI::getGSCookie(GSCookie*  pCookieVal, // OUT
     jitInstance->mc->repGetGSCookie(pCookieVal, ppCookieVal);
 }
 
+// Provide patchpoint info for the method currently being jitted.
+void MyICJI::setPatchpointInfo(PatchpointInfo* patchpointInfo)
+{
+    jitInstance->mc->cr->AddCall("setPatchpointInfo");
+    jitInstance->mc->cr->recSetPatchpointInfo(patchpointInfo);
+    freeArray(patchpointInfo); // See note in recSetPatchpointInfo... we own destroying this array
+}
+
+// Get OSR info for the method currently being jitted
+PatchpointInfo* MyICJI::getOSRInfo(unsigned* ilOffset)
+{
+    jitInstance->mc->cr->AddCall("getOSRInfo");
+    return jitInstance->mc->repGetOSRInfo(ilOffset);
+}
+
 /**********************************************************************************/
 //
 // ICorModuleInfo
@@ -1001,14 +1016,6 @@ void MyICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of inte
     jitInstance->mc->cr->AddCall("setVars");
     jitInstance->mc->cr->recSetVars(ftn, cVars, vars);
     freeArray(vars); // See note in recSetVars... we own destroying this array
-}
-
-// Provide patchpoint info for the method currently being jitted.
-void MyICJI::setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
-{
-    jitInstance->mc->cr->AddCall("setPatchpointInfo");
-    jitInstance->mc->cr->recSetPatchpointInfo(patchpointInfo);
-    freeArray(patchpointInfo); // See note in recSetPatchpointInfo... we own destroying this array
 }
 
 /*-------------------------- Misc ---------------------------------------*/

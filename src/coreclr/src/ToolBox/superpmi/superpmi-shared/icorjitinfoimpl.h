@@ -180,6 +180,15 @@ void getGSCookie(GSCookie*  pCookieVal, // OUT
                  GSCookie** ppCookieVal // OUT
                  );
 
+// Provide patchpoint info for the method currently being jitted.
+void setPatchpointInfo(
+            PatchpointInfo* patchpointInfo
+            );
+
+PatchpointInfo* getOSRInfo(
+           unsigned * ilOffset   // OUT
+           );
+
 /**********************************************************************************/
 //
 // ICorModuleInfo
@@ -560,11 +569,6 @@ void setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of interest
              ICorDebugInfo::NativeVarInfo* vars   // [IN] map telling where local vars are stored at what points
                                                   //      jit allocated with allocateArray, EE frees
              );
-
-// Provide patchpoint info for the method currently being jitted.
-void setPatchpointInfo(
-            CORINFO_PATCHPOINT_INFO* patchpointInfo
-            );
 
 /*-------------------------- Misc ---------------------------------------*/
 

@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 #include "stacklevelsetter.h"
 #include "jittelemetry.h"
+#include "patchpointinfo.h"
 
 #if defined(DEBUG)
 // Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
@@ -4937,9 +4938,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         assert(codeGen->isFramePointerUsed());
 
         // Allocate patchpoint info storage from runtime, and fill in initial bits of data.
-        const unsigned                 patchpointInfoSize = CORINFO_PATCHPOINT_INFO::ComputeSize(info.compLocalsCount);
-        CORINFO_PATCHPOINT_INFO* const patchpointInfo =
-            (CORINFO_PATCHPOINT_INFO*)info.compCompHnd->allocateArray(patchpointInfoSize);
+        const unsigned        patchpointInfoSize = PatchpointInfo::ComputeSize(info.compLocalsCount);
+        PatchpointInfo* const patchpointInfo     = (PatchpointInfo*)info.compCompHnd->allocateArray(patchpointInfoSize);
         patchpointInfo->Initialize(info.compLocalsCount, info.compILCodeSize,
                                    codeGen->genSPtoFPdelta() + TARGET_POINTER_SIZE);
 
@@ -5291,15 +5291,9 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     }
     else if (compileFlags->IsSet(JitFlags::JIT_FLAG_OSR))
     {
-        info.compILEntry        = methodInfo->osrInfo.ilOffset;
-        info.compPatchpointInfo = methodInfo->osrInfo.patchpointInfo;
-
+        // Fetch OSR info from the runtime
+        info.compPatchpointInfo = info.compCompHnd->getOSRInfo(&info.compILEntry);
         assert(info.compPatchpointInfo != nullptr);
-    }
-    else
-    {
-        // If JIT_FLAG_OSR is not set, we should not be passed valid OSR info
-        assert(methodInfo->osrInfo.patchpointInfo == nullptr);
     }
 
     virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_CORERT_ABI));

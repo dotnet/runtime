@@ -8,6 +8,7 @@
 
 #include "common.h"
 #include "codeversion.h"
+#include "patchpointinfo.h"
 
 #ifdef FEATURE_CODE_VERSIONING
 #include "threadsuspend.h"
@@ -64,7 +65,9 @@ NativeCodeVersionNode::NativeCodeVersionNode(
     NativeCodeVersionId id,
     MethodDesc* pMethodDesc,
     ReJITID parentId,
-    NativeCodeVersion::OptimizationTier optimizationTier)
+    NativeCodeVersion::OptimizationTier optimizationTier,
+    PatchpointInfo* patchpointInfo,
+    unsigned ilOffset)
     :
     m_pNativeCode(NULL),
     m_pMethodDesc(pMethodDesc),
@@ -77,13 +80,12 @@ NativeCodeVersionNode::NativeCodeVersionNode(
 #ifdef HAVE_GCCOVER
     m_gcCover(PTR_NULL),
 #endif
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    m_patchpointInfo(patchpointInfo),
+    m_ilOffset(ilOffset),
+#endif
     m_flags(0)
 {
-
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-    m_osrInfo.ilOffset = 0;
-    m_osrInfo.patchpointInfo = NULL;
-#endif
 
 }
 #endif
@@ -188,21 +190,12 @@ void NativeCodeVersionNode::SetOptimizationTier(NativeCodeVersion::OptimizationT
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-CORINFO_OSR_INFO* NativeCodeVersionNode::GetOSRInfo()
+PatchpointInfo* NativeCodeVersionNode::GetOSRInfo(unsigned * ilOffset)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return &m_osrInfo;
+    *ilOffset = m_ilOffset;
+    return m_patchpointInfo;
 }
-
-#ifndef DACCESS_COMPILE
-
-void NativeCodeVersionNode::SetOSRInfo(CORINFO_OSR_INFO * info)
-{
-    LIMITED_METHOD_CONTRACT;
-    m_osrInfo = *info;
-}
-
-#endif
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
@@ -438,33 +431,18 @@ void NativeCodeVersion::SetOptimizationTier(OptimizationTier tier)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-CORINFO_OSR_INFO * NativeCodeVersion::GetOSRInfo()
+PatchpointInfo * NativeCodeVersion::GetOSRInfo(unsigned * ilOffset)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     if (m_storageKind == StorageKind::Explicit)
     {
-        return AsNode()->GetOSRInfo();
+        return AsNode()->GetOSRInfo(ilOffset);
     }
     else
     {
         return NULL;
     }
 }
-
-#ifndef DACCESS_COMPILE
-void NativeCodeVersion::SetOSRInfo(CORINFO_OSR_INFO * info)
-{
-    WRAPPER_NO_CONTRACT;
-    if (m_storageKind == StorageKind::Explicit)
-    {
-        AsNode()->SetOSRInfo(info);
-    }
-    else
-    {
-        _ASSERTE(!"Cannot set OSR info here");
-    }
-}
-#endif
 
 #endif
 
@@ -1079,11 +1057,14 @@ void ILCodeVersion::SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap)
 HRESULT ILCodeVersion::AddNativeCodeVersion(
     MethodDesc* pClosedMethodDesc,
     NativeCodeVersion::OptimizationTier optimizationTier,
-    NativeCodeVersion* pNativeCodeVersion)
+    NativeCodeVersion* pNativeCodeVersion,
+    PatchpointInfo* patchpointInfo,
+    unsigned ilOffset
+    )
 {
     LIMITED_METHOD_CONTRACT;
     CodeVersionManager* pManager = GetModule()->GetCodeVersionManager();
-    HRESULT hr = pManager->AddNativeCodeVersion(*this, pClosedMethodDesc, optimizationTier, pNativeCodeVersion);
+    HRESULT hr = pManager->AddNativeCodeVersion(*this, pClosedMethodDesc, optimizationTier, pNativeCodeVersion, patchpointInfo, ilOffset);
     if (FAILED(hr))
     {
         _ASSERTE(hr == E_OUTOFMEMORY);
@@ -1756,7 +1737,9 @@ HRESULT CodeVersionManager::AddNativeCodeVersion(
     ILCodeVersion ilCodeVersion,
     MethodDesc* pClosedMethodDesc,
     NativeCodeVersion::OptimizationTier optimizationTier,
-    NativeCodeVersion* pNativeCodeVersion)
+    NativeCodeVersion* pNativeCodeVersion,
+    PatchpointInfo* patchpointInfo,
+    unsigned ilOffset)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(LockOwnedByCurrentThread());
@@ -1770,7 +1753,7 @@ HRESULT CodeVersionManager::AddNativeCodeVersion(
     }
 
     NativeCodeVersionId newId = pMethodVersioningState->AllocateVersionId();
-    NativeCodeVersionNode* pNativeCodeVersionNode = new (nothrow) NativeCodeVersionNode(newId, pClosedMethodDesc, ilCodeVersion.GetVersionId(), optimizationTier);
+    NativeCodeVersionNode* pNativeCodeVersionNode = new (nothrow) NativeCodeVersionNode(newId, pClosedMethodDesc, ilCodeVersion.GetVersionId(), optimizationTier, patchpointInfo, ilOffset);
     if (pNativeCodeVersionNode == NULL)
     {
         return E_OUTOFMEMORY;

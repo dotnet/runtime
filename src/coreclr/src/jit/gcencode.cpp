@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "gcinfotypes.h"
+#include "patchpointinfo.h"
 
 ReturnKind GCTypeToReturnKind(CorInfoGCType gcType)
 {
@@ -3895,8 +3896,8 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 
         if (compiler->opts.IsOSR())
         {
-            CORINFO_PATCHPOINT_INFO* ppInfo = compiler->info.compPatchpointInfo;
-            offset                          = ppInfo->GenericContextArgOffset();
+            PatchpointInfo* ppInfo = compiler->info.compPatchpointInfo;
+            offset                 = ppInfo->GenericContextArgOffset();
             assert(offset != -1);
         }
         else
@@ -3917,8 +3918,8 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 
         if (compiler->opts.IsOSR())
         {
-            CORINFO_PATCHPOINT_INFO* ppInfo = compiler->info.compPatchpointInfo;
-            offset                          = ppInfo->GenericContextArgOffset();
+            PatchpointInfo* ppInfo = compiler->info.compPatchpointInfo;
+            offset                 = ppInfo->GenericContextArgOffset();
             assert(offset != -1);
         }
         else
@@ -3946,8 +3947,8 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             // pushed RA and RBP for that frame. But ppInfo's FpToSpDelta also accounts for the
             // pseudo-RA between the original method frame and the OSR frame. So the net adjustment
             // is simply FpToSpDelta plus one register.
-            CORINFO_PATCHPOINT_INFO* ppInfo     = compiler->info.compPatchpointInfo;
-            int                      adjustment = ppInfo->FpToSpDelta() + REGSIZE_BYTES;
+            PatchpointInfo* ppInfo     = compiler->info.compPatchpointInfo;
+            int             adjustment = ppInfo->FpToSpDelta() + REGSIZE_BYTES;
             offset -= adjustment;
             JITDUMP("OSR cookie adjustment %d, final caller-SP offset %d\n", adjustment, offset);
         }

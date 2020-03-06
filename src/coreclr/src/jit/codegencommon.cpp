@@ -28,6 +28,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "gcinfoencoder.h"
 #endif
 
+#include "patchpointinfo.h"
+
 /*****************************************************************************/
 
 const BYTE genTypeSizes[] = {
@@ -6507,7 +6509,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
     // Initialize args and locals for OSR. Note this may include promoted fields.
     if (compiler->opts.IsOSR())
     {
-        CORINFO_PATCHPOINT_INFO* patchpointInfo = compiler->info.compPatchpointInfo;
+        PatchpointInfo* patchpointInfo = compiler->info.compPatchpointInfo;
 
         // basic sanity checks (make sure we're OSRing the right method)
         assert(patchpointInfo->NumberOfLocals() == compiler->info.compLocalsCount);
@@ -7262,8 +7264,8 @@ void CodeGen::genFnProlog()
     // in the original frame that impact RBP and RSP on entry to the OSR method.
     if (compiler->opts.IsOSR())
     {
-        CORINFO_PATCHPOINT_INFO* patchpointInfo    = compiler->info.compPatchpointInfo;
-        const int                originalFrameSize = patchpointInfo->FpToSpDelta();
+        PatchpointInfo* patchpointInfo    = compiler->info.compPatchpointInfo;
+        const int       originalFrameSize = patchpointInfo->FpToSpDelta();
 
         compiler->unwindPush(REG_FPBASE);
         compiler->unwindAllocStack(originalFrameSize);
@@ -8443,8 +8445,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         // will save and restore what it needs.
         if (compiler->opts.IsOSR())
         {
-            CORINFO_PATCHPOINT_INFO* patchpointInfo    = compiler->info.compPatchpointInfo;
-            const int                originalFrameSize = patchpointInfo->FpToSpDelta();
+            PatchpointInfo* patchpointInfo    = compiler->info.compPatchpointInfo;
+            const int       originalFrameSize = patchpointInfo->FpToSpDelta();
 
             // Use add since we know the SP-to-FP delta of the original method.
             //
@@ -8567,8 +8569,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         // will save and restore what it needs.
         if (compiler->opts.IsOSR())
         {
-            CORINFO_PATCHPOINT_INFO* patchpointInfo    = compiler->info.compPatchpointInfo;
-            const int                originalFrameSize = patchpointInfo->FpToSpDelta();
+            PatchpointInfo* patchpointInfo    = compiler->info.compPatchpointInfo;
+            const int       originalFrameSize = patchpointInfo->FpToSpDelta();
 
             // Use add since we know the SP-to-FP delta of the original method.
             // We also need to skip over the slot where we pushed RBP.

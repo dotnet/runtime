@@ -5147,6 +5147,18 @@ static PCODE JitPatchpointWorker(void* ip, int ilOffset)
     EECodeInfo codeInfo((PCODE)ip);
     MethodDesc* pMD = codeInfo.GetMethodDesc();
 
+    // Fetch the patchpoint info for the current method
+    EEJitManager* jitMgr = ExecutionManager::GetEEJitManager();
+    CodeHeader* codeHdr = jitMgr->GetCodeHeaderFromStartAddress(codeInfo.GetStartAddress());
+    PTR_BYTE debugInfo = codeHdr->GetDebugInfo();
+    PatchpointInfo* patchpointInfo = CompressDebugInfo::RestorePatchpointInfo(debugInfo);
+
+    if (patchpointInfo == NULL)
+    {
+        // log ...
+        return NULL;
+    }
+
     // Find the il method version corresponding to this version of the method
     // and set up a new native code version for it.
     ReJITID rejitId = ReJitManager::GetReJitId(pMD, codeInfo.GetStartAddress());
@@ -5156,31 +5168,13 @@ static PCODE JitPatchpointWorker(void* ip, int ilOffset)
         // Request a new native version that is optimized.
         CodeVersionManager::TableLockHolder lock(codeVersionManager);
         ILCodeVersion ilCodeVersion = codeVersionManager->GetILCodeVersion(pMD, rejitId);
-        HRESULT hr = ilCodeVersion.AddNativeCodeVersion(pMD, NativeCodeVersion::OptimizationTier1, &osrNativeCodeVersion);
+        HRESULT hr = ilCodeVersion.AddNativeCodeVersion(pMD, NativeCodeVersion::OptimizationTier1, &osrNativeCodeVersion, patchpointInfo, ilOffset);
         if (FAILED(hr))
         {
             // log ...
             return NULL;
         }
     }
-
-    // Prepare info for the jit
-    CORINFO_OSR_INFO osrInfo;
-    osrInfo.ilOffset = ilOffset;
-
-    // Fetch the patchpoint info for the current method
-    EEJitManager* jitMgr = ExecutionManager::GetEEJitManager();
-    CodeHeader* codeHdr = jitMgr->GetCodeHeaderFromStartAddress(codeInfo.GetStartAddress());
-    PTR_BYTE debugInfo = codeHdr->GetDebugInfo();
-    CORINFO_PATCHPOINT_INFO* patchpointInfo = CompressDebugInfo::RestorePatchpointInfo(debugInfo);
-    osrInfo.patchpointInfo = patchpointInfo;
-
-    if (osrInfo.patchpointInfo == NULL)
-    {
-        // log ...
-        return NULL;
-    }
-    osrNativeCodeVersion.SetOSRInfo(&osrInfo);
 
     // Invoke the jit to compile the OSR version
     PrepareCodeConfigBuffer configBuffer(osrNativeCodeVersion);

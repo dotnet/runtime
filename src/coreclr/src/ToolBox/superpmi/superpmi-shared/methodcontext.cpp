@@ -430,8 +430,6 @@ bool MethodContext::Equal(MethodContext* other)
         return false;
     if (otherFlags != ourFlags)
         return false;
-    if (otherInfo.osrInfo.ilOffset != ourInfo.osrInfo.ilOffset)
-        return false;
 
 // Now compare the other maps to "estimate" equality.
 
@@ -655,20 +653,6 @@ void MethodContext::recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags)
     value.info.locals.token = (DWORD)info->locals.token;
     value.flags             = (DWORD)flags;
 
-    value.info.osrInfo.ilOffset = (DWORD)info->osrInfo.ilOffset;
-
-    DWORD* patchpointInfo = (DWORD*)info->osrInfo.patchpointInfo;
-
-    if (patchpointInfo == nullptr)
-    {
-        value.info.osrInfo.patchpointInfo_Index = -1;
-    }
-    else
-    {
-        DWORD patchpointInfoSize = patchpointInfo[0];
-        value.info.osrInfo.patchpointInfo_Index = CompileMethod->AddBuffer((unsigned char*)patchpointInfo, patchpointInfoSize);
-    }
-
     CompileMethod->Add(0, value);
     DEBUG_REC(dmpCompileMethod(0, value));
 }
@@ -693,8 +677,6 @@ void MethodContext::dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& va
            value.info.locals.sigInst_classInst_Index, value.info.locals.sigInst_methInstCount,
            value.info.locals.sigInst_methInst_Index, value.info.locals.args, value.info.locals.cbSig,
            value.info.locals.pSig_Index, value.info.locals.scope, value.info.locals.token, value.flags);
-
-    printf(" osr{iloffs-%u ppInfo_index-%d}", value.info.osrInfo.ilOffset, value.info.osrInfo.patchpointInfo_Index);
 }
 void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags)
 {
@@ -745,9 +727,6 @@ void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags)
     info->locals.pSig  = (PCCOR_SIGNATURE)CompileMethod->GetBuffer(value.info.locals.pSig_Index);
     info->locals.scope = (CORINFO_MODULE_HANDLE)value.info.locals.scope;
     info->locals.token = (mdToken)value.info.locals.token;
-
-    info->osrInfo.ilOffset = (unsigned)value.info.osrInfo.ilOffset;
-    info->osrInfo.patchpointInfo = (CORINFO_PATCHPOINT_INFO*)CompileMethod->GetBuffer(value.info.osrInfo.patchpointInfo_Index);
 
     *flags             = (unsigned)value.flags;
     DEBUG_REP(dmpCompileMethod(0, value));
@@ -2799,20 +2778,6 @@ void MethodContext::recGetMethodInfo(CORINFO_METHOD_HANDLE ftn,
             (DWORD)GetMethodInfo->AddBuffer((unsigned char*)info->locals.pSig, info->locals.cbSig);
         value.info.locals.scope = (DWORDLONG)info->locals.scope;
         value.info.locals.token = (DWORD)info->locals.token;
-
-        value.info.osrInfo.ilOffset = info->osrInfo.ilOffset;
-
-        DWORD* patchpointInfo = (DWORD*)info->osrInfo.patchpointInfo;
-
-        if (patchpointInfo == nullptr)
-        {
-            value.info.osrInfo.patchpointInfo_Index = -1;
-        }
-        else
-        {
-            DWORD patchpointInfoSize = patchpointInfo[0];
-            value.info.osrInfo.patchpointInfo_Index = GetMethodInfo->AddBuffer((unsigned char*)patchpointInfo, patchpointInfoSize);
-        }
     }
     value.result        = result;
     value.exceptionCode = (DWORD)exceptionCode;
@@ -2842,8 +2807,6 @@ void MethodContext::dmpGetMethodInfo(DWORDLONG key, const Agnostic_GetMethodInfo
            value.info.locals.sigInst_classInst_Index, value.info.locals.sigInst_methInstCount,
            value.info.locals.sigInst_methInst_Index, value.info.locals.args, value.info.locals.cbSig,
            value.info.locals.pSig_Index, value.info.locals.scope, value.info.locals.token, value.exceptionCode);
-
-    printf(" osr{iloffs-%u ppInfo_index-%d}", value.info.osrInfo.ilOffset, value.info.osrInfo.patchpointInfo_Index);
 }
 bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, DWORD* exceptionCode)
 {
@@ -2898,9 +2861,6 @@ bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_I
         info->locals.pSig  = (PCCOR_SIGNATURE)GetMethodInfo->GetBuffer(value.info.locals.pSig_Index);
         info->locals.scope = (CORINFO_MODULE_HANDLE)value.info.locals.scope;
         info->locals.token = (mdToken)value.info.locals.token;
-
-        info->osrInfo.ilOffset = (unsigned)value.info.osrInfo.ilOffset;
-        info->osrInfo.patchpointInfo = (CORINFO_PATCHPOINT_INFO*)GetMethodInfo->GetBuffer(value.info.osrInfo.patchpointInfo_Index);
     }
     bool result    = value.result;
     *exceptionCode = (DWORD)value.exceptionCode;
@@ -4004,6 +3964,39 @@ void MethodContext::repGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
         *pCookieVal = (GSCookie)value.A;
     if (ppCookieVal != nullptr)
         *ppCookieVal = (GSCookie*)value.B;
+}
+
+void MethodContext::recGetOSRInfo(PatchpointInfo* patchpointInfo, unsigned* ilOffset)
+{
+    if (GetOSRInfo == nullptr)
+    {
+        GetOSRInfo = new LightWeightMap<DWORD, Agnostic_GetOSRInfo>();
+    }
+
+    Agnostic_GetOSRInfo value;
+
+    value.index = (DWORD)GetOSRInfo->AddBuffer((const unsigned char*) patchpointInfo, patchpointInfo->PatchpointInfoSize());
+    value.ilOffset = *ilOffset;
+
+    // use 0 for key
+    DWORD key = 0;
+    GetOSRInfo->Add(key, value);
+    DEBUG_REC(dmpGetOSRInfo(key, value));
+}
+
+void MethodContext::dmpGetOSRInfo(DWORD key, const Agnostic_GetOSRInfo& value)
+{
+    // todo - dump patchpoint info?
+    printf("GetOSRInfo key %u, value patchpointInfo-%u {...} iloffset-%u\n",
+        key, value.index, value.ilOffset);
+}
+
+PatchpointInfo* MethodContext::repGetOSRInfo(unsigned* ilOffset)
+{
+    DWORD key = 0;
+    Agnostic_GetOSRInfo value = GetOSRInfo->Get(key);
+    *ilOffset = value.ilOffset;
+    return (PatchpointInfo*)GetOSRInfo->GetBuffer(value.index);
 }
 
 void MethodContext::recGetClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
@@ -6232,14 +6225,6 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
     t = sprintf_s(buff, len, "ILCode Hash: %s", ilHash);
     buff += t;
     len -= t;
-
-    // Add OSR info, if present.
-    if (info.osrInfo.patchpointInfo != nullptr)
-    {
-        t = sprintf_s(buff, len, "OSR IL Offset: %u", info.osrInfo.ilOffset);
-        buff += t;
-        len -= t;
-    }
 
     return (int)(buff - obuff);
 }
