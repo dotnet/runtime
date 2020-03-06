@@ -27,7 +27,7 @@ public:
     static void Initialize(EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue);
 
     // Enable profiling.
-    static void Enable(EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue);
+    static void Enable();
 
     // Disable profiling.
     static void Disable();
