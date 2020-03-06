@@ -342,7 +342,7 @@ PTR_BYTE ReadyToRunInfo::GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction)
     return dac_cast<PTR_BYTE>(m_pComposite->GetLayout()->GetBase()) + debugInfoOffset;
 }
 
-MethodDesc *ReadyToRunInfo::TryGetMethodDescForEntryPoint(TADDR entryPointRVA)
+PTR_MethodDesc ReadyToRunInfo::TryGetMethodDescForEntryPoint(PCODE entryPoint)
 {
     CONTRACTL
     {
@@ -353,7 +353,7 @@ MethodDesc *ReadyToRunInfo::TryGetMethodDescForEntryPoint(TADDR entryPointRVA)
     }
     CONTRACTL_END;
 
-    TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPointRVA), (LPVOID)PCODEToPINSTR(entryPointRVA));
+    TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint));
     if (val == (TADDR)INVALIDENTRY)
         return NULL;
     return dac_cast<PTR_MethodDesc>(val);
@@ -361,7 +361,7 @@ MethodDesc *ReadyToRunInfo::TryGetMethodDescForEntryPoint(TADDR entryPointRVA)
 
 #ifndef DACCESS_COMPILE
 
-void ReadyToRunInfo::SetMethodDescForEntryPoint(TADDR entryPointRVA, MethodDesc *methodDesc)
+void ReadyToRunInfo::SetMethodDescForEntryPoint(PCODE entryPoint, MethodDesc *methodDesc)
 {
     CONTRACTL
     {
@@ -371,9 +371,9 @@ void ReadyToRunInfo::SetMethodDescForEntryPoint(TADDR entryPointRVA, MethodDesc 
 
     CrstHolder ch(&m_Crst);
 
-    if (m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPointRVA), (LPVOID)PCODEToPINSTR(entryPointRVA)) == (LPVOID)INVALIDENTRY)
+    if ((TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
     {
-        m_entryPointToMethodDescMap.InsertValue(PCODEToPINSTR(entryPointRVA), methodDesc);
+        m_entryPointToMethodDescMap.InsertValue(PCODEToPINSTR(entryPoint), methodDesc);
     }
 }
 
