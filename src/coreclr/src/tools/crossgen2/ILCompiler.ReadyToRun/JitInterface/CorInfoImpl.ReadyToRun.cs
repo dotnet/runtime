@@ -211,7 +211,7 @@ namespace Internal.JitInterface
 
             try
             {
-                if (!ShouldSkipCompilation(MethodBeingCompiled, JitConfigProvider.Instance.AggressiveOptimizationBehavior))
+                if (!ShouldSkipCompilation(MethodBeingCompiled, _compilation.AggressiveOptimizationBehavior))
                 {
                     CompileMethodInternal(methodCodeNodeNeedingCode);
                     codeGotPublished = true;

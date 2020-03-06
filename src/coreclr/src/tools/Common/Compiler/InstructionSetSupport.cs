@@ -7,12 +7,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-using ILCompiler.DependencyAnalysis.ReadyToRun;
 using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    public class InstructionSetSupport : ICompilationRootProvider
+    public class InstructionSetSupport
     {
         private static Dictionary<ValueTuple<TargetArchitecture, string, string>, bool> s_apiSupportViaImplication = new Dictionary<ValueTuple<TargetArchitecture, string, string>, bool>();
         private static object s_lock = new object();
@@ -125,14 +124,6 @@ namespace ILCompiler
                 }
                 return instructionSetImplied;
             }
-        }
-
-        void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
-        {
-            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(this);
-            ReadyToRunInstructionSetSupportSignature instructionSetSupportSig = new ReadyToRunInstructionSetSupportSignature(instructionSetSupportString);
-
-            rootProvider.AddRoot(new Import(rootProvider.NodeFactory.EagerImports, instructionSetSupportSig), "Baseline instruction set support");
         }
     }
 

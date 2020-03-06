@@ -13,7 +13,5 @@ namespace ILCompiler
     public interface IRootingServiceProvider
     {
         void AddCompilationRoot(MethodDesc method, string reason);
-        public NodeFactory NodeFactory { get; }
-        public void AddRoot(object o, string reason);
     }
 }

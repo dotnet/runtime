@@ -191,7 +191,7 @@ namespace ILCompiler
             if (_ibcTuning)
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBINSTR);
 
-            JitConfigProvider.Initialize(corJitFlags, _ryujitOptions, _instructionSetSupport, _optimizationBehavior, _jitPath);
+            JitConfigProvider.Initialize(corJitFlags, _ryujitOptions, _instructionSetSupport, _jitPath);
 
             return new ReadyToRunCodegenCompilation(
                 graph,
@@ -201,6 +201,8 @@ namespace ILCompiler
                 _logger,
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
                 _inputFiles,
+                _instructionSetSupport,
+                _optimizationBehavior,
                 _resilient,
                 _generateMapFile,
                 _parallelism);

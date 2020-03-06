@@ -28,12 +28,10 @@ namespace Internal.JitInterface
         private CorJitFlag[] _jitFlags;
         private Dictionary<string, string> _config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private object _keepAlive; // Keeps callback delegates alive
-        private InstructionSetSupport _instructionSetSupport;
-        private AggressiveOptimizationBehavior _aggressiveOptBehavior;
 
-        public static void Initialize(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, InstructionSetSupport instructionSetSupport, AggressiveOptimizationBehavior aggressiveOptBehavior, string jitPath = null)
+        public static void Initialize(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, InstructionSetSupport instructionSetSupport, string jitPath = null)
         {
-            var config = new JitConfigProvider(jitFlags, parameters, instructionSetSupport, aggressiveOptBehavior);
+            var config = new JitConfigProvider(jitFlags, parameters, instructionSetSupport);
 
             // Make sure we didn't try to initialize two instances of JIT configuration.
             // RyuJIT doesn't support multiple hosts in a single process.
@@ -72,7 +70,7 @@ namespace Internal.JitInterface
         /// </summary>
         /// <param name="jitFlags">A collection of JIT compiler flags.</param>
         /// <param name="parameters">A collection of parameter name/value pairs.</param>
-        public JitConfigProvider(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, InstructionSetSupport instructionSetSupport, AggressiveOptimizationBehavior aggressiveOptBehavior)
+        public JitConfigProvider(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, InstructionSetSupport instructionSetSupport)
         {
             ArrayBuilder<CorJitFlag> jitFlagBuilder = new ArrayBuilder<CorJitFlag>();
             foreach (CorJitFlag jitFlag in jitFlags)
@@ -172,8 +170,6 @@ namespace Internal.JitInterface
 
 
             _jitFlags = jitFlagBuilder.ToArray();
-            _instructionSetSupport = instructionSetSupport;
-            _aggressiveOptBehavior = aggressiveOptBehavior;
 
             foreach (var param in parameters)
             {
@@ -182,10 +178,6 @@ namespace Internal.JitInterface
 
             UnmanagedInstance = CreateUnmanagedInstance();
         }
-
-        public InstructionSetSupport InstructionSetSupport => _instructionSetSupport;
-
-        public AggressiveOptimizationBehavior AggressiveOptimizationBehavior => _aggressiveOptBehavior;
 
         public bool HasFlag(CorJitFlag flag)
         {

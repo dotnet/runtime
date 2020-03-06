@@ -268,7 +268,7 @@ namespace Internal.JitInterface
             // Detect cases where the instruction set support used is a superset of the baseline instruction set specification
             if (_actualInstructionSetSupport != null)
             {
-                var baselineSupport = JitConfigProvider.Instance.InstructionSetSupport;
+                var baselineSupport = _compilation.InstructionSetSupport;
                 var actualSupport = _actualInstructionSetSupport.CreateInstructionSetSupport(null);
                 bool needPerMethodInstructionSetFixup = false;
 
@@ -2977,7 +2977,7 @@ namespace Internal.JitInterface
         {
             if (_actualInstructionSetSupport == null)
             {
-                _actualInstructionSetSupport = new InstructionSetSupportBuilder(JitConfigProvider.Instance.InstructionSetSupport.Architecture);
+                _actualInstructionSetSupport = new InstructionSetSupportBuilder(_compilation.InstructionSetSupport.Architecture);
             }
 
             string instructionSetNameString = new string(instructionSetName);
