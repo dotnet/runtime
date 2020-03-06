@@ -264,6 +264,93 @@ namespace System
             return newString;
         }
 
+        // Returns 'null' if the input buffer does not represent well-formed UTF-16 data and 'replaceInvalidSequences' is false.
+        private static byte[]? CreateBufferFromUtf16Common(ReadOnlySpan<char> value, bool replaceInvalidSequences)
+        {
+            // Shortcut: Since we expect most strings to be small-ish, first try a one-pass
+            // operation where we transcode directly on to the stack and then copy the validated
+            // data into the new Utf8String instance. It's still O(n), but it should have a smaller
+            // constant factor than a typical "count + transcode" combo.
+
+            OperationStatus status;
+            byte[] newBuffer;
+
+            if (value.Length <= MAX_STACK_TRANSCODE_CHAR_COUNT /* in chars */)
+            {
+                if (value.IsEmpty)
+                {
+                    return Array.Empty<byte>();
+                }
+
+                Span<byte> scratch = stackalloc byte[MAX_STACK_TRANSCODE_CHAR_COUNT * MAX_UTF8_BYTES_PER_UTF16_CHAR]; // largest possible expansion, as explained below
+                status = Utf8.FromUtf16(value, scratch, out _, out int scratchBytesWritten, replaceInvalidSequences);
+                Debug.Assert(status == OperationStatus.Done || status == OperationStatus.InvalidData);
+
+                if (status == OperationStatus.InvalidData)
+                {
+                    return null;
+                }
+
+                // At this point we know transcoding succeeded, so the original input data was well-formed.
+                // We'll memcpy the scratch buffer into the new Utf8String instance, which is very fast.
+
+                newBuffer = new byte[scratchBytesWritten];
+                scratch.Slice(0, scratchBytesWritten).CopyTo(newBuffer);
+                return newBuffer;
+            }
+
+            // First, determine how many UTF-8 bytes we'll need in order to represent this data.
+            // This also checks the input data for well-formedness.
+
+            long utf8CodeUnitCountAdjustment;
+
+            unsafe
+            {
+                fixed (char* pChars = &MemoryMarshal.GetReference(value))
+                {
+                    if (Utf16Utility.GetPointerToFirstInvalidChar(pChars, value.Length, out utf8CodeUnitCountAdjustment, out int _) != (pChars + (uint)value.Length))
+                    {
+                        return null;
+                    }
+                }
+            }
+
+            // The max possible expansion transcoding UTF-16 to UTF-8 is that each input char corresponds
+            // to 3 UTF-8 bytes. This is most common in CJK languages. Since the input buffer could be
+            // up to int.MaxValue elements in length, we need to use a 64-bit value to hold the total
+            // required UTF-8 byte length. However, the VM places restrictions on how large a Utf8String
+            // instance can be, and the maximum allowed element count is just under int.MaxValue. (This
+            // mirrors the restrictions already in place for System.String.) The VM will throw an
+            // OutOfMemoryException if anybody tries to create a Utf8String instance larger than that,
+            // so if we detect any sort of overflow we'll end up passing int.MaxValue down to the allocation
+            // routine. This normalizes the OutOfMemoryException the caller sees.
+
+            long totalUtf8BytesRequired = (uint)value.Length + utf8CodeUnitCountAdjustment;
+            if (totalUtf8BytesRequired > int.MaxValue)
+            {
+                totalUtf8BytesRequired = int.MaxValue;
+            }
+
+            // We can get away with FastAllocateSkipZeroInit here because we're not going to return the
+            // new Utf8String instance to the caller if we don't overwrite every byte of the buffer.
+
+            newBuffer = new byte[(int)totalUtf8BytesRequired];
+
+            // Now transcode the UTF-16 input into the newly allocated Utf8String's buffer. We can't call the
+            // "skip validation" transcoder because the caller could've mutated the input buffer between the
+            // initial counting step and the transcoding step below.
+
+            status = Utf8.FromUtf16(value, newBuffer, out _, out int bytesWritten, replaceInvalidSequences: false);
+            if (status != OperationStatus.Done || bytesWritten != newBuffer.Length)
+            {
+                // Did somebody mutate our input buffer? Shouldn't be any other way this could happen.
+
+                return null;
+            }
+
+            return newBuffer;
+        }
+
         /// <summary>
         /// Creates a new <see cref="Utf8String"/> instance populated with a copy of the provided contents.
         /// Please see remarks for important safety information about this method.
@@ -287,6 +374,7 @@ namespace System
 
             Utf8String newString = FastAllocateSkipZeroInit(utf8Contents.Length);
             utf8Contents.CopyTo(newString.DangerousGetMutableSpan());
+            // TODO_UTF8STRING: Zero-init was skipped above, but we didn't null-terminate the string
 
             // The line below is removed entirely in release builds.
 

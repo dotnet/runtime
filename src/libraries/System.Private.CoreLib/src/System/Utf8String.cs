@@ -56,10 +56,6 @@ namespace System
         public static implicit operator Utf8Span(Utf8String? value) => new Utf8Span(value);
 
         /*
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> Everything building
          * INDEXERS
          */
 
@@ -80,11 +76,6 @@ namespace System
         }
 
         /*
-<<<<<<< HEAD
-=======
->>>>>>> Get Utf8String building on netstandard2.0
-=======
->>>>>>> Everything building
          * METHODS
          */
 

@@ -16,7 +16,7 @@ namespace System
         /// <summary>
         /// Returns the length (in UTF-8 code units, or <see cref="byte"/>s) of this instance.
         /// </summary>
-        public int Length => _bytes.Length - 1; // -1 because the bytes are always null-terminated
+        public int Length => _bytes.Length > 0 ? - 1 : 0; // -1 because the bytes are always null-terminated
 
         public Utf8String(ReadOnlySpan<byte> value)
         {
@@ -52,7 +52,21 @@ namespace System
 
         public Utf8String(string value)
         {
-            _bytes = Array.Empty<byte>(); //TODO: eerhardt
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
+            _bytes = CreateBufferFromUtf16Common(value.AsSpan(), replaceInvalidSequences: false);
+
+            if (_bytes is null)
+            {
+                // Input buffer contained invalid UTF-16 data.
+
+                throw new ArgumentException(
+                    message: SR.Utf8String_InputContainedMalformedUtf16,
+                    paramName: nameof(value));
+            }
         }
 
         private Utf8String(byte[] bytes)
