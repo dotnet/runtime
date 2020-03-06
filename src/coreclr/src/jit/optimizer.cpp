@@ -8763,6 +8763,7 @@ void Compiler::optBranchlessConditions()
             continue;
         }
 
+        bool    reverseCond = false;
         ssize_t addValue;
         if (cnsForFalse > cnsForTrue)
         {
@@ -8770,11 +8771,23 @@ void Compiler::optBranchlessConditions()
             // cns for true-branch must be greater than cns for false-branch
             // we need to flip the comparision operator in this case, e.g. `>` -> `<=`
             assert(rootSubNode->OperIsCompare());
-            gtReverseCond(rootSubNode);
+            reverseCond = true;
         }
         else
         {
             addValue = cnsForFalse;
+        }
+
+#ifndef TARGET_64BIT
+        if ((typ == TYP_INT) && (addValue == INT_MIN))
+        {
+            continue;
+        }
+#endif
+
+        if (reverseCond)
+        {
+            gtReverseCond(rootSubNode);
         }
 
         // unlink both blocks

@@ -23,7 +23,7 @@ public class Program
 
         long[] testInput = Enumerable.Range(-256, 256)
             .Select(i => (long)i)
-            .Concat(new [] { (long)int.MaxValue - 1, int.MaxValue, long.MaxValue - 1, long.MaxValue })
+            .Concat(new[] { (long)int.MaxValue - 1, int.MaxValue, long.MaxValue - 1, long.MaxValue })
             .ToArray();
 
         for (int i = 0; i < allTestsWithOpt.Length; i++)
@@ -33,9 +33,13 @@ public class Program
                 object[] invokeArgs;
                 Type argType = allTestsWithOpt[i].GetParameters()[0].ParameterType;
                 if (argType == typeof(int))
-                    invokeArgs = new object[] {unchecked((int) testInput[j])};
+                    invokeArgs = new object[] { unchecked((int)testInput[j]) };
+                else if(argType == typeof(uint))
+	                invokeArgs = new object[] { unchecked((uint)testInput[j]) };
+                else if (argType == typeof(ulong))
+	                invokeArgs = new object[] { unchecked((ulong)testInput[j]) };
                 else
-                    invokeArgs = new object[] {testInput[j]};
+                    invokeArgs = new object[] { testInput[j] };
 
                 object actualBoxed = allTestsWithOpt[i].Invoke(testsWithOpt, invokeArgs);
                 object expectedBoxed = allTestsWithoutOpt[i].Invoke(testsWithoutOpt, invokeArgs);
@@ -47,6 +51,7 @@ public class Program
                 }
             }
         }
+
         return returnCode;
     }
 }
@@ -82,6 +87,7 @@ public class Tests
     public int Test23(int a) => a != 42 ? Cns(4) : Cns(6);
     public int Test24(int a) => a != 42 ? Cns(int.MaxValue) : Cns(int.MaxValue - 1);
     public int Test25(int a) => a != 42 ? Cns(int.MaxValue) : Cns(int.MinValue);
+    public int Test25_(int a) => a != 42 ? Cns(int.MinValue) : Cns(int.MaxValue);
     public int Test26(int a) => a != 42 ? Cns(int.MaxValue - 1) : Cns(int.MaxValue);
 
     public int Test27(int a) => a > 42 ? Cns(0) : Cns(1);
@@ -125,6 +131,14 @@ public class Tests
     public int Test62(int a) => a != 0 ? Cns(4) : Cns(6);
     public int Test63(int a) => a != 0 ? Cns(int.MaxValue) : Cns(int.MaxValue - 1);
     public int Test64(int a) => a != 0 ? Cns(int.MaxValue) : Cns(int.MinValue);
+    public uint Test64u1(uint a) => a != 0 ? Cns(uint.MaxValue) : Cns(uint.MinValue);
+    public uint Test64u2(uint a) => a != 0 ? Cns(uint.MinValue) : Cns(uint.MaxValue);
+    public uint Test64u3(uint a) => a != 0 ? Cns(uint.MinValue) : Cns(uint.MaxValue);
+    public uint Test64u4(uint a) => a != 0 ? Cns(uint.MaxValue - 1) : Cns(uint.MaxValue);
+    public ulong Test64ul1(ulong a) => a != 0 ? Cns(ulong.MaxValue) : Cns(ulong.MinValue);
+    public ulong Test64ul2(ulong a) => a != 0 ? Cns(ulong.MinValue) : Cns(ulong.MaxValue);
+    public ulong Test64ul3(ulong a) => a != 0 ? Cns(ulong.MinValue) : Cns(ulong.MaxValue);
+    public ulong Test64ul4(ulong a) => a != 0 ? Cns(ulong.MaxValue - 1) : Cns(ulong.MaxValue);
     public int Test65(int a) => a != 0 ? Cns(int.MaxValue - 1) : Cns(int.MaxValue);
 
     public long Test66(long a) => a != 0 ? Cns(0) : Cns(1);
@@ -140,26 +154,30 @@ public class Tests
     public long Test76(long a) => a != 0 ? Cns(long.MaxValue) : Cns(long.MaxValue - 1);
     public long Test77(long a) => a != 0 ? Cns(long.MaxValue) : Cns(long.MinValue);
     public long Test78(long a) => a != 0 ? Cns(long.MaxValue - 1) : Cns(long.MaxValue);
+    public long Test79(long a) => a != 0 ? Cns(int.MaxValue) : Cns(int.MaxValue - 1);
+    public long Test80(long a) => a != 0 ? Cns(int.MaxValue) : Cns(int.MinValue);
+    public long Test81(long a) => a != 0 ? Cns((long)int.MaxValue - 1) : Cns((long)int.MaxValue);
+    public long Test82(long a) => a != 0 ? Cns((long)int.MaxValue) : Cns((long)int.MaxValue + 1);
 
-    public bool Test79(long a)
+    public bool Test83(long a)
     {
         if (a == 0)
             return Cns(true);
         return Cns(false);
     }
-    public bool Test80(long a)
+    public bool Test84(long a)
     {
         if (a == 42)
             return Cns(false);
         return Cns(true);
     }
-    public int Test81(long a)
+    public int Test85(long a)
     {
         if (a != 42)
             return Cns(1);
         return Cns(0);
     }
-    public int Test82(long a)
+    public int Test86(long a)
     {
         if (a > 42)
             return Cns(0);
@@ -198,6 +216,7 @@ public class TestsWithoutOptimization
     public int Test23(int a) => a != 42 ? Var(4) : Var(6);
     public int Test24(int a) => a != 42 ? Var(int.MaxValue) : Var(int.MaxValue - 1);
     public int Test25(int a) => a != 42 ? Var(int.MaxValue) : Var(int.MinValue);
+    public int Test25_(int a) => a != 42 ? Var(int.MinValue) : Var(int.MaxValue);
     public int Test26(int a) => a != 42 ? Var(int.MaxValue - 1) : Var(int.MaxValue);
 
     public int Test27(int a) => a > 42 ? Var(0) : Var(1);
@@ -241,6 +260,14 @@ public class TestsWithoutOptimization
     public int Test62(int a) => a != 0 ? Var(4) : Var(6);
     public int Test63(int a) => a != 0 ? Var(int.MaxValue) : Var(int.MaxValue - 1);
     public int Test64(int a) => a != 0 ? Var(int.MaxValue) : Var(int.MinValue);
+    public uint Test64u1(uint a) => a != 0 ? Var(uint.MaxValue) : Var(uint.MinValue);
+    public uint Test64u2(uint a) => a != 0 ? Var(uint.MinValue) : Var(uint.MaxValue);
+    public uint Test64u3(uint a) => a != 0 ? Var(uint.MinValue) : Var(uint.MaxValue);
+    public uint Test64u4(uint a) => a != 0 ? Var(uint.MaxValue - 1) : Var(uint.MaxValue);
+    public ulong Test64ul1(ulong a) => a != 0 ? Var(ulong.MaxValue) : Var(ulong.MinValue);
+    public ulong Test64ul2(ulong a) => a != 0 ? Var(ulong.MinValue) : Var(ulong.MaxValue);
+    public ulong Test64ul3(ulong a) => a != 0 ? Var(ulong.MinValue) : Var(ulong.MaxValue);
+    public ulong Test64ul4(ulong a) => a != 0 ? Var(ulong.MaxValue - 1) : Var(ulong.MaxValue);
     public int Test65(int a) => a != 0 ? Var(int.MaxValue - 1) : Var(int.MaxValue);
 
     public long Test66(long a) => a != 0 ? Var(0) : Var(1);
@@ -256,26 +283,30 @@ public class TestsWithoutOptimization
     public long Test76(long a) => a != 0 ? Var(long.MaxValue) : Var(long.MaxValue - 1);
     public long Test77(long a) => a != 0 ? Var(long.MaxValue) : Var(long.MinValue);
     public long Test78(long a) => a != 0 ? Var(long.MaxValue - 1) : Var(long.MaxValue);
+    public long Test79(long a) => a != 0 ? Var(int.MaxValue) : Var(int.MaxValue - 1);
+    public long Test80(long a) => a != 0 ? Var(int.MaxValue) : Var(int.MinValue);
+    public long Test81(long a) => a != 0 ? Var((long)int.MaxValue - 1) : Var((long)int.MaxValue);
+    public long Test82(long a) => a != 0 ? Var((long)int.MaxValue) : Var((long)int.MaxValue + 1);
 
-    public bool Test79(long a)
+    public bool Test83(long a)
     {
         if (a == 0)
             return Var(true);
         return Var(false);
     }
-    public bool Test80(long a)
+    public bool Test84(long a)
     {
         if (a == 42)
             return Var(false);
         return Var(true);
     }
-    public int Test81(long a)
+    public int Test85(long a)
     {
         if (a != 42)
             return Var(1);
         return Var(0);
     }
-    public int Test82(long a)
+    public int Test86(long a)
     {
         if (a > 42)
             return Var(0);
