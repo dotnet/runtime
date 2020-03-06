@@ -151,13 +151,13 @@ namespace System.Net.Http
                     case ClientCertificateOption.Manual:
                         ThrowForModifiedManagedSslOptionsIfStarted();
                         _clientCertificateOptions = value;
-                        _socketsHttpHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(ClientCertificates);
+                        _socketsHttpHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(ClientCertificates)!;
                         break;
 
                     case ClientCertificateOption.Automatic:
                         ThrowForModifiedManagedSslOptionsIfStarted();
                         _clientCertificateOptions = value;
-                        _socketsHttpHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate();
+                        _socketsHttpHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate()!;
                         break;
 
                     default:

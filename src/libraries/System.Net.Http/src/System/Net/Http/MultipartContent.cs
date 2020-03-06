@@ -203,16 +203,16 @@ namespace System.Net.Http
             }
         }
 
-        protected override Task<Stream?> CreateContentReadStreamAsync() =>
+        protected override Task<Stream> CreateContentReadStreamAsync() =>
             CreateContentReadStreamAsyncCore(CancellationToken.None);
 
-        protected override Task<Stream?> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
+        protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
             // Only skip the original protected virtual CreateContentReadStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
             GetType() == typeof(MultipartContent) ? CreateContentReadStreamAsyncCore(cancellationToken) :
             base.CreateContentReadStreamAsync(cancellationToken);
 
-        private async Task<Stream?> CreateContentReadStreamAsyncCore(CancellationToken cancellationToken)
+        private async Task<Stream> CreateContentReadStreamAsyncCore(CancellationToken cancellationToken)
         {
             try
             {

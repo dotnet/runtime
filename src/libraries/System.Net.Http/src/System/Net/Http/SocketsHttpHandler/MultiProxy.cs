@@ -47,7 +47,7 @@ namespace System.Net.Http
         /// </summary>
         /// <param name="proxyConfig">The WinHTTP proxy config to parse.</param>
         /// <param name="secure">If true, return proxies suitable for use with a secure connection. If false, return proxies suitable for an insecure connection.</param>
-        public static MultiProxy Parse(FailedProxyCache failedProxyCache, string proxyConfig, bool secure)
+        public static MultiProxy Parse(FailedProxyCache failedProxyCache, string? proxyConfig, bool secure)
         {
             Debug.Assert(failedProxyCache != null);
 

@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0.
 // See THIRD-PARTY-NOTICES.TXT in the project root for license information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 

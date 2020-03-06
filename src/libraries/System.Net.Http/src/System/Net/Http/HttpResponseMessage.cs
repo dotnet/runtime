@@ -79,7 +79,7 @@ namespace System.Net.Http
 
         internal void SetStatusCodeWithoutValidation(HttpStatusCode value) => _statusCode = value;
 
-        public string ReasonPhrase
+        public string? ReasonPhrase
         {
             get
             {

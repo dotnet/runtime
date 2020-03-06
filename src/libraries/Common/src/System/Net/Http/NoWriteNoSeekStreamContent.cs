@@ -82,7 +82,7 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        protected override Task<Stream?> CreateContentReadStreamAsync() => Task.FromResult(_content)!;
+        protected override Task<Stream> CreateContentReadStreamAsync() => Task.FromResult(_content);
 
 #if !WINHTTPHANDLER_DLL
         internal override Stream TryCreateContentReadStream() => _content;

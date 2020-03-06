@@ -25,7 +25,7 @@ namespace System.Net.Quic.Implementations.Mock
         private long _nextOutboundUnidirectionalStream;
 
         // Constructor for outbound connections
-        internal MockConnection(IPEndPoint remoteEndPoint, SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
+        internal MockConnection(IPEndPoint? remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
         {
             _remoteEndPoint = remoteEndPoint;
             _localEndPoint = localEndPoint;

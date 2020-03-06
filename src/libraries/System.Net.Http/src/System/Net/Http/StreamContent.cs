@@ -96,10 +96,10 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        protected override Task<Stream?> CreateContentReadStreamAsync()
+        protected override Task<Stream> CreateContentReadStreamAsync()
         {
             // Wrap the stream with a read-only stream to prevent someone from writing to the stream.
-            return Task.FromResult<Stream?>(new ReadOnlyStream(_content));
+            return Task.FromResult<Stream>(new ReadOnlyStream(_content));
         }
 
         internal override Stream? TryCreateContentReadStream() =>

@@ -1018,7 +1018,7 @@ namespace System.Net.Http
             }
         }
 
-        public Task<HttpResponseMessage?> SendWithNtProxyAuthAsync(HttpConnection connection, HttpRequestMessage request, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpConnection connection, HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (AnyProxyKind && ProxyCredentials != null)
             {

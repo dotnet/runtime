@@ -69,8 +69,8 @@ namespace System.Net.Http
             return true;
         }
 
-        protected override Task<Stream?> CreateContentReadStreamAsync() =>
-            Task.FromResult<Stream?>(CreateMemoryStreamForByteArray());
+        protected override Task<Stream> CreateContentReadStreamAsync() =>
+            Task.FromResult<Stream>(CreateMemoryStreamForByteArray());
 
         internal override Stream? TryCreateContentReadStream() =>
             GetType() == typeof(ByteArrayContent) ? CreateMemoryStreamForByteArray() : // type check ensures we use possible derived type's CreateContentReadStreamAsync override

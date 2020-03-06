@@ -127,14 +127,13 @@ namespace System.Net.Http
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
-                using (Stream? decompressedStream = TryCreateContentReadStream() ?? await CreateContentReadStreamAsync(cancellationToken).ConfigureAwait(false))
+                using (Stream decompressedStream = TryCreateContentReadStream() ?? await CreateContentReadStreamAsync(cancellationToken).ConfigureAwait(false))
                 {
-                    Debug.Assert(decompressedStream != null);
                     await decompressedStream.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
                 }
             }
 
-            protected override async Task<Stream?> CreateContentReadStreamAsync(CancellationToken cancellationToken)
+            protected override async Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken)
             {
                 if (_contentConsumed)
                 {
@@ -143,8 +142,8 @@ namespace System.Net.Http
 
                 _contentConsumed = true;
 
-                Stream? originalStream = _originalContent.TryReadAsStream() ?? await _originalContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-                Debug.Assert(originalStream != null);
+                Stream originalStream = _originalContent.TryReadAsStream() ?? await _originalContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+
                 return GetDecompressedStream(originalStream);
             }
 

@@ -316,7 +316,7 @@ namespace System.Net.Http
             return WriteAsciiStringAsync(value.ToString("X", CultureInfo.InvariantCulture));
         }
 
-        public async Task<HttpResponseMessage?> SendAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             TaskCompletionSource<bool>? allowExpect100ToContinue = null;
             Task? sendRequestContentTask = null;
@@ -714,7 +714,7 @@ namespace System.Net.Http
             }
         }
 
-        public sealed override Task<HttpResponseMessage?> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             return SendAsyncCore(request, cancellationToken);
         }
@@ -846,7 +846,7 @@ namespace System.Net.Http
             else if (line[MinStatusLineLength] == ' ')
             {
                 Span<byte> reasonBytes = line.Slice(MinStatusLineLength + 1);
-                string knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
+                string? knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
                 if (knownReasonPhrase != null && EqualsOrdinal(knownReasonPhrase, reasonBytes))
                 {
                     response.SetReasonPhraseWithoutValidation(knownReasonPhrase);

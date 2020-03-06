@@ -292,19 +292,19 @@ namespace System.Net.Http
             }
         }
 
-        public Task<Stream?> GetStreamAsync(string? requestUri) =>
+        public Task<Stream> GetStreamAsync(string? requestUri) =>
             GetStreamAsync(CreateUri(requestUri));
 
-        public Task<Stream?> GetStreamAsync(string? requestUri, CancellationToken cancellationToken) =>
+        public Task<Stream> GetStreamAsync(string? requestUri, CancellationToken cancellationToken) =>
             GetStreamAsync(CreateUri(requestUri), cancellationToken);
 
-        public Task<Stream?> GetStreamAsync(Uri? requestUri) =>
+        public Task<Stream> GetStreamAsync(Uri? requestUri) =>
             GetStreamAsync(requestUri, CancellationToken.None);
 
-        public Task<Stream?> GetStreamAsync(Uri? requestUri, CancellationToken cancellationToken) =>
+        public Task<Stream> GetStreamAsync(Uri? requestUri, CancellationToken cancellationToken) =>
             FinishGetStreamAsync(GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken), cancellationToken);
 
-        private async Task<Stream?> FinishGetStreamAsync(Task<HttpResponseMessage> getTask, CancellationToken cancellationToken)
+        private async Task<Stream> FinishGetStreamAsync(Task<HttpResponseMessage> getTask, CancellationToken cancellationToken)
         {
             HttpResponseMessage response = await getTask.ConfigureAwait(false);
             response.EnsureSuccessStatusCode();

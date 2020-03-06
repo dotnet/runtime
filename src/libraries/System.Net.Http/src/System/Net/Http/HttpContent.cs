@@ -259,10 +259,10 @@ namespace System.Net.Http
             return _bufferedContent.ToArray();
         }
 
-        public Task<Stream?> ReadAsStreamAsync() =>
+        public Task<Stream> ReadAsStreamAsync() =>
             ReadAsStreamAsync(CancellationToken.None);
 
-        public Task<Stream?> ReadAsStreamAsync(CancellationToken cancellationToken)
+        public Task<Stream> ReadAsStreamAsync(CancellationToken cancellationToken)
         {
             CheckDisposed();
 
@@ -272,20 +272,20 @@ namespace System.Net.Http
 
             if (_contentReadStream == null) // don't yet have a Stream
             {
-                Task<Stream?> t = TryGetBuffer(out ArraySegment<byte> buffer) ?
-                    Task.FromResult<Stream?>(new MemoryStream(buffer.Array!, buffer.Offset, buffer.Count, writable: false)) :
+                Task<Stream> t = TryGetBuffer(out ArraySegment<byte> buffer) ?
+                    Task.FromResult<Stream>(new MemoryStream(buffer.Array!, buffer.Offset, buffer.Count, writable: false)) :
                     CreateContentReadStreamAsync(cancellationToken);
                 _contentReadStream = t;
                 return t;
             }
-            else if (_contentReadStream is Task<Stream?> t) // have a Task<Stream>
+            else if (_contentReadStream is Task<Stream> t) // have a Task<Stream>
             {
                 return t;
             }
             else
             {
                 Debug.Assert(_contentReadStream is Stream, $"Expected a Stream, got ${_contentReadStream}");
-                Task<Stream?> ts = Task.FromResult((Stream?)_contentReadStream);
+                Task<Stream> ts = Task.FromResult((Stream)_contentReadStream);
                 _contentReadStream = ts;
                 return ts;
             }
@@ -459,15 +459,15 @@ namespace System.Net.Http
             }
         }
 
-        protected virtual Task<Stream?> CreateContentReadStreamAsync()
+        protected virtual Task<Stream> CreateContentReadStreamAsync()
         {
             // By default just buffer the content to a memory stream. Derived classes can override this behavior
             // if there is a better way to retrieve the content as stream (e.g. byte array/string use a more efficient
             // way, like wrapping a read-only MemoryStream around the bytes/string)
-            return WaitAndReturnAsync(LoadIntoBufferAsync(), this, s => (Stream?)s._bufferedContent);
+            return WaitAndReturnAsync(LoadIntoBufferAsync(), this, s => (Stream)s._bufferedContent!);
         }
 
-        protected virtual Task<Stream?> CreateContentReadStreamAsync(CancellationToken cancellationToken)
+        protected virtual Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken)
         {
             // Drops the CT for compatibility reasons, see https://github.com/dotnet/runtime/issues/916#issuecomment-562083237
             return CreateContentReadStreamAsync();

@@ -178,9 +178,9 @@ namespace System.Net.Http
         /// <summary>
         /// Gets the proxy URI. (IWebProxy interface)
         /// </summary>
-        public Uri GetProxy(Uri uri)
+        public Uri? GetProxy(Uri uri)
         {
-            GetMultiProxy(uri).ReadNext(out Uri proxyUri, out _);
+            GetMultiProxy(uri).ReadNext(out Uri? proxyUri, out _);
             return proxyUri;
         }
 

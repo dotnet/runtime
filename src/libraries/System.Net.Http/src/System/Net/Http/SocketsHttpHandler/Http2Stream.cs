@@ -139,13 +139,14 @@ namespace System.Net.Http
 
             public int StreamId => _streamId;
 
-            public HttpResponseMessage? GetAndClearResponse()
+            public HttpResponseMessage GetAndClearResponse()
             {
                 // Once SendAsync completes, the Http2Stream should no longer hold onto the response message.
                 // Since the Http2Stream is rooted by the Http2Connection dictionary, doing so would prevent
                 // the response stream from being collected and finalized if it were to be dropped without
                 // being disposed first.
-                HttpResponseMessage? r = _response;
+                Debug.Assert(_response != null);
+                HttpResponseMessage r = _response;
                 _response = null;
                 return r;
             }

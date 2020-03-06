@@ -54,8 +54,8 @@ namespace System.Net.Http
             return false;
         }
 
-        protected sealed override Task<Stream?> CreateContentReadStreamAsync() =>
-            Task.FromResult<Stream?>(ConsumeStream());
+        protected sealed override Task<Stream> CreateContentReadStreamAsync() =>
+            Task.FromResult<Stream>(ConsumeStream());
 
         internal sealed override Stream TryCreateContentReadStream() =>
             ConsumeStream();

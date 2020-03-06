@@ -9,13 +9,12 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Security.Authentication.ExtendedProtection;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http
 {
     internal partial class AuthenticationHelper
     {
-        private static Task<HttpResponseMessage?> InnerSendAsync(HttpRequestMessage request, bool isProxyAuth, HttpConnectionPool pool, HttpConnection connection, CancellationToken cancellationToken)
+        private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, bool isProxyAuth, HttpConnectionPool pool, HttpConnection connection, CancellationToken cancellationToken)
         {
             return isProxyAuth ?
                 connection.SendAsyncCore(request, cancellationToken) :
@@ -40,10 +39,9 @@ namespace System.Net.Http
             return false;
         }
 
-        private static async Task<HttpResponseMessage?> SendWithNtAuthAsync(HttpRequestMessage request, Uri authUri, ICredentials credentials, bool isProxyAuth, HttpConnection? connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
+        private static async Task<HttpResponseMessage> SendWithNtAuthAsync(HttpRequestMessage request, Uri authUri, ICredentials credentials, bool isProxyAuth, HttpConnection? connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
             HttpResponseMessage? response = await InnerSendAsync(request, isProxyAuth, connectionPool, connection!, cancellationToken).ConfigureAwait(false);
-            Debug.Assert(response != null);
             if (!isProxyAuth && connection!.Kind == HttpConnectionKind.Proxy && !ProxySupportsConnectionAuth(response))
             {
                 // Proxy didn't indicate that it supports connection-based auth, so we can't proceed.
@@ -166,15 +164,15 @@ namespace System.Net.Http
                 }
             }
 
-            return response;
+            return response!;
         }
 
-        public static Task<HttpResponseMessage?> SendWithNtProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, ICredentials proxyCredentials, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
+        public static Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, ICredentials proxyCredentials, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
             return SendWithNtAuthAsync(request, proxyUri, proxyCredentials, isProxyAuth: true, connection, connectionPool, cancellationToken);
         }
 
-        public static Task<HttpResponseMessage?> SendWithNtConnectionAuthAsync(HttpRequestMessage request, ICredentials credentials, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
+        public static Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpRequestMessage request, ICredentials credentials, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
             Debug.Assert(request.RequestUri != null);
             return SendWithNtAuthAsync(request, request.RequestUri, credentials, isProxyAuth: false, connection, connectionPool, cancellationToken);
