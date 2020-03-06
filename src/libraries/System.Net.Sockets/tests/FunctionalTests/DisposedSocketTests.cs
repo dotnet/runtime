@@ -520,6 +520,12 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void SetRawSocketOption_Throws_ObjectDisposed()
+        {
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SetRawSocketOption(0, 0, new byte[0]));
+        }
+
+        [Fact]
         public void GetSocketOption_Int_Throws_ObjectDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error, 4));
@@ -535,6 +541,12 @@ namespace System.Net.Sockets.Tests
         public void GetSocketOption_Object_Throws_ObjectDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger));
+        }
+
+        [Fact]
+        public void GetRawSocketOption_Throws_ObjectDisposed()
+        {
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().GetRawSocketOption(0, 0, new byte[0]));
         }
 
         [Fact]
