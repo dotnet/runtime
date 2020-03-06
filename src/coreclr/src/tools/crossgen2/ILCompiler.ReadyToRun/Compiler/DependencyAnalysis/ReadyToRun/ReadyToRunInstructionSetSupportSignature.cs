@@ -67,18 +67,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             string[] instructionSetsSupported = supportedAndUnsupportedSplit[0] == "" ? Array.Empty<string>() : supportedAndUnsupportedSplit[0].Split('+');
             string[] instructionSetsExplicitlyUnsupported = supportedAndUnsupportedSplit[1] == "" ? Array.Empty<string>() : supportedAndUnsupportedSplit[1].Split('-');
-            builder.EmitInt(instructionSetsSupported.Length + instructionSetsExplicitlyUnsupported.Length);
+
+            // This type of fixup is not dependent on module
+            builder.EmitByte(checked((byte)ReadyToRunFixupKind.Check_InstructionSetSupport));
+
+            builder.EmitUInt((uint)(instructionSetsSupported.Length + instructionSetsExplicitlyUnsupported.Length));
 
             foreach (string instructionSetString in instructionSetsSupported)
             {
-                int valueToEmit = (((int)InstructionSetFromString(instructionSetString)) << 1) | 1;
-                builder.EmitInt(valueToEmit);
+                uint valueToEmit = (((uint)InstructionSetFromString(instructionSetString)) << 1) | 1;
+                builder.EmitUInt(valueToEmit);
             }
 
             foreach (string instructionSetString in instructionSetsExplicitlyUnsupported)
             {
-                int valueToEmit = (((int)InstructionSetFromString(instructionSetString)) << 1) | 0;
-                builder.EmitInt(valueToEmit);
+                uint valueToEmit = (((uint)InstructionSetFromString(instructionSetString)) << 1) | 0;
+                builder.EmitUInt(valueToEmit);
             }
 
             return builder.ToObjectData();
