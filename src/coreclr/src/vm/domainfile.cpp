@@ -2265,50 +2265,6 @@ void DomainAssembly::NotifyDebuggerUnload()
 
 }
 
-// This will enumerate for static GC refs (but not thread static GC refs)
-
-void DomainAssembly::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
-{
-    CONTRACT_VOID
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    _ASSERTE(GCHeapUtilities::IsGCInProgress() &&
-         GCHeapUtilities::IsServerHeap()   &&
-         IsGCSpecialThread());
-
-    if (IsCollectible())
-    {
-        // Collectible assemblies have statics stored in managed arrays, so they don't need special handlings
-        return;
-    }
-
-    DomainModuleIterator i = IterateModules(kModIterIncludeLoaded);
-    while (i.Next())
-    {
-        DomainFile* pDomainFile = i.GetDomainFile();
-
-        if (pDomainFile->IsActive())
-        {
-            // We guarantee that at this point the module has it's DomainLocalModule set up
-            // , as we create it while we load the module
-            _ASSERTE(pDomainFile->GetLoadedModule()->GetDomainLocalModule());
-            pDomainFile->GetLoadedModule()->EnumRegularStaticGCRefs(fn, sc);
-
-            // We current to do not iterate over the ThreadLocalModules that correspond
-            // to this Module. The GC discovers thread statics through the handle table.
-        }
-    }
-
-    RETURN;
-}
-
-
-
-
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
