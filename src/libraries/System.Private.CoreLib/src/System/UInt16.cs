@@ -73,7 +73,7 @@ namespace System
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatUInt32(m_value, null, provider);
+            return Number.UInt32ToDecStr(m_value, -1);
         }
 
         public string ToString(string? format)
