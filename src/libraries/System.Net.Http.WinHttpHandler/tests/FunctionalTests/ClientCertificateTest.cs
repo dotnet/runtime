@@ -26,7 +26,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     handler.ClientCertificates.Add(clientCert);
                     handler.ClientCertificateOption = ClientCertificateOption.Manual;
                     using (var client = new HttpClient(handler))
-                    using (HttpResponseMessage response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, address) { Version = HttpVersion.Version20 }))
+                    using (HttpResponseMessage response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, address) { Version = HttpVersion20.Value }))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                         Assert.True(_validationCallbackHistory.WasCalled);
@@ -59,7 +59,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     handler.ClientCertificates.Add(clientCert);
                     handler.ClientCertificateOption = ClientCertificateOption.Manual;
                     using (var client = new HttpClient(handler))
-                    using (HttpResponseMessage response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, address) { Version = HttpVersion.Version20 }))
+                    using (HttpResponseMessage response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, address) { Version = HttpVersion20.Value }))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                         Assert.True(_validationCallbackHistory.WasCalled);
@@ -91,7 +91,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     var handler = new WinHttpHandler();
                     handler.ServerCertificateValidationCallback = CustomServerCertificateValidationCallback;
                     using (var client = new HttpClient(handler))
-                    using (HttpResponseMessage response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, address) { Version = HttpVersion.Version20 }))
+                    using (HttpResponseMessage response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, address) { Version = HttpVersion20.Value }))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                         Assert.True(_validationCallbackHistory.WasCalled);
@@ -111,7 +111,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                         int streamId = await connection.ReadRequestHeaderAsync();
                         await connection.SendDefaultResponseAsync(streamId);
                     }
-                }, new Http2Options { ClientCertificateRequired = true });
+                }, new Http2Options { ClientCertificateRequired = false });
         }
     }
 }

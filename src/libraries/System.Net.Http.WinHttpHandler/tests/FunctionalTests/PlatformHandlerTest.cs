@@ -194,14 +194,16 @@ namespace System.Net.Http.Functional.Tests
 
     // Enable this to run HTTP2 tests on platform handler
 #if PLATFORM_HANDLER_HTTP2_TESTS
-    public sealed class PlatformHandlerTest_Http2 : HttpClientHandlerTest_Http2
+    /*public sealed class PlatformHandlerTest_Http2 : HttpClientHandlerTest_Http2
     {
-    }
+    }*/
     
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
     public sealed class PlatformHandlerTest_Cookies_Http2 : HttpClientHandlerTest_Cookies
     {
-        protected override bool UseHttp2LoopbackServer => true;
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public PlatformHandlerTest_Cookies_Http2(ITestOutputHelper output) : base(output) { }
     }
 #endif
 }

@@ -467,7 +467,11 @@ namespace System.Net.Http.Functional.Tests
                     {
                         byte[] buffer = new byte[4096];
                         int bytesRead;
+#if !NETFRAMEWORK
                         while ((bytesRead = await respStream.ReadAsync(buffer)) > 0)
+#else
+                        while ((bytesRead = await respStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+#endif
                         {
                             actualData.Write(buffer, 0, bytesRead);
                         }
@@ -481,13 +485,22 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await connection.ReadRequestHeaderAsync();
 
-                    await connection.Writer.WriteAsync($"HTTP/1.1 200 OK{lineEnding}Transfer-Encoding: chunked{lineEnding}{lineEnding}");
+                    string text = $"HTTP/1.1 200 OK{lineEnding}Transfer-Encoding: chunked{lineEnding}{lineEnding}";
+#if !NETFRAMEWORK
+                    await connection.Writer.WriteAsync(text);
+#else
+                    await connection.Writer.WriteAsync(text.ToCharArray(), 0, text.Length);
+#endif
                     for (int bytesSent = 0; bytesSent < expectedData.Length;)
                     {
                         int bytesRemaining = expectedData.Length - bytesSent;
                         int bytesToSend = rand.Next(1, Math.Min(bytesRemaining, maxChunkSize + 1));
                         await connection.Writer.WriteAsync(bytesToSend.ToString("X") + lineEnding);
+#if !NETFRAMEWORK
                         await connection.Stream.WriteAsync(new Memory<byte>(expectedData, bytesSent, bytesToSend));
+#else
+                        await connection.Stream.WriteAsync(expectedData, bytesSent, bytesToSend);
+#endif
                         await connection.Writer.WriteAsync(lineEnding);
                         bytesSent += bytesToSend;
                     }

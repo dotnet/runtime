@@ -244,7 +244,7 @@ namespace System.Net.Test.Common
             }
         }
 
-        public override Version Version => HttpVersion.Version20;
+    public override Version Version => HttpVersion20.Value;
     }
 
     public enum ProtocolErrors
@@ -263,5 +263,14 @@ namespace System.Net.Test.Common
         ENHANCE_YOUR_CALM = 0xb,
         INADEQUATE_SECURITY = 0xc,
         HTTP_1_1_REQUIRED = 0xd
+    }
+
+    public static class HttpVersion20
+    {
+#if !NETFRAMEWORK
+        public static readonly Version Value = HttpVersion.Version20;
+#else
+        public static readonly Version Value = new Version(2, 0);
+#endif
     }
 }

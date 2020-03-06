@@ -33,7 +33,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, CancellationMode.Token)]
         public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool chunkedTransfer, CancellationMode mode)
         {
-            if (LoopbackServerFactory.Version >= HttpVersion.Version20 && chunkedTransfer)
+            if (LoopbackServerFactory.Version >= HttpVersion20.Value && chunkedTransfer)
             {
                 // There is no chunked encoding in HTTP/2 and later
                 return;
@@ -80,7 +80,7 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(OneBoolAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseHeadersReceived_TaskCanceledQuickly(bool connectionClose, CancellationMode mode)
         {
-            if (LoopbackServerFactory.Version >= HttpVersion.Version20 && connectionClose)
+            if (LoopbackServerFactory.Version >= HttpVersion20.Value && connectionClose)
             {
                 // There is no Connection header in HTTP/2 and later
                 return;
@@ -130,7 +130,7 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(TwoBoolsAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Buffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, CancellationMode mode)
         {
-            if (LoopbackServerFactory.Version >= HttpVersion.Version20 && (chunkedTransfer || connectionClose))
+            if (LoopbackServerFactory.Version >= HttpVersion20.Value && (chunkedTransfer || connectionClose))
             {
                 // There is no chunked encoding or connection header in HTTP/2 and later
                 return;
@@ -186,7 +186,7 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(ThreeBools))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Unbuffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, bool readOrCopyToAsync)
         {
-            if (LoopbackServerFactory.Version >= HttpVersion.Version20 && (chunkedTransfer || connectionClose))
+            if (LoopbackServerFactory.Version >= HttpVersion20.Value && (chunkedTransfer || connectionClose))
             {
                 // There is no chunked encoding or connection header in HTTP/2 and later
                 return;
@@ -312,7 +312,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {
-            if (LoopbackServerFactory.Version >= HttpVersion.Version20)
+            if (LoopbackServerFactory.Version >= HttpVersion20.Value)
             {
                 // HTTP/2 does not use connection limits.
                 throw new SkipTestException("Not supported on HTTP/2 and later");

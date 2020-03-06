@@ -73,6 +73,9 @@ namespace System.Net.Http.Functional.Tests
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             Assert.NotNull(cert);
             handler.ClientCertificates.Add(cert);
+//#if WINHTTPHANDLER_TEST
+            handler.ClientCertificateOption = ClientCertificateOption.Manual;
+//#endif
             Assert.True(handler.ClientCertificates.Contains(cert));
 
             return CreateHttpClient(handler);
@@ -111,9 +114,13 @@ namespace System.Net.Http.Functional.Tests
                         SslStream sslStream = Assert.IsType<SslStream>(connection.Stream);
                         if (serverExpectsClientCertificate)
                         {
+#if !NETFRAMEWORK
                             _output.WriteLine(
                                 "Client cert: {0}",
                                 ((X509Certificate2)sslStream.RemoteCertificate).GetNameInfo(X509NameType.SimpleName, false));
+#else
+                            _output.WriteLine("Client cert: {0}", sslStream.RemoteCertificate.Subject);
+#endif
                             Assert.Equal(cert, sslStream.RemoteCertificate);
                         }
                         else

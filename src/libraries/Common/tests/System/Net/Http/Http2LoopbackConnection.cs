@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http.Functional.Tests;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -40,6 +41,7 @@ namespace System.Net.Test.Common
 
                 using (var cert = Configuration.Certificates.GetServerCertificate())
                 {
+#if !NETFRAMEWORK
                     SslServerAuthenticationOptions options = new SslServerAuthenticationOptions();
 
                     options.EnabledSslProtocols = httpOptions.SslProtocols;
@@ -54,6 +56,9 @@ namespace System.Net.Test.Common
                     options.ClientCertificateRequired = httpOptions.ClientCertificateRequired;
 
                     sslStream.AuthenticateAsServerAsync(options, CancellationToken.None).Wait();
+#else
+                    sslStream.AuthenticateAsServerAsync(cert, httpOptions.ClientCertificateRequired, httpOptions.SslProtocols, false).Wait();
+#endif
                 }
 
                 _connectionStream = sslStream;
@@ -90,6 +95,7 @@ namespace System.Net.Test.Common
 
         // Read until the buffer is full
         // Return false on EOF, throw on partial read
+#if !NETFRAMEWORK
         private async Task<bool> FillBufferAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
             int readBytes = await _connectionStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
@@ -112,11 +118,37 @@ namespace System.Net.Test.Common
 
             return true;
         }
+#else
+        private async Task<bool> FillBufferAsync(byte[] buffer, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            int readBytes = await _connectionStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
+            if (readBytes == 0)
+            {
+                return false;
+            }
+
+            buffer = buffer.Skip(readBytes).ToArray();
+            while (buffer.Length > 0)
+            {
+                readBytes = await _connectionStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
+                if (readBytes == 0)
+                {
+                    throw new Exception("Connection closed when expecting more data.");
+                }
+
+                buffer = buffer.Skip(readBytes).ToArray();
+            }
+
+            return true;
+        }
+#endif
 
         public async Task<Frame> ReadFrameAsync(TimeSpan timeout)
         {
-            using CancellationTokenSource timeoutCts = new CancellationTokenSource(timeout);
-            return await ReadFrameAsync(timeoutCts.Token).ConfigureAwait(false);
+            using (CancellationTokenSource timeoutCts = new CancellationTokenSource(timeout))
+            {
+                return await ReadFrameAsync(timeoutCts.Token).ConfigureAwait(false);
+            }
         }
 
         private async Task<Frame> ReadFrameAsync(CancellationToken cancellationToken)
@@ -331,7 +363,11 @@ namespace System.Net.Test.Common
             }
             else
             {
+#if !NETFRAMEWORK
                 string value = Encoding.ASCII.GetString(headerBlock.Slice(bytesConsumed, stringLength));
+#else
+                string value = Encoding.ASCII.GetString(headerBlock.Slice(bytesConsumed, stringLength).ToArray());
+#endif
                 return (bytesConsumed + stringLength, value);
             }
         }

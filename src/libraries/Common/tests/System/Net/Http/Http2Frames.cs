@@ -548,10 +548,19 @@ namespace System.Net.Test.Common
             BinaryPrimitives.WriteUInt16BigEndian(buffer, checked((ushort)Origin.Length));
             buffer = buffer.Slice(2);
 
+#if !NETFRAMEWORK
             Encoding.ASCII.GetBytes(Origin, buffer);
             buffer = buffer.Slice(Origin.Length);
 
             Encoding.ASCII.GetBytes(AltSvc, buffer);
+#else
+            var tmpBuffer = Encoding.ASCII.GetBytes(Origin);
+            tmpBuffer.CopyTo(buffer);
+            buffer = buffer.Slice(Origin.Length);
+
+            tmpBuffer = Encoding.ASCII.GetBytes(AltSvc);
+            tmpBuffer.CopyTo(buffer);
+#endif
         }
 
         public override string ToString() => $"{base.ToString()}\n{nameof(Origin)}: {Origin}\n{nameof(AltSvc)}: {AltSvc}";

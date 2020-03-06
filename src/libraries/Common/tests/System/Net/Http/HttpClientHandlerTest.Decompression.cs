@@ -22,6 +22,11 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract class HttpClientHandler_Decompression_Test : HttpClientHandlerTestBase
     {
+#if !NETFRAMEWORK
+        private static readonly DecompressionMethods _all = DecompressionMethods.All;
+#else
+        private static readonly DecompressionMethods _all = DecompressionMethods.Deflate | DecompressionMethods.GZip;
+#endif
         public HttpClientHandler_Decompression_Test(ITestOutputHelper output) : base(output) { }
 
         public static IEnumerable<object[]> RemoteServersAndCompressionUris()
@@ -41,20 +46,22 @@ namespace System.Net.Http.Functional.Tests
                 {
                     "deflate",
                     new Func<Stream, Stream>(s => new DeflateStream(s, CompressionLevel.Optimal, leaveOpen: true)),
-                    specifyAllMethods ? DecompressionMethods.Deflate : DecompressionMethods.All
+                    specifyAllMethods ? DecompressionMethods.Deflate : _all
                 };
                 yield return new object[]
                 {
                     "gzip",
                     new Func<Stream, Stream>(s => new GZipStream(s, CompressionLevel.Optimal, leaveOpen: true)),
-                    specifyAllMethods ? DecompressionMethods.GZip : DecompressionMethods.All
+                    specifyAllMethods ? DecompressionMethods.GZip : _all
                 };
+#if !NETFRAMEWORK
                 yield return new object[]
                 {
                     "br",
                     new Func<Stream, Stream>(s => new BrotliStream(s, CompressionLevel.Optimal, leaveOpen: true)),
-                    specifyAllMethods ? DecompressionMethods.Brotli : DecompressionMethods.All
+                    specifyAllMethods ? DecompressionMethods.Brotli : _all
                 };
+#endif
             }
         }
 
@@ -88,7 +95,11 @@ namespace System.Net.Http.Functional.Tests
                     await connection.Writer.WriteAsync($"HTTP/1.1 200 OK\r\nContent-Encoding: {encodingName}\r\n\r\n");
                     using (Stream compressedStream = compress(connection.Stream))
                     {
+#if !NETFRAMEWORK
                         await compressedStream.WriteAsync(expectedContent);
+#else
+                        await compressedStream.WriteAsync(expectedContent, 0, expectedContent.Length);
+#endif
                     }
                 });
             });
@@ -102,6 +113,7 @@ namespace System.Net.Http.Functional.Tests
                 new Func<Stream, Stream>(s => new DeflateStream(s, CompressionLevel.Optimal, leaveOpen: true)),
                 DecompressionMethods.None
             };
+#if !NETFRAMEWORK
             yield return new object[]
             {
                 "gzip",
@@ -114,6 +126,7 @@ namespace System.Net.Http.Functional.Tests
                 new Func<Stream, Stream>(s => new BrotliStream(s, CompressionLevel.Optimal, leaveOpen: true)),
                 DecompressionMethods.Deflate | DecompressionMethods.GZip
             };
+#endif
         }
 
         [Theory]
@@ -127,7 +140,11 @@ namespace System.Net.Http.Functional.Tests
             var compressedContentStream = new MemoryStream();
             using (Stream s = compress(compressedContentStream))
             {
+#if !NETFRAMEWORK
                 await s.WriteAsync(expectedContent);
+#else
+                await s.WriteAsync(expectedContent, 0, expectedContent.Length);
+#endif
             }
             byte[] compressedContent = compressedContentStream.ToArray();
 
@@ -144,8 +161,14 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestHeaderAsync();
-                    await connection.Writer.WriteAsync($"HTTP/1.1 200 OK\r\nContent-Encoding: {encodingName}\r\n\r\n");
+                    string text = $"HTTP/1.1 200 OK\r\nContent-Encoding: {encodingName}\r\n\r\n";
+#if !NETFRAMEWORK
+                    await connection.Writer.WriteAsync(text);
                     await connection.Stream.WriteAsync(compressedContent);
+#else
+                    await connection.Writer.WriteAsync(text.ToCharArray(), 0, text.Length);
+                    await connection.Stream.WriteAsync(compressedContent, 0, compressedContent.Length);
+#endif
                 });
             });
         }
@@ -189,10 +212,12 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+#if NETCORE
         [InlineData(DecompressionMethods.Brotli, "br", "")]
         [InlineData(DecompressionMethods.Brotli, "br", "br")]
         [InlineData(DecompressionMethods.Brotli, "br", "gzip")]
         [InlineData(DecompressionMethods.Brotli, "br", "gzip, deflate")]
+#endif
         [InlineData(DecompressionMethods.GZip, "gzip", "")]
         [InlineData(DecompressionMethods.Deflate, "deflate", "")]
         [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip, deflate", "")]
