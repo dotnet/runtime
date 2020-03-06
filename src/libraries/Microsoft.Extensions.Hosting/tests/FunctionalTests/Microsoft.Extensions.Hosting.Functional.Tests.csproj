@@ -1,6 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <Import Project="$(MSBuildThisFileDirectory)..\..\..\Logging\Logging.Testing\src\build\Microsoft.Extensions.Logging.Testing.props" />
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(DefaultNetCoreTargetFramework);net472</TargetFrameworks>
@@ -8,6 +6,7 @@
 
   <ItemGroup>
     <Content Include="testroot\**\*" />
+    <Compile Include="$(RepoRoot)src\Logging\test\TestLoggerBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>
