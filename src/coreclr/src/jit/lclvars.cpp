@@ -4901,7 +4901,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     // We normally add alignment below the locals between them and the outgoing
     // arg space area. When we store fp/lr at the bottom, however, this will be
     // below the alignment. So we should not apply the alignment adjustment to

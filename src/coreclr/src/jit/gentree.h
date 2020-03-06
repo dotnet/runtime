@@ -4091,7 +4091,7 @@ struct GenTreeCall final : public GenTree
     // tailcall mechanism.
     bool IsTailCallViaJitHelper() const
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         return IsTailCall() && (gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER);
 #else
         return false;
@@ -4101,7 +4101,7 @@ struct GenTreeCall final : public GenTree
 #if FEATURE_FASTTAILCALL
     bool IsFastTailCall() const
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         return IsTailCall() && !(gtCallMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER);
 #else
         return IsTailCall();

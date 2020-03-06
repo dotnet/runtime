@@ -6766,7 +6766,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         return false;
     }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Needed for Jit64 compat.
     // In future, enabling fast tail calls from methods that need GS cookie
     // check would require codegen side work to emit GS cookie check before a
@@ -17945,7 +17945,7 @@ bool Compiler::fgCheckStmtAfterTailCall()
 //
 bool Compiler::fgCanTailCallViaJitHelper()
 {
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
     // On anything except X86 we have no faster mechanism available.
     return false;
 #else
