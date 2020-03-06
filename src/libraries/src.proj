@@ -1,4 +1,4 @@
-<Project InitialTargets="IncludeProjectReferences">
+<Project>
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
@@ -10,22 +10,16 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
-    <Project Include="$(MSBuildThisFileDirectory)*\src\*.csproj" Exclude="@(ProjectExclusions)" />
-    <Project Include="$(MSBuildThisFileDirectory)*\src\*.ilproj" Exclude="@(ProjectExclusions)" />
-    <Project Include="$(MSBuildThisFileDirectory)*\src\*.vbproj" Exclude="@(ProjectExclusions)" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.csproj" Exclude="@(ProjectExclusions)" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.ilproj" Exclude="@(ProjectExclusions)" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.vbproj" Exclude="@(ProjectExclusions)" />
     <!-- Explicitly include the runtime.depproj project here to correctly set up the test host. -->
-    <Project Include="$(MSBuildThisFileDirectory)restore\runtime\runtime.depproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)restore\runtime\runtime.depproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(DirectoryToBuild)' != ''">
-    <Project Include="$(DirectoryToBuild)\src\*.*proj" />
+    <ProjectReference Include="$(DirectoryToBuild)\src\*.*proj" />
   </ItemGroup>
-
-  <Target Name="IncludeProjectReferences">
-    <ItemGroup>
-      <ProjectReference Include="@(Project)" />
-    </ItemGroup>
-  </Target>
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
   
@@ -33,7 +27,7 @@
   <Target Name="Build" DependsOnTargets="BuildAllProjects" />
   <Target Name="BuildAllProjects">
     <MSBuild Targets="Build"
-             Projects="@(Project)"
+             Projects="@(ProjectReference)"
              Properties="BuildAllProjects=true;%(Project.AdditionalProperties)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />

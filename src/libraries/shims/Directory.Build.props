@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+    <EnableProjectRestore>true</EnableProjectRestore>
+  </PropertyGroup>
+
   <Import Project="..\Directory.Build.props" />
 
   <Import Project="netfxreference.props" />

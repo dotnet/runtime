@@ -1,4 +1,4 @@
-<Project InitialTargets="IncludeProjectReferences">
+<Project>
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
@@ -10,15 +10,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Project Condition="'$(DirectoryToBuild)' == ''" Include="$(MSBuildThisFileDirectory)*\ref\*.*proj" Exclude="@(ProjectExclusions)" />
-    <Project Condition="'$(DirectoryToBuild)' != ''" Include="$(DirectoryToBuild)\ref\*.*proj" />
+    <ProjectReference Condition="'$(DirectoryToBuild)' == ''" Include="$(MSBuildThisFileDirectory)*\ref\*.*proj" Exclude="@(ProjectExclusions)" />
+    <ProjectReference Condition="'$(DirectoryToBuild)' != ''" Include="$(DirectoryToBuild)\ref\*.*proj" />
   </ItemGroup>
-
-  <Target Name="IncludeProjectReferences">
-    <ItemGroup>
-      <ProjectReference Include="@(Project)" />
-    </ItemGroup>
-  </Target>
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
   
@@ -26,7 +20,7 @@
   <Target Name="Build" DependsOnTargets="BuildAllProjects" />
   <Target Name="BuildAllProjects">
     <MSBuild Targets="Build"
-             Projects="@(Project)"
+             Projects="@(ProjectReference)"
              Properties="BuildAllProjects=true;%(Project.AdditionalProperties)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />

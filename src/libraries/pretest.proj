@@ -58,6 +58,7 @@
       <_TestProjectRootDir>$(LibrariesProjectRoot)</_TestProjectRootDir>
       <_TestProjectRootDir Condition="'$(DirectoryToBuild)'!=''">$(DirectoryToBuild)</_TestProjectRootDir>
     </PropertyGroup>
+
     <ItemGroup>
       <!-- Keep in sync with pattern for test projects in tests.proj -->
       <TestProjects Include="$(_TestProjectRootDir)*\tests\**\*.Tests.csproj" />
@@ -73,15 +74,10 @@
   <Target Name="Build"
           Condition="'$(SkipPrepareTest)' != 'true'"
           DependsOnTargets="GenerateLaunchSettingsFiles;GenerateTestSharedFrameworkDepsFile;GenerateFileVersionProps">
-
     <MSBuild Targets="Build"
              Projects="@(Project)"
              Properties="TargetFramework=$(BuildTargetFramework);%(Project.AdditionalProperties)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
-
-    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
-    <Error Condition="'$(MSBuildLastTaskResult)' == 'false'" />
-
   </Target>
 </Project>
