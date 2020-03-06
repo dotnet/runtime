@@ -4536,6 +4536,9 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
     {
     }
 
+    bool OperIsMemoryLoad() const; // Returns true for the SIMD Instrinsic instructions that have MemoryLoad semantics,
+                                   // false otherwise
+
 #if DEBUGGABLE_GENTREE
     GenTreeSIMD() : GenTreeJitIntrinsic()
     {
@@ -4584,12 +4587,12 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     // However there are HW Instrinsic instructions that have 3 or even 4 operands and this is
     // supported using a single op1 and using an ArgList for it:  gtNewArgList(op1, op2, op3)
 
-    bool OperIsMemoryLoad();        // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics,
+    bool OperIsMemoryLoad() const;  // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics,
                                     // false otherwise
-    bool OperIsMemoryStore();       // Returns true for the HW Instrinsic instructions that have MemoryStore semantics,
+    bool OperIsMemoryStore() const; // Returns true for the HW Instrinsic instructions that have MemoryStore semantics,
                                     // false otherwise
-    bool OperIsMemoryLoadOrStore(); // Returns true for the HW Instrinsic instructions that have MemoryLoad or
-                                    // MemoryStore semantics, false otherwise
+    bool OperIsMemoryLoadOrStore() const; // Returns true for the HW Instrinsic instructions that have MemoryLoad or
+                                          // MemoryStore semantics, false otherwise
 
 #if DEBUGGABLE_GENTREE
     GenTreeHWIntrinsic() : GenTreeJitIntrinsic()

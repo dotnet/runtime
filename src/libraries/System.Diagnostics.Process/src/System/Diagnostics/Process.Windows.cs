@@ -116,6 +116,7 @@ namespace System.Diagnostics
         private void RefreshCore()
         {
             _signaled = false;
+            _haveMainWindow = false;
         }
 
         /// <summary>Additional logic invoked when the Process is closed.</summary>

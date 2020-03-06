@@ -70,6 +70,22 @@ namespace System.Text.Json.Serialization.Tests
             public int MyInt { get; set; }
         }
 
+        private class NullConverterAttribute : JsonConverterAttribute
+        {
+            public NullConverterAttribute() : base(null) { }
+
+            public override JsonConverter CreateConverter(Type typeToConvert)
+            {
+                return null;
+            }
+        }
+
+        private class PocoWithNullConverter
+        {
+            [NullConverter]
+            public int MyInt { get; set; }
+        }
+
         [Fact]
         public static void AttributeCreateConverterFail()
         {
@@ -81,6 +97,15 @@ namespace System.Text.Json.Serialization.Tests
 
             ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PocoWithInvalidConverter>("{}"));
             Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+PocoWithInvalidConverter.MyInt'", ex.Message);
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new PocoWithNullConverter()));
+            // Message should be in the form "The converter specified on 'System.Text.Json.Serialization.Tests.CustomConverterTests+PocoWithNullConverter.MyInt'  is not compatible with the type 'System.Int32'."
+            Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+PocoWithNullConverter.MyInt'", ex.Message);
+            Assert.Contains("'System.Int32'", ex.Message);
+
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PocoWithNullConverter>("{}"));
+            Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+PocoWithNullConverter.MyInt'", ex.Message);
+            Assert.Contains("'System.Int32'", ex.Message);
         }
 
         private class InvalidTypeConverterClass

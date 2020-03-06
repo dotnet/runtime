@@ -23,14 +23,12 @@
 #define PRId PRId64
 #define PRIA "016"
 #define PRIxA PRIA PRIx
-#define TARGET_WORDSIZE 64
 #else
 #define PRIx PRIx32
 #define PRIu PRIu32
 #define PRId PRId32
 #define PRIA "08"
 #define PRIxA PRIA PRIx
-#define TARGET_WORDSIZE 32
 #endif
 
 #ifdef HOST_UNIX
@@ -281,7 +279,7 @@ uint32_t
 ElfReader::Hash(const std::string& symbolName)
 {
     uint32_t h = 5381;
-    for (int i = 0; i < symbolName.length(); i++)
+    for (unsigned int i = 0; i < symbolName.length(); i++)
     {
         h = (h << 5) + h + symbolName[i];
     }

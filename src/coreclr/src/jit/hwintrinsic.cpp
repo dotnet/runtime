@@ -173,6 +173,69 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
     return NO_CLASS_HANDLE;
 }
 
+#ifdef FEATURE_HW_INTRINSICS
+//------------------------------------------------------------------------
+// vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID):
+//
+// Arguments:
+//    hwIntrinsicID -- The id for the HW intrinsic
+//
+// Return Value:
+//   Returns true if this intrinsic requires value numbering to add an
+//   extra SimdType argument that encodes the resulting type.
+//   If we don't do this overloaded versions can return the same VN
+//   leading to incorrect CSE subsitutions.
+//
+/* static */ bool Compiler::vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID)
+{
+    int numArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicID);
+
+    // HW Instrinsic's with -1 for numArgs have a varying number of args, so we currently
+    // give themm a unique value number them, and don't add an extra argument.
+    //
+    if (numArgs == -1)
+    {
+        return false;
+    }
+
+    // We iterate over all of the different baseType's for this instrinsic in the HWIntrinsicInfo table
+    // We set  diffInsCount to the number of instructions that can execute differently.
+    //
+    unsigned diffInsCount = 0;
+#ifdef TARGET_XARCH
+    instruction lastIns = INS_invalid;
+#endif
+    for (var_types baseType = TYP_BYTE; (baseType <= TYP_DOUBLE); baseType = (var_types)(baseType + 1))
+    {
+        instruction curIns = HWIntrinsicInfo::lookupIns(hwIntrinsicID, baseType);
+        if (curIns != INS_invalid)
+        {
+#ifdef TARGET_XARCH
+            if (curIns != lastIns)
+            {
+                diffInsCount++;
+                // remember the last valid instruction that we saw
+                lastIns = curIns;
+            }
+#elif defined(TARGET_ARM64)
+            // On ARM64 we use the same instruction and specify an insOpt arrangement
+            // so we always consider the instruction operation to be different
+            //
+            diffInsCount++;
+#endif // TARGET
+            if (diffInsCount >= 2)
+            {
+                // We can  early exit the loop now
+                break;
+            }
+        }
+    }
+
+    // If we see two (or more) different instructions we need the extra VNF_SimdType arg
+    return (diffInsCount >= 2);
+}
+#endif // FEATURE_HW_INTRINSICS
+
 //------------------------------------------------------------------------
 // lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
 //

@@ -4682,6 +4682,16 @@ public:
     // Does value-numbering for an intrinsic tree.
     void fgValueNumberIntrinsic(GenTree* tree);
 
+#ifdef FEATURE_SIMD
+    // Does value-numbering for a GT_SIMD tree
+    void fgValueNumberSimd(GenTree* tree);
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+    // Does value-numbering for a GT_HWINTRINSIC tree
+    void fgValueNumberHWIntrinsic(GenTree* tree);
+#endif // FEATURE_HW_INTRINSICS
+
     // Does value-numbering for a call.  We interpret some helper calls.
     void fgValueNumberCall(GenTreeCall* call);
 
@@ -4705,6 +4715,9 @@ public:
 
     // Adds the exception set for the current tree node which is performing a overflow checking operation
     void fgValueNumberAddExceptionSetForOverflow(GenTree* tree);
+
+    // Adds the exception set for the current tree node which is performing a bounds check operation
+    void fgValueNumberAddExceptionSetForBoundsCheck(GenTree* tree);
 
     // Adds the exception set for the current tree node which is performing a ckfinite operation
     void fgValueNumberAddExceptionSetForCkFinite(GenTree* tree);
@@ -6196,6 +6209,12 @@ protected:
 
         treeStmtLst* csdTreeList; // list of matching tree nodes: head
         treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
+
+        // ToDo: This can be removed when gtGetStructHandleIfPresent stops guessing
+        // and GT_IND nodes always have valid struct handle.
+        //
+        CORINFO_CLASS_HANDLE csdStructHnd; // The class handle, currently needed to create a SIMD LclVar in PerformCSE
+        bool                 csdStructHndMismatch;
 
         ValueNum defExcSetPromise; // The exception set that is now required for all defs of this CSE.
                                    // This will be set to NoVN if we decide to abandon this CSE
@@ -8207,6 +8226,13 @@ public:
 #endif // !FEATURE_SIMD
     }
 
+#ifdef FEATURE_SIMD
+    static bool vnEncodesResultTypeForSIMDIntrinsic(SIMDIntrinsicID intrinsicId);
+#endif // !FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+    static bool vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID);
+#endif // FEATURE_HW_INTRINSICS
+
 private:
     // These routines need not be enclosed under FEATURE_SIMD since lvIsSIMDType()
     // is defined for both FEATURE_SIMD and !FEATURE_SIMD apropriately. The use
@@ -8998,10 +9024,16 @@ public:
 //-------------------------- Global Compiler Data ------------------------------------
 
 #ifdef DEBUG
-    static unsigned s_compMethodsCount; // to produce unique label names
-    unsigned        compGenTreeID;
-    unsigned        compStatementID;
-    unsigned        compBasicBlockID;
+private:
+    static LONG s_compMethodsCount; // to produce unique label names
+#endif
+
+public:
+#ifdef DEBUG
+    LONG     compMethodID;
+    unsigned compGenTreeID;
+    unsigned compStatementID;
+    unsigned compBasicBlockID;
 #endif
 
     BasicBlock* compCurBB;   // the current basic block in process

@@ -5180,6 +5180,16 @@ namespace System.Collections.Generic
         void CopyTo(T[] array, int arrayIndex);
         bool Remove(T item);
     }
+    public partial interface IReadOnlySet<T> : IReadOnlyCollection<T>
+    {
+        bool Contains(T item);
+        bool IsProperSubsetOf(IEnumerable<T> other);
+        bool IsProperSupersetOf(IEnumerable<T> other);
+        bool IsSubsetOf(IEnumerable<T> other);
+        bool IsSupersetOf(IEnumerable<T> other);
+        bool Overlaps(IEnumerable<T> other);
+        bool SetEquals(IEnumerable<T> other);
+    }
     public partial interface IComparer<in T>
     {
         int Compare([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);

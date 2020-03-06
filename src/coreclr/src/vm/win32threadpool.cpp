@@ -1502,28 +1502,13 @@ WorkRequest* ThreadpoolMgr::DequeueWorkRequest()
     RETURN entry;
 }
 
-DWORD WINAPI ThreadpoolMgr::ExecuteHostRequest(PVOID pArg)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    bool foundWork, wasNotRecalled;
-    ExecuteWorkRequest(&foundWork, &wasNotRecalled);
-    return ERROR_SUCCESS;
-}
-
 void ThreadpoolMgr::ExecuteWorkRequest(bool* foundWork, bool* wasNotRecalled)
 {
     CONTRACTL
     {
         THROWS;     // QueueUserWorkItem can throw
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 

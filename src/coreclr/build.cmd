@@ -6,6 +6,8 @@ setlocal EnableDelayedExpansion EnableExtensions
 set "__MsgPrefix=BUILD: "
 
 echo %__MsgPrefix%Starting Build at %TIME%
+echo %__MsgPrefix%WARNING: This build script is deprecated and will be deleted soon. Use the root build script to build CoreCLR. If you want to build the CoreCLR runtime without using MSBuild, use the build-native.cmd script.
+echo %__MsgPrefix%See https://github.com/dotnet/runtime/issues/32991 for more information.
 
 set __ThisScriptFull="%~f0"
 set __ThisScriptDir="%~dp0"
@@ -51,8 +53,6 @@ set "__RepoRootDir=%__ProjectDir%\..\.."
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__SourceDir=%__ProjectDir%\src"
 set "__RootBinDir=%__RepoRootDir%\artifacts"
-set "__LogsDir=%__RootBinDir%\log"
-set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
 set __BuildAll=
 
@@ -123,7 +123,6 @@ if /i "%1" == "-debug"               (set __BuildTypeDebug=1&set processedArgs=!
 if /i "%1" == "-checked"             (set __BuildTypeChecked=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-release"             (set __BuildTypeRelease=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "-ci"                  (set __ArcadeScriptArgs="-ci"&set __ErrMsgPrefix=##vso[task.logissue type=error]&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -158,6 +157,9 @@ if [!__PassThroughArgs!]==[] (
     set __PassThroughArgs=%__PassThroughArgs% %1
 )
 
+if /i "%1" == "-ci"                  (set __ArcadeScriptArgs="-ci"&set __ErrMsgPrefix=##vso[task.logissue type=error]&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-OfficialBuildId"     (set __OfficialBuildIdArg=/p:OfficialBuildId=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1=%2&shift&shift&goto Arg_Loop)
+
 if /i "%1" == "-alpinedac"           (set __BuildCoreLib=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=alpine&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-linuxdac"            (set __BuildCoreLib=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
@@ -182,10 +184,9 @@ if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!p
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-crossgenaltjit"      (set __CrossgenAltJit=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-crossgenaltjit"      (set __CrossgenAltJit=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 REM TODO remove these once they are no longer used in buildpipeline
 if /i "%1" == "-skiprestore"         (set __SkipRestoreArg=/p:RestoreDuringBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-OfficialBuildId"     (set __OfficialBuildIdArg=/p:OfficialBuildId=%2&set processedArgs=!processedArgs! %1=%2&shift&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -209,7 +210,7 @@ if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!pr
 if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "crossgenaltjit"      (set __CrossgenAltJit=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "crossgenaltjit"      (set __CrossgenAltJit=%2&set __PassThroughArgs=%__PassThroughArgs% %2set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 REM TODO remove this once it's no longer used in buildpipeline
 if /i "%1" == "--"                  (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
@@ -277,6 +278,15 @@ REM Determine if this is a cross-arch build. Only do cross-arch build if we're a
 
 if %__SkipCrossArchNative% EQU 0 (
     if %__BuildNative% EQU 1 (
+        if %__BuildCrossArchNative% EQU 0 (
+            if /i not "%__BuildArch%"=="x86" (
+                REM Make recursive calls to build the cross OS DAC
+                call :BuildCrossOSDac -linuxdac
+                if not !errorlevel! == 0 (
+                    goto ExitWithError
+                )
+            )
+        )
         if /i "%__BuildArch%"=="arm64" (
             set __BuildCrossArchNative=1
         )
@@ -299,6 +309,8 @@ if "%__NMakeMakefiles%"=="1" (set "__IntermediatesDir=%__RootBinDir%\nmakeobj\%_
 set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__CrossComponentBinDir=%__BinDir%"
 set "__CrossCompIntermediatesDir=%__IntermediatesDir%\crossgen"
+set "__LogsDir=%__RootBinDir%\log\!__BuildType!"
+set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
 
 if NOT "%__CrossArch%" == "" set __CrossComponentBinDir=%__CrossComponentBinDir%\%__CrossArch%
@@ -359,12 +371,15 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
+echo %__MsgPrefix%Generating native version headers
+set "__BinLog=%__LogsDir%\GenerateVersionHeaders_%__BuildOS%__%__BuildArch%__%__BuildType%.binlog"
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
     %__RepoRootDir%\eng\empty.csproj /p:NativeVersionFile="%__RootBinDir%\obj\coreclr\_version.h"^
     /t:GenerateNativeVersionFile /restore^
-    %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
+    %__CommonMSBuildArgs% %__UnprocessedBuildArgs% /bl:!__BinLog!
 if not !errorlevel! == 0 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to generate version headers.
+    echo !__BinLog!
     set __exitCode=!errorlevel!
     goto ExitWithCode
 )
@@ -378,12 +393,15 @@ REM ============================================================================
 set OptDataProjectFilePath=%__ProjectDir%\src\.nuget\optdata\optdata.csproj
 if %__RestoreOptData% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
+    set "__BinLog=%__LogsDir%\OptRestore_%__BuildOS%__%__BuildArch%__%__BuildType%.binlog"
+
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
         %OptDataProjectFilePath% /t:Restore^
         %__CommonMSBuildArgs% %__UnprocessedBuildArgs%^
-        /nodereuse:false
+        /nodereuse:false /bl:!__BinLog!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to restore the optimization data package.
+        echo !__BinLog!
         set __exitCode=!errorlevel!
         goto ExitWithCode
     )
@@ -391,18 +409,21 @@ if %__RestoreOptData% EQU 1 (
 set __PgoOptDataPath=
 if %__PgoOptimize% EQU 1 (
     set PgoDataPackagePathOutputFile="%__IntermediatesDir%\optdatapath.txt"
+    set "__BinLog=%__LogsDir%\PgoVersionRead_%__BuildOS%__%__BuildArch%__%__BuildType%.binlog"
 
     REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath %__CommonMSBuildArgs% /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"
+        "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath %__CommonMSBuildArgs% /bl:!__BinLog! /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"
 
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%Failed to get PGO data package path.
+        echo !__BinLog!
         set __exitCode=!errorlevel!
         goto ExitWithCode
     )
     if not exist "!PgoDataPackagePathOutputFile!" (
         echo %__ErrMsgPrefix%Failed to get PGO data package path.
+        echo !__BinLog!
         goto ExitWithError
     )
 
@@ -477,19 +498,22 @@ if %__BuildCrossArchNative% EQU 1 (
     if defined __ConfigureOnly goto SkipCrossCompBuild
 
     set __BuildLogRootName=Cross
-    set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-    set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-    set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
-    set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
-    set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
-    set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-    set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
+    set "__BuildLog=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+    set "__BuildWrn=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
+    set "__BuildErr=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+    set "__BinLog=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.binlog"
+    set "__MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!"
+    set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
+    set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
+    set "__MsbuildBinLog=/bl:!__BinLog!"
+    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
 
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
     "%CMakePath%" --build %__CrossCompIntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: cross-arch components build failed.
+        echo !__BinLog!
         set __exitCode=!errorlevel!
         goto ExitWithCode
     )
@@ -555,19 +579,22 @@ if %__BuildNative% EQU 1 (
     if defined __ConfigureOnly goto SkipNativeBuild
 
     set __BuildLogRootName=CoreCLR
-    set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-    set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-    set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
-    set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
-    set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
-    set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-    set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
+    set "__BuildLog=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+    set "__BuildWrn=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
+    set "__BuildErr=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+    set "__BinLog=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.binlog"
+    set "__MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!"
+    set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
+    set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
+    set "__MsbuildBinLog=/bl:!__BinLog!"
+    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
 
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
     "%CMakePath%" --build %__IntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: native component build failed.
+        echo !__BinLog!
         set __exitCode=!errorlevel!
         goto ExitWithCode
     )
@@ -598,23 +625,26 @@ if %__BuildCoreLib% EQU 1 (
     )
 
     set __BuildLogRootName=System.Private.CoreLib
-    set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-    set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-    set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
-    set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
-    set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
-    set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-    set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
+    set "__BuildLog=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+    set "__BuildWrn=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
+    set "__BuildErr=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+    set "__Binlog=%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.binlog"
+    set "__MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!"
+    set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
+    set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
+    set "__MsbuildBinLog=/bl:!__Binlog!"
+    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
 
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
         %__ProjectDir%\src\build.proj /t:Restore^
         /nodeReuse:false /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true^
-        !__Logging! %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
+        !__Logging! /bl: %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: Managed Product assemblies restore failed. Refer to the build log files for details.
         echo     !__BuildLog!
         echo     !__BuildWrn!
         echo     !__BuildErr!
+        echo     !__Binlog!
         set __exitCode=!errorlevel!
         goto ExitWithCode
     )
@@ -627,6 +657,7 @@ if %__BuildCoreLib% EQU 1 (
         echo     !__BuildLog!
         echo     !__BuildWrn!
         echo     !__BuildErr!
+        echo     !__Binlog!
         set __exitCode=!errorlevel!
         goto ExitWithCode
     )
@@ -878,6 +909,11 @@ if not !errorlevel! == 0 (
     echo %__MsgPrefix%    %__BuildArch% %__BuildType% %__PassThroughArgs% >> %__BuildResultFile%
     set __AllBuildSuccess=false
 )
+
+
+echo %__MsgPrefix%WARNING: This build script is deprecated and will be deleted soon. Use the root build script to build CoreCLR. If you want to build the CoreCLR runtime without using MSBuild, use the build-native.cmd script.
+echo %__MsgPrefix%See https://github.com/dotnet/runtime/issues/32991 for more information.
+
 exit /b 0
 
 REM =========================================================================================
@@ -893,10 +929,28 @@ REM === Like MSBuild or Powershell. If we directly exit /b 1 from within a if st
 REM === any of the routines, the exit code is not propagated.
 REM =========================================================================================
 :ExitWithError
+echo %__MsgPrefix%WARNING: This build script is deprecated and will be deleted soon. Use the root build script to build CoreCLR. If you want to build the CoreCLR runtime without using MSBuild, use the build-native.cmd script.
+echo %__MsgPrefix%See https://github.com/dotnet/runtime/issues/32991 for more information.
 exit /b 1
 
 :ExitWithCode
+echo %__MsgPrefix%WARNING: This build script is deprecated and will be deleted soon. Use the root build script to build CoreCLR. If you want to build the CoreCLR runtime without using MSBuild, use the build-native.cmd script.
+echo %__MsgPrefix%See https://github.com/dotnet/runtime/issues/32991 for more information.
 exit /b !__exitCode!
+
+:BuildCrossOSDac
+setlocal
+set __BuildDacOption=%1
+set __NextCmd=call %__ThisScriptFull% %__BuildDacOption% %__BuildArch% %__BuildType% %__PassThroughArgs%
+echo %__MsgPrefix%Invoking: %__NextCmd%
+%__NextCmd%
+if not !errorlevel! == 0 (
+    echo %__MsgPrefix%    %__BuildDacOption% %__BuildArch% %__BuildType% %__PassThroughArgs%
+    endlocal
+    goto ExitWithError
+)
+endlocal
+exit /b 0
 
 :Usage
 echo.
@@ -923,6 +977,9 @@ echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fai
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
 echo -ibcinstrument: generate IBC-tuning-enabled native images when invoking crossgen.
 echo -configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
+echo -alpinedac: Build a linux musl DAC with minimal support for printing exceptions in a dump on a windows host.
+echo -linuxdac: Build a linux DAC with minimal support for printing exceptions in a dump on a windows host.
+
 echo -skipconfigure: skip CMake ^(default: CMake is run^)
 echo -skipmscorlib: skip building System.Private.CoreLib ^(default: System.Private.CoreLib is built^).
 echo -skipnative: skip building native components ^(default: native components are built^).

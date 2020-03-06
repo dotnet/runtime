@@ -1300,7 +1300,7 @@ size_t genFlowNodeCnt;
 
 #ifdef DEBUG
 /* static */
-unsigned Compiler::s_compMethodsCount = 0; // to produce unique label names
+LONG Compiler::s_compMethodsCount = 0; // to produce unique label names
 #endif
 
 #if MEASURE_MEM_ALLOC
@@ -3801,6 +3801,7 @@ _SetMinOpts:
         !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) && !opts.compDbgCode)
     {
         info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_MIN_OPT);
+        opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER1);
         compSwitchedToMinOpts = true;
     }
 
@@ -4919,6 +4920,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
+
+    // We're done -- set the active phase to the last phase
+    // (which isn't really a phase)
+    mostRecentlyActivePhase = PHASE_POST_EMIT;
 
 #ifdef FEATURE_JIT_METHOD_PERF
     if (pCompJitTimer)
@@ -6086,11 +6091,11 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     if (opts.disAsm || opts.dspEmit || verbose)
     {
-        s_compMethodsCount = ~info.compMethodHash() & 0xffff;
+        compMethodID = ~info.compMethodHash() & 0xffff;
     }
     else
     {
-        s_compMethodsCount++;
+        compMethodID = InterlockedIncrement(&s_compMethodsCount);
     }
 #endif
 

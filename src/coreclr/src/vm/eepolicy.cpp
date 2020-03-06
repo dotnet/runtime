@@ -265,14 +265,7 @@ EPolicyAction EEPolicy::GetFinalAction(EPolicyAction action, Thread *pThread)
             defaultAction = m_DefaultAction[OPR_ThreadAbort];
                 break;
             case eRudeAbortThread:
-                if (pThread && !pThread->HasLockInCurrentDomain())
-                {
-                defaultAction = m_DefaultAction[OPR_ThreadRudeAbortInNonCriticalRegion];
-                }
-                else
-                {
                 defaultAction = m_DefaultAction[OPR_ThreadRudeAbortInCriticalRegion];
-                }
                 break;
             case eUnloadAppDomain:
             defaultAction = m_DefaultAction[OPR_AppDomainUnload];
@@ -591,12 +584,7 @@ EPolicyAction EEPolicy::DetermineResourceConstraintAction(Thread *pThread)
     }
     CONTRACTL_END;
 
-    EPolicyAction action;
-    if (pThread->HasLockInCurrentDomain()) {
-        action = GetEEPolicy()->GetActionOnFailure(FAIL_CriticalResource);
-    }
-    else
-        action = GetEEPolicy()->GetActionOnFailure(FAIL_NonCriticalResource);
+    EPolicyAction action = GetEEPolicy()->GetActionOnFailure(FAIL_CriticalResource);
 
     AppDomain *pDomain = GetAppDomain();
     // If it is default domain, we can not unload the appdomain

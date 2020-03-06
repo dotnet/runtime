@@ -77,3 +77,18 @@ jobs:
       testGroup: innerloop
       nameSuffix: RuntimeFlavor_Mono
       buildArgs: /p:RuntimeFlavor=Mono
+
+#
+# Build Mono + Libraries. This excercises the code path where we build libraries without
+# first building CoreCLR
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: debug
+    platforms:
+    - Windows_NT_x64
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: Mono_Libraries
+      buildArgs: -subsetCategory libraries-mono /p:RuntimeFlavor=Mono

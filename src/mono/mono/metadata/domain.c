@@ -465,7 +465,7 @@ mono_domain_create (void)
 
 	mono_coop_mutex_init_recursive (&domain->lock);
 
-	mono_os_mutex_init_recursive (&domain->assemblies_lock);
+	mono_coop_mutex_init_recursive (&domain->assemblies_lock);
 	mono_os_mutex_init_recursive (&domain->jit_code_hash_lock);
 	mono_os_mutex_init_recursive (&domain->finalizable_objects_hash_lock);
 
@@ -1301,7 +1301,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 #endif
 
 	mono_os_mutex_destroy (&domain->finalizable_objects_hash_lock);
-	mono_os_mutex_destroy (&domain->assemblies_lock);
+	mono_coop_mutex_destroy (&domain->assemblies_lock);
 	mono_os_mutex_destroy (&domain->jit_code_hash_lock);
 
 	mono_coop_mutex_destroy (&domain->lock);

@@ -737,6 +737,32 @@ Frame::Interception StubDispatchFrame::GetInterception()
 }
 
 #ifndef DACCESS_COMPILE
+CallCountingHelperFrame::CallCountingHelperFrame(TransitionBlock *pTransitionBlock, MethodDesc *pMD)
+    : FramedMethodFrame(pTransitionBlock, pMD)
+{
+    WRAPPER_NO_CONTRACT;
+}
+#endif
+
+void CallCountingHelperFrame::GcScanRoots(promote_func *fn, ScanContext *sc)
+{
+    WRAPPER_NO_CONTRACT;
+
+    FramedMethodFrame::GcScanRoots(fn, sc);
+    PromoteCallerStack(fn, sc);
+}
+
+BOOL CallCountingHelperFrame::TraceFrame(Thread *thread, BOOL fromPatch, TraceDestination *trace, REGDISPLAY *regs)
+{
+    WRAPPER_NO_CONTRACT;
+
+    // OnCallCountThresholdReached never directly calls managed code. Returning false instructs the debugger to step out of the
+    // call that erected this frame and continuing trying to trace execution from there.
+    LOG((LF_CORDB, LL_INFO1000, "CallCountingHelperFrame::TraceFrame: return FALSE\n"));
+    return FALSE;
+}
+
+#ifndef DACCESS_COMPILE
 ExternalMethodFrame::ExternalMethodFrame(TransitionBlock * pTransitionBlock)
     : FramedMethodFrame(pTransitionBlock, NULL)
 {
