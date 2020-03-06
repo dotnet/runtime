@@ -636,19 +636,22 @@ def crossgen_framework(args):
 
     il_corelib_filename = args.il_corelib_filename
     ni_files_dirname, debugging_files_dirname = create_output_folders()
-    ni_corelib_filename = os.path.join(ni_files_dirname, os.path.basename(il_corelib_filename))
-    platform_assemblies_paths = [args.core_root]
-    crossgen_results = run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
-    save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
+    g_Framework_Assemblies = [il_corelib_filename] + g_Framework_Assemblies
 
-    def run_crossgen(print_prefix, assembly_name):
-        il_filename = os.path.join(args.core_root, assembly_name)
-        ni_filename = os.path.join(ni_files_dirname, add_ni_extension(assembly_name))
-        crossgen_results = run_crossgen(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname)
-        save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
+    def run_crossgen_helper(print_prefix, assembly_name):
+        if assembly_name == il_corelib_filename:
+            ni_corelib_filename = os.path.join(ni_files_dirname, os.path.basename(il_corelib_filename))
+            platform_assemblies_paths = [args.core_root]
+            crossgen_results = run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
+            save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
+        else:
+            il_filename = os.path.join(args.core_root, assembly_name)
+            ni_filename = os.path.join(ni_files_dirname, add_ni_extension(assembly_name))
+            crossgen_results = run_crossgen(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname)
+            save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
 
     helper = AsyncSubprocessHelper(g_Framework_Assemblies)
-    helper.run_to_completion(run_crossgen)
+    helper.run_to_completion(run_crossgen_helper)
 
     shutil.rmtree(ni_files_dirname, ignore_errors=True)
 
