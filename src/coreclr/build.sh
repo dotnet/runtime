@@ -157,7 +157,7 @@ build_CoreLib_ni()
         exit "$exit_code"
     fi
 
-    if [[ "$__TargetOS" == "Linux" ]]; then
+    if [[ "$__TargetOS" == "linux" ]]; then
         echo "Generating symbol file for System.Private.CoreLib.dll"
         echo "$__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll"
         "$__CrossGenExec" /nologo /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
@@ -228,7 +228,7 @@ build_CoreLib()
             exit "$exit_code"
         fi
 
-        if [[ "$__HostOS" == "OSX" ]]; then
+        if [[ "$__HostOS" == "osx" ]]; then
             cp "$__BinDir/libclrjit.dylib" "$__BinDir/crossgen2/libclrjitilc.dylib"
             cp "$__BinDir/libjitinterface.dylib" "$__BinDir/crossgen2/libjitinterface.dylib"
         else

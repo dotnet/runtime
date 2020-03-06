@@ -58,7 +58,7 @@ package() {
         build.proj \
         /t:BuildTraversalBuildDependencies \
         /p:ConfigurationGroup=Release \
-        /p:TargetOS=Linux \
+        /p:TargetOS=linux \
         /p:PortableBuild=false \
         /p:TargetArchitecture=x64 \
         "/bl:bin/msbuild.$name.traversaldependencies.binlog"
@@ -71,7 +71,7 @@ package() {
         /p:InstallerSourceOSPlatformConfig=linux-x64.Release \
         /p:GenerateProjectInstallers=true \
         /p:ConfigurationGroup=Release \
-        /p:TargetOS=Linux \
+        /p:TargetOS=linux \
         /p:PortableBuild=false \
         /p:TargetArchitecture=x64 \
         "/bl:bin/msbuild.$name.installers.binlog"

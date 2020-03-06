@@ -72,7 +72,7 @@ jobs:
     variables:
     - name: testhostArg
       value: 'generatetesthostonly'
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'win') }}:
       - name: testhostArg
         value: 'buildtesthostonly'
 

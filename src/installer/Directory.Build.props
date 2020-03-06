@@ -126,8 +126,8 @@
 
   <PropertyGroup>
     <DisableCrossgen>false</DisableCrossgen>
-    <!-- Disable cross-gen on FreeBSD for now. This can be revisited when we have full support. -->
-    <DisableCrossgen Condition="'$(TargetOS)'=='FreeBSD'">true</DisableCrossgen>
+    <!-- Disable cross-gen on freebsd for now. This can be revisited when we have full support. -->
+    <DisableCrossgen Condition="'$(TargetOS)'=='freebsd'">true</DisableCrossgen>
     <OutputVersionBadge>$(AssetOutputPath)sharedfx_$(OutputRid)_$(Configuration)_version_badge.svg</OutputVersionBadge>
   </PropertyGroup>
 
@@ -143,12 +143,12 @@
     <SharedFrameworkInstallerStart>$(AssetOutputPath)$(DotnetRuntimeString)</SharedFrameworkInstallerStart>
     <DotnetRuntimeDependenciesPackageInstallerStart>$(AssetOutputPath)$(DotnetRuntimeDependenciesPackageString)</DotnetRuntimeDependenciesPackageInstallerStart>
 
-    <!-- OSX specific intermediate package suffix . OSX specific intermediate packages are suffixed with -internal to avoid name collision for bundle package (dotnet-runtime-*)
+    <!-- osx specific intermediate package suffix . osx specific intermediate packages are suffixed with -internal to avoid name collision for bundle package (dotnet-runtime-*)
          and runtime ( earlier as dotnet-sharedframework-*)	-->
-    <InstallerStartSuffix Condition="'$(TargetOS)' == 'OSX'">internal</InstallerStartSuffix>
-    <SharedHostInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(SharedHostInstallerStart)$(InstallerStartSuffix)-</SharedHostInstallerStart>
-    <HostFxrInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(HostFxrInstallerStart)$(InstallerStartSuffix)-</HostFxrInstallerStart>
-    <SharedFrameworkInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(SharedFrameworkInstallerStart)$(InstallerStartSuffix)-</SharedFrameworkInstallerStart>
+    <InstallerStartSuffix Condition="'$(TargetOS)' == 'osx'">internal</InstallerStartSuffix>
+    <SharedHostInstallerStart Condition="'$(TargetOS)' == 'osx'">$(SharedHostInstallerStart)$(InstallerStartSuffix)-</SharedHostInstallerStart>
+    <HostFxrInstallerStart Condition="'$(TargetOS)' == 'osx'">$(HostFxrInstallerStart)$(InstallerStartSuffix)-</HostFxrInstallerStart>
+    <SharedFrameworkInstallerStart Condition="'$(TargetOS)' == 'osx'">$(SharedFrameworkInstallerStart)$(InstallerStartSuffix)-</SharedFrameworkInstallerStart>
 
   </PropertyGroup>
 
@@ -327,7 +327,7 @@
   <PropertyGroup>
     <CrossGenSymbolExtension>.map</CrossGenSymbolExtension>
     <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'win'">.ni.pdb</CrossGenSymbolExtension>
-    <!-- OSX doesn't have crossgen symbols, yet -->
+    <!-- osx doesn't have crossgen symbols, yet -->
     <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'osx'"></CrossGenSymbolExtension>
   </PropertyGroup>
 

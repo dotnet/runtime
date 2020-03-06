@@ -45,10 +45,10 @@ jobs:
   pool: ${{ parameters.pool }}
   timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
-  # Do not attempt to clean workspace on Linux: the agent might not be able to remove the files
+  # Do not attempt to clean workspace on linux: the agent might not be able to remove the files
   # because they may be owned by "root" due to the way this job uses Docker. We do our own cleanup
   # in this case as a prepare step.
-  ${{ if ne(parameters.osGroup, 'Linux') }}:
+  ${{ if ne(parameters.osGroup, 'linux') }}:
     workspace:
       clean: all
 
@@ -79,17 +79,17 @@ jobs:
       value: /p:OfficialBuildId=$(Build.BuildNumber)
 
   - name: buildCommandSourcesDirectory
-    ${{ if ne(parameters.osGroup, 'Linux') }}:
+    ${{ if ne(parameters.osGroup, 'linux') }}:
       value: '$(Build.SourcesDirectory)/'
     # This job runs within Docker containers, so Build.SourcesDirectory is not accurate.
-    ${{ if eq(parameters.osGroup, 'Linux') }}:
+    ${{ if eq(parameters.osGroup, 'linux') }}:
       value: '/root/runtime/'
 
   ###
   ### Platform-specific variable setup
   ###
 
-  - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+  - ${{ if eq(parameters.osGroup, 'win') }}:
 
     - name: CommonMSBuildArgs
       value: >-
@@ -112,7 +112,7 @@ jobs:
         $(CommonMSBuildArgs)
         $(MsbuildSigningArguments)
 
-  - ${{ if eq(parameters.osGroup, 'OSX') }}:
+  - ${{ if eq(parameters.osGroup, 'osx') }}:
 
     - name: CommonMSBuildArgs
       value: >-
@@ -128,7 +128,7 @@ jobs:
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
 
-  - ${{ if eq(parameters.osGroup, 'Linux') }}:
+  - ${{ if eq(parameters.osGroup, 'linux') }}:
 
     # Preserve the NuGet authentication env vars into the Docker container.
     # The 'NuGetAuthenticate' build step may have set these.
@@ -174,7 +174,7 @@ jobs:
     - name: _DisableCrossgen
       value: false
 
-    - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
+    - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'linux')) }}:
       # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
       # lowercase for RID format. (Detection normally converts, but we're preventing it.)
       - name: OutputRidArg
@@ -346,7 +346,7 @@ jobs:
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
     - task: NuGetAuthenticate@0
 
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'win') }}:
       # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
       # auto-update PRs by preventing the CI build from fetching the new version. Delete the cache.
       - powershell: Remove-Item -Recurse -ErrorAction Ignore "$env:LocalAppData\NuGet\v3-cache"
@@ -467,7 +467,7 @@ jobs:
       continueOnError: true
       condition: succeededOrFailed()
 
-  - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.isOfficialBuild, true)) }}:
+  - ${{ if and(eq(parameters.osGroup, 'win'), eq(parameters.isOfficialBuild, true)) }}:
     - task: NuGetCommand@2
       displayName: Push Visual Studio NuPkgs
       inputs:
@@ -486,7 +486,7 @@ jobs:
       skipTests: $(SkipTests)
       isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
 
-  - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+  - ${{ if ne(parameters.osGroup, 'win') }}:
     - script: set -x && df -h
       displayName: Check remaining storage space
       condition: always()

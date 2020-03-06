@@ -67,7 +67,7 @@ jobs:
         - ${{ parameters.variables }}
 
       steps:
-        - ${{ if eq(parameters.osGroup, 'OSX') }}:
+        - ${{ if eq(parameters.osGroup, 'osx') }}:
           - script: |
               brew install pkgconfig icu4c openssl
               brew link --force icu4c

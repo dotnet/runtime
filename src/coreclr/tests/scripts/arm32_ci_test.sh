@@ -69,7 +69,7 @@ do
         ;;
     esac
 done
-__buildDirName="Linux.${__abi}.${__buildConfig}"
+__buildDirName="linux.${__abi}.${__buildConfig}"
 
 CORECLR_DIR=/opt/code
 ARM_CHROOT_HOME_DIR=/home/coreclr
@@ -110,6 +110,6 @@ chroot ${__ROOTFS_DIR} /bin/bash -x <<EOF
                        --mscorlibDir=${ARM_CHROOT_HOME_DIR}/artifacts/bin/coreclr/${__buildDirName} \
                        --testNativeBinDir=${ARM_CHROOT_HOME_DIR}/artifacts/obj/coreclr/${__buildDirName}/tests \
                        --coreFxBinDir=${ARM_CHROOT_HOME_DIR}/bin/CoreFxBinDir \
-                       --testRootDir=${ARM_CHROOT_HOME_DIR}/bin/tests/Windows_NT.x64.${__buildConfig} \
+                       --testRootDir=${ARM_CHROOT_HOME_DIR}/bin/tests/win.x64.${__buildConfig} \
                        --testDirFile=${ARM_CHROOT_HOME_DIR}/tests/testsRunningInsideARM.txt
 EOF

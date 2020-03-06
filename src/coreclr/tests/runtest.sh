@@ -9,10 +9,10 @@ function print_usage {
     echo 'coreclr/tests/runtest.sh <arch> <configurations>'
     echo ''
     echo 'Optional arguments:'
-    echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/Windows_NT.x64.Debug).'
-    echo '  --testNativeBinDir=<path>        : Directory of the native CoreCLR test build (e.g. runtime/artifacts/obj/Linux.x64.Debug/tests).'
+    echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/win.x64.Debug).'
+    echo '  --testNativeBinDir=<path>        : Directory of the native CoreCLR test build (e.g. runtime/artifacts/obj/linux.x64.Debug/tests).'
     echo '  --coreOverlayDir=<path>          : Directory containing core binaries and test dependencies.'
-    echo '  --coreClrBinDir=<path>           : Directory of the CoreCLR build (e.g. runtime/artifacts/bin/coreclr/Linux.x64.Debug).'
+    echo '  --coreClrBinDir=<path>           : Directory of the CoreCLR build (e.g. runtime/artifacts/bin/coreclr/linux.x64.Debug).'
     echo '  --build-overlay-only             : Build coreoverlay only, and skip running tests.'
     echo '  --disableEventLogging            : Disable the events logged by both VM and Managed Code'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
@@ -78,12 +78,12 @@ function create_testhost
     fi
 
     case "${OSName}" in
-        # Check if we're running under OSX        
+        # Check if we're running under osx        
         Darwin)
             local coreFXTestRemoteURL=$(<${coreClrSrcTestDir}/CoreFX/CoreFXTestListURL_OSX.txt)
             local coreFXTestExclusionDef=nonosxtests
         ;;        
-        # Default to Linux        
+        # Default to linux        
         *)
             local coreFXTestRemoteURL=$(<${coreClrSrcTestDir}/CoreFX/CoreFXTestListURL_Linux.txt)
             local coreFXTestExclusionDef=nonlinuxtests
@@ -126,8 +126,8 @@ function create_testhost
 }
 
 function set_up_core_dump_generation {
-    # We will only enable dump generation here if we're on Mac or Linux
-    if [[ ! ( "$(uname -s)" == "Darwin" || "$(uname -s)" == "Linux" ) ]]; then
+    # We will only enable dump generation here if we're on Mac or linux
+    if [[ ! ( "$(uname -s)" == "Darwin" || "$(uname -s)" == "linux" ) ]]; then
         return
     fi
 
@@ -141,7 +141,7 @@ function set_up_core_dump_generation {
     # Allow dump generation
     ulimit -c unlimited
 
-    if [ "$(uname -s)" == "Linux" ]; then
+    if [ "$(uname -s)" == "linux" ]; then
         if [ -e /proc/self/coredump_filter ]; then
             # Include memory in private and shared file-backed mappings in the dump.
             # This ensures that we can see disassembly from our shared libraries when

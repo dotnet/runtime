@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-if [ "$1" = "Linux" ]; then
+if [ "$1" = "linux" ]; then
     sudo apt update
     if [ "$?" != "0" ]; then
        exit 1;
@@ -9,7 +9,7 @@ if [ "$1" = "Linux" ]; then
     if [ "$?" != "0" ]; then
         exit 1;
     fi
-elif [ "$1" = "OSX" ]; then
+elif [ "$1" = "osx" ]; then
     brew update
     if [ "$?" != "0" ]; then
         exit 1;
@@ -23,7 +23,7 @@ elif [ "$1" = "OSX" ]; then
         exit 1;
     fi
 else
-    echo "Must pass \"Linux\" or \"OSX\" as first argument."
+    echo "Must pass \"linux\" or \"osx\" as first argument."
     exit 1
 fi
 

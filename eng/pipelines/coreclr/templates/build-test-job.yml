@@ -79,10 +79,10 @@ jobs:
     steps:
 
     # Install test build dependencies
-    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+    - ${{ if eq(parameters.osGroup, 'osx') }}:
       - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'win') }}:
       # Necessary to install correct cmake version
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies

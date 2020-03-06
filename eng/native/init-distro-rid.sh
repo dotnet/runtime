@@ -42,7 +42,7 @@ initNonPortableDistroRid()
     local rootfsDir="$4"
     local nonPortableBuildID=""
 
-    if [ "$targetOs" = "Linux" ]; then
+    if [ "$targetOs" = "linux" ]; then
         if [ -e "${rootfsDir}/etc/os-release" ]; then
             source "${rootfsDir}/etc/os-release"
 
@@ -69,7 +69,7 @@ initNonPortableDistroRid()
         fi
     fi
 
-    if [ "$targetOs" = "FreeBSD" ]; then
+    if [ "$targetOs" = "freebsd" ]; then
         __freebsd_major_version=$(freebsd-version | { read v; echo "${v%%.*}"; })
         nonPortableBuildID="freebsd.$__freebsd_major_version-${buildArch}"
     fi
@@ -150,18 +150,18 @@ initDistroRidGlobal()
         export __PortableBuild
         local distroRid=""
 
-        # Check for musl-based distros (e.g Alpine Linux, Void Linux).
+        # Check for musl-based distros (e.g Alpine linux, Void linux).
         if "${rootfsDir}/usr/bin/ldd" --version 2>&1 | grep -q musl ||
                 strings "${rootfsDir}/usr/bin/ldd" 2>&1 | grep -q musl; then
             distroRid="linux-musl-${buildArch}"
         fi
 
         if [ -z "${distroRid}" ]; then
-            if [ "$targetOs" = "Linux" ]; then
+            if [ "$targetOs" = "linux" ]; then
                 distroRid="linux-$buildArch"
-            elif [ "$targetOs" = "OSX" ]; then
+            elif [ "$targetOs" = "osx" ]; then
                 distroRid="osx-$buildArch"
-            elif [ "$targetOs" = "FreeBSD" ]; then
+            elif [ "$targetOs" = "freebsd" ]; then
                 distroRid="freebsd-$buildArch"
             fi
         fi

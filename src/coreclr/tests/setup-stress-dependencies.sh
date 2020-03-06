@@ -106,39 +106,39 @@ fi
 OSName=$(uname -s)
 case "$OSName" in
     Linux)
-        __TargetOS=Linux
-        __HostOS=Linux
+        __TargetOS=linux
+        __HostOS=linux
         ;;
 
     Darwin)
-        __TargetOS=OSX
-        __HostOS=OSX
+        __TargetOS=osx
+        __HostOS=osx
         ;;
 
     FreeBSD)
-        __TargetOS=FreeBSD
-        __HostOS=FreeBSD
+        __TargetOS=freebsd
+        __HostOS=freebsd
         ;;
 
     OpenBSD)
-        __TargetOS=OpenBSD
-        __HostOS=OpenBSD
+        __TargetOS=openbsd
+        __HostOS=openbsd
         ;;
 
-    NetBSD)
-        __TargetOS=NetBSD
-        __HostOS=NetBSD
+    netbsd)
+        __TargetOS=netbsd
+        __HostOS=netbsd
         ;;
 
     SunOS)
-        __TargetOS=SunOS
-        __HostOS=SunOS
+        __TargetOS=sunos
+        __HostOS=sunos
         ;;
 
     *)
-        echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        __TargetOS=Linux
-        __HostOS=Linux
+        echo "Unsupported OS $OSName detected, configuring as if for linux"
+        __TargetOS=linux
+        __HostOS=linux
         ;;
 esac
 
@@ -153,7 +153,7 @@ initDistroRidGlobal "$__TargetOS" x64 "$isPortable"
 # The CoreDisTools package is currently manually packaged and we only have
 # 14.04 and 16.04 packages. Use the oldest package which will work on newer
 # platforms.
-if [ "$__TargetOS" = "Linux" ]; then
+if [ "$__TargetOS" = "linux" ]; then
     if [ "$__BuildArch" = "x64" ]; then
         __DistroRid=ubuntu.14.04-x64
     elif [ "$__BuildArch" = "x86" ]; then

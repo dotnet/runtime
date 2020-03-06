@@ -3,19 +3,19 @@
     <TargetOS Condition="'$(TargetOS)' == ''">$(DefaultOSGroup)</TargetOS>
     <RunWorkingDirectory>$(OutDir)</RunWorkingDirectory>
 
-    <RunScriptInputName Condition="'$(TargetOS)' == 'Windows_NT'">RunnerTemplate.cmd</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' != 'Windows_NT'">RunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'win'">RunnerTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' != 'win'">RunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputPath>$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
 
-    <RunScriptOutputName Condition="'$(TargetOS)' == 'Windows_NT'">RunTests.cmd</RunScriptOutputName>
-    <RunScriptOutputName Condition="'$(TargetOS)' != 'Windows_NT'">RunTests.sh</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(TargetOS)' == 'win'">RunTests.cmd</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(TargetOS)' != 'win'">RunTests.sh</RunScriptOutputName>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
 
-    <RunScriptHostDir Condition="'$(TargetOS)' == 'Windows_NT'">%RUNTIME_PATH%\</RunScriptHostDir>
-    <RunScriptHostDir Condition="'$(TargetOS)' != 'Windows_NT'">$RUNTIME_PATH/</RunScriptHostDir>
+    <RunScriptHostDir Condition="'$(TargetOS)' == 'win'">%RUNTIME_PATH%\</RunScriptHostDir>
+    <RunScriptHostDir Condition="'$(TargetOS)' != 'win'">$RUNTIME_PATH/</RunScriptHostDir>
 
-    <RunScriptHost Condition="'$(TargetOS)' == 'Windows_NT'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
-    <RunScriptHost Condition="'$(TargetOS)' != 'Windows_NT'">$(RunScriptHostDir)dotnet</RunScriptHost>
+    <RunScriptHost Condition="'$(TargetOS)' == 'win'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
+    <RunScriptHost Condition="'$(TargetOS)' != 'win'">$(RunScriptHostDir)dotnet</RunScriptHost>
 
     <!-- TODO: remove rsp argument when rsp files are removed: https://github.com/dotnet/runtime/issues/1980. -->
     <MonoRspFile>$(RunWorkingDirectory)$(MonoRspFileName)</MonoRspFile>
@@ -38,8 +38,8 @@
   <Target Name="GenerateRunScript">
     <PropertyGroup>
       <!-- RSP file support. -->
-      <RunArguments Condition="'$(TargetOS)' == 'Windows_NT'">$(RunArguments) %RSP_FILE%</RunArguments>
-      <RunArguments Condition="'$(TargetOS)' != 'Windows_NT'">$(RunArguments) $RSP_FILE</RunArguments>
+      <RunArguments Condition="'$(TargetOS)' == 'win'">$(RunArguments) %RSP_FILE%</RunArguments>
+      <RunArguments Condition="'$(TargetOS)' != 'win'">$(RunArguments) $RSP_FILE</RunArguments>
 
       <!-- Escape arguments with user inputs. -->
       <RunArguments>$([MSBuild]::Escape('$(RunArguments)'))</RunArguments>
@@ -74,17 +74,17 @@
                        TemplatePath="$(RunScriptInputPath)"
                        OutputPath="$(RunScriptOutputPath)" />
 
-    <Exec Condition="'$(TargetOS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
+    <Exec Condition="'$(TargetOS)' != 'win'" Command="chmod +x $(RunScriptOutputPath)" />
 
     <!-- Generate Mono .rsp file -->
     <!-- TODO: remove when rsp files are removed: https://github.com/dotnet/runtime/issues/1980. -->
     <ItemGroup>
       <_rspFile Include="$(TestRspFile)" Condition="'$(TestRspFile)' != ''" />
-      <_rspFile Include="$(MonoProjectRoot)netcore\CoreFX.issues_linux.rsp" Condition="'$(TargetOS)' == 'Linux'" />
-      <_rspFile Include="$(MonoProjectRoot)netcore\CoreFX.issues_windows.rsp" Condition="'$(TargetOS)' == 'Windows_NT'" />
+      <_rspFile Include="$(MonoProjectRoot)netcore\CoreFX.issues_linux.rsp" Condition="'$(TargetOS)' == 'linux'" />
+      <_rspFile Include="$(MonoProjectRoot)netcore\CoreFX.issues_windows.rsp" Condition="'$(TargetOS)' == 'win'" />
     </ItemGroup>
     <ItemGroup>
-      <_rspFileContent Include="$([System.IO.File]::ReadAllText(%(_rspFile.Identity)))" Condition="'$(TargetOS)' != 'OSX'" />
+      <_rspFileContent Include="$([System.IO.File]::ReadAllText(%(_rspFile.Identity)))" Condition="'$(TargetOS)' != 'osx'" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(MonoRspFile)" Lines="@(_rspFileContent)" Overwrite="true" />

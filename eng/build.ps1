@@ -24,7 +24,7 @@ function Get-Help() {
   Write-Host "  -subset                   Build a subset, print available subsets with -subset help"
   Write-Host "  -subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
   Write-Host "  -vs                       Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
-  Write-Host "  -os                       Build operating system: Windows_NT or Unix"
+  Write-Host "  -os                       Build operating system: win or unix"
   Write-Host "  -arch                     Build platform: x86, x64, arm or arm64"
   Write-Host "  -configuration            Build configuration: Debug, Release or [CoreCLR]Checked (short: -c)"
   Write-Host "  -runtimeConfiguration     Runtime build configuration: Debug, Release or [CoreCLR]Checked"
@@ -89,8 +89,8 @@ if ($vs) {
     $archTestHost = if ($arch) { $arch } else { "x64" }
 
     # This tells .NET Core to use the same dotnet.exe that build scripts use
-    $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\netcoreapp5.0-Windows_NT-$configuration-$archTestHost";
-    $env:DEVPATH="$PSScriptRoot\..\artifacts\bin\testhost\net472-Windows_NT-$configuration-$archTestHost";
+    $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\netcoreapp5.0-win-$configuration-$archTestHost";
+    $env:DEVPATH="$PSScriptRoot\..\artifacts\bin\testhost\net472-win-$configuration-$archTestHost";
   }
 
   # This tells MSBuild to load the SDK from the directory of the bootstrapped SDK

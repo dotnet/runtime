@@ -45,10 +45,10 @@ jobs:
         - HelixPreCommand: ''
 
         - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-          - ${{ if eq( parameters.osGroup, 'Windows_NT') }}:
+          - ${{ if eq( parameters.osGroup, 'win') }}:
             - HelixPreCommand: 'set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
             - IsInternal: -Internal
-          - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+          - ${{ if ne(parameters.osGroup, 'win') }}:
             - HelixPreCommand: 'export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
             - IsInternal: --internal
             
@@ -73,11 +73,11 @@ jobs:
           - ${{ step }}
         - powershell: $(Build.SourcesDirectory)\eng\common\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) ${{ parameters.extraSetupParameters }}
           displayName: Performance Setup (Windows)
-          condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
+          condition: and(succeeded(), eq(variables['Agent.Os'], 'win'))
           continueOnError: ${{ parameters.continueOnError }}
         - script: $(Build.SourcesDirectory)/eng/common/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) ${{ parameters.extraSetupParameters }}
           displayName: Performance Setup (Unix)
-          condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
+          condition: and(succeeded(), ne(variables['Agent.Os'], 'win'))
           continueOnError: ${{ parameters.continueOnError }}
         - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments)
           displayName: Run ci setup script

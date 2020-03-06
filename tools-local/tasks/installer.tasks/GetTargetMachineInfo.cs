@@ -37,15 +37,15 @@ namespace Microsoft.DotNet.Build.Tasks
             }
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                TargetOS = "Windows_NT";
+                TargetOS = "win";
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                TargetOS = "Linux";
+                TargetOS = "linux";
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                TargetOS = "OSX";
+                TargetOS = "osx";
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")))
-                TargetOS = "FreeBSD";
+                TargetOS = "freebsd";
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")))
-                TargetOS = "NetBSD";
+                TargetOS = "netbsd";
 
             RuntimeIdentifier = Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.GetRuntimeIdentifier();
 

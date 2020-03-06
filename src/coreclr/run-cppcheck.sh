@@ -39,9 +39,9 @@ SloccountOutput="sloccount.sc"
 # Get the number of processors available to the scheduler
 # Other techniques such as `nproc` only get the number of
 # processors available to a single process.
-if [ `uname` = "FreeBSD" ]; then
+if [ `uname` = "freebsd" ]; then
 NumProc=`sysctl hw.ncpu | awk '{ print $2+1 }'`
-elif [ `uname` = "NetBSD" ]; then
+elif [ `uname` = "netbsd" ]; then
 NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
 else
 NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))

@@ -35,12 +35,12 @@ Corefx_url = 'https://github.com/dotnet/corefx.git'
 
 # This should be factored out of build.sh
 Unix_name_map = {
-    'Linux': 'Linux',
-    'Darwin': 'OSX',
-    'FreeBSD': 'FreeBSD',
-    'OpenBSD': 'OpenBSD',
-    'NetBSD': 'NetBSD',
-    'SunOS': 'SunOS'
+    'Linux': 'linux',
+    'Darwin': 'osx',
+    'FreeBSD': 'freebsd',
+    'OpenBSD': 'openbsd',
+    'NetBSD': 'netbsd',
+    'SunOS': 'sunos'
 }
 
 Is_windows = (os.name == 'nt')
@@ -228,7 +228,7 @@ def main(args):
     arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, exclusion_rsp_file, no_run_tests = validate_args(
         args)
 
-    clr_os = 'Windows_NT' if Is_windows else Unix_name_map[os.uname()[0]]
+    clr_os = 'win' if Is_windows else Unix_name_map[os.uname()[0]]
 
     core_root = os.path.join(clr_root,
                              'bin',

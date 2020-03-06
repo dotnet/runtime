@@ -127,7 +127,7 @@ generate_layout()
     # Make sure to copy over the pulled down packages
     cp -r "$__BinDir"/* "$CORE_ROOT/" > /dev/null
 
-    if [[ "$__TargetOS" != "OSX" ]]; then
+    if [[ "$__TargetOS" != "osx" ]]; then
         nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
         echo "Resolve runtime dependences via $nextCommand"
         eval $nextCommand

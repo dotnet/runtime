@@ -61,7 +61,7 @@
       <PropertyGroup>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetOS)'=='Windows_NT'">
+    <When Condition="'$(TargetOS)'=='win'">
       <PropertyGroup>
         <!-- Since cross compilation of test builds on Windows is possible, the
              TargetsWindows property may already be set. Only set the property if
@@ -70,21 +70,21 @@
         <TestNugetRuntimeId>win-$(__BuildArch)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetOS)'=='Linux'">
+    <When Condition="'$(TargetOS)'=='linux'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsLinux>true</TargetsLinux>
         <TestNugetRuntimeId>ubuntu.14.04-$(__BuildArch)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetOS)'=='OSX'">
+    <When Condition="'$(TargetOS)'=='osx'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsOSX>true</TargetsOSX>
         <TestNugetRuntimeId>osx.10.12-$(__BuildArch)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
-    <When Condition="'$(TargetOS)'=='FreeBSD'">
+    <When Condition="'$(TargetOS)'=='freebsd'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsFreeBSD>true</TargetsFreeBSD>
@@ -109,7 +109,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'FreeBSD' AND '$(TargetOS)' != 'Linux' AND '$(TargetOS)' != 'OSX'">true</TargetsUnknownUnix>
+    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'freebsd' AND '$(TargetOS)' != 'linux' AND '$(TargetOS)' != 'osx'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
   </PropertyGroup>

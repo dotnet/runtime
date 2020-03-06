@@ -97,10 +97,10 @@ jobs:
       value: ''
 
     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if ne(parameters.osGroup, 'win') }}:
         - name: priorityArg
           value: 'priority1'
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if eq(parameters.osGroup, 'win') }}:
         - name: priorityArg
           value: '-priority=1'
 

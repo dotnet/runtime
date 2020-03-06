@@ -78,7 +78,7 @@ collection_help = "Which collection type to use for replays. Default is to run e
 
 log_file_help = "Write output to a log file. Requires --sequential."
 
-host_os_help = "OS (Windows_NT, OSX, Linux). Default: current OS."
+host_os_help = "OS (win, osx, linux). Default: current OS."
 
 arch_help = "Architecture (x64, x86, arm, arm64). Default: current architecture."
 
@@ -452,15 +452,15 @@ class SuperPMICollect:
 
         """
 
-        if coreclr_args.host_os == "OSX":
+        if coreclr_args.host_os == "osx":
             self.collection_shim_name = "libsuperpmi-shim-collector.dylib"
             self.mcs_tool_name = "mcs"
             self.corerun_tool_name = "corerun"
-        elif coreclr_args.host_os == "Linux":
+        elif coreclr_args.host_os == "linux":
             self.collection_shim_name = "libsuperpmi-shim-collector.so"
             self.mcs_tool_name = "mcs"
             self.corerun_tool_name = "corerun"
-        elif coreclr_args.host_os == "Windows_NT":
+        elif coreclr_args.host_os == "win":
             self.collection_shim_name = "superpmi-shim-collector.dll"
             self.mcs_tool_name = "mcs.exe"
             self.corerun_tool_name = "corerun.exe"
@@ -933,7 +933,7 @@ class SuperPMIReplay:
                     print("Jit failed to initialize.")
                 elif return_code == 1:
                     print("Compilation failures.")
-                elif return_code == 139 and self.coreclr_args != "Windows_NT":
+                elif return_code == 139 and self.coreclr_args != "win":
                     print("Fatal error, SuperPMI has returned SIG_SEV (segmentation fault).")
                 else:
                     print("Unknown error code.")
@@ -1111,7 +1111,7 @@ class SuperPMIReplayAsmDiffs:
                     print("Jit failed to initialize.")
                 elif return_code == 1:
                     print("Compilation failures.")
-                elif return_code == 139 and self.coreclr_args != "Windows_NT":
+                elif return_code == 139 and self.coreclr_args != "win":
                     print("Fatal error, SuperPMI has returned SIG_SEV (segmentation fault).")
                 else:
                     print("Unknown error code.")
@@ -1167,7 +1167,7 @@ class SuperPMIReplayAsmDiffs:
                     print("Jit failed to initialize.")
                 elif return_code == 1:
                     print("Compilation failures.")
-                elif return_code == 139 and self.coreclr_args != "Windows_NT":
+                elif return_code == 139 and self.coreclr_args != "win":
                     print("Fatal error, SuperPMI has returned SIG_SEV (segmentation fault).")
                 elif return_code == 2:
                     print("Asm diffs found.")
@@ -1534,7 +1534,7 @@ def determine_coredis_tools(coreclr_args):
         coredistools_dll_name = "libcoredistools.dylib"
     elif coreclr_args.host_os.lower() == "linux":
         coredistools_dll_name = "libcoredistools.so"
-    elif coreclr_args.host_os.lower() == "windows_nt":
+    elif coreclr_args.host_os.lower() == "win":
         coredistools_dll_name = "coredistools.dll"
     else:
         raise RuntimeError("Unknown host os: {}").format(coreclr_args.host_os)
@@ -1614,11 +1614,11 @@ def determine_jit_name(coreclr_args):
     elif coreclr_args.altjit == True:
         jit_base_name = "protononjit"
 
-    if coreclr_args.host_os == "OSX":
+    if coreclr_args.host_os == "osx":
         return "lib" + jit_base_name + ".dylib"
-    elif coreclr_args.host_os == "Linux":
+    elif coreclr_args.host_os == "linux":
         return "lib" + jit_base_name + ".so"
-    elif coreclr_args.host_os == "Windows_NT":
+    elif coreclr_args.host_os == "win":
         return jit_base_name + ".dll"
     else:
         raise RuntimeError("Unknown OS.")
@@ -1633,11 +1633,11 @@ def determine_superpmi_tool_name(coreclr_args):
         superpmi_tool_name(str) : name of the jit for this OS
     """
 
-    if coreclr_args.host_os == "OSX":
+    if coreclr_args.host_os == "osx":
         return "superpmi"
-    elif coreclr_args.host_os == "Linux":
+    elif coreclr_args.host_os == "linux":
         return "superpmi"
-    elif coreclr_args.host_os == "Windows_NT":
+    elif coreclr_args.host_os == "win":
         return "superpmi.exe"
     else:
         raise RuntimeError("Unknown OS.")
@@ -1651,7 +1651,7 @@ def print_platform_specific_environment_vars(coreclr_args, var, value):
         value (str): value being set.
     """
 
-    if coreclr_args.host_os == "Windows_NT":
+    if coreclr_args.host_os == "win":
         print("set {}={}".format(var, value))
     else:
         print("export {}={}".format(var, value))
@@ -1696,9 +1696,9 @@ def download_index(coreclr_args):
         Example:
 
         {
-            "frameworks": "Windows_NT.x64.Checked.frameworks.mch",
-            "default": "Windows_NT.x64.Checked.mch",
-            "tests": "Windows_NT.x64.Checked.tests.mch"
+            "frameworks": "win.x64.Checked.frameworks.mch",
+            "default": "win.x64.Checked.mch",
+            "tests": "win.x64.Checked.tests.mch"
         }
     """
 
@@ -2038,18 +2038,18 @@ def setup_args(args):
         determined_arch = None
         determined_build_type = None
         if standard_location:
-            # Get os/arch/flavor directory, e.g. split "F:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked" with "F:\gh\runtime\artifacts\bin\coreclr"
+            # Get os/arch/flavor directory, e.g. split "F:\gh\runtime\artifacts\bin\coreclr\win.x64.Checked" with "F:\gh\runtime\artifacts\bin\coreclr"
             # yielding
             # [0]: ""
-            # [1]: "\Windows_NT.x64.Checked"
+            # [1]: "\win.x64.Checked"
             standard_location_split = os.path.dirname(coreclr_args.jit_path).split(os.path.dirname(coreclr_args.product_location))
             assert(coreclr_args.host_os in standard_location_split[1])
 
             # Get arch/flavor. Remove leading slash.
             specialized_path = standard_location_split[1].split(os.path.sep)[1]
 
-            # Split components: "Windows_NT.x64.Checked" into:
-            # [0]: "Windows_NT"
+            # Split components: "win.x64.Checked" into:
+            # [0]: "win"
             # [1]: "x64"
             # [2]: "Checked"
             determined_split = specialized_path.split(".")
@@ -2147,18 +2147,18 @@ def setup_args(args):
         determined_arch = None
         determined_build_type = None
         if standard_location:
-            # Get os/arch/flavor directory, e.g. split "F:\gh\runtime\artifacts\bin\coreclr\Windows_NT.x64.Checked" with "F:\gh\runtime\artifacts\bin\coreclr"
+            # Get os/arch/flavor directory, e.g. split "F:\gh\runtime\artifacts\bin\coreclr\win.x64.Checked" with "F:\gh\runtime\artifacts\bin\coreclr"
             # yielding
             # [0]: ""
-            # [1]: "\Windows_NT.x64.Checked"
+            # [1]: "\win.x64.Checked"
             standard_location_split = os.path.dirname(coreclr_args.jit_path).split(os.path.dirname(coreclr_args.product_location))
             assert(coreclr_args.host_os in standard_location_split[1])
 
             # Get arch/flavor. Remove leading slash.
             specialized_path = standard_location_split[1].split(os.path.sep)[1]
 
-            # Split components: "Windows_NT.x64.Checked" into:
-            # [0]: "Windows_NT"
+            # Split components: "win.x64.Checked" into:
+            # [0]: "win"
             # [1]: "x64"
             # [2]: "Checked"
             determined_split = specialized_path.split(".")

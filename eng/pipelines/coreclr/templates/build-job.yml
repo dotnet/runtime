@@ -57,19 +57,19 @@ jobs:
         value: '-stripsymbols'
     - name: clangArg
       value: ''
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if ne(parameters.osGroup, 'win') }}:
       - name: clangArg
         value: '-clang9'
-      # Our FreeBSD doesn't yet detect available clang versions, so pass it explicitly.
-      - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+      # Our freebsd doesn't yet detect available clang versions, so pass it explicitly.
+      - ${{ if eq(parameters.osGroup, 'freebsd') }}:
         - name: clangArg
           value: '-clang6.0'
-      # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
-      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
+      # Building for x64 MUSL happens on Alpine linux and we need to use the stable version available there
+      - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
         - name: clangArg
           value: ''
       # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
-      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - ${{ if eq(parameters.osGroup, 'osx') }}:
         - name: clangArg
           value: ''
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
@@ -89,7 +89,7 @@ jobs:
     - name: enforcePgoArg
       value: ''
     # The EnforcePGO script is only supported on Windows and is not supported on arm or arm64.
-    - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'Windows_NT'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))))) }}:
+    - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'win'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))))) }}:
       - name: enforcePgoArg
         value: '-enforcepgo'
 
@@ -98,13 +98,13 @@ jobs:
     steps:
 
     # Install native dependencies
-    # Linux builds use docker images with dependencies preinstalled,
-    # and FreeBSD builds use a build agent with dependencies
-    # preinstalled, so we only need this step for OSX and Windows.
-    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+    # linux builds use docker images with dependencies preinstalled,
+    # and freebsd builds use a build agent with dependencies
+    # preinstalled, so we only need this step for osx and Windows.
+    - ${{ if eq(parameters.osGroup, 'osx') }}:
       - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'win') }}:
       # Necessary to install python
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
@@ -119,16 +119,16 @@ jobs:
           installDotnet: true
 
     # Build CoreCLR Runtime
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if ne(parameters.osGroup, 'win') }}:
       - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
         displayName: Build CoreCLR Runtime
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'win') }}:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg)
         displayName: Build CoreCLR Runtime
 
-    - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(parameters.archType, 'x86')) }}:
+    - ${{ if and(eq(parameters.osGroup, 'win'), ne(parameters.archType, 'x86')) }}:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac $(officialBuildIdArg)
-        displayName: Build Cross OS Linux DAC for Windows
+        displayName: Build Cross OS linux DAC for Windows
 
     # Build CoreCLR Managed Components
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib-nativecorelib-tools-packages $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci
@@ -139,7 +139,7 @@ jobs:
       displayName: Build native test components
 
     # Sign on Windows
-    - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.signBinaries, 'true')) }}:
+    - ${{ if and(eq(parameters.osGroup, 'win'), eq(parameters.signBinaries, 'true')) }}:
       - powershell: eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 /p:ArcadeBuild=true /p:OfficialBuild=true /p:TargetOS=$(osGroup) /p:BuildArch=$(archType) /p:BuildType=$(_BuildConfig) /p:DotNetSignType=$env:_SignType -projects $(Build.SourcesDirectory)\eng\empty.csproj
         displayName: Sign Binaries
 

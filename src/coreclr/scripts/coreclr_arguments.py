@@ -74,7 +74,7 @@ class CoreclrArguments:
 
         self.valid_arches = ["x64", "x86", "arm", "arm64"]
         self.valid_build_types = ["Debug", "Checked", "Release"]
-        self.valid_host_os = ["Windows_NT", "OSX", "Linux"]
+        self.valid_host_os = ["win", "osx", "linux"]
 
         self.__initialize__(args)
 
@@ -178,11 +178,11 @@ class CoreclrArguments:
     @staticmethod
     def provide_default_host_os():
         if sys.platform == "linux" or sys.platform == "linux2":
-            return "Linux"
+            return "linux"
         elif sys.platform == "darwin":
-            return "OSX"
+            return "osx"
         elif sys.platform == "win32":
-            return "Windows_NT"
+            return "win"
         else:
             print("Unknown OS: %s" % self.host_os)
             sys.exit(1)

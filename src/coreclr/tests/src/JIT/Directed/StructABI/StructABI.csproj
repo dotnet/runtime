@@ -9,9 +9,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="StructABI.cs" />
-    <Compile Include="StructABI.Windows.cs" Condition="'$(TargetOS)' == 'Windows_NT'" />
-    <Compile Include="StructABI.Unix.cs" Condition="'$(TargetOS)' == 'Linux' Or '$(TargetOS)' == 'FreeBSD'" />
-    <Compile Include="StructABI.OSX.cs" Condition="'$(TargetOS)' == 'OSX'" />
+    <Compile Include="StructABI.Windows.cs" Condition="'$(TargetOS)' == 'win'" />
+    <Compile Include="StructABI.Unix.cs" Condition="'$(TargetOS)' == 'linux' Or '$(TargetOS)' == 'freebsd'" />
+    <Compile Include="StructABI.OSX.cs" Condition="'$(TargetOS)' == 'osx'" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="CMakeLists.txt" />

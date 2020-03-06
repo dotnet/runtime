@@ -14,7 +14,7 @@
     <_testFilter Condition="'$(_withCategories)' != ''">$(_withCategories.Replace(';', '&amp;category='))</_testFilter>
     <_testFilter Condition="'$(_withoutCategories)' != ''">$(_testFilter)$(_withoutCategories.Replace(';', '&amp;category!='))</_testFilter>
     <!-- On Windows in bat scripts with delayed expansion enabled we need to escape the bang operator. -->
-    <_testFilter Condition="'$(TargetOS)' == 'Windows_NT'">$(_testFilter.Replace('!=', '^!='))</_testFilter>
+    <_testFilter Condition="'$(TargetOS)' == 'win'">$(_testFilter.Replace('!=', '^!='))</_testFilter>
     <_testFilter>$(_testFilter.Trim('&amp;'))</_testFilter>
     <!-- On Windows in bat scripts with delayed expansion enabled we need to escape the bang operator. -->
     <_testFilter Condition="'$(TestFilter)' != ''">$(_testFilter)&amp;$(TestFilter.Replace('!=', '^!='))</_testFilter>

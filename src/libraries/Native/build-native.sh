@@ -27,7 +27,7 @@ handle_arguments() {
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __BuildArch=x64
-__TargetOS=Linux
+__TargetOS=linux
 __BuildType=Debug
 __CMakeArgs=""
 __Compiler=clang
@@ -62,7 +62,7 @@ else
     source "$EMSDK_PATH"/emsdk_env.sh
 fi
 
-# set default OSX deployment target
+# set default osx deployment target
 if [[ "$__TargetOS" == osx ]]; then
     __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
 fi

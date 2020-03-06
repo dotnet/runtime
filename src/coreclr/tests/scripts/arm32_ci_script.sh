@@ -10,16 +10,16 @@ function usage {
     echo '    corefx source is at ~/cfx'
     echo '    --testRootDir and --mscorlibDir have been built on Windows/downloaded from dotnet-ci.cloudapp.net'
     echo '    --coreFxNativeBinDir has been built using cross build'
-    echo '    --coreFxBinDir has been built on Linux'
+    echo '    --coreFxBinDir has been built on linux'
     echo '$ cd ~/clr'
     echo '$ ./tests/scripts/arm32_ci_script.sh'
     echo '    --emulatorPath=/opt/linux-arm-emulator'
     echo '    --mountPath=/opt/linux-arm-emulator-root'
     echo '    --buildConfig=Release'
-    echo '    --testRootDir=~/Downloads/Windows_NT.x64.Release'
-    echo '    --mscorlibDir=~/clr/bin/bin/coreclr/Linux.armel.Release'
-    echo '    --coreFxNativeBinDir=~/cfx/bin/Linux.armel.Release'
-    echo '    --coreFxBinDir="~/cfx/bin/Linux.AnyCPU.Release;~/cfx/bin/Unix.AnyCPU.Release;~/cfx/bin/AnyOS.AnyCPU.Release"'
+    echo '    --testRootDir=~/Downloads/win.x64.Release'
+    echo '    --mscorlibDir=~/clr/bin/bin/coreclr/linux.armel.Release'
+    echo '    --coreFxNativeBinDir=~/cfx/bin/linux.armel.Release'
+    echo '    --coreFxBinDir="~/cfx/bin/linux.AnyCPU.Release;~/cfx/bin/Unix.AnyCPU.Release;~/cfx/bin/AnyOS.AnyCPU.Release"'
     echo '    --testDirFile=~/clr/tests/testsRunningInsideARM.txt'
     echo ''
     echo 'Required Arguments:'
@@ -33,12 +33,12 @@ function usage {
     echo '    --mode=<mode>                      : docker or emulator (default)'
     echo '    --arm                              : Build using hard ABI'
     echo '    --armel                            : Build using softfp ABI (default)'
-    echo '    --linuxCodeName=<name>             : Code name for Linux: For arm, trusty (default) and xenial. For armel, tizen'
+    echo '    --linuxCodeName=<name>             : Code name for linux: For arm, trusty (default) and xenial. For armel, tizen'
     echo '    --skipRootFS                       : Skip building rootfs'
     echo '    --skipTests                        : Presenting this option skips testing the generated binaries'
     echo '                                         If this option is not presented, then tests are run by default'
     echo '                                         using the other test related options'
-    echo '    --skipmscorlib                     : Skips generating mscorlib.dll on Linux'
+    echo '    --skipmscorlib                     : Skips generating mscorlib.dll on linux'
     echo '                                         If tests are run and this option is not used,'
     echo '                                         then --mscorlibDir option to this script is mandatory'
     echo '    -v --verbose                       : Build made verbose'
@@ -421,7 +421,7 @@ __coreFxNativeBinDir=
 __coreFxBinDir=
 __testDirFile=
 __verboseFlag=
-__targetOS="Linux"
+__targetOS="linux"
 __buildArch="armel"
 __linuxCodeName="tizen"
 __skipRootFS=0

@@ -14,10 +14,10 @@
 
   <PropertyGroup>
     <TargetOSTrait Condition="'$(TargetOS)' == 'win'">nonwindowstests</TargetOSTrait>
-    <TargetOSTrait Condition="'$(TargetOS)' == 'Linux'">nonlinuxtests</TargetOSTrait>
-    <TargetOSTrait Condition="'$(TargetOS)' == 'OSX'">nonosxtests</TargetOSTrait>
-    <TargetOSTrait Condition="'$(TargetOS)' == 'FreeBSD'">nonfreebsdtests</TargetOSTrait>
-    <TargetOSTrait Condition="'$(TargetOS)' == 'NetBSD'">nonnetbsdtests</TargetOSTrait>
+    <TargetOSTrait Condition="'$(TargetOS)' == 'linux'">nonlinuxtests</TargetOSTrait>
+    <TargetOSTrait Condition="'$(TargetOS)' == 'osx'">nonosxtests</TargetOSTrait>
+    <TargetOSTrait Condition="'$(TargetOS)' == 'freebsd'">nonfreebsdtests</TargetOSTrait>
+    <TargetOSTrait Condition="'$(TargetOS)' == 'netbsd'">nonnetbsdtests</TargetOSTrait>
 
     <TestRunnerAdditionalArguments Condition="'$(TargetOSTrait)' != ''">-notrait category=$(TargetOSTrait)</TestRunnerAdditionalArguments>
   </PropertyGroup>

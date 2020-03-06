@@ -114,9 +114,9 @@ def main(argv):
 
     cleanup(jitUtilsPath, '')
 
-    if platform == 'Linux' or platform == 'OSX':
+    if platform == 'linux' or platform == 'osx':
         bootstrapFilename = "bootstrap.sh"
-    elif platform == 'Windows_NT':
+    elif platform == 'win':
         bootstrapFilename = "bootstrap.cmd"
 
     bootstrapUrl = "https://raw.githubusercontent.com/dotnet/jitutils/master/" + bootstrapFilename
@@ -133,7 +133,7 @@ def main(argv):
             print("Did not download bootstrap!")
             return -1
 
-        if platform == 'Windows_NT':
+        if platform == 'win':
             # Need to ensure we have Windows line endings on the downloaded script file,
             # which is downloaded with Unix line endings.
             print('Convert', bootstrapPath, 'to Windows line endings')
@@ -149,16 +149,16 @@ def main(argv):
 
         # On *nix platforms, we need to make the bootstrap file executable
 
-        if platform == 'Linux' or platform == 'OSX':
+        if platform == 'linux' or platform == 'osx':
             print("Making bootstrap executable")
             os.chmod(bootstrapPath, 0o751)
 
         # Run bootstrap
-        if platform == 'Linux' or platform == 'OSX':
+        if platform == 'linux' or platform == 'osx':
             print('Running:', 'bash', bootstrapPath)
             proc = subprocess.Popen(['bash', bootstrapPath], env=my_env)
             output,error = proc.communicate()
-        elif platform == 'Windows_NT':
+        elif platform == 'win':
             print('Running:', bootstrapPath)
             proc = subprocess.Popen([bootstrapPath], env=my_env)
             output,error = proc.communicate()
@@ -180,9 +180,9 @@ def main(argv):
 
         jitformat = jitutilsBin
 
-        if platform == 'Linux' or platform == 'OSX':
+        if platform == 'linux' or platform == 'osx':
             jitformat = os.path.join(jitformat, "jit-format")
-        elif platform == 'Windows_NT':
+        elif platform == 'win':
             jitformat = os.path.join(jitformat,"jit-format.bat")
         errorMessage = ""
 
@@ -231,7 +231,7 @@ def main(argv):
         print(errorMessage)
         print("\nOr download and apply generated patch:")
         print("1. From the GitHub 'Checks' page on the Pull Request, with the failing Formatting")
-        print("   job selected (e.g., 'Formatting Linux x64'), click the 'View more details on")
+        print("   job selected (e.g., 'Formatting linux x64'), click the 'View more details on")
         print("   Azure Pipelines' link.")
         print("3. Select the 'Summary' tab.")
         print("4. Open the 'Build artifacts published' entry.")

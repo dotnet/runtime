@@ -40,7 +40,7 @@ steps:
       WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
       Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    condition: and(${{ parameters.condition }}, eq(variables['Agent.Os'], 'Windows_NT'))
+    condition: and(${{ parameters.condition }}, eq(variables['Agent.Os'], 'win'))
     continueOnError: ${{ parameters.continueOnError }}
   - script: $BUILD_SOURCESDIRECTORY/eng/common/msbuild.sh $BUILD_SOURCESDIRECTORY/eng/common/performance/perfhelixpublish.proj /restore /t:Test /bl:$BUILD_SOURCESDIRECTORY/artifacts/log/$BuildConfig/SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }} (Unix)
@@ -62,5 +62,5 @@ steps:
       WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
       Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    condition: and(${{ parameters.condition }}, ne(variables['Agent.Os'], 'Windows_NT'))
+    condition: and(${{ parameters.condition }}, ne(variables['Agent.Os'], 'win'))
     continueOnError: ${{ parameters.continueOnError }}

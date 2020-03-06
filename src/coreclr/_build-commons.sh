@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-usage_list+=("-coverage: optional argument to enable code coverage build (currently supported only for Linux and OSX).")
+usage_list+=("-coverage: optional argument to enable code coverage build (currently supported only for linux and osx).")
 usage_list+=("-skipmanaged: do not build managed components.")
 usage_list+=("-skipnative: do not build native components.")
 

@@ -33,7 +33,7 @@ build_CoreLib_ni()
         exit "$exit_code"
     fi
 
-    if [[ "$__TargetOS" == "Linux" ]]; then
+    if [[ "$__TargetOS" == "linux" ]]; then
         echo "Generating symbol file for System.Private.CoreLib.dll"
         echo "$__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll"
         "$__CrossGenExec" /nologo /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1

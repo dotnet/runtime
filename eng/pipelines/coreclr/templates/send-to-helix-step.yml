@@ -23,7 +23,7 @@ parameters:
   coreClrRepoRoot: ''
 
 steps:
-- ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+- ${{ if eq(parameters.osGroup, 'win') }}:
   # TODO: Remove and consolidate this when we move to arcade via init-tools.cmd.
   - powershell: $(Build.SourcesDirectory)\eng\common\build.ps1 /p:DotNetPublishToBlobFeed=true -ci -restore -projects $(Build.SourcesDirectory)\eng\empty.csproj
     displayName: Restore blob feed tasks
@@ -58,13 +58,13 @@ steps:
       # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
       NUGET_PACKAGES: $(Build.SourcesDirectory)\.packages 
 
-- ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+- ${{ if ne(parameters.osGroup, 'win') }}:
   # TODO: Remove and consolidate this when we move to arcade via init-tools.sh.
   - script: $(Build.SourcesDirectory)/eng/common/build.sh /p:DotNetPublishToBlobFeed=true --ci --restore --projects $(Build.SourcesDirectory)/eng/empty.csproj
     displayName: Restore blob feed tasks
     ${{ if ne(parameters.condition, '') }}:
       condition: ${{ parameters.condition }}
-    ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+    ${{ if eq(parameters.osGroup, 'freebsd') }}:
       env:
         # Arcade uses this SDK instead of trying to restore one.
         DotNetCoreSdkDir: /usr/local/dotnet

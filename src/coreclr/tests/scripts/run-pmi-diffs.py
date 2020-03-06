@@ -57,16 +57,16 @@ Docker_opts_arm64 = '-e ROOTFS_DIR=/crossrootfs/arm64'
 
 # This should be factored out of build.sh
 Unix_name_map = {
-    'Linux': 'Linux',
-    'Darwin': 'OSX',
-    'FreeBSD': 'FreeBSD',
-    'OpenBSD': 'OpenBSD',
-    'NetBSD': 'NetBSD',
-    'SunOS': 'SunOS'
+    'Linux': 'linux',
+    'Darwin': 'osx',
+    'FreeBSD': 'freebsd',
+    'OpenBSD': 'openbsd',
+    'NetBSD': 'netbsd',
+    'SunOS': 'sunos'
 }
 
 Is_windows = (os.name == 'nt')
-Clr_os = 'Windows_NT' if Is_windows else Unix_name_map[os.uname()[0]]
+Clr_os = 'win' if Is_windows else Unix_name_map[os.uname()[0]]
 
 ##########################################################################
 # Delete protocol
@@ -315,7 +315,7 @@ def baseline_build():
         buildOpts = ''
         dockerCmd = ''
         if not Is_windows and (arch == 'arm' or arch == 'arm64'):
-            # Linux arm and arm64 builds are cross-compilation builds using Docker.
+            # linux arm and arm64 builds are cross-compilation builds using Docker.
             if arch == 'arm':
                 dockerFile = Docker_name_arm32
                 dockerOpts = Docker_opts_arm32
@@ -442,16 +442,16 @@ def do_pmi_diffs():
     dotnetcliUrl = ""
     dotnetcliFilename = ""
 
-    if Clr_os == 'Linux' and arch == 'x64':
+    if Clr_os == 'linux' and arch == 'x64':
         dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.402/dotnet-sdk-2.1.402-linux-x64.tar.gz"
-    elif Clr_os == 'Linux' and arch == 'arm':
+    elif Clr_os == 'linux' and arch == 'arm':
         dotnetcliUrl = "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/release/2.1.4xx/dotnet-sdk-latest-linux-arm.tar.gz"
-    elif Clr_os == 'Linux' and arch == 'arm64':
+    elif Clr_os == 'linux' and arch == 'arm64':
         # Use the latest (3.0) dotnet SDK. Earlier versions don't work.
         dotnetcliUrl = "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-linux-arm64.tar.gz"
-    elif Clr_os == 'OSX':
+    elif Clr_os == 'osx':
         dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.402/dotnet-sdk-2.1.402-osx-x64.tar.gz"
-    elif Clr_os == 'Windows_NT':
+    elif Clr_os == 'win':
         dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.402/dotnet-sdk-2.1.402-win-x64.zip"
     else:
         log('ERROR: unknown or unsupported OS (%s) architecture (%s) combination' % (Clr_os, arch))

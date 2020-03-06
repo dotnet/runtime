@@ -3,13 +3,13 @@
 
   <!--
     Determine CoreCLR/Libraries TargetOS based on Installer TargetOS. For example,
-    Installer uses Unix when applicable, but others go straight to Linux.
+    Installer uses Unix when applicable, but others go straight to linux.
   -->
   <PropertyGroup>
     <CoreCLRTargetOS Condition="'$(TargetsWindows)' == 'true'">win</CoreCLRTargetOS>
-    <CoreCLRTargetOS Condition="'$(TargetsLinux)' == 'true'">Linux</CoreCLRTargetOS>
-    <CoreCLRTargetOS Condition="'$(TargetsOSX)' == 'true'">OSX</CoreCLRTargetOS>
-    <CoreCLRTargetOS Condition="'$(TargetsFreeBSD)' == 'true'">FreeBSD</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsLinux)' == 'true'">linux</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsOSX)' == 'true'">osx</CoreCLRTargetOS>
+    <CoreCLRTargetOS Condition="'$(TargetsFreeBSD)' == 'true'">freebsd</CoreCLRTargetOS>
     <LibrariesTargetOS>$(CoreCLRTargetOS)</LibrariesTargetOS>
   </PropertyGroup>
 

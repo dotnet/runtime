@@ -194,7 +194,7 @@ class DebugEnv:
 
         self.path = None
         
-        if self.args.host_os == "Windows_NT":
+        if self.args.host_os == "win":
             self.path = self.unique_name + ".cmd"
         else:
             self.path = self.unique_name + ".sh"
@@ -249,7 +249,7 @@ class DebugEnv:
 
         configurations = launch_json["configurations"]
 
-        dbg_type = "cppvsdbg" if self.host_os == "Windows_NT" else ""
+        dbg_type = "cppvsdbg" if self.host_os == "win" else ""
 
         env = {
             "COMPlus_AssertOnNYI": "1",
@@ -310,7 +310,7 @@ class DebugEnv:
         """ Create the repro wrapper
         """
 
-        if self.args.host_os == "Windows_NT":
+        if self.args.host_os == "win":
             self.__create_batch_wrapper__()
         else:
             self.__create_bash_wrapper__()
@@ -465,12 +465,12 @@ def create_and_use_test_env(_os, env, func):
         #
         # errors.
 
-        tempfile_suffix = ".bat" if _os == "Windows_NT" else ""
+        tempfile_suffix = ".bat" if _os == "win" else ""
         test_env = tempfile.NamedTemporaryFile(mode="w", suffix=tempfile_suffix, delete=False)
         try:
             file_header = None
 
-            if _os == "Windows_NT":
+            if _os == "win":
                 file_header = \
 """@REM Temporary test env for test run.
 @echo on
@@ -486,7 +486,7 @@ def create_and_use_test_env(_os, env, func):
             for key in complus_vars:
                 value = complus_vars[key]
                 command = None
-                if _os == "Windows_NT":
+                if _os == "win":
                     command = "set"
                 else:
                     command = "export"
@@ -504,7 +504,7 @@ def create_and_use_test_env(_os, env, func):
 
                 contents += line
 
-            if _os == "Windows_NT":
+            if _os == "win":
                 file_suffix = \
 """@echo off
 """
@@ -666,16 +666,16 @@ def setup_coredump_generation(host_os):
         host_os (String)        : os
 
     Notes:
-        This is only support for OSX and Linux, it does nothing on Windows.
+        This is only support for osx and linux, it does nothing on Windows.
         This will print a message if setting the rlimit fails but will otherwise
         continue execution, as some systems will already be configured correctly
         and it is not necessarily a failure to not collect coredumps.
     """
     global coredump_pattern
 
-    if host_os == "OSX":
+    if host_os == "osx":
         coredump_pattern = subprocess.check_output("sysctl -n kern.corefile", shell=True).rstrip()
-    elif host_os == "Linux":
+    elif host_os == "linux":
         with open("/proc/sys/kernel/core_pattern", "r") as f:
             coredump_pattern = f.read().rstrip()
     else:
@@ -717,7 +717,7 @@ def setup_coredump_generation(host_os):
 
     print("CoreDump generation enabled")
 
-    if host_os == "Linux" and os.path.isfile("/proc/self/coredump_filter"):
+    if host_os == "linux" and os.path.isfile("/proc/self/coredump_filter"):
         # Include memory in private and shared file-backed mappings in the dump.
         # This ensures that we can see disassembly from our shared libraries when
         # inspecting the contents of the dump. See 'man core' for details.
@@ -734,8 +734,8 @@ def print_info_from_coredump_file(host_os, arch, coredump_name, executable_name)
         executable_name (String) : name of the executable that generated the coredump
 
     Notes:
-        This is only support for OSX and Linux, it does nothing on Windows.
-        This defaults to lldb on OSX and gdb on Linux.
+        This is only support for osx and linux, it does nothing on Windows.
+        This defaults to lldb on osx and gdb on linux.
         For both lldb and db, it backtraces all threads. For gdb, it also prints local
         information for every frame. This option is not available as a built-in for lldb.
     """
@@ -749,9 +749,9 @@ def print_info_from_coredump_file(host_os, arch, coredump_name, executable_name)
 
     command = ""
 
-    if host_os == "OSX":
+    if host_os == "osx":
         command = "lldb -c %s -b -o 'bt all' -o 'disassemble -b -p'" % coredump_name
-    elif host_os == "Linux":
+    elif host_os == "linux":
         command = "gdb --batch -ex \"thread apply all bt full\" -ex \"disassemble /r $pc\" -ex \"quit\" %s %s" % (executable_name, coredump_name)
     else:
         print("Not printing coredump due to unsupported OS: %s" % host_os)
@@ -837,7 +837,7 @@ def inspect_and_delete_coredump_files(host_os, arch, test_location):
     
     if "%P" in coredump_pattern:
         coredump_name_uses_pid=True
-    elif host_os == "Linux" and os.path.isfile("/proc/sys/kernel/core_uses_pid"):
+    elif host_os == "linux" and os.path.isfile("/proc/sys/kernel/core_uses_pid"):
         with open("/proc/sys/kernel/core_uses_pid", "r") as f:
             if f.read().rstrip() == "1":
                 coredump_name_uses_pid=True
@@ -941,7 +941,7 @@ def run_tests(args,
 
     #=====================================================================================================================================================
     #
-    # This is a workaround needed to unblock our CI (in particular, Linux/arm and Linux/arm64 jobs) from the following failures appearing almost in every
+    # This is a workaround needed to unblock our CI (in particular, linux/arm and linux/arm64 jobs) from the following failures appearing almost in every
     # pull request (but hard to reproduce locally)
     #
     #   System.IO.FileLoadException: Could not load file or assembly 'Exceptions.Finalization.XUnitWrapper, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'.
@@ -1126,7 +1126,7 @@ def setup_args(args):
         is_same_arch = build_info["build_arch"] == coreclr_setup_args.arch
         is_same_build_type = build_info["build_type"] == coreclr_setup_args.build_type
 
-    if coreclr_setup_args.host_os != "Windows_NT" and not (is_same_os and is_same_arch and is_same_build_type):
+    if coreclr_setup_args.host_os != "win" and not (is_same_os and is_same_arch and is_same_build_type):
         test_native_bin_location = None
         if args.test_native_bin_location is None:
             test_native_bin_location = os.path.join(os.path.join(coreclr_setup_args.artifacts_location, "tests", "coreclr", "obj", "%s.%s.%s" % (coreclr_setup_args.host_os, coreclr_setup_args.arch, coreclr_setup_args.build_type)))
@@ -1149,12 +1149,12 @@ def setup_args(args):
     print("test_location            : %s" % coreclr_setup_args.test_location)
     print("test_native_bin_location : %s" % coreclr_setup_args.test_native_bin_location)
 
-    coreclr_setup_args.crossgen_path = os.path.join(coreclr_setup_args.core_root, "crossgen%s" % (".exe" if coreclr_setup_args.host_os == "Windows_NT" else ""))
-    coreclr_setup_args.corerun_path = os.path.join(coreclr_setup_args.core_root, "corerun%s" % (".exe" if coreclr_setup_args.host_os == "Windows_NT" else ""))
-    coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % (".cmd" if coreclr_setup_args.host_os == "Windows_NT" else ".sh"))
+    coreclr_setup_args.crossgen_path = os.path.join(coreclr_setup_args.core_root, "crossgen%s" % (".exe" if coreclr_setup_args.host_os == "win" else ""))
+    coreclr_setup_args.corerun_path = os.path.join(coreclr_setup_args.core_root, "corerun%s" % (".exe" if coreclr_setup_args.host_os == "win" else ""))
+    coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % (".cmd" if coreclr_setup_args.host_os == "win" else ".sh"))
     coreclr_setup_args.coreclr_tests_dir = os.path.join(coreclr_setup_args.coreclr_dir, "tests")
     coreclr_setup_args.coreclr_tests_src_dir = os.path.join(coreclr_setup_args.coreclr_tests_dir, "src")
-    coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_dir, "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "Windows_NT" else ".sh"))
+    coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_dir, "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "win" else ".sh"))
     coreclr_setup_args.logs_dir = os.path.join(coreclr_setup_args.artifacts_location, "log")
 
     return coreclr_setup_args
@@ -1187,7 +1187,7 @@ def precompile_core_root(args):
         ".*System.Net.Primitives.*"
     ]
 
-    if args.host_os != "Windows_NT":
+    if args.host_os != "win":
         skip_list += unix_skip_list
     
         if args.arch == "arm64":

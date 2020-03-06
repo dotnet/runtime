@@ -27,9 +27,9 @@ isMSBuildOnNETCoreSupported()
         return
     fi
 
-    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" ) ]]; then
+    if [[ ( "$__HostOS" == "linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" ) ]]; then
         __IsMSBuildOnNETCoreSupported=1
-    elif [[ ( "$__HostOS" == "OSX" || "$__HostOS" == "FreeBSD" ) && "$__HostArch" == "x64" ]]; then
+    elif [[ ( "$__HostOS" == "osx" || "$__HostOS" == "freebsd" ) && "$__HostArch" == "x64" ]]; then
         __IsMSBuildOnNETCoreSupported=1
     fi
 }
@@ -371,9 +371,9 @@ done
 # Other techniques such as `nproc` only get the number of
 # processors available to a single process.
 platform=$(uname)
-if [[ "$platform" == "FreeBSD" ]]; then
+if [[ "$platform" == "freebsd" ]]; then
   __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
-elif [[ "$platform" == "NetBSD" ]]; then
+elif [[ "$platform" == "netbsd" ]]; then
   __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
 elif [[ "$platform" == "Darwin" ]]; then
   __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
