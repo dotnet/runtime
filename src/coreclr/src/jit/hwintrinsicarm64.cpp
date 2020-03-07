@@ -259,7 +259,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    baseType = getBaseTypeFromArgIfNeeded(intrinsic, clsHnd, sig, baseType);
+    GenTree* retNode = nullptr;
+
+    HWIntrinsicArgsInfo hwIntrinsicArgsInfo(this, intrinsic, category, sig, baseType, /* mustExpand: */ false);
+    baseType = hwIntrinsicArgsInfo.baseType;
 
     if (baseType == TYP_UNKNOWN)
     {
@@ -280,17 +283,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         return nullptr;
     }
 
-    unsigned                simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
-    CORINFO_ARG_LIST_HANDLE argList  = sig->args;
-    CORINFO_CLASS_HANDLE    argClass;
-    var_types               argType = TYP_UNKNOWN;
-
-    assert(numArgs >= 0);
-
-    GenTree* retNode = nullptr;
-    GenTree* op1     = nullptr;
-    GenTree* op2     = nullptr;
-
+    // Special handling for Vector* instructions as we adjust the
+    // class handle of popped argument.
     switch (intrinsic)
     {
         case NI_Vector64_AsByte:
@@ -327,9 +321,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = impSIMDPopStack(retType, /* expectAddr: */ false, sig->retTypeClass);
             SetOpLclRelatedToSIMDIntrinsic(retNode);
             assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
-            break;
+            return retNode;
         }
+    }
 
+
+    hwIntrinsicArgsInfo.PopArgsForHWIntrinsic();
+
+    unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
+    assert(numArgs >= 0);
+
+    switch (intrinsic)
+    {
         case NI_Vector64_get_Count:
         case NI_Vector128_get_Count:
         {
@@ -348,15 +351,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Crc32_Arm64_ComputeCrc32C:
         {
             assert(numArgs == 2);
+            assert(simdSize == 0);
 
-            argType = JITtype2varType(
-                strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(argList), &argClass)));
-            op2 = getArgForHWIntrinsic(argType, argClass);
-
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
-            op1     = getArgForHWIntrinsic(argType, argClass);
-
-            retNode                                  = gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic);
+            retNode = hwIntrinsicArgsInfo.gtNewHWIntrinsicNode(retType, simdSize);
             retNode->AsHWIntrinsic()->gtSIMDBaseType = baseType;
             break;
         }

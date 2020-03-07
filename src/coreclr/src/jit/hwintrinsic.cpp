@@ -42,6 +42,115 @@ const HWIntrinsicInfo& HWIntrinsicInfo::lookup(NamedIntrinsic id)
 }
 
 //------------------------------------------------------------------------
+// gtNewHWIntrinsicNode: Gets new WIntrinsicNode
+//
+// Arguments:
+//    retType -- The return type of the intrinsic
+//    simdSize -- The simd size
+//
+// Return Value:
+//    The Scalar or SIMD HWIntrinsicNode
+GenTreeHWIntrinsic* HWIntrinsicArgsInfo::gtNewHWIntrinsicNode(var_types retType, unsigned simdSize)
+{
+    bool isScalar = category == HW_Category_Scalar;
+    assert (isScalar || simdSize != 0);
+    switch (numArgs)
+    {
+        case 0:
+            assert(!isScalar);
+            return compiler->gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
+        case 1:
+            return isScalar ? compiler->gtNewScalarHWIntrinsicNode(retType, op1, intrinsic)
+                            : compiler->gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+        case 2:
+            return isScalar ? compiler->gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic)
+                            : compiler->gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, baseType, simdSize);
+        case 3:
+            return isScalar ? compiler->gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic)
+                            : compiler->gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, baseType, simdSize);
+        default:
+            return nullptr;
+    }
+}
+
+//------------------------------------------------------------------------
+// InitializeBaseType: Initialize the base type of this intrinsic depending on if
+// it should be taken from first arg or second arg
+//
+void HWIntrinsicArgsInfo::InitializeBaseType()
+{
+    if (category == HW_Category_MemoryStore || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic) ||
+        HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
+    {
+        CORINFO_ARG_LIST_HANDLE arg = sig->args;
+
+        if ((category == HW_Category_MemoryStore) || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
+        {
+            arg = compiler->info.compCompHnd->getArgNext(arg);
+        }
+
+        CORINFO_CLASS_HANDLE argClass = compiler->info.compCompHnd->getArgClass(sig, arg);
+        baseType                      = compiler->getBaseTypeAndSizeOfSIMDType(argClass);
+
+        if (baseType == TYP_UNKNOWN) // the argument is not a vector
+        {
+            CORINFO_CLASS_HANDLE tmpClass;
+            CorInfoType          corInfoType = strip(compiler->info.compCompHnd->getArgType(sig, arg, &tmpClass));
+
+            if (corInfoType == CORINFO_TYPE_PTR)
+            {
+                corInfoType = compiler->info.compCompHnd->getChildType(argClass, &tmpClass);
+            }
+
+            baseType = JITtype2varType(corInfoType);
+        }
+        assert(baseType != TYP_UNKNOWN);
+    }
+}
+
+//------------------------------------------------------------------------
+// PopArgsForHWIntrinsic: Pop the arguments from the stack
+//
+void HWIntrinsicArgsInfo::PopArgsForHWIntrinsic()
+{
+    CORINFO_ARG_LIST_HANDLE argList, arg;
+    CORINFO_CLASS_HANDLE    argClass;
+    bool                    rangeCheckAdded = false;
+
+    var_types             argType = TYP_UNKNOWN;
+    const Compiler::Info& info    = compiler->info;
+    argList                       = sig->args;
+
+    switch (numArgs)
+    {
+        case 3:
+            arg             = info.compCompHnd->getArgNext(info.compCompHnd->getArgNext(argList));
+            argType         = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &argClass)));
+            op3             = compiler->getArgForHWIntrinsic(argType, argClass);
+            op3             = compiler->addRangeCheckIfNeeded(intrinsic, op3, mustExpand);
+            rangeCheckAdded = true;
+            // fall through
+        case 2:
+            arg     = info.compCompHnd->getArgNext(argList);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &argClass)));
+            op2     = compiler->getArgForHWIntrinsic(argType, argClass);
+            if (!rangeCheckAdded)
+            {
+                op2 = compiler->addRangeCheckIfNeeded(intrinsic, op2, mustExpand);
+            }
+            // fall through
+        case 1:
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+            op1     = compiler->getArgForHWIntrinsic(argType, argClass);
+            // fall through
+        case 0:
+            break;
+        default:
+            assert("Unexpected numArgs");
+    }
+}
+
+//------------------------------------------------------------------------
 // impUnsupportedHWIntrinsic: returns a node for an unsupported HWIntrinsic
 //
 // Arguments:
@@ -559,263 +668,6 @@ static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
     return (category != HW_Category_Special) && HWIntrinsicInfo::RequiresCodegen(intrinsicId) && !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
 }
 
-//GenTreeHWIntrinsic* Compiler::gtNewHWIntrinsicNode(HWIntrinsicArgsInfo argsInfo, var_types retType, unsigned simdSize)
-//{
-//    if (argsInfo.category == HW_Category_Scalar)
-//    {
-//        switch (argsInfo.numArgs)
-//        {
-//            case 0:
-//                assert("Zero args for scalar intrinsic not allowed.");
-//                break;
-//            case 1:
-//                return gtNewScalarHWIntrinsicNode(retType, argsInfo.op1, argsInfo.id);
-//            case 2:
-//                return gtNewScalarHWIntrinsicNode(retType, argsInfo.op1, argsInfo.op2, argsInfo.id);
-//            case 3:
-//                return gtNewScalarHWIntrinsicNode(retType, argsInfo.op1, argsInfo.op2, argsInfo.op3, argsInfo.id);
-//            default:
-//                break;
-//        }
-//    }
-//    else
-//    {
-//        switch (argsInfo.numArgs)
-//        {
-//            case 0:
-//                return gtNewSimdHWIntrinsicNode(retType, argsInfo.id, argsInfo.baseType, simdSize);
-//                break;
-//            case 1:
-//                return gtNewSimdHWIntrinsicNode(retType, argsInfo.op1, argsInfo.id, argsInfo.baseType, simdSize);
-//            case 2:
-//                return gtNewSimdHWIntrinsicNode(retType, argsInfo.op1, argsInfo.op2, argsInfo.id, argsInfo.baseType,
-//                                                simdSize);
-//            case 3:
-//                return gtNewSimdHWIntrinsicNode(retType, argsInfo.op1, argsInfo.op2, argsInfo.op3, argsInfo.id,
-//                                                argsInfo.baseType, simdSize);
-//            default:
-//                break;
-//        }
-//    }
-//
-//    return nullptr;
-//}
-
-////------------------------------------------------------------------------
-//// getArgsInfoForHWIntrinsic:
-////
-//// Arguments:
-////    intrinsicId - HW intrinsic id
-////    category - category of a HW intrinsic
-////    sig       -- signature of the intrinsic call.
-////    baseType  -- Predetermined baseType, could be TYP_UNKNOWN
-//
-//// Return Value:
-////    returns HWIntrinsicArgsInfo populated with appropriate information
-////
-//HWIntrinsicArgsInfo Compiler::getArgsInfoForHWIntrinsic(
-//    NamedIntrinsic intrinsic, HWIntrinsicCategory category, CORINFO_SIG_INFO* sig, var_types baseType, bool mustExpand)
-//{
-//    CORINFO_ARG_LIST_HANDLE argList = sig->args, arg, baseTypeArg = nullptr;
-//    CORINFO_CLASS_HANDLE    argClass = nullptr, baseTypeArgClass = nullptr;
-//    var_types               argType  = TYP_UNKNOWN;
-//    var_types               baseType = baseType;
-//    unsigned int            numArgs  = sig->numArgs;
-//    GenTree*                op1      = nullptr;
-//    GenTree*                op2      = nullptr;
-//    GenTree*                op3      = nullptr;
-//
-//    switch (numArgs)
-//    {
-//        case 3:
-//            arg     = info.compCompHnd->getArgNext(info.compCompHnd->getArgNext(argList));
-//            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &argClass)));
-//            op3     = getArgForHWIntrinsic(argType, argClass);
-//            op3     = addRangeCheckIfNeeded(intrinsic, op3, mustExpand);
-//            // fall through
-//        case 2:
-//            arg     = info.compCompHnd->getArgNext(argList);
-//            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &argClass)));
-//            op2     = getArgForHWIntrinsic(argType, argClass);
-//            op2     = addRangeCheckIfNeeded(intrinsic, op2, mustExpand);
-//
-//            if (category == HW_Category_MemoryStore || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
-//            {
-//                baseType         = getBaseTypeAndSizeOfSIMDType(argClass);
-//                baseTypeArg      = arg;
-//                baseTypeArgClass = argClass;
-//            }
-//            // fall through
-//        case 1:
-//            arg     = argList;
-//            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &argClass)));
-//            op1     = getArgForHWIntrinsic(argType, argClass);
-//
-//            if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
-//            {
-//                baseTypeArg      = arg;
-//                baseTypeArgClass = argClass;
-//            }
-//            // fall through
-//        case 0:
-//            break;
-//        default:
-//            assert("Unexpected numArgs");
-//    }
-//
-//    if (baseTypeArgClass != nullptr)
-//    {
-//        baseType = getBaseTypeAndSizeOfSIMDType(baseTypeArgClass);
-//        if (baseType == TYP_UNKNOWN) // the argument is not a vector
-//        {
-//            CORINFO_CLASS_HANDLE tmpClass;
-//            CorInfoType          corInfoType = strip(info.compCompHnd->getArgType(sig, baseTypeArg, &tmpClass));
-//
-//            if (corInfoType == CORINFO_TYPE_PTR)
-//            {
-//                corInfoType = info.compCompHnd->getChildType(baseTypeArgClass, &tmpClass);
-//            }
-//
-//            baseType = JITtype2varType(corInfoType);
-//        }
-//    }
-//
-//    HWIntrinsicArgsInfo todo(intrinsic, category, numArgs, op1, op2, op3, baseType);
-//    return todo;
-//}
-//
-////------------------------------------------------------------------------
-//// getBaseTypeFromArgIfNeeded: Get baseType of intrinsic from 1st or 2nd argument depending on the flag
-////
-//// Arguments:
-////    intrinsic -- id of the intrinsic function.
-////    method    -- method handle of the intrinsic function.
-////    sig       -- signature of the intrinsic call.
-////    baseType  -- Predetermined baseType, could be TYP_UNKNOWN
-////
-//// Return Value:
-////    The basetype of intrinsic of it can be fetched from 1st or 2nd argument, else return baseType unmodified.
-////
-//var_types Compiler::getBaseTypeFromArgIfNeeded(NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig, var_types baseType)
-//{
-//    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
-//
-//    if ((category == HW_Category_MemoryStore) || HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic) ||
-//        HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
-//    {
-//        CORINFO_ARG_LIST_HANDLE arg = sig->args;
-//
-//        if ((category == HW_Category_MemoryStore) || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
-//        {
-//            arg = info.compCompHnd->getArgNext(arg);
-//        }
-//
-//        CORINFO_CLASS_HANDLE argClass = info.compCompHnd->getArgClass(sig, arg);
-//        baseType                      = getBaseTypeAndSizeOfSIMDType(argClass);
-//
-//        if (baseType == TYP_UNKNOWN) // the argument is not a vector
-//        {
-//            CORINFO_CLASS_HANDLE tmpClass;
-//            CorInfoType          corInfoType = strip(info.compCompHnd->getArgType(sig, arg, &tmpClass));
-//
-//            if (corInfoType == CORINFO_TYPE_PTR)
-//            {
-//                corInfoType = info.compCompHnd->getChildType(argClass, &tmpClass);
-//            }
-//
-//            baseType = JITtype2varType(corInfoType);
-//        }
-//
-//        assert(baseType != TYP_UNKNOWN);
-//    }
-//    return baseType;
-//}
-
-GenTreeHWIntrinsic* HWIntrinsicArgsInfo::gtNewHWIntrinsicNode(Compiler* comp, var_types retType, unsigned simdSize)
-{
-    bool isScalar = category == HW_Category_Scalar;
-    switch (numArgs)
-    {
-        case 0:
-            assert(!isScalar);
-            return comp->gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
-        case 1:
-            return isScalar ? comp->gtNewScalarHWIntrinsicNode(retType, op1, intrinsic)
-                            : comp->gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
-        case 2:
-            return isScalar ? comp->gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic)
-                            : comp->gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, baseType, simdSize);
-        case 3:
-            return isScalar ? comp->gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic)
-                            : comp->gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, baseType, simdSize);
-        default:
-            return nullptr;
-    }
-}
-
-void HWIntrinsicArgsInfo::PopulateArgsInfoForHWIntrinsic(Compiler* comp, CORINFO_SIG_INFO* sig, bool mustExpand)
-{
-    CORINFO_ARG_LIST_HANDLE argList = sig->args, arg, baseTypeArg = nullptr;
-    CORINFO_CLASS_HANDLE    argClass = nullptr, baseTypeArgClass = nullptr;
-    var_types               argType = TYP_UNKNOWN;
-    const Compiler::Info&   info    = comp->info;
-
-    switch (numArgs)
-    {
-        case 3:
-            arg     = info.compCompHnd->getArgNext(info.compCompHnd->getArgNext(argList));
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &argClass)));
-            op3     = comp->getArgForHWIntrinsic(argType, argClass);
-            op3     = comp->addRangeCheckIfNeeded(intrinsic, op3, mustExpand);
-            // fall through
-        case 2:
-            arg     = info.compCompHnd->getArgNext(argList);
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &argClass)));
-            op2     = comp->getArgForHWIntrinsic(argType, argClass);
-            op2     = comp->addRangeCheckIfNeeded(intrinsic, op2, mustExpand);
-
-            if (category == HW_Category_MemoryStore || HWIntrinsicInfo::BaseTypeFromSecondArg(intrinsic))
-            {
-                baseType         = comp->getBaseTypeAndSizeOfSIMDType(argClass);
-                baseTypeArg      = arg;
-                baseTypeArgClass = argClass;
-            }
-            // fall through
-        case 1:
-            arg     = argList;
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &argClass)));
-            op1     = comp->getArgForHWIntrinsic(argType, argClass);
-
-            if (HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic))
-            {
-                baseTypeArg      = arg;
-                baseTypeArgClass = argClass;
-            }
-            // fall through
-        case 0:
-            break;
-        default:
-            assert("Unexpected numArgs");
-    }
-
-    if (baseTypeArgClass != nullptr)
-    {
-        baseType = comp->getBaseTypeAndSizeOfSIMDType(baseTypeArgClass);
-        if (baseType == TYP_UNKNOWN) // the argument is not a vector
-        {
-            CORINFO_CLASS_HANDLE tmpClass;
-            CorInfoType          corInfoType = strip(info.compCompHnd->getArgType(sig, baseTypeArg, &tmpClass));
-
-            if (corInfoType == CORINFO_TYPE_PTR)
-            {
-                corInfoType = info.compCompHnd->getChildType(baseTypeArgClass, &tmpClass);
-            }
-
-            baseType = JITtype2varType(corInfoType);
-        }
-    }
-}
-
 //------------------------------------------------------------------------
 // impHWIntrinsic: Import a hardware intrinsic as a GT_HWINTRINSIC node if possible
 //
@@ -893,6 +745,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     if (impIsTableDrivenHWIntrinsic(intrinsic, category))
     {
         HWIntrinsicArgsInfo hwIntrinsicArgsInfo(this, intrinsic, category, sig, baseType, mustExpand);
+        hwIntrinsicArgsInfo.PopArgsForHWIntrinsic();
+        baseType = hwIntrinsicArgsInfo.baseType;
 
         unsigned                simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
         GenTreeHWIntrinsic*     retNode  = nullptr;
@@ -905,6 +759,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             return nullptr;
         }
 
+
         if (numArgs == 1 && category == HW_Category_MemoryLoad && hwIntrinsicArgsInfo.op1->OperIs(GT_CAST))
         {
             // Although the API specifies a pointer, if what we have is a BYREF, that's what
@@ -915,7 +770,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
         }
 
-        retNode = hwIntrinsicArgsInfo.gtNewHWIntrinsicNode(this, retType, simdSize);
+        retNode = hwIntrinsicArgsInfo.gtNewHWIntrinsicNode(retType, simdSize);
 
 #ifdef TARGET_XARCH
         if (numArgs == 3 && (intrinsic == NI_AVX2_GatherVector128 || intrinsic == NI_AVX2_GatherVector256))

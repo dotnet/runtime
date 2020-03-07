@@ -304,9 +304,12 @@ struct HWIntrinsicInfo
 
 struct HWIntrinsicArgsInfo final
 {
+    Compiler*           compiler;
+    CORINFO_SIG_INFO*   sig;
     NamedIntrinsic      intrinsic = NI_Illegal;
     HWIntrinsicCategory category;
     unsigned int        numArgs;
+    bool                mustExpand;
     GenTree*            op1      = nullptr;
     GenTree*            op2      = nullptr;
     GenTree*            op3      = nullptr;
@@ -315,18 +318,25 @@ struct HWIntrinsicArgsInfo final
     HWIntrinsicArgsInfo(Compiler*           comp,
                         NamedIntrinsic      intrinsicId,
                         HWIntrinsicCategory intrinsicCategory,
-                        CORINFO_SIG_INFO*   sig,
+                        CORINFO_SIG_INFO*   intrinsicSig,
                         var_types           intrinsicBaseType,
-                        bool                mustExpand)
+                        bool                intrinsicMustExpand)
     {
+        compiler    = comp;
+        sig         = intrinsicSig;
         intrinsic   = intrinsicId;
         category    = intrinsicCategory;
         baseType    = intrinsicBaseType;
+        mustExpand  = intrinsicMustExpand;
         numArgs     = sig->numArgs;
-        PopulateArgsInfoForHWIntrinsic(comp, sig, mustExpand);
+
+        InitializeBaseType();
     }
-    GenTreeHWIntrinsic* gtNewHWIntrinsicNode(Compiler* comp, var_types retType, unsigned simdSize);
-    void PopulateArgsInfoForHWIntrinsic(Compiler* comp, CORINFO_SIG_INFO* sig, bool mustExpand);
+    GenTreeHWIntrinsic* gtNewHWIntrinsicNode(var_types retType, unsigned simdSize);
+    void                PopArgsForHWIntrinsic();
+
+private:
+    void                InitializeBaseType();
 
     //{
 //    CORINFO_ARG_LIST_HANDLE argList = sig->args, arg, baseTypeArg = nullptr;
