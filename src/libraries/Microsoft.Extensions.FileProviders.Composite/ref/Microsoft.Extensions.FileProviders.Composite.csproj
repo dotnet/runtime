@@ -7,7 +7,7 @@
     <Compile Include="Microsoft.Extensions.FileProviders.Composite.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Extensions.FileProviders.Abstractions"  />
-    <Reference Include="Microsoft.Extensions.Primitives"  />
+    <ProjectReference Include="..\..\Microsoft.Extensions.FileProviders.Abstractions\ref\Microsoft.Extensions.FileProviders.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Primitives\ref\Microsoft.Extensions.Primitives.csproj" />
   </ItemGroup>
 </Project>

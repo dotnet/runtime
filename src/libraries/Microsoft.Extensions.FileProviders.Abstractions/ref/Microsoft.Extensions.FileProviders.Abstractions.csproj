@@ -6,6 +6,6 @@
     <Compile Include="Microsoft.Extensions.FileProviders.Abstractions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Primitives"  />
+    <ProjectReference Include="..\..\Microsoft.Extensions.Primitives\ref\Microsoft.Extensions.Primitives.csproj" />
   </ItemGroup>
 </Project>
