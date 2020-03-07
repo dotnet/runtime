@@ -106,7 +106,7 @@
       <ReferencePath Include="@(_filteredReferencePathFromRuntimeByFileName->'%(ReferencePath)')" Condition="'%(_filteredReferencePathFromRuntimeByFileName.Aliases)' != ''" Aliases="" />
     </ItemGroup>
 
-    <Error Condition="'@(_missingReferenceFromRuntime)' != ''"
+    <Error Condition="'@(_missingReferenceFromRuntime)' != '' and '$(DesignTimeBuild)' != 'true'"
            Text="Could not resolve ReferenceFromRuntime item(s) '%(_missingReferenceFromRuntime.OriginalReferenceFromRuntime)' from '$(RuntimeProjectFile)'." />
   </Target>
 </Project>

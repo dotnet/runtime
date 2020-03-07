@@ -117,7 +117,7 @@ namespace System
         /// Throws a <see cref="NullReferenceException"/> if the input is null.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ReadOnlySpan<byte> AsBytesSkipNullCheck() => _bytes;
+        internal ReadOnlySpan<byte> AsBytesSkipNullCheck() => GetSpan();
 
         /// <summary>
         /// Creates a new zero-initialized instance of the specified length. Actual storage allocated is "length + 1" bytes

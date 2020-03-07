@@ -24,7 +24,7 @@ namespace System.Text.Unicode
                 // Very quick check: see if the byte is in the range [ 21 .. 7F ].
                 // If so, we can skip the more expensive logic later in this method.
 
-                if (utf8Data[i] > (sbyte)0x20)
+                if ((sbyte)utf8Data[i] > (sbyte)0x20)
                 {
                     break;
                 }
@@ -102,7 +102,7 @@ namespace System.Text.Unicode
                     // Not ASCII data. Go back to the slower "decode the entire scalar"
                     // code path, then compare it against our Unicode tables.
 
-                    Rune.DecodeLastFromUtf8(utf8Data.Slice(length), out Rune decodedRune, out int bytesConsumed);
+                    Rune.DecodeLastFromUtf8(utf8Data.Slice(0, length), out Rune decodedRune, out int bytesConsumed);
                     if (Rune.IsWhiteSpace(decodedRune))
                     {
                         length -= bytesConsumed;

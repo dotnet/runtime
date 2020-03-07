@@ -14,6 +14,15 @@ namespace System.Tests
     public partial class MemoryTests
     {
         [Fact]
+        public static void MemoryMarshal_TryGetArrayOfByte_Utf8String()
+        {
+            ReadOnlyMemory<byte> rom = u8("Hello").AsMemoryBytes();
+
+            Assert.False(MemoryMarshal.TryGetArray(rom, out ArraySegment<byte> segment));
+            Assert.True(default(ArraySegment<byte>).Equals(segment));
+        }
+
+        [Fact]
         public static void MemoryMarshal_TryGetArrayOfChar8_Utf8String()
         {
             ReadOnlyMemory<Char8> rom = u8("Hello").AsMemory();
@@ -67,6 +76,20 @@ namespace System.Tests
         public static void ReadOnlyMemoryOfChar8_WithUtf8String_ToString()
         {
             Assert.Equal("Hello", u8("Hello").AsMemory().ToString());
+        }
+
+        [Fact]
+        public static void ReadOnlySpanOfChar8_ToString()
+        {
+            ReadOnlySpan<Char8> span = stackalloc Char8[] { (Char8)'H', (Char8)'i' };
+            Assert.Equal("Hi", span.ToString());
+        }
+
+        [Fact]
+        public static void SpanOfChar8_ToString()
+        {
+            Span<Char8> span = stackalloc Char8[] { (Char8)'H', (Char8)'i' };
+            Assert.Equal("Hi", span.ToString());
         }
     }
 }
