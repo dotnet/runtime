@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -13,16 +14,20 @@ namespace System.Text.Json
         /// <summary>
         /// Internal version that allows re-entry with preserving ReadStack so that JsonPath works correctly.
         /// </summary>
-        internal static T Deserialize<T>(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, string? propertyName = null)
+        internal static TValue Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, string? propertyName = null)
         {
             if (options == null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
 
-            state.Current.InitializeReEntry(typeof(T), options, propertyName);
+            state.Current.InitializeReEntry(typeof(TValue), options, propertyName);
 
-            T value = (T)ReadCoreReEntry(options, ref reader, ref state)!;
+            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo!;
+
+            JsonConverter<TValue> converter = (JsonConverter<TValue>)jsonPropertyInfo.ConverterBase;
+            bool success = converter.TryRead(ref reader, jsonPropertyInfo.RuntimePropertyType!, options, ref state, out TValue value);
+            Debug.Assert(success);
 
             // Clear the current property state since we are done processing it.
             state.Current.EndProperty();
@@ -71,7 +76,15 @@ namespace System.Text.Json
         [return: MaybeNull]
         public static TValue Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
         {
-            return (TValue)ReadValueCore(ref reader, typeof(TValue), options)!;
+            if (options == null)
+            {
+                options = JsonSerializerOptions.s_defaultOptions;
+            }
+
+            ReadStack state = default;
+            state.Initialize(typeof(TValue), options, supportContinuation: false);
+
+            return ReadValueCore<TValue>(options, ref reader, ref state);
         }
 
         /// <summary>
@@ -118,24 +131,19 @@ namespace System.Text.Json
         public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType == null)
+            {
                 throw new ArgumentNullException(nameof(returnType));
+            }
 
-            return ReadValueCore(ref reader, returnType, options);
-        }
-
-        private static object? ReadValueCore(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options)
-        {
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
             ReadStack state = default;
-            state.InitializeRoot(returnType, options);
+            state.Initialize(returnType, options, supportContinuation: false);
 
-            ReadValueCore(options, ref reader, ref state);
-
-            return state.Current.ReturnValue;
+            return ReadValueCore<object>(options, ref reader, ref state);
         }
 
         private static void CheckSupportedOptions(JsonReaderOptions readerOptions, string paramName)
@@ -146,7 +154,7 @@ namespace System.Text.Json
             }
         }
 
-        private static void ReadValueCore(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
+        private static TValue ReadValueCore<TValue>(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
         {
             JsonReaderState readerState = reader.CurrentState;
             CheckSupportedOptions(readerState.Options, nameof(reader));
@@ -325,10 +333,13 @@ namespace System.Text.Json
 
                 var newReader = new Utf8JsonReader(rentedSpan, originalReaderOptions);
 
-                ReadCore(options, ref newReader, ref state);
+                JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.ConverterBase;
+                TValue value = ReadCore<TValue>(jsonConverter, ref newReader, options, ref state);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(newReader.BytesConsumed == length);
+
+                return value;
             }
             catch (JsonException)
             {

@@ -62,8 +62,6 @@ add_library(System.Native-Static
     ${NATIVE_SOURCES}
 )
 
-# Disable the "lib" prefix and override default name
-set_target_properties(System.Native-Static PROPERTIES PREFIX "")
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
 install (TARGETS System.Native-Static DESTINATION .)

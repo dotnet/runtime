@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace System.Data.Common
 {
-    public abstract class DbCommand : Component, IDbCommand
+    public abstract class DbCommand : Component, IDbCommand, IAsyncDisposable
     {
         protected DbCommand() : base()
         {

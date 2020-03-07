@@ -3067,8 +3067,6 @@ public:
     // Self-initializing accessor for domain-independent IJW thunk heap
     LoaderHeap              *GetDllThunkHeap();
 
-    void            EnumRegularStaticGCRefs        (promote_func* fn, ScanContext* sc);
-
 protected:
 
     void            BuildStaticsOffsets     (AllocMemTracker *pamTracker);
@@ -3243,9 +3241,6 @@ public:
 
     uint32_t GetNativeMetadataAssemblyCount();
 #endif // !defined(DACCESS_COMPILE)
-
-    // For protecting dictionary layout slot expansions
-    CrstExplicitInit        m_DictionaryCrst;
 };
 
 //

@@ -36,7 +36,7 @@ namespace System.Text.Json
         /// </exception>
         public static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, JsonSerializerOptions? options = null)
         {
-            WriteValueCore(writer, value, typeof(TValue), options);
+            Serialize<TValue>(writer, value, typeof(TValue), options);
         }
 
         /// <summary>
@@ -51,8 +51,32 @@ namespace System.Text.Json
         /// </exception>
         public static void Serialize(Utf8JsonWriter writer, object? value, Type inputType, JsonSerializerOptions? options = null)
         {
-            VerifyValueAndType(value, inputType);
-            WriteValueCore(writer, value, inputType, options);
+            if (inputType == null)
+            {
+                throw new ArgumentNullException(nameof(inputType));
+            }
+
+            if (value != null && !inputType.IsAssignableFrom(value.GetType()))
+            {
+                ThrowHelper.ThrowArgumentException_DeserializeWrongType(inputType, value);
+            }
+
+            Serialize<object?>(writer, value, inputType, options);
+        }
+
+        private static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, Type type, JsonSerializerOptions? options)
+        {
+            if (options == null)
+            {
+                options = JsonSerializerOptions.s_defaultOptions;
+            }
+
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
+            WriteCore<TValue>(writer, value, type, options);
         }
     }
 }

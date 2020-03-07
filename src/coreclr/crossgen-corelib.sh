@@ -24,7 +24,7 @@ build_CoreLib_ni()
     if [[ -e "$__CrossGenCoreLibLog" ]]; then
         rm "$__CrossGenCoreLibLog"
     fi
-    echo "Generating native image of System.Private.CoreLib.dll for $__BuildOS.$__BuildArch.$__BuildType. Logging to \"$__CrossGenCoreLibLog\"."
+    echo "Generating native image of System.Private.CoreLib.dll for $__TargetOS.$__BuildArch.$__BuildType. Logging to \"$__CrossGenCoreLibLog\"."
     echo "$__CrossGenExec /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll"
     "$__CrossGenExec" /nologo /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
     local exit_code="$?"
@@ -33,7 +33,7 @@ build_CoreLib_ni()
         exit "$exit_code"
     fi
 
-    if [[ "$__BuildOS" == "Linux" ]]; then
+    if [[ "$__TargetOS" == "Linux" ]]; then
         echo "Generating symbol file for System.Private.CoreLib.dll"
         echo "$__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll"
         "$__CrossGenExec" /nologo /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
@@ -102,14 +102,14 @@ fi
 __LogsDir="$__RootBinDir/log/$__BuildType"
 
 # Set the remaining variables based upon the determined build configuration
-__BinDir="$__RootBinDir/bin/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
+__BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
 __CrossComponentBinDir="$__BinDir"
 
 __CrossArch="$__HostArch"
 if [[ "$__CrossBuild" == 1 ]]; then
     __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
 fi
-__CrossGenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__BuildOS.$__BuildArch.$__BuildType.log"
+__CrossGenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__TargetOS.$__BuildArch.$__BuildType.log"
 
 # Crossgen System.Private.CoreLib
 

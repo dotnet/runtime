@@ -10,8 +10,8 @@
           Condition="'$(IsEligibleForNgenOptimization)' == 'true'"
           BeforeTargets="CoreCompile">
     <PropertyGroup>
-      <IbcOptimizationDataDir Condition="'$(OSGroup)' == 'Unix' or '$(OSGroup)' == 'Linux'">$(IbcOptimizationDataDir)Linux\</IbcOptimizationDataDir>
-      <IbcOptimizationDataDir Condition="'$(OSGroup)' != 'Unix' and '$(OSGroup)' != 'Linux'">$(IbcOptimizationDataDir)Windows\</IbcOptimizationDataDir>
+      <IbcOptimizationDataDir Condition="'$(TargetOS)' == 'Unix' or '$(TargetOS)' == 'Linux'">$(IbcOptimizationDataDir)Linux\</IbcOptimizationDataDir>
+      <IbcOptimizationDataDir Condition="'$(TargetOS)' == 'Windows_NT'">$(IbcOptimizationDataDir)Windows\</IbcOptimizationDataDir>
     </PropertyGroup>
     <ItemGroup>
       <_optimizationDataAssembly Include="$(IbcOptimizationDataDir)**\$(TargetFileName)" />

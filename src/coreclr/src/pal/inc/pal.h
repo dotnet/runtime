@@ -135,7 +135,7 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 
 /******************* Compiler-specific glue *******************************/
 #ifndef THROW_DECL
-#if defined(_MSC_VER) || defined(__llvm__) || !defined(__cplusplus)
+#if defined(_MSC_VER) || !defined(__cplusplus)
 #define THROW_DECL
 #else
 #define THROW_DECL throw()

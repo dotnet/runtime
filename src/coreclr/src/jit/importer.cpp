@@ -2082,12 +2082,14 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
         if (pRuntimeLookup->offsets[i] != 0)
         {
-            // The last indirection could be subject to a size check (dynamic dictionary expansion)
-            if (i == pRuntimeLookup->indirections - 1 && pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+// The last indirection could be subject to a size check (dynamic dictionary expansion feature)
+#if 0  // Uncomment that block when you add sizeOffset field to pRuntimeLookup.
+            if (i == pRuntimeLookup->indirections - 1 && pRuntimeLookup->sizeOffset != 0xFFFF)
             {
                 lastIndOfTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                              nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
             }
+#endif // 0
 
             slotPtrTree =
                 gtNewOperNode(GT_ADD, TYP_I_IMPL, slotPtrTree, gtNewIconNode(pRuntimeLookup->offsets[i], TYP_I_IMPL));
@@ -2158,10 +2160,9 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
     GenTree* result = nullptr;
 
-    if (pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+#if 0  // Uncomment that block when you add sizeOffset field to pRuntimeLookup.
+    if (pRuntimeLookup->sizeOffset != 0xFFFF) // dynamic dictionary expansion feature
     {
-        // Dynamic dictionary expansion support
-
         assert((lastIndOfTree != nullptr) && (pRuntimeLookup->indirections > 0));
 
         // sizeValue = dictionary[pRuntimeLookup->sizeOffset]
@@ -2185,6 +2186,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         addExpRuntimeLookupCandidate(helperCall);
     }
     else
+#endif // 0
     {
         GenTreeColon* colonNullCheck = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, handleForResult, helperCall);
         result                       = gtNewQmarkNode(TYP_I_IMPL, nullCheck, colonNullCheck);
