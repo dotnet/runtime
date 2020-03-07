@@ -10523,7 +10523,10 @@ void Module::RunEagerFixupsUnlocked()
                         ThrowHR(COR_E_BADIMAGEFORMAT);
                     }
                 }
-                _ASSERTE(*fixupCell != NULL);
+                else
+                {
+                    _ASSERTE(*fixupCell != NULL);
+                }
             }
         }
         else

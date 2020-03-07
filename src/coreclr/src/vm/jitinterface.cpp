@@ -13245,133 +13245,63 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
 
 bool IsInstructionSetSupported(CORJIT_FLAGS jitFlags, ReadyToRunInstructionSet r2rInstructionSet)
 {
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     switch (r2rInstructionSet)
     {
         case READYTORUN_INSTRUCTION_Aes:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_AES);
-#elif defined(TARGET_ARM64)
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_AES);
-#else
-            return false;
-#endif
         case READYTORUN_INSTRUCTION_Avx:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX);
-#else
-            return false;
-#endif
         case READYTORUN_INSTRUCTION_Avx2:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_AVX2);
-#else
-            return false;
-#endif
         case READYTORUN_INSTRUCTION_Bmi1:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI1);
-#else
-            return false;
-#endif
         case READYTORUN_INSTRUCTION_Bmi2:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_BMI2);
-#else
-            return false;
-#endif
         case READYTORUN_INSTRUCTION_Fma:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_FMA);
-#else
-            return false;
-#endif
         case READYTORUN_INSTRUCTION_Lzcnt:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_LZCNT);
-#else
-            return false;
-#endif
         case READYTORUN_INSTRUCTION_Pclmuldq:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_PCLMULQDQ);
-#else
-            return false;
-#endif
         case READYTORUN_INSTRUCTION_Popcnt:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_POPCNT);
-#else
-            return false;
-#endif
         case READYTORUN_INSTRUCTION_Sse:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
-#else
-            return false;
-#endif
         case READYTORUN_INSTRUCTION_Sse2:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
-#else
-            return false;
-#endif
         case READYTORUN_INSTRUCTION_Sse3:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3);
-#else
-            return false;
-#endif
         case READYTORUN_INSTRUCTION_Ssse3:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_SSSE3);
-#else
-            return false;
-#endif
         case READYTORUN_INSTRUCTION_Sse41:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE41);
-#else
-            return false;
-#endif
         case READYTORUN_INSTRUCTION_Sse42:
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
             return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE42);
-#else
-            return false;
-#endif
-        case READYTORUN_INSTRUCTION_AdvSimd:
-#if defined(TARGET_ARM64)
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD);
-#else
-            return false;
-#endif
-        case READYTORUN_INSTRUCTION_ArmBase:
-#if defined(TARGET_ARM64)
-            return true;
-#else
-            return false;
-#endif
-        case READYTORUN_INSTRUCTION_Crc32:
-#if defined(TARGET_ARM64)
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_CRC32);
-#else
-            return false;
-#endif
-        case READYTORUN_INSTRUCTION_Sha1:
-#if defined(TARGET_ARM64)
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA1);
-#else
-            return false;
-#endif
-        case READYTORUN_INSTRUCTION_Sha256:
-#if defined(TARGET_ARM64)
-            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA256);
-#else
-            return false;
-#endif
         default:
             return false;
     }
+#elif defined(TARGET_ARM64)
+    switch (r2rInstructionSet)
+    {
+        case READYTORUN_INSTRUCTION_Aes:
+            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_AES);
+        case READYTORUN_INSTRUCTION_AdvSimd:
+            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_ADVSIMD);
+        case READYTORUN_INSTRUCTION_ArmBase:
+            return true;
+        case READYTORUN_INSTRUCTION_Crc32:
+            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_CRC32);
+        case READYTORUN_INSTRUCTION_Sha1:
+            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA1);
+        case READYTORUN_INSTRUCTION_Sha256:
+            return jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA256);
+        default:
+            return false;
+    }
+#else
+    return false;
+#endif
 }
 
 BOOL LoadDynamicInfoEntry(Module *currentModule,
@@ -13855,7 +13785,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             DWORD dwInstructionSetCount = CorSigUncompressData(pBlob);
             CORJIT_FLAGS corjitFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
 
-            for (DWORD dwinstructionSetIndex = 0; dwinstructionSetIndex < dwInstructionSetCount; dwInstructionSetCount++)
+            for (DWORD dwinstructionSetIndex = 0; dwinstructionSetIndex < dwInstructionSetCount; dwinstructionSetIndex++)
             {
                 DWORD instructionSetEncoded = CorSigUncompressData(pBlob);
                 bool mustInstructionSetBeSupported = !!(instructionSetEncoded & 1);
@@ -13864,10 +13794,10 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 {
                     return FALSE;
                 }
-
-                result = 1;
             }
+            result = 1;
         }
+        break;
 #endif // FEATURE_READYTORUN
 
 #endif // CROSSGEN_COMPILE
