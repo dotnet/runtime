@@ -92,7 +92,7 @@ namespace Internal.JitInterface
     {
     }
     
-    public struct CORINFO_PATCHPOINT_INFO
+    public struct PatchpointInfo
     {
     }
 

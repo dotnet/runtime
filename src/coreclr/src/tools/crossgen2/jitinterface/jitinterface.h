@@ -35,6 +35,8 @@ struct JitInterfaceCallbacks
     void (* methodMustBeLoadedBeforeCodeIsRun)(void * thisHandle, CorInfoException** ppException, void* method);
     void* (* mapMethodDeclToMethodImpl)(void * thisHandle, CorInfoException** ppException, void* method);
     void (* getGSCookie)(void * thisHandle, CorInfoException** ppException, void* pCookieVal, void** ppCookieVal);
+    void (* setPatchpointInfo)(void * thisHandle, CorInfoException** ppException, void* patchpointInfo);
+    void* (* getOSRInfo)(void * thisHandle, CorInfoException** ppException, unsigned* ilOffset);
     void (* resolveToken)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
     void (* tryResolveToken)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
     void (* findSig)(void * thisHandle, CorInfoException** ppException, void* module, unsigned sigTOK, void* context, void* sig);
@@ -104,7 +106,6 @@ struct JitInterfaceCallbacks
     void (* setBoundaries)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned int cMap, void* pMap);
     void (* getVars)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned int* cVars, void* vars, bool* extendOthers);
     void (* setVars)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned int cVars, void* vars);
-    void (* setPatchpointInfo)(void * thisHandle, CorInfoException** ppException, void* patchpointInfo);
     void* (* allocateArray)(void * thisHandle, CorInfoException** ppException, size_t cBytes);
     void (* freeArray)(void * thisHandle, CorInfoException** ppException, void* array);
     void* (* getArgNext)(void * thisHandle, CorInfoException** ppException, void* args);
@@ -406,6 +407,23 @@ public:
         _callbacks->getGSCookie(_thisHandle, &pException, pCookieVal, ppCookieVal);
         if (pException != nullptr)
             throw pException;
+    }
+
+    virtual void setPatchpointInfo(void* patchpointInfo)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->setPatchpointInfo(_thisHandle, &pException, patchpointInfo);
+        if (pException != nullptr)
+            throw pException;
+    }
+
+    virtual void* getOSRInfo(unsigned* ilOffset)
+    {
+        CorInfoException* pException = nullptr;
+        void* _ret = _callbacks->getOSRInfo(_thisHandle, &pException, ilOffset);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
     }
 
     virtual void resolveToken(void* pResolvedToken)
@@ -1013,14 +1031,6 @@ public:
     {
         CorInfoException* pException = nullptr;
         _callbacks->setVars(_thisHandle, &pException, ftn, cVars, vars);
-        if (pException != nullptr)
-            throw pException;
-    }
-
-    virtual void setPatchpointInfo(void* patchpointInfo)
-    {
-        CorInfoException* pException = nullptr;
-        _callbacks->setPatchpointInfo(_thisHandle, &pException, patchpointInfo);
         if (pException != nullptr)
             throw pException;
     }

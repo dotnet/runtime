@@ -810,15 +810,6 @@ namespace Internal.JitInterface
             }
         }
 
-        /// <summary>
-        /// Record patchpoint info for the method
-        /// </summary>
-        private void setPatchpointInfo(CORINFO_PATCHPOINT_INFO* patchpointInfo)
-        {
-            // No patchpoint info when prejitting
-            throw new NotImplementedException();
-        }
-
         private void PublishEmptyCode()
         {
             _methodCodeNode.SetCode(new ObjectNode.ObjectData(Array.Empty<byte>(), null, 1, Array.Empty<ISymbolDefinitionNode>()));
@@ -2149,6 +2140,24 @@ namespace Internal.JitInterface
         {
             *pCookieVal = IntPtr.Zero;
             *ppCookieVal = (IntPtr *)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ReadyToRunHelper.GSCookie));
+        }
+
+        /// <summary>
+        /// Record patchpoint info for the method
+        /// </summary>
+        private void setPatchpointInfo(PatchpointInfo* patchpointInfo)
+        {
+            // No patchpoint info when prejitting
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Retrieve OSR info for the method
+        /// </summary>
+        private PatchpointInfo* getOSRInfo(ref uint ilOffset)
+        {
+            // No patchpoint info when prejitting
+            throw new NotImplementedException();
         }
 
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
