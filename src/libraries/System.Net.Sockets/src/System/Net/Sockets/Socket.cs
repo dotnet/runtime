@@ -175,7 +175,7 @@ namespace System.Net.Sockets
                 // This may throw ObjectDisposedException.
                 SocketError errorCode = SocketPal.GetAvailable(_handle, out argp);
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.ioctlsocket returns errorCode:{errorCode}");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetAvailable returns errorCode:{errorCode}");
 
                 // Throw an appropriate SocketException if the native call fails.
                 if (errorCode != SocketError.Success)
@@ -706,7 +706,7 @@ namespace System.Net.Sockets
             {
                 try
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} Interop.Winsock.bind returns errorCode:{errorCode}");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} Bind returns errorCode:{errorCode}");
                 }
                 catch (ObjectDisposedException) { }
             }
@@ -968,7 +968,7 @@ namespace System.Net.Sockets
             {
                 try
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} Interop.Winsock.listen returns errorCode:{errorCode}");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} Listen returns errorCode:{errorCode}");
                 }
                 catch (ObjectDisposedException) { }
             }
@@ -1097,7 +1097,7 @@ namespace System.Net.Sockets
             {
                 try
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} Interop.Winsock.send returns errorCode:{errorCode} bytesTransferred:{bytesTransferred}");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} Send returns errorCode:{errorCode} bytesTransferred:{bytesTransferred}");
                 }
                 catch (ObjectDisposedException) { }
             }
@@ -1177,7 +1177,7 @@ namespace System.Net.Sockets
 
             if (NetEventSource.IsEnabled)
             {
-                NetEventSource.Info(this, $"Interop.Winsock.send returns:{bytesTransferred}");
+                NetEventSource.Info(this, $"Send returns:{bytesTransferred}");
                 NetEventSource.DumpBuffer(this, buffer, offset, bytesTransferred);
                 NetEventSource.Exit(this, bytesTransferred);
             }
@@ -1483,7 +1483,7 @@ namespace System.Net.Sockets
             {
                 try
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} Interop.Winsock.send returns errorCode:{errorCode} bytesTransferred:{bytesTransferred}");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} Receive returns errorCode:{errorCode} bytesTransferred:{bytesTransferred}");
                 }
                 catch (ObjectDisposedException) { }
             }
@@ -1718,7 +1718,7 @@ namespace System.Net.Sockets
             // platforms, however.
             SocketError errorCode = SocketPal.WindowsIoctl(_handle, ioControlCode, optionInValue, optionOutValue, out realOptionLength);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.WSAIoctl returns errorCode:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"WindowsIoctl returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1752,7 +1752,7 @@ namespace System.Net.Sockets
             // This can throw ObjectDisposedException.
             SocketError errorCode = SocketPal.SetSockOpt(_handle, optionLevel, optionName, optionValue);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.setsockopt returns errorCode:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetSockOpt returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1859,7 +1859,7 @@ namespace System.Net.Sockets
                 optionName,
                 out optionValue);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.getsockopt returns errorCode:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetSockOpt returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1884,7 +1884,7 @@ namespace System.Net.Sockets
                 optionValue!,
                 ref optionLength);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.getsockopt returns errorCode:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetSockOpt returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1908,7 +1908,7 @@ namespace System.Net.Sockets
                 optionValue,
                 ref realOptionLength);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetSockOpt returned errorCode:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetSockOpt returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1971,7 +1971,7 @@ namespace System.Net.Sockets
 
             bool status;
             SocketError errorCode = SocketPal.Poll(_handle, microSeconds, mode, out status);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.select returns socketCount:{(int)errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Poll returns socketCount:{(int)errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -2472,14 +2472,11 @@ namespace System.Net.Sockets
 
         private SocketError DoBeginSend(byte[] buffer, int offset, int size, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} size:{size}");
-
-            // Get the Send going.
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"asyncResult:{asyncResult} size:{size}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} size:{size} asyncResult:{asyncResult}");
 
             SocketError errorCode = SocketPal.SendAsync(_handle, buffer, offset, size, socketFlags, asyncResult);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.WSASend returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SendAsync returns:{errorCode} size:{size} AsyncResult:{asyncResult}");
 
             // If the call failed, update our status
             if (!CheckErrorAndUpdateStatus(errorCode))
@@ -2539,12 +2536,11 @@ namespace System.Net.Sockets
 
         private SocketError DoBeginSend(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} buffers:{buffers}");
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"asyncResult:{asyncResult}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} buffers:{buffers} asyncResult:{asyncResult}");
 
             SocketError errorCode = SocketPal.SendAsync(_handle, buffers, socketFlags, asyncResult);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.WSASend returns:{errorCode} returning AsyncResult:{asyncResult}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SendAsync returns:{errorCode} returning AsyncResult:{asyncResult}");
 
             // If the call failed, update our status
             if (!CheckErrorAndUpdateStatus(errorCode))
@@ -2740,7 +2736,7 @@ namespace System.Net.Sockets
 
                 errorCode = SocketPal.SendToAsync(_handle, buffer, offset, size, socketFlags, socketAddress, asyncResult);
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.WSASend returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SendToAsync returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
             }
             catch (ObjectDisposedException)
             {
@@ -2896,7 +2892,7 @@ namespace System.Net.Sockets
 #endif
             SocketError errorCode = SocketPal.ReceiveAsync(_handle, buffer, offset, size, socketFlags, asyncResult);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.WSARecv returns:{errorCode} returning AsyncResult:{asyncResult}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ReceiveAsync returns:{errorCode} returning AsyncResult:{asyncResult}");
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred: 0);
             if (CheckErrorAndUpdateStatus(errorCode))
@@ -2968,7 +2964,7 @@ namespace System.Net.Sockets
 #endif
             SocketError errorCode = SocketPal.ReceiveAsync(_handle, buffers, socketFlags, asyncResult);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.WSARecv returns:{errorCode} returning AsyncResult:{asyncResult}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ReceiveAsync returns:{errorCode} returning AsyncResult:{asyncResult}");
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred: 0);
             if (!CheckErrorAndUpdateStatus(errorCode))
@@ -3149,7 +3145,7 @@ namespace System.Net.Sockets
                     }
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.WSARecvMsg returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ReceiveMessageFromAsync returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
             }
             catch (ObjectDisposedException)
             {
@@ -3362,7 +3358,7 @@ namespace System.Net.Sockets
 
                 errorCode = SocketPal.ReceiveFromAsync(_handle, buffer, offset, size, socketFlags, socketAddress, asyncResult);
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.WSARecvFrom returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ReceiveFromAsync returns:{errorCode} size:{size} returning AsyncResult:{asyncResult}");
             }
             catch (ObjectDisposedException)
             {
@@ -3541,7 +3537,7 @@ namespace System.Net.Sockets
             int socketAddressSize = GetAddressSize(_rightEndPoint);
             SocketError errorCode = SocketPal.AcceptAsync(this, _handle, acceptHandle, receiveSize, socketAddressSize, asyncResult);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.AcceptEx returns:{errorCode} {asyncResult}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"AcceptAsync returns:{errorCode} {asyncResult}");
 
             // Throw an appropriate SocketException if the native call fails synchronously.
             if (!CheckErrorAndUpdateStatus(errorCode))
@@ -3646,7 +3642,7 @@ namespace System.Net.Sockets
             // This can throw ObjectDisposedException.
             SocketError errorCode = SocketPal.Shutdown(_handle, _isConnected, _isDisconnected, how);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.shutdown returns errorCode:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Shutdown returns errorCode:{errorCode}");
 
             // Skip good cases: success, socket already closed.
             if (errorCode != SocketError.Success && errorCode != SocketError.NotSocket)
@@ -4273,7 +4269,7 @@ namespace System.Net.Sockets
             {
                 try
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} Interop.Winsock.WSAConnect returns errorCode:{errorCode}");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} Connect returns errorCode:{errorCode}");
                 }
                 catch (ObjectDisposedException) { }
             }
@@ -4497,7 +4493,7 @@ namespace System.Net.Sockets
             try
             {
                 errorCode = SocketPal.SetSockOpt(_handle, optionLevel, optionName, optionValue);
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.setsockopt returns errorCode:{errorCode}");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetSockOpt returns errorCode:{errorCode}");
             }
             catch
             {
@@ -4531,7 +4527,7 @@ namespace System.Net.Sockets
         {
             SocketError errorCode = SocketPal.SetMulticastOption(_handle, optionName, MR);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.setsockopt returns errorCode:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetMulticastOption returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -4545,7 +4541,7 @@ namespace System.Net.Sockets
         {
             SocketError errorCode = SocketPal.SetIPv6MulticastOption(_handle, optionName, MR);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.setsockopt returns errorCode:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetIPv6MulticastOption returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -4558,7 +4554,7 @@ namespace System.Net.Sockets
         {
             SocketError errorCode = SocketPal.SetLingerOption(_handle, lref);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.setsockopt returns errorCode:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetLingerOption returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -4572,7 +4568,7 @@ namespace System.Net.Sockets
             LingerOption? lingerOption;
             SocketError errorCode = SocketPal.GetLingerOption(_handle, out lingerOption);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.getsockopt returns errorCode:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetLingerOption returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -4588,7 +4584,7 @@ namespace System.Net.Sockets
             MulticastOption? multicastOption;
             SocketError errorCode = SocketPal.GetMulticastOption(_handle, optionName, out multicastOption);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.getsockopt returns errorCode:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetMulticastOption returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -4605,7 +4601,7 @@ namespace System.Net.Sockets
             IPv6MulticastOption? multicastOption;
             SocketError errorCode = SocketPal.GetIPv6MulticastOption(_handle, optionName, out multicastOption);
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.getsockopt returns errorCode:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"GetIPv6MulticastOption returns errorCode:{errorCode}");
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -4641,7 +4637,7 @@ namespace System.Net.Sockets
                 errorCode = SocketError.NotSocket;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.ioctlsocket returns errorCode:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SetBlocking returns errorCode:{errorCode}");
 
             // We will update only internal state but only on successful win32 call
             // so if the native call fails, the state will remain the same.
@@ -4701,7 +4697,7 @@ namespace System.Net.Sockets
                 throw;
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.connect returns:{errorCode}");
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ConnectAsync returns:{errorCode}");
 
             if (errorCode == SocketError.Success)
             {
