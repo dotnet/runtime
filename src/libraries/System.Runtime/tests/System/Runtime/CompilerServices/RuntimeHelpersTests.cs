@@ -269,15 +269,15 @@ namespace System.Runtime.CompilerServices.Tests
         public static void AllocateTypeAssociatedMemoryInvalidArguments()
         {
             Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(null, 10); });
-            Assert.Throws<ArgumentOutOfRangeException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(AllocateTypeAssociatedMemoryTest), -1); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1); });
         }
 
         [Fact]
         [SkipOnMono("Not presently implemented on Mono")]
         public static void AllocateTypeAssociatedMemoryValidArguments()
         {
-            IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(AllocateTypeAssociatedMemoryTest), 32);
-            Assert.AreNotEqual(memory, IntPtr.Zero);
+            IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32);
+            Assert.NotEqual(memory, IntPtr.Zero);
         }
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
