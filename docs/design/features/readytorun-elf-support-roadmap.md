@@ -20,8 +20,7 @@ proposal tries to summarize the steps needed towards native executable support.
 Support for Linux native executable format will require changes to the following
 areas:
 
-* **CoreCLR runtime**: ideally we should be able to use the Linux ELF headers
-  in the native code. The current treatment of ready-to-run files involving
+* **CoreCLR runtime**: The current treatment of ready-to-run files involving
   classes PEFile, PEImage and PEImageLayout aka PEDecoder, need virtualizing
   to allow for their ELF counterparts and proper deduplication of common logic
   especially related to R2R that should be mostly autonomous once the R2R header
@@ -34,9 +33,7 @@ areas:
 * **Crossgen2 compiler**: The SectionBuilder and R2RPEBuilder needs to be
   decoupled from the PE format by some form of virtualization. We need to
   port the various ELF header structures to managed code for use in Crossgen2
-  and R2RDump (do we need some approval or special arrangements for porting
-  the Linux header files like elf.h and elftypes.h to managed code in the runtime
-  repo?). After we have the constants, structures and their serialization
+  and R2RDump. Once we have the constants, structures and their serialization
   mechanisms in place and after we figure out the proper abstraction the work
   should be pretty straightforward in terms of just filling in the various header
   and section tables and emitting the section data in the proper place.
@@ -69,12 +66,11 @@ The natural sequencing and initial T-shirt costing implied by the various
 inter-dependencies and by the natural requirement that each step needs to be
 verifiable / diagnosable is as follows:
 
-* Import (rewrite) the relevant Linux headers elf.h and elftypes.h to managed
-  code, probably somewhere under *src/coreclr/src/tools/Common/Internal/Runtime*.
-  We need to verify licensing conditions for doing this. The actual work is
-  junior level, estimated at 2 man-weeks including some rudimentary regression
-  testing - e.g. writing a simple test that will dump a subset of the headers
-  for a hard-coded ELF file used as a resource by the test.
+* Import (rewrite) the relevant ELF headers to managed code, probably
+  somewhere under *src/coreclr/src/tools/Common/Internal/Runtime*.
+  This is junior level work estimated at 2 man-weeks including some rudimentary
+  regression testing - e.g. writing a simple test that will dump a subset of
+  the headers for a hard-coded ELF file used as a resource by the test.
   
   An interesting observation is that most ELF header structures have
   parallel 32-bit and 64-bit variants. It might be useful to logically unify them
