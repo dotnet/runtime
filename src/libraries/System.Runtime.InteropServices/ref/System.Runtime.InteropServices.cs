@@ -1705,7 +1705,6 @@ namespace System.Security
         public void RemoveAt(int index) { }
         public void SetAt(int index, char c) { }
     }
-    [System.CLSCompliantAttribute(false)]
     public static partial class SecureStringMarshal
     {
         public static System.IntPtr SecureStringToCoTaskMemAnsi(System.Security.SecureString s) { throw null; }
