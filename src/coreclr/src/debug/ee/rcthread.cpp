@@ -543,8 +543,9 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
 
     // @dbgtodo  inspection - this should all go away or be obtained from DacDbi Primitives.
     g_pEEInterface->GetRuntimeOffsets(&pDebuggerRuntimeOffsets->m_TLSIndex,
-                                      &pDebuggerRuntimeOffsets->m_TLSIsSpecialIndex,
-                                      &pDebuggerRuntimeOffsets->m_TLSCantStopIndex,
+                                      &pDebuggerRuntimeOffsets->m_TLSEEThreadOffset,
+                                      &pDebuggerRuntimeOffsets->m_TLSIsSpecialOffset,
+                                      &pDebuggerRuntimeOffsets->m_TLSCantStopOffset,
                                       &pDebuggerRuntimeOffsets->m_EEThreadStateOffset,
                                       &pDebuggerRuntimeOffsets->m_EEThreadStateNCOffset,
                                       &pDebuggerRuntimeOffsets->m_EEThreadPGCDisabledOffset,

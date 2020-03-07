@@ -2121,6 +2121,11 @@ public:
 #endif // ENABLE_CONTRACTS_IMPL
 
     //---------------------------------------------------------------
+    // Calculate thread static offset
+    //---------------------------------------------------------------
+    static size_t GetOffsetOfThreadStatic(void* pThreadStatic);
+
+    //---------------------------------------------------------------
     // Expose key offsets and values for stub generation.
     //---------------------------------------------------------------
     static BYTE GetOffsetOfCurrentFrame()
@@ -2145,30 +2150,6 @@ public:
         size_t ofs = offsetof(class Thread, m_fPreemptiveGCDisabled);
         _ASSERTE(FitsInI1(ofs));
         return (BYTE)ofs;
-    }
-
-    static void StaticDisablePreemptiveGC( Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(pThread != NULL);
-        pThread->DisablePreemptiveGC();
-    }
-
-    static void StaticEnablePreemptiveGC( Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(pThread != NULL);
-        pThread->EnablePreemptiveGC();
-    }
-
-
-    //---------------------------------------------------------------
-    // Expose offset of the app domain word for the interop and delegate callback
-    //---------------------------------------------------------------
-    static SIZE_T GetOffsetOfAppDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (SIZE_T)(offsetof(class Thread, m_pDomain));
     }
 
     //---------------------------------------------------------------

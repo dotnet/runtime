@@ -21,6 +21,8 @@
 
 #ifndef DACCESS_COMPILE
 
+thread_local size_t t_CantStopCount;
+
 // Helper function that encapsulates the parsing rules.
 //
 // Called first with *pdstout == NULL to figure out how many args there are

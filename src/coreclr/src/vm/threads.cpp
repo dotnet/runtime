@@ -316,29 +316,20 @@ bool Thread::DetectHandleILStubsForDebugger()
 __thread ThreadLocalInfo gCurrentThreadInfo;
 #endif
 
-// index into TLS Array. Definition added by compiler
-EXTERN_C UINT32 _tls_index;
-
-#ifndef HOST_WINDOWS
-UINT32 _tls_index;
-#endif
-
 #ifndef DACCESS_COMPILE
 
-BOOL SetThread(Thread* t)
+void SetThread(Thread* t)
 {
     LIMITED_METHOD_CONTRACT
 
     gCurrentThreadInfo.m_pThread = t;
-    return TRUE;
 }
 
-BOOL SetAppDomain(AppDomain* ad)
+void SetAppDomain(AppDomain* ad)
 {
     LIMITED_METHOD_CONTRACT
 
     gCurrentThreadInfo.m_pAppDomain = ad;
-    return TRUE;
 }
 
 BOOL Thread::Alert ()
@@ -743,10 +734,8 @@ Thread* SetupThread(BOOL fInternal)
 
     ThreadStore::AddThread(pThread);
 
-    BOOL fOK = SetThread(pThread);
-    _ASSERTE (fOK);
-    fOK = SetAppDomain(pThread->GetDomain());
-    _ASSERTE (fOK);
+    SetThread(pThread);
+    SetAppDomain(pThread->GetDomain());
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Ensure that debugger word slot is allocated
@@ -1004,7 +993,11 @@ DWORD GetRuntimeId()
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef HOST_WINDOWS
     return _tls_index;
+#else
+    return 0;
+#endif
 }
 
 //---------------------------------------------------------------------------
@@ -1122,11 +1115,7 @@ void InitThreadManager()
 #ifndef TARGET_UNIX
     _ASSERTE(GetThread() == NULL);
 
-    PTEB Teb = NtCurrentTeb();
-    BYTE** tlsArray = (BYTE**)Teb->ThreadLocalStoragePointer;
-    BYTE* tlsData = (BYTE*)tlsArray[_tls_index];
-
-    size_t offsetOfCurrentThreadInfo = (BYTE*)&gCurrentThreadInfo - tlsData;
+    size_t offsetOfCurrentThreadInfo = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo);
 
     _ASSERTE(offsetOfCurrentThreadInfo < 0x8000);
     _ASSERTE(_tls_index < 0x10000);
@@ -1779,15 +1768,8 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
 
         InitThread(FALSE);
 
-        if (SetThread(this) == FALSE)
-        {
-            ThrowOutOfMemory();
-        }
-
-        if (SetAppDomain(m_pDomain) == FALSE)
-        {
-            ThrowOutOfMemory();
-        }
+        SetThread(this);
+        SetAppDomain(m_pDomain);
 
         ThreadStore::TransferStartedThread(this, bRequiresTSL);
 
@@ -1831,10 +1813,8 @@ FAILURE:
             {
                 // The thread pointer in TLS may not be set yet, if we had a failure before we set it.
                 // So we'll set it up here (we'll unset it a few lines down).
-                if (SetThread(this) != FALSE)
-                {
-                    CleanupCOMState();
-                }
+                SetThread(this);
+                CleanupCOMState();
             }
 #endif
             FastInterlockDecrement(&ThreadStore::s_pThreadStore->m_PendingThreadCount);

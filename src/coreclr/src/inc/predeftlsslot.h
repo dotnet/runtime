@@ -25,7 +25,7 @@ enum PredefinedTlsSlots
     TlsIdx_Unused3,
     TlsIdx_Unused4,
     TlsIdx_Unused5,
-    TlsIdx_CantStopCount, // Can't-stop counter for any thread
+    TlsIdx_Unused6,
     TlsIdx_Unused7,
     TlsIdx_Unused8,
     TlsIdx_Unused9,
