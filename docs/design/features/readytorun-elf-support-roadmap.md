@@ -136,7 +136,7 @@ verifiable / diagnosable is as follows:
   from the existing Linux libraries. We should consider some level of
   virtualization to cater for common constructs. The new objects should be
   Linux-specific and should use the Linux-native functions for manipulating
-  executables like **dlopen** / **dlsym**.
+  executables like ``dlopen`` / ``dlsym``.
   
   This will wildly differ from the existing PE manipulation, hopefully
   in the direction of simplifying it. [For single-exe aka R2R with a
