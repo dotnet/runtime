@@ -15,7 +15,6 @@ namespace Internal.JitInterface
         // This accounts for up to 2 indirections to get at a dictionary followed by a possible spill slot
         public const uint MAXINDIRECTIONS = 4;
         public const ushort USEHELPER = 0xffff;
-        public const ushort CORINFO_NO_SIZE_CHECK = 0xffff;
     }
 
     public struct CORINFO_METHOD_STRUCT_
@@ -249,7 +248,6 @@ namespace Internal.JitInterface
         public byte _testForFixup;
         public bool testForFixup { get { return _testForFixup != 0; } set { _testForFixup = value ? (byte)1 : (byte)0; } }
 
-        public ushort sizeOffset;
         public IntPtr offset0;
         public IntPtr offset1;
         public IntPtr offset2;
