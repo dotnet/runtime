@@ -801,7 +801,7 @@ namespace InteropLibImports
         BEGIN_EXTERNAL_ENTRYPOINT(&hr)
         {
             GCX_COOP_THREAD_EXISTS(GET_THREAD());
-            if (req == GcRequest::Extensive)
+            if (req == GcRequest::FullBlocking)
             {
                 GCHeapUtilities::GetGCHeap()->GarbageCollect(2, true, collection_blocking | collection_optimized);
             }

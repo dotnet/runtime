@@ -30,7 +30,7 @@ namespace InteropLibImports
     enum class GcRequest
     {
         Default,
-        Extensive // This is an expensive GC request, akin to a Gen2/"stop the world" GC.
+        FullBlocking // This is an expensive GC request, akin to a Gen2/"stop the world" GC.
     };
 
     // Request a GC from the runtime.

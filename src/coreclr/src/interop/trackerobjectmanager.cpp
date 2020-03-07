@@ -75,7 +75,7 @@ namespace
 
         // Request a "stop the world" GC when a suspend is occurring.
         if (flags & XAML_REFERENCETRACKER_DISCONNECT_SUSPEND)
-            type = InteropLibImports::GcRequest::Extensive;
+            type = InteropLibImports::GcRequest::FullBlocking;
 
         return InteropLibImports::RequestGarbageCollectionForExternal(type);
     }
