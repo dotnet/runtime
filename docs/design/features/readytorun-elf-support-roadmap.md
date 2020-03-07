@@ -67,7 +67,7 @@ inter-dependencies and by the natural requirement that each step needs to be
 verifiable / diagnosable is as follows:
 
 * Import (rewrite) the relevant ELF headers to managed code, probably
-  somewhere under *src/coreclr/src/tools/Common/Internal/Runtime*.
+  somewhere under ``src/coreclr/src/tools/Common/Internal/Runtime``.
   This is junior level work estimated at 2 man-weeks including some rudimentary
   regression testing - e.g. writing a simple test that will dump a subset of
   the headers for a hard-coded ELF file used as a resource by the test.
@@ -83,7 +83,7 @@ verifiable / diagnosable is as follows:
   technically switchable endianness but we only support the little variant).
 
 * Create a simplified counterpart of System.Reflection.PortableExecutable to
-  support ELF, again somewhere under *src/coreclr/src/tools/Common/Internal/Runtime*.
+  support ELF, again somewhere under ``src/coreclr/src/tools/Common/Internal/Runtime``.
   At some point we may consider porting it to libraries but initially it's better
   to keep that separate.
   
