@@ -1258,6 +1258,9 @@ PrepareCodeConfig::JitOptimizationTier PrepareCodeConfig::GetJitOptimizationTier
                 case NativeCodeVersion::OptimizationTier1:
                     return JitOptimizationTier::OptimizedTier1;
 
+                case NativeCodeVersion::OptimizationTier1OSR:
+                    return JitOptimizationTier::OptimizedTier1OSR;
+
                 case NativeCodeVersion::OptimizationTierOptimized:
                     return JitOptimizationTier::Optimized;
 
@@ -1282,6 +1285,7 @@ const char *PrepareCodeConfig::GetJitOptimizationTierStr(PrepareCodeConfig *conf
         case JitOptimizationTier::Optimized: return "Optimized";
         case JitOptimizationTier::QuickJitted: return "QuickJitted";
         case JitOptimizationTier::OptimizedTier1: return "OptimizedTier1";
+        case JitOptimizationTier::OptimizedTier1OSR: return "OptimizedTier1OSR";
 
         default:
             UNREACHABLE();
@@ -1344,15 +1348,6 @@ CORJIT_FLAGS VersionedPrepareCodeConfig::GetJitCompilationFlags()
 
 #ifdef FEATURE_TIERED_COMPILATION
     flags.Add(TieredCompilationManager::GetJitFlags(m_nativeCodeVersion));
-#endif
-
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-    unsigned ilOffset = 0;
-    PatchpointInfo * patchpointInfo = m_nativeCodeVersion.GetOSRInfo(&ilOffset);
-    if (patchpointInfo != NULL)
-    {
-        flags.Add(CORJIT_FLAGS::CORJIT_FLAG_OSR);
-    }
 #endif
 
     return flags;

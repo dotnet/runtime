@@ -5067,16 +5067,14 @@ static PCODE JitPatchpointWorker(void* ip, int ilOffset)
         return NULL;
     }
 
-    // Find the il method version corresponding to this version of the method
-    // and set up a new native code version for it.
-    ReJITID rejitId = ReJitManager::GetReJitId(pMD, codeInfo.GetStartAddress());
-    CodeVersionManager* codeVersionManager = pMD->GetCodeVersionManager();
+    // Set up a new native code version for the OSR variant of this method.
     NativeCodeVersion osrNativeCodeVersion;
     {
-        // Request a new native version that is optimized.
-        CodeVersionManager::TableLockHolder lock(codeVersionManager);
-        ILCodeVersion ilCodeVersion = codeVersionManager->GetILCodeVersion(pMD, rejitId);
-        HRESULT hr = ilCodeVersion.AddNativeCodeVersion(pMD, NativeCodeVersion::OptimizationTier1, &osrNativeCodeVersion, patchpointInfo, ilOffset);
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+
+        NativeCodeVersion currentNativeCodeVersion = codeInfo.GetNativeCodeVersion();
+        ILCodeVersion ilCodeVersion = currentNativeCodeVersion.GetILCodeVersion();
+        HRESULT hr = ilCodeVersion.AddNativeCodeVersion(pMD, NativeCodeVersion::OptimizationTier1OSR, &osrNativeCodeVersion, patchpointInfo, ilOffset);
         if (FAILED(hr))
         {
             // log ...

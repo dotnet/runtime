@@ -44,8 +44,7 @@ void NativeCodeVersion::SetGCCoverageInfo(PTR_GCCoverageInfo gcCover)
 }
 #endif
 
-bool NativeCodeVersion::operator==(const NativeCodeVersion & rhs) const { return m_pMethodDesc == rhs.m_pMethodDesc; }
-bool NativeCodeVersion::operator!=(const NativeCodeVersion & rhs) const { return !operator==(rhs); }
+
 #else // FEATURE_CODE_VERSIONING
 
 
@@ -74,9 +73,7 @@ NativeCodeVersionNode::NativeCodeVersionNode(
     m_ilOffset(ilOffset),
 #endif
     m_flags(0)
-{
-
-}
+{}
 #endif
 
 PCODE NativeCodeVersionNode::GetNativeCode() const

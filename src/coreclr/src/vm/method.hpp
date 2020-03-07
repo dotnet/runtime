@@ -2103,6 +2103,7 @@ public:
         Optimized,
         QuickJitted,
         OptimizedTier1,
+        OptimizedTier1OSR,
 
         Count
     };

@@ -924,6 +924,12 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(NativeCodeVersion nativeCodeV
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
             break;
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        case NativeCodeVersion::OptimizationTier1OSR:
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_OSR);
+            // fall through
+#endif
+
         case NativeCodeVersion::OptimizationTier1:
             flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
             // fall through

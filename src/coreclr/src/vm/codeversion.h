@@ -77,6 +77,7 @@ public:
     {
         OptimizationTier0,
         OptimizationTier1,
+        OptimizationTier1OSR,
         OptimizationTierOptimized, // may do less optimizations than tier 1
     };
 #ifdef FEATURE_TIERED_COMPILATION
