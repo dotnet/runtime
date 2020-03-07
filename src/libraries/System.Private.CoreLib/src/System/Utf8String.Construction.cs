@@ -294,7 +294,7 @@ namespace System
                 // At this point we know transcoding succeeded, so the original input data was well-formed.
                 // We'll memcpy the scratch buffer into the new Utf8String instance, which is very fast.
 
-                newBuffer = new byte[scratchBytesWritten];
+                newBuffer = new byte[scratchBytesWritten + 1]; // null-terminated
                 scratch.Slice(0, scratchBytesWritten).CopyTo(newBuffer);
                 return newBuffer;
             }
@@ -334,7 +334,7 @@ namespace System
             // We can get away with FastAllocateSkipZeroInit here because we're not going to return the
             // new Utf8String instance to the caller if we don't overwrite every byte of the buffer.
 
-            newBuffer = new byte[(int)totalUtf8BytesRequired];
+            newBuffer = new byte[(int)totalUtf8BytesRequired + 1]; // null-terminated
 
             // Now transcode the UTF-16 input into the newly allocated Utf8String's buffer. We can't call the
             // "skip validation" transcoder because the caller could've mutated the input buffer between the

@@ -181,7 +181,7 @@ namespace System
                 ref DangerousGetMutableReference(), Length,
                 ref MemoryMarshal.GetReference(runeBytes), runeBytesWritten) >= 0;
 #else
-            return DangerousGetMutableSpan()
+            return GetSpan()
                 .IndexOf(runeBytes.Slice(0, runeBytesWritten)) >= 0;
 #endif
         }

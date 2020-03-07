@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -16,7 +17,7 @@ namespace System
         /// <summary>
         /// Returns the length (in UTF-8 code units, or <see cref="byte"/>s) of this instance.
         /// </summary>
-        public int Length => _bytes.Length > 0 ? - 1 : 0; // -1 because the bytes are always null-terminated
+        public int Length => _bytes.Length == 0 ? 0 : _bytes.Length - 1; // -1 because the bytes are always null-terminated
 
         public Utf8String(ReadOnlySpan<byte> value)
         {
@@ -81,14 +82,25 @@ namespace System
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ref byte DangerousGetMutableReference() =>
-            ref MemoryMarshal.GetReference(_bytes.Length > 0 ? _bytes.AsSpan() : s_EmptyRef);
+            ref MemoryMarshal.GetReference(Length > 0 ? _bytes.AsSpan() : s_EmptyRef);
 
         /// <summary>
         /// Returns a <em>mutable</em> <see cref="Span{Byte}"/> that can be used to populate this
         /// <see cref="Utf8String"/> instance. Only to be used during construction.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal Span<byte> DangerousGetMutableSpan() => _bytes;
+        internal Span<byte> DangerousGetMutableSpan()
+        {
+            Debug.Assert(Length > 0, $"This should only ever be called on a non-empty {nameof(Utf8String)}.");
+            return _bytes.AsSpan(0, Length);
+        }
+
+        /// <summary>
+        /// Returns a <see cref="ReadOnlySpan{Byte}"/> for this
+        /// <see cref="Utf8String"/> instance.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<byte> GetSpan() => Length > 0 ? _bytes.AsSpan(0, Length) : s_EmptyRef.Slice(0, 0);
 
         /// <summary>
         /// Gets an immutable reference that can be used in a <see langword="fixed"/> statement. The resulting

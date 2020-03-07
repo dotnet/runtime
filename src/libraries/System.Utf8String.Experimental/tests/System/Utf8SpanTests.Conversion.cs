@@ -159,7 +159,7 @@ namespace System.Text.Tests
 
                 foreach (int bufferSize in new[] { expectedUtf8.Length, expectedUtf8.Length + 1 })
                 {
-                    byte[] buffer = new byte[expectedUtf8.Length];
+                    byte[] buffer = new byte[bufferSize];
 
                     if (culture is null)
                     {
@@ -170,7 +170,7 @@ namespace System.Text.Tests
                         Assert.Equal(expectedUtf8.Length, inputSpan.ToUpper(buffer, culture));
                     }
 
-                    Assert.True(expectedUtf8.AsBytes().SequenceEqual(buffer));
+                    Assert.True(expectedUtf8.AsBytes().SequenceEqual(buffer.AsSpan(0, expectedUtf8.Length)));
                 }
             }
 

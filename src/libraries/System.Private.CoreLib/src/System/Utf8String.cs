@@ -159,7 +159,7 @@ namespace System
 #if CORECLR
                 && SpanHelpers.SequenceEqual(ref this.DangerousGetMutableReference(), ref value.DangerousGetMutableReference(), (uint)Length);
 #else
-                && this.DangerousGetMutableSpan().SequenceEqual(value.DangerousGetMutableSpan());
+                && this.GetSpan().SequenceEqual(value.GetSpan());
 #endif
         }
 
@@ -188,7 +188,7 @@ namespace System
 #if CORECLR
                 && SpanHelpers.SequenceEqual(ref left.DangerousGetMutableReference(), ref right.DangerousGetMutableReference(), (uint)left.Length);
 #else
-                && left.DangerousGetMutableSpan().SequenceEqual(right.DangerousGetMutableSpan());
+                && left.GetSpan().SequenceEqual(right.GetSpan());
 #endif
         }
 
@@ -275,7 +275,7 @@ namespace System
             byte[] buffer = ArrayPool<byte>.Shared.Rent(Length);
             try
             {
-                _bytes.CopyTo(buffer.AsSpan());
+                _bytes.AsSpan(0, Length).CopyTo(buffer.AsSpan());
                 return Encoding.UTF8.GetString(buffer, 0, Length);
             }
             finally

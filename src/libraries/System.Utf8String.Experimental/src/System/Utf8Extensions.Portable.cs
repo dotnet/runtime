@@ -9,15 +9,15 @@ namespace System
     public static partial class Utf8Extensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ReadOnlySpan<byte> CreateSpan(Utf8String text) => text.DangerousGetMutableSpan();
+        private static ReadOnlySpan<byte> CreateSpan(Utf8String text) => text.GetSpan();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ReadOnlySpan<byte> CreateSpan(Utf8String text, int start) =>
-            text.DangerousGetMutableSpan().Slice(start);
+            text.GetSpan().Slice(start);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ReadOnlySpan<byte> CreateSpan(Utf8String text, int start, int length) =>
-            text.DangerousGetMutableSpan().Slice(start, length);
+            text.GetSpan().Slice(start, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ReadOnlyMemory<byte> CreateMemoryBytes(Utf8String text, int start, int length) =>

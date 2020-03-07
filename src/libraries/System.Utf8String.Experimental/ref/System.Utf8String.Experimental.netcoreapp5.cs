@@ -16,3 +16,10 @@ namespace System
         public static System.ReadOnlyMemory<System.Char8> AsMemory(this System.Utf8String? text, System.Range range) { throw null; }
     }
 }
+namespace System.Net.Http
+{
+    public sealed partial class Utf8StringContent : System.Net.Http.HttpContent
+    {
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
+    }
+}
