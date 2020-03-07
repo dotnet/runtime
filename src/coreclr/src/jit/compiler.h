@@ -3659,15 +3659,6 @@ protected:
                             CORINFO_METHOD_HANDLE method,
                             CORINFO_SIG_INFO*     sig,
                             bool                  mustExpand);
-   /* var_types getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
-                        CORINFO_SIG_INFO*    sig,
-                        var_types baseType);
-    HWIntrinsicArgsInfo getArgsInfoForHWIntrinsic(NamedIntrinsic      intrinsic,
-                                               HWIntrinsicCategory category,
-                                               CORINFO_SIG_INFO*   sig,
-                                               var_types           baseType,
-                                               bool                mustExpand);
-    GenTreeHWIntrinsic* gtNewHWIntrinsicNode(HWIntrinsicArgsInfo argsInfo, var_types retType, unsigned simdSize);*/
     GenTree* impUnsupportedHWIntrinsic(unsigned              helper,
                                        CORINFO_METHOD_HANDLE method,
                                        CORINFO_SIG_INFO*     sig,
