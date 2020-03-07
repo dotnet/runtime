@@ -77,7 +77,7 @@ verifiable / diagnosable is as follows:
   for a hard-coded ELF file used as a resource by the test.
   
   An interesting observation is that most ELF header structures have
-  paraller 32-bit and 64-bit variants. It might be useful to logically unify them
+  parallel 32-bit and 64-bit variants. It might be useful to logically unify them
   by internally using longs and just have virtual de-serializers that would have
   something like ReadNativeInt representing 32-bit or 64-bit integer based on
   the bitness.
