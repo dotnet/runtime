@@ -1120,7 +1120,7 @@ void InitThreadManager()
 
     memcpy(s_barrierCopy, (BYTE*)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
 
-    // Store the JIT_WriteBarrier copy location to a global variable so that the JIT_Stelem_Ref and its helpers
+    // Store the JIT_WriteBarrier copy location to a global variable so that helpers
     // can jump to it.
     JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
 
@@ -6510,7 +6510,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
         // -additionally, we need to provide some region to hosts to allow for lock acquisition in a hosted scenario
         //
         EXTRA_PAGES = 3;
-        INDEBUG(EXTRA_PAGES += 3);
+        INDEBUG(EXTRA_PAGES += 1);
 
         int ThreadGuardPages = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ThreadGuardPages);
         if (ThreadGuardPages == 0)
@@ -6524,7 +6524,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
 
 #else // HOST_64BIT
 #ifdef _DEBUG
-        uGuardSize += (3 * GetOsPageSize());    // three extra pages for debug infrastructure
+        uGuardSize += (1 * GetOsPageSize());    // one extra page for debug infrastructure
 #endif // _DEBUG
 #endif // HOST_64BIT
 

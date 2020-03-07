@@ -15,6 +15,15 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.Primitives",
+    "Description": "Primitives shared by framework extensions. Commonly used types include:",
+    "CommonTypes": [
+      "Microsoft.Extensions.Primitives.IChangeToken",
+      "Microsoft.Extensions.Primitives.StringValues",
+      "Microsoft.Extensions.Primitives.StringSegment"
+    ]
+  },
+  {
     "Name": "Microsoft.Bcl.HashCode",
     "Description": "Provides the HashCode type for .NET Standard 2.0. This package is not required starting with .NET Standard 2.1 and .NET Core 3.0.",
     "CommonTypes": [

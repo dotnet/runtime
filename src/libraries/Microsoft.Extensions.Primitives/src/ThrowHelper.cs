@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Primitives
 
         private static string GetResourceText(ExceptionResource resource)
         {
-            return Resources.ResourceManager.GetString(GetResourceName(resource), Resources.Culture);
+            return SR.GetResourceString(GetResourceName(resource));
         }
 
         private static string GetArgumentName(ExceptionArgument argument)

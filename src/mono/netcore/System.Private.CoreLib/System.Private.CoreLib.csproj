@@ -139,6 +139,7 @@
     <FeaturePortableTimer>true</FeaturePortableTimer>
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
     <FeaturePerfTracing>true</FeaturePerfTracing>
+    <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
   </PropertyGroup>
 
   <!-- Sources -->

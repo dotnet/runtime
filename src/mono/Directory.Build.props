@@ -4,19 +4,13 @@
   </PropertyGroup>
   <Import Project="..\..\Directory.Build.props" />
   
-  <!-- Set default Configuration and Platform -->
+  <!-- Set default Platform -->
   <PropertyGroup>
-    <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(Windows))' == 'true'">Windows_NT</OSGroup>
-    <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(Linux))' == 'true'">Linux</OSGroup>
-    <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</OSGroup>
-
     <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
     <Platform>$(ArchGroup)</Platform>
     <TargetArchitecture>$(ArchGroup)</TargetArchitecture>
 
-    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
-
-    <PlatformConfigPathPart>$(OSGroup).$(Platform).$(Configuration)</PlatformConfigPathPart>
+    <PlatformConfigPathPart>$(TargetOS).$(Platform).$(Configuration)</PlatformConfigPathPart>
   </PropertyGroup>
 
   <!-- Common properties -->
@@ -41,11 +35,11 @@
 
   <!-- Set up common target properties that we use to conditionally include sources -->
   <PropertyGroup>
-    <TargetsFreeBSD Condition="'$(OSGroup)' == 'FreeBSD'">true</TargetsFreeBSD>
-    <TargetsLinux Condition="'$(OSGroup)' == 'Linux'">true</TargetsLinux>
-    <TargetsNetBSD Condition="'$(OSGroup)' == 'NetBSD'">true</TargetsNetBSD>
-    <TargetsOSX Condition="'$(OSGroup)' == 'OSX'">true</TargetsOSX>
-    <TargetsWindows Condition="'$(OSGroup)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
+    <TargetsLinux Condition="'$(TargetOS)' == 'Linux'">true</TargetsLinux>
+    <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
+    <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
+    <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
 

@@ -11,6 +11,7 @@ using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.NET.HostModel.Bundle;
 using BundleTests.Helpers;
+using FluentAssertions;
 
 namespace Microsoft.NET.HostModel.Tests
 {
@@ -98,49 +99,11 @@ namespace Microsoft.NET.HostModel.Tests
             File.Copy(Path.Combine(publishPath, $"{appName}.runtimeconfig.json"), 
                       Path.Combine(publishPath, $"{appName}.runtimeconfig.dev.json"));
 
-            var singleFile = new Bundler(hostName, bundleDir.FullName, embedPDBs).GenerateBundle(publishPath);
+            var bundler = new Bundler(hostName, bundleDir.FullName, embedPDBs); 
+            bundler.GenerateBundle(publishPath);
 
-            bundleDir.Should().OnlyHaveFiles(new string[] { hostName });
-
-            new Extractor(singleFile, bundleDir.FullName).ExtractFiles();
-
-            bundleDir.Should().NotHaveFile($"{appName}.runtimeconfig.dev.json");
-            if (!embedPDBs)
-            {
-                bundleDir.Should().NotHaveFile($"{appName}.pdb");
-            }
-        }
-
-        [Fact]
-        public void ExtractingANonBundleFails()
-        {
-            var fixture = sharedTestState.TestFixture.Copy();
-
-            var hostName = BundleHelper.GetHostName(fixture);
-            var hostExe = Path.Combine(BundleHelper.GetPublishPath(fixture), hostName);
-
-            var bundleDir = BundleHelper.GetBundleDir(fixture);
-            Extractor extractor = new Extractor(hostExe, "extract");
-            Assert.Throws<BundleException>(() => extractor.ExtractFiles());
-        }
-
-        [Fact]
-        public void AllBundledFilesAreExtracted()
-        {
-            var fixture = sharedTestState.TestFixture.Copy();
-
-            var hostName = BundleHelper.GetHostName(fixture);
-            var bundleDir = BundleHelper.GetBundleDir(fixture);
-
-            var bundler = new Bundler(hostName, bundleDir.FullName);
-            string singleFile = bundler.GenerateBundle(BundleHelper.GetPublishPath(fixture));
-
-            var expectedFiles = new List<string>(bundler.BundleManifest.Files.Count);
-            expectedFiles.Add(hostName);
-            bundler.BundleManifest.Files.ForEach(file => expectedFiles.Add(file.RelativePath));
-
-            new Extractor(singleFile, bundleDir.FullName).ExtractFiles();
-            bundleDir.Should().OnlyHaveFiles(expectedFiles);
+            bundler.BundleManifest.Contains($"{appName}.runtimeconfig.dev.json").Should().BeFalse();
+            bundler.BundleManifest.Contains($"{appName}.pdb").Should().Be(embedPDBs);
         }
 
         [Fact]

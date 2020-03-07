@@ -547,7 +547,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 
 #ifndef TARGET_UNIX
 #define JIT_NewCrossContext         JIT_NewCrossContext
-#define JIT_Stelem_Ref              JIT_Stelem_Ref
 #endif // TARGET_UNIX
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

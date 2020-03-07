@@ -666,7 +666,12 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	MonoInst *ins = NULL;
 	MonoClass *runtime_helpers_class = mono_class_get_runtime_helpers_class ();
 
-	const char* cmethod_klass_name_space = m_class_get_name_space (cmethod->klass);
+	const char* cmethod_klass_name_space;
+	if (m_class_get_nested_in (cmethod->klass))
+		cmethod_klass_name_space = m_class_get_name_space (m_class_get_nested_in (cmethod->klass));
+	else
+		cmethod_klass_name_space = m_class_get_name_space (cmethod->klass);
+
 	const char* cmethod_klass_name = m_class_get_name (cmethod->klass);
 	MonoImage *cmethod_klass_image = m_class_get_image (cmethod->klass);
 	gboolean in_corlib = cmethod_klass_image == mono_defaults.corlib;

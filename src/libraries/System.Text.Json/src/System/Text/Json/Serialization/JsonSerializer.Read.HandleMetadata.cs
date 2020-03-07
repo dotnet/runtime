@@ -58,7 +58,7 @@ namespace System.Text.Json
                 else if (metadata == MetadataPropertyName.Ref)
                 {
                     state.Current.JsonPropertyName = propertyName.ToArray();
-                    if (converter.TypeToConvert.IsValueType)
+                    if (converter.IsValueType)
                     {
                         ThrowHelper.ThrowJsonException_MetadataInvalidReferenceToValueType(converter.TypeToConvert);
                     }
