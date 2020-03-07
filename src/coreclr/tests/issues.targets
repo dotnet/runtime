@@ -382,6 +382,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/WinRT/NETClients/Bindings/NETClientBindings/*">
             <Issue>WindowsXamlManager and DesktopWindowXamlSource are supported for apps targeting Windows version 10.0.18226.0 and later.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/Dynamic/Dynamic/*">
+            <Issue>https://github.com/dotnet/runtime/issues/33276</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows arm32 specific excludes -->
