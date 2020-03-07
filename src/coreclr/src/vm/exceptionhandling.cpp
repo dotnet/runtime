@@ -4655,6 +4655,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
             }
             else
             {
+                // TODO: This needs to implemented. Make it fail for now.
                 UNREACHABLE();
             }
         }
@@ -4663,26 +4664,8 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
             controlPc = Thread::VirtualUnwindLeafCallFrame(frameContext);
         }
 
-        bool isManagedCode = ExecutionManager::IsManagedCode(controlPc);
-        if (!isManagedCode)
-        {
-            GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
-
-            if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
-            {
-                // Propagating exception from a method marked by NativeCallable attribute to a native caller is prohibited on Unix
-                if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
-                {
-                    LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
-                    _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
-                }
-                TerminateProcess(GetCurrentProcess(), 1);
-                UNREACHABLE();
-            }
-        }
-
         // Check whether we are crossing managed-to-native boundary
-        while (!isManagedCode)
+        while (!ExecutionManager::IsManagedCode(controlPc))
         {
 #ifdef VSD_STUB_CAN_THROW_AV
             if (IsIPinVirtualStub(controlPc))
@@ -4746,8 +4729,6 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
                 // The EXCEPTION_CONTINUE_EXECUTION is not supported and should never be returned by a filter
                 _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
             }
-
-            isManagedCode = ExecutionManager::IsManagedCode(controlPc);
         }
 
     } while (Thread::IsAddressInCurrentStack((void*)GetSP(frameContext)));
