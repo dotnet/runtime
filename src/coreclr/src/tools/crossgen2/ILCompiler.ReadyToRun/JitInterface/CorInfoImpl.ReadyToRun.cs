@@ -1154,11 +1154,19 @@ namespace Internal.JitInterface
             if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0
                 && originalMethod.IsNativeCallable)
             {
-                if (!originalMethod.Signature.IsStatic // Must be a static method
-                    || originalMethod.HasInstantiation || originalMethod.OwningType.HasInstantiation // No generics involved
-                    || Marshaller.IsMarshallingRequired(originalMethod)) // Only blittable arguments
+                if (!originalMethod.Signature.IsStatic) // Must be a static method
                 {
-                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNativeCallableAttributeUsage);
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonStaticMethod, originalMethod);
+                }
+
+                if (originalMethod.HasInstantiation || originalMethod.OwningType.HasInstantiation) // No generics involved
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, originalMethod);
+                }
+
+                if (Marshaller.IsMarshallingRequired(originalMethod.Signature, Array.Empty<ParameterMetadata>())) // Only blittable arguments
+                {
+                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, originalMethod);
                 }
             }
 

@@ -1148,15 +1148,15 @@ PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
 
     // only static methods are allowed
     if (!pMD->IsStatic())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_NonStaticMethod"));
+        COMPlusThrow(kInvalidProgramException, W("InvalidProgram_NonStaticMethod"));
 
     // no generic methods
     if (pMD->IsGenericMethodDefinition())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_GenericMethod"));
+        COMPlusThrow(kInvalidProgramException, W("InvalidProgram_GenericMethod"));
 
     // Arguments
     if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
-        COMPlusThrow(kNotSupportedException, W("NotSupported_NonBlittableTypes"));
+        COMPlusThrow(kInvalidProgramException, W("InvalidProgram_NonBlittableTypes"));
 
     // Get UMEntryThunk from the thunk cache.
     UMEntryThunk *pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);

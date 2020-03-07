@@ -5090,15 +5090,15 @@ void CEEInfo::getCallInfo(
     if ((flags & CORINFO_CALLINFO_LDFTN) && pMD->HasNativeCallableAttribute())
     {
         if (!pMD->IsStatic())
-            EX_THROW(EEResourceException, (kNotSupportedException, W("NotSupported_NonStaticMethod")));
+            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonStaticMethod")));
 
         // No generic methods
         if (pMD->HasClassOrMethodInstantiation())
-            EX_THROW(EEResourceException, (kNotSupportedException, W("NotSupported_GenericMethod")));
+            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_GenericMethod")));
 
         // Arguments
         if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
-            EX_THROW(EEResourceException, (kNotSupportedException, W("NotSupported_NonBlittableTypes")));
+            EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
     }
 
     TypeHandle exactType = TypeHandle(pResolvedToken->hClass);
