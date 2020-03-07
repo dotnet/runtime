@@ -40,9 +40,7 @@ void DumpMap(int index, MethodContext* mc)
     DumpPrimToConsoleBare(mc, cmi.args.retType, (DWORDLONG)cmi.args.retTypeClass);
     printf(" %s(", methodName);
     DumpSigToConsoleBare(mc, &cmi.args);
-    printf(")\"");
-
-    printf("\n");
+    printf(")\"\n");
 }
 
 int verbDumpMap::DoWork(const char* nameOfInput)
