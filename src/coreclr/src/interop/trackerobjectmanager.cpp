@@ -73,9 +73,9 @@ namespace
     {
         InteropLibImports::GcRequest type = InteropLibImports::GcRequest::Default;
 
-        // Request an expensive blocking GC when a suspend is occurring.
+        // Request a "stop the world" GC when a suspend is occurring.
         if (flags & XAML_REFERENCETRACKER_DISCONNECT_SUSPEND)
-            type = InteropLibImports::GcRequest::Blocking;
+            type = InteropLibImports::GcRequest::Extensive;
 
         return InteropLibImports::RequestGarbageCollectionForExternal(type);
     }
