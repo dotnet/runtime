@@ -5045,7 +5045,7 @@ EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 EXTERN_C void STDCALL ReversePInvokeBadTransition();
 
 // This is a slower version of the reverse PInvoke enter function.
-static void JIT_ReversePInvokeEnterRare(FastReversePInvokeFrame* frame)
+NOINLINE static void JIT_ReversePInvokeEnterRare(FastReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
 
