@@ -5314,8 +5314,8 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     }
 #endif // FEATURE_SIMD
 
-    // Set up the the array length's offset into lenOffs
-    // And    the the first element's offset into elemOffs
+    // Set up the array length's offset into lenOffs
+    // And    the first element's offset into elemOffs
     ssize_t lenOffs;
     ssize_t elemOffs;
     if (tree->gtFlags & GTF_INX_STRING_LAYOUT)
@@ -5552,8 +5552,15 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     // This is an array index expression.
     tree->gtFlags |= GTF_IND_ARR_INDEX;
 
-    /* An indirection will cause a GPF if the address is null */
-    tree->gtFlags |= GTF_EXCEPT;
+    // If there's a bounds check, the indir won't fault.
+    if (bndsChk)
+    {
+        tree->gtFlags |= GTF_IND_NONFAULTING;
+    }
+    else
+    {
+        tree->gtFlags |= GTF_EXCEPT;
+    }
 
     if (nCSE)
     {
@@ -9210,7 +9217,7 @@ GenTree* Compiler::fgMorphPromoteLocalInitBlock(GenTreeLclVar* destLclNode, GenT
         unsigned   fieldLclNum = destLclVar->lvFieldLclStart + i;
         LclVarDsc* fieldDesc   = lvaGetDesc(fieldLclNum);
         GenTree*   dest        = gtNewLclvNode(fieldLclNum, fieldDesc->TypeGet());
-        // If it had been labeled a "USEASG", assignments to the the individual promoted fields are not.
+        // If it had been labeled a "USEASG", assignments to the individual promoted fields are not.
         dest->gtFlags |= (destLclNode->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG));
 
         GenTree* src;
@@ -10210,7 +10217,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 noway_assert(destLclNum != BAD_VAR_NUM);
                 unsigned dstFieldLclNum = lvaTable[destLclNum].lvFieldLclStart + i;
                 dstFld                  = gtNewLclvNode(dstFieldLclNum, lvaTable[dstFieldLclNum].TypeGet());
-                // If it had been labeled a "USEASG", assignments to the the individual promoted fields are not.
+                // If it had been labeled a "USEASG", assignments to the individual promoted fields are not.
                 if (destAddr != nullptr)
                 {
                     noway_assert(destAddr->AsOp()->gtOp1->gtOper == GT_LCL_VAR);
@@ -13120,7 +13127,7 @@ DONE_MORPHING_CHILDREN:
                 // all the comma nodes the type of op1.
                 // TODO: the comma flag update below is conservative and can be improved.
                 // For example, if we made the ADDR(IND(x)) == x transformation, we may be able to
-                // get rid of some of the the IND flags on the COMMA nodes (e.g., GTF_GLOB_REF).
+                // get rid of some of the IND flags on the COMMA nodes (e.g., GTF_GLOB_REF).
 
                 while (!commas.Empty())
                 {
@@ -17210,6 +17217,13 @@ GenTree* Compiler::fgMorphImplicitByRefArgs(GenTree* tree, bool isAddr)
 void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZero)
 {
     // We expect 'addr' to be an address at this point.
+    assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_REF);
+
+    // Tunnel through any commas.
+    const bool commaOnly = true;
+    addr                 = addr->gtEffectiveVal(commaOnly);
+
+    // We still expect 'addr' to be an address at this point.
     assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_REF);
 
     FieldSeqNode* fieldSeqUpdate   = fieldSeqZero;
