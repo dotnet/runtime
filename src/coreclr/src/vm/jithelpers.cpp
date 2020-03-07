@@ -5044,7 +5044,8 @@ EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 // Forward declaration
 EXTERN_C void STDCALL ReversePInvokeBadTransition();
 
-EXTERN_C void JIT_ReversePInvokeEnter(FastReversePInvokeFrame* frame)
+// This is a slower version of the reverse PInvoke enter function.
+static void JIT_ReversePInvokeEnterRare(FastReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
 
@@ -5058,6 +5059,28 @@ EXTERN_C void JIT_ReversePInvokeEnter(FastReversePInvokeFrame* frame)
 
     thread->DisablePreemptiveGC();
     frame->currentThread = thread;
+}
+
+EXTERN_C void JIT_ReversePInvokeEnter(FastReversePInvokeFrame* frame)
+{
+    _ASSERTE(frame != NULL);
+    Thread* thread = GetThreadNULLOk();
+
+    // If a thread instance exists and is in the
+    // correct GC mode attempt a quick transition.
+    if (thread != NULL
+        && !thread->PreemptiveGCDisabled())
+    {
+        // Manually inline the fast path in Thread::DisablePreemptiveGC().
+        thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+        if (g_TrapReturningThreads.LoadWithoutBarrier() == 0)
+        {
+            frame->currentThread = thread;
+            return;
+        }
+    }
+
+    JIT_ReversePInvokeEnterRare(frame);
 }
 
 EXTERN_C void JIT_ReversePInvokeExit(FastReversePInvokeFrame* frame)
