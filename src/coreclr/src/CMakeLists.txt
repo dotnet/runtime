@@ -74,6 +74,7 @@ add_subdirectory(tools)
 add_subdirectory(unwinder)
 add_subdirectory(ildasm)
 add_subdirectory(ilasm)
+add_subdirectory(interop)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_subdirectory(palrt)

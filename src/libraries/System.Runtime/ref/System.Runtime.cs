@@ -9025,6 +9025,7 @@ namespace System.Runtime.CompilerServices
     public static partial class RuntimeHelpers
     {
         public static int OffsetToStringData { get { throw null; } }
+        public static IntPtr AllocateTypeAssociatedMemory(Type type, int size) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
         public static new bool Equals(object? o1, object? o2) { throw null; }
         public static void ExecuteCodeWithGuaranteedCleanup(System.Runtime.CompilerServices.RuntimeHelpers.TryCode code, System.Runtime.CompilerServices.RuntimeHelpers.CleanupCode backoutCode, object? userData) { }
