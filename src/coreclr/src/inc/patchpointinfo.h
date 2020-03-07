@@ -11,8 +11,6 @@
 #ifndef _PATCHPOINTINFO_H_
 #define _PATCHPOINTINFO_H_
 
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-
 // --------------------------------------------------------------------------------
 // Describes information needed to make an OSR transition
 //  - location of Il-visible locals and other important state on the 
@@ -151,12 +149,6 @@ private:
     int      m_securityCookieOffset;
     int      m_offsetAndExposureData[];
 };
-
-#else
-
-struct PatchpointInfo {};
-
-#endif // FEATURE_ON_STACK_REPLACEMENT
 
 typedef DPTR(struct PatchpointInfo) PTR_PatchpointInfo;
 
