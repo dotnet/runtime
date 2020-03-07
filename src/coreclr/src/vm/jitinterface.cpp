@@ -10104,7 +10104,8 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     // Wrapper delegate offsets
     pEEInfoOut->offsetOfWrapperDelegateIndirectCell = OFFSETOF__DelegateObject__methodPtrAux;
 
-    pEEInfoOut->sizeOfReversePInvokeFrame = sizeof(FastReversePInvokeFrame);
+    pEEInfoOut->sizeOfReversePInvokeFrame = TARGET_POINTER_SIZE * READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits;
+    _ASSERTE(sizeof(FastReversePInvokeFrame) <= pEEInfoOut->sizeOfReversePInvokeFrame);
 
     pEEInfoOut->osPageSize = GetOsPageSize();
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
@@ -13379,6 +13380,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
         MethodEntry:
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
             if (kind == ENCODE_METHOD_NATIVE_ENTRY)
             {
                 result = COMDelegate::ConvertToCallback(pMD);
@@ -13387,6 +13389,10 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             {
                 result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
             }
+#else
+            result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+
+#endif // !(TARGET_X86 && TARGET_WINDOWS)
 
         #ifndef TARGET_ARM
             if (CORCOMPILE_IS_PCODE_TAGGED(result))

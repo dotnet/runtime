@@ -2322,6 +2322,7 @@ namespace Internal.JitInterface
         }
 
         private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;
+        private int SizeOfReversePInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;
 
         private void setEHcount(uint cEH)
         {

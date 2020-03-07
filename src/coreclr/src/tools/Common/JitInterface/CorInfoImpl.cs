@@ -2220,7 +2220,7 @@ namespace Internal.JitInterface
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
 
-            pEEInfoOut.sizeOfReversePInvokeFrame = (uint)(2 * pointerSize);
+            pEEInfoOut.sizeOfReversePInvokeFrame = (uint)SizeOfReversePInvokeTransitionFrame;
 
             pEEInfoOut.osPageSize = new UIntPtr(0x1000);
 
