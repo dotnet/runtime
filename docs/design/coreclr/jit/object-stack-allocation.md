@@ -165,7 +165,7 @@ of all allocated bytes: 0.67% (6.24 Mb out of 920.1 Mb) but it's just a single s
 Below is the portion of the call graph the escape analysis will have to consider when proving this allocation is not escaping.
 Green arrows correspond to the call sites that are inlined and red arrows correspond to the call sites that are not inlined.
 
-![Call Graph](GreenNode_WriteTo_CallGraph.png)
+![Call Graph](images/GreenNode_WriteTo_CallGraph.png)
 
 ## Roadmap
 

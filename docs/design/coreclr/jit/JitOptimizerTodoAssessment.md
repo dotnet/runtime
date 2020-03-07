@@ -12,7 +12,7 @@ Big-Ticket Items
 
 ### Improved Struct Handling
 
-Most of the work required to improve struct handling in RyuJIT is captered in the [first-class structs](https://github.com/dotnet/runtime/blob/master/docs/design/features/first-class-structs.md)
+Most of the work required to improve struct handling in RyuJIT is captered in the [first-class structs](first-class-structs.md)
 document, though that document needs to be updated to reflect the work that has already been done.
 
 Recent improvements include the struct promotion improvements that went in for `Span<T>`.
@@ -59,7 +59,7 @@ respond to any particular issues that come out of that work.
 This is increasingly important as C# language constructs like async/await and
 certain `foreach` incantations are implemented with EH constructs, making them
 difficult to avoid at source level.  The recent work on finally cloning, empty
-finally removal, and empty try removal targeted this.  [Writethrough](https://github.com/dotnet/runtime/blob/master/docs/design/features/eh-writethru.md)
+finally removal, and empty try removal targeted this.  [Writethrough](eh-writethru.md)
 is another key optimization enabler here, and we are actively pursuing it.  Other
 things we've discussed include inlining methods with EH and computing funclet
 callee-save register usage independently of main function callee-save register
