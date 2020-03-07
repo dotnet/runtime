@@ -35,13 +35,6 @@ public class Program
         {
             TestNativeCallableValid();
             TestNativeCallableValid_OnNewNativeThread();
-
-            // Exception handling is only supported on Windows.
-            if (TestLibrary.Utilities.IsWindows)
-            {
-                TestNativeCallableValid_ThrowException();
-            }
-
             NegativeTest_NonStaticMethod();
             NegativeTest_ViaDelegate();
             NegativeTest_NonBlittable();
@@ -49,7 +42,13 @@ public class Program
             NegativeTest_InstantiatedGenericArguments();
             NegativeTest_FromInstantiatedGenericClass();
             TestNativeCallableViaUnmanagedCalli();
-            TestNativeCallableViaUnmanagedCalli_ThrowException();
+
+            // Exception handling is only supported on Windows.
+            if (TestLibrary.Utilities.IsWindows)
+            {
+                TestNativeCallableValid_ThrowException();
+                TestNativeCallableViaUnmanagedCalli_ThrowException();
+            }
 
             if (args.Length != 0 && args[0].Equals("calli"))
             {
