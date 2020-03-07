@@ -1,18 +1,12 @@
-﻿<Project InitialTargets="AddPackageDownload" Sdk="Microsoft.NET.Sdk">
+﻿<Project InitialTargets="AddPackageDownload">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <PackagingTaskAssembly>$(NuGetPackageRoot)microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\tools\</PackagingTaskAssembly>
     <PackagingTaskAssembly Condition="'$(MSBuildRuntimeType)' == 'core'">$(PackagingTaskAssembly)netcoreapp2.1\</PackagingTaskAssembly>
     <PackagingTaskAssembly Condition="'$(MSBuildRuntimeType)' != 'core'">$(PackagingTaskAssembly)net472\</PackagingTaskAssembly>
     <PackagingTaskAssembly>$(PackagingTaskAssembly)Microsoft.DotNet.Build.Tasks.Packaging.dll</PackagingTaskAssembly>
   </PropertyGroup>
 
-  <Import Project="$(PkgDir)baseline/baseline.props" />
-
-  <!-- only restore this project during the build, don't copy any of it's packages
-       The sole purpose of this project is to download packages that can be examined
-       for harvesting binaries & support. -->
-  <Target Name="Build" DependsOnTargets="RestorePackages" />
+  <Import Project="$(LibrariesProjectRoot)pkg\baseline\baseline.props" />
 
   <UsingTask TaskName="GetLastStablePackage" AssemblyFile="$(PackagingTaskAssembly)"/>
   <Target Name="AddPackageDownload">

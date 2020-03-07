@@ -1,9 +1,9 @@
 <Project>
+  <!-- Import to have access to properties/items used both during the Arcade phase and in the repo. -->
+  <Import Project="$(MSBuildThisFileDirectory)Configurations.props" />
+
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" />
-
-    <!-- Download the package in the initial arcade restore step to work around race conditions when restoring an msbuild SDK. -->
-    <PackageDownload Include="Microsoft.NET.Sdk.IL" Version="[$(MicrosoftNETSdkILVersion)]" />
   </ItemGroup>
 
   <!-- excluded from source build -->
@@ -12,6 +12,7 @@
     <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksVersion)" />
   </ItemGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)restore\harvestPackages.targets" Condition="'$(BuildAllConfigurations)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
   <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
 </Project>

@@ -1,5 +1,5 @@
 <Project>
-  <Import Project="Directory.Build.props" />
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
@@ -9,7 +9,6 @@
     <ProjectReference Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp/netcoreapp.depproj" />
     <ProjectReference Include="netstandard/netstandard.depproj" />
     <ProjectReference Include="netfx/netfx.depproj" />
-    <ProjectReference Include="harvestPackages/harvestPackages.depproj" />
     <ProjectReference Include="binplacePackages/binplacePackages.depproj" />
   </ItemGroup>
 

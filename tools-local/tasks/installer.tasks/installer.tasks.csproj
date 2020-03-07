@@ -20,6 +20,14 @@
     <PackageReference Include="System.Reflection.Metadata" Version="1.7.0" />
   </ItemGroup>
 
+  <!--
+    Restore the packaging package here to use it during the repo restore phase in 
+    harvestPackages.targets which is hooked into Tools.props.
+  -->
+  <ItemGroup>
+    <PackageDownload Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="[$(MicrosoftDotNetBuildTasksPackagingVersion)]" />
+  </ItemGroup>
+
   <Choose>
     <When Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
       <ItemGroup>
