@@ -206,14 +206,7 @@ public class Program
         Console.WriteLine($"Running {nameof(NegativeTest_ViaDelegate)}...");
 
         // Try invoking method directly
-        try
-        {
-            CallAsDelegate();
-            Assert.Fail($"Invalid to call {nameof(ManagedDoubleCallback)} as delegate");
-        }
-        catch (NotSupportedException)
-        {
-        }
+        Assert.Throws<NotSupportedException>(() => { CallAsDelegate(); });
 
         // Local function to delay exception thrown during JIT
         void CallAsDelegate()
@@ -224,10 +217,9 @@ public class Program
     }
 
     [NativeCallable]
-    public int CallbackNonStatic(int n)
+    public void CallbackNonStatic()
     {
         Assert.Fail($"Instance functions with attribute {nameof(NativeCallableAttribute)} are invalid");
-        return -1;
     }
 
     public static void NegativeTest_NonStaticMethod()
@@ -239,7 +231,7 @@ public class Program
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
-                IL_0001:  ldftn      int32 CallbackNonStatic(int)
+                IL_0001:  ldftn      void CallbackNonStatic()
                 IL_0007:  stloc.0
                 IL_0008:  ret
              }
@@ -257,21 +249,13 @@ public class Program
         var testNativeMethod = (NativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(NativeMethodInvoker));
 
         // Try invoking method
-        try
-        {
-            testNativeMethod();
-            Assert.Fail($"Function {nameof(CallbackNonStatic)} is non-static");
-        }
-        catch (NotSupportedException)
-        {
-        }
+        Assert.Throws<InvalidProgramException>(() => { testNativeMethod(); });
     }
 
     [NativeCallable]
-    public static int CallbackMethodNonBlittable(bool x1)
+    public static void CallbackMethodNonBlittable(bool x1)
     {
         Assert.Fail($"Functions with attribute {nameof(NativeCallableAttribute)} cannot have non-blittable arguments");
-        return -1;
     }
 
     public static void NegativeTest_NonBlittable()
@@ -283,7 +267,7 @@ public class Program
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
-                IL_0001:  ldftn      int32 CallbackMethodNonBlittable(bool)
+                IL_0001:  ldftn      void CallbackMethodNonBlittable(bool)
                 IL_0007:  stloc.0
                 IL_0008:  ret
              }
@@ -301,21 +285,13 @@ public class Program
         var testNativeMethod = (NativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(NativeMethodInvoker));
 
         // Try invoking method
-        try
-        {
-            testNativeMethod();
-            Assert.Fail($"Function {nameof(CallbackMethodNonBlittable)} has non-blittable types");
-        }
-        catch (NotSupportedException)
-        {
-        }
+        Assert.Throws<InvalidProgramException>(() => { testNativeMethod(); });
     }
 
     [NativeCallable]
-    public static int CallbackMethodGeneric<T>(T arg)
+    public static void CallbackMethodGeneric<T>(T arg)
     {
         Assert.Fail($"Functions with attribute {nameof(NativeCallableAttribute)} cannot have generic arguments");
-        return -1;
     }
 
     public static void NegativeTest_NonInstantiatedGenericArguments()
@@ -327,7 +303,7 @@ public class Program
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
-                IL_0001:  ldftn      int32 CallbackMethodGeneric(T)
+                IL_0001:  ldftn      void CallbackMethodGeneric(T)
                 IL_0007:  stloc.0
                 IL_0008:  ret
              }
@@ -345,14 +321,7 @@ public class Program
         var testNativeMethod = (NativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(NativeMethodInvoker));
 
         // Try invoking method
-        try
-        {
-            testNativeMethod();
-            Assert.Fail($"Function {nameof(CallbackMethodGeneric)} has generic types");
-        }
-        catch (InvalidProgramException)
-        {
-        }
+        Assert.Throws<InvalidProgramException>(() => { testNativeMethod(); });
     }
 
     public static void NegativeTest_InstantiatedGenericArguments()
@@ -364,7 +333,7 @@ public class Program
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
-                IL_0001:  ldftn      int32 CallbackMethodGeneric(int)
+                IL_0001:  ldftn      void CallbackMethodGeneric(int)
                 IL_0007:  stloc.0
                 IL_0008:  ret
              }
@@ -382,23 +351,15 @@ public class Program
         var testNativeMethod = (NativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(NativeMethodInvoker));
 
         // Try invoking method
-        try
-        {
-            testNativeMethod();
-            Assert.Fail($"Function {nameof(CallbackMethodGeneric)} has generic types");
-        }
-        catch (NotSupportedException)
-        {
-        }
+        Assert.Throws<InvalidProgramException>(() => { testNativeMethod(); });
     }
 
     public class GenericClass<T>
     {
         [NativeCallable]
-        public static int CallbackMethod(int n)
+        public static void CallbackMethod(int n)
         {
             Assert.Fail($"Functions with attribute {nameof(NativeCallableAttribute)} within a generic type are invalid");
-            return -1;
         }
     }
 
@@ -411,7 +372,7 @@ public class Program
            {
                 .locals init ([0] native int ptr)
                 IL_0000:  nop
-                IL_0001:  ldftn      int32 GenericClass<int>::CallbackMethod(int)
+                IL_0001:  ldftn      void GenericClass<int>::CallbackMethod(int)
                 IL_0007:  stloc.0
                 IL_0008:  ret
              }
@@ -429,14 +390,7 @@ public class Program
         var testNativeMethod = (NativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(NativeMethodInvoker));
 
         // Try invoking method
-        try
-        {
-            testNativeMethod();
-            Assert.Fail($"Function {nameof(GenericClass<int>.CallbackMethod)} has generic class");
-        }
-        catch (NotSupportedException)
-        {
-        }
+        Assert.Throws<InvalidProgramException>(() => { testNativeMethod(); });
     }
 
     [NativeCallable]
