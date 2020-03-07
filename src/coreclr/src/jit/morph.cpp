@@ -14756,8 +14756,10 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         /* Did we fold the conditional */
 
         noway_assert(lastStmt->GetRootNode()->AsOp()->gtOp1);
-        GenTree* condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
-        GenTree* cond     = condTree->gtEffectiveVal(true);
+        GenTree* condTree;
+        condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
+        GenTree* cond;
+        cond = condTree->gtEffectiveVal(true);
 
         if (cond->OperKind() & GTK_CONST)
         {
