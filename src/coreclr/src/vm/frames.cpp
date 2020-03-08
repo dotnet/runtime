@@ -403,9 +403,9 @@ VOID Frame::Push(Thread *pThread)
     // So GetOsPageSize() is a guess of the maximum stack frame size of any method
     // with multiple Frames in mscorwks.dll
     _ASSERTE(pThread->IsExecutingOnAltStack() ||
-              ((m_Next == FRAME_TOP) ||
-              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
-             "Pushing a frame out of order ?");
+             (((m_Next == FRAME_TOP) ||
+             (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+             "Pushing a frame out of order ?"));
 
     _ASSERTE(// If AssertOnFailFast is set, the test expects to do stack overrun
              // corruptions. In that case, the Frame chain may be corrupted,
