@@ -2269,7 +2269,8 @@ namespace System.Tests
             Assert.True(ReferenceEquals(TimeZoneInfo.FindSystemTimeZoneById("UTC"), TimeZoneInfo.Utc));
         }
 
-        [Fact]
+        // We test the exsitance of a specific English time zone name to avoid failures on non-English platforms.
+        [ConditionalFact(nameof(IsEnglishUILanguage))]
         public static void TestNameWithInvariantCulture()
         {
             RemoteExecutor.Invoke(() =>
@@ -2289,6 +2290,8 @@ namespace System.Tests
             }).Dispose();
 
         }
+
+        private static bool IsEnglishUILanguage() => CultureInfo.CurrentUICulture.Name == "en" || CultureInfo.CurrentUICulture.Name.StartsWith("en-", StringComparison.Ordinal);
 
         private static void VerifyConvertException<TException>(DateTimeOffset inputTime, string destinationTimeZoneId) where TException : Exception
         {
