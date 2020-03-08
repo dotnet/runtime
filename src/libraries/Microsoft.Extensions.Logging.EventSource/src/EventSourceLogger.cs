@@ -1,12 +1,16 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.IO;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
-using Newtonsoft.Json;
 
 namespace Microsoft.Extensions.Logging.EventSource
 {
@@ -27,8 +31,8 @@ namespace Microsoft.Extensions.Logging.EventSource
         {
             CategoryName = categoryName;
 
-            // Default is to turn off logging
-            Level = LoggingEventSource.LoggingDisabled;
+            // Default is to turn on all the logging
+            Level = LogLevel.Trace;
 
             _factoryID = factoryID;
             _eventSource = eventSource;
@@ -37,22 +41,7 @@ namespace Microsoft.Extensions.Logging.EventSource
 
         public string CategoryName { get; }
 
-        private LogLevel _level;
-
-        public LogLevel Level
-        {
-            get
-            {
-                // need to check if the filter spec and internal event source level has changed
-                // and update the loggers level if it has
-                _eventSource.ApplyFilterSpec();
-                return _level;
-            }
-            set
-            {
-                _level = value;
-            }
-        }
+        public LogLevel Level { get; set; }
 
         // Loggers created by a single provider form a linked list
         public EventSourceLogger Next { get; }
@@ -77,21 +66,23 @@ namespace Microsoft.Extensions.Logging.EventSource
                     logLevel,
                     _factoryID,
                     CategoryName,
-                    eventId.ToString(),
+                    eventId.Id,
+                    eventId.Name,
                     message);
             }
 
             // See if they want the message as its component parts.
             if (_eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.Message))
             {
-                ExceptionInfo exceptionInfo = GetExceptionInfo(exception);
-                IEnumerable<KeyValuePair<string, string>> arguments = GetProperties(state);
+                var exceptionInfo = GetExceptionInfo(exception);
+                var arguments = GetProperties(state);
 
                 _eventSource.Message(
                     logLevel,
                     _factoryID,
                     CategoryName,
-                    eventId.ToString(),
+                    eventId.Id,
+                    eventId.Name,
                     exceptionInfo,
                     arguments);
             }
@@ -103,7 +94,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                 if (exception != null)
                 {
                     var exceptionInfo = GetExceptionInfo(exception);
-                    var exceptionInfoData = new KeyValuePair<string, string>[]
+                    var exceptionInfoData = new[]
                     {
                         new KeyValuePair<string, string>("TypeName", exceptionInfo.TypeName),
                         new KeyValuePair<string, string>("Message", exceptionInfo.Message),
@@ -112,12 +103,13 @@ namespace Microsoft.Extensions.Logging.EventSource
                     };
                     exceptionJson = ToJson(exceptionInfoData);
                 }
-                IEnumerable<KeyValuePair<string, string>> arguments = GetProperties(state);
+                var arguments = GetProperties(state);
                 _eventSource.MessageJson(
                     logLevel,
                     _factoryID,
                     CategoryName,
-                    eventId.ToString(),
+                    eventId.Id,
+                    eventId.Name,
                     exceptionJson,
                     ToJson(arguments));
             }
@@ -127,7 +119,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         {
             if (!IsEnabled(LogLevel.Critical))
             {
-                return NoopDisposable.Instance;
+                return NullScope.Instance;
             }
 
             var id = Interlocked.Increment(ref _activityIds);
@@ -135,16 +127,20 @@ namespace Microsoft.Extensions.Logging.EventSource
             // If JsonMessage is on, use JSON format
             if (_eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.JsonMessage))
             {
-                IEnumerable<KeyValuePair<string, string>> arguments = GetProperties(state);
+                var arguments = GetProperties(state);
                 _eventSource.ActivityJsonStart(id, _factoryID, CategoryName, ToJson(arguments));
                 return new ActivityScope(_eventSource, CategoryName, id, _factoryID, true);
             }
-            else
+
+            if (_eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.Message) ||
+                _eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.FormattedMessage))
             {
-                IEnumerable<KeyValuePair<string, string>> arguments = GetProperties(state);
+                var arguments = GetProperties(state);
                 _eventSource.ActivityStart(id, _factoryID, CategoryName, arguments);
                 return new ActivityScope(_eventSource, CategoryName, id, _factoryID, false);
             }
+
+            return NullScope.Instance;
         }
 
         /// <summary>
@@ -181,68 +177,56 @@ namespace Microsoft.Extensions.Logging.EventSource
             }
         }
 
-        private class NoopDisposable : IDisposable
-        {
-            public static readonly NoopDisposable Instance = new NoopDisposable();
-
-            public void Dispose()
-            {
-            }
-        }
-
         /// <summary>
         /// 'serializes' a given exception into an ExceptionInfo (that EventSource knows how to serialize)
         /// </summary>
-        /// <param name="exception"></param>
+        /// <param name="exception">The exception to get information for.</param>
         /// <returns>ExceptionInfo object represending a .NET Exception</returns>
         /// <remarks>ETW does not support a concept of a null value. So we use an un-initialized object if there is no exception in the event data.</remarks>
         private ExceptionInfo GetExceptionInfo(Exception exception)
         {
-            var exceptionInfo = new ExceptionInfo();
-            if (exception != null)
-            {
-                exceptionInfo.TypeName = exception.GetType().FullName;
-                exceptionInfo.Message = exception.Message;
-                exceptionInfo.HResult = exception.HResult;
-                exceptionInfo.VerboseMessage = exception.ToString();
-            }
-            return exceptionInfo;
+            return exception != null ? new ExceptionInfo(exception) : ExceptionInfo.Empty;
         }
 
         /// <summary>
         /// Converts an ILogger state object into a set of key-value pairs (That can be send to a EventSource)
         /// </summary>
-        private IEnumerable<KeyValuePair<string, string>> GetProperties(object state)
+        private IReadOnlyList<KeyValuePair<string, string>> GetProperties(object state)
         {
-            var arguments = new List<KeyValuePair<string, string>>();
-            var asKeyValues = state as IEnumerable<KeyValuePair<string, object>>;
-            if (asKeyValues != null)
+            if (state is IReadOnlyList<KeyValuePair<string, object>> keyValuePairs)
             {
-                foreach (var keyValue in asKeyValues)
+                var arguments = new KeyValuePair<string, string>[keyValuePairs.Count];
+                for (var i = 0; i < keyValuePairs.Count; i++)
                 {
-                    if (keyValue.Key != null)
-                    {
-                        arguments.Add(new KeyValuePair<string, string>(keyValue.Key, keyValue.Value?.ToString()));
-                    }
+                    var keyValuePair = keyValuePairs[i];
+                    arguments[i] = new KeyValuePair<string, string>(keyValuePair.Key, keyValuePair.Value?.ToString());
                 }
+                return arguments;
             }
-            return arguments;
+
+            return Array.Empty<KeyValuePair<string, string>>();
         }
 
-        private string ToJson(IEnumerable<KeyValuePair<string, string>> keyValues)
+        private string ToJson(IReadOnlyList<KeyValuePair<string, string>> keyValues)
         {
-            var sw = new StringWriter();
-            var writer = new JsonTextWriter(sw);
-            writer.DateFormatString = "O"; // ISO 8601
+            using var stream = new MemoryStream();
+            using var writer = new Utf8JsonWriter(stream);
 
             writer.WriteStartObject();
             foreach (var keyValue in keyValues)
             {
-                writer.WritePropertyName(keyValue.Key, true);
-                writer.WriteValue(keyValue.Value);
+                writer.WriteString(keyValue.Key, keyValue.Value);
             }
             writer.WriteEndObject();
-            return sw.ToString();
+
+            writer.Flush();
+
+            if (!stream.TryGetBuffer(out var buffer))
+            {
+                buffer = new ArraySegment<byte>(stream.ToArray());
+            }
+
+            return Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
         }
     }
 }

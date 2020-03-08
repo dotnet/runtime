@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Linq;
@@ -43,43 +44,45 @@ namespace Microsoft.Extensions.Internal
             int bestLength = -1;
             var seenPreferred = false;
 
-            ConstructorMatcher bestMatcher = null;
+            ConstructorMatcher bestMatcher = default;
 
             if (!instanceType.GetTypeInfo().IsAbstract)
             {
                 foreach (var constructor in instanceType
                     .GetTypeInfo()
-                    .DeclaredConstructors
-                    .Where(c => !c.IsStatic && c.IsPublic))
+                    .DeclaredConstructors)
                 {
-                    var matcher = new ConstructorMatcher(constructor);
-                    var isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
-                    var length = matcher.Match(parameters);
-
-                    if (isPreferred)
+                    if (!constructor.IsStatic && constructor.IsPublic)
                     {
-                        if (seenPreferred)
+                        var matcher = new ConstructorMatcher(constructor);
+                        var isPreferred = constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false);
+                        var length = matcher.Match(parameters);
+
+                        if (isPreferred)
                         {
-                            ThrowMultipleCtorsMarkedWithAttributeException();
+                            if (seenPreferred)
+                            {
+                                ThrowMultipleCtorsMarkedWithAttributeException();
+                            }
+
+                            if (length == -1)
+                            {
+                                ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
+                            }
                         }
 
-                        if (length == -1)
+                        if (isPreferred || bestLength < length)
                         {
-                            ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
+                            bestLength = length;
+                            bestMatcher = matcher;
                         }
-                    }
 
-                    if (isPreferred || bestLength < length)
-                    {
-                        bestLength = length;
-                        bestMatcher = matcher;
+                        seenPreferred |= isPreferred;
                     }
-
-                    seenPreferred |= isPreferred;
                 }
             }
 
-            if (bestMatcher == null)
+            if (bestLength == -1)
             {
                 var message = $"A suitable constructor for type '{instanceType}' could not be located. Ensure the type is concrete and services are registered for all parameters of a public constructor.";
                 throw new InvalidOperationException(message);
@@ -327,18 +330,16 @@ namespace Microsoft.Extensions.Internal
             return true;
         }
 
-        private class ConstructorMatcher
+        private struct ConstructorMatcher
         {
             private readonly ConstructorInfo _constructor;
             private readonly ParameterInfo[] _parameters;
             private readonly object[] _parameterValues;
-            private readonly bool[] _parameterValuesSet;
 
             public ConstructorMatcher(ConstructorInfo constructor)
             {
                 _constructor = constructor;
                 _parameters = _constructor.GetParameters();
-                _parameterValuesSet = new bool[_parameters.Length];
                 _parameterValues = new object[_parameters.Length];
             }
 
@@ -353,11 +354,10 @@ namespace Microsoft.Extensions.Internal
 
                     for (var applyIndex = applyIndexStart; givenMatched == false && applyIndex != _parameters.Length; ++applyIndex)
                     {
-                        if (_parameterValuesSet[applyIndex] == false &&
+                        if (_parameterValues[applyIndex] == null &&
                             _parameters[applyIndex].ParameterType.GetTypeInfo().IsAssignableFrom(givenType))
                         {
                             givenMatched = true;
-                            _parameterValuesSet[applyIndex] = true;
                             _parameterValues[applyIndex] = givenParameters[givenIndex];
                             if (applyIndexStart == applyIndex)
                             {
@@ -382,7 +382,7 @@ namespace Microsoft.Extensions.Internal
             {
                 for (var index = 0; index != _parameters.Length; index++)
                 {
-                    if (_parameterValuesSet[index] == false)
+                    if (_parameterValues[index] == null)
                     {
                         var value = provider.GetService(_parameters[index].ParameterType);
                         if (value == null)
@@ -403,16 +403,20 @@ namespace Microsoft.Extensions.Internal
                     }
                 }
 
+#if NETCOREAPP
+                return _constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters: _parameterValues, culture: null);
+#else
                 try
                 {
                     return _constructor.Invoke(_parameterValues);
                 }
-                catch (TargetInvocationException ex)
+                catch (TargetInvocationException ex) when (ex.InnerException != null)
                 {
                     ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
                     // The above line will always throw, but the compiler requires we throw explicitly.
                     throw;
                 }
+#endif
             }
         }
 

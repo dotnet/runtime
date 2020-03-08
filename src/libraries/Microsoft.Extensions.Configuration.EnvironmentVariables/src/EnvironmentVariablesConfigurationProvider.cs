@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -48,7 +49,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
 
         internal void Load(IDictionary envVariables)
         {
-            Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             var filteredEnvVariables = envVariables
                 .Cast<DictionaryEntry>()
@@ -58,8 +59,10 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
             foreach (var envVariable in filteredEnvVariables)
             {
                 var key = ((string)envVariable.Key).Substring(_prefix.Length);
-                Data[key] = (string)envVariable.Value;
+                data[key] = (string)envVariable.Value;
             }
+
+            Data = data;
         }
 
         private static string NormalizeKey(string key)

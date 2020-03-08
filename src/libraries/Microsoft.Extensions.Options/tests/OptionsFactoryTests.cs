@@ -1,5 +1,6 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,19 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal("two", factory.Create("2").Message);
         }
 
+        [Fact]
+        public void NamesAreCaseSensitive()
+        {
+            var services = new ServiceCollection();
+            services.Configure<FakeOptions>("UP", options => options.Message += "UP");
+            services.Configure<FakeOptions>("up", options => options.Message += "up");
+
+            var sp = services.BuildServiceProvider();
+            var factory = sp.GetRequiredService<IOptionsFactory<FakeOptions>>();
+            Assert.Equal("UP", factory.Create("UP").Message);
+            Assert.Equal("up", factory.Create("up").Message);
+        }        
+        
         [Fact]
         public void CanConfigureAllOptions()
         {

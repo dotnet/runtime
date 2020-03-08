@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -51,7 +52,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         public virtual void Load()
         { }
-       
+
         /// <summary>
         /// Returns the list of keys that this provider has.
         /// </summary>
@@ -80,7 +81,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Returns a <see cref="IChangeToken"/> that can be used to listen when this provider is reloaded.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The <see cref="IChangeToken"/>.</returns>
         public IChangeToken GetReloadToken()
         {
             return _reloadToken;
@@ -94,5 +95,11 @@ namespace Microsoft.Extensions.Configuration
             var previousToken = Interlocked.Exchange(ref _reloadToken, new ConfigurationReloadToken());
             previousToken.OnReload();
         }
+
+        /// <summary>
+        /// Generates a string representing this provider name and relevant details.
+        /// </summary>
+        /// <returns> The configuration name. </returns>
+        public override string ToString() => $"{GetType().Name}";
     }
 }

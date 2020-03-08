@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -13,14 +14,26 @@ namespace Microsoft.Extensions.CommandLineUtils
 {
     internal class CommandLineApplication
     {
-        // Indicates whether the parser should throw an exception when it runs into an unexpected argument.
-        // If this field is set to false, the parser will stop parsing when it sees an unexpected argument, and all
-        // remaining arguments, including the first unexpected argument, will be stored in RemainingArguments property.
+        // Indicates whether the parser should throw an exception when it runs into an unexpected argument. If this is
+        // set to true (the default), the parser will throw on the first unexpected argument. Otherwise, all unexpected
+        // arguments (including the first) are added to RemainingArguments.
         private readonly bool _throwOnUnexpectedArg;
 
-        public CommandLineApplication(bool throwOnUnexpectedArg = true)
+        // Indicates whether the parser should check remaining arguments for command or option matches after
+        // encountering an unexpected argument. Ignored if _throwOnUnexpectedArg is true (the default). If
+        // _throwOnUnexpectedArg and this are both false, the first unexpected argument and all remaining arguments are
+        // added to RemainingArguments. If _throwOnUnexpectedArg is false and this is true, only unexpected arguments
+        // are added to RemainingArguments -- allowing a mix of expected and unexpected arguments, commands and
+        // options.
+        private readonly bool _continueAfterUnexpectedArg;
+
+        private readonly bool _treatUnmatchedOptionsAsArguments;
+
+        public CommandLineApplication(bool throwOnUnexpectedArg = true, bool continueAfterUnexpectedArg = false, bool treatUnmatchedOptionsAsArguments = false)
         {
             _throwOnUnexpectedArg = throwOnUnexpectedArg;
+            _continueAfterUnexpectedArg = continueAfterUnexpectedArg;
+            _treatUnmatchedOptionsAsArguments = treatUnmatchedOptionsAsArguments;
             Options = new List<CommandOption>();
             Arguments = new List<CommandArgument>();
             Commands = new List<CommandLineApplication>();
@@ -127,6 +140,7 @@ namespace Microsoft.Extensions.CommandLineUtils
             CommandLineApplication command = this;
             CommandOption option = null;
             IEnumerator<CommandArgument> arguments = null;
+            var argumentsAssigned = false;
 
             for (var index = 0; index < args.Length; index++)
             {
@@ -145,21 +159,55 @@ namespace Microsoft.Extensions.CommandLineUtils
                     {
                         shortOption = arg.Substring(1).Split(new[] { ':', '=' }, 2);
                     }
+
                     if (longOption != null)
                     {
                         processed = true;
                         var longOptionName = longOption[0];
                         option = command.GetOptions().SingleOrDefault(opt => string.Equals(opt.LongName, longOptionName, StringComparison.Ordinal));
 
+                        if (option == null && _treatUnmatchedOptionsAsArguments)
+                        {
+                            if (arguments == null)
+                            {
+                                arguments = new CommandArgumentEnumerator(command.Arguments.GetEnumerator());
+                            }
+                            if (arguments.MoveNext())
+                            {
+                                processed = true;
+                                arguments.Current.Values.Add(arg);
+                                argumentsAssigned = true;
+                                continue;
+                            }
+                            //else
+                            //{
+                            //    argumentsAssigned = false;
+                            //}
+                        }
+
                         if (option == null)
                         {
-                            if (string.IsNullOrEmpty(longOptionName) && !command._throwOnUnexpectedArg  && AllowArgumentSeparator)
+                            var ignoreContinueAfterUnexpectedArg = false;
+                            if (string.IsNullOrEmpty(longOptionName) &&
+                                !command._throwOnUnexpectedArg &&
+                                AllowArgumentSeparator)
                             {
-                                // skip over the '--' argument separator
+                                // Skip over the '--' argument separator then consume all remaining arguments. All
+                                // remaining arguments are unconditionally stored for further use.
                                 index++;
+                                ignoreContinueAfterUnexpectedArg = true;
                             }
 
-                            HandleUnexpectedArg(command, args, index, argTypeName: "option");
+                            if (HandleUnexpectedArg(
+                                command,
+                                args,
+                                index,
+                                argTypeName: "option",
+                                ignoreContinueAfterUnexpectedArg))
+                            {
+                                continue;
+                            }
+
                             break;
                         }
 
@@ -191,10 +239,30 @@ namespace Microsoft.Extensions.CommandLineUtils
                             option = null;
                         }
                     }
+
                     if (shortOption != null)
                     {
                         processed = true;
                         option = command.GetOptions().SingleOrDefault(opt => string.Equals(opt.ShortName, shortOption[0], StringComparison.Ordinal));
+
+                        if (option == null && _treatUnmatchedOptionsAsArguments)
+                        {
+                            if (arguments == null)
+                            {
+                                arguments = new CommandArgumentEnumerator(command.Arguments.GetEnumerator());
+                            }
+                            if (arguments.MoveNext())
+                            {
+                                processed = true;
+                                arguments.Current.Values.Add(arg);
+                                argumentsAssigned = true;
+                                continue;
+                            }
+                            //else
+                            //{
+                            //    argumentsAssigned = false;
+                            //}
+                        }
 
                         // If not a short option, try symbol option
                         if (option == null)
@@ -204,7 +272,11 @@ namespace Microsoft.Extensions.CommandLineUtils
 
                         if (option == null)
                         {
-                            HandleUnexpectedArg(command, args, index, argTypeName: "option");
+                            if (HandleUnexpectedArg(command, args, index, argTypeName: "option"))
+                            {
+                                continue;
+                            }
+
                             break;
                         }
 
@@ -249,7 +321,7 @@ namespace Microsoft.Extensions.CommandLineUtils
                     option = null;
                 }
 
-                if (!processed && arguments == null)
+                if (!processed && !argumentsAssigned)
                 {
                     var currentCommand = command;
                     foreach (var subcommand in command.Commands)
@@ -268,6 +340,7 @@ namespace Microsoft.Extensions.CommandLineUtils
                         processed = true;
                     }
                 }
+
                 if (!processed)
                 {
                     if (arguments == null)
@@ -280,9 +353,14 @@ namespace Microsoft.Extensions.CommandLineUtils
                         arguments.Current.Values.Add(arg);
                     }
                 }
+
                 if (!processed)
                 {
-                    HandleUnexpectedArg(command, args, index, argTypeName: "command or argument");
+                    if (HandleUnexpectedArg(command, args, index, argTypeName: "command or argument"))
+                    {
+                        continue;
+                    }
+
                     break;
                 }
             }
@@ -490,17 +568,29 @@ namespace Microsoft.Extensions.CommandLineUtils
             Out.WriteLine();
         }
 
-        private void HandleUnexpectedArg(CommandLineApplication command, string[] args, int index, string argTypeName)
+        private bool HandleUnexpectedArg(
+            CommandLineApplication command,
+            string[] args,
+            int index,
+            string argTypeName,
+            bool ignoreContinueAfterUnexpectedArg = false)
         {
             if (command._throwOnUnexpectedArg)
             {
                 command.ShowHint();
                 throw new CommandParsingException(command, $"Unrecognized {argTypeName} '{args[index]}'");
             }
+            else if (_continueAfterUnexpectedArg && !ignoreContinueAfterUnexpectedArg)
+            {
+                // Store argument for further use.
+                command.RemainingArguments.Add(args[index]);
+                return true;
+            }
             else
             {
-                // All remaining arguments are stored for further use
+                // Store all remaining arguments for later use.
                 command.RemainingArguments.AddRange(new ArraySegment<string>(args, index, args.Length - index));
+                return false;
             }
         }
 

@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Linq;
@@ -12,6 +13,7 @@ namespace Microsoft.Extensions.Logging.Testing
     {
         private readonly ITestOutputHelper _output;
         private readonly LogLevel _minLevel;
+        private readonly DateTimeOffset? _logStart;
 
         public XunitLoggerProvider(ITestOutputHelper output)
             : this(output, LogLevel.Trace)
@@ -19,14 +21,20 @@ namespace Microsoft.Extensions.Logging.Testing
         }
 
         public XunitLoggerProvider(ITestOutputHelper output, LogLevel minLevel)
+            : this(output, minLevel, null)
+        {
+        }
+
+        public XunitLoggerProvider(ITestOutputHelper output, LogLevel minLevel, DateTimeOffset? logStart)
         {
             _output = output;
             _minLevel = minLevel;
+            _logStart = logStart;
         }
 
         public ILogger CreateLogger(string categoryName)
         {
-            return new XunitLogger(_output, categoryName, _minLevel);
+            return new XunitLogger(_output, categoryName, _minLevel, _logStart);
         }
 
         public void Dispose()
@@ -40,12 +48,14 @@ namespace Microsoft.Extensions.Logging.Testing
         private readonly string _category;
         private readonly LogLevel _minLogLevel;
         private readonly ITestOutputHelper _output;
+        private DateTimeOffset? _logStart;
 
-        public XunitLogger(ITestOutputHelper output, string category, LogLevel minLogLevel)
+        public XunitLogger(ITestOutputHelper output, string category, LogLevel minLogLevel, DateTimeOffset? logStart)
         {
             _minLogLevel = minLogLevel;
             _category = category;
             _output = output;
+            _logStart = logStart;
         }
 
         public void Log<TState>(
@@ -59,7 +69,8 @@ namespace Microsoft.Extensions.Logging.Testing
             // Buffer the message into a single string in order to avoid shearing the message when running across multiple threads.
             var messageBuilder = new StringBuilder();
 
-            var timestamp = DateTime.Now.ToString("s");
+            var timestamp = _logStart.HasValue ? $"{(DateTimeOffset.UtcNow - _logStart.Value).TotalSeconds.ToString("N3")}s" : DateTimeOffset.UtcNow.ToString("s");
+
             var firstLinePrefix = $"| [{timestamp}] {_category} {logLevel}: ";
             var lines = formatter(state, exception).Split(NewLineChars, StringSplitOptions.RemoveEmptyEntries);
             messageBuilder.AppendLine(firstLinePrefix + lines.FirstOrDefault() ?? string.Empty);

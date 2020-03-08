@@ -1,8 +1,8 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
-using Microsoft.Extensions.Logging.EventLog.Internal;
 
 namespace Microsoft.Extensions.Logging.EventLog
 {
@@ -11,13 +11,15 @@ namespace Microsoft.Extensions.Logging.EventLog
     /// </summary>
     public class EventLogSettings
     {
+        private IEventLog _eventLog;
+
         /// <summary>
         /// Name of the event log. If <c>null</c> or not specified, "Application" is the default.
         /// </summary>
         public string LogName { get; set; }
 
         /// <summary>
-        /// Name of the event log source. If <c>null</c> or not specified, "Application" is the default.
+        /// Name of the event log source. If <c>null</c> or not specified, ".NET Runtime" is the default.
         /// </summary>
         public string SourceName { get; set; }
 
@@ -31,9 +33,28 @@ namespace Microsoft.Extensions.Logging.EventLog
         /// </summary>
         public Func<string, LogLevel, bool> Filter { get; set; }
 
-        /// <summary>
-        /// For unit testing purposes only.
-        /// </summary>
-        public IEventLog EventLog { get; set; }
+        internal IEventLog EventLog
+        {
+            get => _eventLog ??= CreateDefaultEventLog();
+
+            // For unit testing purposes only.
+            set => _eventLog = value;
+        }
+
+        private IEventLog CreateDefaultEventLog()
+        {
+            var logName = string.IsNullOrEmpty(LogName) ? "Application" : LogName;
+            var machineName = string.IsNullOrEmpty(MachineName) ? "." : MachineName;
+            var sourceName = string.IsNullOrEmpty(SourceName) ? ".NET Runtime" : SourceName;
+            int? defaultEventId = null;
+
+            if (string.IsNullOrEmpty(SourceName))
+            {
+                sourceName = ".NET Runtime";
+                defaultEventId = 1000;
+            }
+
+            return new WindowsEventLog(logName, machineName, sourceName) { DefaultEventId = defaultEventId };
+        }
     }
 }

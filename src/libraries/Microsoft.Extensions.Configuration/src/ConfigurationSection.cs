@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public class ConfigurationSection : IConfigurationSection
     {
-        private readonly ConfigurationRoot _root;
+        private readonly IConfigurationRoot _root;
         private readonly string _path;
         private string _key;
 
@@ -21,7 +22,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="root">The configuration root.</param>
         /// <param name="path">The path to this section.</param>
-        public ConfigurationSection(ConfigurationRoot root, string path)
+        public ConfigurationSection(IConfigurationRoot root, string path)
         {
             if (root == null)
             {
@@ -111,7 +112,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Returns a <see cref="IChangeToken"/> that can be used to observe when this configuration is reloaded.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The <see cref="IChangeToken"/>.</returns>
         public IChangeToken GetReloadToken() => _root.GetReloadToken();
     }
 }

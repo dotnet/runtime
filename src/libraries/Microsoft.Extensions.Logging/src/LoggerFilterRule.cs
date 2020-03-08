@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -10,6 +11,13 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public class LoggerFilterRule
     {
+        /// <summary>
+        /// Creates a new <see cref="LoggerFilterRule"/> instance.
+        /// </summary>
+        /// <param name="providerName">The provider name to use in this filter rule.</param>
+        /// <param name="categoryName">The category name to use in this filter rule.</param>
+        /// <param name="logLevel">The <see cref="LogLevel"/> to use in this filter rule.</param>
+        /// <param name="filter">The filter to apply.</param>
         public LoggerFilterRule(string providerName, string categoryName, LogLevel? logLevel, Func<string, string, LogLevel, bool> filter)
         {
             ProviderName = providerName;
@@ -38,6 +46,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         public Func<string, string, LogLevel, bool> Filter { get; }
 
+        /// <inheritdoc/>
         public override string ToString()
         {
             return $"{nameof(ProviderName)}: '{ProviderName}', {nameof(CategoryName)}: '{CategoryName}', {nameof(LogLevel)}: '{LogLevel}', {nameof(Filter)}: '{Filter}'";

@@ -1,5 +1,6 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
@@ -13,7 +14,7 @@ namespace Microsoft.Extensions.Hosting
     public abstract class BackgroundService : IHostedService, IDisposable
     {
         private Task _executingTask;
-        private readonly CancellationTokenSource _stoppingCts = new CancellationTokenSource();
+        private CancellationTokenSource _stoppingCts;
 
         /// <summary>
         /// This method is called when the <see cref="IHostedService"/> starts. The implementation should return a task that represents
@@ -29,6 +30,9 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="cancellationToken">Indicates that the start process has been aborted.</param>
         public virtual Task StartAsync(CancellationToken cancellationToken)
         {
+            // Create linked token to allow cancelling executing task from provided token
+            _stoppingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
             // Store the task we're executing
             _executingTask = ExecuteAsync(_stoppingCts.Token);
 
@@ -69,7 +73,7 @@ namespace Microsoft.Extensions.Hosting
 
         public virtual void Dispose()
         {
-            _stoppingCts.Cancel();
+            _stoppingCts?.Cancel();
         }
     }
 }

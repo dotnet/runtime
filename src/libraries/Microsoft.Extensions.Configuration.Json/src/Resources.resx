@@ -121,12 +121,12 @@
     <value>File path must be a non-empty string.</value>
   </data>
   <data name="Error_JSONParseError" xml:space="preserve">
-    <value>Could not parse the JSON file. Error on line number '{0}': '{1}'.</value>
+    <value>Could not parse the JSON file.</value>
   </data>
   <data name="Error_KeyIsDuplicated" xml:space="preserve">
     <value>A duplicate key '{0}' was found.</value>
   </data>
   <data name="Error_UnsupportedJSONToken" xml:space="preserve">
-    <value>Unsupported JSON token '{0}' was found. Path '{1}', line {2} position {3}.</value>
+    <value>Unsupported JSON token '{0}' was found.</value>
   </data>
 </root>

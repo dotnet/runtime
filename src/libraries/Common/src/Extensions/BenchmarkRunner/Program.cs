@@ -1,16 +1,16 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Jobs;
-using BenchmarkDotNet.Toolchains.InProcess;
+using BenchmarkDotNet.Running;
 
 namespace Microsoft.AspNetCore.BenchmarkDotNet.Runner
 {
@@ -25,7 +25,7 @@ namespace Microsoft.AspNetCore.BenchmarkDotNet.Runner
         {
             BeforeMain(args);
 
-            CheckValidate(ref args);
+            AssignConfiguration(ref args);
             var summaries = BenchmarkSwitcher.FromAssembly(typeof(Program).GetTypeInfo().Assembly)
                 .Run(args, ManualConfig.CreateEmpty());
 
@@ -66,16 +66,35 @@ namespace Microsoft.AspNetCore.BenchmarkDotNet.Runner
             return 1;
         }
 
-        private static void CheckValidate(ref string[] args)
+        private static void AssignConfiguration(ref string[] args)
         {
             var argsList = args.ToList();
             if (argsList.Remove("--validate") || argsList.Remove("--validate-fast"))
             {
+                // Compat: support the old style of passing a config that is used by our build system.
                 SuppressConsole();
-                AspNetCoreBenchmarkAttribute.UseValidationConfig = true;
+                AspNetCoreBenchmarkAttribute.ConfigName = AspNetCoreBenchmarkAttribute.NamedConfiguration.Validation;
+                args = argsList.ToArray();
+                return;
+            }
+            
+            var index = argsList.IndexOf("--config");
+            if (index >= 0 && index < argsList.Count -1)
+            {
+                AspNetCoreBenchmarkAttribute.ConfigName = argsList[index + 1];
+                argsList.RemoveAt(index + 1);
+                argsList.RemoveAt(index);
+                args = argsList.ToArray();
+                return;
             }
 
-            args = argsList.ToArray();
+            if (Debugger.IsAttached)
+            {
+                Console.WriteLine("Using the debug config since you are debugging. I hope that's OK!");
+                Console.WriteLine("Specify a configuration with --config <name> to override");
+                AspNetCoreBenchmarkAttribute.ConfigName = AspNetCoreBenchmarkAttribute.NamedConfiguration.Debug;
+                return;
+            }
         }
 
         private static void SuppressConsole()

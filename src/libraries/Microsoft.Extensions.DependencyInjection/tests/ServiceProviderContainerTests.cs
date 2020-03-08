@@ -1,8 +1,11 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Fakes;
 using Microsoft.Extensions.DependencyInjection.Specification;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
@@ -127,6 +130,34 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public void ResolvesServiceMixedServiceAndOptionalStructConstructorArgumentsReliably()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IFakeService, FakeService>();
+            serviceCollection.AddTransient<ClassWithServiceAndOptionalArgsCtorWithStructs>();
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            // Repeatedly resolve and re-check to ensure dynamically generated code properly initializes the values types.
+            for (int i = 0; i < 100; i++)
+            {
+                var service = provider.GetService<ClassWithServiceAndOptionalArgsCtorWithStructs>();
+
+                Assert.NotNull(service);
+                Assert.Equal(new DateTime(), service.DateTime);
+                Assert.Equal(default(DateTime), service.DateTimeDefault);
+                Assert.Equal(new TimeSpan(), service.TimeSpan);
+                Assert.Equal(default(TimeSpan), service.TimeSpanDefault);
+                Assert.Equal(new DateTimeOffset(), service.DateTimeOffset);
+                Assert.Equal(default(DateTimeOffset), service.DateTimeOffsetDefault);
+                Assert.Equal(new Guid(), service.Guid);
+                Assert.Equal(default(Guid), service.GuidDefault);
+                Assert.Equal(new ClassWithServiceAndOptionalArgsCtorWithStructs.CustomStruct(), service.CustomStructValue);
+                Assert.Equal(default(ClassWithServiceAndOptionalArgsCtorWithStructs.CustomStruct), service.CustomStructDefault);
+            }
+        }
+
+        [Fact]
         public void RootProviderDispose_PreventsServiceResolution()
         {
             var serviceCollection = new ServiceCollection();
@@ -194,6 +225,205 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.NotNull(service);
         }
 
+        [Fact]
+        public void WorksWithWideScopedTrees()
+        {
+            var serviceCollection = new ServiceCollection();
+            for (int i = 0; i < 20; i++)
+            {
+                serviceCollection.AddScoped<IFakeOuterService, FakeOuterService>();
+                serviceCollection.AddScoped<IFakeMultipleService, FakeMultipleServiceWithIEnumerableDependency>();
+                serviceCollection.AddScoped<IFakeService, FakeService>();
+            }
+
+            var service = CreateServiceProvider(serviceCollection).GetService<IEnumerable<IFakeOuterService>>();
+        }
+
+        [Fact]
+        public void GenericIEnumerableItemCachedInTheRightSlot()
+        {
+            var services = new ServiceCollection();
+            // It's important that this service is generic, it hits a different codepath when resolved inside IEnumerable
+            services.AddSingleton<IFakeOpenGenericService<PocoClass>, FakeService>();
+            // Doesn't matter what this services is, we just want something in the collection after generic registration
+            services.AddSingleton<FakeService>();
+
+            var serviceProvider = services.BuildServiceProvider();
+
+            var serviceRef1 = serviceProvider.GetRequiredService<IFakeOpenGenericService<PocoClass>>();
+            var servicesRef1 = serviceProvider.GetServices<IFakeOpenGenericService<PocoClass>>().Single();
+
+            Assert.Same(serviceRef1, servicesRef1);
+        }
+
+
+        [Fact]
+        public async Task ProviderDisposeAsyncCallsDisposeAsyncOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<AsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var disposable = serviceProvider.GetService<AsyncDisposable>();
+
+            await (serviceProvider as IAsyncDisposable).DisposeAsync();
+
+            Assert.True(disposable.DisposeAsyncCalled);
+        }
+
+        [Fact]
+        public async Task ProviderDisposeAsyncPrefersDisposeAsyncOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<SyncAsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var disposable = serviceProvider.GetService<SyncAsyncDisposable>();
+
+            await (serviceProvider as IAsyncDisposable).DisposeAsync();
+
+            Assert.True(disposable.DisposeAsyncCalled);
+        }
+
+        [Fact]
+        public void ProviderDisposePrefersServiceDispose()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<SyncAsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var disposable = serviceProvider.GetService<SyncAsyncDisposable>();
+
+            (serviceProvider as IDisposable).Dispose();
+
+            Assert.True(disposable.DisposeCalled);
+        }
+
+        [Fact]
+        public void ProviderDisposeThrowsWhenOnlyDisposeAsyncImplemented()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<AsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var disposable = serviceProvider.GetService<AsyncDisposable>();
+
+            var exception = Assert.Throws<InvalidOperationException>(() => (serviceProvider as IDisposable).Dispose());
+            Assert.Equal(
+                "'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderContainerTests+AsyncDisposable' type only implements IAsyncDisposable. Use DisposeAsync to dispose the container.",
+                exception.Message);
+        }
+
+        [Fact]
+        public async Task ProviderScopeDisposeAsyncCallsDisposeAsyncOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<AsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateScope();
+            var disposable = scope.ServiceProvider.GetService<AsyncDisposable>();
+
+            await (scope as IAsyncDisposable).DisposeAsync();
+
+            Assert.True(disposable.DisposeAsyncCalled);
+        }
+
+        [Fact]
+        public async Task ProviderScopeDisposeAsyncPrefersDisposeAsyncOnServices()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<SyncAsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateScope();
+            var disposable = scope.ServiceProvider.GetService<SyncAsyncDisposable>();
+
+            await (scope as IAsyncDisposable).DisposeAsync();
+
+            Assert.True(disposable.DisposeAsyncCalled);
+        }
+
+        [Fact]
+        public void ProviderScopeDisposePrefersServiceDispose()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<SyncAsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateScope();
+            var disposable = scope.ServiceProvider.GetService<SyncAsyncDisposable>();
+
+            (scope as IDisposable).Dispose();
+
+            Assert.True(disposable.DisposeCalled);
+        }
+
+        [Fact]
+        public void ProviderScopeDisposeThrowsWhenOnlyDisposeAsyncImplemented()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<AsyncDisposable>();
+
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+            var scope = serviceProvider.CreateScope();
+            var disposable = scope.ServiceProvider.GetService<AsyncDisposable>();
+
+            var exception = Assert.Throws<InvalidOperationException>(() => (scope as IDisposable).Dispose());
+            Assert.Equal(
+                "'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderContainerTests+AsyncDisposable' type only implements IAsyncDisposable. Use DisposeAsync to dispose the container.",
+                exception.Message);
+        }
+
+        [Fact]
+        public void SingletonServiceCreatedFromFactoryIsDisposedWhenContainerIsDisposed()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton(_ => new FakeDisposable());
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+
+            // Act
+            var service = serviceProvider.GetService<FakeDisposable>();
+            ((IDisposable)serviceProvider).Dispose();
+
+            // Assert
+            Assert.True(service.IsDisposed);
+        }
+
+        [Fact]
+        public void SingletonServiceCreatedFromInstanceIsNotDisposedWhenContainerIsDisposed()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton(new FakeDisposable());
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+
+            // Act
+            var service = serviceProvider.GetService<FakeDisposable>();
+            ((IDisposable)serviceProvider).Dispose();
+
+            // Assert
+            Assert.False(service.IsDisposed);
+        }
+
+        private class FakeDisposable : IDisposable
+        {
+            public bool IsDisposed { get; private set; }
+
+            public void Dispose()
+            {
+                IsDisposed = true;
+            }
+        }
+
+        private class FakeMultipleServiceWithIEnumerableDependency: IFakeMultipleService
+        {
+            public FakeMultipleServiceWithIEnumerableDependency(IEnumerable<IFakeService> fakeServices)
+            {
+            }
+        }
+
         private abstract class AbstractFakeOpenGenericService<T> : IFakeOpenGenericService<T>
         {
             public abstract T Value { get; }
@@ -206,6 +436,34 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             public void Dispose()
             {
                 Disposed = true;
+            }
+        }
+
+        private class AsyncDisposable : IFakeService, IAsyncDisposable
+        {
+            public bool DisposeAsyncCalled { get; private set; }
+
+            public ValueTask DisposeAsync()
+            {
+                DisposeAsyncCalled = true;
+                return new ValueTask(Task.CompletedTask);
+            }
+        }
+
+        private class SyncAsyncDisposable : IFakeService, IAsyncDisposable, IDisposable
+        {
+            public bool DisposeCalled { get; private set; }
+            public bool DisposeAsyncCalled { get; private set; }
+
+            public void Dispose()
+            {
+                DisposeCalled = true;
+            }
+
+            public ValueTask DisposeAsync()
+            {
+                DisposeAsyncCalled = true;
+                return new ValueTask(Task.CompletedTask);
             }
         }
     }

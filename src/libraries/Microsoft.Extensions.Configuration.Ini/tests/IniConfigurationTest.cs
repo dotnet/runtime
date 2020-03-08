@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -10,6 +11,36 @@ namespace Microsoft.Extensions.Configuration.Ini.Test
 {
     public class IniConfigurationTest
     {
+        [Fact]
+        public void CanLoadValidIniFromStreamProvider()
+        {
+            var ini = @"[DefaultConnection]
+ConnectionString=TestConnectionString
+Provider=SqlClient
+[Data:Inventory]
+ConnectionString=AnotherTestConnectionString
+SubHeader:Provider=MySql";
+            var config = new ConfigurationBuilder().AddIniStream(TestStreamHelpers.StringToStream(ini)).Build();
+
+            Assert.Equal("TestConnectionString", config["defaultconnection:ConnectionString"]);
+            Assert.Equal("SqlClient", config["DEFAULTCONNECTION:PROVIDER"]);
+            Assert.Equal("AnotherTestConnectionString", config["Data:Inventory:CONNECTIONSTRING"]);
+            Assert.Equal("MySql", config["Data:Inventory:SubHeader:Provider"]);
+        }
+
+        [Fact]
+        public void ReloadThrowsFromIniStreamProvider()
+        {
+            var ini = @"[DefaultConnection]
+ConnectionString=TestConnectionString
+Provider=SqlClient
+[Data:Inventory]
+ConnectionString=AnotherTestConnectionString
+SubHeader:Provider=MySql";
+            var config = new ConfigurationBuilder().AddIniStream(TestStreamHelpers.StringToStream(ini)).Build();
+            Assert.Throws<InvalidOperationException>(() => config.Reload());
+        }
+
         [Fact]
         public void LoadKeyValuePairsFromValidIniFile()
         {

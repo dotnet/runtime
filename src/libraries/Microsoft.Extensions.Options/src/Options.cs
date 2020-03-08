@@ -1,5 +1,6 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 namespace Microsoft.Extensions.Options
 {
@@ -8,15 +9,18 @@ namespace Microsoft.Extensions.Options
     /// </summary>
     public static class Options
     {
+        /// <summary>
+        /// The default name used for options instances: "".
+        /// </summary>
         public static readonly string DefaultName = string.Empty;
 
         /// <summary>
-        /// Creates a wrapper around an instance of TOptions to return itself as an IOptions.
+        /// Creates a wrapper around an instance of <typeparamref name="TOptions"/> to return itself as an <see cref="IOptions{TOptions}"/>.
         /// </summary>
-        /// <typeparam name="TOptions"></typeparam>
-        /// <param name="options"></param>
-        /// <returns></returns>
-        public static IOptions<TOptions> Create<TOptions>(TOptions options) where TOptions : class, new()
+        /// <typeparam name="TOptions">Options type.</typeparam>
+        /// <param name="options">Options object.</param>
+        /// <returns>Wrapped options object.</returns>
+        public static IOptions<TOptions> Create<TOptions>(TOptions options) where TOptions : class
         {
             return new OptionsWrapper<TOptions>(options);
         }

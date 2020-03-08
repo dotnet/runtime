@@ -1,5 +1,6 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using Xunit;
@@ -347,6 +348,23 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        public void StringSegment_EqualsObject_Valid()
+        {
+            var segment1 = new StringSegment("My Car Is Cool", 3, 3);
+            var segment2 = new StringSegment("Your Carport is blue", 5, 3);
+
+            Assert.True(segment1.Equals((object)segment2));
+        }
+
+        [Fact]
+        public void StringSegment_EqualsNull_Invalid()
+        {
+            var segment1 = new StringSegment("My Car Is Cool", 3, 3);
+
+            Assert.False(segment1.Equals(null as object));
+        }
+
+        [Fact]
         public void StringSegment_StaticEquals_Valid()
         {
             var segment1 = new StringSegment("My Car Is Cool", 3, 3);
@@ -626,7 +644,19 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act & Assert
-            Assert.Throws<ArgumentOutOfRangeException>(() => segment.Substring(-1, 1));
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Substring(-1, 1));
+            Assert.Equal("offset", exception.ParamName);
+        }
+
+        [Fact]
+        public void StringSegment_Substring_InvalidLength()
+        {
+            // Arrange
+            var segment = new StringSegment("Hello, World!", 1, 3);
+
+            // Act & Assert
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Substring(0, -1));
+            Assert.Equal("length", exception.ParamName);
         }
 
         [Fact]
@@ -636,7 +666,19 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act & Assert
-            Assert.Throws<ArgumentOutOfRangeException>(() => segment.Substring(2, 3));
+            var exception = Assert.Throws<ArgumentException>(() => segment.Substring(2, 3));
+            Assert.Contains("bounds", exception.Message);
+        }
+
+        [Fact]
+        public void StringSegment_Substring_OffsetAndLengthOverflows()
+        {
+            // Arrange
+            var segment = new StringSegment("Hello, World!", 1, 3);
+
+            // Act & Assert
+            var exception = Assert.Throws<ArgumentException>(() => segment.Substring(1, int.MaxValue));
+            Assert.Contains("bounds", exception.Message);
         }
 
         [Fact]
@@ -684,7 +726,19 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act & Assert
-            Assert.Throws<ArgumentOutOfRangeException>(() => segment.Subsegment(-1, 1));
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Subsegment(-1, 1));
+            Assert.Equal("offset", exception.ParamName);
+        }
+
+        [Fact]
+        public void StringSegment_Subsegment_InvalidLength()
+        {
+            // Arrange
+            var segment = new StringSegment("Hello, World!", 1, 3);
+
+            // Act & Assert
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.Subsegment(0, -1));
+            Assert.Equal("length", exception.ParamName);
         }
 
         [Fact]
@@ -694,7 +748,165 @@ namespace Microsoft.Extensions.Primitives
             var segment = new StringSegment("Hello, World!", 1, 3);
 
             // Act & Assert
-            Assert.Throws<ArgumentOutOfRangeException>(() => segment.Subsegment(2, 3));
+            var exception = Assert.Throws<ArgumentException>(() => segment.Subsegment(2, 3));
+            Assert.Contains("bounds", exception.Message);
+        }
+
+        [Fact]
+        public void StringSegment_Subsegment_OffsetAndLengthOverflows()
+        {
+            // Arrange
+            var segment = new StringSegment("Hello, World!", 1, 3);
+
+            // Act & Assert
+            var exception = Assert.Throws<ArgumentException>(() => segment.Subsegment(1, int.MaxValue));
+            Assert.Contains("bounds", exception.Message);
+        }
+
+        public static TheoryData<StringSegment, StringSegmentComparer> CompareLesserData
+        {
+            get
+            {
+                // candidate / comparer
+                return new TheoryData<StringSegment, StringSegmentComparer>()
+                {
+                    { new StringSegment("abcdef", 1, 4), StringSegmentComparer.Ordinal },
+                    { new StringSegment("abcdef", 1, 5), StringSegmentComparer.OrdinalIgnoreCase },
+                    { new StringSegment("ABCDEF", 2, 2), StringSegmentComparer.OrdinalIgnoreCase },
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CompareLesserData))]
+        public void StringSegment_Compare_Lesser(StringSegment candidate, StringSegmentComparer comparer)
+        {
+            // Arrange
+            var segment = new StringSegment("ABCDEF", 1, 4);
+
+            // Act
+            var result = comparer.Compare(segment, candidate);
+
+            // Assert
+            Assert.True(result < 0, $"{segment} should be less than {candidate}");
+        }
+
+        public static TheoryData<StringSegment, StringSegmentComparer> CompareEqualData
+        {
+            get
+            {
+                // candidate / comparer
+                return new TheoryData<StringSegment, StringSegmentComparer>()
+                {
+                    { new StringSegment("abcdef", 1, 4), StringSegmentComparer.Ordinal },
+                    { new StringSegment("ABCDEF", 1, 4), StringSegmentComparer.OrdinalIgnoreCase },
+                    { new StringSegment("bcde", 0, 4), StringSegmentComparer.Ordinal },
+                    { new StringSegment("BcDeF", 0, 4), StringSegmentComparer.OrdinalIgnoreCase },
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CompareEqualData))]
+        public void StringSegment_Compare_Equal(StringSegment candidate, StringSegmentComparer comparer)
+        {
+            // Arrange
+            var segment = new StringSegment("abcdef", 1, 4);
+
+            // Act
+            var result = comparer.Compare(segment, candidate);
+
+            // Assert
+            Assert.True(result == 0, $"{segment} should equal {candidate}");
+        }
+
+        public static TheoryData<StringSegment, StringSegmentComparer> CompareGreaterData
+        {
+            get
+            {
+                // candidate / comparer
+                return new TheoryData<StringSegment, StringSegmentComparer>()
+                {
+                    { new StringSegment("ABCDEF", 1, 4), StringSegmentComparer.Ordinal },
+                    { new StringSegment("ABCDEF", 0, 6), StringSegmentComparer.OrdinalIgnoreCase },
+                    { new StringSegment("abcdef", 0, 3), StringSegmentComparer.Ordinal },
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CompareGreaterData))]
+        public void StringSegment_Compare_Greater(StringSegment candidate, StringSegmentComparer comparer)
+        {
+            // Arrange
+            var segment = new StringSegment("abcdef", 1, 4);
+
+            // Act
+            var result = comparer.Compare(segment, candidate);
+
+            // Assert
+            Assert.True(result > 0, $"{segment} should be greater than {candidate}");
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashCode_ReturnsSameValueForEqualSubstringsData))]
+        public void StringSegmentComparerOrdinal_GetHashCode_ReturnsSameValueForEqualSubstrings(StringSegment segment1, StringSegment segment2)
+        {
+            // Arrange
+            var comparer = StringSegmentComparer.Ordinal;
+
+            // Act
+            var hashCode1 = comparer.GetHashCode(segment1);
+            var hashCode2 = comparer.GetHashCode(segment2);
+
+            // Assert
+            Assert.Equal(hashCode1, hashCode2);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashCode_ReturnsSameValueForEqualSubstringsData))]
+        public void StringSegmentComparerOrdinalIgnoreCase_GetHashCode_ReturnsSameValueForEqualSubstrings(StringSegment segment1, StringSegment segment2)
+        {
+            // Arrange
+            var comparer = StringSegmentComparer.OrdinalIgnoreCase;
+
+            // Act
+            var hashCode1 = comparer.GetHashCode(segment1);
+            var hashCode2 = comparer.GetHashCode(segment2);
+
+            // Assert
+            Assert.Equal(hashCode1, hashCode2);
+        }
+
+        [Fact]
+        public void StringSegmentComparerOrdinalIgnoreCase_GetHashCode_ReturnsSameValueForDifferentlyCasedStrings()
+        {
+            // Arrange
+            var segment1 = new StringSegment("abc");
+            var segment2 = new StringSegment("Abcd", 0, 3);
+            var comparer = StringSegmentComparer.OrdinalIgnoreCase;
+
+            // Act
+            var hashCode1 = comparer.GetHashCode(segment1);
+            var hashCode2 = comparer.GetHashCode(segment2);
+
+            // Assert
+            Assert.Equal(hashCode1, hashCode2);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashCode_ReturnsDifferentValuesForInequalSubstringsData))]
+        public void StringSegmentComparerOrdinal_GetHashCode_ReturnsDifferentValuesForInequalSubstrings(StringSegment segment1, StringSegment segment2)
+        {
+            // Arrange
+            var comparer = StringSegmentComparer.Ordinal;
+
+            // Act
+            var hashCode1 = comparer.GetHashCode(segment1);
+            var hashCode2 = comparer.GetHashCode(segment2);
+
+            // Assert
+            Assert.NotEqual(hashCode1, hashCode2);
         }
 
         [Fact]
@@ -749,6 +961,29 @@ namespace Microsoft.Extensions.Primitives
 
             // Assert
             Assert.Equal(-1, result);
+        }
+
+        [Fact]
+        public void IndexOf_NegativeStart_OutOfRangeThrows()
+        {
+            // Arrange
+            const string buffer = "Hello, World!, Hello people!";
+            var segment = new StringSegment(buffer, 3, buffer.Length - 3);
+
+            // Act & Assert
+            Assert.Throws<ArgumentOutOfRangeException>(() => segment.IndexOf('!', -1, 3));
+        }
+
+        [Fact]
+        public void IndexOf_StartOverflowsWithOffset_OutOfRangeThrows()
+        {
+            // Arrange
+            const string buffer = "Hello, World!, Hello people!";
+            var segment = new StringSegment(buffer, 3, buffer.Length - 3);
+
+            // Act & Assert
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.IndexOf('!', int.MaxValue, 3));
+            Assert.Equal("start", exception.ParamName);
         }
 
         [Fact]

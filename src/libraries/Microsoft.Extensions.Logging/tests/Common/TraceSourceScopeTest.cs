@@ -1,15 +1,15 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging.Test
 {
     public class TraceSourceScopeTest
     {
-#if NET461
+#if NET472
         [Fact]
         public static void DiagnosticsScope_PushesAndPops_LogicalOperationStack()
         {
@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Same(a, c);
             Assert.Same(state, b);
         }
-#elif NETCOREAPP2_0 || NETCOREAPP2_1
+#elif NETCOREAPP
 #else
 #error Target framework needs to be updated
 #endif

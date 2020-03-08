@@ -2,9 +2,16 @@
 
   <PropertyGroup>
     <Description>XML configuration provider implementation for Microsoft.Extensions.Configuration.</Description>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;$(DefaultNetCoreTargetFramework)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(DefaultNetCoreTargetFramework)</TargetFrameworks>
     <PackageTags>$(PackageTags);xml</PackageTags>
+    <IsPackable>true</IsPackable>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.Configuration.Xml.Tests" />
+  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.Configuration" />
@@ -13,4 +20,3 @@
   </ItemGroup>
 
 </Project>
-

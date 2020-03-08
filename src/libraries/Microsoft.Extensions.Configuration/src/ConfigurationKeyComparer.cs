@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ namespace Microsoft.Extensions.Configuration
     public class ConfigurationKeyComparer : IComparer<string>
     {
         private static readonly string[] _keyDelimiterArray = new[] { ConfigurationPath.KeyDelimiter };
-        
+
         /// <summary>
         /// The default instance.
         /// </summary>
@@ -23,11 +24,11 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="x">First string.</param>
         /// <param name="y">Second string.</param>
-        /// <returns></returns>
+        /// <returns>Less than 0 if x is less than y, 0 if x is equal to y and greater than 0 if x is greater than y.</returns>
         public int Compare(string x, string y)
         {
-            var xParts = x?.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
-            var yParts = y?.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
+            var xParts = x?.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+            var yParts = y?.Split(_keyDelimiterArray, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
 
             // Compare each part until we get two parts that are not equal
             for (int i = 0; i < Math.Min(xParts.Length, yParts.Length); i++)
@@ -41,7 +42,7 @@ namespace Microsoft.Extensions.Configuration
                 var xIsInt = x != null && int.TryParse(x, out value1);
                 var yIsInt = y != null && int.TryParse(y, out value2);
 
-                int result = 0;
+                int result;
 
                 if (!xIsInt && !yIsInt)
                 {
@@ -50,7 +51,7 @@ namespace Microsoft.Extensions.Configuration
                 }
                 else if (xIsInt && yIsInt)
                 {
-                    // Both are int 
+                    // Both are int
                     result = value1 - value2;
                 }
                 else

@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Microsoft.Extensions.Primitives;
@@ -29,7 +30,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Returns a change token if this provider supports change tracking, null otherwise.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The change token.</returns>
         IChangeToken GetReloadToken();
 
         /// <summary>
@@ -39,7 +40,7 @@ namespace Microsoft.Extensions.Configuration
 
         /// <summary>
         /// Returns the immediate descendant configuration keys for a given parent path based on this
-        /// <see cref="IConfigurationProvider"/>'s data and the set of keys returned by all the preceding
+        /// <see cref="IConfigurationProvider"/>s data and the set of keys returned by all the preceding
         /// <see cref="IConfigurationProvider"/>s.
         /// </summary>
         /// <param name="earlierKeys">The child keys returned by the preceding providers for the same parent path.</param>

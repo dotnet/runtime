@@ -2,15 +2,17 @@
 
   <PropertyGroup>
     <RootNamespace>Microsoft.Extensions.FileProviders.Composite</RootNamespace>
-    <TargetFrameworks>netcoreapp2.1;net461</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetCoreTargetFramework);net472</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\shared\**\*.cs" />
+    <Compile Include="..\..\Shared\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="Microsoft.Extensions.FileProviders.Abstractions" />
     <Reference Include="Microsoft.Extensions.FileProviders.Composite" />
+    <Reference Include="Microsoft.Extensions.Primitives" />
   </ItemGroup>
 
 </Project>

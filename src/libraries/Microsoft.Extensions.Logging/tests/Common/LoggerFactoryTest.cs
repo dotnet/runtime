@@ -1,9 +1,10 @@
-// Copyright (c) Microsoft Open Technologies, Inc. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
-using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
 
@@ -133,6 +134,16 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        public void BeginScope_ReturnsInternalSourceTokenDirectly()
+        {
+            var loggerProvider = new InternalScopeLoggerProvider();
+            var loggerFactory = new LoggerFactory(new[] { loggerProvider });
+            var logger = loggerFactory.CreateLogger("Logger");
+            var scope = logger.BeginScope("Scope");
+            Assert.Contains("LoggerExternalScopeProvider+Scope", scope.GetType().FullName);
+        }
+
+        [Fact]
         public void BeginScope_ReturnsCompositeToken_ForMultipleLoggers()
         {
             var loggerProvider = new ExternalScopeLoggerProvider();
@@ -167,6 +178,19 @@ namespace Microsoft.Extensions.Logging.Test
                     "Scope2",
                     "Message2",
                 });
+        }
+
+        [Fact]
+        public void CreateDisposeDisposesInnerServiceProvider()
+        {
+            var disposed = false;
+            var provider = new Mock<ILoggerProvider>();
+            provider.Setup(p => p.Dispose()).Callback(() => disposed = true);
+
+            var factory = LoggerFactory.Create(builder => builder.Services.AddSingleton(_=> provider.Object));
+            factory.Dispose();
+
+            Assert.True(disposed);
         }
 
         private class InternalScopeLoggerProvider : ILoggerProvider, ILogger

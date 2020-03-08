@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -76,9 +77,9 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                         }
 
                         // If the switch is a key in given switch mappings, interpret it
-                        if (_switchMappings != null && _switchMappings.ContainsKey(currentArg))
+                        if (_switchMappings != null && _switchMappings.TryGetValue(currentArg, out var mappedKey))
                         {
-                            key = _switchMappings[currentArg];
+                            key = mappedKey;
                         }
                         // If the switch starts with a single "-" and it isn't in given mappings , it is an invalid usage so ignore it
                         else if (keyStartIndex == 1)
@@ -105,9 +106,9 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                         var keySegment = currentArg.Substring(0, separator);
 
                         // If the switch is a key in given switch mappings, interpret it
-                        if (_switchMappings != null && _switchMappings.ContainsKey(keySegment))
+                        if (_switchMappings != null && _switchMappings.TryGetValue(keySegment, out var mappedKeySegment))
                         {
-                            key = _switchMappings[keySegment];
+                            key = mappedKeySegment;
                         }
                         // If the switch starts with a single "-" and it isn't in given mappings , it is an invalid usage
                         else if (keyStartIndex == 1)

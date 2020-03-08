@@ -1,5 +1,6 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -8,7 +9,7 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Primitives
 {
     /// <summary>
-    /// Tokenizes a <c>string</c> into <see cref="StringSegment"/>s.
+    /// Tokenizes a <see cref="string"/> into <see cref="StringSegment"/>s.
     /// </summary>
     public readonly struct StringTokenizer :  IEnumerable<StringSegment>
     {
@@ -18,7 +19,7 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Initializes a new instance of <see cref="StringTokenizer"/>.
         /// </summary>
-        /// <param name="value">The <c>string</c> to tokenize.</param>
+        /// <param name="value">The <see cref="string"/> to tokenize.</param>
         /// <param name="separators">The characters to tokenize by.</param>
         public StringTokenizer(string value, char[] separators)
         {
@@ -39,7 +40,7 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Initializes a new instance of <see cref="StringTokenizer"/>.
         /// </summary>
-        /// <param name="value">The <c>StringSegment</c> to tokenize.</param>
+        /// <param name="value">The <see cref="StringSegment"/> to tokenize.</param>
         /// <param name="separators">The characters to tokenize by.</param>
         public StringTokenizer(StringSegment value, char[] separators)
         {

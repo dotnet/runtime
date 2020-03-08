@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -573,7 +574,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="descriptor">The <see cref="ServiceDescriptor"/>.</param>
         /// <remarks>
-        /// Use <see cref="TryAddEnumerable(IServiceCollection, ServiceDescriptor)"/> when registing a service implementation of a
+        /// Use <see cref="TryAddEnumerable(IServiceCollection, ServiceDescriptor)"/> when registering a service implementation of a
         /// service type that
         /// supports multiple registrations of the same service type. Using
         /// <see cref="Add(IServiceCollection, ServiceDescriptor)"/> is not idempotent and can add
@@ -624,7 +625,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="descriptors">The <see cref="ServiceDescriptor"/>s.</param>
         /// <remarks>
-        /// Use <see cref="TryAddEnumerable(IServiceCollection, ServiceDescriptor)"/> when registing a service
+        /// Use <see cref="TryAddEnumerable(IServiceCollection, ServiceDescriptor)"/> when registering a service
         /// implementation of a service type that
         /// supports multiple registrations of the same service type. Using
         /// <see cref="Add(IServiceCollection, ServiceDescriptor)"/> is not idempotent and can add
@@ -655,11 +656,11 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
 
         /// <summary>
         /// Removes the first service in <see cref="IServiceCollection"/> with the same service type
-        /// as <paramref name="descriptor"/> and adds <paramef name="descriptor"/> to the collection.
+        /// as <paramref name="descriptor"/> and adds <paramref name="descriptor"/> to the collection.
         /// </summary>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="descriptor">The <see cref="ServiceDescriptor"/> to replace with.</param>
-        /// <returns></returns>
+        /// <returns>The <see cref="IServiceCollection"/> for chaining.</returns>
         public static IServiceCollection Replace(
             this IServiceCollection collection,
             ServiceDescriptor descriptor)
@@ -685,21 +686,21 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         }
 
         /// <summary>
-        /// Removes all services of type <typeparamef name="T"/> in <see cref="IServiceCollection"/>.
+        /// Removes all services of type <typeparamref name="T"/> in <see cref="IServiceCollection"/>.
         /// </summary>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
-        /// <returns></returns>
+        /// <returns>The <see cref="IServiceCollection"/> for chaining.</returns>
         public static IServiceCollection RemoveAll<T>(this IServiceCollection collection)
         {
             return RemoveAll(collection, typeof(T));
         }
 
         /// <summary>
-        /// Removes all services of type <paramef name="serviceType"/> in <see cref="IServiceCollection"/>.
+        /// Removes all services of type <paramref name="serviceType"/> in <see cref="IServiceCollection"/>.
         /// </summary>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="serviceType">The service type to remove.</param>
-        /// <returns></returns>
+        /// <returns>The <see cref="IServiceCollection"/> for chaining.</returns>
         public static IServiceCollection RemoveAll(this IServiceCollection collection, Type serviceType)
         {
             if (serviceType == null)

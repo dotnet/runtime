@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
@@ -107,7 +108,45 @@ namespace Microsoft.Extensions.Primitives
                     { "abc", new[] { "abc" } },
                     { new[] { "abc" }, new[] { "abc" } },
                     { new[] { "abc", "bcd" }, new[] { "abc", "bcd" } },
-                    { new[] { "abc", "bcd", "foo" }, new[] { "abc", "bcd", "foo" } }
+                    { new[] { "abc", "bcd", "foo" }, new[] { "abc", "bcd", "foo" } },
+                    { new[] { null, "abc", "bcd", "foo" }, new[] { null, "abc", "bcd", "foo" } },
+                    { new[] { "abc", null, "bcd", "foo" }, new[] { "abc", null, "bcd", "foo" } },
+                    { new[] { "abc", "bcd", "foo", null }, new[] { "abc", "bcd", "foo", null } },
+                    { new[] { string.Empty, "abc", "bcd", "foo" }, new[] { string.Empty, "abc", "bcd", "foo" } },
+                    { new[] { "abc", string.Empty, "bcd", "foo" }, new[] { "abc", string.Empty, "bcd", "foo" } },
+                    { new[] { "abc", "bcd", "foo", string.Empty }, new[] { "abc", "bcd", "foo", string.Empty } }
+                };
+            }
+        }
+
+        public static TheoryData<StringValues, string> FilledStringValuesToStringToExpected
+        {
+            get
+            {
+                return new TheoryData<StringValues, string>
+                {
+                    { default(StringValues), string.Empty },
+                    { StringValues.Empty, string.Empty },
+                    { new StringValues(string.Empty), string.Empty },
+                    { new StringValues("abc"), "abc" },
+                    { new StringValues(new[] { "abc" }), "abc" },
+                    { new StringValues(new[] { "abc", "bcd" }), "abc,bcd" },
+                    { new StringValues(new[] { "abc", "bcd", "foo" }), "abc,bcd,foo" },
+                    { string.Empty, string.Empty },
+                    { (string)null, string.Empty },
+                    { "abc","abc" },
+                    { new[] { "abc" }, "abc" },
+                    { new[] { "abc", "bcd" }, "abc,bcd" },
+                    { new[] { "abc", null, "bcd" }, "abc,bcd" },
+                    { new[] { "abc", string.Empty, "bcd" }, "abc,bcd" },
+                    { new[] { "abc", "bcd", "foo" }, "abc,bcd,foo" },
+                    { new[] { null, "abc", "bcd", "foo" }, "abc,bcd,foo" },
+                    { new[] { "abc", null, "bcd", "foo" }, "abc,bcd,foo" },
+                    { new[] { "abc", "bcd", "foo", null }, "abc,bcd,foo" },
+                    { new[] { string.Empty, "abc", "bcd", "foo" }, "abc,bcd,foo" },
+                    { new[] { "abc", string.Empty, "bcd", "foo" }, "abc,bcd,foo" },
+                    { new[] { "abc", "bcd", "foo", string.Empty }, "abc,bcd,foo" },
+                    { new[] { "abc", "bcd", "foo", string.Empty, null }, "abc,bcd,foo" }
                 };
             }
         }
@@ -158,6 +197,13 @@ namespace Microsoft.Extensions.Primitives
             Assert.Empty(stringValues);
         }
 
+        [Theory]
+        [MemberData(nameof(FilledStringValuesToStringToExpected))]
+        public void ToString_ExpectedValues(StringValues stringValues, string expected)
+        {
+            Assert.Equal(stringValues.ToString(), expected);
+        }
+
         [Fact]
         public void ImplicitStringConverter_Works()
         {
@@ -174,6 +220,37 @@ namespace Microsoft.Extensions.Primitives
             Assert.Equal(aString, stringValues[0]);
             Assert.Equal(aString, ((IList<string>)stringValues)[0]);
             Assert.Equal<string[]>(new string[] { aString }, stringValues);
+        }
+
+        [Fact]
+        public void GetHashCode_SingleValueVsArrayWithOneItem_SameHashCode()
+        {
+            var sv1 = new StringValues("value");
+            var sv2 = new StringValues(new[] { "value" });
+            Assert.Equal(sv1, sv2);
+            Assert.Equal(sv1.GetHashCode(), sv2.GetHashCode());
+        }
+
+        [Fact]
+        public void GetHashCode_NullCases_DifferentHashCodes()
+        {
+            var sv1 = new StringValues((string)null);
+            var sv2 = new StringValues(new[] { (string)null });
+            Assert.NotEqual(sv1, sv2);
+            Assert.NotEqual(sv1.GetHashCode(), sv2.GetHashCode());
+
+            var sv3 = new StringValues((string[])null);
+            Assert.Equal(sv1, sv3);
+            Assert.Equal(sv1.GetHashCode(), sv3.GetHashCode());
+        }
+
+        [Fact]
+        public void GetHashCode_SingleValueVsArrayWithTwoItems_DifferentHashCodes()
+        {
+            var sv1 = new StringValues("value");
+            var sv2 = new StringValues(new[] { "value", "value" });
+            Assert.NotEqual(sv1, sv2);
+            Assert.NotEqual(sv1.GetHashCode(), sv2.GetHashCode());
         }
 
         [Fact]
@@ -466,6 +543,9 @@ namespace Microsoft.Extensions.Primitives
 
             Assert.True(StringValues.Equals(stringValues, expected));
             Assert.False(StringValues.Equals(stringValues, notEqual));
+
+            Assert.True(StringValues.Equals(stringValues, new StringValues(expected)));
+            Assert.Equal(stringValues.GetHashCode(), new StringValues(expected).GetHashCode());
         }
 
         [Theory]
@@ -476,6 +556,9 @@ namespace Microsoft.Extensions.Primitives
 
             Assert.True(StringValues.Equals(stringValues, expected));
             Assert.False(StringValues.Equals(stringValues, notEqual));
+
+            Assert.True(StringValues.Equals(stringValues, new StringValues(expected)));
+            Assert.Equal(stringValues.GetHashCode(), new StringValues(expected).GetHashCode());
         }
     }
 }

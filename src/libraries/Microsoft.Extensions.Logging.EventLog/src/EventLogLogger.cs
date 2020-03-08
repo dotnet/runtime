@@ -1,17 +1,18 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.Extensions.Logging.EventLog.Internal;
+using System.Text;
 
 namespace Microsoft.Extensions.Logging.EventLog
 {
     /// <summary>
     /// A logger that writes messages to Windows Event Log.
     /// </summary>
-    public class EventLogLogger : ILogger
+    internal class EventLogLogger : ILogger
     {
         private readonly string _name;
         private readonly EventLogSettings _settings;
@@ -25,43 +26,15 @@ namespace Microsoft.Extensions.Logging.EventLog
         /// Initializes a new instance of the <see cref="EventLogLogger"/> class.
         /// </summary>
         /// <param name="name">The name of the logger.</param>
-        public EventLogLogger(string name)
-            : this(name, settings: new EventLogSettings())
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="EventLogLogger"/> class.
-        /// </summary>
-        /// <param name="name">The name of the logger.</param>
-        /// <param name="settings">The <see cref="EventLogSettings"/>.</param>
-        public EventLogLogger(string name, EventLogSettings settings)
-            : this(name, settings, new LoggerExternalScopeProvider())
-        {
-
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="EventLogLogger"/> class.
-        /// </summary>
-        /// <param name="name">The name of the logger.</param>
         /// <param name="settings">The <see cref="EventLogSettings"/>.</param>
         /// <param name="externalScopeProvider">The <see cref="IExternalScopeProvider"/>.</param>
         public EventLogLogger(string name, EventLogSettings settings, IExternalScopeProvider externalScopeProvider)
         {
-            _name = string.IsNullOrEmpty(name) ? nameof(EventLogLogger) : name;
-            _settings = settings;
+            _name = name ?? throw new ArgumentNullException(nameof(name));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+
             _externalScopeProvider = externalScopeProvider;
-
-            var logName = string.IsNullOrEmpty(settings.LogName) ? "Application" : settings.LogName;
-            var sourceName = string.IsNullOrEmpty(settings.SourceName) ? "Application" : settings.SourceName;
-            var machineName = string.IsNullOrEmpty(settings.MachineName) ? "." : settings.MachineName;
-
-            // Due to the following reasons, we cannot have these checks either here or in IsEnabled method:
-            // 1. Log name & source name existence check only works on local computer.
-            // 2. Source name existence check requires Administrative privileges.
-
-            EventLog = settings.EventLog ?? new WindowsEventLog(logName, machineName, sourceName);
+            EventLog = settings.EventLog;
 
             // Examples:
             // 1. An error occu...
@@ -113,16 +86,38 @@ namespace Microsoft.Extensions.Logging.EventLog
                 return;
             }
 
-            message = _name + Environment.NewLine + message;
+            var builder = new StringBuilder()
+                            .Append("Category: ")
+                            .AppendLine(_name)
+                            .Append("EventId: ")
+                            .Append(eventId.Id)
+                            .AppendLine();
+
+            _externalScopeProvider?.ForEachScope((scope, sb) =>
+            {
+                if (scope is IEnumerable<KeyValuePair<string, object>> properties)
+                {
+                    foreach (var pair in properties)
+                    {
+                        sb.Append(pair.Key).Append(": ").AppendLine(pair.Value?.ToString());
+                    }
+                }
+                else if (scope != null)
+                {
+                    sb.AppendLine(scope.ToString());
+                }
+            },
+            builder);
+
+            builder.AppendLine()
+            .AppendLine(message);
 
             if (exception != null)
             {
-                message += Environment.NewLine + Environment.NewLine + exception;
+                builder.AppendLine().AppendLine("Exception: ").Append(exception).AppendLine();
             }
 
-            _externalScopeProvider?.ForEachScope<object>((scope, _) => message += Environment.NewLine + scope, null);
-
-            WriteMessage(message, GetEventLogEntryType(logLevel), eventId.Id);
+            WriteMessage(builder.ToString(), GetEventLogEntryType(logLevel), EventLog.DefaultEventId ?? eventId.Id);
         }
 
         // category '0' translates to 'None' in event log
@@ -185,15 +180,6 @@ namespace Microsoft.Extensions.Logging.EventLog
                     return EventLogEntryType.Error;
                 default:
                     return EventLogEntryType.Information;
-            }
-        }
-
-        private class NoopDisposable : IDisposable
-        {
-            public static NoopDisposable Instance = new NoopDisposable();
-
-            public void Dispose()
-            {
             }
         }
     }

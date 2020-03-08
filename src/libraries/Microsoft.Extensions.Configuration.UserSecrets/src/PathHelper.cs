@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -40,17 +41,24 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
                         badCharIndex));
             }
 
-            var root = Environment.GetEnvironmentVariable("APPDATA") ??         // On Windows it goes to %APPDATA%\Microsoft\UserSecrets\
-                        Environment.GetEnvironmentVariable("HOME");             // On Mac/Linux it goes to ~/.microsoft/usersecrets/
+            const string userSecretsFallbackDir = "DOTNET_USER_SECRETS_FALLBACK_DIR";
 
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APPDATA")))
+            // For backwards compat, this checks env vars first before using Env.GetFolderPath
+            var appData = Environment.GetEnvironmentVariable("APPDATA");
+            var root = appData                                                                   // On Windows it goes to %APPDATA%\Microsoft\UserSecrets\
+                       ?? Environment.GetEnvironmentVariable("HOME")                             // On Mac/Linux it goes to ~/.microsoft/usersecrets/
+                       ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) 
+                       ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+                       ?? Environment.GetEnvironmentVariable(userSecretsFallbackDir);            // this fallback is an escape hatch if everything else fails
+
+            if (string.IsNullOrEmpty(root))
             {
-                return Path.Combine(root, "Microsoft", "UserSecrets", userSecretsId, SecretsFileName);
+                throw new InvalidOperationException("Could not determine an appropriate location for storing user secrets. Set the " + userSecretsFallbackDir + " environment variable to a folder where user secrets should be stored.");
             }
-            else
-            {
-                return Path.Combine(root, ".microsoft", "usersecrets", userSecretsId, SecretsFileName);
-            }
+
+            return !string.IsNullOrEmpty(appData)
+                ? Path.Combine(root, "Microsoft", "UserSecrets", userSecretsId, SecretsFileName)
+                : Path.Combine(root, ".microsoft", "usersecrets", userSecretsId, SecretsFileName);
         }
     }
 }

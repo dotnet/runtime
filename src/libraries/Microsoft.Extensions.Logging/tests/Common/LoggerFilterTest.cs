@@ -1,12 +1,11 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Testing;
 using Microsoft.Extensions.Options;
@@ -28,7 +27,7 @@ namespace Microsoft.Extensions.Logging.Test
     }
   }
 }";
-            var config = CreateConfiguration(() => json);
+            var config = TestConfiguration.Create(() => json);
             var loggerProvider = new TestLoggerProvider(new TestSink(), isEnabled: true);
 
             var factory = TestLoggerBuilder.Create(builder => builder
@@ -74,7 +73,7 @@ namespace Microsoft.Extensions.Logging.Test
     }
   }
 }";
-            var config = CreateConfiguration(() => json);
+            var config = TestConfiguration.Create(() => json);
             var loggerProvider = new TestLoggerProvider(new TestSink(), isEnabled: true);
             var factory = TestLoggerBuilder.Create(builder => builder
                 .AddConfiguration(config.GetSection("Logging"))
@@ -121,7 +120,7 @@ namespace Microsoft.Extensions.Logging.Test
     }
   }
 }";
-            var config = CreateConfiguration(() => json);
+            var config = TestConfiguration.Create(() => json);
 
             var loggerProvider = new TestLoggerProvider(new TestSink(), isEnabled: true);
             var factory = TestLoggerBuilder.Create(builder => builder
@@ -155,7 +154,7 @@ namespace Microsoft.Extensions.Logging.Test
     }
   }
 }";
-            var config = CreateConfiguration(() => json);
+            var config = TestConfiguration.Create(() => json);
 
             var loggerProvider = new TestLoggerProvider(new TestSink(), isEnabled: true);
             var factory = TestLoggerBuilder.Create(builder => builder
@@ -187,7 +186,7 @@ namespace Microsoft.Extensions.Logging.Test
     }
   }
 }";
-            var config = CreateConfiguration(() => json);
+            var config = TestConfiguration.Create(() => json);
 
             var loggerProvider = new TestLoggerProvider(new TestSink(), isEnabled: true);
             var factory = TestLoggerBuilder.Create(builder => builder
@@ -315,7 +314,7 @@ namespace Microsoft.Extensions.Logging.Test
     }
   }
 }";
-            var config = CreateConfiguration(() => json);
+            var config = TestConfiguration.Create(() => json);
             var loggerProvider = new TestLoggerProvider(new TestSink(), isEnabled: true);
 
             var factory = TestLoggerBuilder.Create(builder => builder
@@ -426,10 +425,27 @@ namespace Microsoft.Extensions.Logging.Test
                                                             .Build())
                 )
                 .BuildServiceProvider();
-            
+
             var options = serviceProvider.GetRequiredService<IOptions<LoggerFilterOptions>>();
 
             Assert.Null(options.Value.Rules.Single().CategoryName);
+        }
+
+        [Fact]
+        public void MultipleWildcardsAreNotAllowed()
+        {
+            var options = new LoggerFilterOptions()
+            {
+                Rules = { new LoggerFilterRule(providerName: null, categoryName: "*A*", logLevel: null, filter: null)}
+            };
+            var testSink1 = new TestSink();
+            var loggerFactory = new LoggerFactory(new[]
+            {
+                new TestLoggerProvider2(testSink1)
+            }, options);
+
+            var exception = Assert.Throws<InvalidOperationException>(() => loggerFactory.CreateLogger("Category"));
+            Assert.Equal("Only one wildcard character is allowed in category name.", exception.Message);
         }
 
         [Theory]
@@ -452,7 +468,6 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(message.expectInProvider1 ? 1 : 0, testSink1.Writes.Count);
             Assert.Equal(message.expectInProvider2 ? 1 : 0, testSink2.Writes.Count);
         }
-
 
         public static TheoryData<LoggerFilterOptions, (string, LogLevel, bool, bool)> FilterTestData =
             new TheoryData<LoggerFilterOptions, (string, LogLevel, bool, bool)>()
@@ -583,33 +598,40 @@ namespace Microsoft.Extensions.Logging.Test
                     },
                     ("Category.Sub", LogLevel.Trace, true, false)
                 },
+                { // Wildcards allowed in category names
+                    new LoggerFilterOptions()
+                    {
+                        MinLevel = LogLevel.Critical,
+                        Rules =
+                        {
+                            new LoggerFilterRule(typeof(TestLoggerProvider).FullName, "Category.*.Sub", LogLevel.Trace, null),
+                            new LoggerFilterRule(null, null, LogLevel.Critical, null)
+                        }
+                    },
+                    ("Category.B.Sub", LogLevel.Trace, true, false)
+                },
+                { // Wildcards allowed in the beginning of category names
+                    new LoggerFilterOptions()
+                    {
+                        MinLevel = LogLevel.Critical,
+                        Rules =
+                        {
+                            new LoggerFilterRule(typeof(TestLoggerProvider).FullName, "*.Sub", LogLevel.Trace, null),
+                        }
+                    },
+                    ("Category.B.Sub", LogLevel.Trace, true, false)
+                },
+                { // Wildcards allowed in the end of category names
+                    new LoggerFilterOptions()
+                    {
+                        MinLevel = LogLevel.Critical,
+                        Rules =
+                        {
+                            new LoggerFilterRule(typeof(TestLoggerProvider).FullName, "Cat*", LogLevel.Trace, null),
+                        }
+                    },
+                    ("Category.B.Sub", LogLevel.Trace, true, false)
+                }
             };
-
-
-        internal ConfigurationRoot CreateConfiguration(Func<string> getJson)
-        {
-            var provider = new TestConfiguration(new JsonConfigurationSource { Optional = true }, getJson);
-            return new ConfigurationRoot(new List<IConfigurationProvider> { provider });
-        }
-
-        private class TestConfiguration : JsonConfigurationProvider
-        {
-            private Func<string> _json;
-            public TestConfiguration(JsonConfigurationSource source, Func<string> json)
-                : base(source)
-            {
-                _json = json;
-            }
-
-            public override void Load()
-            {
-                var stream = new MemoryStream();
-                var writer = new StreamWriter(stream);
-                writer.Write(_json());
-                writer.Flush();
-                stream.Seek(0, SeekOrigin.Begin);
-                Load(stream);
-            }
-        }
     }
 }

@@ -1,13 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.1;net461</TargetFrameworks>
+    <TargetFrameworks>$(DefaultNetCoreTargetFramework);net472</TargetFrameworks>
     <RootNamespace>Microsoft.Extensions.DependencyInjection</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Microsoft.Extensions.DependencyInjection.csproj" />
-    <ProjectReference Include="..\..\DI.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj" />
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Specification.Tests" />
+    <Reference Include="Microsoft.Extensions.DependencyInjection" />
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <Reference Include="Newtonsoft.Json" />
   </ItemGroup>
 
   <ItemGroup>

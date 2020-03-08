@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using Microsoft.Extensions.Configuration;
@@ -8,7 +9,8 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Creates IChangeTokens so that IOptionsMonitor gets notified when IConfiguration changes.
+    /// Creates <see cref="IChangeToken"/>s so that <see cref="IOptionsMonitor{TOptions}"/> gets
+    /// notified when <see cref="IConfiguration"/> changes.
     /// </summary>
     /// <typeparam name="TOptions"></typeparam>
     public class ConfigurationChangeTokenSource<TOptions> : IOptionsChangeTokenSource<TOptions>
@@ -16,16 +18,16 @@ namespace Microsoft.Extensions.Options
         private IConfiguration _config;
 
         /// <summary>
-        /// Constructor taking the IConfiguration instance to watch.
+        /// Constructor taking the <see cref="IConfiguration"/> instance to watch.
         /// </summary>
         /// <param name="config">The configuration instance.</param>
         public ConfigurationChangeTokenSource(IConfiguration config) : this(Options.DefaultName, config)
         { }
 
         /// <summary>
-        /// Constructor taking the IConfiguration instance to watch.
+        /// Constructor taking the <see cref="IConfiguration"/> instance to watch.
         /// </summary>
-        /// <param name="name">The name of the options instance being watche.</param>
+        /// <param name="name">The name of the options instance being watched.</param>
         /// <param name="config">The configuration instance.</param>
         public ConfigurationChangeTokenSource(string name, IConfiguration config)
         {
@@ -37,10 +39,13 @@ namespace Microsoft.Extensions.Options
             Name = name ?? Options.DefaultName;
         }
 
+        /// <summary>
+        /// The name of the option instance being changed.
+        /// </summary>
         public string Name { get; }
 
         /// <summary>
-        /// Returns the reloadToken from IConfiguration.
+        /// Returns the reloadToken from the <see cref="IConfiguration"/>.
         /// </summary>
         /// <returns></returns>
         public IChangeToken GetChangeToken()

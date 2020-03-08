@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -29,19 +30,19 @@ i=ini_i.i.i.i
 ";
         private static readonly string _json1ConfigFileContent = @"
 {
-    'address': [
-        'json_0.0.0.0',
-        'json_1.1.1.1',
-        'json_2.2.2.2'
+    ""address"": [
+        ""json_0.0.0.0"",
+        ""json_1.1.1.1"",
+        ""json_2.2.2.2""
     ]
 }
 ";
 
         private static readonly string _json2ConfigFileContent = @"
 {
-    'address': {
-        'j': 'json_j.j.j.j',
-        '3': 'json_3.3.3.3'
+    ""address"": {
+        ""j"": ""json_j.j.j.j"",
+        ""3"": ""json_3.3.3.3""
     }
 }
 ";

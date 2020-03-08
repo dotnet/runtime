@@ -1,15 +1,14 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-
-using System;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Implementation of IOptions and IOptionsSnapshot.
+    /// Implementation of <see cref="IOptions{TOptions}"/> and <see cref="IOptionsSnapshot{TOptions}"/>.
     /// </summary>
-    /// <typeparam name="TOptions"></typeparam>
-    public class OptionsManager<TOptions> : IOptions<TOptions>, IOptionsSnapshot<TOptions> where TOptions : class, new()
+    /// <typeparam name="TOptions">Options type.</typeparam>
+    public class OptionsManager<TOptions> : IOptions<TOptions>, IOptionsSnapshot<TOptions> where TOptions : class
     {
         private readonly IOptionsFactory<TOptions> _factory;
         private readonly OptionsCache<TOptions> _cache = new OptionsCache<TOptions>(); // Note: this is a private cache
@@ -23,6 +22,9 @@ namespace Microsoft.Extensions.Options
             _factory = factory;
         }
 
+        /// <summary>
+        /// The default configured <typeparamref name="TOptions"/> instance, equivalent to Get(Options.DefaultName).
+        /// </summary>
         public TOptions Value
         {
             get
@@ -31,6 +33,9 @@ namespace Microsoft.Extensions.Options
             }
         }
 
+        /// <summary>
+        /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
+        /// </summary>
         public virtual TOptions Get(string name)
         {
             name = name ?? Options.DefaultName;

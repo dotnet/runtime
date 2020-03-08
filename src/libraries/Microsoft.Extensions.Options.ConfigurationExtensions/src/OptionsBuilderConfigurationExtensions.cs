@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using Microsoft.Extensions.Configuration;
@@ -13,7 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class OptionsBuilderConfigurationExtensions
     {
         /// <summary>
-        /// Registers a configuration instance which TOptions will bind against.
+        /// Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.
         /// </summary>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="optionsBuilder">The options builder to add the services to.</param>
@@ -23,7 +24,7 @@ namespace Microsoft.Extensions.DependencyInjection
             => optionsBuilder.Bind(config, _ => { });
 
         /// <summary>
-        /// Registers a configuration instance which TOptions will bind against.
+        /// Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.
         /// </summary>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="optionsBuilder">The options builder to add the services to.</param>

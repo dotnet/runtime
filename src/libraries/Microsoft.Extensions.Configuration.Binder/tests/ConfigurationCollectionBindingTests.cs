@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -170,6 +171,26 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val_1", options[KeyEnum.abc]);
             Assert.Equal("val_2", options[KeyEnum.def]);
             Assert.Equal("val_3", options[KeyEnum.ghi]);
+        }
+
+        [Fact]
+        public void GetUintEnumDictionary()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"EnumDictionary:abc", "val_1"},
+                {"EnumDictionary:def", "val_2"},
+                {"EnumDictionary:ghi", "val_3"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+            var options = new Dictionary<KeyUintEnum, string>();
+            config.GetSection("EnumDictionary").Bind(options);
+            Assert.Equal(3, options.Count);
+            Assert.Equal("val_1", options[KeyUintEnum.abc]);
+            Assert.Equal("val_2", options[KeyUintEnum.def]);
+            Assert.Equal("val_3", options[KeyUintEnum.ghi]);
         }
 
         [Fact]
@@ -1015,6 +1036,13 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         private enum KeyEnum
+        {
+            abc,
+            def,
+            ghi
+        }
+
+        private enum KeyUintEnum : uint
         {
             abc,
             def,

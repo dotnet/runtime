@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -11,9 +12,10 @@ namespace Microsoft.Extensions.Configuration
     /// <summary>
     /// Chained implementation of <see cref="IConfigurationProvider"/>
     /// </summary>
-    public class ChainedConfigurationProvider : IConfigurationProvider
+    public class ChainedConfigurationProvider : IConfigurationProvider, IDisposable
     {
         private readonly IConfiguration _config;
+        private readonly bool _shouldDisposeConfig;
 
         /// <summary>
         /// Initialize a new instance from the source configuration.
@@ -31,6 +33,7 @@ namespace Microsoft.Extensions.Configuration
             }
 
             _config = source.Configuration;
+            _shouldDisposeConfig = source.ShouldDisposeConfiguration;
         }
 
         /// <summary>
@@ -55,7 +58,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Returns a change token if this provider supports change tracking, null otherwise.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The change token.</returns>
         public IChangeToken GetReloadToken() => _config.GetReloadToken();
 
         /// <summary>
@@ -65,7 +68,7 @@ namespace Microsoft.Extensions.Configuration
 
         /// <summary>
         /// Returns the immediate descendant configuration keys for a given parent path based on this
-        /// <see cref="IConfigurationProvider"/>'s data and the set of keys returned by all the preceding
+        /// <see cref="IConfigurationProvider"/>s data and the set of keys returned by all the preceding
         /// <see cref="IConfigurationProvider"/>s.
         /// </summary>
         /// <param name="earlierKeys">The child keys returned by the preceding providers for the same parent path.</param>
@@ -81,6 +84,15 @@ namespace Microsoft.Extensions.Configuration
             keys.AddRange(children.Select(c => c.Key));
             return keys.Concat(earlierKeys)
                 .OrderBy(k => k, ConfigurationKeyComparer.Instance);
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            if (_shouldDisposeConfig)
+            {
+                (_config as IDisposable)?.Dispose();
+            }
         }
     }
 }

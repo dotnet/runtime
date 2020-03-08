@@ -1,9 +1,11 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -25,7 +27,7 @@ namespace Microsoft.Extensions.Hosting
         private IConfiguration _hostConfiguration;
         private IConfiguration _appConfiguration;
         private HostBuilderContext _hostBuilderContext;
-        private IHostingEnvironment _hostingEnvironment;
+        private HostingEnvironment _hostingEnvironment;
         private IServiceProvider _appServices;
 
         /// <summary>
@@ -34,10 +36,11 @@ namespace Microsoft.Extensions.Hosting
         public IDictionary<object, object> Properties { get; } = new Dictionary<object, object>();
 
         /// <summary>
-        /// Set up the configuration for the builder itself. This will be used to initialize the <see cref="IHostingEnvironment"/>
+        /// Set up the configuration for the builder itself. This will be used to initialize the <see cref="IHostEnvironment"/>
         /// for use later in the build process. This can be called multiple times and the results will be additive.
         /// </summary>
-        /// <param name="configureDelegate"></param>
+        /// <param name="configureDelegate">The delegate for configuring the <see cref="IConfigurationBuilder"/> that will be used
+        /// to construct the <see cref="IConfiguration"/> for the host.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder ConfigureHostConfiguration(Action<IConfigurationBuilder> configureDelegate)
         {
@@ -50,7 +53,8 @@ namespace Microsoft.Extensions.Hosting
         /// the results will be additive. The results will be available at <see cref="HostBuilderContext.Configuration"/> for
         /// subsequent operations, as well as in <see cref="IHost.Services"/>.
         /// </summary>
-        /// <param name="configureDelegate"></param>
+        /// <param name="configureDelegate">The delegate for configuring the <see cref="IConfigurationBuilder"/> that will be used
+        /// to construct the <see cref="IConfiguration"/> for the host.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate)
         {
@@ -61,7 +65,8 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// Adds services to the container. This can be called multiple times and the results will be additive.
         /// </summary>
-        /// <param name="configureDelegate"></param>
+        /// <param name="configureDelegate">The delegate for configuring the <see cref="IConfigurationBuilder"/> that will be used
+        /// to construct the <see cref="IConfiguration"/> for the host.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder ConfigureServices(Action<HostBuilderContext, IServiceCollection> configureDelegate)
         {
@@ -72,8 +77,8 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// Overrides the factory used to create the service provider.
         /// </summary>
-        /// <typeparam name="TContainerBuilder"></typeparam>
-        /// <param name="factory"></param>
+        /// <typeparam name="TContainerBuilder">The type of the builder to create.</typeparam>
+        /// <param name="factory">A factory used for creating service providers.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory)
         {
@@ -82,11 +87,24 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
+        /// Overrides the factory used to create the service provider.
+        /// </summary>
+        /// <param name="factory">A factory used for creating service providers.</param>
+        /// <typeparam name="TContainerBuilder">The type of the builder to create.</typeparam>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory)
+        {
+            _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostBuilderContext, factory ?? throw new ArgumentNullException(nameof(factory)));
+            return this;
+        }
+
+        /// <summary>
         /// Enables configuring the instantiated dependency container. This can be called multiple times and
         /// the results will be additive.
         /// </summary>
-        /// <typeparam name="TContainerBuilder"></typeparam>
-        /// <param name="configureDelegate"></param>
+        /// <typeparam name="TContainerBuilder">The type of the builder to create.</typeparam>
+        /// <param name="configureDelegate">The delegate for configuring the <see cref="IConfigurationBuilder"/> that will be used
+        /// to construct the <see cref="IConfiguration"/> for the host.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder ConfigureContainer<TContainerBuilder>(Action<HostBuilderContext, TContainerBuilder> configureDelegate)
         {
@@ -118,7 +136,9 @@ namespace Microsoft.Extensions.Hosting
 
         private void BuildHostConfiguration()
         {
-            var configBuilder = new ConfigurationBuilder();
+            var configBuilder = new ConfigurationBuilder()
+                .AddInMemoryCollection(); // Make sure there's some default storage since there are no default providers
+
             foreach (var buildAction in _configureHostConfigActions)
             {
                 buildAction(configBuilder);
@@ -131,9 +151,16 @@ namespace Microsoft.Extensions.Hosting
             _hostingEnvironment = new HostingEnvironment()
             {
                 ApplicationName = _hostConfiguration[HostDefaults.ApplicationKey],
-                EnvironmentName = _hostConfiguration[HostDefaults.EnvironmentKey] ?? EnvironmentName.Production,
+                EnvironmentName = _hostConfiguration[HostDefaults.EnvironmentKey] ?? Environments.Production,
                 ContentRootPath = ResolveContentRootPath(_hostConfiguration[HostDefaults.ContentRootKey], AppContext.BaseDirectory),
             };
+
+            if (string.IsNullOrEmpty(_hostingEnvironment.ApplicationName))
+            {
+                // Note GetEntryAssembly returns null for the net4x console test runner.
+                _hostingEnvironment.ApplicationName = Assembly.GetEntryAssembly()?.GetName().Name;
+            }
+
             _hostingEnvironment.ContentRootFileProvider = new PhysicalFileProvider(_hostingEnvironment.ContentRootPath);
         }
 
@@ -161,8 +188,10 @@ namespace Microsoft.Extensions.Hosting
 
         private void BuildAppConfiguration()
         {
-            var configBuilder = new ConfigurationBuilder();
-            configBuilder.AddConfiguration(_hostConfiguration);
+            var configBuilder = new ConfigurationBuilder()
+                .SetBasePath(_hostingEnvironment.ContentRootPath)
+                .AddConfiguration(_hostConfiguration, shouldDisposeConfiguration: true);
+
             foreach (var buildAction in _configureAppConfigActions)
             {
                 buildAction(_hostBuilderContext, configBuilder);
@@ -174,15 +203,22 @@ namespace Microsoft.Extensions.Hosting
         private void CreateServiceProvider()
         {
             var services = new ServiceCollection();
-            services.AddSingleton(_hostingEnvironment);
+#pragma warning disable CS0618 // Type or member is obsolete
+            services.AddSingleton<IHostingEnvironment>(_hostingEnvironment);
+#pragma warning restore CS0618 // Type or member is obsolete
+            services.AddSingleton<IHostEnvironment>(_hostingEnvironment);
             services.AddSingleton(_hostBuilderContext);
-            services.AddSingleton(_appConfiguration);
-            services.AddSingleton<IApplicationLifetime, ApplicationLifetime>();
+            // register configuration as factory to make it dispose with the service provider
+            services.AddSingleton(_ => _appConfiguration);
+#pragma warning disable CS0618 // Type or member is obsolete
+            services.AddSingleton<IApplicationLifetime>(s => (IApplicationLifetime)s.GetService<IHostApplicationLifetime>());
+#pragma warning restore CS0618 // Type or member is obsolete
+            services.AddSingleton<IHostApplicationLifetime, ApplicationLifetime>();
             services.AddSingleton<IHostLifetime, ConsoleLifetime>();
-            services.AddSingleton<IHost, Host>();
+            services.AddSingleton<IHost, Internal.Host>();
             services.AddOptions();
             services.AddLogging();
-            
+
             foreach (var configureServicesAction in _configureServicesActions)
             {
                 configureServicesAction(_hostBuilderContext, services);
@@ -201,6 +237,10 @@ namespace Microsoft.Extensions.Hosting
             {
                 throw new InvalidOperationException($"The IServiceProviderFactory returned a null IServiceProvider.");
             }
+
+            // resolve configuration explicitly once to mark it as resolved within the
+            // service provider, ensuring it will be properly disposed with the provider
+            _ = _appServices.GetService<IConfiguration>();
         }
     }
 }

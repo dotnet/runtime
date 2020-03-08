@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -12,9 +13,10 @@ namespace Microsoft.Extensions.Configuration
     /// <summary>
     /// The root node for a configuration.
     /// </summary>
-    public class ConfigurationRoot : IConfigurationRoot
+    public class ConfigurationRoot : IConfigurationRoot, IDisposable
     {
-        private IList<IConfigurationProvider> _providers;
+        private readonly IList<IConfigurationProvider> _providers;
+        private readonly IList<IDisposable> _changeTokenRegistrations;
         private ConfigurationReloadToken _changeToken = new ConfigurationReloadToken();
 
         /// <summary>
@@ -29,10 +31,11 @@ namespace Microsoft.Extensions.Configuration
             }
 
             _providers = providers;
+            _changeTokenRegistrations = new List<IDisposable>(providers.Count);
             foreach (var p in providers)
             {
                 p.Load();
-                ChangeToken.OnChange(() => p.GetReloadToken(), () => RaiseChanged());
+                _changeTokenRegistrations.Add(ChangeToken.OnChange(() => p.GetReloadToken(), () => RaiseChanged()));
             }
         }
 
@@ -50,11 +53,11 @@ namespace Microsoft.Extensions.Configuration
         {
             get
             {
-                foreach (var provider in _providers.Reverse())
+                for (var i = _providers.Count - 1; i >= 0; i--)
                 {
-                    string value;
+                    var provider = _providers[i];
 
-                    if (provider.TryGet(key, out value))
+                    if (provider.TryGet(key, out var value))
                     {
                         return value;
                     }
@@ -62,7 +65,6 @@ namespace Microsoft.Extensions.Configuration
 
                 return null;
             }
-
             set
             {
                 if (!_providers.Any())
@@ -80,22 +82,13 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Gets the immediate children sub-sections.
         /// </summary>
-        /// <returns></returns>
-        public IEnumerable<IConfigurationSection> GetChildren() => GetChildrenImplementation(null);
-
-        internal IEnumerable<IConfigurationSection> GetChildrenImplementation(string path)
-        {
-            return _providers
-                .Aggregate(Enumerable.Empty<string>(),
-                    (seed, source) => source.GetChildKeys(seed, path))
-                .Distinct()
-                .Select(key => GetSection(path == null ? key : ConfigurationPath.Combine(path, key)));
-        }
+        /// <returns>The children.</returns>
+        public IEnumerable<IConfigurationSection> GetChildren() => this.GetChildrenImplementation(null);
 
         /// <summary>
         /// Returns a <see cref="IChangeToken"/> that can be used to observe when this configuration is reloaded.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The <see cref="IChangeToken"/>.</returns>
         public IChangeToken GetReloadToken() => _changeToken;
 
         /// <summary>
@@ -107,7 +100,7 @@ namespace Microsoft.Extensions.Configuration
         ///     This method will never return <c>null</c>. If no matching sub-section is found with the specified key,
         ///     an empty <see cref="IConfigurationSection"/> will be returned.
         /// </remarks>
-        public IConfigurationSection GetSection(string key) 
+        public IConfigurationSection GetSection(string key)
             => new ConfigurationSection(this, key);
 
         /// <summary>
@@ -126,6 +119,22 @@ namespace Microsoft.Extensions.Configuration
         {
             var previousToken = Interlocked.Exchange(ref _changeToken, new ConfigurationReloadToken());
             previousToken.OnReload();
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            // dispose change token registrations
+            foreach (var registration in _changeTokenRegistrations)
+            {
+                registration.Dispose();
+            }
+
+            // dispose providers
+            foreach (var provider in _providers)
+            {
+                (provider as IDisposable)?.Dispose();
+            }
         }
     }
 }

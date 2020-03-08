@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Globalization;
@@ -20,15 +21,46 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [Fact]
+        public void CanLoadValidJsonFromStreamProvider()
+        {
+            var json = @"
+{
+    ""firstname"": ""test"",
+    ""test.last.name"": ""last.name"",
+        ""residential.address"": {
+            ""street.name"": ""Something street"",
+            ""zipcode"": ""12345""
+        }
+}";
+            var config = new ConfigurationBuilder().AddJsonStream(TestStreamHelpers.StringToStream(json)).Build();
+            Assert.Equal("test", config["firstname"]);
+            Assert.Equal("last.name", config["test.last.name"]);
+            Assert.Equal("Something street", config["residential.address:STREET.name"]);
+            Assert.Equal("12345", config["residential.address:zipcode"]);
+        }
+
+        [Fact]
+        public void ReloadThrowsFromStreamProvider()
+        {
+            var json = @"
+{
+    ""firstname"": ""test""
+}";
+            var config = new ConfigurationBuilder().AddJsonStream(TestStreamHelpers.StringToStream(json)).Build();
+            Assert.Throws<InvalidOperationException>(() => config.Reload());
+        }
+
+
+        [Fact]
         public void LoadKeyValuePairsFromValidJson()
         {
             var json = @"
 {
-    'firstname': 'test',
-    'test.last.name': 'last.name',
-        'residential.address': {
-            'street.name': 'Something street',
-            'zipcode': '12345'
+    ""firstname"": ""test"",
+    ""test.last.name"": ""last.name"",
+        ""residential.address"": {
+            ""street.name"": ""Something street"",
+            ""zipcode"": ""12345""
         }
 }";
             var jsonConfigSrc = LoadProvider(json);
@@ -44,7 +76,7 @@ namespace Microsoft.Extensions.Configuration
         {
             var json = @"
 {
-    'name': ''
+    ""name"": """"
 }";
             var jsonConfigSrc = LoadProvider(json);
             Assert.Equal(string.Empty, jsonConfigSrc.Get("name"));
@@ -61,7 +93,7 @@ namespace Microsoft.Extensions.Configuration
 
                 var json = @"
 {
-    'number': 3.14
+    ""number"": 3.14
 }";
                 var jsonConfigSrc = LoadProvider(json);
                 Assert.Equal("3.14", jsonConfigSrc.Get("number"));
@@ -75,7 +107,7 @@ namespace Microsoft.Extensions.Configuration
         [Fact]
         public void NonObjectRootIsInvalid()
         {
-            var json = @"'test'";
+            var json = @"""test""";
 
             var exception = Assert.Throws<FormatException>(
                 () => LoadProvider(json));
@@ -101,17 +133,37 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [Fact]
+        public void SupportAndIgnoreTrailingCommas()
+        {
+            var json = @"
+{
+    ""firstname"": ""test"",
+    ""test.last.name"": ""last.name"",
+        ""residential.address"": {
+            ""street.name"": ""Something street"",
+            ""zipcode"": ""12345"",
+        },
+}";
+            var jsonConfigSrc = LoadProvider(json);
+
+            Assert.Equal("test", jsonConfigSrc.Get("firstname"));
+            Assert.Equal("last.name", jsonConfigSrc.Get("test.last.name"));
+            Assert.Equal("Something street", jsonConfigSrc.Get("residential.address:STREET.name"));
+            Assert.Equal("12345", jsonConfigSrc.Get("residential.address:zipcode"));
+        }
+
+        [Fact]
         public void ThrowExceptionWhenUnexpectedEndFoundBeforeFinishParsing()
         {
             var json = @"{
-                'name': 'test',
-                'address': {
-                    'street': 'Something street',
-                    'zipcode': '12345'
+                ""name"": ""test"",
+                ""address"": {
+                    ""street"": ""Something street"",
+                    ""zipcode"": ""12345""
                 }
             /* Missing a right brace here*/";
             var exception = Assert.Throws<FormatException>(() => LoadProvider(json));
-            Assert.NotNull(exception.Message);
+            Assert.Contains("Could not parse the JSON file.", exception.Message);
         }
 
         [Fact]
@@ -119,7 +171,7 @@ namespace Microsoft.Extensions.Configuration
         {
             var json = @"
             {
-              'Data': {
+              ""Data"": {
             ";
 
             var exception = Assert.Throws<FormatException>(() => LoadProvider(json));
@@ -166,6 +218,7 @@ namespace Microsoft.Extensions.Configuration
         public void ThrowFormatExceptionWhenFileIsEmpty()
         {
             var exception = Assert.Throws<FormatException>(() => LoadProvider(@""));
+            Assert.Contains("Could not parse the JSON file.", exception.Message);
         }
     }
 }

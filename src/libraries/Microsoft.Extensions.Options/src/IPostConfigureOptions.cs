@@ -1,17 +1,18 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Represents something that configures the TOptions type.
+    /// Represents something that configures the <typeparamref name="TOptions"/> type.
     /// Note: These are run after all <see cref="IConfigureOptions{TOptions}"/>.
     /// </summary>
-    /// <typeparam name="TOptions"></typeparam>
+    /// <typeparam name="TOptions">Options type being configured.</typeparam>
     public interface IPostConfigureOptions<in TOptions> where TOptions : class
     {
         /// <summary>
-        /// Invoked to configure a TOptions instance.
+        /// Invoked to configure a <typeparamref name="TOptions"/> instance.
         /// </summary>
         /// <param name="name">The name of the options instance being configured.</param>
         /// <param name="options">The options instance to configured.</param>

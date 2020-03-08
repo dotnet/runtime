@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
@@ -31,6 +32,25 @@ namespace Microsoft.Extensions.Primitives
         /// <inheritdoc />
         public IDisposable RegisterChangeCallback(Action<object> callback, object state)
         {
+#if NETCOREAPP
+            try
+            {
+                return Token.UnsafeRegister(callback, state);
+            }
+            catch (ObjectDisposedException)
+            {
+                // Reset the flag so that we can indicate to future callers that this wouldn't work.
+                ActiveChangeCallbacks = false;
+            }
+#else
+            // Don't capture the current ExecutionContext and its AsyncLocals onto the token registration causing them to live forever
+            var restoreFlow = false;
+            if (!ExecutionContext.IsFlowSuppressed())
+            {
+                ExecutionContext.SuppressFlow();
+                restoreFlow = true;
+            }
+
             try
             {
                 return Token.Register(callback, state);
@@ -40,7 +60,15 @@ namespace Microsoft.Extensions.Primitives
                 // Reset the flag so that we can indicate to future callers that this wouldn't work.
                 ActiveChangeCallbacks = false;
             }
-
+            finally
+            {
+                // Restore the current ExecutionContext
+                if (restoreFlow)
+                {
+                    ExecutionContext.RestoreFlow();
+                }
+            }
+#endif
             return NullDisposable.Instance;
         }
 

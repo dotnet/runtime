@@ -1,23 +1,31 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 
 namespace Microsoft.Extensions.Logging
 {
-    internal struct LoggerInformation
+    internal readonly struct MessageLogger
     {
-        public ILogger Logger { get; set; }
+        public MessageLogger(ILogger logger, string category, string providerTypeFullName, LogLevel? minLevel, Func<string, string, LogLevel, bool> filter)
+        {
+            Logger = logger;
+            Category = category;
+            ProviderTypeFullName = providerTypeFullName;
+            MinLevel = minLevel;
+            Filter = filter;
+        }
 
-        public string Category { get; set; }
+        public ILogger Logger { get; }
 
-        public Type ProviderType { get; set; }
+        public string Category { get; }
 
-        public LogLevel? MinLevel { get; set; }
+        private string ProviderTypeFullName { get; }
 
-        public Func<string, string, LogLevel, bool> Filter { get; set; }
+        public LogLevel? MinLevel { get; }
 
-        public bool ExternalScope { get; set; }
+        public Func<string, string, LogLevel, bool> Filter { get; }
 
         public bool IsEnabled(LogLevel level)
         {
@@ -28,10 +36,51 @@ namespace Microsoft.Extensions.Logging
 
             if (Filter != null)
             {
-                return Filter(ProviderType.FullName, Category, level);
+                return Filter(ProviderTypeFullName, Category, level);
             }
 
             return true;
         }
+    }
+
+    internal readonly struct ScopeLogger
+    {
+        public ScopeLogger(ILogger logger, IExternalScopeProvider externalScopeProvider)
+        {
+            Logger = logger;
+            ExternalScopeProvider = externalScopeProvider;
+        }
+
+        public ILogger Logger { get; }
+
+        public IExternalScopeProvider ExternalScopeProvider { get; }
+
+        public IDisposable CreateScope<TState>(TState state)
+        {
+            if (ExternalScopeProvider != null)
+            {
+                return ExternalScopeProvider.Push(state);
+            }
+            return Logger.BeginScope<TState>(state);
+        }
+    }
+
+    internal readonly struct LoggerInformation
+    {
+        public LoggerInformation(ILoggerProvider provider, string category) : this()
+        {
+            ProviderType = provider.GetType();
+            Logger = provider.CreateLogger(category);
+            Category = category;
+            ExternalScope = provider is ISupportExternalScope;
+        }
+
+        public ILogger Logger { get; }
+
+        public string Category { get; }
+
+        public Type ProviderType { get; }
+
+        public bool ExternalScope { get; }
     }
 }

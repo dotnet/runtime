@@ -1,9 +1,12 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using Microsoft.AspNetCore.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -16,6 +19,20 @@ namespace Microsoft.Extensions.Hosting
 {
     public class HostBuilderTests
     {
+        [Fact]
+        public void DefaultConfigIsMutable()
+        {
+            var host = new HostBuilder()
+                .Build();
+
+            using (host)
+            {
+                var config = host.Services.GetRequiredService<IConfiguration>();
+                config["key1"] = "value";
+                Assert.Equal("value", config["key1"]);
+            }
+        }
+
         [Fact]
         public void ConfigureHostConfigurationPropagated()
         {
@@ -100,23 +117,55 @@ namespace Microsoft.Extensions.Hosting
         }
 
         [Fact]
-        public void DefaultIHostingEnvironmentValues()
+        public void CanConfigureAppConfigurationFromFile()
+        {
+            var hostBuilder = new HostBuilder()
+                .UseContentRoot(AppContext.BaseDirectory)
+                .ConfigureAppConfiguration((context, configBuilder) =>
+                {
+                    configBuilder.AddJsonFile("appSettings.json", optional: false);
+                });
+
+            using (var host = hostBuilder.Build())
+            {
+                var config = host.Services.GetService<IConfiguration>();
+                Assert.NotNull(config);
+                Assert.Equal("value", config["key"]);
+            }
+        }
+
+        [Fact]
+        public void DefaultIHostEnvironmentValues()
         {
             var hostBuilder = new HostBuilder()
                 .ConfigureAppConfiguration((hostContext, appConfig) =>
                 {
                     var env = hostContext.HostingEnvironment;
-                    Assert.Equal(EnvironmentName.Production, env.EnvironmentName);
+                    Assert.Equal(Environments.Production, env.EnvironmentName);
+#if NETCOREAPP
+                    Assert.NotNull(env.ApplicationName);
+#elif NET472
+                    // Note GetEntryAssembly returns null for the net4x console test runner.
                     Assert.Null(env.ApplicationName);
+#else
+#error TFMs need to be updated
+#endif
                     Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
                     Assert.IsAssignableFrom<PhysicalFileProvider>(env.ContentRootFileProvider);
                 });
 
             using (var host = hostBuilder.Build())
             {
-                var env = host.Services.GetRequiredService<IHostingEnvironment>();
-                Assert.Equal(EnvironmentName.Production, env.EnvironmentName);
+                var env = host.Services.GetRequiredService<IHostEnvironment>();
+                Assert.Equal(Environments.Production, env.EnvironmentName);
+#if NETCOREAPP
+                Assert.NotNull(env.ApplicationName);
+#elif NET472
+                // Note GetEntryAssembly returns null for the net4x console test runner.
                 Assert.Null(env.ApplicationName);
+#else
+#error TFMs need to be updated
+#endif
                 Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
                 Assert.IsAssignableFrom<PhysicalFileProvider>(env.ContentRootFileProvider);
             }
@@ -149,7 +198,7 @@ namespace Microsoft.Extensions.Hosting
 
             using (var host = hostBuilder.Build())
             {
-                Assert.Equal("EnvB", host.Services.GetRequiredService<IHostingEnvironment>().EnvironmentName);
+                Assert.Equal("EnvB", host.Services.GetRequiredService<IHostEnvironment>().EnvironmentName);
             }
         }
 
@@ -172,7 +221,7 @@ namespace Microsoft.Extensions.Hosting
                 .UseEnvironment(expected)
                 .Build())
             {
-                Assert.Equal(expected, host.Services.GetService<IHostingEnvironment>().EnvironmentName);
+                Assert.Equal(expected, host.Services.GetService<IHostEnvironment>().EnvironmentName);
             }
         }
 
@@ -199,7 +248,7 @@ namespace Microsoft.Extensions.Hosting
                 .UseContentRoot("/")
                 .Build())
             {
-                Assert.Equal("/", host.Services.GetService<IHostingEnvironment>().ContentRootPath);
+                Assert.Equal("/", host.Services.GetService<IHostEnvironment>().ContentRootPath);
             }
         }
 
@@ -209,21 +258,22 @@ namespace Microsoft.Extensions.Hosting
             var parameters = new Dictionary<string, string>()
             {
                 { "applicationName", "MyProjectReference"},
-                { "environment", EnvironmentName.Development},
+                { "environment", Environments.Development},
                 { "contentRoot", Path.GetFullPath(".") }
             };
 
-            var host = new HostBuilder()
+            using (var host = new HostBuilder()
                 .ConfigureHostConfiguration(config =>
                 {
                     config.AddInMemoryCollection(parameters);
-                }).Build();
+                }).Build())
+            {
+                var env = host.Services.GetRequiredService<IHostEnvironment>();
 
-            var env = host.Services.GetRequiredService<IHostingEnvironment>();
-
-            Assert.Equal("MyProjectReference", env.ApplicationName);
-            Assert.Equal(EnvironmentName.Development, env.EnvironmentName);
-            Assert.Equal(Path.GetFullPath("."), env.ContentRootPath);
+                Assert.Equal("MyProjectReference", env.ApplicationName);
+                Assert.Equal(Environments.Development, env.EnvironmentName);
+                Assert.Equal(Path.GetFullPath("."), env.ContentRootPath);
+            }
         }
 
         [Fact]
@@ -233,7 +283,7 @@ namespace Microsoft.Extensions.Hosting
                 .UseContentRoot("testroot")
                 .Build())
             {
-                var basePath = host.Services.GetRequiredService<IHostingEnvironment>().ContentRootPath;
+                var basePath = host.Services.GetRequiredService<IHostEnvironment>().ContentRootPath;
                 Assert.True(Path.IsPathRooted(basePath));
                 Assert.EndsWith(Path.DirectorySeparatorChar + "testroot", basePath);
             }
@@ -246,7 +296,7 @@ namespace Microsoft.Extensions.Hosting
                 .Build())
             {
                 var appBase = AppContext.BaseDirectory;
-                Assert.Equal(appBase, host.Services.GetService<IHostingEnvironment>().ContentRootPath);
+                Assert.Equal(appBase, host.Services.GetService<IHostEnvironment>().ContentRootPath);
             }
         }
 
@@ -256,10 +306,16 @@ namespace Microsoft.Extensions.Hosting
             using (var host = new HostBuilder()
                 .Build())
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 Assert.NotNull(host.Services.GetRequiredService<IHostingEnvironment>());
+#pragma warning restore CS0618 // Type or member is obsolete
+                Assert.NotNull(host.Services.GetRequiredService<IHostEnvironment>());
                 Assert.NotNull(host.Services.GetRequiredService<IConfiguration>());
                 Assert.NotNull(host.Services.GetRequiredService<HostBuilderContext>());
+#pragma warning disable CS0618 // Type or member is obsolete
                 Assert.NotNull(host.Services.GetRequiredService<IApplicationLifetime>());
+#pragma warning restore CS0618 // Type or member is obsolete
+                Assert.NotNull(host.Services.GetRequiredService<IHostApplicationLifetime>());
                 Assert.NotNull(host.Services.GetRequiredService<ILoggerFactory>());
                 Assert.NotNull(host.Services.GetRequiredService<IOptions<FakeOptions>>());
             }
@@ -323,13 +379,24 @@ namespace Microsoft.Extensions.Hosting
                     s.AddTransient<ServiceD>();
                     s.AddScoped<ServiceC>();
                 })
-                .UseServiceProviderFactory(new DefaultServiceProviderFactory(new ServiceProviderOptions()
+                .ConfigureHostConfiguration(config =>
                 {
-                    ValidateScopes = true,
-                }));
-            var host = hostBuilder.Build();
-
-            Assert.Throws<InvalidOperationException>(() => { host.Services.GetRequiredService<ServiceC>(); });
+                    config.AddInMemoryCollection(new[]
+                    {
+                        new KeyValuePair<string, string>("Key", "Value"),
+                    });
+                })
+                .UseDefaultServiceProvider((context, options) =>
+                {
+                    Assert.NotNull(context);
+                    Assert.Equal("Value", context.Configuration["Key"]);
+                    Assert.NotNull(options);
+                    options.ValidateScopes = true;
+                });
+            using (var host = hostBuilder.Build())
+            {
+                Assert.Throws<InvalidOperationException>(() => { host.Services.GetRequiredService<ServiceC>(); });
+            }
         }
 
         [Fact]
@@ -352,9 +419,11 @@ namespace Microsoft.Extensions.Hosting
                      Assert.Equal("1", container.State);
                      container.State = "2";
                  });
-            var host = hostBuilder.Build();
-            var fakeServices = host.Services.GetRequiredService<FakeServiceCollection>();
-            Assert.Equal("2", fakeServices.State);
+            using (var host = hostBuilder.Build())
+            {
+                var fakeServices = host.Services.GetRequiredService<FakeServiceCollection>();
+                Assert.Equal("2", fakeServices.State);
+            }
         }
 
         [Fact]
@@ -430,7 +499,7 @@ namespace Microsoft.Extensions.Hosting
         [Fact]
         public void SetsFullPathToContentRoot()
         {
-            var host = new HostBuilder()
+            using (var host = new HostBuilder()
                 .ConfigureHostConfiguration(config =>
                 {
                     config.AddInMemoryCollection(new[]
@@ -438,11 +507,13 @@ namespace Microsoft.Extensions.Hosting
                         new KeyValuePair<string, string>(HostDefaults.ContentRootKey, Path.GetFullPath("."))
                     });
                 })
-                .Build();
-            var env = host.Services.GetRequiredService<IHostingEnvironment>();
+                .Build())
+            {
+                var env = host.Services.GetRequiredService<IHostEnvironment>();
 
-            Assert.Equal(Path.GetFullPath("."), env.ContentRootPath);
-            Assert.IsAssignableFrom<PhysicalFileProvider>(env.ContentRootFileProvider);
+                Assert.Equal(Path.GetFullPath("."), env.ContentRootPath);
+                Assert.IsAssignableFrom<PhysicalFileProvider>(env.ContentRootFileProvider);
+            }
         }
 
         [Fact]

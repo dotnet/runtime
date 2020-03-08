@@ -1,9 +1,12 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.Internal
@@ -14,45 +17,83 @@ namespace Microsoft.Extensions.Hosting.Internal
     public class ConsoleLifetime : IHostLifetime, IDisposable
     {
         private readonly ManualResetEvent _shutdownBlock = new ManualResetEvent(false);
+        private CancellationTokenRegistration _applicationStartedRegistration;
+        private CancellationTokenRegistration _applicationStoppingRegistration;
 
-        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostingEnvironment environment, IApplicationLifetime applicationLifetime)
+        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, IOptions<HostOptions> hostOptions)
+            : this(options, environment, applicationLifetime, hostOptions, NullLoggerFactory.Instance) { }
+
+        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, IOptions<HostOptions> hostOptions, ILoggerFactory loggerFactory)
         {
             Options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             Environment = environment ?? throw new ArgumentNullException(nameof(environment));
             ApplicationLifetime = applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime));
+            HostOptions = hostOptions?.Value ?? throw new ArgumentNullException(nameof(hostOptions));
+            Logger = loggerFactory.CreateLogger("Microsoft.Hosting.Lifetime");
         }
 
         private ConsoleLifetimeOptions Options { get; }
 
-        private IHostingEnvironment Environment { get; }
+        private IHostEnvironment Environment { get; }
 
-        private IApplicationLifetime ApplicationLifetime { get; }
+        private IHostApplicationLifetime ApplicationLifetime { get; }
+
+        private HostOptions HostOptions { get; }
+
+        private ILogger Logger { get; }
 
         public Task WaitForStartAsync(CancellationToken cancellationToken)
         {
             if (!Options.SuppressStatusMessages)
             {
-                ApplicationLifetime.ApplicationStarted.Register(() =>
+                _applicationStartedRegistration = ApplicationLifetime.ApplicationStarted.Register(state =>
                 {
-                    Console.WriteLine("Application started. Press Ctrl+C to shut down.");
-                    Console.WriteLine($"Hosting environment: {Environment.EnvironmentName}");
-                    Console.WriteLine($"Content root path: {Environment.ContentRootPath}");
-                });
+                    ((ConsoleLifetime)state).OnApplicationStarted();
+                },
+                this);
+                _applicationStoppingRegistration = ApplicationLifetime.ApplicationStopping.Register(state =>
+                {
+                    ((ConsoleLifetime)state).OnApplicationStopping();
+                },
+                this);
             }
 
-            AppDomain.CurrentDomain.ProcessExit += (sender, eventArgs) =>
-            {
-                ApplicationLifetime.StopApplication();
-                _shutdownBlock.WaitOne();
-            };
-            Console.CancelKeyPress += (sender, e) =>
-            {
-                e.Cancel = true;
-                ApplicationLifetime.StopApplication();
-            };
+            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+            Console.CancelKeyPress += OnCancelKeyPress;
 
             // Console applications start immediately.
             return Task.CompletedTask;
+        }
+
+        private void OnApplicationStarted()
+        {
+            Logger.LogInformation("Application started. Press Ctrl+C to shut down.");
+            Logger.LogInformation("Hosting environment: {envName}", Environment.EnvironmentName);
+            Logger.LogInformation("Content root path: {contentRoot}", Environment.ContentRootPath);
+        }
+
+        private void OnApplicationStopping()
+        {
+            Logger.LogInformation("Application is shutting down...");
+        }
+
+        private void OnProcessExit(object sender, EventArgs e)
+        {
+            ApplicationLifetime.StopApplication();
+            if(!_shutdownBlock.WaitOne(HostOptions.ShutdownTimeout))
+            {
+                Logger.LogInformation("Waiting for the host to be disposed. Ensure all 'IHost' instances are wrapped in 'using' blocks.");
+            }
+            _shutdownBlock.WaitOne();
+            // On Linux if the shutdown is triggered by SIGTERM then that's signaled with the 143 exit code.
+            // Suppress that since we shut down gracefully. https://github.com/dotnet/aspnetcore/issues/6526
+            System.Environment.ExitCode = 0;
+        }
+
+        private void OnCancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
+            e.Cancel = true;
+            ApplicationLifetime.StopApplication();
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
@@ -64,6 +105,12 @@ namespace Microsoft.Extensions.Hosting.Internal
         public void Dispose()
         {
             _shutdownBlock.Set();
+
+            AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
+            Console.CancelKeyPress -= OnCancelKeyPress;
+
+            _applicationStartedRegistration.Dispose();
+            _applicationStoppingRegistration.Dispose();
         }
     }
 }

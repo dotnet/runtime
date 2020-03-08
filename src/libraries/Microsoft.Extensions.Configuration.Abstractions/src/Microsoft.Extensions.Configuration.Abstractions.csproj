@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;$(DefaultNetCoreTargetFramework)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(DefaultNetCoreTargetFramework)</TargetFrameworks>
     <Description>Abstractions of key-value pair based configuration.
 Commonly used types:
 Microsoft.Extensions.Configuration.IConfiguration
@@ -9,6 +10,8 @@ Microsoft.Extensions.Configuration.IConfigurationBuilder
 Microsoft.Extensions.Configuration.IConfigurationProvider
 Microsoft.Extensions.Configuration.IConfigurationRoot
 Microsoft.Extensions.Configuration.IConfigurationSection</Description>
+    <IsPackable>true</IsPackable>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>

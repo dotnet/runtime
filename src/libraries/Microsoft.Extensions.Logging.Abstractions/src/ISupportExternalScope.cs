@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 namespace Microsoft.Extensions.Logging
 {
@@ -11,7 +12,7 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Sets external scope information source for logger provider.
         /// </summary>
-        /// <param name="scopeProvider"></param>
+        /// <param name="scopeProvider">The provider of scope data.</param>
         void SetScopeProvider(IExternalScopeProvider scopeProvider);
     }
 }

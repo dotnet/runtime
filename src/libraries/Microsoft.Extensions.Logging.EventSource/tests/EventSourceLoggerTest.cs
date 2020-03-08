@@ -1,5 +1,6 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -7,21 +8,32 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Logging.EventSource;
-using Newtonsoft.Json;
 using Xunit;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 
 namespace Microsoft.Extensions.Logging.Test
 {
-    public class EventSourceLoggerTest
+    public class EventSourceLoggerTest: IDisposable
     {
+        private ILoggerFactory _loggerFactory;
+
+        protected ILoggerFactory CreateLoggerFactory()
+        {
+            return _loggerFactory = LoggerFactory.Create(builder => builder.AddEventSourceLogger());
+        }
+
+        public void Dispose()
+        {
+            _loggerFactory?.Dispose();
+        }
+
         [Fact]
-        public static void IsEnabledReturnsCorrectValue()
+        public void IsEnabledReturnsCorrectValue()
         {
             using (var testListener = new TestEventListener())
             {
-                var factory = new LoggerFactory();
-                factory.AddEventSourceLogger();
+                var loggerFactory = CreateLoggerFactory();
 
                 var listenerSettings = new TestEventListener.ListenerSettings();
                 listenerSettings.Keywords = LoggingEventSource.Keywords.JsonMessage;
@@ -29,7 +41,7 @@ namespace Microsoft.Extensions.Logging.Test
                 listenerSettings.Level = EventLevel.Warning;
                 testListener.EnableEvents(listenerSettings);
 
-                var logger = factory.CreateLogger("Logger1");
+                var logger = loggerFactory.CreateLogger("Logger1");
 
                 Assert.False(logger.IsEnabled(LogLevel.None));
                 Assert.True(logger.IsEnabled(LogLevel.Critical));
@@ -75,19 +87,42 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        public void Logs_AsExpected_WithDefaults_EnabledEarly()
+        {
+            using (var testListener = new TestEventListener())
+            {
+                var listenerSettings = new TestEventListener.ListenerSettings();
+                listenerSettings.Keywords = (EventKeywords)(-1);
+                listenerSettings.FilterSpec = null;
+                listenerSettings.Level = default(EventLevel);
+                testListener.EnableEvents(listenerSettings);
+
+                LogStuff(CreateLoggerFactory());
+
+                // Use testListener.DumpEvents as necessary to examine what exactly the listener received
+
+                VerifyEvents(testListener,
+                    "E1FM", "E1MSG", "E1JS",
+                    // Second event is omitted because default LogLevel == Debug
+                    "E3FM", "E3MSG", "E3JS",
+                    "OuterScopeJsonStart",
+                    "E4FM", "E4MSG", "E4JS",
+                    "E5FM", "E5MSG", "E5JS",
+                    "InnerScopeJsonStart",
+                    "E6FM", "E6MSG", "E6JS",
+                    "InnerScopeJsonStop",
+                    "E7FM", "E7MSG", "E7JS",
+                    "OuterScopeJsonStop",
+                    "E8FM", "E8MSG", "E8JS");
+            }
+        }
+
+        [Fact]
         public void Logs_Nothing_IfNotEnabled()
         {
             using (var testListener = new TestEventListener())
             {
-                // No call to factory.AddEventSourceLogger();
-                var factory = TestLoggerBuilder.Create(builder => builder
-                    .SetMinimumLevel(LogLevel.Trace));
-
-                var listenerSettings = new TestEventListener.ListenerSettings();
-                listenerSettings.Keywords = EventKeywords.None;
-                listenerSettings.FilterSpec = null;
-                listenerSettings.Level = default(EventLevel);
-                testListener.EnableEvents(listenerSettings);
+                var factory = CreateLoggerFactory();
 
                 LogStuff(factory);
 
@@ -314,6 +349,40 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        public void Logs_AsExpected_AfterSettingsReload()
+        {
+            using (var testListener = new TestEventListener())
+            {
+                var factory = CreateLoggerFactory();
+
+                var listenerSettings = new TestEventListener.ListenerSettings();
+                listenerSettings.Keywords = LoggingEventSource.Keywords.JsonMessage;
+                listenerSettings.FilterSpec = "Logger2:Error";
+                listenerSettings.Level = EventLevel.Error;
+                testListener.EnableEvents(listenerSettings);
+
+                LogStuff(factory);
+
+                VerifyEvents(testListener,
+                    "E5JS");
+
+                listenerSettings = new TestEventListener.ListenerSettings();
+                listenerSettings.Keywords = LoggingEventSource.Keywords.JsonMessage;
+                listenerSettings.FilterSpec = "Logger1:Error";
+                listenerSettings.Level = EventLevel.Error;
+                testListener.EnableEvents(listenerSettings);
+
+                LogStuff(factory);
+
+                VerifyEvents(testListener,
+                    "E5JS",
+                    "OuterScopeJsonStart",
+                    "E4JS",
+                    "OuterScopeJsonStop");
+            }
+        }
+
+        [Fact]
         public void Logs_AsExpected_WithComplexLoggerSpec()
         {
             using (var testListener = new TestEventListener())
@@ -336,11 +405,27 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
-        private static ILoggerFactory CreateLoggerFactory()
+        [Fact]
+        public void Logs_Nothing_AfterDispose()
         {
-            return TestLoggerBuilder.Create(builder => builder
-                    .AddEventSourceLogger()
-                    .SetMinimumLevel(LogLevel.Trace));
+            using (var testListener = new TestEventListener())
+            {
+                var factory = CreateLoggerFactory();
+
+                var listenerSettings = new TestEventListener.ListenerSettings();
+                listenerSettings.Keywords = LoggingEventSource.Keywords.JsonMessage;
+                listenerSettings.FilterSpec = null;
+                listenerSettings.Level = EventLevel.Verbose;
+                testListener.EnableEvents(listenerSettings);
+
+                var logger = factory.CreateLogger("Logger1");
+
+                Dispose();
+
+                logger.LogDebug(new EventId(1), "Logger1 Event1 Debug {intParam}", 1);
+
+                VerifyEvents(testListener);
+            }
         }
 
         private void LogStuff(ILoggerFactory factory)
@@ -355,7 +440,7 @@ namespace Microsoft.Extensions.Logging.Test
 
             using (logger1.BeginScope("Outer scope {stringParam} {intParam} {doubleParam}", "scoped foo", 13, DoubleParam1))
             {
-                logger1.LogError(new EventId(4), "Logger1 Event4 Error {stringParam} {guidParam}", "foo", GuidParam);
+                logger1.LogError(new EventId(4, "ErrorEvent"), "Logger1 Event4 Error {stringParam} {guidParam}", "foo", GuidParam);
 
                 logger2.LogCritical(new EventId(5), new Exception("oops", new Exception("inner oops")),
                     "Logger2 Event5 Critical {stringParam} {int1Param} {int2Param}", "bar", 23, 45);
@@ -376,17 +461,24 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Collection(eventListener.Events, verifierIDs.Select(id => EventVerifiers[id]).ToArray());
         }
 
-        private static void VerifySingleEvent(string eventJson, string loggerName, string eventName, int? eventId, LogLevel? level, params string[] fragments)
+        private static void VerifySingleEvent(string eventJson, string loggerName, string eventName, int? eventId, string eventIdName, LogLevel? level, params string[] fragments)
         {
             Assert.True(eventJson.Contains(@"""__EVENT_NAME"":""" + eventName + @""""), $"Event name does not match. Expected {eventName}, event data is '{eventJson}'");
             Assert.True(eventJson.Contains(@"""LoggerName"":""" + loggerName + @""""), $"Logger name does not match. Expected {loggerName}, event data is '{eventJson}'");
+
             if (level.HasValue)
             {
                 Assert.True(eventJson.Contains(@"""Level"":" + ((int)level.Value).ToString()), $"Log level does not match. Expected level {((int)level.Value).ToString()}, event data is '{eventJson}'");
             }
+
             if (eventId.HasValue)
             {
-                Assert.True(eventJson.Contains(@"""EventId"":""" + eventId.Value.ToString()), $"Event id does not match. Expected id {eventId.Value}, event data is '{eventJson}'");
+                Assert.True(eventJson.Contains(@"""EventId"":" + eventId.Value.ToString()), $"Event id does not match. Expected id {eventId.Value}, event data is '{eventJson}'");
+            }
+
+            if (eventIdName != null)
+            {
+                Assert.True(eventJson.Contains(@"""EventName"":""" + eventIdName), $"Event name does not match. Expected id {eventIdName}, event data is '{eventJson}'");
             }
 
             for (int i = 0; i < fragments.Length; i++)
@@ -406,6 +498,8 @@ namespace Microsoft.Extensions.Logging.Test
 
             private System.Diagnostics.Tracing.EventSource _loggingEventSource;
 
+            private ListenerSettings _enableWhenCreated;
+
             public TestEventListener()
             {
                 Events = new List<string>();
@@ -415,13 +509,25 @@ namespace Microsoft.Extensions.Logging.Test
 
             public void EnableEvents(ListenerSettings settings)
             {
+                if (_loggingEventSource != null)
+                {
+                    EnableEvents(_loggingEventSource, settings.Level, settings.Keywords,  GetArguments(settings));
+                }
+                else
+                {
+                    _enableWhenCreated = settings;
+                }
+            }
+
+            private static Dictionary<string, string> GetArguments(ListenerSettings settings)
+            {
                 var args = new Dictionary<string, string>();
                 if (!string.IsNullOrEmpty(settings.FilterSpec))
                 {
                     args["FilterSpecs"] = settings.FilterSpec;
                 }
 
-                EnableEvents(_loggingEventSource, settings.Level, settings.Keywords, args);
+                return args;
             }
 
             protected override void OnEventSourceCreated(System.Diagnostics.Tracing.EventSource eventSource)
@@ -429,6 +535,12 @@ namespace Microsoft.Extensions.Logging.Test
                 if (eventSource.Name == "Microsoft-Extensions-Logging")
                 {
                     _loggingEventSource = eventSource;
+                }
+
+                if (_enableWhenCreated != null)
+                {
+                    EnableEvents(_loggingEventSource, _enableWhenCreated.Level, _enableWhenCreated.Keywords, GetArguments(_enableWhenCreated));
+                    _enableWhenCreated = null;
                 }
             }
 
@@ -538,94 +650,112 @@ namespace Microsoft.Extensions.Logging.Test
 
         private static readonly IDictionary<string, Action<string>> EventVerifiers = new Dictionary<string, Action<string>>
         {
-            { "E1FM", (e) => VerifySingleEvent(e, "Logger1", EventTypes.FormattedMessage, 1, LogLevel.Debug,
+            { "E1FM", (e) => VerifySingleEvent(e, "Logger1", EventTypes.FormattedMessage, 1, null, LogLevel.Debug,
 
                 @"""FormattedMessage"":""Logger1 Event1 Debug 1""") },
-            { "E1JS", (e) => VerifySingleEvent(e, "Logger1", EventTypes.MessageJson, 1, LogLevel.Debug,
+            { "E1JS", (e) => VerifySingleEvent(e, "Logger1", EventTypes.MessageJson, 1, null, LogLevel.Debug,
                         @"""ArgumentsJson"":{""intParam"":""1""") },
-            { "E1MSG", (e) => VerifySingleEvent(e, "Logger1", EventTypes.Message, 1, LogLevel.Debug,
+            { "E1MSG", (e) => VerifySingleEvent(e, "Logger1", EventTypes.Message, 1, null, LogLevel.Debug,
                         @"{""Key"":""intParam"",""Value"":""1""}") },
 
-            { "E2FM", (e) => VerifySingleEvent(e, "Logger2", EventTypes.FormattedMessage, 2, LogLevel.Trace,
+            { "E2FM", (e) => VerifySingleEvent(e, "Logger2", EventTypes.FormattedMessage, 2, null, LogLevel.Trace,
                 @"""FormattedMessage"":""Logger2 Event2 Trace " + DoubleParam1.ToString() + " " + TimeParam.ToString("O") + " " + DoubleParam2.ToString()) },
-            { "E2JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 2, LogLevel.Trace,
+            { "E2JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 2, null, LogLevel.Trace,
                         @"""ArgumentsJson"":{""doubleParam"":""" + DoubleParam1.ToString() + @""",""timeParam"":"""
                         + TimeParam.ToString("O") +@""",""doubleParam2"":""" + DoubleParam2.ToString()) },
-            { "E2MSG", (e) => VerifySingleEvent(e, "Logger2", EventTypes.Message, 2, LogLevel.Trace,
+            { "E2MSG", (e) => VerifySingleEvent(e, "Logger2", EventTypes.Message, 2, null, LogLevel.Trace,
                 @"{""Key"":""doubleParam"",""Value"":""" + DoubleParam1.ToString() +@"""}",
                 @"{""Key"":""timeParam"",""Value"":""" + TimeParam.ToString("O") +@"""}",
                 @"{""Key"":""doubleParam2"",""Value"":""" + DoubleParam2.ToString() +@"""}") },
 
-            { "E3FM", (e) => VerifySingleEvent(e, "Logger3", EventTypes.FormattedMessage, 3, LogLevel.Information,
+            { "E3FM", (e) => VerifySingleEvent(e, "Logger3", EventTypes.FormattedMessage, 3, null, LogLevel.Information,
                 @"""FormattedMessage"":""Logger3 Event3 Information foo bar baz") },
-            { "E3JS", (e) => VerifySingleEvent(e, "Logger3", EventTypes.MessageJson, 3, LogLevel.Information,
+            { "E3JS", (e) => VerifySingleEvent(e, "Logger3", EventTypes.MessageJson, 3, null, LogLevel.Information,
                         @"""ArgumentsJson"":{""string1Param"":""foo"",""string2Param"":""bar"",""string3Param"":""baz""") },
-            { "E3MSG", (e) => VerifySingleEvent(e, "Logger3", EventTypes.Message, 3, LogLevel.Information,
+            { "E3MSG", (e) => VerifySingleEvent(e, "Logger3", EventTypes.Message, 3, null, LogLevel.Information,
                 @"{""Key"":""string1Param"",""Value"":""foo""}",
                 @"{""Key"":""string2Param"",""Value"":""bar""}",
                 @"{""Key"":""string3Param"",""Value"":""baz""}") },
 
-            { "E4FM", (e) => VerifySingleEvent(e, "Logger1", EventTypes.FormattedMessage, 4, LogLevel.Error,
+            { "E4FM", (e) => VerifySingleEvent(e, "Logger1", EventTypes.FormattedMessage, 4, "ErrorEvent", LogLevel.Error,
 
                 @"""FormattedMessage"":""Logger1 Event4 Error foo " + GuidParam.ToString("D") + @"""") },
 
-            { "E4JS", (e) => VerifySingleEvent(e, "Logger1", EventTypes.MessageJson, 4, LogLevel.Error,
+            { "E4JS", (e) => VerifySingleEvent(e, "Logger1", EventTypes.MessageJson, 4, "ErrorEvent", LogLevel.Error,
                 @"""ArgumentsJson"":{""stringParam"":""foo"",""guidParam"":""" + GuidParam.ToString("D") + @"""") },
 
-            { "E4MSG", (e) => VerifySingleEvent(e, "Logger1", EventTypes.Message, 4, LogLevel.Error,
+            { "E4MSG", (e) => VerifySingleEvent(e, "Logger1", EventTypes.Message, 4, "ErrorEvent", LogLevel.Error,
                 @"{""Key"":""stringParam"",""Value"":""foo""}",
                 @"{""Key"":""guidParam"",""Value"":""" + GuidParam.ToString("D") +@"""}") },
 
-            { "E5FM", (e) => VerifySingleEvent(e, "Logger2", EventTypes.FormattedMessage, 5, LogLevel.Critical,
+            { "E5FM", (e) => VerifySingleEvent(e, "Logger2", EventTypes.FormattedMessage, 5, null, LogLevel.Critical,
                 @"""FormattedMessage"":""Logger2 Event5 Critical bar 23 45") },
 
-            { "E5JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 5, LogLevel.Critical,
+// Starting in netcoreapp3.0 Exception.ToString() puts a newline before inner exceptions
+#if NETCOREAPP
+            { "E5JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 5, null, LogLevel.Critical,
                 @"""ArgumentsJson"":{""stringParam"":""bar"",""int1Param"":""23"",""int2Param"":""45""",
-                @"""ExceptionJson"":{""TypeName"":""System.Exception"",""Message"":""oops"",""HResult"":""-2146233088"",""VerboseMessage"":""System.Exception: oops ---> System.Exception: inner oops") },
+                @$"""ExceptionJson"":{{""TypeName"":""System.Exception"",""Message"":""oops"",""HResult"":""-2146233088"",""VerboseMessage"":""System.Exception: oops{EscapedNewline()} ---\u003E System.Exception: inner oops") },
 
-            { "E5MSG", (e) => VerifySingleEvent(e, "Logger2", EventTypes.Message, 5, LogLevel.Critical,
+            { "E5MSG", (e) => VerifySingleEvent(e, "Logger2", EventTypes.Message, 5, null, LogLevel.Critical,
+                 @"{""Key"":""stringParam"",""Value"":""bar""}",
+                @"{""Key"":""int1Param"",""Value"":""23""}",
+                @"{""Key"":""int2Param"",""Value"":""45""}",
+                @$"""Exception"":{{""TypeName"":""System.Exception"",""Message"":""oops"",""HResult"":-2146233088,""VerboseMessage"":""System.Exception: oops{EscapedNewline()} ---> System.Exception: inner oops") },
+#else
+            { "E5JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 5, null, LogLevel.Critical,
+                @"""ArgumentsJson"":{""stringParam"":""bar"",""int1Param"":""23"",""int2Param"":""45""",
+                @"""ExceptionJson"":{""TypeName"":""System.Exception"",""Message"":""oops"",""HResult"":""-2146233088"",""VerboseMessage"":""System.Exception: oops ---\u003E System.Exception: inner oops") },
+
+            { "E5MSG", (e) => VerifySingleEvent(e, "Logger2", EventTypes.Message, 5, null, LogLevel.Critical,
                  @"{""Key"":""stringParam"",""Value"":""bar""}",
                 @"{""Key"":""int1Param"",""Value"":""23""}",
                 @"{""Key"":""int2Param"",""Value"":""45""}",
                 @"""Exception"":{""TypeName"":""System.Exception"",""Message"":""oops"",""HResult"":-2146233088,""VerboseMessage"":""System.Exception: oops ---> System.Exception: inner oops") },
+#endif
 
-            { "E6FM", (e) => VerifySingleEvent(e, "Logger2", EventTypes.FormattedMessage, 6, LogLevel.Warning,
+            { "E6FM", (e) => VerifySingleEvent(e, "Logger2", EventTypes.FormattedMessage, 6, null, LogLevel.Warning,
                 @"""FormattedMessage"":""Logger2 Event6 Warning NoParams""") },
-            { "E6JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 6, LogLevel.Warning) },
-            { "E6MSG", (e) => VerifySingleEvent(e, "Logger2", EventTypes.Message, 6, LogLevel.Warning) },
+            { "E6JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 6, null, LogLevel.Warning) },
+            { "E6MSG", (e) => VerifySingleEvent(e, "Logger2", EventTypes.Message, 6, null, LogLevel.Warning) },
 
-            { "E7FM", (e) => VerifySingleEvent(e, "Logger3", EventTypes.FormattedMessage, 7, LogLevel.Information,
+            { "E7FM", (e) => VerifySingleEvent(e, "Logger3", EventTypes.FormattedMessage, 7, null, LogLevel.Information,
                 @"""FormattedMessage"":""Logger3 Event7 Information inner scope closed " + DoubleParam2.ToString() + " 37") },
-            { "E7JS", (e) => VerifySingleEvent(e, "Logger3", EventTypes.MessageJson, 7, LogLevel.Information,
+            { "E7JS", (e) => VerifySingleEvent(e, "Logger3", EventTypes.MessageJson, 7, null, LogLevel.Information,
                         @"""ArgumentsJson"":{""stringParam"":""inner scope closed"",""doubleParam"":""" + DoubleParam2.ToString() + @""",""intParam"":""37""") },
-            { "E7MSG", (e) => VerifySingleEvent(e, "Logger3", EventTypes.Message, 7, LogLevel.Information,
+            { "E7MSG", (e) => VerifySingleEvent(e, "Logger3", EventTypes.Message, 7, null, LogLevel.Information,
                 @"{""Key"":""stringParam"",""Value"":""inner scope closed""}",
                 @"{""Key"":""doubleParam"",""Value"":""" + DoubleParam2.ToString() +@"""}",
                 @"{""Key"":""intParam"",""Value"":""37""}") },
 
-            { "E8FM", (e) => VerifySingleEvent(e, "Logger2", EventTypes.FormattedMessage, 8, LogLevel.Warning,
+            { "E8FM", (e) => VerifySingleEvent(e, "Logger2", EventTypes.FormattedMessage, 8, null, LogLevel.Warning,
                 @"""FormattedMessage"":""Logger2 Event8 Warning Outer scope closed " + TimeParam.ToString("O")) },
-            { "E8JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 8, LogLevel.Warning,
+            { "E8JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 8, null, LogLevel.Warning,
                         @"""ArgumentsJson"":{""stringParam"":""Outer scope closed"",""timeParam"":""" + TimeParam.ToString("O")) },
 
-            { "E8MSG", (e) => VerifySingleEvent(e, "Logger2", EventTypes.Message, 8, LogLevel.Warning,
+            { "E8MSG", (e) => VerifySingleEvent(e, "Logger2", EventTypes.Message, 8, null, LogLevel.Warning,
                 @"{""Key"":""stringParam"",""Value"":""Outer scope closed""}",
                 @"{""Key"":""timeParam"",""Value"":""" + TimeParam.ToString("O") +@"""}") },
 
 
-            { "OuterScopeJsonStart", (e) => VerifySingleEvent(e, "Logger1", EventTypes.ActivityJsonStart, null, null,
+            { "OuterScopeJsonStart", (e) => VerifySingleEvent(e, "Logger1", EventTypes.ActivityJsonStart, null, null, null,
                         @"""ArgumentsJson"":{""stringParam"":""scoped foo"",""intParam"":""13"",""doubleParam"":""" + DoubleParam1.ToString()) },
-            { "OuterScopeJsonStop", (e) => VerifySingleEvent(e, "Logger1", EventTypes.ActivityJsonStop, null, null) },
+            { "OuterScopeJsonStop", (e) => VerifySingleEvent(e, "Logger1", EventTypes.ActivityJsonStop, null, null, null) },
 
-            { "OuterScopeStart", (e) => VerifySingleEvent(e, "Logger1", EventTypes.ActivityStart, null, null) },
-            { "OuterScopeStop", (e) => VerifySingleEvent(e, "Logger1", EventTypes.ActivityStop, null, null) },
+            { "OuterScopeStart", (e) => VerifySingleEvent(e, "Logger1", EventTypes.ActivityStart, null, null, null) },
+            { "OuterScopeStop", (e) => VerifySingleEvent(e, "Logger1", EventTypes.ActivityStop, null, null, null) },
 
-            { "InnerScopeJsonStart", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityJsonStart, null, null,
+            { "InnerScopeJsonStart", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityJsonStart, null, null, null,
                         @"""ArgumentsJson"":{""timeParam"":""" + TimeParam.ToString() + @""",""guidParam"":""" + GuidParam.ToString("D")) },
-            { "InnerScopeJsonStop", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityJsonStop, null, null) },
+            { "InnerScopeJsonStop", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityJsonStop, null, null, null) },
 
-            { "InnerScopeStart", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityStart, null, null) },
-            { "InnerScopeStop", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityStop, null, null) },
+            { "InnerScopeStart", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityStart, null, null, null) },
+            { "InnerScopeStop", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityStop, null, null, null) },
         };
+
+        static string EscapedNewline()
+        {
+            return Environment.NewLine.Replace("\r", "\\r").Replace("\n", "\\n");
+        }
     }
 }

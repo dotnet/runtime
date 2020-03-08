@@ -1,13 +1,12 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.Console;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -22,8 +21,7 @@ namespace Microsoft.Extensions.Logging
             builder.AddConfiguration();
 
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ConsoleLoggerProvider>());
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<ConsoleLoggerOptions>, ConsoleLoggerOptionsSetup>());
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOptionsChangeTokenSource<ConsoleLoggerOptions>, LoggerProviderOptionsChangeTokenSource<ConsoleLoggerOptions, ConsoleLoggerProvider>>());
+            LoggerProviderOptions.RegisterProviderOptions<ConsoleLoggerOptions, ConsoleLoggerProvider>(builder.Services);
             return builder;
         }
 
@@ -31,7 +29,7 @@ namespace Microsoft.Extensions.Logging
         /// Adds a console logger named 'Console' to the factory.
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
-        /// <param name="configure"></param>
+        /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/>.</param>
         public static ILoggingBuilder AddConsole(this ILoggingBuilder builder, Action<ConsoleLoggerOptions> configure)
         {
             if (configure == null)
@@ -43,108 +41,6 @@ namespace Microsoft.Extensions.Logging
             builder.Services.Configure(configure);
 
             return builder;
-        }
-
-        /// <summary>
-        /// Adds a console logger that is enabled for <see cref="LogLevel"/>.Information or higher.
-        /// </summary>
-        /// <param name="factory">The <see cref="ILoggerFactory"/> to use.</param>
-        public static ILoggerFactory AddConsole(this ILoggerFactory factory)
-        {
-            return factory.AddConsole(includeScopes: false);
-        }
-
-        /// <summary>
-        /// Adds a console logger that is enabled for <see cref="LogLevel"/>.Information or higher.
-        /// </summary>
-        /// <param name="factory">The <see cref="ILoggerFactory"/> to use.</param>
-        /// <param name="includeScopes">A value which indicates whether log scope information should be displayed
-        /// in the output.</param>
-        public static ILoggerFactory AddConsole(this ILoggerFactory factory, bool includeScopes)
-        {
-            factory.AddConsole((n, l) => l >= LogLevel.Information, includeScopes);
-            return factory;
-        }
-
-        /// <summary>
-        /// Adds a console logger that is enabled for <see cref="LogLevel"/>s of minLevel or higher.
-        /// </summary>
-        /// <param name="factory">The <see cref="ILoggerFactory"/> to use.</param>
-        /// <param name="minLevel">The minimum <see cref="LogLevel"/> to be logged</param>
-        public static ILoggerFactory AddConsole(this ILoggerFactory factory, LogLevel minLevel)
-        {
-            factory.AddConsole(minLevel, includeScopes: false);
-            return factory;
-        }
-
-        /// <summary>
-        /// Adds a console logger that is enabled for <see cref="LogLevel"/>s of minLevel or higher.
-        /// </summary>
-        /// <param name="factory">The <see cref="ILoggerFactory"/> to use.</param>
-        /// <param name="minLevel">The minimum <see cref="LogLevel"/> to be logged</param>
-        /// <param name="includeScopes">A value which indicates whether log scope information should be displayed
-        /// in the output.</param>
-        public static ILoggerFactory AddConsole(
-            this ILoggerFactory factory,
-            LogLevel minLevel,
-            bool includeScopes)
-        {
-            factory.AddConsole((category, logLevel) => logLevel >= minLevel, includeScopes);
-            return factory;
-        }
-
-        /// <summary>
-        /// Adds a console logger that is enabled as defined by the filter function.
-        /// </summary>
-        /// <param name="factory">The <see cref="ILoggerFactory"/> to use.</param>
-        /// <param name="filter">The category filter to apply to logs.</param>
-        public static ILoggerFactory AddConsole(
-            this ILoggerFactory factory,
-            Func<string, LogLevel, bool> filter)
-        {
-            factory.AddConsole(filter, includeScopes: false);
-            return factory;
-        }
-
-        /// <summary>
-        /// Adds a console logger that is enabled as defined by the filter function.
-        /// </summary>
-        /// <param name="factory">The <see cref="ILoggerFactory"/> to use.</param>
-        /// <param name="filter">The category filter to apply to logs.</param>
-        /// <param name="includeScopes">A value which indicates whether log scope information should be displayed
-        /// in the output.</param>
-        public static ILoggerFactory AddConsole(
-            this ILoggerFactory factory,
-            Func<string, LogLevel, bool> filter,
-            bool includeScopes)
-        {
-            factory.AddProvider(new ConsoleLoggerProvider(filter, includeScopes));
-            return factory;
-        }
-
-
-        /// <summary>
-        /// </summary>
-        /// <param name="factory">The <see cref="ILoggerFactory"/> to use.</param>
-        /// <param name="settings">The settings to apply to created <see cref="ConsoleLogger"/>'s.</param>
-        /// <returns></returns>
-        public static ILoggerFactory AddConsole(
-            this ILoggerFactory factory,
-            IConsoleLoggerSettings settings)
-        {
-            factory.AddProvider(new ConsoleLoggerProvider(settings));
-            return factory;
-        }
-
-        /// <summary>
-        /// </summary>
-        /// <param name="factory">The <see cref="ILoggerFactory"/> to use.</param>
-        /// <param name="configuration">The <see cref="IConfiguration"/> to use for <see cref="IConsoleLoggerSettings"/>.</param>
-        /// <returns></returns>
-        public static ILoggerFactory AddConsole(this ILoggerFactory factory, IConfiguration configuration)
-        {
-            var settings = new ConfigurationConsoleLoggerSettings(configuration);
-            return factory.AddConsole(settings);
         }
     }
 }

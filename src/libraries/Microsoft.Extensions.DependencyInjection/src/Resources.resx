@@ -150,4 +150,13 @@
   <data name="DirectScopedResolvedFromRootException" xml:space="preserve">
     <value>Cannot resolve {1} service '{0}' from root provider.</value>
   </data>
+  <data name="ConstantCantBeConvertedToServiceType" xml:space="preserve">
+    <value>Constant value of type '{0}' can't be converted to service type '{1}'</value>
+  </data>
+  <data name="ImplementationTypeCantBeConvertedToServiceType" xml:space="preserve">
+    <value>Implementation type '{0}' can't be converted to service type '{1}'</value>
+  </data>
+  <data name="AsyncDisposableServiceDispose" xml:space="preserve">
+    <value>'{0}' type only implements IAsyncDisposable. Use DisposeAsync to dispose the container.</value>
+  </data>
 </root>

@@ -1,5 +1,6 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
@@ -11,17 +12,10 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     public class ServiceProviderCompilationTest
     {
         [Theory]
-#if DEBUG
-        [InlineData(ServiceProviderMode.Dynamic, typeof(I150))]
-        [InlineData(ServiceProviderMode.Runtime, typeof(I150))]
-        [InlineData(ServiceProviderMode.ILEmit, typeof(I150))]
-        [InlineData(ServiceProviderMode.Expressions, typeof(I150))]
-#else
-        [InlineData(ServiceProviderMode.Dynamic, typeof(I350))]
-        [InlineData(ServiceProviderMode.Runtime, typeof(I350))]
-        [InlineData(ServiceProviderMode.ILEmit, typeof(I350))]
-        [InlineData(ServiceProviderMode.Expressions, typeof(I350))]
-#endif
+        [InlineData(ServiceProviderMode.Dynamic, typeof(I999))]
+        [InlineData(ServiceProviderMode.Runtime, typeof(I999))]
+        [InlineData(ServiceProviderMode.ILEmit, typeof(I999))]
+        [InlineData(ServiceProviderMode.Expressions, typeof(I999))]
         private async Task CompilesInLimitedStackSpace(ServiceProviderMode mode, Type serviceType)
         {
             // Arrange

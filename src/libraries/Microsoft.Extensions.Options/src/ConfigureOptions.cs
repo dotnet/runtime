@@ -1,14 +1,15 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Implementation of IConfigureOptions.
+    /// Implementation of <see cref="IConfigureOptions{TOptions}"/>.
     /// </summary>
-    /// <typeparam name="TOptions"></typeparam>
+    /// <typeparam name="TOptions">Options type being configured.</typeparam>
     public class ConfigureOptions<TOptions> : IConfigureOptions<TOptions> where TOptions : class
     {
         /// <summary>
@@ -26,9 +27,9 @@ namespace Microsoft.Extensions.Options
         public Action<TOptions> Action { get; }
 
         /// <summary>
-        /// Invokes the registered configure Action if the name matches.
+        /// Invokes the registered configure <see cref="Action"/>.
         /// </summary>
-        /// <param name="options"></param>
+        /// <param name="options">The options instance to configure.</param>
         public virtual void Configure(TOptions options)
         {
             if (options == null)

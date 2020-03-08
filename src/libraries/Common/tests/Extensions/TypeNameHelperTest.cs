@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -214,6 +215,47 @@ namespace Microsoft.Extensions.Internal
 
             // Assert
             Assert.Equal(expected, actual);
+        }
+
+        public static TheoryData<Type, string> FullTypeNameData
+        {
+            get
+            {
+                return new TheoryData<Type, string>
+                {
+                    // Predefined Types
+                    { typeof(int), "int" },
+                    { typeof(List<int>), "System.Collections.Generic.List" },
+                    { typeof(Dictionary<int, string>), "System.Collections.Generic.Dictionary" },
+                    { typeof(Dictionary<int, List<string>>), "System.Collections.Generic.Dictionary" },
+                    { typeof(List<List<string>>), "System.Collections.Generic.List" },
+
+                    // Classes inside NonGeneric class
+                    { typeof(A), "Microsoft.Extensions.Internal.TypeNameHelperTest.A" },
+                    { typeof(B<int>), "Microsoft.Extensions.Internal.TypeNameHelperTest.B" },
+                    { typeof(C<int, string>), "Microsoft.Extensions.Internal.TypeNameHelperTest.C" },
+                    { typeof(C<int, B<string>>), "Microsoft.Extensions.Internal.TypeNameHelperTest.C" },
+                    { typeof(B<B<string>>), "Microsoft.Extensions.Internal.TypeNameHelperTest.B" },
+
+                    // Classes inside Generic class
+                    { typeof(Outer<int>.D), "Microsoft.Extensions.Internal.TypeNameHelperTest.Outer.D" },
+                    { typeof(Outer<int>.E<int>), "Microsoft.Extensions.Internal.TypeNameHelperTest.Outer.E" },
+                    { typeof(Outer<int>.F<int, string>), "Microsoft.Extensions.Internal.TypeNameHelperTest.Outer.F" },
+                    { typeof(Outer<int>.F<int, Outer<int>.E<string>>),"Microsoft.Extensions.Internal.TypeNameHelperTest.Outer.F" },
+                    { typeof(Outer<int>.E<Outer<int>.E<string>>), "Microsoft.Extensions.Internal.TypeNameHelperTest.Outer.E" }
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(FullTypeNameData))]
+        public void Can_PrettyPrint_FullTypeName_WithoutGenericParametersAndNestedTypeDelimiter(Type type, string expectedTypeName)
+        {
+            // Arrange & Act
+            var displayName = TypeNameHelper.GetTypeDisplayName(type, fullName: true, includeGenericParameters: false, nestedTypeDelimiter: '.');
+
+            // Assert
+            Assert.Equal(expectedTypeName, displayName);
         }
 
         private class A { }

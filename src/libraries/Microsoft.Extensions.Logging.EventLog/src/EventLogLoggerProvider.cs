@@ -1,7 +1,9 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging.EventLog
 {
@@ -11,7 +13,7 @@ namespace Microsoft.Extensions.Logging.EventLog
     [ProviderAlias("EventLog")]
     public class EventLogLoggerProvider : ILoggerProvider, ISupportExternalScope
     {
-        private readonly EventLogSettings _settings;
+        internal readonly EventLogSettings _settings;
 
         private IExternalScopeProvider _scopeProvider;
 
@@ -29,19 +31,34 @@ namespace Microsoft.Extensions.Logging.EventLog
         /// <param name="settings">The <see cref="EventLogSettings"/>.</param>
         public EventLogLoggerProvider(EventLogSettings settings)
         {
-            _settings = settings;
+            _settings = settings ?? new EventLogSettings();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EventLogLoggerProvider"/> class.
+        /// </summary>
+        /// <param name="options">The <see cref="IOptions{EventLogSettings}"/>.</param>
+        public EventLogLoggerProvider(IOptions<EventLogSettings> options)
+            : this(options.Value)
+        {
         }
 
         /// <inheritdoc />
         public ILogger CreateLogger(string name)
         {
-            return new EventLogLogger(name, _settings ?? new EventLogSettings());
+            return new EventLogLogger(name, _settings, _scopeProvider);
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
+            if (_settings.EventLog is WindowsEventLog windowsEventLog)
+            {
+                windowsEventLog.DiagnosticsEventLog.Dispose();
+            }
         }
 
+        /// <inheritdoc />
         public void SetScopeProvider(IExternalScopeProvider scopeProvider)
         {
             _scopeProvider = scopeProvider;

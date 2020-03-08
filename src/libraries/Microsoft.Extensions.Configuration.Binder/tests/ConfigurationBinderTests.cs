@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft Open Technologies, Inc. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -81,6 +82,16 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         public class GenericOptions<T>
         {
             public T Value { get; set; }
+        }
+
+        public class OptionsWithNesting
+        {
+            public NestedOptions Nested { get; set; }
+
+            public class NestedOptions
+            {
+                public int Value { get; set; }
+            }
         }
 
         public class ConfigurationInterfaceOptions
@@ -362,9 +373,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             // arrange
             const string IncorrectValue = "Invalid data";
+            const string ConfigKey = "Value";
             var dic = new Dictionary<string, string>
             {
-                {"Value", IncorrectValue}
+                {ConfigKey, IncorrectValue}
             };
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection(dic);
@@ -387,14 +399,38 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.NotNull(exception.InnerException);
             Assert.NotNull(getException.InnerException);
             Assert.Equal(
-                Resources.FormatError_FailedBinding(type),
+                Resources.FormatError_FailedBinding(ConfigKey, type),
                 exception.Message);
             Assert.Equal(
-                Resources.FormatError_FailedBinding(type),
+                Resources.FormatError_FailedBinding(ConfigKey, type),
                 getException.Message);
             Assert.Equal(
-                Resources.FormatError_FailedBinding(type),
+                Resources.FormatError_FailedBinding(ConfigKey, type),
                 getValueException.Message);
+        }
+
+        [Fact]
+        public void ExceptionOnFailedBindingIncludesPath()
+        {
+            const string IncorrectValue = "Invalid data";
+            const string ConfigKey = "Nested:Value";
+
+            var dic = new Dictionary<string, string>
+            {
+                {ConfigKey, IncorrectValue}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithNesting();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(options));
+
+            Assert.Equal(Resources.FormatError_FailedBinding(ConfigKey, typeof(int)),
+                exception.Message);
         }
 
         [Fact]

@@ -1,24 +1,25 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal class IEnumerableCallSite : IServiceCallSite
+    internal class IEnumerableCallSite : ServiceCallSite
     {
         internal Type ItemType { get; }
-        internal IServiceCallSite[] ServiceCallSites { get; }
+        internal ServiceCallSite[] ServiceCallSites { get; }
 
-        public IEnumerableCallSite(Type itemType, IServiceCallSite[] serviceCallSites)
+        public IEnumerableCallSite(ResultCache cache, Type itemType, ServiceCallSite[] serviceCallSites) : base(cache)
         {
             ItemType = itemType;
             ServiceCallSites = serviceCallSites;
         }
 
-        public Type ServiceType => typeof(IEnumerable<>).MakeGenericType(ItemType);
-        public Type ImplementationType  => ItemType.MakeArrayType();
-        public CallSiteKind Kind { get; } = CallSiteKind.IEnumerable;
+        public override Type ServiceType => typeof(IEnumerable<>).MakeGenericType(ItemType);
+        public override Type ImplementationType  => ItemType.MakeArrayType();
+        public override CallSiteKind Kind { get; } = CallSiteKind.IEnumerable;
     }
 }

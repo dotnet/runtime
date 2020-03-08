@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 namespace Microsoft.Extensions.Hosting
 {
@@ -9,18 +10,18 @@ namespace Microsoft.Extensions.Hosting
     public static class HostDefaults
     {
         /// <summary>
-        /// The configuration key used to set <see cref="IHostingEnvironment.ApplicationName"/>.
+        /// The configuration key used to set <see cref="IHostEnvironment.ApplicationName"/>.
         /// </summary>
         public static readonly string ApplicationKey = "applicationName";
 
         /// <summary>
-        /// The configuration key used to set <see cref="IHostingEnvironment.EnvironmentName"/>.
+        /// The configuration key used to set <see cref="IHostEnvironment.EnvironmentName"/>.
         /// </summary>
         public static readonly string EnvironmentKey = "environment";
 
         /// <summary>
-        /// The configuration key used to set <see cref="IHostingEnvironment.ContentRootPath"/>
-        /// and <see cref="IHostingEnvironment.ContentRootFileProvider"/>.
+        /// The configuration key used to set <see cref="IHostEnvironment.ContentRootPath"/>
+        /// and <see cref="IHostEnvironment.ContentRootFileProvider"/>.
         /// </summary>
         public static readonly string ContentRootKey = "contentRoot";
     }

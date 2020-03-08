@@ -1,5 +1,6 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -51,6 +52,31 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
+        /// Specify the <see cref="IServiceProvider"/> to be the default one.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
+        /// <param name="configure"></param>
+        /// <returns>The <see cref="IHostBuilder"/>.</returns>
+        public static IHostBuilder UseDefaultServiceProvider(this IHostBuilder hostBuilder, Action<ServiceProviderOptions> configure)
+            => hostBuilder.UseDefaultServiceProvider((context, options) => configure(options));
+
+        /// <summary>
+        /// Specify the <see cref="IServiceProvider"/> to be the default one.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
+        /// <param name="configure">The delegate that configures the <see cref="IServiceProvider"/>.</param>
+        /// <returns>The <see cref="IHostBuilder"/>.</returns>
+        public static IHostBuilder UseDefaultServiceProvider(this IHostBuilder hostBuilder, Action<HostBuilderContext, ServiceProviderOptions> configure)
+        {
+            return hostBuilder.UseServiceProviderFactory(context =>
+            {
+                var options = new ServiceProviderOptions();
+                configure(context, options);
+                return new DefaultServiceProviderFactory(options);
+            });
+        }
+
+        /// <summary>
         /// Adds a delegate for configuring the provided <see cref="ILoggingBuilder"/>. This may be called multiple times.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
@@ -77,7 +103,8 @@ namespace Microsoft.Extensions.Hosting
         /// subsequent operations, as well as in <see cref="IHost.Services"/>.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
-        /// <param name="configureDelegate"></param>
+        /// <param name="configureDelegate">The delegate for configuring the <see cref="IConfigurationBuilder"/> that will be used
+        /// to construct the <see cref="IConfiguration"/> for the host.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public static IHostBuilder ConfigureAppConfiguration(this IHostBuilder hostBuilder, Action<IConfigurationBuilder> configureDelegate)
         {
@@ -88,7 +115,7 @@ namespace Microsoft.Extensions.Hosting
         /// Adds services to the container. This can be called multiple times and the results will be additive.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
-        /// <param name="configureDelegate"></param>
+        /// <param name="configureDelegate">The delegate for configuring the <see cref="IServiceCollection"/>.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public static IHostBuilder ConfigureServices(this IHostBuilder hostBuilder, Action<IServiceCollection> configureDelegate)
         {
@@ -101,7 +128,7 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         /// <typeparam name="TContainerBuilder"></typeparam>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
-        /// <param name="configureDelegate"></param>
+        /// <param name="configureDelegate">The delegate for configuring the <typeparamref name="TContainerBuilder"/>.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public static IHostBuilder ConfigureContainer<TContainerBuilder>(this IHostBuilder hostBuilder, Action<TContainerBuilder> configureDelegate)
         {
@@ -109,7 +136,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Listens for Ctrl+C or SIGTERM and calls <see cref="IApplicationLifetime.StopApplication"/> to start the shutdown process.
+        /// Listens for Ctrl+C or SIGTERM and calls <see cref="IHostApplicationLifetime.StopApplication"/> to start the shutdown process.
         /// This will unblock extensions like RunAsync and WaitForShutdownAsync.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
@@ -120,14 +147,42 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
+        /// Listens for Ctrl+C or SIGTERM and calls <see cref="IHostApplicationLifetime.StopApplication"/> to start the shutdown process.
+        /// This will unblock extensions like RunAsync and WaitForShutdownAsync.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="configureOptions">The delegate for configuring the <see cref="ConsoleLifetime"/>.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHostBuilder UseConsoleLifetime(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions)
+        {
+            return hostBuilder.ConfigureServices((context, collection) =>
+            {
+                collection.AddSingleton<IHostLifetime, ConsoleLifetime>();
+                collection.Configure(configureOptions);
+            });
+        }
+
+        /// <summary>
         /// Enables console support, builds and starts the host, and waits for Ctrl+C or SIGTERM to shut down.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> that can be used to cancel the console.</param>
+        /// <returns>A <see cref="Task"/> that only completes when the token is triggeredor shutdown is triggered.</returns>
         public static Task RunConsoleAsync(this IHostBuilder hostBuilder, CancellationToken cancellationToken = default)
         {
             return hostBuilder.UseConsoleLifetime().Build().RunAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Enables console support, builds and starts the host, and waits for Ctrl+C or SIGTERM to shut down.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="configureOptions">The delegate for configuring the <see cref="ConsoleLifetime"/>.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> that can be used to cancel the console.</param>
+        /// <returns>A <see cref="Task"/> that only completes when the token is triggeredor shutdown is triggered.</returns>
+        public static Task RunConsoleAsync(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions, CancellationToken cancellationToken = default)
+        {
+            return hostBuilder.UseConsoleLifetime(configureOptions).Build().RunAsync(cancellationToken);
         }
     }
 }

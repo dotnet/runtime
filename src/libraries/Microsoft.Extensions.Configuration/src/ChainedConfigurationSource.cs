@@ -1,10 +1,11 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Represents a chained IConfiguration as an <see cref="IConfigurationSource"/>.
+    /// Represents a chained <see cref="IConfiguration"/> as an <see cref="IConfigurationSource"/>.
     /// </summary>
     public class ChainedConfigurationSource : IConfigurationSource
     {
@@ -12,6 +13,12 @@ namespace Microsoft.Extensions.Configuration
         /// The chained configuration.
         /// </summary>
         public IConfiguration Configuration { get; set; }
+
+        /// <summary>
+        /// Whether the chained configuration should be disposed when the
+        /// configuration provider gets disposed.
+        /// </summary>
+        public bool ShouldDisposeConfiguration { get; set; }
 
         /// <summary>
         /// Builds the <see cref="ChainedConfigurationProvider"/> for this source.
