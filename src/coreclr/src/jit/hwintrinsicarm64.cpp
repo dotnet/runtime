@@ -323,6 +323,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
             return retNode;
         }
+        default:
+            // continue below for other intrinsics.
+            break;
     }
 
 
