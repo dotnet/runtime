@@ -1150,22 +1150,15 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(typeof(StringToStringIReadOnlyDictionaryWrapper).ToString(), ex.Message);
         }
 
-        [Fact]
-        public static void ReadReadOnlyCollections_Throws()
+        [Theory]
+        [InlineData(typeof(ReadOnlyWrapperForIList), @"[""1"", ""2""]")]
+        [InlineData(typeof(ReadOnlyStringIListWrapper), @"[""1"", ""2""]")]
+        [InlineData(typeof(ReadOnlyStringICollectionWrapper), @"[""1"", ""2""]")]
+        [InlineData(typeof(ReadOnlyStringToStringIDictionaryWrapper), @"{""Key"":""key"",""Value"":""value""}")]
+        public static void ReadReadOnlyCollections_Throws(Type type, string json)
         {
-            NotSupportedException ex;
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyWrapperForIList>(@"[""1"", ""2""]"));
-            Assert.Contains(typeof(ReadOnlyWrapperForIList).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyStringIListWrapper>(@"[""1"", ""2""]"));
-            Assert.Contains(typeof(ReadOnlyStringIListWrapper).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyStringICollectionWrapper>(@"[""1"", ""2""]"));
-            Assert.Contains(typeof(ReadOnlyStringICollectionWrapper).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ReadOnlyStringToStringIDictionaryWrapper>(@"{""Key"":""key"",""Value"":""value""}"));
-            Assert.Contains(typeof(ReadOnlyStringToStringIDictionaryWrapper).ToString(), ex.Message);
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));
+            Assert.Contains(type.ToString(), ex.Message);
         }
 
         [Fact]
@@ -1180,40 +1173,21 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("test", JsonSerializer.Deserialize<MyListString>(json).First());
         }
 
-        [Fact]
-        public static void Read_Generic_NoPublicConstructor_Throws()
+        [Theory]
+        [InlineData(typeof(GenericIEnumerableWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericICollectionWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericIListWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericISetWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericIDictionaryWrapperPrivateConstructor<string, string>), @"{""Key"":""Value""}")]
+        [InlineData(typeof(StringToStringIReadOnlyDictionaryWrapperPrivateConstructor), @"{""Key"":""Value""}")]
+        [InlineData(typeof(GenericListWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericQueueWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(GenericStackWrapperPrivateConstructor<string>), @"[""1""]")]
+        [InlineData(typeof(StringToGenericDictionaryWrapperPrivateConstructor<string>), @"{""Key"":""Value""}")]
+        public static void Read_Generic_NoPublicConstructor_Throws(Type type, string json)
         {
-            NotSupportedException ex;
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericIEnumerableWrapperPrivateConstructor<string>>(@"[""1""]"));
-            Assert.Contains(typeof(GenericIEnumerableWrapperPrivateConstructor<string>).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericICollectionWrapperPrivateConstructor<string>>(@"[""1""]"));
-            Assert.Contains(typeof(GenericICollectionWrapperPrivateConstructor<string>).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericIListWrapperPrivateConstructor<string>>(@"[""1""]"));
-            Assert.Contains(typeof(GenericIListWrapperPrivateConstructor<string>).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericISetWrapperPrivateConstructor<string>>(@"[""1""]"));
-            Assert.Contains(typeof(GenericISetWrapperPrivateConstructor<string>).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericIDictionaryWrapperPrivateConstructor<string, string>>(@"{""Key"":""Value""}"));
-            Assert.Contains(typeof(GenericIDictionaryWrapperPrivateConstructor<string, string>).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<StringToStringIReadOnlyDictionaryWrapperPrivateConstructor>(@"{""Key"":""Value""}"));
-            Assert.Contains(typeof(StringToStringIReadOnlyDictionaryWrapperPrivateConstructor).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericListWrapperPrivateConstructor<string>>(@"[""1""]"));
-            Assert.Contains(typeof(GenericListWrapperPrivateConstructor<string>).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericQueueWrapperPrivateConstructor<string>>(@"[""1""]"));
-            Assert.Contains(typeof(GenericQueueWrapperPrivateConstructor<string>).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericStackWrapperPrivateConstructor<string>>(@"[""1""]"));
-            Assert.Contains(typeof(GenericStackWrapperPrivateConstructor<string>).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<StringToGenericDictionaryWrapperPrivateConstructor<string>>(@"{""Key"":""Value""}"));
-            Assert.Contains(typeof(StringToGenericDictionaryWrapperPrivateConstructor<string>).ToString(), ex.Message);
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));
+            Assert.Contains(type.ToString(), ex.Message);
         }
     }
 }
