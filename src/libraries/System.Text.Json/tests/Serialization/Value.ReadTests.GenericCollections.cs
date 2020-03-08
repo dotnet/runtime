@@ -1132,22 +1132,43 @@ namespace System.Text.Json.Serialization.Tests
             obj.Verify();
         }
 
-        [Fact]
-        public static void ReadSimpleTestClass_GenericWrappers_NoAddMethod_Throws()
+        [Theory]
+        [MemberData(nameof(ReadSimpleTestClass_GenericWrappers_NoAddMethod))]
+        public static void ReadSimpleTestClass_GenericWrappers_NoAddMethod_Throws(Type type, string json, Type exceptionMessageType)
         {
-            NotSupportedException ex;
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));
+            Assert.Contains(exceptionMessageType.ToString(), ex.Message);
+        }
 
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIEnumerableWrapper>(SimpleTestClassWithStringIEnumerableWrapper.s_json));
-            Assert.Contains(typeof(StringIEnumerableWrapper).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIReadOnlyCollectionWrapper>(SimpleTestClassWithStringIReadOnlyCollectionWrapper.s_json));
-            Assert.Contains(typeof(StringIReadOnlyCollectionWrapper).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIReadOnlyListWrapper>(SimpleTestClassWithStringIReadOnlyListWrapper.s_json));
-            Assert.Contains(typeof(StringIReadOnlyListWrapper).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper>(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json));
-            Assert.Contains(typeof(StringToStringIReadOnlyDictionaryWrapper).ToString(), ex.Message);
+        public static IEnumerable<object[]> ReadSimpleTestClass_GenericWrappers_NoAddMethod
+        {
+            get
+            {
+                yield return new object[]
+                {
+                    typeof(SimpleTestClassWithStringIEnumerableWrapper),
+                    SimpleTestClassWithStringIEnumerableWrapper.s_json,
+                    typeof(StringIEnumerableWrapper)
+                };
+                yield return new object[]
+                {
+                    typeof(SimpleTestClassWithStringIReadOnlyCollectionWrapper),
+                    SimpleTestClassWithStringIReadOnlyCollectionWrapper.s_json,
+                    typeof(StringIReadOnlyCollectionWrapper)
+                };
+                yield return new object[]
+                {
+                    typeof(SimpleTestClassWithStringIReadOnlyListWrapper),
+                    SimpleTestClassWithStringIReadOnlyListWrapper.s_json,
+                    typeof(StringIReadOnlyListWrapper)
+                };
+                yield return new object[]
+                {
+                    typeof(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper),
+                    SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json,
+                    typeof(StringToStringIReadOnlyDictionaryWrapper)
+                };
+            }
         }
 
         [Theory]

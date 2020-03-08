@@ -458,16 +458,31 @@ namespace System.Text.Json.Serialization.Tests
             obj.Verify();
         }
 
-        [Fact]
-        public static void ReadSimpleTestClass_NonGenericWrappers_NoAddMethod_Throws()
+        [Theory]
+        [MemberData(nameof(ReadSimpleTestClass_NonGenericWrappers_NoAddMethod))]
+        public static void ReadSimpleTestClass_NonGenericWrappers_NoAddMethod_Throws(Type type, string json, Type exceptionMessageType)
         {
-            NotSupportedException ex;
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, type));
+            Assert.Contains(exceptionMessageType.ToString(), ex.Message);
+        }
 
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithIEnumerableWrapper>(SimpleTestClassWithIEnumerableWrapper.s_json));
-            Assert.Contains(typeof(WrapperForIEnumerable).ToString(), ex.Message);
-
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<SimpleTestClassWithICollectionWrapper>(SimpleTestClassWithICollectionWrapper.s_json));
-            Assert.Contains(typeof(WrapperForICollection).ToString(), ex.Message);
+        public static IEnumerable<object[]> ReadSimpleTestClass_NonGenericWrappers_NoAddMethod
+        {
+            get
+            {
+                yield return new object[]
+                {
+                    typeof(SimpleTestClassWithIEnumerableWrapper),
+                    SimpleTestClassWithIEnumerableWrapper.s_json,
+                    typeof(WrapperForIEnumerable)
+                };
+                yield return new object[]
+                {
+                    typeof(SimpleTestClassWithICollectionWrapper),
+                    SimpleTestClassWithICollectionWrapper.s_json,
+                    typeof(WrapperForICollection)
+                };
+            }
         }
 
         [Theory]
