@@ -276,7 +276,14 @@ namespace System.Text
                 idx = compareInfo.IndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, 0, thisTranscodedToUtf16.Length, compareOptions, &matchLength, fromBeginning);
             }
 #else
-            idx = compareInfo.IndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, 0, thisTranscodedToUtf16.Length, compareOptions);
+            if (fromBeginning)
+            {
+                idx = compareInfo.IndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, 0, thisTranscodedToUtf16.Length, compareOptions);
+            }
+            else
+            {
+                idx = compareInfo.LastIndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, thisTranscodedToUtf16.Length, thisTranscodedToUtf16.Length, compareOptions);
+            }
             // TODO_UTF8STRING: matchLength is not correct here. Need to figure this out outside of CoreLib.
             matchLength = otherTranscodedToUtf16.Length;
 #endif

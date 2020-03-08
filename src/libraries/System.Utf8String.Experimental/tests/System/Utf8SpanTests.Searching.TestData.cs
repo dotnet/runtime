@@ -499,6 +499,7 @@ namespace System.Text.Tests
                     ExpectedFirstMatch = null,
                     ExpectedLastMatch = null,
                 },
+#if !NETFRAMEWORK
                 new TryFindTestData
                 {
                     // Turkish I, case-sensitive
@@ -509,6 +510,7 @@ namespace System.Text.Tests
                     ExpectedFirstMatch = 0..1,
                     ExpectedLastMatch = 0..1,
                 },
+#endif
                 new TryFindTestData
                 {
                     // Turkish I, case-insensitive
@@ -529,6 +531,7 @@ namespace System.Text.Tests
                     ExpectedFirstMatch = null,
                     ExpectedLastMatch = null,
                 },
+#if !NETFRAMEWORK
                 new TryFindTestData
                 {
                     // denormalized forms, case-sensitive
@@ -549,6 +552,7 @@ namespace System.Text.Tests
                     ExpectedFirstMatch = 3..6,
                     ExpectedLastMatch = ^3..,
                 },
+#endif
             };
 
             return testDataEntries;

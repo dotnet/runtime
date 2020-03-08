@@ -264,6 +264,7 @@ namespace System
             return newString;
         }
 
+#if !SYSTEM_PRIVATE_CORELIB
         // Returns 'null' if the input buffer does not represent well-formed UTF-16 data and 'replaceInvalidSequences' is false.
         private static byte[]? CreateBufferFromUtf16Common(ReadOnlySpan<char> value, bool replaceInvalidSequences)
         {
@@ -279,7 +280,7 @@ namespace System
             {
                 if (value.IsEmpty)
                 {
-                    return Array.Empty<byte>();
+                    return Utf8String.Empty._bytes;
                 }
 
                 Span<byte> scratch = stackalloc byte[MAX_STACK_TRANSCODE_CHAR_COUNT * MAX_UTF8_BYTES_PER_UTF16_CHAR]; // largest possible expansion, as explained below
@@ -350,6 +351,7 @@ namespace System
 
             return newBuffer;
         }
+#endif
 
         /// <summary>
         /// Creates a new <see cref="Utf8String"/> instance populated with a copy of the provided contents.

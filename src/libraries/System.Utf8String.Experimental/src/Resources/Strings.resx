@@ -141,6 +141,9 @@
   <data name="Arg_EnumIllegalVal" xml:space="preserve">
     <value>Illegal enum value: {0}.</value>
   </data>
+  <data name="Arg_MustBeNullTerminatedString" xml:space="preserve">
+    <value>The string must be null-terminated.</value>
+  </data>
   <data name="NotSupported_StringComparison" xml:space="preserve">
     <value>The string comparison type passed in is currently not supported.</value>
   </data>

@@ -275,7 +275,7 @@ namespace System
             byte[] buffer = ArrayPool<byte>.Shared.Rent(Length);
             try
             {
-                _bytes.AsSpan(0, Length).CopyTo(buffer.AsSpan());
+                GetSpan().CopyTo(buffer.AsSpan());
                 return Encoding.UTF8.GetString(buffer, 0, Length);
             }
             finally

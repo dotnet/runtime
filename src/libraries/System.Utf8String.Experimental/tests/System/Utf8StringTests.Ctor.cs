@@ -17,7 +17,7 @@ namespace System.Tests
         public static void Ctor_ByteArrayOffset_Empty_ReturnsEmpty()
         {
             byte[] inputData = new byte[] { (byte)'H', (byte)'e', (byte)'l', (byte)'l', (byte)'o' };
-            Assert.Same(Utf8String.Empty, new Utf8String(inputData, 3, 0));
+            AssertSameAsEmpty(new Utf8String(inputData, 3, 0));
         }
 
         [Fact]
@@ -67,7 +67,7 @@ namespace System.Tests
 
             using (BoundedMemory<byte> boundedMemory = BoundedMemory.AllocateFromExistingData(inputData))
             {
-                Assert.Same(Utf8String.Empty, new Utf8String((byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(boundedMemory.Span))));
+                AssertSameAsEmpty(new Utf8String((byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(boundedMemory.Span))));
             }
         }
 
@@ -96,7 +96,7 @@ namespace System.Tests
         [Fact]
         public static void Ctor_ByteSpan_Empty_ReturnsEmpty()
         {
-            Assert.Same(Utf8String.Empty, new Utf8String(ReadOnlySpan<byte>.Empty));
+            AssertSameAsEmpty(new Utf8String(ReadOnlySpan<byte>.Empty));
         }
 
         [Fact]
@@ -121,7 +121,7 @@ namespace System.Tests
         public static void Ctor_CharArrayOffset_Empty_ReturnsEmpty()
         {
             char[] inputData = "H\U00012345ello".ToCharArray(); // ok to have an empty slice in the middle of a multi-byte subsequence
-            Assert.Same(Utf8String.Empty, new Utf8String(inputData, 3, 0));
+            AssertSameAsEmpty(new Utf8String(inputData, 3, 0));
         }
 
         [Fact]
@@ -171,7 +171,7 @@ namespace System.Tests
 
             using (BoundedMemory<char> boundedMemory = BoundedMemory.AllocateFromExistingData(inputData))
             {
-                Assert.Same(Utf8String.Empty, new Utf8String((char*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(boundedMemory.Span))));
+                AssertSameAsEmpty(new Utf8String((char*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(boundedMemory.Span))));
             }
         }
 
@@ -200,7 +200,7 @@ namespace System.Tests
         [Fact]
         public static void Ctor_CharSpan_Empty_ReturnsEmpty()
         {
-            Assert.Same(Utf8String.Empty, new Utf8String(ReadOnlySpan<char>.Empty));
+            AssertSameAsEmpty(new Utf8String(ReadOnlySpan<char>.Empty));
         }
 
         [Fact]
@@ -231,7 +231,7 @@ namespace System.Tests
         [Fact]
         public static void Ctor_String_Empty_ReturnsEmpty()
         {
-            Assert.Same(Utf8String.Empty, new Utf8String(string.Empty));
+            AssertSameAsEmpty(new Utf8String(string.Empty));
         }
 
         [Fact]
@@ -319,6 +319,20 @@ namespace System.Tests
 
             Assert.False(Utf8String.TryCreateFrom("\uD800x".AsSpan(), out value));
             Assert.Null(value);
+        }
+
+        private static void AssertSameAsEmpty(Utf8String value)
+        {
+#if NETFRAMEWORK
+            // When OOB, we can't change the actual object returned from a constructor.
+            // So just assert the underlying "_bytes" is the same.
+            Assert.Equal(0, value.Length);
+            Assert.True(Unsafe.AreSame(
+                ref Unsafe.AsRef(in Utf8String.Empty.GetPinnableReference()),
+                ref Unsafe.AsRef(in value.GetPinnableReference())));
+#else
+            Assert.Same(Utf8String.Empty, new Utf8String(ReadOnlySpan<char>.Empty));
+#endif
         }
     }
 }

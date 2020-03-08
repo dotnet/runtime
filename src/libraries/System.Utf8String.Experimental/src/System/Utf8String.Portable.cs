@@ -4,14 +4,15 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text.Unicode;
 
 namespace System
 {
     public sealed partial class Utf8String
     {
-        private static ReadOnlySpan<byte> s_EmptyRef => new byte[] { 0x00 };
         private readonly byte[] _bytes;
 
         /// <summary>
@@ -21,34 +22,54 @@ namespace System
 
         public Utf8String(ReadOnlySpan<byte> value)
         {
-            _bytes = Array.Empty<byte>(); //TODO: eerhardt
+            _bytes = InitializeBuffer(value);
         }
 
         public Utf8String(byte[] value, int startIndex, int length)
         {
-            _bytes = Array.Empty<byte>(); //TODO: eerhardt
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
+            _bytes = InitializeBuffer(new ReadOnlySpan<byte>(value, startIndex, length));
         }
 
         [CLSCompliant(false)]
         public unsafe Utf8String(byte* value)
         {
-            _bytes = Array.Empty<byte>(); //TODO: eerhardt
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
+            _bytes = InitializeBuffer(new ReadOnlySpan<byte>(value, strlen(value)));
         }
 
         public Utf8String(ReadOnlySpan<char> value)
         {
-            _bytes = Array.Empty<byte>(); //TODO: eerhardt
+            _bytes = InitializeBuffer(value);
         }
 
         public Utf8String(char[] value, int startIndex, int length)
         {
-            _bytes = Array.Empty<byte>(); //TODO: eerhardt
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
+            _bytes = InitializeBuffer(new ReadOnlySpan<char>(value, startIndex, length));
         }
 
         [CLSCompliant(false)]
         public unsafe Utf8String(char* value)
         {
-            _bytes = Array.Empty<byte>(); //TODO: eerhardt
+            if (value == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+            }
+
+            _bytes = InitializeBuffer(new ReadOnlySpan<char>(value, wcslen(value)));
         }
 
         public Utf8String(string value)
@@ -58,9 +79,39 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
 
-            _bytes = CreateBufferFromUtf16Common(value.AsSpan(), replaceInvalidSequences: false);
+            _bytes = InitializeBuffer(value.AsSpan());
+        }
 
-            if (_bytes is null)
+        private static byte[] InitializeBuffer(ReadOnlySpan<byte> value)
+        {
+            if (value.IsEmpty)
+            {
+                return Empty._bytes;
+            }
+
+            // Create and populate the Utf8String buffer.
+
+            byte[] newBuffer = AllocateBuffer(value.Length);
+            value.CopyTo(newBuffer);
+
+            // Now perform validation.
+            // Reminder: Perform validation over the copy, not over the source.
+
+            if (!Utf8Utility.IsWellFormedUtf8(newBuffer))
+            {
+                throw new ArgumentException(
+                    message: SR.Utf8String_InputContainedMalformedUtf8,
+                    paramName: nameof(value));
+            }
+
+            return newBuffer;
+        }
+
+        private static byte[] InitializeBuffer(ReadOnlySpan<char> value)
+        {
+            byte[] newBuffer = CreateBufferFromUtf16Common(value, replaceInvalidSequences: false);
+
+            if (newBuffer is null)
             {
                 // Input buffer contained invalid UTF-16 data.
 
@@ -68,6 +119,8 @@ namespace System
                     message: SR.Utf8String_InputContainedMalformedUtf16,
                     paramName: nameof(value));
             }
+
+            return newBuffer;
         }
 
         private Utf8String(byte[] bytes)
@@ -82,7 +135,7 @@ namespace System
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ref byte DangerousGetMutableReference() =>
-            ref MemoryMarshal.GetReference(Length > 0 ? _bytes.AsSpan() : s_EmptyRef);
+            ref MemoryMarshal.GetReference(_bytes.AsSpan());
 
         /// <summary>
         /// Returns a <em>mutable</em> <see cref="Span{Byte}"/> that can be used to populate this
@@ -100,7 +153,7 @@ namespace System
         /// <see cref="Utf8String"/> instance.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ReadOnlySpan<byte> GetSpan() => Length > 0 ? _bytes.AsSpan(0, Length) : s_EmptyRef.Slice(0, 0);
+        internal ReadOnlySpan<byte> GetSpan() => _bytes.AsSpan(0, Length);
 
         /// <summary>
         /// Gets an immutable reference that can be used in a <see langword="fixed"/> statement. The resulting
@@ -129,7 +182,45 @@ namespace System
         private static Utf8String FastAllocate(int length)
         {
             // just simulate a "fast allocate", since this is portable
-            return new Utf8String(new byte[length + 1]);
+            return new Utf8String(AllocateBuffer(length));
+        }
+
+        private static byte[] AllocateBuffer(int length)
+        {
+            // Actual storage allocated is "length + 1" bytes because instances are null-terminated.
+            return new byte[length + 1];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe int wcslen(char* ptr)
+        {
+            // IndexOf processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
+            int length = new ReadOnlySpan<char>(ptr, int.MaxValue).IndexOf('\0');
+            if (length < 0)
+            {
+                ThrowMustBeNullTerminatedString();
+            }
+
+            return length;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe int strlen(byte* ptr)
+        {
+            // IndexOf processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
+            int length = new ReadOnlySpan<byte>(ptr, int.MaxValue).IndexOf((byte)'\0');
+            if (length < 0)
+            {
+                ThrowMustBeNullTerminatedString();
+            }
+
+            return length;
+        }
+
+        [DoesNotReturn]
+        private static void ThrowMustBeNullTerminatedString()
+        {
+            throw new ArgumentException(SR.Arg_MustBeNullTerminatedString);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
