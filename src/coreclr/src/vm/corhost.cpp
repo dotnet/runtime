@@ -44,8 +44,6 @@
 #endif
 
 
-GVAL_IMPL_INIT(DWORD, g_fHostConfig, 0);
-
 #ifndef __GNUC__
 EXTERN_C __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
 #else // !__GNUC__
@@ -62,7 +60,6 @@ UINT32 _tls_index = 0;
 extern void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading);
 extern void PrintToStdOutA(const char *pszString);
 extern void PrintToStdOutW(const WCHAR *pwzString);
-extern BOOL g_fEEHostedStartup;
 
 //***************************************************************************
 
@@ -133,22 +130,6 @@ STDMETHODIMP CorHost2::Start()
     }
     else
     {
-        // Using managed C++ libraries, its possible that when the runtime is already running,
-        // MC++ will use CorBindToRuntimeEx to make callbacks into specific appdomain of its
-        // choice. Now, CorBindToRuntimeEx results in CorHost2::CreateObject being invoked
-        // that will set runtime hosted flag "g_fHostConfig |= CLRHOSTED".
-        //
-        // For the case when managed code started without CLR hosting and MC++ does a
-        // CorBindToRuntimeEx, setting the CLR hosted flag is incorrect.
-        //
-        // Thus, before we attempt to start the runtime, we save the status of it being
-        // already running or not. Next, if we are able to successfully start the runtime
-        // and ONLY if it was not started earlier will we set the hosted flag below.
-        if (!g_fEEStarted)
-        {
-            g_fHostConfig |= CLRHOSTED;
-        }
-
         hr = CorRuntimeHostBase::Start();
         if (SUCCEEDED(hr))
         {
@@ -172,7 +153,7 @@ STDMETHODIMP CorHost2::Start()
     return hr;
 }
 
-// Starts the runtime. This is equivalent to CoInitializeEE();
+// Starts the runtime.
 HRESULT CorRuntimeHostBase::Start()
 {
     CONTRACTL
@@ -188,10 +169,7 @@ HRESULT CorRuntimeHostBase::Start()
     BEGIN_ENTRYPOINT_NOTHROW;
     {
         m_Started = TRUE;
-#ifdef FEATURE_EVENT_TRACE
-        g_fEEHostedStartup = TRUE;
-#endif // FEATURE_EVENT_TRACE
-        hr = InitializeEE(COINITEE_DEFAULT);
+        hr = EnsureEEStarted();
     }
     END_ENTRYPOINT_NOTHROW;
 
