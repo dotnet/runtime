@@ -111,6 +111,6 @@
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

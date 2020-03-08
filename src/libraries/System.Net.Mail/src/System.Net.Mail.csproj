@@ -311,7 +311,4 @@
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
-    <Reference Include="System.Memory" />
-  </ItemGroup>
 </Project>

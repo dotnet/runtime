@@ -32,7 +32,7 @@
     <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" PrivateAssets="all" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
 </Project>

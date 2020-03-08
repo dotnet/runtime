@@ -38,6 +38,11 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.ThreadPool" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Threading.Tasks.Extensions" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

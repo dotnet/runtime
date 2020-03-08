@@ -108,7 +108,7 @@
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XPath" />
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="mscorlib" />

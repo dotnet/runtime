@@ -9,7 +9,7 @@
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions"  />
     <Reference Include="Microsoft.Extensions.FileProviders.Abstractions"  />
     <Reference Include="Microsoft.Extensions.Logging.Abstractions"  />
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces"  />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" PrivateAssets="all" />
   </ItemGroup>
 <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="Microsoft.Extensions.Hosting.Abstractions.netcoreapp.cs" />

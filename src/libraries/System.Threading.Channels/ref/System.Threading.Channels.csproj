@@ -10,9 +10,6 @@
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System.Threading.Channels.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
-    <Reference Include="System.Threading.Tasks.Extensions" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="System.Runtime" />
   </ItemGroup>
@@ -22,5 +19,8 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

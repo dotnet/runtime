@@ -24,11 +24,4 @@
     <ProjectReference Include="..\testassets\MockHostTypes\MockHostTypes.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="System.Threading.Tasks.Extensions" />
-    <Reference Include="System.Security.Cryptography.Cng" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.IO.Pipelines" />
-  </ItemGroup>
-
 </Project>

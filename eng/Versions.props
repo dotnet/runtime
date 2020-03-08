@@ -75,6 +75,11 @@
     <MicrosoftNETSdkILVersion>5.0.0-alpha.1.20076.2</MicrosoftNETSdkILVersion>
     <!-- Libraries dependencies -->
     <runtimenativeSystemIOPortsVersion>5.0.0-alpha.1.19563.3</runtimenativeSystemIOPortsVersion>
+    <SystemBuffersVersion>4.5.0</SystemBuffersVersion>
+    <SystemMemoryVersion>4.5.3</SystemMemoryVersion>
+    <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
+    <SystemThreadingTasksExtensionsVersion>4.5.2</SystemThreadingTasksExtensionsVersion>
+    <MicrosoftBclAsyncInterfacesVersion>1.0.0</MicrosoftBclAsyncInterfacesVersion>
     <!-- Runtime-Assets dependencies -->
     <SystemComponentModelTypeConverterTestDataVersion>5.0.0-beta.20125.1</SystemComponentModelTypeConverterTestDataVersion>
     <SystemDrawingCommonTestDataVersion>5.0.0-beta.20125.1</SystemDrawingCommonTestDataVersion>

@@ -112,7 +112,7 @@
   <ItemGroup>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Diagnostics.DiagnosticSource" />
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />

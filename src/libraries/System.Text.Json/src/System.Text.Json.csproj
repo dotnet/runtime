@@ -224,9 +224,11 @@
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" PrivateAssets="all" />
+    <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" PrivateAssets="all" />
     <Reference Include="System.ValueTuple" />
-    <Reference Include="System.Numerics.Vectors" />
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' or '$(TargetsNetFx)' == 'true' or '$(TargetFramework)' == 'netcoreapp3.0'">
     <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs">
@@ -236,6 +238,8 @@
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />
     <Reference Include="System.Reflection.Emit.Lightweight" />
@@ -243,17 +247,15 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Linq" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Text.Encodings.Web" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 </Project>

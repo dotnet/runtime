@@ -179,7 +179,8 @@
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.MemoryMappedFiles" />
-    <Reference Include="System.Memory" />
+    <Reference Include="System.Memory" Condition="'$(TargetsNetCoreApp)' == 'true' and '$(TargetFramework)' != 'netcoreapp2.0'" />
+    <PackageReference Include="System.Memory" Condition="'$(TargetsNetStandard)' == 'true' or '$(TargetFramework)' == 'netcoreapp2.0'" Version="$(SystemMemoryVersion)" PrivateAssets="all" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />

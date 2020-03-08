@@ -26,20 +26,27 @@
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Memory" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Buffers" />
     <Reference Include="System.Net.WebSockets" />
-    <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
     <Reference Include="System.Threading.Timer" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Numerics.Vectors" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" PrivateAssets="all" />
+    <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" PrivateAssets="all" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

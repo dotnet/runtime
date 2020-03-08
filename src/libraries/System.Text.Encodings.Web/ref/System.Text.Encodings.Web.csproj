@@ -14,6 +14,6 @@
     <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

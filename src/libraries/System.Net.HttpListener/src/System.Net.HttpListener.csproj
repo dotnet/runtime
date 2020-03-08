@@ -33,9 +33,6 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
-    <Reference Include="System.Memory" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Net\BoundaryType.cs" />
     <Compile Include="System\Net\EntitySendFormat.cs" />

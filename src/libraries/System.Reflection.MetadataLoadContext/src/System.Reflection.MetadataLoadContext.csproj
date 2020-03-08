@@ -149,7 +149,8 @@
     <Reference Include="System.Collections.Immutable" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Memory" />
+    <Reference Include="System.Memory" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <PackageReference Include="System.Memory" Condition="'$(TargetsNetStandard)' == 'true'" Version="$(SystemMemoryVersion)" PrivateAssets="all" />
     <Reference Include="System.Reflection.Metadata" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />

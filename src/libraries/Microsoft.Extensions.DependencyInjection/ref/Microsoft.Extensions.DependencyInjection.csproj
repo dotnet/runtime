@@ -10,7 +10,7 @@
 <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="Microsoft.Extensions.DependencyInjection.netstandard2.0.cs" />
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions"  />
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces"  />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" PrivateAssets="all" />
   </ItemGroup>
 <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
     <Compile Include="Microsoft.Extensions.DependencyInjection.netstandard2.1.cs" />

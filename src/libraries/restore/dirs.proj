@@ -6,10 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Project Include="netcoreapp/netcoreapp.depproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
+    <Project Include="netcoreapp/netcoreapp.depproj" Condition="'$(BuildAllConfigurations)' == 'true'"  />
     <Project Include="netstandard/netstandard.depproj" />
     <Project Include="netfx/netfx.depproj" />
-    <Project Include="binplacePackages/binplacePackages.depproj" />
   </ItemGroup>
 
   <Import Project="..\dir.traversal.targets" />

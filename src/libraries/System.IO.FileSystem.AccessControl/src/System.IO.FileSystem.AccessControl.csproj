@@ -64,7 +64,8 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetsNetFx)' != 'true'">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Memory" />
+    <Reference Include="System.Memory" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <PackageReference Include="System.Memory" Condition="'$(TargetsNetStandard)' == 'true'" Version="$(SystemMemoryVersion)" PrivateAssets="all" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading.Tasks" />
   </ItemGroup>

@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
