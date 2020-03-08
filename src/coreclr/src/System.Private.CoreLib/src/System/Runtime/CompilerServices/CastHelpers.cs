@@ -558,6 +558,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void StelemRef_Helper(ref object? element, void* elementType, object obj)
         {
             CastResult result = TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);

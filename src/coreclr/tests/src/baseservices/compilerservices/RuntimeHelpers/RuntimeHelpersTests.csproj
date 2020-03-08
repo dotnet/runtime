@@ -5,9 +5,9 @@
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ExecuteCodeWithGuaranteedCleanup.cs" />
+    <Compile Include="*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <NoWarn Include="42016,42020,42025,42024" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

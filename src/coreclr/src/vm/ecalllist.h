@@ -921,6 +921,7 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("EnsureSufficientExecutionStack", ReflectionInvocation::EnsureSufficientExecutionStack)
     FCFuncElement("TryEnsureSufficientExecutionStack", ReflectionInvocation::TryEnsureSufficientExecutionStack)
     FCFuncElement("GetUninitializedObjectInternal", ReflectionSerialization::GetUninitializedObject)
+    QCFuncElement("AllocateTypeAssociatedMemoryInternal", RuntimeTypeHandle::AllocateTypeAssociatedMemory)
     FCFuncElement("AllocTailCallArgBuffer", TailCallHelp::AllocTailCallArgBuffer)
     FCFuncElement("FreeTailCallArgBuffer", TailCallHelp::FreeTailCallArgBuffer)
     FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
@@ -994,6 +995,14 @@ FCFuncStart(gWinRTTypeNameConverterFuncs)
 FCFuncEnd()
 
 #endif // FEATURE_COMINTEROP
+
+#ifdef FEATURE_COMWRAPPERS
+FCFuncStart(gComWrappersFuncs)
+    QCFuncElement("GetIUnknownImplInternal", ComWrappersNative::GetIUnknownImpl)
+    QCFuncElement("GetOrCreateComInterfaceForObjectInternal", ComWrappersNative::GetOrCreateComInterfaceForObject)
+    QCFuncElement("GetOrCreateObjectForComInstanceInternal", ComWrappersNative::GetOrCreateObjectForComInstance)
+FCFuncEnd()
+#endif // FEATURE_COMWRAPPERS
 
 FCFuncStart(gMngdRefCustomMarshalerFuncs)
     FCFuncElement("CreateMarshaler", MngdRefCustomMarshaler::CreateMarshaler)
@@ -1213,6 +1222,9 @@ FCClassElement("AssemblyName", "System.Reflection", gAssemblyNameFuncs)
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CLRConfig", "System", gClrConfig)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
+#ifdef FEATURE_COMINTEROP
+FCClassElement("ComWrappers", "System.Runtime.InteropServices", gComWrappersFuncs)
+#endif // FEATURE_COMINTEROP
 FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
 FCClassElement("CustomAttribute", "System.Reflection", gCOMCustomAttributeFuncs)
 FCClassElement("CustomAttributeEncodedArgument", "System.Reflection", gCustomAttributeEncodedArgument)

@@ -10,7 +10,7 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
-#include "rcwwalker.h"
+#include "interoplibinterface.h"
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 
