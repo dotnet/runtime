@@ -17,17 +17,21 @@
 
   <Target Name="Restore" DependsOnTargets="GenerateRuntimeOSPropsFile">
     <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
-      <_RestoreProjects Include="$(MSBuildThisFileDirectory)restore\dirs.proj" MSBuildTarget="Build" />
+      <_RestoreBuildProjects Include="$(MSBuildThisFileDirectory)restore\dirs.proj" />
+      <_RestoreProjects Include="@(_RestoreBuildProjects)" />
     </ItemGroup>
 
     <ItemGroup>
-      <_RestoreProjects Include="$(MSBuildThisFileDirectory)dirs.proj" MSBuildTarget="Restore" />
-      <_RestoreProjects Include="$(MSBuildThisFileDirectory)tests.proj" Condition="'$(DotNetBuildFromSource)' != 'true'" MSBuildTarget="Restore" />
+      <_RestoreProjects Include="$(MSBuildThisFileDirectory)dirs.proj" />
+      <_RestoreProjects Include="$(MSBuildThisFileDirectory)tests.proj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
     </ItemGroup>
 
     <MSBuild Projects="@(_RestoreProjects)"
-             Targets="%(_RestoreProjects.MSBuildTarget)"
+             Targets="Restore"
              BuildInParallel="true" />
+
+    <MSBuild Projects="@(_RestoreBuildProjects)"
+             Targets="Build" />
   </Target>
 
   <Target Name="BuildNative">

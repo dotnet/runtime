@@ -1,25 +1,12 @@
 <Project>
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
-
-  <PropertyGroup>
-    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
-  </PropertyGroup>
+  <Import Project="Directory.Build.props" />
 
   <ItemGroup>
-    <ProjectReference Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp/netcoreapp.depproj" />
-    <ProjectReference Include="netstandard/netstandard.depproj" />
-    <ProjectReference Include="netfx/netfx.depproj" />
-    <ProjectReference Include="binplacePackages/binplacePackages.depproj" />
+    <Project Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp/netcoreapp.depproj" />
+    <Project Include="netstandard/netstandard.depproj" />
+    <Project Include="netfx/netfx.depproj" />
+    <Project Include="binplacePackages/binplacePackages.depproj" />
   </ItemGroup>
 
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
-  
-  <!-- Ordering matters! Overwriting the Build target after the Sdk.targets import. -->
-  <Target Name="Build">
-    <MSBuild Targets="Build"
-             Projects="@(ProjectReference)"
-             Properties="%(Project.AdditionalProperties)"
-             BuildInParallel="true"
-             ContinueOnError="ErrorAndStop" />
-  </Target>
+  <Import Project="..\dir.traversal.targets" />
 </Project>
