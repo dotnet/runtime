@@ -395,8 +395,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case InstructionSet_AVX2:
             return impAvxOrAvx2Intrinsic(intrinsic, method, sig);
 
-        case InstructionSet_AES:
-            return impAESIntrinsic(intrinsic, method, sig);
         case InstructionSet_BMI1:
         case InstructionSet_BMI1_X64:
         case InstructionSet_BMI2:
@@ -1383,13 +1381,6 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHO
             break;
     }
     return retNode;
-}
-
-GenTree* Compiler::impAESIntrinsic(NamedIntrinsic intrinsic,
-                                   CORINFO_METHOD_HANDLE method,
-                                   CORINFO_SIG_INFO* sig)
-{
-    return nullptr;
 }
 
 GenTree* Compiler::impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic,
