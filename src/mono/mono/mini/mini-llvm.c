@@ -276,6 +276,8 @@ static LLVMRealPredicate fpcond_to_llvm_cond [] = {
 	LLVMRealUGE,
 	LLVMRealULT,
 	LLVMRealUGT,
+	LLVMRealORD,
+	LLVMRealUNO
 };
 
 static MonoLLVMModule aot_module;
@@ -7456,6 +7458,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = mono_llvm_build_aligned_load (builder, dst_vec, "", FALSE, ins->inst_c0); // inst_c0 is alignment
 			break;
 		}
+		case OP_SSE_MOVSS: {
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (LLVMFloatType (), 0));
+			LLVMValueRef val = mono_llvm_build_load (builder, addr, "", FALSE);
+			values [ins->dreg] = LLVMBuildInsertElement (builder, LLVMConstNull (type_to_sse_type (ins->inst_c1)), val, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			break;
+		}
 
 		case OP_SSE_STORE: {
 			LLVMValueRef dst_vec = convert (ctx, lhs, LLVMPointerType (LLVMTypeOf (rhs), 0));
@@ -7536,24 +7544,146 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_SSE2_ADDS: {
-			gint32 intrinsic = 0;
-			if (ins->inst_c1 == MONO_TYPE_I1)
-				intrinsic = INTRINS_SSE_SADD_SATI8;
-			else if (ins->inst_c1 == MONO_TYPE_U1)
-				intrinsic = INTRINS_SSE_UADD_SATI8;
-			else if (ins->inst_c1 == MONO_TYPE_I2)
-				intrinsic = INTRINS_SSE_SADD_SATI16;
-			else if (ins->inst_c1 == MONO_TYPE_U2)
-				intrinsic = INTRINS_SSE_UADD_SATI16;
-			else
+		case OP_SSE_ADDSS:
+		case OP_SSE_SUBSS:
+		case OP_SSE_DIVSS:
+		case OP_SSE_MULSS:
+		case OP_SSE2_ADDSD: {
+			LLVMValueRef v1 = LLVMBuildExtractElement (builder, lhs, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			LLVMValueRef v2 = LLVMBuildExtractElement (builder, rhs, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+
+			LLVMValueRef v = NULL;
+			switch (ins->opcode) {
+			case OP_SSE_ADDSS:
+			case OP_SSE2_ADDSD:
+				v = LLVMBuildFAdd (builder, v1, v2, "");
+				break;
+			case OP_SSE_SUBSS:
+				v = LLVMBuildFSub (builder, v1, v2, "");
+				break;
+			case OP_SSE_DIVSS:
+				v = LLVMBuildFDiv (builder, v1, v2, "");
+				break;
+			case OP_SSE_MULSS:
+				v = LLVMBuildFMul (builder, v1, v2, "");
+				break;
+			default:
 				g_assert_not_reached ();
+			}
+			values [ins->dreg] = LLVMBuildInsertElement (builder, lhs, v, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			break;
+		}
+
+		case OP_SSE_CMPSS:
+		case OP_SSE2_CMPSD: {
+			int imm = -1;
+			switch (ins->inst_c0) {
+			case CMP_EQ: imm = 0; break;
+			case CMP_GT: imm = 6; break;
+			case CMP_GE: imm = 5; break;
+			case CMP_LT: imm = 1; break;
+			case CMP_LE: imm = 2; break;
+			case CMP_NE: imm = 4; break;
+			case CMP_ORD: imm = 7; break;
+			case CMP_UNORD: imm = 3; break;
+			default: g_assert_not_reached (); break;
+			}
+			LLVMValueRef cmp = LLVMConstInt (LLVMInt8Type (), imm, FALSE);
+			LLVMValueRef args [] = { lhs, rhs, cmp };
+			switch (ins->opcode) {
+			case OP_SSE_CMPSS:
+				values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_CMPSS, args, "");
+				break;
+			case OP_SSE2_CMPSD:
+				values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_CMPSD, args, "");
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_SSE_COMISS: {
+			LLVMValueRef args [] = { lhs, rhs };
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case CMP_EQ: id = INTRINS_SSE_COMIEQ_SS; break;
+			case CMP_GT: id = INTRINS_SSE_COMIGT_SS; break;
+			case CMP_GE: id = INTRINS_SSE_COMIGE_SS; break;
+			case CMP_LT: id = INTRINS_SSE_COMILT_SS; break;
+			case CMP_LE: id = INTRINS_SSE_COMILE_SS; break;
+			case CMP_NE: id = INTRINS_SSE_COMINEQ_SS; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+		case OP_SSE_UCOMISS: {
+			LLVMValueRef args [] = { lhs, rhs };
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case CMP_EQ: id = INTRINS_SSE_UCOMIEQ_SS; break;
+			case CMP_GT: id = INTRINS_SSE_UCOMIGT_SS; break;
+			case CMP_GE: id = INTRINS_SSE_UCOMIGE_SS; break;
+			case CMP_LT: id = INTRINS_SSE_UCOMILT_SS; break;
+			case CMP_LE: id = INTRINS_SSE_UCOMILE_SS; break;
+			case CMP_NE: id = INTRINS_SSE_UCOMINEQ_SS; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+		case OP_XOP_I4_X:
+		case OP_XOP_I8_X: {
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_SSE_CVTSS2SI: id = INTRINS_SSE_CVTSS2SI; break;
+			case SIMD_OP_SSE_CVTTSS2SI: id = INTRINS_SSE_CVTTSS2SI; break;
+			case SIMD_OP_SSE_CVTSS2SI64: id = INTRINS_SSE_CVTSS2SI64; break;
+			case SIMD_OP_SSE_CVTTSS2SI64: id = INTRINS_SSE_CVTTSS2SI64; break;
+			case SIMD_OP_SSE_CVTSD2SI: id = INTRINS_SSE_CVTSD2SI; break;
+			case SIMD_OP_SSE_CVTSD2SI64: id = INTRINS_SSE_CVTSD2SI64; break;
+			case SIMD_OP_SSE_CVTTSD2SI64: id = INTRINS_SSE_CVTTSD2SI64; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, &lhs, "");
+			break;
+		}
+		case OP_XOP_X_X_X:
+		case OP_XOP_X_X_I4:
+		case OP_XOP_X_X_I8: {
+			LLVMValueRef args [] = { lhs, rhs };
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_SSE_CVTSI2SS: id = INTRINS_SSE_CVTSI2SS; break;
+			case SIMD_OP_SSE_CVTSI2SS64: id = INTRINS_SSE_CVTSI2SS64; break;
+			case SIMD_OP_SSE_CVTSI2SD: id = INTRINS_SSE_CVTSI2SD; break;
+			case SIMD_OP_SSE_CVTSI2SD64: id = INTRINS_SSE_CVTSI2SD64; break;
+			case SIMD_OP_SSE_MAXPS: id = INTRINS_SSE_MAXPS; break;
+			case SIMD_OP_SSE_MAXSS: id = INTRINS_SSE_MAXSS; break;
+			case SIMD_OP_SSE_MINPS: id = INTRINS_SSE_MINPS; break;
+			case SIMD_OP_SSE_MINSS: id = INTRINS_SSE_MINSS; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+
+		case OP_SSE2_ADDS: {
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c1) {
+			case MONO_TYPE_I1: id = INTRINS_SSE_SADD_SATI8; break;
+			case MONO_TYPE_U1: id = INTRINS_SSE_UADD_SATI8; break;
+			case MONO_TYPE_I2: id = INTRINS_SSE_SADD_SATI16; break;
+			case MONO_TYPE_U2: id = INTRINS_SSE_UADD_SATI16; break;
+			default: g_assert_not_reached (); break;
+			}
 
 			LLVMValueRef args [2];
 			args [0] = convert (ctx, lhs, type_to_sse_type (ins->inst_c1));
 			args [1] = convert (ctx, rhs, type_to_sse_type (ins->inst_c1));
 			values [ins->dreg] = convert (ctx, 
-				call_intrins (ctx, intrinsic, args, dname),
+				call_intrins (ctx, id, args, dname),
 				type_to_sse_type (ins->inst_c1));
 			break;
 		}
