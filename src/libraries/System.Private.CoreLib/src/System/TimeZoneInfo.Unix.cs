@@ -24,6 +24,7 @@ namespace System
         private const string ZoneTabFileName = "zone.tab";
         private const string TimeZoneEnvironmentVariable = "TZ";
         private const string TimeZoneDirectoryEnvironmentVariable = "TZDIR";
+        private const string FallbackCultureName = "en-US";
 
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {
@@ -80,7 +81,7 @@ namespace System
             }
             _displayName = _standardDisplayName;
 
-            string uiCulture = CultureInfo.CurrentUICulture.Name.Length == 0 ? "en-US" : CultureInfo.CurrentUICulture.Name; // ICU doesn't work nicely with Invariant
+            string uiCulture = CultureInfo.CurrentUICulture.Name.Length == 0 ? FallbackCultureName : CultureInfo.CurrentUICulture.Name; // ICU doesn't work nicely with Invariant
             GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Generic, uiCulture, ref _displayName);
             GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Standard, uiCulture, ref _standardDisplayName);
             GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, uiCulture, ref _daylightDisplayName);
@@ -131,9 +132,9 @@ namespace System
                 nameType,
                 out timeZoneDisplayName);
 
-            if (!result && CultureInfo.CurrentUICulture.Name != "en-US")
+            if (!result && uiCulture != FallbackCultureName)
             {
-                // Try to fallback using en-US just in case we can make it work.
+                // Try to fallback using FallbackCultureName just in case we can make it work.
                 result = Interop.CallStringMethod(
                     (buffer, locale, id, type) =>
                     {
@@ -142,7 +143,7 @@ namespace System
                             return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
                         }
                     },
-                    "en-US",
+                    FallbackCultureName,
                     _id,
                     nameType,
                     out timeZoneDisplayName);

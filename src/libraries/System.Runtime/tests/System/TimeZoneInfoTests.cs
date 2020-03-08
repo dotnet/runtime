@@ -10,6 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
@@ -2271,9 +2272,9 @@ namespace System.Tests
         [Fact]
         public static void TestNameWithInvariantCulture()
         {
-            CultureInfo ci = CultureInfo.CurrentUICulture;
-            try
+            RemoteExecutor.Invoke(() =>
             {
+                CultureInfo ci = CultureInfo.CurrentUICulture;
                 // We call ICU to get the names. When passing invariant culture name to ICU, it fail and we'll use the abbreviated names at that time.
                 // We fixed this issue by avoid sending the invariant culture name to ICU and this test is confirming we work fine at that time.
                 CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
@@ -2284,11 +2285,9 @@ namespace System.Tests
                 Assert.True(pacific.StandardName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.StandardName}' is not the expeted standard name for Pacific time zone");
                 Assert.True(pacific.DaylightName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.DaylightName}' is not the expeted daylight name for Pacific time zone");
                 Assert.True(pacific.DisplayName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.DisplayName}' is not the expeted display name for Pacific time zone");
-            }
-            finally
-            {
-                CultureInfo.CurrentUICulture = ci;
-            }
+
+            }).Dispose();
+
         }
 
         private static void VerifyConvertException<TException>(DateTimeOffset inputTime, string destinationTimeZoneId) where TException : Exception
