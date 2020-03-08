@@ -560,7 +560,8 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
     OUT ULONG32                       * pcMap, // number of entries in ppMap
     OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
     OUT ULONG32                         *pcVars,
-    OUT ICorDebugInfo::NativeVarInfo    **ppVars
+    OUT ICorDebugInfo::NativeVarInfo    **ppVars,
+    BOOL hasFlagByte
     )
 {
     CONTRACTL
@@ -578,21 +579,25 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
     if (ppVars != NULL) *ppVars = NULL;
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-
-    // Check flag byte and skip over any patchpoint info
-    BYTE flagByte = *pDebugInfo;
-    pDebugInfo++;
-
-    if (flagByte == 1)
+    if (hasFlagByte)
     {
-        PTR_PatchpointInfo patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
-        pDebugInfo += patchpointInfo->PatchpointInfoSize();
-    }
-    else
-    {
-        _ASSERTE(flagByte == 0);
+        // Check flag byte and skip over any patchpoint info
+        BYTE flagByte = *pDebugInfo;
+        pDebugInfo++;
+
+        if (flagByte == 1)
+        {
+            PTR_PatchpointInfo patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
+            pDebugInfo += patchpointInfo->PatchpointInfoSize();
+        }
+        else
+        {
+            _ASSERTE(flagByte == 0);
+        }
     }
 
+#else
+    _ASSERTE(!hasFlagByte);
 #endif
 
     NibbleReader r(pDebugInfo, 12 /* maximum size of compressed 2 UINT32s */);

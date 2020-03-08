@@ -96,7 +96,8 @@ public:
         OUT ULONG32                       * pcMap, // number of entries in ppMap
         OUT ICorDebugInfo::OffsetMapping **ppMap, // pointer to newly allocated array
         OUT ULONG32                         *pcVars,
-        OUT ICorDebugInfo::NativeVarInfo    **ppVars
+        OUT ICorDebugInfo::NativeVarInfo    **ppVars,
+        BOOL hasFlagByte
     );
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT

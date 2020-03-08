@@ -3581,12 +3581,20 @@ BOOL EEJitManager::GetBoundariesAndVars(
     if (pDebugInfo == NULL)
         return FALSE;
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    BOOL hasFlagByte = TRUE;
+#else
+    BOOL hasFlagByte = FALSE;
+#endif
+
     // Uncompress. This allocates memory and may throw.
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        hasFlagByte
+    );
 
     return TRUE;
 }
@@ -5521,8 +5529,9 @@ BOOL NativeImageJitManager::GetBoundariesAndVars(
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        FALSE);          // no patchpoint info
 
     return TRUE;
 }
@@ -6735,8 +6744,9 @@ BOOL ReadyToRunJitManager::GetBoundariesAndVars(
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew, pNewData, // allocators
         pDebugInfo,      // input
-        pcMap, ppMap,
-        pcVars, ppVars); // output
+        pcMap, ppMap,    // output
+        pcVars, ppVars,  // output
+        FALSE);          // no patchpoint info
 
     return TRUE;
 }

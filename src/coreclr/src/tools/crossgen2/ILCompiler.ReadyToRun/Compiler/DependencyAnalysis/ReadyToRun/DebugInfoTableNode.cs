@@ -84,13 +84,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods())
             {
                 MemoryStream methodDebugBlob = new MemoryStream();
-
-// #if FEATURE_ON_STACK_REPLACEMENT
-                // First byte of the debug info blob is an OSR flag byte.
-                // Currently always zero when prejitting; there is
-                // no OSR data to follow.
-                methodDebugBlob.WriteByte(0);
-// #endif
                 
                 byte[] bounds = CreateBoundsBlobForMethod(method);
                 byte[] vars = CreateVarBlobForMethod(method);
