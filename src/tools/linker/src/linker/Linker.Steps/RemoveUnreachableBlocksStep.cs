@@ -1151,6 +1151,7 @@ namespace Mono.Linker.Steps
 
 				VariableReference vr;
 				Instruction jmpTarget = null;
+				Instruction linstr;
 
 				foreach (var instr in instructions) {
 					if (jmpTarget != null) {
@@ -1192,23 +1193,42 @@ namespace Mono.Linker.Steps
 						continue;
 
 					case Code.Ldloc_0:
-						PushOnStack (locals [0]);
+						linstr = GetLocalsValue (0, body);
+						if (linstr == null)
+							return false;
+
+						PushOnStack (linstr);
 						continue;
 					case Code.Ldloc_1:
-						PushOnStack (locals [1]);
+						linstr = GetLocalsValue (1, body);
+						if (linstr == null)
+							return false;
+
+						PushOnStack (linstr);
 						continue;
 					case Code.Ldloc_2:
-						PushOnStack (locals [2]);
+						linstr = GetLocalsValue (2, body);
+						if (linstr == null)
+							return false;
+
+						PushOnStack (linstr);
 						continue;
 					case Code.Ldloc_3:
-						PushOnStack (locals [3]);
+						linstr = GetLocalsValue (3, body);
+						if (linstr == null)
+							return false;
+
+						PushOnStack (linstr);
 						continue;
 					case Code.Ldloc:
 					case Code.Ldloc_S:
 						vr = (VariableReference)instr.Operand;
-						PushOnStack (locals [vr.Index]);
-						continue;
+						linstr = GetLocalsValue (vr.Index, body);
+						if (linstr == null)
+							return false;
 
+						PushOnStack (linstr);
+						continue;
 					case Code.Stloc_0:
 						StoreToLocals (0);
 						continue;
@@ -1274,6 +1294,19 @@ namespace Mono.Linker.Steps
 				}
 
 				return false;
+			}
+
+			Instruction GetLocalsValue (int index, MethodBody body)
+			{
+				var instr = locals? [index];
+				if (instr != null)
+					return instr;
+
+				if (!body.InitLocals)
+					return null;
+
+				// local variables don't need to be explicitly initialized
+				return CodeRewriterStep.CreateConstantResultInstruction (body.Variables [index].VariableType);
 			}
 
 			void PushOnStack (Instruction instruction)
