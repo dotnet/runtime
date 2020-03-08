@@ -294,22 +294,16 @@ bool Thread::DetectHandleILStubsForDebugger()
     return false;
 }
 
-extern "C" {
-#ifndef __GNUC__
-__declspec(thread)
-#else // !__GNUC__
-__thread
-#endif // !__GNUC__
-ThreadLocalInfo gCurrentThreadInfo =
-                                              {
-                                                  NULL,    // m_pThread
-                                                  NULL,    // m_pAppDomain
-                                                  NULL,    // m_EETlsData
-                                              };
-} // extern "C"
+#ifndef _MSC_VER
+__thread ThreadLocalInfo gCurrentThreadInfo;
+#endif
 
 // index into TLS Array. Definition added by compiler
 EXTERN_C UINT32 _tls_index;
+
+#ifndef HOST_WINDOWS
+UINT32 _tls_index;
+#endif
 
 #ifndef DACCESS_COMPILE
 
