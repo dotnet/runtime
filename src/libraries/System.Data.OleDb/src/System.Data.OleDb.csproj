@@ -102,9 +102,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Reference Include="Microsoft.Win32.Registry" />
-    <Reference Include="System.Memory" />
     <Reference Include="System.Configuration.ConfigurationManager" />
     <Reference Include="System.Diagnostics.PerformanceCounter" />
     <Reference Include="System.Security.Principal.Windows" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

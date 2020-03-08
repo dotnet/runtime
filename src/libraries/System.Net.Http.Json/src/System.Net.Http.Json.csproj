@@ -14,18 +14,20 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="System\Net\Http\Json\JsonContent.netcoreapp.cs" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Mail" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="System\ArraySegmentExtensions.netstandard.cs" />
-    <Reference Include="System.Buffers" />
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Memory" />
     <Reference Include="System.Text.Json" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 </Project>

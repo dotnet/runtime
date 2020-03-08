@@ -7,7 +7,7 @@
     <ProjectReference Include="..\..\Microsoft.Extensions.DependencyInjection.Abstractions\ref\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="System.Threading.Tasks.Extensions"  />
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces"  />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" />
   </ItemGroup>
 </Project>

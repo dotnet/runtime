@@ -38,7 +38,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Memory" />
+    <Reference Include="System.Memory" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <PackageReference Include="System.Memory" Condition="'$(TargetFramework)' == 'netstandard2.0'" Version="$(SystemMemoryVersion)" />
     <Reference Include="System.Resources.ResourceManager" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">

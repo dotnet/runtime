@@ -3,32 +3,31 @@
     <TargetFrameworks>netstandard2.0;netstandard1.1;netstandard1.3;net45;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0'">true</ExcludeFromPackage>
+    <DefineConstants Condition="$(TargetFramework.StartsWith('net4'))">$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS</DefineConstants>
     <CLSCompliant>false</CLSCompliant>
     <Nullable>enable</Nullable>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net45' or '$(TargetFramework)' == '$(NetFrameworkCurrent)'">
-    <DefineConstants>$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS</DefineConstants>
+    <!--
+      Avoid nuget restore cycle on netstandard1.x
+      System.Diagnostics.DiagnosticSource -> NETStandard.Library 1.6.1 -> System.Net.Http 4.3.0 ->
+      System.Diagnostics.DiagnosticSource (>= 4.3.0)
+    -->
+    <DisableImplicitFrameworkReferences Condition="$(TargetFramework.StartsWith('netstandard1'))">true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Diagnostics.DiagnosticSource.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1'">
     <Compile Include="System.Diagnostics.DiagnosticSourceActivity.cs" />
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net45' or '$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="mscorlib" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
     <Reference Include="System.Runtime" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
-    <Reference Include="netstandard" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard1.3'">
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime" />
+    <PackageReference Include="System.Runtime" Version="$(SystemRuntimeVersion)" />
+    <PackageReference Include="System.Runtime.InteropServices" Version="$(SystemRuntimeInteropServicesVersion)" />
   </ItemGroup>
 </Project>

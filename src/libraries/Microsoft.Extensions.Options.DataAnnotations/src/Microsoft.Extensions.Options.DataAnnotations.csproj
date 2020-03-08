@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
@@ -11,7 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.ComponentModel.Annotations" />
+    <Reference Include="System.ComponentModel.Annotations" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
+    <PackageReference Include="System.ComponentModel.Annotations" Condition="$(TargetFramework.StartsWith('netstandard'))" Version="$(SystemComponentModelAnnotationsVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">

@@ -3,22 +3,34 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent);net461;netstandard2.0;netstandard2.1</TargetFrameworks>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
-
     <ILEmitBackend Condition="$(TargetFramework) != 'netstandard2.0'">True</ILEmitBackend>
-    <DefineConstants Condition="'$(ILEmitBackend)' == 'True'">$(DefineConstants);IL_EMIT</DefineConstants>
-
     <!-- Debug IL generation -->
     <ILEmitBackendSaveAssemblies>False</ILEmitBackendSaveAssemblies>
+    <DefineConstants Condition="'$(ILEmitBackend)' == 'True'">$(DefineConstants);IL_EMIT</DefineConstants>
     <DefineConstants Condition="'$(TargetsNetFx)' == 'true' AND '$(ILEmitBackendSaveAssemblies)' == 'True'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="**\*.cs" />
+    <Compile Remove="ServiceLookup\ILEmit\**\*.cs" />
+
+    <Compile Condition="'$(ILEmitBackend)' == 'True'" Include="ServiceLookup\ILEmit\*.cs" />
+
+    <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs">
+      <Link>Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\TypeNameHelper\TypeNameHelper.cs">
+      <Link>Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs</Link>
+    </Compile>
+  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true' Or '$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true' or '$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
@@ -40,20 +52,6 @@
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="**\*.cs" />
-    <Compile Remove="ServiceLookup\ILEmit\**\*.cs" />
-
-    <Compile Condition="'$(ILEmitBackend)' == 'True'" Include="ServiceLookup\ILEmit\*.cs" />
-
-    <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs">
-      <Link>Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Extensions\TypeNameHelper\TypeNameHelper.cs">
-      <Link>Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs</Link>
-    </Compile>
   </ItemGroup>
 
 </Project>

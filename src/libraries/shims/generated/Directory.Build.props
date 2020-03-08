@@ -10,6 +10,16 @@
 
   <Import Project="..\Directory.Build.props" />
 
+  <!-- Download the .NET Framework RefPack to build against the contract. -->
+  <ItemGroup>
+    <PackageDownload Include="NETStandard.Library"
+                     Condition="'$(MSBuildProjectName)' == 'netstandard'"
+                     Version="[$(NETStandardLibraryVersion)]" />
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.$(NetFrameworkCurrent)"
+                     Condition="'$(MSBuildProjectName)' != 'netstandard'"
+                     Version="[$(MicrosoftNetFrameworkReferenceAssembliesVersion)]" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- reference everything but self -->
     <!-- Type duplicated in Microsoft.Extensions.DependencyModel. Exclude it for now: https://github.com/dotnet/runtime/issues/34420 -->

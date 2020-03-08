@@ -7,6 +7,5 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.CompilerServices.Unsafe.cs" />
-    <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

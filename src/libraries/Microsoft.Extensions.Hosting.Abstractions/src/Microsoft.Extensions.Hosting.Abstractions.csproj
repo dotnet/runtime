@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0</TargetFrameworks>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <RootNamespace>Microsoft.Extensions.Hosting</RootNamespace>
     <EnableDefaultItems>true</EnableDefaultItems>
@@ -17,8 +17,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>
 
 </Project>

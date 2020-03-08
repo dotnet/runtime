@@ -435,13 +435,15 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Reference Include="System.Buffers" />
+    <Reference Include="System.Buffers" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <PackageReference Include="System.Buffers" Condition="'$(TargetFramework)' == 'netstandard2.0'" Version="$(SystemBuffersVersion)" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Linq" />
-    <Reference Include="System.Memory" />
+    <Reference Include="System.Memory" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <PackageReference Include="System.Memory" Condition="'$(TargetFramework)' == 'netstandard2.0'" Version="$(SystemMemoryVersion)" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />

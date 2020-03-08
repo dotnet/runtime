@@ -108,8 +108,8 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.ValueTuple" />
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Microsoft\IO\Enumeration\" />

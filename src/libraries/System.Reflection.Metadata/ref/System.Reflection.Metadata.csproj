@@ -15,11 +15,11 @@
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Collections.Immutable\ref\System.Collections.Immutable.csproj" />
   </ItemGroup>
+  <!-- Include these transitive dependencies to overrule NuGet's ProjectReference over PackageReferene behavior. -->
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.1'">
-    <Reference Include="System.IO" />
-    <Reference Include="System.Reflection.Primitives" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Text.Encoding" />
+    <PackageReference Include="System.Runtime" Version="$(SystemRuntimeVersion)" />
+    <PackageReference Include="System.Collections" Version="$(SystemCollectionsVersion)" />
+    <PackageReference Include="System.Runtime.InteropServices" Version="$(SystemRuntimeInteropServicesVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
     <ProjectReference Include="..\..\System.Collections.Immutable\ref\System.Collections.Immutable.csproj" />

@@ -102,13 +102,15 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or ('$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' == 'true')">
     <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Buffers" />
+    <Reference Include="System.Buffers" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <PackageReference Include="System.Buffers" Condition="'$(TargetsNetStandard)' == 'true'" Version="$(SystemBuffersVersion)" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Console" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Memory" />
+    <Reference Include="System.Memory" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <PackageReference Include="System.Memory" Condition="'$(TargetsNetStandard)' == 'true'" Version="$(SystemMemoryVersion)" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />

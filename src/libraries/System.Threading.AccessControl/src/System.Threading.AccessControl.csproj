@@ -37,7 +37,7 @@
     <Compile Include="System\Threading\ThreadingAclExtensions.net46.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Principal.Windows" />
   </ItemGroup>

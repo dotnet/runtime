@@ -80,6 +80,29 @@
     <MicrosoftFileFormatsVersion>1.0.120601</MicrosoftFileFormatsVersion>
     <!-- Libraries dependencies -->
     <runtimenativeSystemIOPortsVersion>5.0.0-alpha.1.19563.3</runtimenativeSystemIOPortsVersion>
+    <SystemBuffersVersion>4.5.0</SystemBuffersVersion>
+    <SystemCollectionsVersion>4.3.0</SystemCollectionsVersion>
+    <SystemCollectionsConcurrentVersion>4.3.0</SystemCollectionsConcurrentVersion>
+    <SystemComponentModelAnnotationsVersion>4.7.0</SystemComponentModelAnnotationsVersion>
+    <SystemDiagnosticsContractsVersion>4.3.0</SystemDiagnosticsContractsVersion>
+    <SystemDiagnosticsDebugVersion>4.3.0</SystemDiagnosticsDebugVersion>
+    <SystemDiagnosticsTracingVersion>4.3.0</SystemDiagnosticsTracingVersion>
+    <SystemDynamicRuntimeVersion>4.3.0</SystemDynamicRuntimeVersion>
+    <SystemMemoryVersion>4.5.3</SystemMemoryVersion>
+    <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
+    <SystemObjectModelVersion>4.3.0</SystemObjectModelVersion>
+    <SystemResourcesResourceManagerVersion>4.3.0</SystemResourcesResourceManagerVersion>
+    <SystemRuntimeVersion>4.3.0</SystemRuntimeVersion>
+    <SystemRuntimeExtensionsVersion>4.3.0</SystemRuntimeExtensionsVersion>
+    <SystemRuntimeInteropServicesVersion>4.3.0</SystemRuntimeInteropServicesVersion>
+    <SystemRuntimeInteropServicesWindowsRuntimeVersion></SystemRuntimeInteropServicesWindowsRuntimeVersion>
+    <SystemRuntimeSerializationPrimitivesVersion>4.3.0</SystemRuntimeSerializationPrimitivesVersion>
+    <SystemRuntimeWindowsRuntimeVersion>4.3.0</SystemRuntimeWindowsRuntimeVersion>
+    <SystemSecurityCryptographyCngVersion>4.5.0</SystemSecurityCryptographyCngVersion>
+    <SystemSecurityCryptographyPkcsVersion>4.5.2</SystemSecurityCryptographyPkcsVersion>
+    <SystemThreadingVersion>4.3.0</SystemThreadingVersion>
+    <SystemThreadingTasksExtensionsVersion>4.5.2</SystemThreadingTasksExtensionsVersion>
+    <MicrosoftBclAsyncInterfacesVersion>1.0.0</MicrosoftBclAsyncInterfacesVersion>
     <!-- Runtime-Assets dependencies -->
     <SystemComponentModelTypeConverterTestDataVersion>5.0.0-beta.20206.1</SystemComponentModelTypeConverterTestDataVersion>
     <SystemDrawingCommonTestDataVersion>5.0.0-beta.20206.1</SystemDrawingCommonTestDataVersion>

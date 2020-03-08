@@ -18,6 +18,9 @@
     <GenFacadesForceZeroVersionSeeds Condition="'$(MSBuildProjectName)' != 'netstandard'">true</GenFacadesForceZeroVersionSeeds>
     <IncludeDefaultReferences>false</IncludeDefaultReferences>
     <HasMatchingContract>true</HasMatchingContract>
+    <!-- Override RefPaths to point to the targeting packs. -->
+    <NetFxRefPath>$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.$(NetFrameworkCurrent)\$(MicrosoftNetFrameworkReferenceAssembliesVersion)\build\.NETFramework\v4.7.2\</NetFxRefPath>
+    <NETStandard21RefPath>$(NuGetPackageRoot)netstandard.library\$(NETStandardLibraryVersion)\build\netstandard2.1\ref\</NETStandard21RefPath>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'System.Runtime' or '$(MSBuildProjectName)' == 'mscorlib' or '$(MSBuildProjectName)' == 'netstandard'">

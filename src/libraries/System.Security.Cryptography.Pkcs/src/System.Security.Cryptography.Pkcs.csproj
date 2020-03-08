@@ -389,32 +389,33 @@
     <Reference Include="System.Security" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard2.1'">
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Numerics" />
+    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Security.Cryptography.Csp" />
-    <Reference Include="System.Security.Cryptography.Encoding" />
-    <Reference Include="System.Security.Cryptography.X509Certificates" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Threading" />
     <Reference Include="System.Linq" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetFramework)' != 'netstandard2.1'">
-    <Reference Include="System.Buffers" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Reference Include="System.Memory" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <Reference Include="System.Runtime.Numerics" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Cng" />
+    <Reference Include="System.Security.Cryptography.Csp" />
+    <Reference Include="System.Security.Cryptography.Encoding" />
+    <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Buffers"  Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs">

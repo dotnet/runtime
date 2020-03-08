@@ -93,6 +93,7 @@
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.TraceSource" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <Reference Include="System.Net.Requests" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
@@ -102,13 +103,12 @@
     <Reference Include="System.Security.Cryptography.Csp" />
     <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.Primitives" />
-    <Reference Include="System.Security.Cryptography.Pkcs" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="$(SystemSecurityCryptographyPkcsVersion)" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Security.Permissions" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XPath" />
-    <Reference Include="System.Memory" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="mscorlib" />

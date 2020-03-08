@@ -96,16 +96,22 @@
     <Reference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Principal.Windows" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Memory" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

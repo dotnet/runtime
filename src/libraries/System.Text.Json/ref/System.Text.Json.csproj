@@ -11,11 +11,10 @@
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
-    <Reference Include="mscorlib" />
-    <Reference Include="netstandard" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
+    <Reference Include="mscorlib" Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" />
   </ItemGroup>
   <!-- Since S.T.E.W continues to be built live within this repo (as both an in-box library and a standalone netstandard2.0 assembly),
     we should use ProjectReference instead of Reference to make sure that its ref assembly gets built first before S.T.Json, regardless of the TFM. -->

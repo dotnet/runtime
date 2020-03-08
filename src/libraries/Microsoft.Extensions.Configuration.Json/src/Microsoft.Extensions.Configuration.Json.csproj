@@ -12,14 +12,18 @@
     <Reference Include="Microsoft.Extensions.Configuration.Abstractions" />
     <Reference Include="Microsoft.Extensions.Configuration.FileExtensions" />
     <Reference Include="Microsoft.Extensions.FileProviders.Abstractions" />
-    <Reference Include="System.Memory" />
     <Reference Include="System.Text.Json" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Linq" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
 </Project>

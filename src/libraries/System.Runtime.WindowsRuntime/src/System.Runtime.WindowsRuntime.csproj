@@ -87,7 +87,6 @@
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
-    <PackageReference Include="Microsoft.TargetingPack.Private.WinRT" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
@@ -95,12 +94,16 @@
     <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj" />
     <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj" />
   </ItemGroup>
+  <!-- Include these transitive dependencies to overrule NuGet's ProjectReference over PackageReferene behavior. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.2'">
+    <PackageReference Include="System.Runtime" Version="$(SystemRuntimeVersion)" />
+    <PackageReference Include="System.Runtime.Extensions" Version="$(SystemRuntimeExtensionsVersion)" />
+    <PackageReference Include="System.ObjectModel" Version="$(SystemObjectModelVersion)" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.IO" />
-    <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <PackageReference Include="Microsoft.TargetingPack.Private.WinRT" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" PrivateAssets="all" />
     <ProjectReference Include="..\..\mscorlib.WinRT-Facade\ref\mscorlib.WinRT-Facade.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.TargetingPack.Private.WinRT" Version="$(MicrosoftTargetingPackPrivateWinRTVersion)" />
   </ItemGroup>
 </Project>

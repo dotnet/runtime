@@ -145,13 +145,13 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Numerics.Vectors" />
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
-    <Reference Include="System.Numerics.Vectors" />
+    <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">

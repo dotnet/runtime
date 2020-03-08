@@ -108,7 +108,8 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="System.Memory" />
+  <ItemGroup>
+    <PackageReference Include="System.Diagnostics.Contracts" Condition="$(TargetFramework.StartsWith('netstandard1.'))" Version="$(SystemDiagnosticsContractsVersion)" />
+    <PackageReference Include="System.Memory" Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

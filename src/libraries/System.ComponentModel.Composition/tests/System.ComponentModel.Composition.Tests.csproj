@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
-    <DefaultReferenceExclusions Include="System.ComponentModel.Composition" />
+    <DefaultReferenceExclusion Include="System.ComponentModel.Composition" />
     <ReferenceFromRuntime Include="System.ComponentModel.Composition" />
   </ItemGroup>
   <ItemGroup>

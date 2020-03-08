@@ -6,6 +6,6 @@
     <Compile Include="System.Net.WebSockets.WebSocketProtocol.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

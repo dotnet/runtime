@@ -24,6 +24,7 @@
       <DefaultReference Condition="('$(TargetsNetStandard)' == 'true' or '$(IsReferenceAssembly)' != 'true') and Exists('$(RefPath)netstandard.dll')" Include="netstandard" />
     </ItemGroup>
   </Target>
+  
   <Target Name="UpdateReferenceItems" DependsOnTargets="SetupDefaultReferences" BeforeTargets="AddReferencesDynamically">
     <ItemGroup>
       <Reference Include="@(DefaultReference)" />
@@ -36,30 +37,28 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="AddDefaultTestReferences" BeforeTargets="SetupDefaultReferences" Condition="'$(IsTestProject)' == 'true'">
+  <Target Name="AddDefaultReferences"
+          BeforeTargets="SetupDefaultReferences"
+          Condition="'$(IsTestProject)' == 'true' or
+                    ('$(IsSourceProject)' == 'true' and '$(DisableImplicitFrameworkReferences)' != 'true')">
     <ItemGroup>
-      <DefaultReferenceExclusions Include="@(ReferenceFromRuntime)"/>
-
-      <!-- Reference everything in the targeting pack directory -->
-      <DefaultReferenceDirs Include="$(RefPath)" />
-      <DefaultReferenceItems Include="%(DefaultReferenceDirs.Identity)/*.dll" />
-
-      <DefaultReferenceExclusions>
-        <RefDir>%(DefaultReferenceDirs.Identity)</RefDir>
-      </DefaultReferenceExclusions>
-      <_defaultReferenceExclusionsFullPath Include="%(DefaultReferenceExclusions.RefDir)%(DefaultReferenceExclusions.Identity).dll" />
+      <!-- Reference everything in the targeting pack directory. Don't reference the same contract assembly. -->
+      <DefaultReferenceItem Include="$(RefPath)*.dll" Exclude="$(RefPath)$(TargetFileName)" />
 
       <!-- Ensure conflict resolution can see these references. -->
-      <Reference Include="%(DefaultReferenceItems.FullPath)" Private="false" />
+      <Reference Include="%(DefaultReferenceItem.FullPath)" Private="false" />
     </ItemGroup>
   </Target>
 
-  <Target Name="RemoveConflictResolutionAssetsForTests"
+  <Target Name="RemoveDefaultReferenceExclusions"
           AfterTargets="_HandlePackageFileConflicts"
-          DependsOnTargets="AddDefaultTestReferences"
-          Condition="'@(_defaultReferenceExclusionsFullPath)' != ''">
+          Condition="'@(DefaultReferenceExclusion)' != '' or '@(ReferenceFromRuntime)' != ''">
     <ItemGroup>
-      <Reference Remove="@(_defaultReferenceExclusionsFullPath)" />
+      <_referenceWithExclusion Include="@(Reference);@(ReferenceFromRuntime)">
+        <Exclusion>%(DefaultReferenceExclusion.Identity)</Exclusion>
+      </_referenceWithExclusion>
+      <_referenceWithExclusionFiltered Include="@(_referenceWithExclusion)" Condition="'%(Filename)' == '%(Exclusion)'" />
+      <Reference Remove="@(_referenceWithExclusionFiltered)" />
     </ItemGroup>
   </Target>
 

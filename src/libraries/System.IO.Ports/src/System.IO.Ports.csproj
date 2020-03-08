@@ -187,7 +187,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Reference Include="Microsoft.Win32.Registry" />
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true'">

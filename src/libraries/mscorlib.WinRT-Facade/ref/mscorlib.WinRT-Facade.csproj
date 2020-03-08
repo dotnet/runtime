@@ -14,7 +14,7 @@
   <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
-    <Reference Include="System.Runtime" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0'">
+    <PackageReference Include="System.Runtime" Version="$(SystemRuntimeVersion)" />
   </ItemGroup>
 </Project>

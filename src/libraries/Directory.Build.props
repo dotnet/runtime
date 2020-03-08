@@ -194,35 +194,20 @@
     <NoWarn Condition="'$(TargetsNetFx)' == 'true' or '$(TargetsNetStandard)' == 'true'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
-  <!-- Set up Default symbol and optimization for Configuration -->
-  <Choose>
-    <When Condition="'$(Configuration)' == 'Debug'">
-      <PropertyGroup>
-        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-        <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
-        <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
-        <DefineConstants>$(DefineConstants),TRACE,DEBUG</DefineConstants>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(Configuration)' == 'Release'">
-      <PropertyGroup>
-        <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-        <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
-        <DebugType Condition="'$(DebugType)' == ''">pdbonly</DebugType>
-        <DefineConstants>$(DefineConstants),TRACE</DefineConstants>
-      </PropertyGroup>
-    </When>
-  </Choose>
+  <PropertyGroup>
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+    <DebugType Condition="'$(DebugType)' == '' and '$(Configuration)' == 'Debug'">full</DebugType>
+    <DebugType Condition="'$(DebugType)' == '' and '$(Configuration)' == 'Release'">pdbonly</DebugType>
+  </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->
   <PropertyGroup>
     <NoStdLib>true</NoStdLib>
     <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
-    <CopyNuGetImplementations>false</CopyNuGetImplementations>
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
-    <!-- Don't reference implicit framework packages, all projects in this repo must be explicit -->
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <!-- Don't reference implicit framework packages for netcoreapp latest as those should be explicit. -->
+    <DisableImplicitFrameworkReferences Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">true</DisableImplicitFrameworkReferences>
     <!-- We can't generate an apphost without restoring the targeting pack. -->
     <UseAppHost>false</UseAppHost>
   </PropertyGroup>
@@ -356,7 +341,7 @@
     so they can't inadvertently take a dependency on it.)
   -->
   <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(IncludeUtf8StringAsmRef)' != 'true'">
-    <DefaultReferenceExclusions Include="System.Utf8String.Experimental" />
+    <DefaultReferenceExclusion Include="System.Utf8String.Experimental" />
   </ItemGroup>
 
   <PropertyGroup>

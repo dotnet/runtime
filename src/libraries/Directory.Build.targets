@@ -44,6 +44,12 @@
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
 
+  <!-- Filter out contract assemblies that we still live build: https://github.com/dotnet/runtime/issues/34253. -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard' and $(TargetFrameworkVersion.StartsWith('v2.'))">
+    <DefaultReferenceExclusion Include="System.ComponentModel.Composition" />
+    <DefaultReferenceExclusion Include="System.Reflection.DispatchProxy" />
+  </ItemGroup>
+
   <!-- Corefx-specific binplacing properties -->
   <PropertyGroup>
     <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' and '$(IsReferenceAssembly)' != 'true' and '$(BinPlaceRef)' != 'true' and '$(IsTestProject)' != 'true'">true</IsRuntimeAssembly>

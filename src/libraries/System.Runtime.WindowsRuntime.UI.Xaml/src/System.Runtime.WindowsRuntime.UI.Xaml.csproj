@@ -40,6 +40,7 @@
     <Reference Include="System.IO" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime.WindowsRuntime" />
+    <Reference Include="System.Runtime.WindowsRuntime" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
+    <PackageReference Include="System.Runtime.WindowsRuntime" Condition="'$(TargetFramework)' == 'netstandard1.1'" Version="$(SystemRuntimeWindowsRuntimeVersion)" />
   </ItemGroup>
 </Project>

@@ -168,7 +168,6 @@
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.Primitives" />
@@ -179,7 +178,6 @@
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.MemoryMappedFiles" />
-    <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
@@ -189,5 +187,13 @@
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Memory" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'netcoreapp2.0'">
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

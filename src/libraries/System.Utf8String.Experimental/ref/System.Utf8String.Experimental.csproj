@@ -21,7 +21,7 @@
     <Compile Include="System.Utf8String.Experimental.netcoreapp5.0.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
     <Reference Include="netstandard" />

@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime" Condition="!$(TargetFramework.StartsWith('netstandard'))" />
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
     <ILResourceReference Include="$(Refpath)\$(TargetFileName)" />
   </ItemGroup>

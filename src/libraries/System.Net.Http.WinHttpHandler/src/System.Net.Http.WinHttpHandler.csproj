@@ -111,9 +111,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <Reference Include="System.Diagnostics.DiagnosticSource" />
-    <Reference Include="System.Memory" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />

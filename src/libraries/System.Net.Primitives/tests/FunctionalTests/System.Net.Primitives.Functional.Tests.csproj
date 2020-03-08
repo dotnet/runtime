@@ -28,7 +28,4 @@
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Memory" />
-  </ItemGroup>
 </Project>

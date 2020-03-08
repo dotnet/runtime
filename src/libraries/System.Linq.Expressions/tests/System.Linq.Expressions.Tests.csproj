@@ -7,7 +7,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Linq.Expressions" />
+    <DefaultReferenceExclusion Include="System.Linq.Expressions" />
     <ReferenceFromRuntime Include="System.Linq.Expressions" />
   </ItemGroup>
   <ItemGroup>
