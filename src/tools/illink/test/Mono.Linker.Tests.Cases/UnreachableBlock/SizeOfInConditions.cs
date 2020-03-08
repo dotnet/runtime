@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock {
 	[SetupLinkerSubstitutionFile ("SizeOfInConditions.net_4_x.xml")]
 #endif
 	[SetupCompileArgument ("/unsafe")]
-	[SetupLinkerArgument ("--enable-opt", "ipconstantpropagation")]
+	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	public unsafe class SizeOfInConditions {
 		public static void Main ()
 		{

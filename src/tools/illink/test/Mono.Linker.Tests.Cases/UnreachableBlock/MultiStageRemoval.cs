@@ -5,7 +5,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 {
 	[SetupCSharpCompilerToUse ("csc")]
 	[SetupCompileArgument ("/optimize+")]
-	[SetupLinkerArgument ("--enable-opt", "ipconstantpropagation")]
+	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	public class MultiStageRemoval
 	{
 		public static void Main()

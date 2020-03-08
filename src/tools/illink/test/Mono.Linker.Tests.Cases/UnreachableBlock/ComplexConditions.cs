@@ -6,7 +6,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.UnreachableBlock
 {
 	[SetupCompileArgument ("/optimize-")] // Relying on debug csc behaviour
-	[SetupLinkerArgument ("--enable-opt", "ipconstantpropagation")]
+	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	public class ComplexConditions
 	{
 		public static void Main ()
