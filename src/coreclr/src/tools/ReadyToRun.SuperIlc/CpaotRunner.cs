@@ -9,7 +9,6 @@ using System.Linq;
 
 namespace ReadyToRun.SuperIlc
 {
-
     /// <summary>
     /// Compiles assemblies using the Cross-Platform AOT compiler
     /// </summary>
@@ -95,9 +94,13 @@ namespace ReadyToRun.SuperIlc
             }
             foreach (string folder in uniqueFolders)
             {
-                foreach (var reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(folder))
+                foreach (string reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(folder))
                 {
-                    yield return $"-{referenceOption}:{reference}";
+                    string simpleName = Path.GetFileNameWithoutExtension(reference);
+                    if (!FrameworkExclusion.Exclude(simpleName, Index, out string reason))
+                    {
+                        yield return $"-{referenceOption}:{reference}";
+                    }
                 }
             }
 
@@ -116,11 +119,15 @@ namespace ReadyToRun.SuperIlc
         {
             char referenceOption = (_options.Composite ? 'u' : 'r');
             List<string> references = new List<string>();
-            foreach (var referenceFolder in _referenceFolders)
+            foreach (string referenceFolder in _referenceFolders)
             {
-                foreach (var reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(referenceFolder))
+                foreach (string reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(referenceFolder))
                 {
-                    references.Add($"-{referenceOption}:{reference}");
+                    string simpleName = Path.GetFileNameWithoutExtension(reference);
+                    if (!FrameworkExclusion.Exclude(simpleName, Index, out string reason))
+                    {
+                        references.Add($"-{referenceOption}:{reference}");
+                    }
                 }
             }
             return references;
