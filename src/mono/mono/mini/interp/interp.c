@@ -3593,6 +3593,7 @@ main_loop:
 				MonoException *ex = mono_error_convert_to_exception (error);
 				if (ex)
 					THROW_EX (ex, ip);
+				EXCEPTION_CHECKPOINT;
 			}
 			ip += 2;
 			const gboolean realloc_frame = new_method->alloca_size > frame->imethod->alloca_size;
