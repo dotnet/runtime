@@ -2269,7 +2269,7 @@ namespace System.Tests
             Assert.True(ReferenceEquals(TimeZoneInfo.FindSystemTimeZoneById("UTC"), TimeZoneInfo.Utc));
         }
 
-        // We test the exsitance of a specific English time zone name to avoid failures on non-English platforms.
+        // We test the existance of a specific English time zone name to avoid failures on non-English platforms.
         [ConditionalFact(nameof(IsEnglishUILanguage))]
         public static void TestNameWithInvariantCulture()
         {
@@ -2283,9 +2283,9 @@ namespace System.Tests
 
                 TimeZoneInfo pacific = TimeZoneInfo.FindSystemTimeZoneById(s_strPacific);
 
-                Assert.True(pacific.StandardName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.StandardName}' is not the expeted standard name for Pacific time zone");
-                Assert.True(pacific.DaylightName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.DaylightName}' is not the expeted daylight name for Pacific time zone");
-                Assert.True(pacific.DisplayName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.DisplayName}' is not the expeted display name for Pacific time zone");
+                Assert.True(pacific.StandardName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.StandardName}' is not the expected standard name for Pacific time zone");
+                Assert.True(pacific.DaylightName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.DaylightName}' is not the expected daylight name for Pacific time zone");
+                Assert.True(pacific.DisplayName.IndexOf("Pacific", StringComparison.OrdinalIgnoreCase) >= 0, $"'{pacific.DisplayName}' is not the expected display name for Pacific time zone");
 
             }).Dispose();
 
