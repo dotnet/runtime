@@ -272,8 +272,8 @@ if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
 if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
-    add_subdirectory(System.Security.Cryptography.Native)
 endif()
+    add_subdirectory(System.Security.Cryptography.Native)
 endif()
 
 if(CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_IOS)
