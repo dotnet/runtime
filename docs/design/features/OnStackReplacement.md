@@ -17,7 +17,7 @@ some prototype investigations, and describes how OSR might be used to re-host
 Edit and Continue and support more general transitions like deoptimization.
 
 * [Background](#1-Background)
-* [Design Prinicples](#2-Design-Principles)
+* [Design Principles](#2-Design-Principles)
 * [An Overview of OSR](#3-An-Overview-of-OSR)
 * [Complications](#4-Complications)
 * [The Prototype](#5-The-Prototype)
@@ -141,11 +141,13 @@ in the IL. Additional state like the return address, implicit arguments, and so
 on must also be accounted for.
 
 As with GC safepoints, patchpoints can be handled in a _fully interruptible_
-manner here most any instruction boundary is a patchpoint, or a _partially
+manner where most any instruction boundary is a patchpoint, or a _partially
 interruptible_ manner, where only some instruction boundaries are patchpoints.
 Also, as with GC, it is acceptable (if suboptimal) to over-identify the live
 state at a patch point. For instance, the live set can include values that never
-end up being consumed by the new method.
+end up being consumed by the new method (the upshot here is that we can simply
+decide all the visible IL state is live everywhere, and so avoid running
+liveness analysis in Tier0.)
 
 Also, as with GC safepoints, it is desirable to keep the volume of information
 that must be retained to describe patchpoints to a minimum. Most methods
@@ -162,13 +164,13 @@ so that the method itself cannot execute indefinitely between patchpoints. Note
 by this rule, methods that do not contain any loops will not have any
 patchpoints.
 
-From a compilation standpoint, it would be ideal if patchpoints were also stack
-empty points, as this tends to minimize the live state. However, there is no
-guarantee that execution of a method will reach stack empty points with any
-frequency. So, a fully general patchpoint mechanism must handle the case where
-the evaluation stack is not empty. However, it may be acceptable to only allow
-patchpoints at stack empty points, as loops that execute with non-empty
-evaluation stacks are likely rare.
+From a compilation standpoint, it would be ideal if patchpoints were also IL
+stack empty points, as this tends to minimize and regularize the live state.
+However, there is no guarantee that execution of a method will reach stack empty
+points with any frequency. So, a fully general patchpoint mechanism must handle
+the case where the evaluation stack is not empty. However, it may be acceptable
+to only allow patchpoints at stack empty points, as loops that execute with
+non-empty evaluation stacks are likely rare.
 
 It is also beneficial if patchpoint selection works via a fairly simple set of
 rules, and here we propose that using the set of _lexical back edges_ or
@@ -179,18 +181,20 @@ When generating unoptimized code, it is thus sufficient to note the target of
 any backwards branch in IL, the set of those locations (filtered to just the
 subset where the IL stack is empty) are the candidate patchpoints in the method.
 
-With the above restrictions, the live state at every patchpoint in the method
-can be reported in the same way. And because the patchpoints are necessarily at
-basic block boundaries, and the jit will not allocate user state to registers
-across such boundaries, patchpoint reporting in these cases is _untracked_
-(corresponds to untracked GC lifetime): that is to say, a single patchpoint
-descriptor suffices for the entire method. Further, this information is a
-superset of the current GC info, so the additional data needed to describe a
-patchpoint is simply the set of live non-GC slots on the stack.
+We can also rely on the fact that in our current unoptimized code, no IL state
+is kept in registers across IL stack empty points&mdash;all the IL state is
+stored in the native stack frame. This means that each patchpoint's live state
+description is the same&mdash;he set of stack frame locations holding the IL
+state.
+
+So, with the above restrictions, a single patchpoint descriptor suffices for the
+entire method (analogous to the concept of _untracked_ GC lifetimes in the GC
+info). Further, this information is a superset of the current GC info, so the
+additional data needed to describe a patchpoint is simply the set of live non-GC
+slots on the native stack frame.
 
 [Note: more general schemes like _deopt_ will require something more
 sophisticated.]
-
 
 #### 3.1.2 Option I: non-stack empty patchpoints
 
@@ -432,10 +436,14 @@ Instead of generating an alternative that can only be used to transition from
 one specific patchpoint, the alternative method can offer multiple entry points
 to allow transition from some or all of the patchpoints in the original method.
 
-Such a method would have many prologs and would require additional jit work. It
-might also require reworking or suppressing some optimizations where we assume
-that the jit method entry dominates all the code in the method � this would no
-longer be true.
+Note: After thinking about this a bit more, I think we can implement this
+variant without needing multiple prologs&mdash;instead we can pass the IL offset
+of the OSR entry point as a hidden argument to the OSR method, and have a switch
+on that argument in the first body block to jump to the right place in the
+method. This might be a viable option to control the potential explosion of OSR
+variants for methods with many patchpoints. This method would still be OSR
+specific&mdash;that is, it could not also serve as a normally callable Tier1
+method.
 
 #### 3.3.4 Option 4: Method Fragment
 
@@ -449,7 +457,7 @@ fragment.
 
 The prototype generates partial methods with transition prolog. Per 4.1 below,
 the OSR method frame incorporates the (live portion of the) original method
-frame instead of supplanting it.**
+frame instead of supplanting it.
 
 ### 3.4 Transitions
 
@@ -599,7 +607,7 @@ require special consideration. This is something that needs further
 investigation.
 
 **Prototype: The OSR methods have somewhat unusual unwind records that may be
-confusing the debugger stack trace.**
+confusing the (Windbg) debugger stack trace.**
 
 ### 4.6 Proposed Tier-0 Optimizations
 
@@ -871,8 +879,9 @@ different stack offsets.
 ### 5.2 More Complex Examples
 
 If the OSR method needs to save and restore registers, then the epilog will have
-two stack pointer adjustments: the first to reach the register save area on the OSR
-frame, the second to reach the saved RBP and return address on the original frame.
+two stack pointer adjustments: the first to reach the register save area on the
+OSR frame, the second to reach the saved RBP and return address on the original
+frame.
 
 For example:
 ```asm
@@ -895,56 +904,31 @@ with unwind info:
     CodeOffset: 0x00 UnwindOp: UWOP_PUSH_NONVOL (0)     OpInfo: rbp (5)
 ```
 
-If the OSR method needs to save RBP, we may see two RBP restores in the epilog; this
-does not appear to cause problems during execution, as the "last one wins" when unwinding.
+If the OSR method needs to save RBP, we may see two RBP restores in the epilog;
+this does not appear to cause problems during execution, as the "last one wins"
+when unwinding.
 
 However, the debugger (at least windbg) may end up being confused; any tool
 simply following the RBP chain will see the original frame is still "linked"
 into the active stack.
 
-### 5.3 CORINFO_OSR_INFO and CORINFO_PATCHPOINT_INFO
+### 5.3 PatchpointInfo
 
-As noted above, when the jit is invoked to create the OSR method, it is passed
-some extra data:
+As noted above, when the jit is invoked to create the OSR method, it asks the
+runtime for some extra data:
 * The IL offset of the OSR entry point
-* A description of the original method frame
+* `PatchpointInfo`: a description of the original method frame
 
-These are bundled by the runtime into a new runtime data structure:
-```C++
-struct CORINFO_OSR_INFO
-{
-    unsigned ilOffset;                        // IL offset of the patchpoint
-    CORINFO_PATCHPOINT_INFO patchpointInfo;   // original frame info
-};
-```
-which is part of the method info:
-```C++
-struct CORINFO_METHOD_INFO
-{
-    CORINFO_METHOD_HANDLE       ftn;
-    CORINFO_MODULE_HANDLE       scope;
-    BYTE *                      ILCode;
-    unsigned                    ILCodeSize;
-    unsigned                    maxStack;
-    unsigned                    EHcount;
-    CorInfoOptions              options;
-    CorInfoRegionKind           regionKind;
-    CORINFO_SIG_INFO            args;
-    CORINFO_SIG_INFO            locals;
-    CORINFO_OSR_INFO            osrInfo;
-};
-```
-The `patchpointInfo` is produced by the jit when jitting the Tier0 method. It is
+`PatchpointInfo` is produced by the jit when jitting the Tier0 method. It is
 allocated by the runtime similarly to other codegen metadata like GC info and
 unwind info and is likewise associated with the original method. When the
-runtime helper decides to kick off an OSR jit, it bundles the IL offset (passed
-to the helper as an argument and the patchpointInfo (retrieved from the method)
-and attaches those to the method info.
+runtime helper decides to kick off an OSR jit, it sets things up so that the jit
+can retrieve this data.
 
-Since the `patchpointInfo` is produced and consumed by the jit its format is
-currently opaque to the runtime. It has the following general layout:
+Since the `PatchpointInfo` is produced and consumed by the jit its format is
+largely opaque to the runtime. It has the following general layout:
 ```C++
-struct CORINFO_PATCHPOINT_INFO
+struct PatchpointInfo
 {
     unsigned m_patchpointInfoSize;
     unsigned m_ilSize;
@@ -972,6 +956,19 @@ scenarios.
 Initial data shows a general improvement in startup time, in particular for
 applications where startup was impacted by disabling quick-jitting of methods
 with loops (see dotnet/coreclr#24252).
+
+### 5.5 Prototype Limitations and Workarounds
+
+* x64 only
+* Struct promotion is currently disabled for OSR methods
+* No OSR for synchronous methods
+* No OSR for methods with profiler hooks
+* No OSR for methods with localloc
+* No OSR from "handler" regions (catch/finally/filter)
+
+The prototype trigger strategy is a hybrid: it has a per-frame local counter and
+a per-patchpoint global counter (kept by the runtime). This is probably
+something we need to re-assess.
 
 ## 6 Edit and Continue
 
@@ -1065,7 +1062,7 @@ live state via inlining carefully tracked, one can transition from optimized
 code via OSR.
 
 Given the need to preserve address artifacts, this transition must be done
-gradually -- first creating a frame for the innermost inlined method that
+gradually&mdash;first creating a frame for the innermost inlined method that
 extends the original frame, then, when this innermost method returns, creating a
 frame for the next innermost inlined method, and so on, until finally the
 root method frame returns and can clean up the optimized method frame as well.
