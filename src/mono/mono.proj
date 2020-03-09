@@ -371,7 +371,7 @@
     <ItemGroup>
       <_MonoBuildParams Include="/p:MONO_BUILD_DIR_PREFIX=&quot;&quot;$(MonoObjDir)&quot;&quot;" />
       <_MonoBuildParams Include="/p:MONO_ENABLE_NETCORE=true" />
-      <_MonoBuildParams Include="/p:CL_MPCount=8" />
+      <_MonoBuildParams Include="/p:CL_MPCount=$([System.Environment]::ProcessorCount)" />
       <_MonoBuildParams Include="/v:minimal" />
       <_MonoBuildParams Condition="$(MonoEnableLLVM) == true" Include="/p:MONO_ENABLE_LLVM=true" />
       <_MonoBuildParams Condition="$(MonoEnableLLVM) == true" Include="/p:MONO_EXTERNAL_LLVM_CONFIG=&quot;&quot;$(MonoLLVMDir)\bin\llvm-config.exe&quot;&quot;" />
@@ -380,7 +380,7 @@
       <_MonoBuildPlatform Condition="'$(Platform)' == 'x64'">x64</_MonoBuildPlatform>
       <_MonoBuildPlatform Condition="'$(Platform)' == 'x86'">win32</_MonoBuildPlatform>
 
-      <_MonoBuildCommand>msvc\run-msbuild.bat build $(_MonoBuildPlatform) $(Configuration) sgen &quot;@(_MonoBuildParams->Identity, ' ')&quot; msvc\mono-netcore.sln</_MonoBuildCommand>
+      <_MonoBuildCommand>msvc\run-msbuild.bat build $(_MonoBuildPlatform) $(Configuration) sgen &quot;@(_MonoBuildParams, ' ')&quot; msvc\mono-netcore.sln</_MonoBuildCommand>
     </PropertyGroup>
 
     <Message Text="--- Building Mono ---" Importance="High" />
