@@ -7731,7 +7731,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_SSE_RSQRTSS: id = INTRINS_SSE_RSQRT_SS; break;
 			default: g_assert_not_reached (); break;
 			}
-			call_intrins (ctx, id, &lhs, "");
+			values [ins->dreg] = call_intrins (ctx, id, &lhs, "");
 			break;
 		}
 		case OP_XOP_I4_X:
