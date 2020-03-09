@@ -4839,10 +4839,6 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functional requirement
         CodeVersionManager::IsMethodSupported(this) &&
 
-        // Functional requirement of being in COOP mode during a call count query.
-        // NativeCallable methods are, by definition, not initiated from COOP mode.
-        !HasNativeCallableAttribute() &&
-
         // Policy - If QuickJit is disabled and the module does not have any pregenerated code, the method would effectively not
         // be tiered currently, so make the method ineligible for tiering to avoid some unnecessary overhead
         (g_pConfig->TieredCompilation_QuickJit() || GetModule()->HasNativeOrReadyToRunImage()) &&
