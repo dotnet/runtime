@@ -140,7 +140,7 @@
     <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</ApiCompatExcludeAttributeList>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+  <ItemGroup Condition="'$(IsReferenceAssembly)' == 'true' or '$(IsSourceProject)' == 'true'">
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
     <PackageReference Include="Microsoft.DotNet.ApiCompat" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetApiCompatVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
@@ -338,10 +338,10 @@
   <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" />
 
   <PropertyGroup>
-    <EnableProjectRestore Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssembly)' == 'true' or '$(IsTestProject)' == 'true'">true</EnableProjectRestore>
+    <DisableProjectRestore Condition="'$(MSBuildProjectExtension)' == '.depproj' or '$(MSBuildProjectExtension)' == '.pkgproj'">true</DisableProjectRestore>
   </PropertyGroup>
 
-  <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.props" />
+  <Import Condition="'$(DisableProjectRestore)' == 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.props" />
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>

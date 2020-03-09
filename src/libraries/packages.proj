@@ -9,13 +9,17 @@
     <AdditionalBuildTargetFrameworks>$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">
-    <Project Include="$(PkgDir)*\*.builds" >
+    <ProjectReference Include="$(PkgDir)*\*.builds" >
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
-    </Project>
-    <Project Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' OR '$(DotNetBuildFromSource)' == 'true'">
+    </ProjectReference>
+    <ProjectReference Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' OR '$(DotNetBuildFromSource)' == 'true'">
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
-    </Project>
+    </ProjectReference>
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
@@ -73,9 +77,6 @@
       Overwrite="true" />
   </Target>
 
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)dir.traversal.targets" />
-
   <Target Name="SetAzureDevOpsVariableForBuiltPackages"
           Condition="'$(ContinuousIntegrationBuild)' == 'true'"
           AfterTargets="BuildAllProjects">
@@ -84,5 +85,17 @@
     </ItemGroup>
 
     <Message Condition="'@(_PackageReports)' != ''" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
+  </Target>
+
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+
+  <!-- Ordering matters! Overwriting the Build and Test target after the Sdk.targets import. -->
+  <Target Name="Build" DependsOnTargets="BuildAllProjects" />
+  <Target Name="BuildAllProjects">
+    <MSBuild Targets="Build"
+             Projects="@(ProjectReference)"
+             Properties="BuildAllProjects=true;%(Project.AdditionalProperties)"
+             BuildInParallel="true"
+             ContinueOnError="ErrorAndStop" />
   </Target>
 </Project>

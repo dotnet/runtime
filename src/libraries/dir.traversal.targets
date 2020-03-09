@@ -48,5 +48,6 @@
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
   <Target Name="Clean" DependsOnTargets="$(TraversalCleanDependsOn)" />
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
+  <Target Name="Restore" />
 
 </Project>

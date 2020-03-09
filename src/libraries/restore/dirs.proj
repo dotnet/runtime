@@ -1,9 +1,5 @@
 <Project>
   <Import Project="Directory.Build.props" />
-  
-  <PropertyGroup>
-    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
-  </PropertyGroup>
 
   <ItemGroup>
     <Project Include="netcoreapp/netcoreapp.depproj" Condition="'$(BuildAllConfigurations)' == 'true'" />

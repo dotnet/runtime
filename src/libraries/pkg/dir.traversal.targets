@@ -1,7 +1,5 @@
 <Project>
   <Import Project="..\dir.traversal.targets" />
-  <!-- Disable restore of pkgprojs. -->
-  <Target Name="Restore" />
 
   <PropertyGroup Condition="'$(BuildingAnOfficialBuildLeg)' == 'true'">
     <!-- During an official build, only build identity packages in the AllConfigurations build -->
