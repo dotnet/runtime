@@ -109,7 +109,7 @@ namespace System
 
         private static byte[] InitializeBuffer(ReadOnlySpan<char> value)
         {
-            byte[] newBuffer = CreateBufferFromUtf16Common(value, replaceInvalidSequences: false);
+            byte[]? newBuffer = CreateBufferFromUtf16Common(value, replaceInvalidSequences: false);
 
             if (newBuffer is null)
             {

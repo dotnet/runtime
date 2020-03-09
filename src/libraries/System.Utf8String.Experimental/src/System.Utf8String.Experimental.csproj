@@ -12,6 +12,7 @@
     <Compile Include="System\Net\Http\Utf8StringContent.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netstandard2.0'">
+    <Compile Include="System\Net\Http\Utf8StringContent.netstandard.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Index.cs">
       <Link>System\Index.cs</Link>
     </Compile>
@@ -29,9 +30,13 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netcoreapp3.0'">
+    <Compile Include="System\Net\Http\Utf8StringContent.netcoreapp3.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Utf8String.netcoreapp.cs">
       <Link>System\Utf8String.netcoreapp.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="System\Net\Http\Utf8StringContent.netcoreapp5.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Compile Include="System\Globalization\GlobalizationMode.cs" />

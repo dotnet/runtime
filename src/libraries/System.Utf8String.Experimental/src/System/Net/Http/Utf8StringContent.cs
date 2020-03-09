@@ -2,17 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable enable
-using System.Buffers;
 using System.IO;
 using System.Net.Http.Headers;
-using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    public sealed class Utf8StringContent : HttpContent
+    public sealed partial class Utf8StringContent : HttpContent
     {
         private const string DefaultMediaType = "text/plain";
 
@@ -42,36 +38,6 @@ namespace System.Net.Http
 
         protected override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(new Utf8StringStream(_content));
-
-#if NETCOREAPP
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
-            SerializeToStreamAsync(stream, context, default);
-
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
-            stream.WriteAsync(_content.AsMemoryBytes(), cancellationToken).AsTask();
-#else
-        protected async override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
-        {
-            ReadOnlyMemory<byte> buffer = _content.AsMemoryBytes();
-            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> array))
-            {
-                await stream.WriteAsync(array.Array, array.Offset, array.Count).ConfigureAwait(false);
-            }
-            else
-            {
-                byte[] localBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
-                try
-                {
-                    buffer.Span.CopyTo(localBuffer);
-                    await stream.WriteAsync(localBuffer, 0, buffer.Length).ConfigureAwait(false);
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(localBuffer);
-                }
-            }
-        }
-#endif
 
         protected override bool TryComputeLength(out long length)
         {
