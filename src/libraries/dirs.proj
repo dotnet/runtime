@@ -7,7 +7,6 @@
 
   <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
     <ProjectReference Include="ref.proj" />
-    <ProjectReference Include="shims\generated\*.csproj" />
     <ProjectReference Include="Native\native-binplace.proj" />
     <ProjectReference Include="src.proj" />
     <ProjectReference Include="shims\manual\*.csproj" />
