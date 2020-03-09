@@ -1203,31 +1203,6 @@ struct Dbg_TrackSyncStack : public Dbg_TrackSync
     }
 };
 
-// ensure that registers are preserved across this call
-#ifdef _MSC_VER
-#pragma optimize("", off)
-#endif
-// A pain to do all this from ASM, but watch out for trashed registers
-EXTERN_C void EnterSyncHelper    (UINT_PTR caller, void *pAwareLock)
-{
-    BEGIN_ENTRYPOINT_THROWS;
-    WRAPPER_NO_CONTRACT;
-    GetThread()->m_pTrackSync->EnterSync(caller, pAwareLock);
-    END_ENTRYPOINT_THROWS;
-
-}
-EXTERN_C void LeaveSyncHelper    (UINT_PTR caller, void *pAwareLock)
-{
-    BEGIN_ENTRYPOINT_THROWS;
-    WRAPPER_NO_CONTRACT;
-    GetThread()->m_pTrackSync->LeaveSync(caller, pAwareLock);
-    END_ENTRYPOINT_THROWS;
-
-}
-#ifdef _MSC_VER
-#pragma optimize("", on)
-#endif
-
 void Dbg_TrackSyncStack::EnterSync(UINT_PTR caller, void *pAwareLock)
 {
     LIMITED_METHOD_CONTRACT;

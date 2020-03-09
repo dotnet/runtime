@@ -149,7 +149,6 @@
 #include "binder.h"
 #include "olevariant.h"
 #include "comcallablewrapper.h"
-#include "apithreadstress.h"
 #include "../dlls/mscorrc/resource.h"
 #include "util.hpp"
 #include "shimload.h"
@@ -990,9 +989,6 @@ void EEStartupHelper(COINITIEE fFlags)
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
 
-#ifdef _DEBUG
-        APIThreadStress::SetThreadStressCount(g_pConfig->GetAPIThreadStressCount());
-#endif
 #ifdef FEATURE_STACK_SAMPLING
         StackSampler::Init();
 #endif
@@ -1309,11 +1305,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         _ASSERTE(fIsDllUnloading);
         return;
     }
-
-#ifdef _DEBUG
-    // stop API thread stress
-    APIThreadStress::SetThreadStressCount(0);
-#endif
 
     STRESS_LOG1(LF_STARTUP, LL_INFO10, "EEShutDown entered unloading = %d", fIsDllUnloading);
 

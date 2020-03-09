@@ -496,9 +496,6 @@ struct Dbg_TrackSync
     virtual void LeaveSync    (UINT_PTR caller, void *pAwareLock) = 0;
 };
 
-EXTERN_C void EnterSyncHelper    (UINT_PTR caller, void *pAwareLock);
-EXTERN_C void LeaveSyncHelper    (UINT_PTR caller, void *pAwareLock);
-
 #endif  // TRACK_SYNC
 
 //***************************************************************************
