@@ -13,6 +13,4 @@
   </ItemGroup>
 
   <Import Project="..\dir.traversal.targets" />
-  <!-- Disabling restore of the depprojs. -->
-  <Target Name="Restore" />
 </Project>
