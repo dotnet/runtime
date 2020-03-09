@@ -1035,6 +1035,10 @@ MINI_OP(OP_SSE_MOVLPS_LOAD, "sse_movlps_load", XREG, XREG, IREG)
 MINI_OP(OP_SSE_MOVHPS_STORE, "sse_movhps_store", NONE, IREG, XREG)
 MINI_OP(OP_SSE_MOVLPS_STORE, "sse_movlps_store", NONE, IREG, XREG)
 MINI_OP(OP_SSE_MOVNTPS, "sse_movntps", NONE, IREG, XREG)
+MINI_OP(OP_SSE_PREFETCHT0, "sse_prefetcht0", NONE, IREG, NONE)
+MINI_OP(OP_SSE_PREFETCHT1, "sse_prefetcht1", NONE, IREG, NONE)
+MINI_OP(OP_SSE_PREFETCHT2, "sse_prefetcht2", NONE, IREG, NONE)
+MINI_OP(OP_SSE_PREFETCHNTA, "sse_prefetchnta", NONE, IREG, NONE)
 
 /* sse 2 */
 MINI_OP(OP_SSE2_PACKUS, "sse2_packus", XREG, XREG, XREG)
@@ -1464,6 +1468,7 @@ MINI_OP(OP_XCOMPARE_FP, "xcompare_fp", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
 /* inst_c0 contains a SimdOp, inst_c1 might contain additional data */
 MINI_OP(OP_XOP, "xop", NONE, NONE, NONE)
+MINI_OP(OP_XOP_X_X, "xop_x_x", XREG, XREG, NONE)
 MINI_OP(OP_XOP_I4_X, "xop_i4_x", IREG, XREG, NONE)
 MINI_OP(OP_XOP_I8_X, "xop_i8_x", LREG, XREG, NONE)
 MINI_OP(OP_XOP_X_X_X, "xop_x_x_x", XREG, XREG, XREG)

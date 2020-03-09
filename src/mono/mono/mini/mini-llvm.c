@@ -308,7 +308,7 @@ set_failure (EmitContext *ctx, const char *message)
 }
 
 static LLVMValueRef
-ConstInt32 (int v)
+const_int32 (int v)
 {
 	return LLVMConstInt (LLVMInt32Type (), v, FALSE);
 }
@@ -5717,7 +5717,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			v = mono_llvm_build_alloca (builder, LLVMInt8Type (), LLVMConstInt (LLVMInt32Type (), size, FALSE), MONO_ARCH_FRAME_ALIGNMENT, "");
 
 			if (ins->flags & MONO_INST_INIT)
-				emit_memset (ctx, builder, v, ConstInt32 (size), MONO_ARCH_FRAME_ALIGNMENT);
+				emit_memset (ctx, builder, v, const_int32 (size), MONO_ARCH_FRAME_ALIGNMENT);
 
 			values [ins->dreg] = v;
 			break;
@@ -6575,7 +6575,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (!addresses [ins->dreg])
 				addresses [ins->dreg] = build_alloca (ctx, m_class_get_byval_arg (klass));
 			LLVMValueRef ptr = LLVMBuildBitCast (builder, addresses [ins->dreg], LLVMPointerType (LLVMInt8Type (), 0), "");
-			emit_memset (ctx, builder, ptr, ConstInt32 (mono_class_value_size (klass, NULL)), 0);
+			emit_memset (ctx, builder, ptr, const_int32 (mono_class_value_size (klass, NULL)), 0);
 			break;
 		}
 		case OP_DUMMY_VZERO:
@@ -7527,11 +7527,35 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_SSE_MOVNTPS: {
-			printf ("X: %s\n", mono_method_get_full_name (cfg->method));
 			LLVMValueRef store = mono_llvm_build_aligned_store (builder, rhs, lhs, FALSE, 1);
 			set_nontemporal_flag (store);
 			break;
 		}
+		case OP_SSE_PREFETCHT0: {
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (LLVMInt8Type (), 0));
+			LLVMValueRef args [] = { addr, const_int32 (0), const_int32 (3), const_int32 (1) };
+			call_intrins (ctx, INTRINS_PREFETCH, args, "");
+			break;
+		}
+		case OP_SSE_PREFETCHT1: {
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (LLVMInt8Type (), 0));
+			LLVMValueRef args [] = { addr, const_int32 (0), const_int32 (2), const_int32 (1) };
+			call_intrins (ctx, INTRINS_PREFETCH, args, "");
+			break;
+		}
+		case OP_SSE_PREFETCHT2: {
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (LLVMInt8Type (), 0));
+			LLVMValueRef args [] = { addr, const_int32 (0), const_int32 (1), const_int32 (1) };
+			call_intrins (ctx, INTRINS_PREFETCH, args, "");
+			break;
+		}
+		case OP_SSE_PREFETCHNTA: {
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (LLVMInt8Type (), 0));
+			LLVMValueRef args [] = { addr, const_int32 (0), const_int32 (0), const_int32 (1) };
+			call_intrins (ctx, INTRINS_PREFETCH, args, "");
+			break;
+		}
+
 		case OP_SSE_SHUFFLE: {
 			LLVMValueRef shuffle_vec = create_const_vector_4_i32 (
 				((ins->inst_c0 >> 0) & 0x3) + 0, // take two elements from lhs
@@ -7694,6 +7718,20 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			default: g_assert_not_reached (); break;
 			}
 			call_intrins (ctx, id, NULL, "");
+			break;
+		}
+		case OP_XOP_X_X: {
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_SSE_SQRTPS: id = INTRINS_SSE_SQRT_PS; break;
+			case SIMD_OP_SSE_RCPPS: id = INTRINS_SSE_RCP_PS; break;
+			case SIMD_OP_SSE_RSQRTPS: id = INTRINS_SSE_RSQRT_PS; break;
+			case SIMD_OP_SSE_SQRTSS: id = INTRINS_SSE_SQRT_SS; break;
+			case SIMD_OP_SSE_RCPSS: id = INTRINS_SSE_RCP_SS; break;
+			case SIMD_OP_SSE_RSQRTSS: id = INTRINS_SSE_RSQRT_SS; break;
+			default: g_assert_not_reached (); break;
+			}
+			call_intrins (ctx, id, &lhs, "");
 			break;
 		}
 		case OP_XOP_I4_X:

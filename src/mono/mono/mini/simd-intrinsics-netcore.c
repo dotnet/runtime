@@ -736,6 +736,16 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_Multiply, OP_XBINOP, OP_FMUL},
 	{SN_MultiplyScalar, OP_SSE_MULSS},
 	{SN_Or, OP_SSE_OR},
+	{SN_Prefetch0, OP_SSE_PREFETCHT0},
+	{SN_Prefetch1, OP_SSE_PREFETCHT1},
+	{SN_Prefetch2, OP_SSE_PREFETCHT2},
+	{SN_PrefetchNonTemporal, OP_SSE_PREFETCHNTA},
+	{SN_Reciprocal, OP_XOP_X_X, SIMD_OP_SSE_RCPPS},
+	{SN_ReciprocalScalar, 0, SIMD_OP_SSE_RCPSS},
+	{SN_ReciprocalSqrt, OP_XOP_X_X, SIMD_OP_SSE_RSQRTPS},
+	{SN_ReciprocalSqrtScalar, 0, SIMD_OP_SSE_RSQRTSS},
+	{SN_Sqrt, OP_XOP_X_X, SIMD_OP_SSE_SQRTPS},
+	{SN_SqrtScalar, 0, SIMD_OP_SSE_SQRTSS},
 	{SN_Shuffle},
 	{SN_Store, OP_SSE_STORE, 1 /* alignment */},
 	{SN_StoreAligned, OP_SSE_STORE, 16 /* alignment */},
@@ -884,6 +894,13 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			else
 				g_assert_not_reached ();
 			break;
+		case SN_ReciprocalScalar:
+		case SN_ReciprocalSqrtScalar:
+		case SN_SqrtScalar:
+			if (fsig->param_count == 1)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, info->instc0, arg0_type, fsig, args);
+			else
+				return NULL;
 		case SN_LoadScalarVector128:
 			return NULL;
 		default:
