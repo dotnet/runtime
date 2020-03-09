@@ -3,22 +3,22 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- disable warnings about obsolete APIs -->
     <NoWarn>$(NoWarn);0809;0618</NoWarn>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.0;$(NetCoreAppCurrent)</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.0;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false'">
     <Compile Include="System.Utf8String.Experimental.cs" />
+    <Compile Include="System.Utf8String.Experimental.Forwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netstandard2.0'">
-    <Compile Include="System.Utf8String.Experimental.netstandard.cs" />
+    <Compile Include="System.Utf8String.Experimental.Range.cs" />
+    <Compile Include="System.Utf8String.Experimental.Rune.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetsNetCoreApp)' == 'true'">
-    <Compile Include="System.Utf8String.Experimental.Forwards.cs" />
-    <Compile Include="System.Utf8String.Experimental.netcoreapp.cs" />
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netstandard2.1'">
+    <Compile Include="System.Utf8String.Experimental.Rune.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Compile Include="System.Utf8String.Experimental.netcoreapp5.cs" />
+    <Compile Include="System.Utf8String.Experimental.netcoreapp5.0.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <Reference Include="System.Memory" />

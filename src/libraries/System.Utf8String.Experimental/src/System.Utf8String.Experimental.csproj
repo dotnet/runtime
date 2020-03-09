@@ -2,8 +2,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);3019</NoWarn>
-    <IsPartialFacadeAssembly Condition="'$(TargetsNetCoreApp)' == 'true'">true</IsPartialFacadeAssembly>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.0;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <IsPartialFacadeAssembly Condition="'$(TargetFramework)' != 'netstandard2.0'">true</IsPartialFacadeAssembly>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.0;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <Nullable>enable</Nullable>
     <DefineConstants>$(DefineContants);FEATURE_UTF8STRING</DefineConstants>
   </PropertyGroup>
@@ -12,7 +12,6 @@
     <Compile Include="System\Net\Http\Utf8StringContent.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netstandard2.0'">
-    <Compile Include="System\Net\Http\Utf8StringContent.netstandard.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Index.cs">
       <Link>System\Index.cs</Link>
     </Compile>
@@ -29,14 +28,16 @@
       <Link>System\Text\Unicode\Utf8.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netcoreapp3.0'">
-    <Compile Include="System\Net\Http\Utf8StringContent.netcoreapp3.cs" />
-    <Compile Include="$(CoreLibSharedDir)\System\Utf8String.netcoreapp.cs">
-      <Link>System\Utf8String.netcoreapp.cs</Link>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == 'netstandard2.1'">
+    <Compile Include="$(CoreLibSharedDir)\System\Numerics\BitOperations.cs">
+      <Link>System\Numerics\BitOperations.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Compile Include="System\Net\Http\Utf8StringContent.netcoreapp5.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Rune.cs">
+      <Link>System\Text\Rune.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Text\Unicode\Utf8.cs">
+      <Link>System\Text\Unicode\Utf8.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false' AND '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Compile Include="System\Globalization\GlobalizationMode.cs" />
@@ -144,6 +145,10 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <Reference Include="System.Buffers" />
     <Reference Include="System.Memory" />
+    <Reference Include="System.Numerics.Vectors" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
