@@ -1142,9 +1142,6 @@ PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(pMD != NULL);
-        PRECONDITION(pMD->IsStatic()); // only static methods are allowed
-        PRECONDITION(!pMD->IsGenericMethodDefinition()); // no generic methods
-        PRECONDITION(!NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule())); // Arguments
         INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;

@@ -1775,9 +1775,6 @@ static PCODE PreStubWorker_Preemptive(
     _In_opt_ Thread* currentThread)
 {
     _ASSERTE(pMD->HasNativeCallableAttribute());
-    _ASSERTE(pMD->IsStatic() // Must be static
-             && !pMD->IsGenericMethodDefinition() // No generics
-             && !NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule())); // Blittable arguments
 
     PCODE pbRetVal = NULL;
 
@@ -1789,7 +1786,19 @@ static PCODE PreStubWorker_Preemptive(
     // that the thread is new to the runtime so we might have to
     // create one.
     if (currentThread == NULL)
-        currentThread = CreateThreadBlockThrow();
+    {
+        HRESULT hr;
+        currentThread = SetupThreadNoThrow(&hr);
+
+        // Our attempt to create a thread failed. There is nothing
+        // more we can do except fail fast. The reverse P/Invoke isn't
+        // going to work.
+        if (currentThread == NULL)
+        {
+            TerminateProcess(GetCurrentProcess(), hr);
+            UNREACHABLE();
+        }
+    }
 
     MAKE_CURRENT_THREAD_AVAILABLE_EX(currentThread);
 
