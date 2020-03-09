@@ -698,32 +698,21 @@ bool CallCountingManager::SetCodeEntryPoint(
 extern "C" PCODE STDCALL OnCallCountThresholdReached(TransitionBlock *transitionBlock, TADDR stubIdentifyingToken)
 {
     WRAPPER_NO_CONTRACT;
-
-    MAKE_CURRENT_THREAD_AVAILABLE();
-
-    // Attempt to check what GC mode we are running under.
-    if (CURRENT_THREAD == NULL
-        || !CURRENT_THREAD->PreemptiveGCDisabled())
-    {
-        return CallCountingManager::OnCallCountThresholdReachedPreemptive(CURRENT_THREAD, transitionBlock, stubIdentifyingToken);
-    }
-
-    return CallCountingManager::OnCallCountThresholdReached(CURRENT_THREAD, transitionBlock, stubIdentifyingToken);
+    return CallCountingManager::OnCallCountThresholdReached(transitionBlock, stubIdentifyingToken);
 }
 
-PCODE CallCountingManager::OnCallCountThresholdReached(Thread* currentThread, TransitionBlock *transitionBlock, TADDR stubIdentifyingToken)
+PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transitionBlock, TADDR stubIdentifyingToken)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(currentThread != NULL);
         PRECONDITION(CheckPointer(transitionBlock));
     }
     CONTRACTL_END;
 
-    MAKE_CURRENT_THREAD_AVAILABLE_EX(currentThread);
+    MAKE_CURRENT_THREAD_AVAILABLE();
 
 #ifdef _DEBUG
     Thread::ObjectRefFlush(CURRENT_THREAD);
@@ -786,30 +775,6 @@ PCODE CallCountingManager::OnCallCountThresholdReached(Thread* currentThread, Tr
 
     frame->Pop(CURRENT_THREAD);
     return codeEntryPoint;
-}
-
-PCODE CallCountingManager::OnCallCountThresholdReachedPreemptive(Thread* currentThreadMaybe, TransitionBlock *transitionBlock, TADDR stubIdentifyingToken)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    // Starting from preemptive mode means the possibility exists
-    // that the thread is new to the runtime so we might have to
-    // create one.
-    if (currentThreadMaybe == NULL)
-        currentThreadMaybe = CreateThreadBlockThrow();
-
-    MAKE_CURRENT_THREAD_AVAILABLE_EX(currentThreadMaybe);
-
-    {
-        GCX_COOP();
-        return OnCallCountThresholdReached(CURRENT_THREAD, transitionBlock, stubIdentifyingToken);
-    }
 }
 
 COUNT_T CallCountingManager::GetCountOfCodeVersionsPendingCompletion()

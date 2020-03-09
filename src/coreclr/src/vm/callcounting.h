@@ -272,8 +272,7 @@ public:
         PCODE codeEntryPoint,
         bool wasMethodCalled,
         bool *scheduleTieringBackgroundWorkRef);
-    static PCODE OnCallCountThresholdReached(Thread* currentThread, TransitionBlock *transitionBlock, TADDR stubIdentifyingToken);
-    static PCODE OnCallCountThresholdReachedPreemptive(Thread* currentThread, TransitionBlock *transitionBlock, TADDR stubIdentifyingToken);
+    static PCODE OnCallCountThresholdReached(TransitionBlock *transitionBlock, TADDR stubIdentifyingToken);
     static COUNT_T GetCountOfCodeVersionsPendingCompletion();
     static void CompleteCallCounting();
 
