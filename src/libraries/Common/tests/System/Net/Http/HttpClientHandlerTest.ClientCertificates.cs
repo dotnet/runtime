@@ -73,9 +73,6 @@ namespace System.Net.Http.Functional.Tests
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             Assert.NotNull(cert);
             handler.ClientCertificates.Add(cert);
-//#if WINHTTPHANDLER_TEST
-            handler.ClientCertificateOption = ClientCertificateOption.Manual;
-//#endif
             Assert.True(handler.ClientCertificates.Contains(cert));
 
             return CreateHttpClient(handler);

@@ -608,7 +608,7 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { "ABC", "123", useCookies };
                 yield return new object[] { "Hello", "World", useCookies };
                 yield return new object[] { "foo", "bar", useCookies };
-#if !WINHTTPHANDLER_TEST
+#if !NETFRAMEWORK
                 yield return new object[] { "Hello World", "value", useCookies };
 #endif
                 yield return new object[] { ".AspNetCore.Session", "RAExEmXpoCbueP_QYM", useCookies };
