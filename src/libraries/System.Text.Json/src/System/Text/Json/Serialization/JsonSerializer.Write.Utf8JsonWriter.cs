@@ -34,6 +34,10 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="writer"/> is null.
         /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <typeparamref name="TValue"/>.
+        /// </exception>
         public static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, JsonSerializerOptions? options = null)
         {
             Serialize<TValue>(writer, value, typeof(TValue), options);
@@ -46,8 +50,15 @@ namespace System.Text.Json
         /// <param name="value">The value to convert and write.</param>
         /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="options">Options to control the behavior.</param>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="inputType"/> is not compatible with <paramref name="value"/>.
+        /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="writer"/> is null.
+        /// <paramref name="writer"/> or <paramref name="inputType"/> is null.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <paramref name="inputType"/>.
         /// </exception>
         public static void Serialize(Utf8JsonWriter writer, object? value, Type inputType, JsonSerializerOptions? options = null)
         {
