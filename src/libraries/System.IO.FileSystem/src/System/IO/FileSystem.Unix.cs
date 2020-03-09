@@ -58,82 +58,35 @@ namespace System.IO
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
 
-        private static void LinkOrCopyFile (string sourceFullPath, string destFullPath)
-        {
-            if (Interop.Sys.Link(sourceFullPath, destFullPath) >= 0)
-                return;
-
-            // If link fails, we can fall back to doing a full copy, but we'll only do so for
-            // cases where we expect link could fail but such a copy could succeed.  We don't
-            // want to do so for all errors, because the copy could incur a lot of cost
-            // even if we know it'll eventually fail, e.g. EROFS means that the source file
-            // system is read-only and couldn't support the link being added, but if it's
-            // read-only, then the move should fail any way due to an inability to delete
-            // the source file.
-            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-            if (errorInfo.Error == Interop.Error.EXDEV ||      // rename fails across devices / mount points
-                errorInfo.Error == Interop.Error.EACCES ||
-                errorInfo.Error == Interop.Error.EPERM ||      // permissions might not allow creating hard links even if a copy would work
-                errorInfo.Error == Interop.Error.EOPNOTSUPP || // links aren't supported by the source file system
-                errorInfo.Error == Interop.Error.EMLINK ||     // too many hard links to the source file
-                errorInfo.Error == Interop.Error.ENOSYS)       // the file system doesn't support link
-            {
-                CopyFile(sourceFullPath, destFullPath, overwrite: false);
-            }
-            else
-            {
-                // The operation failed.  Within reason, try to determine which path caused the problem
-                // so we can throw a detailed exception.
-                string? path = null;
-                bool isDirectory = false;
-                if (errorInfo.Error == Interop.Error.ENOENT)
-                {
-                    if (!Directory.Exists(Path.GetDirectoryName(destFullPath)))
-                    {
-                        // The parent directory of destFile can't be found.
-                        // Windows distinguishes between whether the directory or the file isn't found,
-                        // and throws a different exception in these cases.  We attempt to approximate that
-                        // here; there is a race condition here, where something could change between
-                        // when the error occurs and our checks, but it's the best we can do, and the
-                        // worst case in such a race condition (which could occur if the file system is
-                        // being manipulated concurrently with these checks) is that we throw a
-                        // FileNotFoundException instead of DirectoryNotFoundexception.
-                        path = destFullPath;
-                        isDirectory = true;
-                    }
-                    else
-                    {
-                        path = sourceFullPath;
-                    }
-                }
-                else if (errorInfo.Error == Interop.Error.EEXIST)
-                {
-                    path = destFullPath;
-                }
-
-                throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory);
-            }
-        }
-
-
         public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool ignoreMetadataErrors)
         {
             if (destBackupFullPath != null)
             {
-                // We're backing up the destination file to the backup file, so we need to first delete the backup
-                // file, if it exists.  If deletion fails for a reason other than the file not existing, fail.
-                if (Interop.Sys.Unlink(destBackupFullPath) != 0)
+                // We're backing up the destination file to the backup file. If it exists, it will be removed if possible.
+                if (Interop.Sys.Rename(destFullPath, destBackupFullPath, 1) < 0)
                 {
                     Interop.ErrorInfo errno = Interop.Sys.GetLastErrorInfo();
-                    if (errno.Error != Interop.Error.ENOENT)
+                    if (errno.Error == Interop.Error.EXDEV ||      // rename fails across devices / mount points
+                        errno.Error == Interop.Error.EACCES ||
+                        errno.Error == Interop.Error.EPERM ||      // permissions might not allow renaming even if a copy would work
+                        errno.Error == Interop.Error.EMLINK)       // too many hard links to the source file
+                   {
+                        // Destination file could not be renamed. Copy it.
+                        CopyFile(destFullPath, destBackupFullPath, true);
+                        if (Interop.Sys.Unlink(destBackupFullPath) != 0)
+                        {
+                            errno = Interop.Sys.GetLastErrorInfo();
+                            if (errno.Error != Interop.Error.ENOENT)
+                            {
+                                throw Interop.GetExceptionForIoErrno(errno, destBackupFullPath);
+                            }
+                        }
+                    }
+                    else if (errno.Error != Interop.Error.ENOENT)
                     {
                         throw Interop.GetExceptionForIoErrno(errno, destBackupFullPath);
                     }
                 }
-
-                // Now that the backup is gone, link the backup to point to the same file as destination.
-                // This way, we don't lose any data in the destination file, no copy is necessary, etc.
-                LinkOrCopyFile(destFullPath, destBackupFullPath);
             }
             else
             {
@@ -150,7 +103,7 @@ namespace System.IO
             }
 
             // Finally, rename the source to the destination, overwriting the destination.
-            Interop.CheckIo(Interop.Sys.Rename(sourceFullPath, destFullPath));
+            Interop.CheckIo(Interop.Sys.Rename(sourceFullPath, destFullPath, 1));
         }
 
         public static void MoveFile(string sourceFullPath, string destFullPath)
@@ -162,56 +115,35 @@ namespace System.IO
         {
             // The desired behavior for Move(source, dest) is to not overwrite the destination file
             // if it exists. Since rename(source, dest) will replace the file at 'dest' if it exists,
-            // link/unlink are used instead. Rename is more efficient than link/unlink on file systems
-            // where hard links are not supported (such as FAT). Therefore, given that source file exists,
-            // rename is used in 2 cases: when dest file does not exist or when source path and dest
-            // path refer to the same file (on the same device). This is important for case-insensitive
+            // link/unlink are used instead. rename is used when the source path and dest path refer
+            // to the same file (on the same device). This is important for case-insensitive
             // file systems (e.g. renaming a file in a way that just changes casing), so that we support
-            // changing the casing in the naming of the file. If this fails in any way (e.g. source file
-            // doesn't exist, dest file doesn't exist, rename fails, etc.), we just fall back to trying the
-            // link/unlink approach and generating any exceptional messages from there as necessary.
-            Interop.Sys.FileStatus sourceStat, destStat;
-            if (Interop.Sys.LStat(sourceFullPath, out sourceStat) == 0 && // source file exists
-               (Interop.Sys.LStat(destFullPath, out destStat) != 0 || // dest file does not exist
-                    sourceStat.Ino == destStat.Ino) && // source and dest are the same file on that device
-                Interop.Sys.Rename(sourceFullPath, destFullPath) == 0) // try the rename
-            {
-                // Renamed successfully.
-                return;
-            }
+            // changing the casing in the naming of the file.
 
-            // If overwrite is allowed then just call rename
-            if (overwrite)
+            // Note that the test is actually in native code, and the only thing managed code does
+            // is check fo EXDEV and call CopyFile.
+            if (Interop.Sys.Rename(sourceFullPath, destFullPath, overwrite ? 1 : 0) < 0)
             {
-                if (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (errorInfo.Error == Interop.Error.EXDEV) // rename fails across devices / mount points
                 {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    if (errorInfo.Error == Interop.Error.EXDEV) // rename fails across devices / mount points
-                    {
-                        CopyFile(sourceFullPath, destFullPath, overwrite);
-                        DeleteFile(sourceFullPath);
-                    }
-                    else
-                    {
-                        // Windows distinguishes between whether the directory or the file isn't found,
-                        // and throws a different exception in these cases.  We attempt to approximate that
-                        // here; there is a race condition here, where something could change between
-                        // when the error occurs and our checks, but it's the best we can do, and the
-                        // worst case in such a race condition (which could occur if the file system is
-                        // being manipulated concurrently with these checks) is that we throw a
-                        // FileNotFoundException instead of DirectoryNotFoundexception.
-                        throw Interop.GetExceptionForIoErrno(errorInfo, destFullPath,
-                            isDirectory: errorInfo.Error == Interop.Error.ENOENT && !Directory.Exists(Path.GetDirectoryName(destFullPath))   // The parent directory of destFile can't be found
-                            );
-                    }
+                    CopyFile(sourceFullPath, destFullPath, overwrite);
+                    DeleteFile(sourceFullPath);
                 }
-
-                // Rename or CopyFile complete
-                return;
+                else
+                {
+                    // Windows distinguishes between whether the directory or the file isn't found,
+                    // and throws a different exception in these cases.  We attempt to approximate that
+                    // here; there is a race condition here, where something could change between
+                    // when the error occurs and our checks, but it's the best we can do, and the
+                    // worst case in such a race condition (which could occur if the file system is
+                    // being manipulated concurrently with these checks) is that we throw a
+                    // FileNotFoundException instead of DirectoryNotFoundexception.
+                    throw Interop.GetExceptionForIoErrno(errorInfo, destFullPath,
+                        isDirectory: errorInfo.Error == Interop.Error.ENOENT && !Directory.Exists(Path.GetDirectoryName(destFullPath))   // The parent directory of destFile can't be found
+                        );
+                }
             }
-
-            LinkOrCopyFile(sourceFullPath, destFullPath);
-            DeleteFile(sourceFullPath);
         }
 
         public static void DeleteFile(string fullPath)
@@ -375,20 +307,15 @@ namespace System.IO
                 destFullPath = Path.TrimEndingDirectorySeparator(destFullPath);
             }
 
-            if (FileExists(destFullPath))
-            {
-                // Some Unix distros will overwrite the destination file if it already exists.
-                // Throwing IOException to match Windows behavior.
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
-            }
-
-            if (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
+            if (Interop.Sys.Rename(sourceFullPath, destFullPath, 2) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)
                 {
                     case Interop.Error.EACCES: // match Win32 exception
                         throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), errorInfo.RawErrno);
+                    case Interop.Error.EEXIST: // match Win32 exception
+                        throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
                     default:
                         throw Interop.GetExceptionForIoErrno(errorInfo, sourceFullPath, isDirectory: true);
                 }

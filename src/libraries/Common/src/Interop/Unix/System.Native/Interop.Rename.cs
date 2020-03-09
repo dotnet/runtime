@@ -14,10 +14,12 @@ internal static partial class Interop
         /// </summary>
         /// <param name="oldPath">Path to the source item</param>
         /// <param name="newPath">Path to the desired new item</param>
+        /// <param name="flags">flags &amp; 1: whether to overwrite target; flags &amp; 2: whether this is Directory.Move or not</param>
         /// <returns>
         /// Returns 0 on success; otherwise, returns -1
         /// </returns>
+        /// <remarks>clobber may be implemented in terms of stat() depending on platform; not all races can be eliminated</remarks>
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Rename", SetLastError = true)]
-        internal static extern int Rename(string oldPath, string newPath);
+        internal static extern int Rename(string oldPath, string newPath, int flags);
     }
 }

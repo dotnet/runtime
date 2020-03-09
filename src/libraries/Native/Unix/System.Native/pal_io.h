@@ -645,7 +645,7 @@ PALEXPORT int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t 
  *
  * Returns 0 on succes; otherwise, returns -1 and errno is set.
  */
-PALEXPORT int32_t SystemNative_Rename(const char* oldPath, const char* newPath);
+PALEXPORT int32_t SystemNative_Rename(const char* oldPath, const char* newPath, int32_t flags);
 
 /**
  * Deletes the specified empty directory.

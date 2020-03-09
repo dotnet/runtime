@@ -61,6 +61,12 @@ extern ssize_t  getline(char **, size_t *, FILE *);
 #define lstat_ lstat
 #endif
 
+#if defined(__linux__) && !defined(ENOTSUPP)
+// ENOTSUP != ENOTSUPP; see include/linux/errno.h
+// also see https://github.com/dotnet/aspnetcore/issues/2941 for why we need this check
+#define ENOTSUPP 524 /* Operation is not supported */
+#endif
+
 // These numeric values are specified by POSIX.
 // Validate that our definitions match.
 c_static_assert(PAL_S_IRWXU == S_IRWXU);
@@ -1098,10 +1104,114 @@ int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize
     return (int32_t)count;
 }
 
-int32_t SystemNative_Rename(const char* oldPath, const char* newPath)
+// Potential issue: renaming a file onto another link to itself can decrease the total link count of the file.
+// We could only fix this if there were a way to ask the filesystem if two dnodes were identical, but there isn't.
+static int32_t RenameOnEexist(int32_t oldResult, struct stat *targetBuf, const char *oldPath, const char *newPath)
+{
+    struct stat oldBuf;
+    struct stat newBuf;
+    bool haveTarget = targetBuf != NULL;
+    if (!targetBuf)
+    {
+        targetBuf = &newBuf;
+    }
+    int savedErrno = errno;
+    errno = 0;
+    if (!lstat(oldPath, &oldBuf) && (haveTarget || !lstat(newPath, targetBuf))
+            && oldBuf.st_dev == targetBuf->st_dev && oldBuf.st_ino == targetBuf->st_ino)
+    {
+        errno = 0;
+        return rename(oldPath, newPath);
+    }
+    if (errno == EINTR)
+    {
+        return -1;
+    }
+    errno = savedErrno;
+    return oldResult;
+}
+
+int32_t SystemNative_Rename(const char* oldPath, const char* newPath, int32_t flags)
 {
     int32_t result;
-    while ((result = rename(oldPath, newPath)) < 0 && errno == EINTR);
+    if (flags & 1)
+    {
+        while ((result = rename(oldPath, newPath)) < 0 && errno == EINTR);
+    }
+    else
+    {
+#ifdef RENAME_NOREPLACE
+        // Linux renameat2() provides the functionality we want inline.
+        // This is in a feature check block as this API may well be ported to other OSes later.
+        do {
+            result = renameat2(AT_FDCWD, oldPath, AT_FDCWD, newPath, RENAME_NOREPLACE);
+            if (result >= 0)
+            {
+                return result;
+            }
+            else if (errno == EEXIST)
+            {
+                // But renameat2 returns EEXIST on renaming a file onto itself. Check that.
+                result = RenameOnEexist(result, NULL, oldPath, newPath);
+                if (result != EINTR)
+                {
+                    return result;
+                }
+            }
+            // Documentation says EINVAL is returned if the filesystem doesn't support it. We also check the standard codes for this.
+            else if (errno != EINTR && errno != EINVAL && errno != ENOSYS && errno != ENOTSUP && errno != EOPNOTSUPP
+#ifdef ENOTSUPP
+                 && errno != ENOTSUPP
+#endif
+            )
+            {
+                return result;
+            }
+        } while (errno == EINTR);
+        // If the underlying FS doesn't support the operation we end up here just as if we're not Linux.
+#endif
+        do {
+            result = -1; // Keeps compiler happy.
+            if (!(flags & 2))
+            {
+                result = link(oldPath, newPath);
+                if (result >= 0)
+                {
+                    while ((result = unlink(oldPath)) < 0 && errno == EINTR);
+                    return result;
+                }
+            }
+            if ((flags & 2) // Directory.Move
+                    || errno == EPERM || errno == EACCES  // Permissions might not allow creating hard links even if a copy would work
+                    || errno == EOPNOTSUPP  // Links aren't supported by the source file system
+                    || errno == EMLINK // Too many hard links to the source file
+                    || errno == ENOSYS // the filesystem doesn't support link
+#ifdef ENOTSUPP
+                    || errno == ENOTSUPP // the remote filessytem doesn't support link
+#endif
+            )
+            {
+                // Either it's a directory or we don't have hard link support here. Do it the long/slow/racy way.
+                struct stat newBuf;
+                do {
+                    errno = 0;
+                    if (lstat(newPath, &newBuf) == 0)
+                    {
+                        errno = EEXIST;
+                        result = RenameOnEexist(-1, &newBuf, oldPath, newPath);
+                    }
+                    else if (errno != EINTR && errno != EIO) // We should allow EIO to raise. Everything else, rename is fair game.
+                    {
+                        result = rename(oldPath, newPath);
+                    }
+                } while (errno == EINTR);
+            }
+            else if (errno == EEXIST)
+            {
+                result = RenameOnEexist(result, NULL, oldPath, newPath);
+            }
+        } while (errno == EINTR);
+    }
     return result;
 }
 
