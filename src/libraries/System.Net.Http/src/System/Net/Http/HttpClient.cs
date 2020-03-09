@@ -176,12 +176,11 @@ namespace System.Net.Http
 
                     // Since the underlying byte[] will never be exposed, we use an ArrayPool-backed
                     // stream to which we copy all of the data from the response.
-                    using (Stream? responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
+                    using (Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
                     using (var buffer = new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize, (int)headers.ContentLength.GetValueOrDefault()))
                     {
                         try
                         {
-                            Debug.Assert(responseStream != null);
                             await responseStream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
                         }
                         catch (Exception e) when (HttpContent.StreamCopyExceptionNeedsWrapping(e))
@@ -231,11 +230,10 @@ namespace System.Net.Http
                     return await c.ReadAsByteArrayAsync().ConfigureAwait(false);
 #else
                     HttpContentHeaders headers = c.Headers;
-                    using (Stream? responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
+                    using (Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
                     {
                         long? contentLength = headers.ContentLength;
                         Stream buffer; // declared here to share the state machine field across both if/else branches
-                        Debug.Assert(responseStream != null);
 
                         if (contentLength.HasValue)
                         {

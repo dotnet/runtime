@@ -1756,7 +1756,7 @@ namespace System.Net.Http
             }
 
             Debug.Assert(response.Content != null);
-            Stream? stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
             HttpContentReadStream? responseStream = stream as HttpContentReadStream;
 
             Debug.Assert(responseStream != null || stream is EmptyReadStream);

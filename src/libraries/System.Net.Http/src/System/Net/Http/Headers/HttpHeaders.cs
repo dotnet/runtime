@@ -95,7 +95,7 @@ namespace System.Net.Http.Headers
             }
 
             bool addToStore;
-            PrepareHeaderInfoForAdd(descriptor, out HeaderStoreItemInfo? info, out addToStore);
+            PrepareHeaderInfoForAdd(descriptor, out HeaderStoreItemInfo info, out addToStore);
 
             try
             {

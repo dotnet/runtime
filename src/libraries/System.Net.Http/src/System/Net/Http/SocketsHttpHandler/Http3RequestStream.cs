@@ -200,9 +200,10 @@ namespace System.Net.Http
                 // Use an atomic exchange to avoid a race to Cancel()/Dispose().
                 Interlocked.Exchange(ref _goawayCancellationSource, null)?.Dispose();
 
+                Debug.Assert(_response != null && _response.Content != null);
                 // Set our content stream.
-                var responseContent = (HttpConnectionResponseContent?)_response!.Content;
-                Debug.Assert(responseContent != null);
+                var responseContent = (HttpConnectionResponseContent)_response.Content;
+
                 // If we have received Content-Length: 0 and have completed sending content (which may not be the case if duplex),
                 // we can close our Http3RequestStream immediately and return a singleton empty content stream. Otherwise, we
                 // need to return a Http3ReadStream which will be responsible for disposing the Http3RequestStream.
@@ -822,7 +823,7 @@ namespace System.Net.Http
 
         void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
         {
-            GetStaticQPackHeader(index, out HeaderDescriptor descriptor, out string knownValue);
+            GetStaticQPackHeader(index, out HeaderDescriptor descriptor, out string? knownValue);
             OnHeader(index, descriptor, knownValue, literalValue: default);
         }
 
@@ -832,9 +833,9 @@ namespace System.Net.Http
             OnHeader(index, descriptor, staticValue: null, literalValue: value);
         }
 
-        private void GetStaticQPackHeader(int index, out HeaderDescriptor descriptor, out string knownValue)
+        private void GetStaticQPackHeader(int index, out HeaderDescriptor descriptor, out string? knownValue)
         {
-            if (!HeaderDescriptor.TryGetStaticQPackHeader(index, out descriptor, out knownValue!))
+            if (!HeaderDescriptor.TryGetStaticQPackHeader(index, out descriptor, out knownValue))
             {
                 if (NetEventSource.IsEnabled) Trace($"Response contains invalid static header index '{index}'.");
                 throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);

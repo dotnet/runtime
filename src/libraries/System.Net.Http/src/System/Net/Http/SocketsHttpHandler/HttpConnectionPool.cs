@@ -1515,7 +1515,7 @@ namespace System.Net.Http
         private void Trace(string? message, [CallerMemberName] string? memberName = null) =>
             NetEventSource.Log.HandlerMessage(
                 GetHashCode(),               // pool ID
-                0,                           // connection I
+                0,                           // connection ID
                 0,                           // request ID
                 memberName,                  // method name
                 message);                    // message

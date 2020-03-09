@@ -179,7 +179,7 @@ namespace System.Net.Http.Headers
             if ((current < input.Length) && (input[current] == ';'))
             {
                 mediaTypeHeader = mediaTypeCreator();
-                mediaTypeHeader._mediaType = mediaType!;
+                mediaTypeHeader._mediaType = mediaType;
 
                 current++; // skip delimiter.
                 int parameterLength = NameValueHeaderValue.GetNameValueListLength(input, current, ';',
@@ -196,7 +196,7 @@ namespace System.Net.Http.Headers
 
             // We have a media type without parameters.
             mediaTypeHeader = mediaTypeCreator();
-            mediaTypeHeader._mediaType = mediaType!;
+            mediaTypeHeader._mediaType = mediaType;
             parsedValue = mediaTypeHeader;
             return current - startIndex;
         }

@@ -143,7 +143,6 @@ namespace System.Net.Http
                 _contentConsumed = true;
 
                 Stream originalStream = _originalContent.TryReadAsStream() ?? await _originalContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-
                 return GetDecompressedStream(originalStream);
             }
 

@@ -39,10 +39,10 @@ namespace System.Net.Http
             return false;
         }
 
-        private static async Task<HttpResponseMessage> SendWithNtAuthAsync(HttpRequestMessage request, Uri authUri, ICredentials credentials, bool isProxyAuth, HttpConnection? connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
+        private static async Task<HttpResponseMessage> SendWithNtAuthAsync(HttpRequestMessage request, Uri authUri, ICredentials credentials, bool isProxyAuth, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
-            HttpResponseMessage? response = await InnerSendAsync(request, isProxyAuth, connectionPool, connection!, cancellationToken).ConfigureAwait(false);
-            if (!isProxyAuth && connection!.Kind == HttpConnectionKind.Proxy && !ProxySupportsConnectionAuth(response))
+            HttpResponseMessage response = await InnerSendAsync(request, isProxyAuth, connectionPool, connection, cancellationToken).ConfigureAwait(false);
+            if (!isProxyAuth && connection.Kind == HttpConnectionKind.Proxy && !ProxySupportsConnectionAuth(response))
             {
                 // Proxy didn't indicate that it supports connection-based auth, so we can't proceed.
                 if (NetEventSource.IsEnabled)
@@ -64,7 +64,9 @@ namespace System.Net.Http
                         if (response.Headers.ConnectionClose.GetValueOrDefault())
                         {
                             // Server is closing the connection and asking us to authenticate on a new connection.
+#pragma warning disable CS8600 // expression returns null connection on error, was not able to use '!' for the expression
                             (connection, response) = await connectionPool.CreateHttp11ConnectionAsync(request, cancellationToken).ConfigureAwait(false);
+#pragma warning restore CS8600
                             if (response != null)
                             {
                                 return response;
@@ -119,7 +121,7 @@ namespace System.Net.Http
                             NetEventSource.Info(connection, $"Authentication: {challenge.AuthenticationType}, SPN: {spn}");
                         }
 
-                        ChannelBinding? channelBinding = connection!.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint);
+                        ChannelBinding? channelBinding = connection.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint);
                         NTAuthentication authContext = new NTAuthentication(isServer: false, challenge.SchemeName, challenge.Credential, spn, ContextFlagsPal.Connection, channelBinding);
                         string? challengeData = challenge.ChallengeData;
                         try
@@ -141,7 +143,7 @@ namespace System.Net.Http
                                 SetRequestAuthenticationHeaderValue(request, new AuthenticationHeaderValue(challenge.SchemeName, challengeResponse), isProxyAuth);
 
                                 response = await InnerSendAsync(request, isProxyAuth, connectionPool, connection, cancellationToken).ConfigureAwait(false);
-                                if (authContext.IsCompleted || !TryGetRepeatedChallenge(response!, challenge.SchemeName, isProxyAuth, out challengeData))
+                                if (authContext.IsCompleted || !TryGetRepeatedChallenge(response, challenge.SchemeName, isProxyAuth, out challengeData))
                                 {
                                     break;
                                 }
