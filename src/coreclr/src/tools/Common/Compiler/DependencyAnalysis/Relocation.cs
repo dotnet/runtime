@@ -8,19 +8,20 @@ namespace ILCompiler.DependencyAnalysis
 {
     public enum RelocType
     {
-        IMAGE_REL_BASED_ABSOLUTE        = 0x00,     // No relocation required
-        IMAGE_REL_BASED_ADDR32NB        = 0x02,     // The 32-bit address without an image base (RVA)
-        IMAGE_REL_BASED_HIGHLOW         = 0x03,     // 32 bit address base
-        IMAGE_REL_BASED_THUMB_MOV32     = 0x07,     // Thumb2: based MOVW/MOVT
-        IMAGE_REL_BASED_DIR64           = 0x0A,     // 64 bit address base
-        IMAGE_REL_BASED_REL32           = 0x10,     // 32-bit relative address from byte following reloc
-        IMAGE_REL_BASED_THUMB_BRANCH24  = 0x13,     // Thumb2: based B, BL
-        IMAGE_REL_BASED_ARM64_BRANCH26  = 0x14,     // Arm64: B, BL
-        IMAGE_REL_BASED_RELPTR32        = 0x7C,     // 32-bit relative address from byte starting reloc
-                                                    // This is a special NGEN-specific relocation type 
-                                                    // for relative pointer (used to make NGen relocation 
-                                                    // section smaller)    
-        IMAGE_REL_SECREL                = 0x80,     // 32 bit offset from base of section containing target
+        IMAGE_REL_BASED_ABSOLUTE             = 0x00,   // No relocation required
+        IMAGE_REL_BASED_ADDR32NB             = 0x02,   // The 32-bit address without an image base (RVA)
+        IMAGE_REL_BASED_HIGHLOW              = 0x03,   // 32 bit address base
+        IMAGE_REL_BASED_THUMB_MOV32          = 0x07,   // Thumb2: based MOVW/MOVT
+        IMAGE_REL_BASED_DIR64                = 0x0A,   // 64 bit address base
+        IMAGE_REL_BASED_REL32                = 0x10,   // 32-bit relative address from byte following reloc
+        IMAGE_REL_BASED_THUMB_BRANCH24       = 0x13,   // Thumb2: based B, BL
+        IMAGE_REL_BASED_THUMB_MOV32_PCREL    = 0x14,   // Thumb2: based MOVW/MOVT
+        IMAGE_REL_BASED_ARM64_BRANCH26       = 0x15,   // Arm64: B, BL
+        IMAGE_REL_BASED_RELPTR32             = 0x7C,   // 32-bit relative address from byte starting reloc
+                                                       // This is a special NGEN-specific relocation type
+                                                       // for relative pointer (used to make NGen relocation
+                                                       // section smaller)
+        IMAGE_REL_SECREL                     = 0x80,   // 32 bit offset from base of section containing target
 
         IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 = 0x81,   // ADRP
         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A = 0x82,   // ADD/ADDS (immediate) with zero shift, for page offset
@@ -29,8 +30,8 @@ namespace ILCompiler.DependencyAnalysis
         //
         // Relocations for R2R image production
         //
-        IMAGE_REL_SYMBOL_SIZE           = 0x1000,   // The size of data in the image represented by the target symbol node
-        IMAGE_REL_FILE_ABSOLUTE         = 0x1001,   // 32 bit offset from begining of image
+        IMAGE_REL_SYMBOL_SIZE                = 0x1000, // The size of data in the image represented by the target symbol node
+        IMAGE_REL_FILE_ABSOLUTE              = 0x1001, // 32 bit offset from begining of image
     }
 
     public struct Relocation
@@ -280,6 +281,7 @@ namespace ILCompiler.DependencyAnalysis
                     *(long*)location = value;
                     break;
                 case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
+                case RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL:
                     PutThumb2Mov32((ushort*)location, (uint)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
@@ -313,6 +315,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_DIR64:
                     return *(long*)location;
                 case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
+                case RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL:
                     return (long)GetThumb2Mov32((ushort*)location);
                 case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
                     return (long)GetThumb2BlRel24((ushort*)location);

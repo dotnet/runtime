@@ -9778,18 +9778,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
 
             case GT_INDEX:
             case GT_INDEX_ADDR:
-
-                if ((tree->gtFlags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) == 0) // We prefer printing V or U over R
-                {
-                    if (tree->gtFlags & GTF_INX_REFARR_LAYOUT)
-                    {
-                        printf("R");
-                        --msgLength;
-                        break;
-                    } // R means RefArray
-                }
-                __fallthrough;
-
             case GT_FIELD:
             case GT_CLS_VAR:
                 if (tree->gtFlags & GTF_IND_VOLATILE)

@@ -127,6 +127,12 @@
     <CoreClrPackagesProjectToBuild>
       <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
     </CoreClrPackagesProjectToBuild>
+    <CoreClrLinuxDacProjectToBuild>
+      <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
+    </CoreClrLinuxDacProjectToBuild>
+    <CoreClrAlpineLinuxDacProjectToBuild>
+      <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
+    </CoreClrAlpineLinuxDacProjectToBuild>
   </ItemDefinitionGroup>
 
   <ItemDefinitionGroup Condition="'$(MonoConfiguration)' != ''">

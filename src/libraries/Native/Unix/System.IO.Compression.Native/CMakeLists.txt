@@ -61,8 +61,6 @@ add_library(System.IO.Compression.Native-Static
     ${NATIVECOMPRESSION_SOURCES}
 )
 
-# Disable the "lib" prefix and override default name
-set_target_properties(System.IO.Compression.Native-Static PROPERTIES PREFIX "")
 set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native  CLEAN_DIRECT_OUTPUT 1)
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION .)

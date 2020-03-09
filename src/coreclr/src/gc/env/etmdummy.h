@@ -401,7 +401,6 @@
 #define FireEtwGCDynamicEvent(EventName, PayloadSize, Payload, ClrInstanceId) 0
 #define FireEtwBGC1stSweepEnd(GenNumber, ClrInstanceId) 0
 #define FireEtwResolutionAttempted(ClrInstanceId, asmName, stage, assemblyLoadContextName, result, resultAsmName, resultAsmPath, errMsg) 0
-#define FireEtwResolutionAttempted(ClrInstanceId, asmName, event, alcName, result, resultAsmName, resultAsmPath, errMsg) 0
 #define FireEtwKnownPathProbed(ClrInstanceId, path, source, hr) 0
 #define FireEtwContentionStop_V1(managedContention, ClrInstanceId, elapsedTimeInNanosecond) 0
 #define FireEtwAssemblyLoadContextResolvingHandlerInvoked(ClrInstanceId, assemblyName, handlerName, alcName, resultAssemblyName, resultAssemblyPath) 0

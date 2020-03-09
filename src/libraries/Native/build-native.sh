@@ -27,7 +27,7 @@ handle_arguments() {
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __BuildArch=x64
-__BuildOS=Linux
+__TargetOS=Linux
 __BuildType=Debug
 __CMakeArgs=""
 __Compiler=clang
@@ -63,12 +63,12 @@ else
 fi
 
 # set default OSX deployment target
-if [[ "$__BuildOS" == OSX ]]; then
+if [[ "$__TargetOS" == OSX ]]; then
     __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
 fi
 
 # Set the remaining variables based upon the determined build configuration
-__outConfig="${__outConfig:-"$__BuildOS-$__BuildArch-$__BuildType"}"
+__outConfig="${__outConfig:-"$__TargetOS-$__BuildArch-$__BuildType"}"
 __IntermediatesDir="$__RootBinDir/obj/native/$__outConfig"
 __BinDir="$__RootBinDir/bin/native/$__outConfig"
 

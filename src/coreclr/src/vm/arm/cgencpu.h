@@ -1059,9 +1059,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 #define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
 #define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
 
-#ifndef TARGET_UNIX
-#define JIT_Stelem_Ref                      JIT_Stelem_Ref
-#endif
 
 //------------------------------------------------------------------------
 //

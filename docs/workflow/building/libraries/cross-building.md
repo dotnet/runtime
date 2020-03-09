@@ -56,7 +56,7 @@ And with:
 
     $ ROOTFS_DIR=/mnt/corefx-cross/arm ./src/Native/build-native.sh debug arm verbose cross
 
-As usual the generated binaries will be found in `artifacts/bin/BuildOS.BuildArch.BuildType/native` as following:
+As usual the generated binaries will be found in `artifacts/bin/TargetOS.BuildArch.BuildType/native` as following:
 
     $ ls -al ./artifacts/bin/Linux.arm.Debug/native
     total 988
@@ -85,7 +85,7 @@ You can also build just managed code with:
 
     $ ./build.sh --arch arm /p:BuildNative=false
 
-The output is at `artifacts/bin/[BuildSettings]` where `BuildSettings` looks something like `netcoreapp5.0-<OSGroup>-Debug-<Architecture>`. Ex: `artifacts/bin/netcoreapp5.0-Linux-Debug-x64`. For more details on the build configurations see [project-guidelines](/docs/coding-guidelines/project-guidelines.md)
+The output is at `artifacts/bin/[BuildSettings]` where `BuildSettings` looks something like `netcoreapp5.0-<TargetOS>-Debug-<Architecture>`. Ex: `artifacts/bin/netcoreapp5.0-Linux-Debug-x64`. For more details on the build configurations see [project-guidelines](/docs/coding-guidelines/project-guidelines.md)
 
 Building corefx for Linux ARM Emulator
 =======================================

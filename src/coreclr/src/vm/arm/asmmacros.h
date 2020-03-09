@@ -185,12 +185,14 @@ __SECTIONREL_gCurrentThreadInfo SETS "SECTIONREL_gCurrentThreadInfo"
 ; INLINE_GETTHREAD. Optionally, it can be also used after any function that used INLINE_GETTHREAD
 ; to improve density, or to reduce distance betweeen the constant pool and its use.
 ;
+    SETALIAS gCurrentThreadInfo, ?gCurrentThreadInfo@@3UThreadLocalInfo@@A
+
     MACRO
         INLINE_GETTHREAD_CONSTANT_POOL
-        EXTERN gCurrentThreadInfo
+        EXTERN $gCurrentThreadInfo
 
 $__SECTIONREL_gCurrentThreadInfo
-        DCDU gCurrentThreadInfo
+        DCDU $gCurrentThreadInfo
         RELOC 15 ;; SECREL
 
 __SECTIONREL_gCurrentThreadInfo SETS "$__SECTIONREL_gCurrentThreadInfo":CC:"_"

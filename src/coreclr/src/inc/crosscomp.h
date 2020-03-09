@@ -362,7 +362,7 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 
 #endif
 
-#if defined(DAC_COMPILE) && defined(TARGET_UNIX)
+#if defined(DACCESS_COMPILE) && defined(TARGET_UNIX)
 // This is a TARGET oriented copy of CRITICAL_SECTION and PAL_CS_NATIVE_DATA_SIZE
 // It is configured based on TARGET configuration rather than HOST configuration
 // There is validation code in src/coreclr/src/vm/crst.cpp to keep these from

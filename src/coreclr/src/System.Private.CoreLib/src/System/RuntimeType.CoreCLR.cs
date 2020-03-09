@@ -2371,10 +2371,11 @@ namespace System
         {
             if (m_cache == IntPtr.Zero)
             {
-                IntPtr newgcHandle = new RuntimeTypeHandle(this).GetGCHandle(GCHandleType.WeakTrackResurrection);
+                RuntimeTypeHandle th = new RuntimeTypeHandle(this);
+                IntPtr newgcHandle = th.GetGCHandle(GCHandleType.WeakTrackResurrection);
                 IntPtr gcHandle = Interlocked.CompareExchange(ref m_cache, newgcHandle, IntPtr.Zero);
                 if (gcHandle != IntPtr.Zero)
-                    GCHandle.InternalFree(newgcHandle);
+                    th.FreeGCHandle(newgcHandle);
             }
 
             RuntimeTypeCache cache = (RuntimeTypeCache)GCHandle.InternalGet(m_cache);
