@@ -22,6 +22,10 @@
     </ProjectReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
   <!-- Need the PackageIndexFile file property from baseline.props -->
   <Import Project="$(RepositoryEngineeringDir)restore\harvestPackages.targets" />
 
