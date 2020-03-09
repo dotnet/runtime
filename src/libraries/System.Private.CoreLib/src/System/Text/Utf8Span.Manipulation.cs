@@ -431,10 +431,10 @@ namespace System.Text
 
                         if (SearchRune >= 0)
                         {
-#if SYSTEM_PRIVATE_CORELIB || NETSTANDARD2_0
-                            wasMatchFound = searchSpan.TryFind(Rune.UnsafeCreate((uint)SearchRune), out matchRange);
-#else
+#if NETCOREAPP3_0
                             wasMatchFound = searchSpan.TryFind(new Rune((uint)SearchRune), out matchRange);
+#else
+                            wasMatchFound = searchSpan.TryFind(Rune.UnsafeCreate((uint)SearchRune), out matchRange);
 #endif
                         }
                         else

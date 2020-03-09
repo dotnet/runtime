@@ -44,7 +44,7 @@ namespace System.Text
             // TODO_UTF8STRING: Reduce allocations in this code path.
 
             ReadOnlySpan<char> normalized = this.ToString().Normalize(normalizationForm)
-#if NETSTANDARD
+#if NETSTANDARD2_0
                 .AsSpan()
 #endif
                 ;
@@ -163,7 +163,7 @@ namespace System.Text
             }
 
             ReadOnlySpan<char> asLower = this.ToString().ToLower(culture)
-#if NETSTANDARD
+#if NETSTANDARD2_0
                 .AsSpan()
 #endif
                 ;
@@ -215,7 +215,7 @@ namespace System.Text
             // TODO_UTF8STRING: Avoid intermediate allocations.
 
             ReadOnlySpan<char> asLowerInvariant = this.ToString().ToLowerInvariant()
-#if NETSTANDARD
+#if NETSTANDARD2_0
                 .AsSpan()
 #endif
                 ;
@@ -275,7 +275,7 @@ namespace System.Text
             }
 
             ReadOnlySpan<char> asUpper = this.ToString().ToUpper(culture)
-#if NETSTANDARD
+#if NETSTANDARD2_0
                 .AsSpan()
 #endif
                 ;
@@ -327,7 +327,7 @@ namespace System.Text
             // TODO_UTF8STRING: Avoid intermediate allocations.
 
             ReadOnlySpan<char> asUpperInvariant = this.ToString().ToUpperInvariant()
-#if NETSTANDARD
+#if NETSTANDARD2_0
                 .AsSpan()
 #endif
                 ;

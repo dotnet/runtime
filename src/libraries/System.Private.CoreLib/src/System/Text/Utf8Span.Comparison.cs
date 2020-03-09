@@ -68,7 +68,7 @@ namespace System.Text
         {
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
-#if SYSTEM_PRIVATE_CORELIB || NETCOREAPP
+#if !NETSTANDARD2_0
             return this.ToString().Contains(value.ToString(), comparison);
 #else
             return this.ToString().IndexOf(value.ToString(), comparison) >= 0;
@@ -92,7 +92,7 @@ namespace System.Text
         {
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
-#if SYSTEM_PRIVATE_CORELIB || NETCOREAPP
+#if !NETSTANDARD2_0
             return this.ToString().Contains(value.ToString(), comparison);
 #else
             return this.ToString().IndexOf(value.ToString(), comparison) >= 0;

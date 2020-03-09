@@ -1811,6 +1811,7 @@
   <ItemGroup Condition="'$(FeatureUtf8String)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Char8.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Utf8Extensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Utf8Extensions.CoreLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Comparison.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Utf8String.Construction.cs" />

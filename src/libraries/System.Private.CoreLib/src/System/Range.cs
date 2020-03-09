@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-#if !SYSTEM_PRIVATE_CORELIB && !NETCOREAPP
+#if NETSTANDARD2_0
 using System.Numerics.Hashing;
 #endif
 
@@ -52,7 +52,7 @@ namespace System
         /// <summary>Returns the hash code for this instance.</summary>
         public override int GetHashCode()
         {
-#if SYSTEM_PRIVATE_CORELIB || NETCOREAPP
+#if !NETSTANDARD2_0
             return HashCode.Combine(Start.GetHashCode(), End.GetHashCode());
 #else
             return HashHelpers.Combine(Start.GetHashCode(), End.GetHashCode());
@@ -62,7 +62,7 @@ namespace System
         /// <summary>Converts the value of the current Range object to its equivalent string representation.</summary>
         public override string ToString()
         {
-#if SYSTEM_PRIVATE_CORELIB || NETCOREAPP
+#if !NETSTANDARD2_0
             Span<char> span = stackalloc char[2 + (2 * 11)]; // 2 for "..", then for each index 1 for '^' and 10 for longest possible uint
             int pos = 0;
 
@@ -88,20 +88,7 @@ namespace System
 
             return new string(span.Slice(0, pos));
 #else
-            var builder = new StringBuilder(2 + (2 * 11)); // 2 for "..", then for each index 1 for '^' and 10 for longest possible uint
-            if (Start.IsFromEnd)
-            {
-                builder.Append('^');
-            }
-            builder.Append((uint)Start.Value);
-            builder.Append('.');
-            builder.Append('.');
-            if (End.IsFromEnd)
-            {
-                builder.Append('^');
-            }
-            builder.Append((uint)End.Value);
-            return builder.ToString();
+            return Start.ToString() + ".." + End.ToString();
 #endif
 
         }

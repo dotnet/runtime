@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Unicode;
 
-#if CORECLR
+#if SYSTEM_PRIVATE_CORELIB
 using Internal.Runtime.CompilerServices;
 #endif
 
@@ -125,10 +125,10 @@ namespace System
             // Allow retrieving references to the null terminator.
 
             Debug.Assert(index <= (uint)Length, "Caller should've performed bounds checking.");
-#if CORECLR
+#if SYSTEM_PRIVATE_CORELIB
             return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), index);
 #else
-            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), (IntPtr)index); // TODO: IntPtr cast?
+            return ref Unsafe.AddByteOffset(ref DangerousGetMutableReference(), (IntPtr)index);
 #endif
         }
 
@@ -156,7 +156,7 @@ namespace System
 
             return !(value is null)
                 && this.Length == value.Length
-#if CORECLR
+#if SYSTEM_PRIVATE_CORELIB
                 && SpanHelpers.SequenceEqual(ref this.DangerousGetMutableReference(), ref value.DangerousGetMutableReference(), (uint)Length);
 #else
                 && this.GetSpan().SequenceEqual(value.GetSpan());
@@ -185,7 +185,7 @@ namespace System
             return !(left is null)
                 && !(right is null)
                 && left.Length == right.Length
-#if CORECLR
+#if SYSTEM_PRIVATE_CORELIB
                 && SpanHelpers.SequenceEqual(ref left.DangerousGetMutableReference(), ref right.DangerousGetMutableReference(), (uint)left.Length);
 #else
                 && left.GetSpan().SequenceEqual(right.GetSpan());
@@ -211,7 +211,7 @@ namespace System
             // TODO_UTF8STRING: Consider whether this should use a different seed than String.GetHashCode.
 
             ulong seed = Marvin.DefaultSeed;
-#if CORECLR
+#if SYSTEM_PRIVATE_CORELIB
             return Marvin.ComputeHash32(ref DangerousGetMutableReference(), (uint)_length /* in bytes */, (uint)seed, (uint)(seed >> 32));
 #else
             return Marvin.ComputeHash32(_bytes, seed);
@@ -258,7 +258,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns the entire <see cref="Utf8String"/> as an array of UTF-8 bytes.GetPinnableReference
+        /// Returns the entire <see cref="Utf8String"/> as an array of UTF-8 bytes.
         /// </summary>
         public byte[] ToByteArray() => this.AsSpanSkipNullCheck().ToByteArray();
 
@@ -269,18 +269,15 @@ namespace System
         {
             // TODO_UTF8STRING: Optimize the call below, potentially by avoiding the two-pass.
 
-#if CORECLR || NETCOREAPP
+#if !NETSTANDARD2_0
             return Encoding.UTF8.GetString(this.AsBytesSkipNullCheck());
 #else
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(Length);
-            try
+            unsafe
             {
-                GetSpan().CopyTo(buffer.AsSpan());
-                return Encoding.UTF8.GetString(buffer, 0, Length);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buffer);
+                fixed (byte* pBytes = this.AsBytesSkipNullCheck())
+                {
+                    return Encoding.UTF8.GetString(pBytes, Length);
+                }
             }
 #endif
         }

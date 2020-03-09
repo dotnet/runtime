@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    public sealed partial class Utf8StringContent : HttpContent
+    public sealed class Utf8StringContent : HttpContent
     {
         private const string DefaultMediaType = "text/plain";
 

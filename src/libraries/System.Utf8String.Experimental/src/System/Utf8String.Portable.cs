@@ -123,6 +123,7 @@ namespace System
             return newBuffer;
         }
 
+        // This should only be called from FastAllocate
         private Utf8String(byte[] bytes)
         {
             _bytes = bytes;
@@ -171,6 +172,10 @@ namespace System
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ReadOnlySpan<byte> AsBytesSkipNullCheck() => GetSpan();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlyMemory<byte> CreateMemoryBytes(int start, int length) =>
+            _bytes.AsMemory(start, length);
 
         /// <summary>
         /// Creates a new zero-initialized instance of the specified length. Actual storage allocated is "length + 1" bytes
@@ -222,9 +227,5 @@ namespace System
         {
             throw new ArgumentException(SR.Arg_MustBeNullTerminatedString);
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ReadOnlyMemory<byte> CreateMemoryBytes(int start, int length) =>
-            _bytes.AsMemory(start, length);
     }
 }

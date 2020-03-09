@@ -48,7 +48,7 @@ namespace System
             // Create and populate the Utf8String instance.
 
             Utf8String newString = FastAllocateSkipZeroInit(buffer.Length);
-#if CORECLR
+#if SYSTEM_PRIVATE_CORELIB
             Buffer.Memmove(ref newString.DangerousGetMutableReference(), ref MemoryMarshal.GetReference(buffer), (uint)buffer.Length);
 #else
             buffer.CopyTo(newString.DangerousGetMutableSpan());
@@ -115,7 +115,7 @@ namespace System
             // Create and populate the Utf8String instance.
 
             Utf8String newString = FastAllocateSkipZeroInit(buffer.Length);
-#if CORECLR
+#if SYSTEM_PRIVATE_CORELIB
             Buffer.Memmove(ref newString.DangerousGetMutableReference(), ref MemoryMarshal.GetReference(buffer), (uint)buffer.Length);
 #else
             buffer.CopyTo(newString.DangerousGetMutableSpan());
@@ -351,7 +351,7 @@ namespace System
 
             return newBuffer;
         }
-#endif
+#endif // !SYSTEM_PRIVATE_CORELIB
 
 #if !NETSTANDARD2_0
         /// <summary>

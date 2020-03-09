@@ -59,7 +59,7 @@ namespace System
             }
 
             return AreEquivalentOrdinalSkipShortCircuitingChecks(utf8Text.AsBytes(), utf16Text
-#if NETSTANDARD
+#if NETSTANDARD2_0
                 .AsSpan()
 #endif
                 );
@@ -194,7 +194,7 @@ namespace System
         {
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
-#if SYSTEM_PRIVATE_CORELIB || NETCOREAPP
+#if !NETSTANDARD2_0
             return ToString().Contains(value.ToString(), comparison);
 #else
             return ToString().IndexOf(value.ToString(), comparison) >= 0;
@@ -228,7 +228,7 @@ namespace System
 
             // TODO_UTF8STRING: Optimize me to avoid allocations.
 
-#if SYSTEM_PRIVATE_CORELIB || NETCOREAPP
+#if !NETSTANDARD2_0
             return ToString().Contains(value.ToString(), comparison);
 #else
             return ToString().IndexOf(value.ToString(), comparison) >= 0;

@@ -191,7 +191,7 @@ namespace System.Text
             original = original.Slice(0, charCount);
             modified = modified.Slice(0, charCount);
 
-#if CORECLR
+#if SYSTEM_PRIVATE_CORELIB
             if (toUpper)
             {
                 culture!.TextInfo.ChangeCaseToUpper(original, modified);
@@ -842,7 +842,7 @@ namespace System.Text
         /// </summary>
         public override string ToString()
         {
-#if CORECLR
+#if SYSTEM_PRIVATE_CORELIB
             if (IsBmp)
             {
                 return string.CreateFromChar((char)_value);
@@ -862,13 +862,7 @@ namespace System.Text
             {
                 Span<char> buffer = stackalloc char[2];
                 UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar(_value, out buffer[0], out buffer[1]);
-                unsafe
-                {
-                    fixed (char* pBuffer = buffer)
-                    {
-                        return new string(pBuffer, 0, 2);
-                    }
-                }
+                return buffer.ToString();
             }
 #endif
         }
@@ -1105,10 +1099,9 @@ namespace System.Text
             else
             {
                 // not an ASCII char; fall back to globalization table
-#if CORECLR
+#if SYSTEM_PRIVATE_CORELIB
                 return CharUnicodeInfo.GetNumericValue(value.Value);
 #else
-                // TODO: figure out a better way than allocating here
                 return CharUnicodeInfo.GetNumericValue(value.ToString(), 0);
 #endif
             }
@@ -1129,10 +1122,9 @@ namespace System.Text
         private static UnicodeCategory GetUnicodeCategoryNonAscii(Rune value)
         {
             Debug.Assert(!value.IsAscii, "Shouldn't use this non-optimized code path for ASCII characters.");
-#if CORECLR
+#if !NETSTANDARD2_0
             return CharUnicodeInfo.GetUnicodeCategory(value.Value);
 #else
-            // TODO: figure out a better way than allocating here
             return CharUnicodeInfo.GetUnicodeCategory(value.ToString(), 0);
 #endif
         }
@@ -1286,7 +1278,7 @@ namespace System.Text
             // if the incoming value is within the BMP.
 
             return value.IsBmp &&
-#if CORECLR
+#if SYSTEM_PRIVATE_CORELIB
                 CharUnicodeInfo.GetIsWhiteSpace((char)value._value);
 #else
                 char.IsWhiteSpace((char)value._value);

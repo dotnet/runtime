@@ -18,6 +18,9 @@
     <Compile Include="$(CoreLibSharedDir)\System\Numerics\BitOperations.cs">
       <Link>System\Numerics\BitOperations.cs</Link>
     </Compile>
+    <Compile Include="$(CoreLibSharedDir)\System\Numerics\Hashing\HashHelpers.cs">
+      <Link>System\Numerics\Hashing\HashHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Range.cs">
       <Link>System\Range.cs</Link>
     </Compile>
@@ -71,9 +74,6 @@
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\Utf8StringComparer.cs">
       <Link>System\Text\Utf8StringComparer.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs">
-      <Link>System\Numerics\Hashing\HashHelpers.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)\System\Text\ASCIIUtility.cs">
       <Link>System\Text\ASCIIUtility.cs</Link>
