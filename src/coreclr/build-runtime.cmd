@@ -51,8 +51,6 @@ set "__RepoRootDir=%__ProjectDir%\..\.."
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__SourceDir=%__ProjectDir%\src"
 set "__RootBinDir=%__RepoRootDir%\artifacts"
-set "__LogsDir=%__RootBinDir%\log\!__BuildType!"
-set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
 set __BuildAll=
 
@@ -259,6 +257,8 @@ if %__PgoOptimize%==0 (
 
 set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
+set "__LogsDir=%__RootBinDir%\log\!__BuildType!"
+set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set "__ArtifactsIntermediatesDir=%__RepoRootDir%\artifacts\obj\coreclr\"
 if "%__NMakeMakefiles%"=="1" (set "__IntermediatesDir=%__RootBinDir%\nmakeobj\%__TargetOS%.%__BuildArch%.%__BuildType%")
 set "__PackagesBinDir=%__BinDir%\.nuget"
