@@ -20,6 +20,12 @@
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
     <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
     <ILLinkTrimXml>$(IntermediateOutputPath)System.Private.CoreLib.xml</ILLinkTrimXml>
+
+    <!-- We don't generate IBC data for the Mac-specific build of System.Private.CoreLib
+         and the Linux one is not valid for the Mac build
+         so we need to disable merging in the IBC data on the Mac build
+    -->
+    <IsEligibleForNgenOptimization Condition="'$(TargetOS)' == 'OSX'">false</IsEligibleForNgenOptimization>
   </PropertyGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
