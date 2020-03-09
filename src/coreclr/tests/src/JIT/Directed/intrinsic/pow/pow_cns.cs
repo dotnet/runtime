@@ -24,23 +24,23 @@ class MathPowTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static T ToVar<T>(T arg) => arg;
 
-    public static void AssertEquals(double a, double b)
+    public static void AssertEquals(double a, double b, [CallerLineNumber] int line = 0)
     {
         if (BitConverter.DoubleToInt64Bits(a) !=
             BitConverter.DoubleToInt64Bits(b))
         {
             returnCode++;
-            Console.WriteLine($"Failed: {a} != {b}");
+            Console.WriteLine($"Failed: {a} != {b}, ({BitConverter.DoubleToInt64Bits(a)} != {BitConverter.DoubleToInt64Bits(b)}, line:{line}");
         }
     }
 
-    public static void AssertEquals(float a, float b)
+    public static void AssertEquals(float a, float b, [CallerLineNumber] int line = 0)
     {
         if (BitConverter.SingleToInt32Bits(a) !=
             BitConverter.SingleToInt32Bits(b))
         {
             returnCode++;
-            Console.WriteLine($"Failed: {a} != {b}");
+            Console.WriteLine($"Failed: {a} != {b}, ({BitConverter.SingleToInt32Bits(a)} != {BitConverter.SingleToInt32Bits(b)}, line:{line}");
         }
     }
 
