@@ -110,7 +110,6 @@
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"
-          Condition="'$(DotNetBuildFromSource)' != 'true'"
     >
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
