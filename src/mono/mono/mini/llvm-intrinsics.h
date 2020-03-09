@@ -149,6 +149,7 @@ INTRINS(SSE_ROUNDSS, x86_sse41_round_ss)
 INTRINS(SSE_ROUNDPD, x86_sse41_round_pd)
 INTRINS(SSE_PTESTZ, x86_sse41_ptestz)
 INTRINS(SSE_INSERTPS, x86_sse41_insertps)
+INTRINS(SSE_SFENCE, x86_sse_sfence)
 #if LLVM_API_VERSION >= 800
 	// these intrinsics were renamed in LLVM 8
 INTRINS_OVR(SSE_SADD_SATI8, sadd_sat)

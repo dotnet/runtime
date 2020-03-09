@@ -2139,6 +2139,20 @@ set_nonnull_load_flag (LLVMValueRef v)
 }
 
 static void
+set_nontemporal_flag (LLVMValueRef v)
+{
+	LLVMValueRef md_arg;
+	int md_kind;
+	const char *flag_name;
+
+	// FIXME: Cache this
+	flag_name = "nontemporal";
+	md_kind = LLVMGetMDKindID (flag_name, strlen (flag_name));
+	md_arg = LLVMMDString ("<index>", strlen ("<index>"));
+	LLVMSetMetadata (v, md_kind, LLVMMDNode (&md_arg, 1));
+}
+
+static void
 set_invariant_load_flag (LLVMValueRef v)
 {
 	LLVMValueRef md_arg;
@@ -7464,6 +7478,41 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildInsertElement (builder, LLVMConstNull (type_to_sse_type (ins->inst_c1)), val, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
 			break;
 		}
+		case OP_SSE_MOVSS_STORE: {
+			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (LLVMFloatType (), 0));
+			LLVMValueRef val = LLVMBuildExtractElement (builder, rhs, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
+			mono_llvm_build_store (builder, val, addr, FALSE, LLVM_BARRIER_NONE);
+			break;
+		}
+
+		case OP_SSE_MOVLPS_LOAD:
+		case OP_SSE_MOVHPS_LOAD: {
+			/* Load two floats from rhs and store them in the low/high part of lhs */
+			LLVMValueRef addr = rhs;
+			LLVMValueRef addr1 = convert (ctx, addr, LLVMPointerType (LLVMFloatType (), 0));
+			LLVMValueRef addr2 = convert (ctx, LLVMBuildAdd (builder, convert (ctx, addr, IntPtrType ()), convert (ctx, LLVMConstInt (LLVMInt32Type (), 4, FALSE), IntPtrType ()), ""), LLVMPointerType (LLVMFloatType (), 0));
+			LLVMValueRef val1 = mono_llvm_build_load (builder, addr1, "", FALSE);
+			LLVMValueRef val2 = mono_llvm_build_load (builder, addr2, "", FALSE);
+			int index1 = ins->opcode == OP_SSE_MOVLPS_LOAD ? 0 : 2;
+			int index2 = ins->opcode == OP_SSE_MOVLPS_LOAD ? 1 : 3;
+			values [ins->dreg] = LLVMBuildInsertElement (builder, LLVMBuildInsertElement (builder, lhs, val1, LLVMConstInt (LLVMInt32Type (), index1, FALSE), ""), val2, LLVMConstInt (LLVMInt32Type (), index2, FALSE), "");
+			break;
+		}
+
+		case OP_SSE_MOVLPS_STORE:
+		case OP_SSE_MOVHPS_STORE: {
+			/* Store two floats from the low/hight part of rhs into lhs */
+			LLVMValueRef addr = lhs;
+			LLVMValueRef addr1 = convert (ctx, addr, LLVMPointerType (LLVMFloatType (), 0));
+			LLVMValueRef addr2 = convert (ctx, LLVMBuildAdd (builder, convert (ctx, addr, IntPtrType ()), convert (ctx, LLVMConstInt (LLVMInt32Type (), 4, FALSE), IntPtrType ()), ""), LLVMPointerType (LLVMFloatType (), 0));
+			int index1 = ins->opcode == OP_SSE_MOVLPS_STORE ? 0 : 2;
+			int index2 = ins->opcode == OP_SSE_MOVLPS_STORE ? 1 : 3;
+			LLVMValueRef val1 = LLVMBuildExtractElement (builder, rhs, LLVMConstInt (LLVMInt32Type (), index1, FALSE), "");
+			LLVMValueRef val2 = LLVMBuildExtractElement (builder, rhs, LLVMConstInt (LLVMInt32Type (), index2, FALSE), "");
+			mono_llvm_build_store (builder, val1, addr1, FALSE, LLVM_BARRIER_NONE);
+			mono_llvm_build_store (builder, val2, addr2, FALSE, LLVM_BARRIER_NONE);
+			break;
+		}
 
 		case OP_SSE_STORE: {
 			LLVMValueRef dst_vec = convert (ctx, lhs, LLVMPointerType (LLVMTypeOf (rhs), 0));
@@ -7477,7 +7526,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			mono_llvm_build_aligned_store (builder, first_elem, dst, FALSE, 1);
 			break;
 		}
-
+		case OP_SSE_MOVNTPS: {
+			printf ("X: %s\n", mono_method_get_full_name (cfg->method));
+			LLVMValueRef store = mono_llvm_build_aligned_store (builder, rhs, lhs, FALSE, 1);
+			set_nontemporal_flag (store);
+			break;
+		}
 		case OP_SSE_SHUFFLE: {
 			LLVMValueRef shuffle_vec = create_const_vector_4_i32 (
 				((ins->inst_c0 >> 0) & 0x3) + 0, // take two elements from lhs
@@ -7631,6 +7685,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			default: g_assert_not_reached (); break;
 			}
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+		case OP_XOP: {
+			IntrinsicId id = (IntrinsicId)0;
+			switch (ins->inst_c0) {
+			case SIMD_OP_SSE_SFENCE: id = INTRINS_SSE_SFENCE; break;
+			default: g_assert_not_reached (); break;
+			}
+			call_intrins (ctx, id, NULL, "");
 			break;
 		}
 		case OP_XOP_I4_X:

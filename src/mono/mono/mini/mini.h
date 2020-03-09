@@ -2899,7 +2899,8 @@ typedef enum {
 	SIMD_OP_SSE_MAXPS,
 	SIMD_OP_SSE_MAXSS,
 	SIMD_OP_SSE_MINPS,
-	SIMD_OP_SSE_MINSS
+	SIMD_OP_SSE_MINSS,
+	SIMD_OP_SSE_SFENCE
 } SimdOp;
 
 const char *mono_arch_xregname (int reg);
