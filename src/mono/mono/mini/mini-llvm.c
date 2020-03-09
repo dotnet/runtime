@@ -7527,7 +7527,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_SSE_MOVNTPS: {
-			LLVMValueRef store = mono_llvm_build_aligned_store (builder, rhs, lhs, FALSE, 1);
+			LLVMValueRef store = mono_llvm_build_aligned_store (builder, rhs, lhs, FALSE, 16);
 			set_nontemporal_flag (store);
 			break;
 		}
