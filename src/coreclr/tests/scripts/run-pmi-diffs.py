@@ -315,7 +315,7 @@ def baseline_build():
         buildOpts = ''
         dockerCmd = ''
         if not Is_windows and (arch == 'arm' or arch == 'arm64'):
-            # linux arm and arm64 builds are cross-compilation builds using Docker.
+            # Linux arm and arm64 builds are cross-compilation builds using Docker.
             if arch == 'arm':
                 dockerFile = Docker_name_arm32
                 dockerOpts = Docker_opts_arm32

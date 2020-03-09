@@ -10,7 +10,7 @@ function usage {
     echo '    corefx source is at ~/cfx'
     echo '    --testRootDir and --mscorlibDir have been built on Windows/downloaded from dotnet-ci.cloudapp.net'
     echo '    --coreFxNativeBinDir has been built using cross build'
-    echo '    --coreFxBinDir has been built on linux'
+    echo '    --coreFxBinDir has been built on Linux'
     echo '$ cd ~/clr'
     echo '$ ./tests/scripts/arm32_ci_script.sh'
     echo '    --emulatorPath=/opt/linux-arm-emulator'
@@ -33,12 +33,12 @@ function usage {
     echo '    --mode=<mode>                      : docker or emulator (default)'
     echo '    --arm                              : Build using hard ABI'
     echo '    --armel                            : Build using softfp ABI (default)'
-    echo '    --linuxCodeName=<name>             : Code name for linux: For arm, trusty (default) and xenial. For armel, tizen'
+    echo '    --linuxCodeName=<name>             : Code name for Linux: For arm, trusty (default) and xenial. For armel, tizen'
     echo '    --skipRootFS                       : Skip building rootfs'
     echo '    --skipTests                        : Presenting this option skips testing the generated binaries'
     echo '                                         If this option is not presented, then tests are run by default'
     echo '                                         using the other test related options'
-    echo '    --skipmscorlib                     : Skips generating mscorlib.dll on linux'
+    echo '    --skipmscorlib                     : Skips generating mscorlib.dll on Linux'
     echo '                                         If tests are run and this option is not used,'
     echo '                                         then --mscorlibDir option to this script is mandatory'
     echo '    -v --verbose                       : Build made verbose'
@@ -258,7 +258,7 @@ function cross_build_coreclr_with_docker {
             __runtimeOS="ubuntu.16.04"
         ;;
         *)
-            exit_with_error "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch" false
+            exit_with_error "ERROR: $__linuxCodeName is not a supported Linux name for $__buildArch" false
         ;;
         esac
     elif [ "$__buildArch" == "armel" ]; then
@@ -271,8 +271,8 @@ function cross_build_coreclr_with_docker {
             __runtimeOS="tizen.5.0.0"
         ;;
         *)
-            echo "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch"
-            exit_with_error "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch" false
+            echo "ERROR: $__linuxCodeName is not a supported Linux name for $__buildArch"
+            exit_with_error "ERROR: $__linuxCodeName is not a supported Linux name for $__buildArch" false
         ;;
         esac
     else
@@ -382,7 +382,7 @@ function run_tests_using_docker {
             __dockerEnvironmentVariables=" -e ROOTFS_DIR=/crossrootfs/arm"
         ;;
         *)
-            exit_with_error "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch" false
+            exit_with_error "ERROR: $__linuxCodeName is not a supported Linux name for $__buildArch" false
         ;;
         esac
     elif [ "$__buildArch" == "armel" ]; then
@@ -393,7 +393,7 @@ function run_tests_using_docker {
             __dockerEnvironmentVariables=" -e ROOTFS_DIR=/crossrootfs/armel.tizen.test"
         ;;
         *)
-            exit_with_error "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch" false
+            exit_with_error "ERROR: $__linuxCodeName is not a supported Linux name for $__buildArch" false
         ;;
         esac
     else

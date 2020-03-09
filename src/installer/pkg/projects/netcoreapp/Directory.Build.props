@@ -3,7 +3,7 @@
 
   <!--
     Determine CoreCLR/Libraries TargetOS based on Installer TargetOS. For example,
-    Installer uses Unix when applicable, but others go straight to linux.
+    Installer uses Unix when applicable, but others go straight to Linux.
   -->
   <PropertyGroup>
     <CoreCLRTargetOS Condition="'$(TargetsWindows)' == 'true'">win</CoreCLRTargetOS>

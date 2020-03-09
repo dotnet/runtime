@@ -27,7 +27,7 @@ parameters:
 
 jobs:
 
-# linux arm
+# Linux arm
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_arm'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
@@ -51,7 +51,7 @@ jobs:
         crossrootfsDir: '/crossrootfs/arm'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# linux arm64
+# Linux arm64
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
@@ -75,7 +75,7 @@ jobs:
         crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# linux musl x64
+# Linux musl x64
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_musl_x64'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
@@ -107,7 +107,7 @@ jobs:
           managedTestBuildOsGroup: osx
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# linux musl arm64
+# Linux musl arm64
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_musl_arm64'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
@@ -132,7 +132,7 @@ jobs:
         crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# linux x64
+# Linux x64
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
@@ -179,9 +179,9 @@ jobs:
           platforms: ${{ parameters.platforms }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# freebsd
+# FeeBSD
 
-# freebsd machines are currently offline. Re-enable in the official build when
+# FeeBSD machines are currently offline. Re-enable in the official build when
 # the machines are healthy.
 
 # - template: xplat-setup.yml

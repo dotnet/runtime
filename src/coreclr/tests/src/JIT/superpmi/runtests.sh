@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# Run CoreCLR OSS tests on linux or Mac
+# Run CoreCLR OSS tests on Linux or Mac
 # Use the instructions here:
 #    https://github.com/dotnet/runtime/blob/master/docs/workflow/building/coreclr/unix-test-instructions.md
 #
 # Summary:
-# 1. On linux/Mac, in coreclr, ./build.sh
-# 2. On linux/Mac, in corefx, ./build.sh
-# 3. On linux/Mac, in corefx, "build-native.sh"
-# 4. On Windows, build linux mscorlib: build.cmd linuxmscorlib
-# 5. Mount Windows shares on linux
-# 6. Copy tests to linux/Mac:
-#       linux: cp --recursive ~/brucefo1/ManagedCodeGen/artifacts/tests/win.x64.Debug ~/test/win.x64.Debug
+# 1. On Linux/Mac, in coreclr, ./build.sh
+# 2. On Linux/Mac, in corefx, ./build.sh
+# 3. On Linux/Mac, in corefx, "build-native.sh"
+# 4. On Windows, build Linux mscorlib: build.cmd linuxmscorlib
+# 5. Mount Windows shares on Linux
+# 6. Copy tests to Linux/Mac:
+#       Linux: cp --recursive ~/brucefo1/ManagedCodeGen/artifacts/tests/win.x64.Debug ~/test/win.x64.Debug
 #       Mac  : cp -R          ~/brucefo1/ManagedCodeGen/artifacts/tests/win.x64.Debug ~/test/win.x64.Debug
 # 7. Run this script
 #

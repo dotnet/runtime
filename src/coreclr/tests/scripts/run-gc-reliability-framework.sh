@@ -19,7 +19,7 @@ case $OSName in
         ;;
 
     *)
-        echo "Unsupported OS $OSName detected, configuring as if for linux"
+        echo "Unsupported OS $OSName detected, configuring as if for Linux"
         OS=linux
         ;;
 esac

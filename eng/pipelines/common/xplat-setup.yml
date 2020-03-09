@@ -69,21 +69,21 @@ jobs:
 
     ${{ if eq(parameters.jobParameters.pool, '') }}:
       pool:
-        # Public linux Build Pool
+        # Public Linux Build Pool
         ${{ if and(eq(parameters.osGroup, 'linux'), eq(variables['System.TeamProject'], 'public')) }}:
           name:  NetCorePublic-Pool
           queue: BuildPool.Ubuntu.1604.Amd64.Open
 
-        # Official Build linux Pool
+        # Official Build Linux Pool
         ${{ if and(eq(parameters.osGroup, 'linux'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCoreInternal-Pool
           queue: BuildPool.Ubuntu.1604.Amd64
 
-        # freebsd builds only in the internal project
+        # FreeBSD builds only in the internal project
         ${{ if and(eq(parameters.osGroup, 'freebsd'), ne(variables['System.TeamProject'], 'public')) }}:
           name: dnceng-freebsd-internal
 
-        # Public osx Build Pool
+        # Public OSX Build Pool
         ${{ if eq(parameters.osGroup, 'osx') }}:
           vmImage: 'macOS-10.14'
 

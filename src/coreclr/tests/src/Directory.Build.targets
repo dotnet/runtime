@@ -51,7 +51,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Since bug in Roslyn for linux empty DebugType property leads to build failure. See issue Roslyn@20343 -->
+    <!-- Since bug in Roslyn for Linux empty DebugType property leads to build failure. See issue Roslyn@20343 -->
     <DebugType Condition=" '$(DebugType)' == '' and '$(RunningOnUnix)' == 'true' ">None</DebugType>
   </PropertyGroup>
 
@@ -138,10 +138,10 @@
         <!-- Filter out the CMakeFiles files -->
         <NativeProjectBinariesExeFilterRemovedCMakeFile Condition="'$(RunningOnUnix)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `.*CMakeFiles.*`))" Include="@(NativeProjectBinariesExeFilterRemovedMakeFile)" />
 
-        <!-- Filter .dylib files on osx -->
+        <!-- Filter .dylib files on OSX -->
         <NativeProjectBinariesDyLibFilter Condition="'$(__TargetOS)' == 'osx' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.dylib`))" Include="@(NativeProjectBinariesMatched)" />
 
-        <!-- Filter .so files on linux -->
+        <!-- Filter .so files on Linux -->
         <NativeProjectBinariesDyLibFilter Condition="'$(__TargetOS)' == 'linux' and $([System.Text.RegularExpressions.Regex]::IsMatch(['%(Identity)', `(.*\/).*\.so`))" Include="@(NativeProjectBinariesMatched)" />
 
         <!-- Filter static lib files on Unix -->

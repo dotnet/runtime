@@ -62,7 +62,7 @@ else
     source "$EMSDK_PATH"/emsdk_env.sh
 fi
 
-# set default osx deployment target
+# set default OSX deployment target
 if [[ "$__TargetOS" == osx ]]; then
     __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
 fi

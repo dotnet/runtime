@@ -231,7 +231,7 @@ def main(argv):
         print(errorMessage)
         print("\nOr download and apply generated patch:")
         print("1. From the GitHub 'Checks' page on the Pull Request, with the failing Formatting")
-        print("   job selected (e.g., 'Formatting linux x64'), click the 'View more details on")
+        print("   job selected (e.g., 'Formatting Linux x64'), click the 'View more details on")
         print("   Azure Pipelines' link.")
         print("3. Select the 'Summary' tab.")
         print("4. Open the 'Build artifacts published' entry.")

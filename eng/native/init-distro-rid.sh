@@ -150,7 +150,7 @@ initDistroRidGlobal()
         export __PortableBuild
         local distroRid=""
 
-        # Check for musl-based distros (e.g Alpine linux, Void linux).
+        # Check for musl-based distros (e.g Alpine Linux, Void Linux).
         if "${rootfsDir}/usr/bin/ldd" --version 2>&1 | grep -q musl ||
                 strings "${rootfsDir}/usr/bin/ldd" 2>&1 | grep -q musl; then
             distroRid="linux-musl-${buildArch}"

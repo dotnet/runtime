@@ -83,7 +83,7 @@ function create_testhost
             local coreFXTestRemoteURL=$(<${coreClrSrcTestDir}/CoreFX/CoreFXTestListURL_OSX.txt)
             local coreFXTestExclusionDef=nonosxtests
         ;;        
-        # Default to linux        
+        # Default to Linux        
         *)
             local coreFXTestRemoteURL=$(<${coreClrSrcTestDir}/CoreFX/CoreFXTestListURL_Linux.txt)
             local coreFXTestExclusionDef=nonlinuxtests
@@ -126,8 +126,8 @@ function create_testhost
 }
 
 function set_up_core_dump_generation {
-    # We will only enable dump generation here if we're on Mac or linux
-    if [[ ! ( "$(uname -s)" == "Darwin" || "$(uname -s)" == "linux" ) ]]; then
+    # We will only enable dump generation here if we're on Mac or Linux
+    if [[ ! ( "$(uname -s)" == "Darwin" || "$(uname -s)" == "Linux" ) ]]; then
         return
     fi
 
@@ -141,7 +141,7 @@ function set_up_core_dump_generation {
     # Allow dump generation
     ulimit -c unlimited
 
-    if [ "$(uname -s)" == "linux" ]; then
+    if [ "$(uname -s)" == "Linux" ]; then
         if [ -e /proc/self/coredump_filter ]; then
             # Include memory in private and shared file-backed mappings in the dump.
             # This ensures that we can see disassembly from our shared libraries when

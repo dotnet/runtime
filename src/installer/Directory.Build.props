@@ -126,7 +126,7 @@
 
   <PropertyGroup>
     <DisableCrossgen>false</DisableCrossgen>
-    <!-- Disable cross-gen on freebsd for now. This can be revisited when we have full support. -->
+    <!-- Disable cross-gen on FreeBSD for now. This can be revisited when we have full support. -->
     <DisableCrossgen Condition="'$(TargetOS)'=='freebsd'">true</DisableCrossgen>
     <OutputVersionBadge>$(AssetOutputPath)sharedfx_$(OutputRid)_$(Configuration)_version_badge.svg</OutputVersionBadge>
   </PropertyGroup>
@@ -143,7 +143,7 @@
     <SharedFrameworkInstallerStart>$(AssetOutputPath)$(DotnetRuntimeString)</SharedFrameworkInstallerStart>
     <DotnetRuntimeDependenciesPackageInstallerStart>$(AssetOutputPath)$(DotnetRuntimeDependenciesPackageString)</DotnetRuntimeDependenciesPackageInstallerStart>
 
-    <!-- osx specific intermediate package suffix . osx specific intermediate packages are suffixed with -internal to avoid name collision for bundle package (dotnet-runtime-*)
+    <!-- OSX specific intermediate package suffix . OSX specific intermediate packages are suffixed with -internal to avoid name collision for bundle package (dotnet-runtime-*)
          and runtime ( earlier as dotnet-sharedframework-*)	-->
     <InstallerStartSuffix Condition="'$(TargetOS)' == 'osx'">internal</InstallerStartSuffix>
     <SharedHostInstallerStart Condition="'$(TargetOS)' == 'osx'">$(SharedHostInstallerStart)$(InstallerStartSuffix)-</SharedHostInstallerStart>
@@ -327,7 +327,7 @@
   <PropertyGroup>
     <CrossGenSymbolExtension>.map</CrossGenSymbolExtension>
     <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'win'">.ni.pdb</CrossGenSymbolExtension>
-    <!-- osx doesn't have crossgen symbols, yet -->
+    <!-- OSX doesn't have crossgen symbols, yet -->
     <CrossGenSymbolExtension Condition="'$(TargetOS)' == 'osx'"></CrossGenSymbolExtension>
   </PropertyGroup>
 

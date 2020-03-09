@@ -2,12 +2,12 @@
 
 usage()
 {
-    echo "Runs .NET CoreFX tests on freebsd, linux, netbsd or osx"
+    echo "Runs .NET CoreFX tests on freebsd, Linux, netbsd or osx"
     echo "usage: run-corefx-tests [options]"
     echo
     echo "Input sources:"
     echo "    --runtime <location>              Location of root of the binaries directory"
-    echo "                                      containing the freebsd, linux, netbsd or osx runtime"
+    echo "                                      containing the freebsd, Linux, netbsd or osx runtime"
     echo "                                      default: <repo_root>/bin/testhost/netcoreapp-<OS>-<Configuration>-<Arch>"
     echo "    --corefx-tests <location>         Location of the root binaries location containing"
     echo "                                      the tests to run"
@@ -16,7 +16,7 @@ usage()
     echo "Flavor/OS/Architecture options:"
     echo "    --configuration <config>     Configuration to run (Debug/Release)"
     echo "                                      default: Debug"
-    echo "    --os <os>                         OS to run (freebsd, linux, netbsd or osx)"
+    echo "    --os <os>                         OS to run (freebsd, Linux, netbsd or osx)"
     echo "                                      default: detect current OS"
     echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64)"
     echo "                                      default: detect current architecture"
@@ -37,7 +37,7 @@ usage()
     echo "Runtime Code Coverage options:"
     echo "    --coreclr-coverage                Optional argument to get coreclr code coverage reports"
     echo "    --coreclr-objs <location>         Location of root of the object directory"
-    echo "                                      containing the freebsd, linux, netbsd or osx coreclr build"
+    echo "                                      containing the freebsd, Linux, netbsd or osx coreclr build"
     echo "                                      default: <repo_root>/bin/obj/<OS>.x64.<Configuration"
     echo "    --coreclr-src <location>          Location of root of the directory"
     echo "                                      containing the coreclr source files"
@@ -82,7 +82,7 @@ case $OSName in
         ;;
 
     *)
-        echo "Unsupported OS $OSName detected, configuring as if for linux"
+        echo "Unsupported OS $OSName detected, configuring as if for Linux"
         OS=linux
         ;;
 esac
@@ -90,7 +90,7 @@ esac
 # Use uname to determine what the CPU is.
 CPUName=$(uname -p)
 
-# Some linux platforms report unknown for platform, but the arch for machine.
+# Some Linux platforms report unknown for platform, but the arch for machine.
 if [ "$CPUName" == "unknown" ]; then
     CPUName=$(uname -m)
 fi
@@ -503,7 +503,7 @@ fi
 
 if [ ! "$OS" == "freebsd" ] && [ ! "$OS" == "linux" ] && [ ! "$OS" == "netbsd" ] && [ ! "$OS" == "osx" ]
 then
-    echo "error: OS should be freebsd, linux, netbsd or osx"
+    echo "error: OS should be FreeBSD, Linux, NetBSD or OSX"
     exit 1
 fi
 

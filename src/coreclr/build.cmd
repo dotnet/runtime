@@ -969,7 +969,7 @@ echo Build architecture: one of -x64, -x86, -arm, -arm64 ^(default: -x64^).
 echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
 echo mscorlib version: one of -freebsdmscorlib, -linuxmscorlib, -netbsdmscorlib, -osxmscorlib,
 echo     or -windowsmscorlib. If one of these is passed, only System.Private.CoreLib is built,
-echo     for the specified platform ^(freebsd, linux, netbsd, OS X or Windows,
+echo     for the specified platform ^(FreeBSD, Linux, NetBSD, OSX or Windows,
 echo     respectively^).
 echo     add nativemscorlib to go further and build the native image for designated mscorlib.
 echo -nopgooptimize: do not use profile guided optimizations.

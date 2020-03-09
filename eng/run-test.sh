@@ -15,12 +15,12 @@ wait_on_pids()
 
 usage()
 {
-    echo "Runs .NET CoreFX tests on freebsd, netbsd or linux"
+    echo "Runs .NET CoreFX tests on FreeBSD, NetBS or Linux"
     echo "usage: run-test [options]"
     echo
     echo "Input sources:"
     echo "    --runtime <location>              Location of root of the binaries directory"
-    echo "                                      containing the freebsd, netbsd or linux runtime"
+    echo "                                      containing the FreeBSD, NetBSD or Linux runtime"
     echo "                                      default: <repo_root>/bin/testhost/netcoreapp-<OS>-<Configuration>-<Arch>"
     echo "    --corefx-tests <location>         Location of the root binaries location containing"
     echo "                                      the tests to run"
@@ -29,7 +29,7 @@ usage()
     echo "Flavor/OS/Architecture options:"
     echo "    --configuration <config>     Configuration to run (Debug/Release)"
     echo "                                      default: Debug"
-    echo "    --os <os>                         OS to run (freebsd, netbsd or linux)"
+    echo "    --os <os>                         OS to run (FreeBSD, NetBSD or Linux)"
     echo "                                      default: detect current OS"
     echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64)"
     echo "                                      default: detect current architecture"
@@ -256,7 +256,7 @@ fi
 
 if [ ! "$OS" == "freebsd" ] && [ ! "$OS" == "netbsd" ] && [ ! "$OS" == "linux" ]
 then
-    echo "error: OS should be freebsd, netbsd or linux"
+    echo "error: OS should be FreeBSD, NetBS or Linux"
     exit 1
 fi
 
@@ -285,7 +285,7 @@ if [ $RunTestSequential -eq 1 ]
 then
     maxProcesses=1;
 else
-    if [ `uname` = "netbsd" ] || [ `uname` = "freebsd" ]; then
+    if [ `uname` = "NetBS" ] || [ `uname` = "FreeBSD" ]; then
       maxProcesses=$(($(getconf NPROCESSORS_ONLN)+1))
     else
       maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))

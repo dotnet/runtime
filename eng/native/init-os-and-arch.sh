@@ -3,12 +3,20 @@
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
 case "$OSName" in
-freebsd|linux|netbsd|openbsd|sunos)
-    os=$OSName ;;
+FreeBSD)
+    os=freebsd ;;
+Linux)
+    os=linux ;;
+NetBSD)
+    os=netbsd ;;
+OpenBSD)
+    os=openbsd ;;
+SunOS)
+    os=sunos ;;
 Darwin)
 	os=osx ;;
 *)
-    echo "Unsupported OS $OSName detected, configuring as if for linux"
+    echo "Unsupported OS $OSName detected, configuring as if for Linux"
     os=linux ;;
 esac
 

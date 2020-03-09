@@ -371,9 +371,9 @@ done
 # Other techniques such as `nproc` only get the number of
 # processors available to a single process.
 platform=$(uname)
-if [[ "$platform" == "freebsd" ]]; then
+if [[ "$platform" == "FreeBSD" ]]; then
   __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
-elif [[ "$platform" == "netbsd" ]]; then
+elif [[ "$platform" == "NetBSD" ]]; then
   __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
 elif [[ "$platform" == "Darwin" ]]; then
   __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))

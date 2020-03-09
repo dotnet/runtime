@@ -60,11 +60,11 @@ jobs:
     - ${{ if ne(parameters.osGroup, 'win') }}:
       - name: clangArg
         value: '-clang9'
-      # Our freebsd doesn't yet detect available clang versions, so pass it explicitly.
+      # Our FreeBSD doesn't yet detect available clang versions, so pass it explicitly.
       - ${{ if eq(parameters.osGroup, 'freebsd') }}:
         - name: clangArg
           value: '-clang6.0'
-      # Building for x64 MUSL happens on Alpine linux and we need to use the stable version available there
+      # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
         - name: clangArg
           value: ''
@@ -98,9 +98,9 @@ jobs:
     steps:
 
     # Install native dependencies
-    # linux builds use docker images with dependencies preinstalled,
-    # and freebsd builds use a build agent with dependencies
-    # preinstalled, so we only need this step for osx and Windows.
+    # Linux builds use docker images with dependencies preinstalled,
+    # and FreeBSD builds use a build agent with dependencies
+    # preinstalled, so we only need this step for OSX and Windows.
     - ${{ if eq(parameters.osGroup, 'osx') }}:
       - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
@@ -128,7 +128,7 @@ jobs:
 
     - ${{ if and(eq(parameters.osGroup, 'win'), ne(parameters.archType, 'x86')) }}:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac $(officialBuildIdArg)
-        displayName: Build Cross OS linux DAC for Windows
+        displayName: Build Cross OS Linux DAC for Windows
 
     # Build CoreCLR Managed Components
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib-nativecorelib-tools-packages $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci

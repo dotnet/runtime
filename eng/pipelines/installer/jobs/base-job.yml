@@ -45,7 +45,7 @@ jobs:
   pool: ${{ parameters.pool }}
   timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
-  # Do not attempt to clean workspace on linux: the agent might not be able to remove the files
+  # Do not attempt to clean workspace on Linux: the agent might not be able to remove the files
   # because they may be owned by "root" due to the way this job uses Docker. We do our own cleanup
   # in this case as a prepare step.
   ${{ if ne(parameters.osGroup, 'linux') }}:
@@ -175,7 +175,7 @@ jobs:
       value: false
 
     - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'linux')) }}:
-      # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
+      # Set output RID manually: musl isn't properly detected. Make sure to also convert Linux to
       # lowercase for RID format. (Detection normally converts, but we're preventing it.)
       - name: OutputRidArg
         value: /p:OutputRid=linux-musl-${{ parameters.archType }}

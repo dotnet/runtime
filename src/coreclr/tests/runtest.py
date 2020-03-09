@@ -666,7 +666,7 @@ def setup_coredump_generation(host_os):
         host_os (String)        : os
 
     Notes:
-        This is only support for osx and linux, it does nothing on Windows.
+        This is only support for OSX and Linux, it does nothing on Windows.
         This will print a message if setting the rlimit fails but will otherwise
         continue execution, as some systems will already be configured correctly
         and it is not necessarily a failure to not collect coredumps.
@@ -734,8 +734,8 @@ def print_info_from_coredump_file(host_os, arch, coredump_name, executable_name)
         executable_name (String) : name of the executable that generated the coredump
 
     Notes:
-        This is only support for osx and linux, it does nothing on Windows.
-        This defaults to lldb on osx and gdb on linux.
+        This is only support for OSX and Linux, it does nothing on Windows.
+        This defaults to lldb on OSX and gdb on Linux.
         For both lldb and db, it backtraces all threads. For gdb, it also prints local
         information for every frame. This option is not available as a built-in for lldb.
     """
@@ -941,7 +941,7 @@ def run_tests(args,
 
     #=====================================================================================================================================================
     #
-    # This is a workaround needed to unblock our CI (in particular, linux/arm and linux/arm64 jobs) from the following failures appearing almost in every
+    # This is a workaround needed to unblock our CI (in particular, Linux/arm and Linux/arm64 jobs) from the following failures appearing almost in every
     # pull request (but hard to reproduce locally)
     #
     #   System.IO.FileLoadException: Could not load file or assembly 'Exceptions.Finalization.XUnitWrapper, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'.
