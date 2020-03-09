@@ -1795,7 +1795,7 @@ static PCODE PreStubWorker_Preemptive(
         // going to work.
         if (currentThread == NULL)
         {
-            TerminateProcess(GetCurrentProcess(), hr);
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(hr, W("Failed to setup new thread during reverse Platform Invoke"));
             UNREACHABLE();
         }
     }
