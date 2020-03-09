@@ -12,6 +12,9 @@
     <!-- build the transport package which includes product and symbols in addition to standard packages -->
     <CreatePackedPackage Condition="'$(CreatePackedPackage)' == ''">true</CreatePackedPackage>
 
+    <!-- indicates that lib prefix is not added to library names for Unix-like operating systems -->
+    <SkipLibraryPrefixFromUnix>true</SkipLibraryPrefixFromUnix>
+
     <!-- Distro rid is passed as runtimeos-arch-->
     <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
     <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(__TargetOS)' == 'OSX'">osx.10.12-x64</_parseDistroRid>
@@ -129,29 +132,7 @@
     </Otherwise>
   </Choose>
 
-  <!-- Determine per-platform native binary extensions. -->
-  <Choose>
-    <When Condition="'$(_runtimeOSFamily)' == 'win'" />
-    <When Condition="'$(_runtimeOSFamily)' == 'osx'">
-      <PropertyGroup>
-        <LibraryFileExtension>.dylib</LibraryFileExtension>
-        <SymbolFileExtension>.dwarf</SymbolFileExtension>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(_runtimeOSFamily)' == 'android'">
-      <PropertyGroup>
-        <LibraryFileExtension>.so</LibraryFileExtension>
-        <!--symbols included in .so, like Linux, but can be generated externally and if so, uses .debug ext-->
-        <SymbolFileExtension>.debug</SymbolFileExtension>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <LibraryFileExtension>.so</LibraryFileExtension>
-        <SymbolFileExtension>.dbg</SymbolFileExtension>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
+  <Import Project="$(RepoRoot)eng\native\naming.props" />
 
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Linux;'))">
     <OfficialBuildRID Include="linux-x64" />

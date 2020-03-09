@@ -152,7 +152,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipe.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeController.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventDispatcher.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventProvider.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeMetadataGenerator.cs" />
@@ -303,6 +302,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\IDispatch.cs">

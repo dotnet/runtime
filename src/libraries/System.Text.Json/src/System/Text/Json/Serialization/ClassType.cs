@@ -13,6 +13,8 @@ namespace System.Text.Json
     /// </remarks>
     internal enum ClassType : byte
     {
+        // Default - no class type.
+        None = 0x0,
         // JsonObjectConverter<> - objects with properties.
         Object = 0x1,
         // JsonConverter<> - simple values.
@@ -23,7 +25,5 @@ namespace System.Text.Json
         Enumerable = 0x8,
         // JsonDictionaryConverter<,> - dictionary types.
         Dictionary = 0x10,
-        // Invalid (not used directly for serialization)
-        Invalid = 0x20
     }
 }

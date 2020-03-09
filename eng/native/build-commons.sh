@@ -87,11 +87,16 @@ build_native()
         if [[ "$__IsMSBuildOnNETCoreSupported" == 0 ]]; then __SkipGenerateVersion=1; fi
         # Drop version.c file
         __versionSourceFile="$intermediatesDir/version.c"
+
+        if [[ ! -z "${__LogsDir}" ]]; then
+            __binlogArg="-bl:\"$__LogsDir/GenNativeVersion_$__TargetOS.$__BuildArch.$__BuildType.binlog\""
+        fi
+
         if [[ "$__SkipGenerateVersion" == 0 ]]; then
             "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary "$__ArcadeScriptArgs" "$__RepoRootDir"/eng/empty.csproj \
                                                    /p:NativeVersionFile="$__versionSourceFile" \
                                                    /t:GenerateNativeVersionFile /restore \
-                                                   $__CommonMSBuildArgs $__UnprocessedBuildArgs
+                                                   $__CommonMSBuildArgs $__binlogArg $__UnprocessedBuildArgs
             local exit_code="$?"
             if [[ "$exit_code" != 0 ]]; then
                 echo "${__ErrMsgPrefix}Failed to generate native version file."

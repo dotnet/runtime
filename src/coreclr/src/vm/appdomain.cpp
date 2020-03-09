@@ -27,7 +27,6 @@
 #include "stringliteralmap.h"
 #include "codeman.h"
 #include "comcallablewrapper.h"
-#include "apithreadstress.h"
 #include "eventtrace.h"
 #include "comdelegate.h"
 #include "siginfo.hpp"
@@ -3610,28 +3609,6 @@ Assembly *AppDomain::LoadAssembly(AssemblySpec* pIdentity,
     RETURN pAssembly->GetAssembly();
 }
 
-#ifndef CROSSGEN_COMPILE
-// Thread stress
-class LoadDomainAssemblyStress : APIThreadStress
-{
-public:
-    AppDomain *pThis;
-    AssemblySpec* pSpec;
-    PEAssembly *pFile;
-    FileLoadLevel targetLevel;
-
-    LoadDomainAssemblyStress(AppDomain *pThis, AssemblySpec* pSpec, PEAssembly *pFile, FileLoadLevel targetLevel)
-        : pThis(pThis), pSpec(pSpec), pFile(pFile), targetLevel(targetLevel) {LIMITED_METHOD_CONTRACT;}
-
-    void Invoke()
-    {
-        WRAPPER_NO_CONTRACT;
-        SetupThread();
-        pThis->LoadDomainAssembly(pSpec, pFile, targetLevel);
-    }
-};
-#endif // CROSSGEN_COMPILE
-
 extern BOOL AreSameBinderInstance(ICLRPrivBinder *pBinderA, ICLRPrivBinder *pBinderB);
 
 DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
@@ -3714,10 +3691,6 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
 
     DomainAssembly * result;
-
-#ifndef CROSSGEN_COMPILE
-    LoadDomainAssemblyStress ts (this, pIdentity, pFile, targetLevel);
-#endif
 
     // Go into preemptive mode since this may take a while.
     GCX_PREEMP();
@@ -3841,9 +3814,6 @@ DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetL
     }
     CONTRACT_END;
 
-    // Thread stress
-    APIThreadStress::SyncThreadStress();
-
     DomainFile *pFile = pLock->GetDomainFile();
 
     // Make sure we release the lock on exit
@@ -3901,9 +3871,6 @@ DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetL
         // Now loop and do the load incrementally to the target level.
         if (pLock->GetLoadLevel() < immediateTargetLevel)
         {
-            // Thread stress
-            APIThreadStress::SyncThreadStress();
-
             while (pLock->Acquire(immediateTargetLevel))
             {
                 FileLoadLevel workLevel;

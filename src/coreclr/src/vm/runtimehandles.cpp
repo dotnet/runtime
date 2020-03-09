@@ -1721,6 +1721,28 @@ FCIMPL1(IMDInternalImport*, RuntimeTypeHandle::GetMetadataImport, ReflectClassBa
 }
 FCIMPLEND
 
+PVOID QCALLTYPE RuntimeTypeHandle::AllocateTypeAssociatedMemory(QCall::TypeHandle type, UINT32 size)
+{
+    QCALL_CONTRACT;
+
+    void *allocatedMemory = nullptr;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = type.AsTypeHandle();
+    _ASSERTE(!typeHandle.IsNull());
+
+    // Get the loader allocator for the associated type.
+    // Allocating using the type's associated loader allocator means
+    // that the memory will be freed when the type is unloaded.
+    PTR_LoaderAllocator loaderAllocator = typeHandle.GetMethodTable()->GetLoaderAllocator();
+    LoaderHeap* loaderHeap = loaderAllocator->GetHighFrequencyHeap();
+    allocatedMemory = loaderHeap->AllocMem(S_SIZE_T(size));
+
+    END_QCALL;
+
+    return allocatedMemory;
+}
 
 //***********************************************************************************
 //***********************************************************************************

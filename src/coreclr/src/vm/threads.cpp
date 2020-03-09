@@ -1203,31 +1203,6 @@ struct Dbg_TrackSyncStack : public Dbg_TrackSync
     }
 };
 
-// ensure that registers are preserved across this call
-#ifdef _MSC_VER
-#pragma optimize("", off)
-#endif
-// A pain to do all this from ASM, but watch out for trashed registers
-EXTERN_C void EnterSyncHelper    (UINT_PTR caller, void *pAwareLock)
-{
-    BEGIN_ENTRYPOINT_THROWS;
-    WRAPPER_NO_CONTRACT;
-    GetThread()->m_pTrackSync->EnterSync(caller, pAwareLock);
-    END_ENTRYPOINT_THROWS;
-
-}
-EXTERN_C void LeaveSyncHelper    (UINT_PTR caller, void *pAwareLock)
-{
-    BEGIN_ENTRYPOINT_THROWS;
-    WRAPPER_NO_CONTRACT;
-    GetThread()->m_pTrackSync->LeaveSync(caller, pAwareLock);
-    END_ENTRYPOINT_THROWS;
-
-}
-#ifdef _MSC_VER
-#pragma optimize("", on)
-#endif
-
 void Dbg_TrackSyncStack::EnterSync(UINT_PTR caller, void *pAwareLock)
 {
     LIMITED_METHOD_CONTRACT;
@@ -6475,7 +6450,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
         // -additionally, we need to provide some region to hosts to allow for lock acquisition in a hosted scenario
         //
         EXTRA_PAGES = 3;
-        INDEBUG(EXTRA_PAGES += 3);
+        INDEBUG(EXTRA_PAGES += 1);
 
         int ThreadGuardPages = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ThreadGuardPages);
         if (ThreadGuardPages == 0)
@@ -6489,7 +6464,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
 
 #else // HOST_64BIT
 #ifdef _DEBUG
-        uGuardSize += (3 * GetOsPageSize());    // three extra pages for debug infrastructure
+        uGuardSize += (1 * GetOsPageSize());    // one extra page for debug infrastructure
 #endif // _DEBUG
 #endif // HOST_64BIT
 

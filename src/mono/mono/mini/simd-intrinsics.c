@@ -1306,7 +1306,7 @@ simd_intrinsic_emit_unary (const SimdIntrinsic *intrinsic, MonoCompile *cfg, Mon
 }
 
 static int
-mono_type_to_extract_op (MonoType *type)
+mono_type_to_extract_op (MonoCompile *cfg, MonoType *type)
 {
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -1319,8 +1319,12 @@ mono_type_to_extract_op (MonoType *type)
 		return OP_EXTRACT_U2;
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
-	case MONO_TYPE_R4:
 		return OP_EXTRACT_I4;
+	case MONO_TYPE_R4:
+		if (COMPILE_LLVM (cfg))
+			return OP_EXTRACT_R4;
+		else
+			return OP_EXTRACT_I4;
 	default:
 		g_assert_not_reached ();
 	}
@@ -1503,18 +1507,23 @@ simd_intrinsic_emit_getter_op (MonoCompile *cfg, int index, MonoClass *klass, Mo
 		MONO_ADD_INS (cfg->cbb, ins);
 	}
 
-	MONO_INST_NEW (cfg, ins, mono_type_to_extract_op (type));
+	MONO_INST_NEW (cfg, ins, mono_type_to_extract_op (cfg, type));
 	ins->klass = klass;
 	ins->sreg1 = vreg;
-	ins->type = STACK_I4;
-	ins->dreg = vreg = alloc_ireg (cfg);
+	if (ins->opcode == OP_EXTRACT_R4) {
+		ins->type = STACK_R4;
+		ins->dreg = vreg = alloc_freg (cfg);
+	} else {
+		ins->type = STACK_I4;
+		ins->dreg = vreg = alloc_ireg (cfg);
+	}
 	if (cfg->compile_llvm)
 		ins->inst_c0 = index;
 	else
 		ins->inst_c0 = index & ((1 << shift_bits) - 1);
 	MONO_ADD_INS (cfg->cbb, ins);
 
-	if (type->type == MONO_TYPE_R4) {
+	if (type->type == MONO_TYPE_R4 && ins->opcode != OP_EXTRACT_R4) {
 		MONO_INST_NEW (cfg, ins, cfg->r4fp ? OP_ICONV_TO_R4_RAW : OP_MOVE_I4_TO_F);
 		ins->klass = mono_defaults.single_class;
 		ins->sreg1 = vreg;
@@ -2232,6 +2241,9 @@ emit_vector_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 			break;
 		if (COMPILE_LLVM (cfg)) {
 			MonoInst *ins;
+
+			if (!(mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE41))
+				break;
 
 			ins = simd_intrinsic_emit_binary (intrins, cfg, cmethod, args);
 			/* The end result is in the lowest element */

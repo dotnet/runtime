@@ -3131,15 +3131,10 @@ namespace System
         public bool Equals(System.SByte obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.SByte Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.SByte Parse(string s) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.SByte Parse(string s, System.Globalization.NumberStyles style) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.SByte Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.SByte Parse(string s, System.IFormatProvider? provider) { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
@@ -3161,13 +3156,9 @@ namespace System
         public string ToString(string? format) { throw null; }
         public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.SByte result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.SByte result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.SByte result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, out System.SByte result) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Struct, Inherited=false)]
@@ -4194,7 +4185,6 @@ namespace System
         public override bool Equals(object? o) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Type GetTargetType(System.TypedReference value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.TypedReference MakeTypedReference(object target, System.Reflection.FieldInfo[] flds) { throw null; }
         public static void SetTypedReference(System.TypedReference target, object? value) { }
         public static System.RuntimeTypeHandle TargetTypeToken(System.TypedReference value) { throw null; }
@@ -4235,15 +4225,10 @@ namespace System
         public bool Equals(System.UInt16 obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt16 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt16 Parse(string s) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt16 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt16 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt16 Parse(string s, System.IFormatProvider? provider) { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
@@ -4265,13 +4250,9 @@ namespace System
         public string ToString(string? format) { throw null; }
         public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt16 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.UInt16 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt16 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, out System.UInt16 result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
@@ -4286,15 +4267,10 @@ namespace System
         public bool Equals(System.UInt32 obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt32 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt32 Parse(string s) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt32 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt32 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt32 Parse(string s, System.IFormatProvider? provider) { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
@@ -4316,13 +4292,9 @@ namespace System
         public string ToString(string? format) { throw null; }
         public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt32 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.UInt32 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt32 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, out System.UInt32 result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
@@ -4337,15 +4309,10 @@ namespace System
         public bool Equals(System.UInt64 obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt64 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt64 Parse(string s) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt64 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt64 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static System.UInt64 Parse(string s, System.IFormatProvider? provider) { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
         byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
@@ -4367,13 +4334,9 @@ namespace System
         public string ToString(string? format) { throw null; }
         public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt64 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.UInt64 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UInt64 result) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string? s, out System.UInt64 result) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
@@ -9025,6 +8988,7 @@ namespace System.Runtime.CompilerServices
     public static partial class RuntimeHelpers
     {
         public static int OffsetToStringData { get { throw null; } }
+        public static IntPtr AllocateTypeAssociatedMemory(Type type, int size) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
         public static new bool Equals(object? o1, object? o2) { throw null; }
         public static void ExecuteCodeWithGuaranteedCleanup(System.Runtime.CompilerServices.RuntimeHelpers.TryCode code, System.Runtime.CompilerServices.RuntimeHelpers.CleanupCode backoutCode, object? userData) { }

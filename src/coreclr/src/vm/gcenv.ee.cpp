@@ -214,17 +214,7 @@ void GCToEEInterface::GcStartWork (int condemned, int max_gen)
 #endif
 
 #ifdef FEATURE_COMINTEROP
-    //
-    // Let GC detect managed/native cycles with input from jupiter
-    // Jupiter will
-    // 1. Report reference from RCW to CCW based on native reference in Jupiter
-    // 2. Identify the subset of CCWs that needs to be rooted
-    //
-    // We'll build the references from RCW to CCW using
-    // 1. Preallocated arrays
-    // 2. Dependent handles
-    //
-    RCWWalker::OnGCStarted(condemned);
+    Interop::OnGCStarted(condemned);
 #endif // FEATURE_COMINTEROP
 
     if (condemned == max_gen)
@@ -243,10 +233,7 @@ void GCToEEInterface::GcDone(int condemned)
     CONTRACTL_END;
 
 #ifdef FEATURE_COMINTEROP
-    //
-    // Tell Jupiter GC has finished
-    //
-    RCWWalker::OnGCFinished(condemned);
+    Interop::OnGCFinished(condemned);
 #endif // FEATURE_COMINTEROP
 }
 
