@@ -3297,12 +3297,14 @@ g_warning_ds (const char *format, int d, const char *s)
 	g_warning (format, d, s);
 }
 
-#if !USE_COMPUTED_GOTO
+#if DEBUG_INTERP && !USE_COMPUTED_GOTO
+
 static void
 g_error_xsx (const char *format, int x1, const char *s, int x2)
 {
 	g_error (format, x1, s, x2);
 }
+
 #endif
 
 static MONO_ALWAYS_INLINE gboolean
@@ -3450,10 +3452,14 @@ main_loop:
 			memset (locals, 0, frame->imethod->locals_size);
 			++ip;
 			MINT_IN_BREAK;
+#if DEBUG_INTERP || USE_COMPUTED_GOTO
+		// not computed goto: This is handled by the fallthrough case and might
+		// aid WebAsembly JIT.
 		MINT_IN_CASE(MINT_NOP)
 		MINT_IN_CASE(MINT_NIY)
 			g_assert_not_reached ();
 			MINT_IN_BREAK;
+#endif
 		MINT_IN_CASE(MINT_BREAK)
 			++ip;
 			do_debugger_tramp (mini_get_dbg_callbacks ()->user_break, frame);
@@ -3901,8 +3907,8 @@ call:;
 #endif
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CALLRUN) {
 #ifndef ENABLE_NETCORE
+		MINT_IN_CASE(MINT_CALLRUN) {
 			MonoMethod *target_method = (MonoMethod*) frame->imethod->data_items [ip [1]];
 			MonoMethodSignature *sig = (MonoMethodSignature*) frame->imethod->data_items [ip [2]];
 
@@ -3922,11 +3928,11 @@ call:;
 				sp++;
 			}
 			ip += 3;
-#else
-			g_assert_not_reached ();
-#endif
 			MINT_IN_BREAK;
 		}
+#else // This is handled by the fallthrough case and might
+      // aid WebAsembly JIT.
+#endif
 		MINT_IN_CASE(MINT_RET)
 			--sp;
 			*frame->retval = *sp;
@@ -6971,7 +6977,7 @@ call_newobj:
 			MINT_IN_BREAK;
 		}
 
-#if !USE_COMPUTED_GOTO
+#if DEBUG_INTERP && !USE_COMPUTED_GOTO
 		default:
 			g_error_xsx ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname (*ip), ip - frame->imethod->code);
 #endif

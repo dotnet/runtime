@@ -8,8 +8,6 @@
 
 /* OPDEF (opsymbol, opstring, oplength (in uint16s), pop_n, push_n, optype) */
 
-OPDEF(MINT_NOP, "nop", 0, Pop0, Push0, MintOpNoArgs)
-OPDEF(MINT_NIY, "niy", 1, Pop0, Push0, MintOpNoArgs)
 OPDEF(MINT_BREAK, "break", 1, Pop0, Push0, MintOpNoArgs)
 OPDEF(MINT_BREAKPOINT, "breakpoint", 1, Pop0, Push0, MintOpNoArgs)
 OPDEF(MINT_LDNULL, "ldnull", 1, Pop0, Push1, MintOpNoArgs)
@@ -723,7 +721,6 @@ OPDEF(MINT_CALLI, "calli", 2, VarPop, VarPush, MintOpMethodToken)
 OPDEF(MINT_CALLI_NAT, "calli.nat", 3, VarPop, VarPush, MintOpMethodToken)
 OPDEF(MINT_CALLI_NAT_FAST, "calli.nat.fast", 4, VarPop, VarPush, MintOpMethodToken)
 OPDEF(MINT_CALL_VARARG, "call.vararg", 3, VarPop, VarPush, MintOpMethodToken)
-OPDEF(MINT_CALLRUN, "callrun", 3, VarPop, VarPush, MintOpNoArgs)
 
 OPDEF(MINT_ICALL_V_V, "mono_icall_v_v", 2, Pop0, Push0, MintOpClassToken) /* not really */
 OPDEF(MINT_ICALL_V_P, "mono_icall_v_p", 2, Pop0, Push1, MintOpClassToken)
@@ -789,3 +786,20 @@ OPDEF(MINT_INTRINS_BYREFERENCE_GET_VALUE, "intrins_byreference_get_value", 1, Po
 OPDEF(MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET, "intrins_unsafe_add_byte_offset", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_UNSAFE_BYTE_OFFSET, "intrins_unsafe_byte_offset", 1, Pop2, Push1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE, "intrins_runtimehelpers_object_has_component_size", 1, Pop1, Push1, MintOpNoArgs)
+
+// This is placed at the end instead of with other calls, so that the internal
+// opcodes have the same value independent of ifndef, even though there is not
+// compatibility requirement. Just to aid people looking at the values
+// in a debugger.
+#ifndef ENABLE_NETCORE
+OPDEF(MINT_CALLRUN, "callrun", 3, VarPop, VarPush, MintOpNoArgs)
+#endif
+
+// These are placed last to possibly aid codegen.
+// In particular, to keep them out of the valid range of the switch.
+// Otherwise, for example, if they are first, there might be a range check,
+// and then a subtraction, and another range check. By placing them
+// outside the switched range entirely, it is hoped to have just one
+// range check and no subtraction.
+OPDEF(MINT_NOP, "nop", 0, Pop0, Push0, MintOpNoArgs)
+OPDEF(MINT_NIY, "niy", 1, Pop0, Push0, MintOpNoArgs)
