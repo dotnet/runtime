@@ -22,17 +22,17 @@ namespace ILCompiler
 
             if (owningType.IsIntrinsic && owningType is MetadataType mdType)
             {
+                mdType = (MetadataType)mdType.ContainingType ?? mdType;
                 TargetArchitecture targetArch = owningType.Context.Target.Architecture;
 
                 if (targetArch == TargetArchitecture.X64 || targetArch == TargetArchitecture.X86)
                 {
-                    mdType = (MetadataType)mdType.ContainingType ?? mdType;
                     if (mdType.Namespace == "System.Runtime.Intrinsics.X86")
                         return true;
                 }
                 else if (targetArch == TargetArchitecture.ARM64)
                 {
-                    if (mdType.Namespace == "System.Runtime.Intrinsics.Arm.Arm64")
+                    if (mdType.Namespace == "System.Runtime.Intrinsics.Arm")
                         return true;
                 }
             }

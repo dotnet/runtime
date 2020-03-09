@@ -43,18 +43,6 @@
 #include "winrttypenameconverter.h"
 #endif
 
-
-#ifndef __GNUC__
-EXTERN_C __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
-#else // !__GNUC__
-EXTERN_C __thread ThreadLocalInfo gCurrentThreadInfo;
-#endif // !__GNUC__
-#ifndef TARGET_UNIX
-EXTERN_C UINT32 _tls_index;
-#else // TARGET_UNIX
-UINT32 _tls_index = 0;
-#endif // TARGET_UNIX
-
 #ifndef DACCESS_COMPILE
 
 extern void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading);
@@ -64,19 +52,6 @@ extern void PrintToStdOutW(const WCHAR *pwzString);
 //***************************************************************************
 
 ULONG CorRuntimeHostBase::m_Version = 0;
-
-#endif // !DAC
-
-typedef DPTR(CONNID)   PTR_CONNID;
-
-
-
-// Keep track connection id and name
-
-#ifndef DACCESS_COMPILE
-
-
-
 
 // *** ICorRuntimeHost methods ***
 

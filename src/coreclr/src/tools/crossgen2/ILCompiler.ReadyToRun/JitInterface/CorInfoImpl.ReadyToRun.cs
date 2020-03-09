@@ -1496,7 +1496,7 @@ namespace Internal.JitInterface
                 }
                 else if (_TARGET_ARM64_)
                 {
-                    fIsPlatformHWIntrinsic = (namespaceName == "System.Runtime.Intrinsics.Arm.Arm64");
+                    fIsPlatformHWIntrinsic = (namespaceName == "System.Runtime.Intrinsics.Arm");
                 }
 
                 fIsHWIntrinsic = fIsPlatformHWIntrinsic || (namespaceName == "System.Runtime.Intrinsics");
@@ -1773,6 +1773,7 @@ namespace Internal.JitInterface
 
             // Unless we decide otherwise, just do the lookup via a helper function
             pResult.indirections = CORINFO.USEHELPER;
+            pResult.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
 
             MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
             TypeDesc contextType = typeFromContext(pResolvedToken.tokenContext);

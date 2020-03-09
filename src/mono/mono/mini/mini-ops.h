@@ -1021,12 +1021,33 @@ MINI_OP(OP_SSE_AND, "sse_and", XREG, XREG, XREG)
 MINI_OP(OP_SSE_OR, "sse_or", XREG, XREG, XREG)
 MINI_OP(OP_SSE_XOR, "sse_xor", XREG, XREG, XREG)
 MINI_OP(OP_SSE_ANDN, "sse_andn", XREG, XREG, XREG)
+MINI_OP(OP_SSE_ADDSS, "sse_addss", XREG, XREG, XREG)
+MINI_OP(OP_SSE_SUBSS, "sse_subss", XREG, XREG, XREG)
+MINI_OP(OP_SSE_DIVSS, "sse_divss", XREG, XREG, XREG)
+MINI_OP(OP_SSE_MULSS, "sse_mulss", XREG, XREG, XREG)
+MINI_OP(OP_SSE_CMPSS, "sse_cmpss", XREG, XREG, XREG)
+MINI_OP(OP_SSE_COMISS, "sse_comiss", IREG, XREG, XREG)
+MINI_OP(OP_SSE_UCOMISS, "sse_ucomiss", IREG, XREG, XREG)
+MINI_OP(OP_SSE_MOVSS, "sse_movss", XREG, IREG, NONE)
+MINI_OP(OP_SSE_MOVSS_STORE, "sse_movss_store", NONE, IREG, XREG)
+MINI_OP(OP_SSE_MOVHPS_LOAD, "sse_movhps_load", XREG, XREG, IREG)
+MINI_OP(OP_SSE_MOVLPS_LOAD, "sse_movlps_load", XREG, XREG, IREG)
+MINI_OP(OP_SSE_MOVHPS_STORE, "sse_movhps_store", NONE, IREG, XREG)
+MINI_OP(OP_SSE_MOVLPS_STORE, "sse_movlps_store", NONE, IREG, XREG)
+MINI_OP(OP_SSE_MOVNTPS, "sse_movntps", NONE, IREG, XREG)
+MINI_OP(OP_SSE_PREFETCHT0, "sse_prefetcht0", NONE, IREG, NONE)
+MINI_OP(OP_SSE_PREFETCHT1, "sse_prefetcht1", NONE, IREG, NONE)
+MINI_OP(OP_SSE_PREFETCHT2, "sse_prefetcht2", NONE, IREG, NONE)
+MINI_OP(OP_SSE_PREFETCHNTA, "sse_prefetchnta", NONE, IREG, NONE)
 
 /* sse 2 */
 MINI_OP(OP_SSE2_PACKUS, "sse2_packus", XREG, XREG, XREG)
 MINI_OP(OP_SSE2_SRLI, "sse2_srli", XREG, XREG, XREG)
 MINI_OP(OP_SSE2_SHUFFLE, "sse2_shuffle", XREG, XREG, XREG)
 MINI_OP(OP_SSE2_ADDS, "sse2_adds", XREG, XREG, XREG)
+MINI_OP(OP_SSE2_ADDSD, "sse2_addsd", XREG, XREG, XREG)
+MINI_OP(OP_SSE2_CMPSD, "sse2_cmpsd", XREG, XREG, XREG)
+MINI_OP(OP_SSE2_COMIEQ_SD, "sse2_comieq_sd", XREG, XREG, XREG)
 
 /* sse 3 */
 MINI_OP(OP_SSE3_MOVDDUP, "sse3_movddup", XREG, XREG, NONE)
@@ -1440,8 +1461,20 @@ MINI_OP(OP_XEQUAL, "xequal", IREG, XREG, XREG)
 /* Per element compate, inst_c0 contains a CompRelation */
 MINI_OP(OP_XCOMPARE, "xcompare", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_FP, "xcompare_fp", XREG, XREG, XREG)
-/* Binary op, inst_c0 contains the operation */
+
+/*
+ * Generic SIMD operations, the rest of the JIT doesn't care about the exact operation.
+ */
 MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
+/* inst_c0 contains a SimdOp, inst_c1 might contain additional data */
+MINI_OP(OP_XOP, "xop", NONE, NONE, NONE)
+MINI_OP(OP_XOP_X_X, "xop_x_x", XREG, XREG, NONE)
+MINI_OP(OP_XOP_I4_X, "xop_i4_x", IREG, XREG, NONE)
+MINI_OP(OP_XOP_I8_X, "xop_i8_x", LREG, XREG, NONE)
+MINI_OP(OP_XOP_X_X_X, "xop_x_x_x", XREG, XREG, XREG)
+MINI_OP(OP_XOP_X_X_I4, "xop_x_x_i4", XREG, XREG, IREG)
+MINI_OP(OP_XOP_X_X_I8, "xop_x_x_i8", XREG, XREG, LREG)
+
 MINI_OP(OP_XCAST, "xcast", XREG, XREG, NONE)
 /* Extract element of vector */
 /* The index is assumed to be in range */
@@ -1456,5 +1489,3 @@ MINI_OP(OP_LZCNT32, "lzcnt32", IREG, IREG, NONE)
 MINI_OP(OP_LZCNT64, "lzcnt64", LREG, LREG, NONE)
 MINI_OP(OP_POPCNT32, "popcnt32", IREG, IREG, NONE)
 MINI_OP(OP_POPCNT64, "popcnt64", LREG, LREG, NONE)
-
-
