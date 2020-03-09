@@ -1029,19 +1029,12 @@ public:
         if(STSGuarantee_Force == fScope)
             return TRUE;
 
+#ifdef DEBUG
         // For debug, always enable setting thread stack guarantee so that we can print the stack trace
-#ifndef DEBUG
-        //The runtime must be hosted to have escalation policy
-        //If escalation policy is enabled but StackOverflow is not part of the policy
-        //   then we don't use SetThreadStackGuarantee
-        if(!CLRHosted() ||
-            GetEEPolicy()->GetActionOnFailure(FAIL_StackOverflow) == eRudeExitProcess)
-        {
-            //FAIL_StackOverflow is ProcessExit so don't use SetThreadStackGuarantee
-            return FALSE;
-        }
-#endif // DEBUG
         return TRUE;
+#else
+        return FALSE;
+#endif
     }
 
 public:
