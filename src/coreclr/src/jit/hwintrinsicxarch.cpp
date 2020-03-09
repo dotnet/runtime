@@ -1383,9 +1383,7 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHO
     return retNode;
 }
 
-GenTree* Compiler::impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic,
-                                          CORINFO_METHOD_HANDLE method,
-                                          CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
     var_types callType = JITtype2varType(sig->retType);
 

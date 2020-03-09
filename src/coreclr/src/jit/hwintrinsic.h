@@ -322,21 +322,21 @@ struct HWIntrinsicArgsInfo final
                         var_types           intrinsicBaseType,
                         bool                intrinsicOpMustExpand)
     {
-        comp        = compiler;
-        sig         = intrinsicSig;
-        intrinsic   = intrinsicId;
-        category    = intrinsicCategory;
-        baseType    = intrinsicBaseType;
-        mustExpand  = intrinsicOpMustExpand;
-        numArgs     = sig->numArgs;
+        comp       = compiler;
+        sig        = intrinsicSig;
+        intrinsic  = intrinsicId;
+        category   = intrinsicCategory;
+        baseType   = intrinsicBaseType;
+        mustExpand = intrinsicOpMustExpand;
+        numArgs    = sig->numArgs;
 
         InitializeBaseType();
     }
     GenTreeHWIntrinsic* gtNewHWIntrinsicNode(var_types retType, unsigned simdSize);
-    void                PopArgsForHWIntrinsic();
+    void PopArgsForHWIntrinsic();
 
 private:
-    void                InitializeBaseType();
+    void InitializeBaseType();
 };
 
 #endif // FEATURE_HW_INTRINSICS

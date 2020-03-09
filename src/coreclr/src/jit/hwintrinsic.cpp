@@ -53,7 +53,7 @@ const HWIntrinsicInfo& HWIntrinsicInfo::lookup(NamedIntrinsic id)
 GenTreeHWIntrinsic* HWIntrinsicArgsInfo::gtNewHWIntrinsicNode(var_types retType, unsigned simdSize)
 {
     bool isScalar = category == HW_Category_Scalar;
-    assert (isScalar || simdSize != 0);
+    assert(isScalar || simdSize != 0);
     switch (numArgs)
     {
         case 0:
@@ -129,7 +129,7 @@ void HWIntrinsicArgsInfo::PopArgsForHWIntrinsic()
             op3             = comp->getArgForHWIntrinsic(argType, argClass);
             op3             = comp->addRangeCheckIfNeeded(intrinsic, op3, mustExpand);
             rangeCheckAdded = true;
-            // fall through
+        // fall through
         case 2:
             arg     = info.compCompHnd->getArgNext(argList);
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &argClass)));
@@ -138,11 +138,11 @@ void HWIntrinsicArgsInfo::PopArgsForHWIntrinsic()
             {
                 op2 = comp->addRangeCheckIfNeeded(intrinsic, op2, mustExpand);
             }
-            // fall through
+        // fall through
         case 1:
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = comp->getArgForHWIntrinsic(argType, argClass);
-            // fall through
+        // fall through
         case 0:
             break;
         default:
@@ -746,13 +746,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     if (impIsTableDrivenHWIntrinsic(intrinsic, category))
     {
         HWIntrinsicArgsInfo hwIntrinsicArgsInfo(this, intrinsic, category, sig, baseType, mustExpand);
-        baseType                         = hwIntrinsicArgsInfo.baseType;
-        unsigned                simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
-        GenTreeHWIntrinsic*     retNode  = nullptr;
+        baseType                     = hwIntrinsicArgsInfo.baseType;
+        unsigned            simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
+        GenTreeHWIntrinsic* retNode  = nullptr;
 
         assert(numArgs >= 0);
         if (category != HW_Category_Scalar && ((HWIntrinsicInfo::lookupIns(intrinsic, baseType) == INS_invalid) ||
-            ((simdSize != 8) && (simdSize != 16) && (simdSize != 32))))
+                                               ((simdSize != 8) && (simdSize != 16) && (simdSize != 32))))
         {
             assert(!"Unexpected HW Intrinsic");
             return nullptr;

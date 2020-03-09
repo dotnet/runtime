@@ -328,7 +328,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
     }
 
-
     hwIntrinsicArgsInfo.PopArgsForHWIntrinsic();
 
     unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
@@ -356,7 +355,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(numArgs == 2);
             assert(simdSize == 0);
 
-            retNode = hwIntrinsicArgsInfo.gtNewHWIntrinsicNode(retType, simdSize);
+            retNode                                  = hwIntrinsicArgsInfo.gtNewHWIntrinsicNode(retType, simdSize);
             retNode->AsHWIntrinsic()->gtSIMDBaseType = baseType;
             break;
         }
