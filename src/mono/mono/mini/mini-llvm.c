@@ -2148,7 +2148,7 @@ set_nontemporal_flag (LLVMValueRef v)
 	// FIXME: Cache this
 	flag_name = "nontemporal";
 	md_kind = LLVMGetMDKindID (flag_name, strlen (flag_name));
-	md_arg = LLVMMDString ("<index>", strlen ("<index>"));
+	md_arg = const_int32 (1);
 	LLVMSetMetadata (v, md_kind, LLVMMDNode (&md_arg, 1));
 }
 
