@@ -343,7 +343,7 @@ namespace
 HRESULT STDMETHODCALLTYPE BasicTest::get_String_Property(
     /* [retval][out] */ BSTR *ret)
 {
-    *ret = _string;
+    *ret = ::SysAllocString(_string);
     return S_OK;
 }
 

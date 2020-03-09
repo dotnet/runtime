@@ -587,7 +587,7 @@ namespace System.Net.Sockets
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
-        public static SocketError SetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue)
+        public static unsafe SocketError SetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue)
         {
             SocketError errorCode;
             if (optionLevel == SocketOptionLevel.Tcp &&
@@ -596,14 +596,29 @@ namespace System.Net.Sockets
             {
                 return IOControlKeepAlive.Set(handle, optionName, optionValue);
             }
-            else
+
+            fixed (byte* optionValuePtr = optionValue)
             {
                 errorCode = Interop.Winsock.setsockopt(
                     handle,
                     optionLevel,
                     optionName,
-                    optionValue,
+                    optionValuePtr,
                     optionValue != null ? optionValue.Length : 0);
+                return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
+            }
+        }
+
+        public static unsafe SocketError SetRawSockOpt(SafeSocketHandle handle, int optionLevel, int optionName, ReadOnlySpan<byte> optionValue)
+        {
+            fixed (byte* optionValuePtr = optionValue)
+            {
+                SocketError errorCode = Interop.Winsock.setsockopt(
+                    handle,
+                    (SocketOptionLevel)optionLevel,
+                    (SocketOptionName)optionName,
+                    optionValuePtr,
+                    optionValue.Length);
                 return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
             }
         }
@@ -696,7 +711,7 @@ namespace System.Net.Sockets
             socket.SetSocketOption(optionLevel, SocketOptionName.IPProtectionLevel, protectionLevel);
         }
 
-        public static SocketError GetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, out int optionValue)
+        public static unsafe SocketError GetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, out int optionValue)
         {
             if (optionLevel == SocketOptionLevel.Tcp &&
                 (optionName == SocketOptionName.TcpKeepAliveTime || optionName == SocketOptionName.TcpKeepAliveInterval) &&
@@ -706,17 +721,20 @@ namespace System.Net.Sockets
                 return SocketError.Success;
             }
 
-            int optionLength = 4; // sizeof(int)
+            int optionLength = sizeof(int);
+            int tmpOptionValue = 0;
             SocketError errorCode = Interop.Winsock.getsockopt(
                 handle,
                 optionLevel,
                 optionName,
-                out optionValue,
+                (byte*)&tmpOptionValue,
                 ref optionLength);
+
+            optionValue = tmpOptionValue;
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
-        public static SocketError GetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue, ref int optionLength)
+        public static unsafe SocketError GetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue, ref int optionLength)
         {
             if (optionLevel == SocketOptionLevel.Tcp &&
                 (optionName == SocketOptionName.TcpKeepAliveTime || optionName == SocketOptionName.TcpKeepAliveInterval) &&
@@ -725,13 +743,33 @@ namespace System.Net.Sockets
                 return IOControlKeepAlive.Get(handle, optionName, optionValue, ref optionLength);
             }
 
-            SocketError errorCode = Interop.Winsock.getsockopt(
-               handle,
-               optionLevel,
-               optionName,
-               optionValue,
-               ref optionLength);
-            return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
+            fixed (byte* optionValuePtr = optionValue)
+            {
+                SocketError errorCode = Interop.Winsock.getsockopt(
+                   handle,
+                   optionLevel,
+                   optionName,
+                   optionValuePtr,
+                   ref optionLength);
+                return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
+            }
+        }
+
+        public static unsafe SocketError GetRawSockOpt(SafeSocketHandle handle, int optionLevel, int optionName, Span<byte> optionValue, ref int optionLength)
+        {
+            Debug.Assert((uint)optionLength <= optionValue.Length);
+
+            SocketError errorCode;
+            fixed (byte* optionValuePtr = optionValue)
+            {
+                errorCode = Interop.Winsock.getsockopt(
+                    handle,
+                    (SocketOptionLevel)optionLevel,
+                    (SocketOptionName)optionName,
+                    optionValuePtr,
+                    ref optionLength);
+                return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
+            }
         }
 
         public static SocketError GetMulticastOption(SafeSocketHandle handle, SocketOptionName optionName, out MulticastOption? optionValue)

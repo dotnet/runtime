@@ -585,18 +585,6 @@ public:
     }
 };
 
-#define CLRHOSTED           0x80000000
-
-GVAL_DECL(DWORD, g_fHostConfig);
-
-
-inline BOOL CLRHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return g_fHostConfig;
-}
-
 #ifndef TARGET_UNIX
 HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 #endif // !TARGET_UNIX

@@ -1,6 +1,5 @@
 <Project>
-
-  <PropertyGroup Condition="$(TargetFramework.StartsWith('netcoreapp')) and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+  <PropertyGroup Condition="'$(TargetsNetCoreApp)' == 'true' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <PrepareProjectReferencesDependsOn>
       AddRuntimeProjectReference;
       $(PrepareProjectReferencesDependsOn);
@@ -14,14 +13,15 @@
       $(CleanDependsOn)
     </CleanDependsOn>
   </PropertyGroup>
+  
+  <PropertyGroup>
+    <RuntimeProjectFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'restore', 'runtime', 'runtime.depproj'))</RuntimeProjectFile>
+  </PropertyGroup>
 
   <Target Name="AddRuntimeProjectReference"
           Condition="'$(IsTestProject)'!='true' and '@(ReferenceFromRuntime)' != ''">
-    <Error Condition="'$(IsReferenceAssembly)' == 'true' and '$(AllowReferenceFromRuntime)' != 'true'" Text="ReferenceFromRuntime may not be used from reference assemblies." />
-
-    <PropertyGroup>
-      <RuntimeProjectFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'restore', 'runtime', 'runtime.depproj'))</RuntimeProjectFile>
-    </PropertyGroup>
+    <Error Text="ReferenceFromRuntime may not be used from reference assemblies."
+           Condition="'$(IsReferenceAssembly)' == 'true' and '$(AllowReferenceFromRuntime)' != 'true'" />
 
     <ItemGroup>
       <ProjectReference Include="$(RuntimeProjectFile)">

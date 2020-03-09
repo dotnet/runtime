@@ -3093,9 +3093,6 @@ namespace Clr
 {
 namespace Util
 {
-    static BOOL g_fLocalAppDataDirectoryInitted = FALSE;
-    static WCHAR *g_wszLocalAppDataDirectory = NULL;
-
 #ifdef HOST_WINDOWS
     // Struct used to scope suspension of client impersonation for the current thread.
     // https://docs.microsoft.com/en-us/windows/desktop/secauthz/client-impersonation

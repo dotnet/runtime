@@ -75,11 +75,6 @@ add_library(System.Security.Cryptography.Native.OpenSsl-Static
     $<TARGET_OBJECTS:objlib>
 )
 
-# Disable the "lib" prefix.
-set_target_properties(System.Security.Cryptography.Native.OpenSsl PROPERTIES PREFIX "")
-
-# Disable the "lib" prefix and override default name
-set_target_properties(System.Security.Cryptography.Native.OpenSsl-Static PROPERTIES PREFIX "")
 set_target_properties(System.Security.Cryptography.Native.OpenSsl-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.OpenSsl CLEAN_DIRECT_OUTPUT 1)
 
 if (FEATURE_DISTRO_AGNOSTIC_SSL)

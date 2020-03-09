@@ -836,7 +836,7 @@ namespace System.Net.Http
                     (wait, emptyResponse) = TryEnsureHeaders();
                     if (wait)
                     {
-                        await GetWaiterTask(cancellationToken).ConfigureAwait(false);
+                        await WaitForDataAsync(cancellationToken).ConfigureAwait(false);
 
                         (wait, emptyResponse) = TryEnsureHeaders();
                         Debug.Assert(!wait);
@@ -893,7 +893,7 @@ namespace System.Net.Http
                 _connection.LogExceptions(_connection.SendWindowUpdateAsync(_streamId, windowUpdateSize));
             }
 
-            private (bool wait, int bytesRead) TryReadFromBuffer(Span<byte> buffer)
+            private (bool wait, int bytesRead) TryReadFromBuffer(Span<byte> buffer, bool partOfSyncRead = false)
             {
                 Debug.Assert(buffer.Length > 0);
 
@@ -920,6 +920,7 @@ namespace System.Net.Http
                     Debug.Assert(!_hasWaiter);
                     _hasWaiter = true;
                     _waitSource.Reset();
+                    _waitSource.RunContinuationsAsynchronously = !partOfSyncRead;
                     return (true, 0);
                 }
             }
@@ -931,13 +932,13 @@ namespace System.Net.Http
                     return 0;
                 }
 
-                (bool wait, int bytesRead) = TryReadFromBuffer(buffer);
+                (bool wait, int bytesRead) = TryReadFromBuffer(buffer, partOfSyncRead: true);
                 if (wait)
                 {
                     // Synchronously block waiting for data to be produced.
                     Debug.Assert(bytesRead == 0);
-                    GetWaiterTask(default).AsTask().GetAwaiter().GetResult();
-                    (wait, bytesRead) = TryReadFromBuffer(buffer);
+                    WaitForData();
+                    (wait, bytesRead) = TryReadFromBuffer(buffer, partOfSyncRead: true);
                     Debug.Assert(!wait);
                 }
 
@@ -965,7 +966,7 @@ namespace System.Net.Http
                 if (wait)
                 {
                     Debug.Assert(bytesRead == 0);
-                    await GetWaiterTask(cancellationToken).ConfigureAwait(false);
+                    await WaitForDataAsync(cancellationToken).ConfigureAwait(false);
                     (wait, bytesRead) = TryReadFromBuffer(buffer.Span);
                     Debug.Assert(!wait);
                 }
@@ -983,6 +984,42 @@ namespace System.Net.Http
                 return bytesRead;
             }
 
+            public void CopyTo(HttpResponseMessage responseMessage, Stream destination, int bufferSize)
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                try
+                {
+                    // Generallly the same logic as in ReadData, but wrapped in a loop where every read segment is written to the destination.
+                    while (true)
+                    {
+                        (bool wait, int bytesRead) = TryReadFromBuffer(buffer, partOfSyncRead: true);
+                        if (wait)
+                        {
+                            Debug.Assert(bytesRead == 0);
+                            WaitForData();
+                            (wait, bytesRead) = TryReadFromBuffer(buffer, partOfSyncRead: true);
+                            Debug.Assert(!wait);
+                        }
+
+                        if (bytesRead != 0)
+                        {
+                            ExtendWindow(bytesRead);
+                            destination.Write(new ReadOnlySpan<byte>(buffer, 0, bytesRead));
+                        }
+                        else
+                        {
+                            // We've hit EOF.  Pull in from the Http2Stream any trailers that were temporarily stored there.
+                            CopyTrailersToResponseMessage(responseMessage);
+                            return;
+                        }
+                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
+
             public async Task CopyToAsync(HttpResponseMessage responseMessage, Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
@@ -995,7 +1032,7 @@ namespace System.Net.Http
                         if (wait)
                         {
                             Debug.Assert(bytesRead == 0);
-                            await GetWaiterTask(cancellationToken).ConfigureAwait(false);
+                            await WaitForDataAsync(cancellationToken).ConfigureAwait(false);
                             (wait, bytesRead) = TryReadFromBuffer(buffer);
                             Debug.Assert(!wait);
                         }
@@ -1122,13 +1159,27 @@ namespace System.Net.Http
             ValueTaskSourceStatus IValueTaskSource.GetStatus(short token) => _waitSource.GetStatus(token);
             void IValueTaskSource.OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags) => _waitSource.OnCompleted(continuation, state, token, flags);
             void IValueTaskSource.GetResult(short token) => _waitSource.GetResult(token);
-            private ValueTask GetWaiterTask(CancellationToken cancellationToken)
+
+            private void WaitForData()
             {
+                // See comments in WaitAsync.
+                Debug.Assert(!_waitSource.RunContinuationsAsynchronously);
+                new ValueTask(this, _waitSource.Version).AsTask().GetAwaiter().GetResult();
+            }
+
+            private ValueTask WaitForDataAsync(CancellationToken cancellationToken)
+            {
+                Debug.Assert(_waitSource.RunContinuationsAsynchronously);
+
                 // No locking is required here to access _waitSource.  To be here, we've already updated _hasWaiter (while holding the lock)
                 // to indicate that we would be creating this waiter, and at that point the only code that could be await'ing _waitSource or
                 // Reset'ing it is this code here.  It's possible for this to race with the _waitSource being completed, but that's ok and is
                 // handled by _waitSource as one of its primary purposes.  We can't assert _hasWaiter here, though, as once we released the
                 // lock, a producer could have seen _hasWaiter as true and both set it to false and signaled _waitSource.
+                if (!cancellationToken.CanBeCanceled)
+                {
+                    return new ValueTask(this, _waitSource.Version);
+                }
 
                 // With HttpClient, the supplied cancellation token will always be cancelable, as HttpClient supplies a token that
                 // will have cancellation requested if CancelPendingRequests is called (or when a non-infinite Timeout expires).
@@ -1137,36 +1188,34 @@ namespace System.Net.Http
                 // this pay-for-play: if the token isn't cancelable, return a ValueTask wrapping this object directly, and only
                 // if it is cancelable, then register for the cancellation callback, allocate a task for the asynchronously
                 // completing case, etc.
-                return cancellationToken.CanBeCanceled ?
-                    GetCancelableWaiterTask(cancellationToken) :
-                    new ValueTask(this, _waitSource.Version);
-            }
+                return GetCancelableWaiterTask(cancellationToken);
 
-            private async ValueTask GetCancelableWaiterTask(CancellationToken cancellationToken)
-            {
-                using (cancellationToken.UnsafeRegister(s =>
+                async ValueTask GetCancelableWaiterTask(CancellationToken cancellationToken)
                 {
-                    var thisRef = (Http2Stream)s;
-
-                    bool signalWaiter;
-                    Debug.Assert(!Monitor.IsEntered(thisRef.SyncObject));
-                    lock (thisRef.SyncObject)
+                    using (cancellationToken.UnsafeRegister(s =>
                     {
-                        signalWaiter = thisRef._hasWaiter;
-                        thisRef._hasWaiter = false;
+                        var thisRef = (Http2Stream)s;
+
+                        bool signalWaiter;
+                        Debug.Assert(!Monitor.IsEntered(thisRef.SyncObject));
+                        lock (thisRef.SyncObject)
+                        {
+                            signalWaiter = thisRef._hasWaiter;
+                            thisRef._hasWaiter = false;
+                        }
+
+                        if (signalWaiter)
+                        {
+                            // Wake up the wait.  It will then immediately check whether cancellation was requested and throw if it was.
+                            thisRef._waitSource.SetResult(true);
+                        }
+                    }, this))
+                    {
+                        await new ValueTask(this, _waitSource.Version).ConfigureAwait(false);
                     }
 
-                    if (signalWaiter)
-                    {
-                        // Wake up the wait.  It will then immediately check whether cancellation was requested and throw if it was.
-                        thisRef._waitSource.SetResult(true);
-                    }
-                }, this))
-                {
-                    await new ValueTask(this, _waitSource.Version).ConfigureAwait(false);
+                    CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
                 }
-
-                CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
             }
 
             public void Trace(string message, [CallerMemberName] string memberName = null) =>
@@ -1260,6 +1309,13 @@ namespace System.Net.Http
                     }
 
                     return http2Stream.ReadDataAsync(destination, _responseMessage, cancellationToken);
+                }
+
+                public override void CopyTo(Stream destination, int bufferSize)
+                {
+                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+                    Http2Stream http2Stream = _http2Stream ?? throw ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)));
+                    http2Stream.CopyTo(_responseMessage, destination, bufferSize);
                 }
 
                 public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)

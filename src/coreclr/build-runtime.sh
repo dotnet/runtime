@@ -43,6 +43,7 @@ restore_optdata()
         echo "Restoring the OptimizationData package"
         "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                                $OptDataProjectFilePath /t:Restore /m \
+                                               -bl:"$__LogsDir/OptRestore_$__ConfigTriplet.binlog" \
                                                $__CommonMSBuildArgs $__UnprocessedBuildArgs \
                                                /nodereuse:false
         local exit_code="$?"
@@ -58,7 +59,9 @@ restore_optdata()
         local PgoDataPackagePathOutputFile="${__IntermediatesDir}/optdatapath.txt"
 
         # Writes into ${PgoDataPackagePathOutputFile}
-        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackagePath ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} > /dev/null 2>&1
+        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackagePath \
+                                            ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} \
+                                            -bl:"$__LogsDir/PgoVersionRead_$__ConfigTriplet.binlog" > /dev/null 2>&1
         local exit_code="$?"
         if [[ "$exit_code" != 0 || ! -f "${PgoDataPackagePathOutputFile}" ]]; then
             echo "${__ErrMsgPrefix}Failed to get PGO data package path."
@@ -185,13 +188,15 @@ if [[ "${__BuildArch}" != "${__HostArch}" ]]; then
 fi
 
 # Set dependent variables
-__LogsDir="$__RootBinDir/log"
-__MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
-__BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
-__IntermediatesDir="$__RootBinDir/obj/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
+__LogsDir="$__RootBinDir/log/$__BuildType"
+__MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
+__ConfigTriplet="$__TargetOS.$__BuildArch.$__BuildType"
+__BinDir="$__RootBinDir/bin/coreclr/$__ConfigTriplet"
 __ArtifactsIntermediatesDir="$__RepoRootDir/artifacts/obj/coreclr"
+__IntermediatesDir="$__ArtifactsIntermediatesDir/$__ConfigTriplet"
+
 export __IntermediatesDir __ArtifactsIntermediatesDir
 __CrossComponentBinDir="$__BinDir"
 

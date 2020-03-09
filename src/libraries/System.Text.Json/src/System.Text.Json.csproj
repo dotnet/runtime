@@ -119,6 +119,8 @@
     <Compile Include="System\Text\Json\Serialization\JsonConverterAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterOfT.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonConverterOfT.WriteCore.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonDefaultNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonDictionaryConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonExtensionDataAttribute.cs" />
@@ -129,7 +131,6 @@
     <Compile Include="System\Text\Json\Serialization\JsonPropertyInfoOfTTypeToConvert.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonPropertyNameAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonResumableConverterOfT.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleMetadata.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandlePropertyName.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Helpers.cs" />
@@ -138,7 +139,6 @@
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.String.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Utf8JsonReader.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.ByteArray.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.HandleMetadata.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Helpers.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Stream.cs" />

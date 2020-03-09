@@ -11,7 +11,6 @@
 #include "common.h"
 #include "pefile.h"
 #include "eecontract.h"
-#include "apithreadstress.h"
 #include "eeconfig.h"
 #include "product_version.h"
 #include "eventtrace.h"
