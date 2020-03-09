@@ -739,8 +739,8 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_StoreAligned, OP_SSE_STORE, 16 /* alignment */},
 	{SN_Subtract, OP_XBINOP, OP_FSUB},
 	{SN_SubtractScalar, OP_SSE_SUBSS},
-	{SN_UnpackHigh, OP_SSE_UNPACKLO},
-	{SN_UnpackLow, OP_SSE_UNPACKHI},
+	{SN_UnpackHigh, OP_SSE_UNPACKHI},
+	{SN_UnpackLow, OP_SSE_UNPACKLO},
 	{SN_Xor, OP_SSE_XOR},
 	{SN_get_IsSupported}
 };
