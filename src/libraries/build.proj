@@ -30,9 +30,11 @@
 
     <MSBuild Projects="@(_RestoreProjects)"
              Targets="Restore"
+             Properties="$(ProjectProperties);__BuildPhase=Restore"
              BuildInParallel="true" />
 
     <MSBuild Projects="@(_RestoreBuildProjects)"
+             Properties="$(ProjectProperties);__BuildPhase=Build"
              Targets="Build" />
   </Target>
 

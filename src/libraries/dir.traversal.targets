@@ -1,5 +1,5 @@
 <Project DefaultTargets="Build">
-  <Import Condition="'$(ImportDirectoryBuildTargets)' != 'false'" Project="$(MSBuildThisFileDirectory)Directory.Build.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.targets" />
 
   <Target Name="BuildAllProjects">
     <PropertyGroup>
