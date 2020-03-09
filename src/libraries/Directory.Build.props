@@ -23,7 +23,7 @@
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
     <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.depproj'">$(RepositoryEngineeringDir)depProj.common.targets</LanguageTargets>
     <RuntimePropsFile>$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'tmp', '$(Configuration)', 'RuntimeOS.props'))</RuntimePropsFile>
-    <RuntimeGraph>$(LibrariesProjectRoot)\pkg\Microsoft.NETCore.Platforms\runtime.json</RuntimeGraph>
+    <RuntimeGraph>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'pkg', 'Microsoft.NETCore.Platforms', 'runtime.json'))</RuntimeGraph> 
     <BuildTargetFramework>netcoreapp5.0</BuildTargetFramework>
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
     <!-- TargetOS can be removed after renaming the property in arcade repo-->
@@ -53,8 +53,9 @@
   </PropertyGroup>
   
   <PropertyGroup>
+    <TargetsWebAssembly Condition="'$(TargetFrameworkSuffix)' == 'WebAssembly'">true</TargetsWebAssembly>
     <TargetsFreeBSD Condition="'$(TargetFrameworkSuffix)' == 'freebsd'">true</TargetsFreeBSD>
-    <TargetsLinux Condition="'$(TargetFrameworkSuffix)' == 'linux'">true</TargetsLinux>
+    <TargetsLinux Condition="'$(TargetFrameworkSuffix)' == 'linux' or '$(TargetsWebAssembly)' == 'true'">true</TargetsLinux>
     <TargetsNetBSD Condition="'$(TargetFrameworkSuffix)' == 'netbsd'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetFrameworkSuffix)' == 'osx'">true</TargetsOSX>
     <TargetsWindows Condition="'$(TargetFrameworkSuffix)' == 'win'">true</TargetsWindows>
