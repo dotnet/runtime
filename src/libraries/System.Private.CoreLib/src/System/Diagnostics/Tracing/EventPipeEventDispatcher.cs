@@ -158,7 +158,7 @@ namespace System.Diagnostics.Tracing
             {
                 m_stopDispatchTask = true;
                 Debug.Assert(!m_dispatchTaskWaitHandle.SafeWaitHandle.IsInvalid);
-                Interop.Kernel32.SetEvent(m_dispatchTaskWaitHandle.SafeWaitHandle);
+                EventWaitHandle.Set(m_dispatchTaskWaitHandle.SafeWaitHandle);
                 m_dispatchTask.Wait();
                 m_dispatchTask = null;
             }

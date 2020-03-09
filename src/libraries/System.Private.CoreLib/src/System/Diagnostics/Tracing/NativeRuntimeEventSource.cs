@@ -11,8 +11,11 @@ namespace System.Diagnostics.Tracing
     [EventSource(Guid = "5E5BB766-BBFC-5662-0548-1D44FAD9BB56", Name = "Microsoft-Windows-DotNETRuntime")]
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
+        internal const string EventSourceName = "Microsoft-Windows-DotNETRuntime";
+        internal static NativeRuntimeEventSource Log = new NativeRuntimeEventSource();
+
         // The NativeRuntimeEventSource GUID is {5e5bb766-bbfc-5662-0548-1d44fad9bb56}
-        private NativeRuntimeEventSource() : base(new Guid(0x5e5bb766, 0xbbfc, 0x5662, 0x05, 0x48, 0x1d, 0x44, 0xfa, 0xd9, 0xbb, 0x56), "Microsoft-Windows-DotNETRuntime") { }
+        private NativeRuntimeEventSource() : base(new Guid(0x5e5bb766, 0xbbfc, 0x5662, 0x05, 0x48, 0x1d, 0x44, 0xfa, 0xd9, 0xbb, 0x56), EventSourceName) { }
 
         /// <summary>
         /// Dispatch a single event with the specified event ID and payload.
