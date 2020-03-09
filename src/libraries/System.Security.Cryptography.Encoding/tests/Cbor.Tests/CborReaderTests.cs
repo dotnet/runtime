@@ -16,15 +16,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             Assert.Throws<InvalidOperationException>(() =>
             {
-                var reader = new CborValueReader(ReadOnlySpan<byte>.Empty);
-                reader.Peek();
+                var reader = new CborReader(ReadOnlyMemory<byte>.Empty);
+                reader.PeekInitialByte();
             });
         }
 
         [Fact]
         public static void TryPeek_EmptyBuffer_ShouldReturnFalse()
         {
-            var reader = new CborValueReader(ReadOnlySpan<byte>.Empty);
+            var reader = new CborReader(ReadOnlyMemory<byte>.Empty);
             bool result = reader.TryPeek(out CborInitialByte _);
             Assert.False(result);
         }
@@ -37,9 +37,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(255)]
         public static void Peek_SingleByteBuffer_ShouldReturnSameByte(byte initialByte)
         {
-            ReadOnlySpan<byte> buffer = stackalloc byte[] { initialByte };
-            var reader = new CborValueReader(buffer);
-            CborInitialByte header = reader.Peek();
+            ReadOnlyMemory<byte> buffer = new [] { initialByte };
+            var reader = new CborReader(buffer);
+            CborInitialByte header = reader.PeekInitialByte();
             Assert.Equal(initialByte, header.InitialByte);
         }
 
@@ -51,8 +51,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData(255)]
         public static void TryPeek_SingleByteBuffer_ShouldReturnSameByte(byte initialByte)
         {
-            ReadOnlySpan<byte> buffer = stackalloc byte[] { initialByte };
-            var reader = new CborValueReader(buffer);
+            ReadOnlyMemory<byte> buffer = new[] { initialByte };
+            var reader = new CborReader(buffer);
             bool result = reader.TryPeek(out CborInitialByte header);
 
             Assert.True(result);

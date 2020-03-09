@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void ReadInt64_SingleValue_HappyPath(long expectedResult, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborValueReader(data);
+            var reader = new CborReader(data);
             long actualResult = reader.ReadInt64();
             Assert.Equal(expectedResult, actualResult);
         }
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void ReadUInt64_SingleValue_HappyPath(ulong expectedResult, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborValueReader(data);
+            var reader = new CborReader(data);
             ulong actualResult = reader.ReadUInt64();
             Assert.Equal(expectedResult, actualResult);
         }
@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void ReadCborNegativeIntegerEncoding_SingleValue_HappyPath(ulong expectedResult, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborValueReader(data);
+            var reader = new CborReader(data);
             ulong actualResult = reader.ReadCborNegativeIntegerEncoding();
             Assert.Equal(expectedResult, actualResult);
         }
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void ReadUInt64_SingleValue_ShouldSupportNonCanonicalEncodings(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborValueReader(data);
+            var reader = new CborReader(data);
             ulong result = reader.ReadUInt64();
             Assert.Equal(23ul, result);
         }
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void ReadInt64_SingleValue_ShouldSupportNonCanonicalEncodings(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborValueReader(data);
+            var reader = new CborReader(data);
             long result = reader.ReadInt64();
             Assert.Equal(-24, result);
         }
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             Assert.Throws<OverflowException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadInt64();
             });
         }
@@ -151,7 +151,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             Assert.Throws<OverflowException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadUInt64();
             });
         }
@@ -169,7 +169,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadInt64();
             });
 
@@ -189,7 +189,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadUInt64();
             });
 
@@ -211,7 +211,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadCborNegativeIntegerEncoding();
             });
 
@@ -240,7 +240,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             Assert.Throws<FormatException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadInt64();
             });
         }
@@ -260,7 +260,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             Assert.Throws<FormatException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadCborNegativeIntegerEncoding();
             });
         }
@@ -273,7 +273,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             Assert.Throws<NotImplementedException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadInt64();
             });
         }

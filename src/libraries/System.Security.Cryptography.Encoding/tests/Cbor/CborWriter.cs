@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         // Returns true iff a complete CBOR document has been written to buffer
-        public bool IsWriteCompleted => _remainingDataItems == 0 && ((_nestedDataItemStack?.Count ?? 0) == 0);
+        public bool IsWriteCompleted => _remainingDataItems == 0 && (_nestedDataItemStack?.Count ?? 0) == 0;
 
         private void EnsureWriteCapacity(int pendingCount)
         {

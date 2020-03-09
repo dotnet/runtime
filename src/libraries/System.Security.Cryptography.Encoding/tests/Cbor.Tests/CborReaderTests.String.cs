@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             byte[] expectedValue = hexExpectedValue.HexToByteArray();
-            var reader = new CborValueReader(encoding);
+            var reader = new CborReader(encoding);
             byte[] output = reader.ReadByteString();
             Assert.Equal(expectedValue, output);
         }
@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] buffer = new byte[32];
             byte[] encoding = hexEncoding.HexToByteArray();
             byte[] expectedValue = hexExpectedValue.HexToByteArray();
-            var reader = new CborValueReader(encoding);
+            var reader = new CborReader(encoding);
             bool result = reader.TryReadByteString(buffer, out int bytesWritten);
             Assert.True(result);
             Assert.Equal(expectedValue.Length, bytesWritten);
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void ReadTextString_SingleValue_HappyPath(string expectedValue, string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborValueReader(data);
+            var reader = new CborReader(data);
             string actualResult = reader.ReadTextString();
             Assert.Equal(expectedValue, actualResult);
         }
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             char[] buffer = new char[32];
             byte[] data = hexEncoding.HexToByteArray();
-            var reader = new CborValueReader(data);
+            var reader = new CborReader(data);
             bool result = reader.TryReadTextString(buffer, out int charsWritten);
             Assert.True(result);
             Assert.Equal(expectedValue.Length, charsWritten);
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] buffer = new byte[actualValue.Length / 2 - 1];
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborValueReader(encoding);
+            var reader = new CborReader(encoding);
             bool result = reader.TryReadByteString(buffer, out int bytesWritten);
             Assert.False(result);
             Assert.Equal(0, bytesWritten);
@@ -105,7 +105,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             char[] buffer = new char[actualValue.Length - 1];
             byte[] encoding = hexEncoding.HexToByteArray();
-            var reader = new CborValueReader(encoding);
+            var reader = new CborReader(encoding);
             bool result = reader.TryReadTextString(buffer, out int charsWritten);
             Assert.False(result);
             Assert.Equal(0, charsWritten);
@@ -127,7 +127,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             Assert.Throws<InvalidOperationException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadByteString();
             });
         }
@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             
             Assert.Throws<InvalidOperationException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadTextString();
             });
         }
@@ -168,7 +168,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             Assert.Throws<InvalidOperationException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.TryReadByteString(buffer, out int _);
             });
         }
@@ -189,7 +189,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             Assert.Throws<InvalidOperationException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.TryReadTextString(buffer, out int _);
             });
         }
@@ -215,7 +215,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             Assert.Throws<FormatException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadByteString();
             });
         }
@@ -241,7 +241,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             Assert.Throws<FormatException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadTextString();
             });
         }
@@ -269,7 +269,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             Assert.Throws<FormatException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.TryReadByteString(buffer, out int _);
             });
         }
@@ -297,7 +297,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             Assert.Throws<FormatException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.TryReadTextString(buffer, out int _);
             });
         }
@@ -311,7 +311,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             Assert.Throws<OverflowException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadByteString();
             });
         }
@@ -325,7 +325,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             Assert.Throws<OverflowException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadTextString();
             });
         }
@@ -338,7 +338,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             Assert.Throws<System.Text.DecoderFallbackException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.ReadTextString();
             });
         }
@@ -353,7 +353,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             Assert.Throws<System.Text.DecoderFallbackException>(() =>
             {
-                var reader = new CborValueReader(data);
+                var reader = new CborReader(data);
                 reader.TryReadTextString(buffer, out int _);
             });
         }
