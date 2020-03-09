@@ -12,7 +12,7 @@
     <BuildDependsOn Condition="'$(BuildPackages)' == 'true' and '$(BuildTests)' != 'only'">$(BuildDependsOn);Pack</BuildDependsOn>
     <BuildDependsOn Condition="'$(BuildTests)' != ''">$(BuildDependsOn);BuildTests</BuildDependsOn>
 
-    <RestoreAll Condition="'$(RestoreAll)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or '$(OfficialBuildId)' != '')">true</RestoreAll>
+    <RestoreAll Condition="'$(RestoreAll)' == '' and '$(ContinuousIntegrationBuild)' == 'true'">true</RestoreAll>
   </PropertyGroup>
 
   <Import Project="Directory.Build.targets" />
@@ -88,10 +88,18 @@
 
   <Target Name="Pack">
     <ItemGroup>
-      <_PackProjects Include="$(MSBuildThisFileDirectory)packages.builds" />
+      <_PackProjects Include="$(MSBuildThisFileDirectory)packages.proj" />
     </ItemGroup>
 
-    <MSBuild Projects="@(_PackProjects)" Properties="$(ProjectProperties)" />
+    <!-- Only restore if there was no upfront restore. -->
+    <MSBuild Projects="@(_PackProjects)"
+             Condition="'$(RestoreAll)' != 'true'"
+             Properties="$(ProjectProperties);__BuildPhase=Restore"
+             Targets="Restore" />
+
+    <MSBuild Projects="@(_PackProjects)"
+             Targets="Build"
+             Properties="$(ProjectProperties);__BuildPhase=Build" />
   </Target>
 
   <Target Name="Build" DependsOnTargets="$(BuildDependsOn)" />

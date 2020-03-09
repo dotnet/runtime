@@ -1,12 +1,28 @@
 <Project>
-  <Import Project="Directory.Build.props" />
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+  
+  <PropertyGroup>
+    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+  </PropertyGroup>
 
   <ItemGroup>
-    <Project Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp/netcoreapp.depproj" />
-    <Project Include="netstandard/netstandard.depproj" />
-    <Project Include="netfx/netfx.depproj" />
-    <Project Include="binplacePackages/binplacePackages.depproj" />
+    <ProjectReference Include="netcoreapp/netcoreapp.depproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
+    <ProjectReference Include="netstandard/netstandard.depproj" />
+    <ProjectReference Include="netfx/netfx.depproj" />
+    <ProjectReference Include="binplacePackages/binplacePackages.depproj" />
   </ItemGroup>
 
-  <Import Project="..\dir.traversal.targets" />
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+  
+  <!-- Ordering matters! Overwriting the Build target after the Sdk.targets import. -->
+  <Target Name="Build">
+    <MSBuild Targets="Build"
+             Projects="@(ProjectReference)"
+             Properties="%(Project.AdditionalProperties)"
+             BuildInParallel="true"
+             ContinueOnError="ErrorAndStop" />
+  </Target>
+
+  <!-- Disabling restore of the depprojs. -->
+  <Target Name="Restore" />
 </Project>

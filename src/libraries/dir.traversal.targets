@@ -1,5 +1,5 @@
 <Project DefaultTargets="Build">
-  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.targets" />
+  <Import Condition="'$(ImportDirectoryBuildTargets)' != 'false'" Project="$(MSBuildThisFileDirectory)Directory.Build.targets" />
 
   <Target Name="BuildAllProjects">
     <PropertyGroup>
@@ -48,6 +48,5 @@
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
   <Target Name="Clean" DependsOnTargets="$(TraversalCleanDependsOn)" />
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
-  <Target Name="Restore" />
 
 </Project>

@@ -1,5 +1,9 @@
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+
+  <PropertyGroup>
+    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+  </PropertyGroup>
 
   <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
     <AdditionalBuildTargetFrameworks>$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
@@ -15,7 +19,7 @@
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
-  <Import Project="$(PkgDir)baseline\baseline.props" />
+  <Import Project="$(RepositoryEngineeringDir)restore\harvestPackages.targets" />
 
   <UsingTask TaskName="UpdatePackageIndex" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll"/>
 
@@ -69,6 +73,7 @@
       Overwrite="true" />
   </Target>
 
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
   <Import Project="$(MSBuildThisFileDirectory)dir.traversal.targets" />
 
   <Target Name="SetAzureDevOpsVariableForBuiltPackages"
