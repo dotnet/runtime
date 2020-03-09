@@ -11,6 +11,8 @@
     <BuildDependsOn Condition="'$(BuildManaged)' == 'true' and '$(BuildTests)' != 'only'">$(BuildDependsOn);BuildManaged</BuildDependsOn>
     <BuildDependsOn Condition="'$(BuildPackages)' == 'true' and '$(BuildTests)' != 'only'">$(BuildDependsOn);Pack</BuildDependsOn>
     <BuildDependsOn Condition="'$(BuildTests)' != ''">$(BuildDependsOn);BuildTests</BuildDependsOn>
+
+    <RestoreAll Condition="'$(RestoreAll)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or '$(OfficialBuildId)' != '')">true</RestoreAll>
   </PropertyGroup>
 
   <Import Project="Directory.Build.targets" />
@@ -22,8 +24,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <_RestoreProjects Include="$(MSBuildThisFileDirectory)dirs.proj" />
-      <_RestoreProjects Include="$(MSBuildThisFileDirectory)tests.proj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+      <_RestoreProjects Include="$(MSBuildThisFileDirectory)dirs.proj" Condition="'$(RestoreAll)' == 'true'" />
+      <_RestoreProjects Include="$(MSBuildThisFileDirectory)tests.proj" Condition="'$(RestoreAll)' == 'true' and '$(DotNetBuildFromSource)' != 'true'" />
     </ItemGroup>
 
     <MSBuild Projects="@(_RestoreProjects)"
@@ -47,7 +49,15 @@
       <_BuildMangedProjects Include="$(MSBuildThisFileDirectory)dirs.proj" />
     </ItemGroup>
 
-    <MSBuild Projects="@(_BuildMangedProjects)" Properties="$(ProjectProperties)" />
+    <!-- Only restore if there was no upfront restore. -->
+    <MSBuild Projects="@(_BuildMangedProjects)"
+             Condition="'$(RestoreAll)' != 'true'"
+             Properties="$(ProjectProperties);__BuildPhase=Restore"
+             Targets="Restore" />
+
+    <MSBuild Projects="@(_BuildMangedProjects)"
+             Properties="$(ProjectProperties);__BuildPhase=Build"
+             Targets="Build" />
   </Target>
 
   <Target Name="BuildTests">
@@ -55,9 +65,15 @@
       <_TestProjects Include="$(MSBuildThisFileDirectory)tests.proj" />
     </ItemGroup>
 
+    <!-- Only restore if there was no upfront restore. -->
+    <MSBuild Projects="@(_TestProjects)"
+             Condition="'$(RestoreAll)' != 'true'"
+             Properties="$(ProjectProperties);__BuildPhase=Restore"
+             Targets="Restore" />
+
     <MSBuild Projects="@(_TestProjects)"
              Targets="Build"
-             Properties="$(ProjectProperties)" />
+             Properties="$(ProjectProperties);__BuildPhase=Build" />
   </Target>
 
   <Target Name="Test">
