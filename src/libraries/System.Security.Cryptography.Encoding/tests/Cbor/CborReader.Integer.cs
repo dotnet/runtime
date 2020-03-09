@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Implements major type 0 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public ulong ReadUInt64()
         {
+            EnsureCanReadNewDataItem();
             CborInitialByte header = PeekInitialByte();
 
             switch (header.MajorType)
@@ -18,6 +19,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 case CborMajorType.UnsignedInteger:
                     ulong value = ReadUnsignedInteger(header, out int additionalBytes);
                     AdvanceBuffer(1 + additionalBytes);
+                    _remainingDataItems--;
                     return value;
 
                 case CborMajorType.NegativeInteger:
@@ -34,6 +36,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             long value;
             int additionalBytes;
 
+            EnsureCanReadNewDataItem();
             CborInitialByte header = PeekInitialByte();
 
             switch (header.MajorType)
@@ -41,11 +44,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 case CborMajorType.UnsignedInteger:
                     value = checked((long)ReadUnsignedInteger(header, out additionalBytes));
                     AdvanceBuffer(1 + additionalBytes);
+                    _remainingDataItems--;
                     return value;
 
                 case CborMajorType.NegativeInteger:
                     value = checked(-1 - (long)ReadUnsignedInteger(header, out additionalBytes));
                     AdvanceBuffer(1 + additionalBytes);
+                    _remainingDataItems--;
                     return value;
 
                 default:
@@ -57,9 +62,11 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // https://tools.ietf.org/html/rfc7049#section-2.1
         public ulong ReadCborNegativeIntegerEncoding()
         {
+            EnsureCanReadNewDataItem();
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.NegativeInteger);
             ulong value = ReadUnsignedInteger(header, out int additionalBytes);
             AdvanceBuffer(1 + additionalBytes);
+            _remainingDataItems--;
             return value;
         }
 

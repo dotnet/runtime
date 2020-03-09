@@ -12,51 +12,36 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     public partial class CborReaderTests
     {
         [Fact]
-        public static void Peek_EmptyBuffer_ShouldThrowInvalidOperationException()
+        public static void Peek_EmptyBuffer_ShouldReturnEof()
         {
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                var reader = new CborReader(ReadOnlyMemory<byte>.Empty);
-                reader.PeekInitialByte();
-            });
+            var reader = new CborReader(ReadOnlyMemory<byte>.Empty);
+            Assert.Equal(CborReaderState.EOF, reader.Peek());
+        }
+
+        [Theory]
+        [InlineData(CborMajorType.UnsignedInteger, CborReaderState.UnsignedInteger)]
+        [InlineData(CborMajorType.NegativeInteger, CborReaderState.NegativeInteger)]
+        [InlineData(CborMajorType.ByteString, CborReaderState.ByteString)]
+        [InlineData(CborMajorType.TextString, CborReaderState.TextString)]
+        [InlineData(CborMajorType.Array, CborReaderState.StartArray)]
+        [InlineData(CborMajorType.Map, CborReaderState.StartMap)]
+        [InlineData(CborMajorType.Tag, CborReaderState.Tag)]
+        [InlineData(CborMajorType.Special, CborReaderState.Special)]
+        internal static void Peek_SingleByteBuffer_ShouldReturnExpectedState(CborMajorType majorType, CborReaderState expectedResult)
+        {
+            ReadOnlyMemory<byte> buffer = new byte[] { (byte)((byte)majorType << 5) };
+            var reader = new CborReader(buffer);
+            Assert.Equal(expectedResult, reader.Peek());
         }
 
         [Fact]
-        public static void TryPeek_EmptyBuffer_ShouldReturnFalse()
+        public static void CborReader_ReadingTwoPrimitiveValues_ShouldThrowInvalidOperationException()
         {
-            var reader = new CborReader(ReadOnlyMemory<byte>.Empty);
-            bool result = reader.TryPeek(out CborInitialByte _);
-            Assert.False(result);
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(10)]
-        [InlineData(100)]
-        [InlineData(255)]
-        public static void Peek_SingleByteBuffer_ShouldReturnSameByte(byte initialByte)
-        {
-            ReadOnlyMemory<byte> buffer = new [] { initialByte };
+            ReadOnlyMemory<byte> buffer = new byte[] { 0 };
             var reader = new CborReader(buffer);
-            CborInitialByte header = reader.PeekInitialByte();
-            Assert.Equal(initialByte, header.InitialByte);
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(10)]
-        [InlineData(100)]
-        [InlineData(255)]
-        public static void TryPeek_SingleByteBuffer_ShouldReturnSameByte(byte initialByte)
-        {
-            ReadOnlyMemory<byte> buffer = new[] { initialByte };
-            var reader = new CborReader(buffer);
-            bool result = reader.TryPeek(out CborInitialByte header);
-
-            Assert.True(result);
-            Assert.Equal(initialByte, header.InitialByte);
+            reader.ReadInt64();
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
         }
     }
 }

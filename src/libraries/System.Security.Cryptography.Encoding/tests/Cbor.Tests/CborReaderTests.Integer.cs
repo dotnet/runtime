@@ -77,6 +77,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(data);
             ulong actualResult = reader.ReadUInt64();
             Assert.Equal(expectedResult, actualResult);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
         [Theory]
