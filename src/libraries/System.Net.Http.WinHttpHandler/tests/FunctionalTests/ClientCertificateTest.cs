@@ -82,7 +82,39 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 }, new Http2Options { ClientCertificateRequired = true });
         }
 
-        [Fact]
+#if NETFRAMEWORK
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
+        public async Task UseClientCertOnHttp2_OSSupportsItButCertNotSet_SuccessWithOneWayAuth()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async address =>
+                {
+                    var handler = new WinHttpHandler();
+                    handler.ServerCertificateValidationCallback = CustomServerCertificateValidationCallback;
+                    using (var client = new HttpClient(handler))
+                    using (HttpResponseMessage response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, address) { Version = HttpVersion20.Value }))
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        Assert.True(_validationCallbackHistory.WasCalled);
+                        Assert.NotEmpty(_validationCallbackHistory.CertificateChain);
+                        Assert.Equal(Test.Common.Configuration.Certificates.GetServerCertificate(), _validationCallbackHistory.CertificateChain[0]);
+                    }
+                },
+                async s =>
+                {
+                    using (LoopbackServer.Connection connection = await s.EstablishConnectionAsync().ConfigureAwait(false))
+                    {
+                        SslStream sslStream = connection.Stream as SslStream;
+                        Assert.NotNull(sslStream);
+                        Assert.False(sslStream.IsMutuallyAuthenticated);
+                        Assert.Null(sslStream.RemoteCertificate);
+
+                        await connection.ReadRequestHeaderAndSendResponseAsync(HttpStatusCode.OK);
+                    }
+                }, new LoopbackServer.Options { UseSsl = true });
+        }
+#else
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
         public async Task UseClientCertOnHttp2_OSSupportsItButCertNotSet_SuccessWithOneWayAuth()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(
@@ -113,5 +145,6 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     }
                 }, new Http2Options { ClientCertificateRequired = false });
         }
+#endif
     }
 }
