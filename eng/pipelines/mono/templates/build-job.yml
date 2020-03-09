@@ -78,16 +78,16 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'win') }}:
       # Necessary to install python
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
     # Build
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if ne(parameters.osGroup, 'win') }}:
       - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'win') }}:
       - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
 
@@ -103,10 +103,10 @@ jobs:
         displayName: 'product build'
 
     # Build packages
-    - ${{ if and(ne(parameters.llvm, true), ne(parameters.osGroup, 'Windows_NT')) }}:
+    - ${{ if and(ne(parameters.llvm, true), ne(parameters.osGroup, 'win')) }}:
       - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
         displayName: Build nupkg
-    - ${{ if and(ne(parameters.llvm, true), eq(parameters.osGroup, 'Windows_NT')) }}:
+    - ${{ if and(ne(parameters.llvm, true), eq(parameters.osGroup, 'win')) }}:
       - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci $(officialBuildIdArg) /p:MonoEnableLLVM=${{ parameters.llvm }} -pack $(OutputRidArg)
         displayName: Build nupkg
 
@@ -118,7 +118,7 @@ jobs:
 
     # Publish official build
     - ${{ if and(ne(parameters.llvm, true), eq(parameters.publishToBlobFeed, 'true')) }}:
-      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if ne(parameters.osGroup, 'win') }}:
         - script: $(Build.SourcesDirectory)/eng/common/build.sh --ci --restore --publish --configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__TargetOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)/artifacts/log/publish-pkgs.binlog" --projects $(Build.SourcesDirectory)/eng/empty.csproj
           displayName: Publish packages to blob feed
           env:
@@ -127,7 +127,7 @@ jobs:
             ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
               # Arcade uses this SDK instead of trying to restore one.
               DotNetCoreSdkDir: /usr/local/dotnet
-      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - ${{ if eq(parameters.osGroup, 'win') }}:
         # TODO: pass publish feed url and access token in from the internal pipeline
         - powershell: eng\common\build.ps1 -ci -restore -publish -configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__TargetOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)\artifacts\log\publish-pkgs.binlog" -projects $(Build.SourcesDirectory)\eng\empty.csproj
           displayName: Publish packages to blob feed

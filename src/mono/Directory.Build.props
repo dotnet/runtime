@@ -35,11 +35,11 @@
 
   <!-- Set up common target properties that we use to conditionally include sources -->
   <PropertyGroup>
-    <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
-    <TargetsLinux Condition="'$(TargetOS)' == 'Linux'">true</TargetsLinux>
-    <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
-    <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
-    <TargetsWindows Condition="'$(TargetOS)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsFreeBSD Condition="'$(TargetOS)' == 'freebsd'">true</TargetsFreeBSD>
+    <TargetsLinux Condition="'$(TargetOS)' == 'linux'">true</TargetsLinux>
+    <TargetsNetBSD Condition="'$(TargetOS)' == 'netbsd'">true</TargetsNetBSD>
+    <TargetsOSX Condition="'$(TargetOS)' == 'osx'">true</TargetsOSX>
+    <TargetsWindows Condition="'$(TargetOS)' == 'win'">true</TargetsWindows>
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
 
