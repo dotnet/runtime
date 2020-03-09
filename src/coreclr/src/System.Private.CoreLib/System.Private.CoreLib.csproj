@@ -303,6 +303,9 @@
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />
   </ItemGroup>
+  <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\IDispatch.cs">
       <Link>Common\System\Runtime\InteropServices\IDispatch.cs</Link>

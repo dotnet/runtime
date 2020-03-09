@@ -98,6 +98,7 @@ add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:CROSSGEN_COMPONENT>>>:F
 add_definitions(-DFEATURE_COLLECTIBLE_TYPES)
 
 if(CLR_CMAKE_TARGET_WIN32)
+    add_definitions(-DFEATURE_COMWRAPPERS)
     add_definitions(-DFEATURE_CLASSIC_COMINTEROP)
     add_definitions(-DFEATURE_COMINTEROP)
     add_definitions(-DFEATURE_COMINTEROP_APARTMENT_SUPPORT)

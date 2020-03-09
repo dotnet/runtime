@@ -478,6 +478,9 @@ End
 Crst RCWCleanupList
 End
 
+Crst ExternalObjectContextCache
+End
+
 Crst ReDacl
 End
 
@@ -705,4 +708,7 @@ End
 Crst MethodDescBackpatchInfoTracker
     AcquiredBefore FuncPtrStubs ThreadStore SystemDomain
     AcquiredAfter ReJITGlobalRequest
+End
+
+Crst NativeImageEagerFixups
 End

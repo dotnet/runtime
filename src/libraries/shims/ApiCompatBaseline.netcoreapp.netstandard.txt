@@ -1,8 +1,33 @@
 Compat issues with assembly mscorlib:
 TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.RuntimeTypeHandle.GetModuleHandle()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.SByte)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.TryParse(System.String, System.SByte)' in the contract but not the implementation.
 TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.TypedReference.MakeTypedReference(System.Object, System.Reflection.FieldInfo[])' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.TypedReference.SetTypedReference(System.TypedReference, System.Object)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt16)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.TryParse(System.String, System.UInt16)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.TryParse(System.String, System.UInt32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt64)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.TryParse(System.String, System.UInt64)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr..ctor(System.Void*)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr.op_Explicit(System.UIntPtr)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr.op_Explicit(System.Void*)' in the contract but not the implementation.
@@ -17,8 +42,33 @@ CannotRemoveAttribute : Attribute 'System.Runtime.ConstrainedExecution.PrePrepar
 Compat issues with assembly netstandard:
 TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.RuntimeTypeHandle.GetModuleHandle()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.SByte)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.TryParse(System.String, System.SByte)' in the contract but not the implementation.
 TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.TypedReference.MakeTypedReference(System.Object, System.Reflection.FieldInfo[])' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.TypedReference.SetTypedReference(System.TypedReference, System.Object)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt16)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.TryParse(System.String, System.UInt16)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.TryParse(System.String, System.UInt32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt64)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.TryParse(System.String, System.UInt64)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr..ctor(System.Void*)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr.op_Explicit(System.UIntPtr)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr.op_Explicit(System.Void*)' in the contract but not the implementation.
@@ -521,6 +571,30 @@ CannotSealType : Type 'System.Linq.EnumerableQuery' is effectively (has a privat
 MembersMustExist : Member 'System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Runtime:
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.RuntimeTypeHandle.GetModuleHandle()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.SByte)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.SByte.TryParse(System.String, System.SByte)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt16)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt16.TryParse(System.String, System.UInt16)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt32.TryParse(System.String, System.UInt32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.Globalization.NumberStyles)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.Globalization.NumberStyles, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.Parse(System.String, System.IFormatProvider)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.TryParse(System.String, System.Globalization.NumberStyles, System.IFormatProvider, System.UInt64)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UInt64.TryParse(System.String, System.UInt64)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr..ctor(System.Void*)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr.op_Explicit(System.UIntPtr)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.UIntPtr.op_Explicit(System.Void*)' in the contract but not the implementation.
@@ -556,4 +630,4 @@ CannotSealType : Type 'System.Xml.Schema.XmlSchemaGroupBase' is effectively (has
 MembersMustExist : Member 'System.Xml.Schema.XmlSchemaGroupBase..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaGroupBase.Items' is non-virtual in the implementation but is virtual in the contract.
 CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaGroupBase.Items.get()' is non-virtual in the implementation but is virtual in the contract.
-Total Issues: 543
+Total Issues: 617

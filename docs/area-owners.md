@@ -82,7 +82,7 @@ Below table shows the combined area owners on this repository:
 | area-System.Numerics.Tensors | @pgovind @eiriktsarpalis | |
 | area-System.Reflection | @steveharter @GrabYourPitchforks | |
 | area-System.Reflection.Emit | @steveharter @GrabYourPitchforks | |
-| area-System.Reflection.Metadata | @tmat @nguerrera | |
+| area-System.Reflection.Metadata | @tmat | |
 | area-System.Resources | @buyaa-n @tarekgh @krwq | |
 | area-System.Runtime | @bartonjs @joperezr | Included:<ul><li>System.Runtime.Serialization.Formatters</li><li>System.Runtime.InteropServices.RuntimeInfo</li><li>System.Array</li></ul>Excluded:<ul><li>Path -> System.IO</li><li>StopWatch -> System.Diagnostics</li><li>Uri -> System.Net</li><li>WebUtility -> System.Net</li></ul> |
 | area-System.Runtime.Caching | @StephenMolloy @HongGit | |

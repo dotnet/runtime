@@ -203,7 +203,7 @@ namespace ILCompiler.PEWriter
                         relocationLength = 4;
                         int sourcePageRVA = sourceRVA & ~0xfff;
                         // Page delta always fits in 21 bits as long as we use 4-byte RVAs
-                        delta = ((targetRVA - sourcePageRVA) >> 12) & 0x1ffff;
+                        delta = ((targetRVA - sourcePageRVA) >> 12) & 0x1f_ffff;
                         break;
                     }
 
