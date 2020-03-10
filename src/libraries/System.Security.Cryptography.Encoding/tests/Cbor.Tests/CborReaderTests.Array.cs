@@ -221,7 +221,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
     static class ArrayReaderHelper
     {
-        public static void ReadArray(this CborReader reader, params object[] expectedValues)
+        public static void VerifyArray(CborReader reader, params object[] expectedValues)
         {
             Assert.Equal(CborReaderState.StartArray, reader.Peek());
 
