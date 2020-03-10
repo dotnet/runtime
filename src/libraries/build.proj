@@ -11,32 +11,21 @@
     <BuildDependsOn Condition="'$(BuildManaged)' == 'true' and '$(BuildTests)' != 'only'">$(BuildDependsOn);BuildManaged</BuildDependsOn>
     <BuildDependsOn Condition="'$(BuildPackages)' == 'true' and '$(BuildTests)' != 'only'">$(BuildDependsOn);Pack</BuildDependsOn>
     <BuildDependsOn Condition="'$(BuildTests)' != ''">$(BuildDependsOn);BuildTests</BuildDependsOn>
-
-    <RestoreAll Condition="'$(RestoreAll)' == '' and '$(ContinuousIntegrationBuild)' == 'true'">true</RestoreAll>
   </PropertyGroup>
 
   <Import Project="Directory.Build.targets" />
 
   <Target Name="Restore" DependsOnTargets="GenerateRuntimeOSPropsFile">
     <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
-      <_RestoreBuildProjects Include="$(MSBuildThisFileDirectory)restore\dirs.proj" />
-      <_RestoreProjects Include="@(_RestoreBuildProjects)" />
+      <_RestoreProjects Include="$(MSBuildThisFileDirectory)restore\dirs.proj" Build="true" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
+      <_RestoreProjects Include="$(MSBuildThisFileDirectory)tests.proj" Build="false" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RestoreAll)' == 'true'">
-      <_RestoreProjects Include="$(MSBuildThisFileDirectory)dirs.proj"  />
-      <_RestoreProjects Include="$(MSBuildThisFileDirectory)tests.proj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
-      <_RestoreProjects Include="$(MSBuildThisFileDirectory)packages.proj" />
-    </ItemGroup>
-
-    <MSBuild Projects="@(_RestoreProjects)"
-             Targets="Restore"
-             Properties="__BuildPhase=Restore"
-             BuildInParallel="true" />
-
-    <MSBuild Projects="@(_RestoreBuildProjects)"
-             Properties="__BuildPhase=Build"
-             Targets="Build" />
+    <MSBuild Projects="@(_RestoreProjects)" Targets="Restore" Properties="$(ProjectProperties)" />
+    <MSBuild Projects="@(_RestoreProjects)" Condition="'%(Build)' != 'false'" Properties="$(ProjectProperties)" />
   </Target>
 
   <Target Name="BuildNative">
@@ -44,7 +33,7 @@
       <_BuildNativeProjects Include="$(MSBuildThisFileDirectory)Native\build-native.proj" />
     </ItemGroup>
 
-    <MSBuild Projects="@(_BuildNativeProjects)" />
+    <MSBuild Projects="@(_BuildNativeProjects)" Properties="$(ProjectProperties)" />
   </Target>
 
   <Target Name="BuildManaged">
@@ -52,15 +41,7 @@
       <_BuildMangedProjects Include="$(MSBuildThisFileDirectory)dirs.proj" />
     </ItemGroup>
 
-    <!-- Only restore if there was no upfront restore. -->
-    <MSBuild Projects="@(_BuildMangedProjects)"
-             Condition="'$(RestoreAll)' != 'true'"
-             Properties="__BuildPhase=Restore"
-             Targets="Restore" />
-
-    <MSBuild Projects="@(_BuildMangedProjects)"
-             Properties="__BuildPhase=Build"
-             Targets="Build" />
+    <MSBuild Projects="@(_BuildMangedProjects)" Properties="$(ProjectProperties)" />
   </Target>
 
   <Target Name="BuildTests">
@@ -68,15 +49,9 @@
       <_TestProjects Include="$(MSBuildThisFileDirectory)tests.proj" />
     </ItemGroup>
 
-    <!-- Only restore if there was no upfront restore. -->
     <MSBuild Projects="@(_TestProjects)"
-             Condition="'$(RestoreAll)' != 'true'"
-             Properties="__BuildPhase=Restore"
-             Targets="Restore" />
-
-    <MSBuild Projects="@(_TestProjects)"             
-             Properties="__BuildPhase=Build"
-             Targets="Build" />
+             Targets="Build"
+             Properties="$(ProjectProperties)" />
   </Target>
 
   <Target Name="Test">
@@ -85,23 +60,16 @@
     </ItemGroup>
 
     <MSBuild Projects="@(_TestProjects)"
-             Targets="Test" />
+             Targets="Test"
+             Properties="$(ProjectProperties)" />
   </Target>
 
   <Target Name="Pack">
     <ItemGroup>
-      <_PackProjects Include="$(MSBuildThisFileDirectory)packages.proj" />
+      <_PackProjects Include="$(MSBuildThisFileDirectory)packages.builds" />
     </ItemGroup>
 
-    <!-- Only restore if there was no upfront restore. -->
-    <MSBuild Projects="@(_PackProjects)"
-             Condition="'$(RestoreAll)' != 'true'"
-             Properties="__BuildPhase=Restore"
-             Targets="Restore" />
-
-    <MSBuild Projects="@(_PackProjects)"
-             Targets="Build"
-             Properties="__BuildPhase=Build" />
+    <MSBuild Projects="@(_PackProjects)" Properties="$(ProjectProperties)" />
   </Target>
 
   <Target Name="Build" DependsOnTargets="$(BuildDependsOn)" />

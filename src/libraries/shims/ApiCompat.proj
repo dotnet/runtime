@@ -1,12 +1,9 @@
-<Project>
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+<Project DefaultTargets="Build">
+
+  <Import Project="Directory.Build.props" />
 
   <PropertyGroup>
-    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <ApiCompatTarget>$(TargetFramework)</ApiCompatTarget>
+    <ApiCompatTarget>$(BuildTargetFramework)</ApiCompatTarget>
     <ApiCompatTarget Condition="$(BuildTargetFramework.Contains('netcoreapp'))">netcoreapp</ApiCompatTarget>
     <ApiCompatResponseFile>$(IntermediateOutputPath)/apicompat.rsp</ApiCompatResponseFile>
     <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(ApiCompatTarget).netfx461.txt</ApiCompatBaselineFile>
@@ -101,12 +98,11 @@
 
   </Target>
 
-  <Target Name="CleanAdditionalFiles" AfterTargets="Clean">
+  <Target Name="Build" DependsOnTargets="RunApiCompat" />
+  <Target Name="Clean">
     <RemoveDir Directories="$(BaseIntermediateOutputPath)" />
   </Target>
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
-
-  <!-- Ordering matters! Overwriting the Build target after the Sdk.targets import. -->
-  <Target Name="Build" DependsOnTargets="RunApiCompat" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

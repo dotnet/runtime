@@ -1,35 +1,26 @@
 <Project>
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
 
+  <!-- required to build the projects in their specified order -->
   <PropertyGroup>
-    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+    <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
-    <ProjectReference Include="ref.proj" />
-    <ProjectReference Include="Native\native-binplace.proj" />
-    <ProjectReference Include="src.proj" />
-    <ProjectReference Include="shims\manual\*.csproj" />
-    <ProjectReference Include="shims\ApiCompat.proj" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'" />
-    <ProjectReference Include="pretest.proj" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" />
+    <Project Include="ref.builds" />
+    <Project Include="shims\generated\*.csproj" />
+    <Project Include="Native\native-binplace.proj" />
+    <Project Include="src.builds" />
+    <Project Include="shims\manual\*.csproj" />
+    <Project Include="shims\ApiCompat.proj" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'" />
+    <Project Include="pretest.proj" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(DirectoryToBuild)' != ''">
-    <ProjectReference Include="ref.proj" />
-    <ProjectReference Include="src.proj" />
+    <Project Include="ref.builds" />
+    <Project Include="src.builds" />
   </ItemGroup>
 
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)dir.traversal.targets" />
   
-  <!--
-    Ordering matters! Overwriting the Build target after the Sdk.targets import.
-    BuildInParallel false is required to build the projects in their specified order.
-  -->
-  <Target Name="Build" DependsOnTargets="BuildAllProjects" />
-  <Target Name="BuildAllProjects">
-    <MSBuild Targets="Build"
-             Projects="@(ProjectReference)"
-             Properties="BuildAllProjects=true"
-             ContinueOnError="ErrorAndStop" />
-  </Target>
 </Project>
