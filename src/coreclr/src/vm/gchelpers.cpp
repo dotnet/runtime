@@ -440,8 +440,9 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
             orDummyObject->SetMethodTable(g_pObjectClass);
         }
         else
+#endif  // FEATURE_64BIT_ALIGNMENT
         {
-#else   // ! FEATURE_64BIT_ALIGNMENT
+#ifdef FEATURE_64BIT_ALIGNMENT
             MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
             if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
             {
