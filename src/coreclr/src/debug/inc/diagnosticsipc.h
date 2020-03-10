@@ -33,6 +33,8 @@ public:
             SERVER
         };
 
+        ConnectionMode mode;
+
         ~DiagnosticsIpc();
 
         //! Creates an IPC object
@@ -64,8 +66,6 @@ public:
 
         DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength], ConnectionMode mode = ConnectionMode::SERVER);
 #endif /* TARGET_UNIX */
-
-        ConnectionMode _mode;
 
         DiagnosticsIpc() = delete;
         DiagnosticsIpc(const DiagnosticsIpc &src) = delete;

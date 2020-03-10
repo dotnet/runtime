@@ -14,10 +14,10 @@
 #include "processdescriptor.h"
 
 IpcStream::DiagnosticsIpc::DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress, ConnectionMode mode) :
+    mode(mode),
     _serverSocket(serverSocket),
     _pServerAddress(new sockaddr_un),
-    _isClosed(false),
-    _mode(mode)
+    _isClosed(false)
 {
     _ASSERTE(_pServerAddress != nullptr);
     _ASSERTE(_serverSocket != -1);

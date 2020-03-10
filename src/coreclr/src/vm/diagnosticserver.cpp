@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "diagnosticserver.h"
+#include "diagnosticsipcfactory.h"
 #include "eventpipeprotocolhelper.h"
 #include "dumpdiagnosticprotocolhelper.h"
 #include "profilerdiagnosticprotocolhelper.h"
@@ -19,9 +20,8 @@
 
 #ifdef FEATURE_PERFTRACING
 
-IpcStream::DiagnosticsIpc *DiagnosticServer::s_pServerIpc = nullptr;
-IpcStream::DiagnosticsIpc *DiagnosticServer::s_pClientIpc = nullptr;
 Volatile<bool> DiagnosticServer::s_shuttingDown(false);
+CQuickArrayList<IpcStream::DiagnosticsIpc*> DiagnosticServer::s_rgIpcs = CQuickArrayList<IpcStream::DiagnosticsIpc*>();
 
 DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
 {
@@ -34,7 +34,7 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
     }
     CONTRACTL_END;
 
-    if (s_pServerIpc == nullptr)
+    if (s_rgIpcs.Size() == 0)
     {
         STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, "Diagnostics IPC listener was undefined\n");
         return 1;
@@ -46,18 +46,9 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
 
     EX_TRY
     {
-        int nIpcs = (s_pClientIpc == nullptr) ? 1 : 2;
-        NewArrayHolder<IpcStream*> pListeningIpcs = new IpcStream*[nIpcs];
         while (!s_shuttingDown)
         {
-            // FIXME: Ideally this would be something like a std::shared_ptr
-            pListeningIpcs[0] = s_pServerIpc->Accept(false, LoggingCallback);
-
-            // TODO: this should loop till connected
-            if (s_pClientIpc != nullptr)
-                pListeningIpcs[1] = s_pClientIpc->Connect(LoggingCallback);
-
-            IpcStream *pStream = IpcStream::Select(pListeningIpcs, nIpcs, LoggingCallback);
+            IpcStream *pStream = DiagnosticsIpcFactory::GetNextConnectedStream(s_rgIpcs.Ptr(), s_rgIpcs.Size(), LoggingCallback);
 
             if (pStream == nullptr)
                 continue;
@@ -158,19 +149,12 @@ bool DiagnosticServer::Initialize()
             }
 
             // Create the clint mode connection
-            s_pClientIpc = IpcStream::DiagnosticsIpc::Create(address, IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT, ErrorCallback);
+            s_rgIpcs.Push(DiagnosticsIpcFactory::CreateClient(address, ErrorCallback));
         }
 
-        s_pServerIpc = IpcStream::DiagnosticsIpc::Create(nullptr, IpcStream::DiagnosticsIpc::ConnectionMode::SERVER, ErrorCallback);
+        s_rgIpcs.Push(DiagnosticsIpcFactory::CreateServer(nullptr, ErrorCallback));
 
-        // TODO: Error check the constructor
-
-        // TODO: Optionally block until connection with client mode is complete
-
-        // TODO: Should we handle/assert that (s_pIpc == nullptr)?
-        // s_pIpc = IpcStream::DiagnosticsIpc::Create(address, IpcStream::DiagnosticsIpc::ConnectionMode::SERVER, ErrorCallback);
-
-        if (s_pServerIpc != nullptr)
+        if (s_rgIpcs.Ptr() != nullptr)
         {
 #ifdef FEATURE_AUTO_TRACE
             auto_trace_init();
@@ -181,21 +165,12 @@ bool DiagnosticServer::Initialize()
                 nullptr,                     // no security attribute
                 0,                           // default stack size
                 DiagnosticsServerThread,     // thread proc
-                (LPVOID)s_pServerIpc,              // thread parameter
+                (LPVOID)s_rgIpcs.Ptr(),              // thread parameter
                 0,                           // not suspended
                 &dwThreadId);                // returns thread ID
 
             if (hServerThread == NULL)
             {
-                delete s_pServerIpc;
-                s_pServerIpc = nullptr;
-
-                if (s_pClientIpc != nullptr)
-                {
-                    delete s_pClientIpc;
-                    s_pClientIpc = nullptr;
-                }
-
                 // Failed to create IPC thread.
                 STRESS_LOG1(
                     LF_DIAGNOSTICS_PORT,                                 // facility
@@ -239,7 +214,7 @@ bool DiagnosticServer::Shutdown()
 
     EX_TRY
     {
-        if (s_pServerIpc != nullptr)
+        if (s_rgIpcs.Ptr() != nullptr)
         {
             auto ErrorCallback = [](const char *szMessage, uint32_t code) {
                 STRESS_LOG2(

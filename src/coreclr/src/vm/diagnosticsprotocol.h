@@ -57,6 +57,23 @@ bool TryParseString(uint8_t *&bufferCursor, uint32_t &bufferLen, const T *&resul
     return true;
 }
 
+template <typename T>
+bool TryWriteNumberLittleEndian(uint8_t *&bufferCursor, uint32_t &bufferLen, const T &value)
+{
+    static_assert(std::is_integral<T>::value, "Can only write integral types");
+
+    if (bufferLen < sizeof(value))
+        return false;
+
+    for (int i = 0; i < sizeof(value); i++)
+    {
+        *bufferCursor++ = (value >> (i * 8)) & 0xFF;
+        bufferLen += 8;
+    }
+
+    return true;
+}
+
 namespace DiagnosticsIpc
 {
     enum class IpcMagicVersion : uint8_t
@@ -103,6 +120,38 @@ namespace DiagnosticsIpc
     };
 
     const MagicVersion DotnetIpcMagic_V1 = { "DOTNET_IPC_V1" };
+
+    /**
+     * ==ADVERTISE PROTOCOL==
+     * Before standard IPC Protocol communication can occur on a client-mode connection
+     * the runtime must advertise itself over the connection.  ALL SUBSEQUENT COMMUNICATION 
+     * IS STANDARD DIAGNOSTICS IPC PROTOCOL COMMUNICATION.
+     * 
+     * The flow for Advertise is a one-way burst of 24 bytes consisting of
+     * 6 bytes - "AD_V1\0" (ASCII chars + null byte)
+     * 4 bytes - CLR Instance ID (little-endian)
+     * 8 bytes - PID (little-endian)
+     */
+
+    const uint8_t AdvertiseMagic_V1[6] = "AD_V1";
+
+    inline bool PopulateIpcAdvertisePayload_V1(uint8_t (&buf)[18])
+    {
+        uint16_t clrInstanceId = GetClrInstanceId();
+        uint64_t pid = GetCurrentProcessId();
+        uint8_t *bufferCursor = &buf[0];
+        uint32_t bufferLen = sizeof(buf);
+
+        for (int i = 0; i < sizeof(AdvertiseMagic_V1); i++)
+            if (!TryWriteNumberLittleEndian(bufferCursor, bufferLen, AdvertiseMagic_V1[i]))
+                return false;
+        
+        if (!TryWriteNumberLittleEndian(bufferCursor, bufferLen, clrInstanceId) ||
+            !TryWriteNumberLittleEndian(bufferCursor, bufferLen, pid))
+            return false;
+
+        return true;
+    }
 
     const IpcHeader GenericSuccessHeader =
     {

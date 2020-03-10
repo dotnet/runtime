@@ -10,7 +10,7 @@
 #define _ASSERTE assert
 
 IpcStream::DiagnosticsIpc::DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength], ConnectionMode mode)
-    : _mode(mode)
+    : mode(mode)
 {
     memcpy(_pNamedPipeName, namedPipeName, sizeof(_pNamedPipeName));
 }
@@ -60,8 +60,8 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
 
 IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback callback) const
 {
-    _ASSERTE(_mode == ConnectionMode::SERVER);
-    if (_mode != ConnectionMode::SERVER)
+    _ASSERTE(mode == ConnectionMode::SERVER);
+    if (mode != ConnectionMode::SERVER)
     {
         if (callback != nullptr)
             callback("Cannot call accept on a client connection", 0);
@@ -92,7 +92,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback cal
 
     // TODO: Find a better way to do this than
     // mixing abstractions
-    IpcStream *pStream = new IpcStream(hPipe, _mode);
+    IpcStream *pStream = new IpcStream(hPipe, mode);
 
     BOOL fSuccess = ::ConnectNamedPipe(hPipe, &pStream->_oOverlap) != 0;
     if (!fSuccess)
@@ -131,8 +131,8 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback cal
 
 IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
 {
-    _ASSERTE(_mode == ConnectionMode::CLIENT);
-    if (_mode != ConnectionMode::CLIENT)
+    _ASSERTE(mode == ConnectionMode::CLIENT);
+    if (mode != ConnectionMode::CLIENT)
     {
         if (callback != nullptr)
             callback("Cannot call connect on a client connection", 0);
@@ -156,7 +156,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
         return nullptr;
     }
 
-    return new IpcStream(hPipe, _mode);
+    return new IpcStream(hPipe, mode);
 }
 
 void IpcStream::DiagnosticsIpc::Close(ErrorCallback)
