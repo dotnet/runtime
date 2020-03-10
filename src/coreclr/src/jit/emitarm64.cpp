@@ -10810,26 +10810,7 @@ void emitter::emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t i
 {
     assert(isVectorRegister(reg));
     printf(emitVectorRegName(reg));
-
-    switch (elemsize)
-    {
-        case EA_1BYTE:
-            printf(".b");
-            break;
-        case EA_2BYTE:
-            printf(".h");
-            break;
-        case EA_4BYTE:
-            printf(".s");
-            break;
-        case EA_8BYTE:
-            printf(".d");
-            break;
-        default:
-            assert(!"invalid elemsize");
-            break;
-    }
-
+    emitDispElemsize(elemsize);
     printf("[%d]", index);
 
     if (addComma)
@@ -10875,6 +10856,36 @@ void emitter::emitDispArrangement(insOpts opt)
             assert(!"Invalid insOpt for vector register");
     }
     printf(".");
+    printf(str);
+}
+
+//------------------------------------------------------------------------
+// emitDispElemsize: Display a SIMD vector element suffix
+//
+void emitter::emitDispElemsize(emitAttr elemsize)
+{
+    const char* str = "???";
+
+    switch (elemsize)
+    {
+        case EA_1BYTE:
+            str = ".b";
+            break;
+        case EA_2BYTE:
+            str = ".h";
+            break;
+        case EA_4BYTE:
+            str = ".s";
+            break;
+        case EA_8BYTE:
+            str = ".d";
+            break;
+
+        default:
+            assert(!"invalid elemsize");
+            break;
+    }
+
     printf(str);
 }
 

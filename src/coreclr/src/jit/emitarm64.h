@@ -40,6 +40,7 @@ void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
 void emitDispVectorReg(regNumber reg, insOpts opt, bool addComma);
 void emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma);
 void emitDispArrangement(insOpts opt);
+void emitDispElemsize(emitAttr elemsize);
 void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
 void emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm);
