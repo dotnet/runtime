@@ -11429,6 +11429,7 @@ void emitter::emitDispIns(
         emitAttr     dstsize;
         ssize_t      index;
         ssize_t      index2;
+        unsigned     selem;
 
         case IF_BI_0A: // BI_0A   ......iiiiiiiiii iiiiiiiiiiiiiiii               simm26:00
         case IF_BI_0B: // BI_0B   ......iiiiiiiiii iiiiiiiiiii.....               simm19:00
@@ -11603,17 +11604,41 @@ void emitter::emitDispIns(
             emitDispAddrRI(id->idReg2(), id->idInsOpt(), imm);
             break;
 
-        case IF_LS_2D: // LS_2D   .Q.............. xx.xssnnnnnttttt      Vt Rn
-            assert(emitGetInsSC(id) == 0);
-            emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
-            emitDispAddrRI(id->idReg2(), id->idInsOpt(), 0);
+        case IF_LS_2D: // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn
+        case IF_LS_2E: // LS_2E   .Q.............. ....ssnnnnnttttt      Vt Rn
+            selem = insGetLoadStoreVectorSelem(id->idIns());
+            emitDispVectorRegList(id->idReg1(), selem, id->idInsOpt(), true);
+
+            if (fmt == IF_LS_2D)
+            {
+                // Load/Store multiple structures       base register
+                // Load single structure and replicate  base register
+                emitDispAddrRI(id->idReg2(), INS_OPTS_NONE, 0);
+            }
+            else
+            {
+                // Load/Store multiple structures       post-indexed by an immediate
+                // Load single structure and replicate  post-indexed by an immediate
+                emitDispAddrRI(id->idReg2(), INS_OPTS_POST_INDEX, id->idSmallCns());
+            }
             break;
 
-        case IF_LS_2E: // LS_2E   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
-            assert(insOptsNone(id->idInsOpt()));
-            assert(emitGetInsSC(id) == 0);
-            emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
-            emitDispAddrRI(id->idReg2(), id->idInsOpt(), 0);
+        case IF_LS_2F: // LS_2F   .Q.............. ...Sssnnnnnttttt      Vt[] Rn
+        case IF_LS_2G: // LS_2G   .Q.............. ...Sssnnnnnttttt      Vt[] Rn
+            selem    = insGetLoadStoreVectorSelem(id->idIns());
+            elemsize = id->idOpSize();
+            emitDispVectorElemList(id->idReg1(), selem, elemsize, id->idSmallCns(), true);
+
+            if (fmt == IF_LS_2F)
+            {
+                // Load/Store single structure  base register
+                emitDispAddrRI(id->idReg2(), INS_OPTS_NONE, 0);
+            }
+            else
+            {
+                // Load/Store single structure  post-indexed by an immediate
+                emitDispAddrRI(id->idReg2(), INS_OPTS_POST_INDEX, (selem * elemsize));
+            }
             break;
 
         case IF_LS_3A: // LS_3A   .X.......X.mmmmm oooS..nnnnnttttt      Rt Rn Rm ext(Rm) LSL {}
@@ -11662,20 +11687,27 @@ void emitter::emitDispIns(
             emitDispAddrRI(id->idReg3(), id->idInsOpt(), 0);
             break;
 
-        case IF_LS_3F: // LS_3F   .Q.........mmmmm xx.xssnnnnnttttt      Vt Rn Rm
-            assert(insOptsNone(id->idInsOpt()));
-            assert(emitGetInsSC(id) == 0);
-            emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
-            emitDispReg(id->idReg2(), emitInsTargetRegSize(id), true);
-            emitDispAddrRI(id->idReg3(), id->idInsOpt(), 0);
-            break;
+        case IF_LS_3F: // LS_3F   .Q.........mmmmm ....ssnnnnnttttt      Vt Rn Rm
+        case IF_LS_3G: // LS_3G   .Q.........mmmmm ...Sssnnnnnttttt      Vt[] Rn Rm
+            selem = insGetLoadStoreVectorSelem(id->idIns());
 
-        case IF_LS_3G: // LS_3G   .Q.........mmmmm xx.Sssnnnnnttttt      Vt[] Rn Rm
-            assert(insOptsNone(id->idInsOpt()));
-            assert(emitGetInsSC(id) == 0);
-            emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
-            emitDispReg(id->idReg2(), emitInsTargetRegSize(id), true);
-            emitDispAddrRI(id->idReg3(), id->idInsOpt(), 0);
+            if (fmt == IF_LS_3F)
+            {
+                // Load/Store multiple structures       post-indexed by a register
+                // Load single structure and replicate  post-indexed by a register
+                emitDispVectorRegList(id->idReg1(), selem, id->idInsOpt(), true);
+            }
+            else
+            {
+                // Load/Store single structure          post-indexed by a register
+                elemsize = id->idOpSize();
+                emitDispVectorElemList(id->idReg1(), selem, elemsize, id->idSmallCns(), true);
+            }
+
+            printf("[");
+            emitDispReg(encodingZRtoSP(id->idReg2()), EA_8BYTE, false);
+            printf("], ");
+            emitDispReg(id->idReg3(), EA_8BYTE, false);
             break;
 
         case IF_DI_1A: // DI_1A   X.......shiiiiii iiiiiinnnnn.....      Rn       imm(i12,sh)
