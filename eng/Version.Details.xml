@@ -38,13 +38,13 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>421b20fb860907c45673de791177e3fd61402197</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.CodeAnalysis" Version="5.0.0-beta.20156.4">
+    <Dependency Name="Microsoft.DotNet.CodeAnalysis" Version="5.0.0-beta.20153.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>421b20fb860907c45673de791177e3fd61402197</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Version="5.0.0-beta.20155.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Version="5.0.0-beta.20153.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>bc4fa8e7149769db4efd466f160417a32b11f0bf</Sha>
+      <Sha>421b20fb860907c45673de791177e3fd61402197</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="5.0.0-beta.20153.1">
       <Uri>https://github.com/dotnet/arcade</Uri>

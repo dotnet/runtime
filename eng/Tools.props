@@ -1,13 +1,39 @@
 <Project>
-  <!-- Import to have access to properties/items used both during the Arcade phase and in the repo. -->
-  <Import Project="$(MSBuildThisFileDirectory)Configurations.props" />
+  <PropertyGroup>
+    <MSBuildTreatWarningsAsErrors>false</MSBuildTreatWarningsAsErrors>
+    <EnableAnalyzers>true</EnableAnalyzers>
+  </PropertyGroup>
 
+  <!-- We need to import this props file which contains PackageReferences to analyzers so that
+       analyzer build assets are imported via the Tools generated props and targets -->
+  <Import Project="$(RepositoryEngineeringDir)Analyzers.props" Condition="Exists('$(RepositoryEngineeringDir)Analyzers.props') and '$(DotNetBuildFromSource)' != 'true'" />
+
+  <!-- source-built packages -->
   <ItemGroup>
+    <!-- arcade -->
+    <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" />
+
+    <!-- coreclr -->
+    <!-- Download the package in the initial arcade restore step to work around race conditions when restoring an msbuild SDK. -->
+    <PackageDownload Include="Microsoft.NET.Sdk.IL" Version="[$(MicrosoftNETSdkILVersion)]" />
+
+    <!-- roslyn -->
+    <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="$(MicrosoftNetCompilersToolsetVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+
+    <!-- mono -->
+    <PackageReference Include="illink.tasks" Version="$(ILLinkTasksVersion)" PrivateAssets="all" IsImplicitlyDefined="true" ExcludeAssets="build" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <!-- excluded from offline portion of source build -->
+  <ItemGroup Condition="'$(DotNetBuildOffline)' != 'true'">
+    <!-- arcade -->
+    <PackageReference Include="Microsoft.DotNet.GenAPI" Version="$(MicrosoftDotNetGenApiVersion)" />
   </ItemGroup>
 
   <!-- excluded from source build -->
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
+    <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Feed" Version="$(MicrosoftDotNetBuildTasksFeedVersion)" />
     <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksVersion)" />
 

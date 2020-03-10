@@ -1,14 +1,15 @@
-﻿<Project InitialTargets="AddPackageDownload">
+﻿<Project InitialTargets="AddPackageDownload" Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <PackagingTaskAssembly>$(NuGetPackageRoot)microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\tools\</PackagingTaskAssembly>
-    <PackagingTaskAssembly Condition="'$(MSBuildRuntimeType)' == 'core'">$(PackagingTaskAssembly)netcoreapp2.1\</PackagingTaskAssembly>
-    <PackagingTaskAssembly Condition="'$(MSBuildRuntimeType)' != 'core'">$(PackagingTaskAssembly)net472\</PackagingTaskAssembly>
-    <PackagingTaskAssembly>$(PackagingTaskAssembly)Microsoft.DotNet.Build.Tasks.Packaging.dll</PackagingTaskAssembly>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
 
-  <Import Project="$(LibrariesProjectRoot)pkg\baseline\baseline.props" />
+  <Import Project="$(PkgDir)baseline/baseline.props" />
 
-  <UsingTask TaskName="GetLastStablePackage" AssemblyFile="$(PackagingTaskAssembly)"/>
+  <!-- only restore this project during the build, don't copy any of it's packages
+       The sole purpose of this project is to download packages that can be examined
+       for harvesting binaries & support. -->
+  <Target Name="Build" DependsOnTargets="RestorePackages" />
+
   <Target Name="AddPackageDownload">
     <ItemGroup>
       <_AllPkgProjs Include="$(LibrariesProjectRoot)*\pkg\**\*.pkgproj" />
@@ -19,10 +20,10 @@
     </ItemGroup>
 
     <GetLastStablePackage
-      LatestPackages="@(_AllPkgProjsToPackageIdentity)"
-      PackageIndexes="$(PackageIndexFile)"
-      DoNotAllowVersionsFromSameRelease="true">
-      <Output TaskParameter="LastStablePackages" ItemName="_PackageDownload" />
+        LatestPackages="@(_AllPkgProjsToPackageIdentity)"
+        PackageIndexes="$(PackageIndexFile)"
+        DoNotAllowVersionsFromSameRelease="true">
+        <Output TaskParameter="LastStablePackages" ItemName="_PackageDownload" />
     </GetLastStablePackage>
 
     <!-- Allow to override package download and versions in case there is already a PackageDownload set -->
@@ -39,4 +40,5 @@
       </PackageDownload>
     </ItemGroup>
   </Target>
+
 </Project>
