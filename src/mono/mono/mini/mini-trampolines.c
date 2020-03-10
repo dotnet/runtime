@@ -697,7 +697,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 			*vtable_slot_to_patch = mono_get_addr_from_ftnptr (addr);
 		}
 	} else {
-		guint8 *plt_entry = mono_aot_get_plt_entry (code);
+		guint8 *plt_entry = mono_aot_get_plt_entry (regs, code);
 		gboolean no_patch = FALSE;
 		MonoJitInfo *target_ji;
 
@@ -718,7 +718,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 				}
 			}
 			if (!no_patch)
-				mono_aot_patch_plt_entry (code, plt_entry, NULL, regs, (guint8 *)addr);
+				mono_aot_patch_plt_entry (NULL, code, plt_entry, NULL, regs, (guint8 *)addr);
 		} else {
 			if (generic_shared) {
 				if (m->wrapper_type != MONO_WRAPPER_NONE)
@@ -951,10 +951,10 @@ mono_aot_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info,
 	addr = mono_create_ftnptr (mono_domain_get (), addr);
 
 	/* This is a normal call through a PLT entry */
-	plt_entry = mono_aot_get_plt_entry (code);
+	plt_entry = mono_aot_get_plt_entry (regs, code);
 	g_assert (plt_entry);
 
-	mono_aot_patch_plt_entry (code, plt_entry, NULL, regs, (guint8 *)addr);
+	mono_aot_patch_plt_entry (NULL, code, plt_entry, NULL, regs, (guint8 *)addr);
 
 	return addr;
 }
@@ -970,13 +970,12 @@ mono_aot_plt_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *aot_module,
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	guint32 plt_info_offset = mono_aot_get_plt_info_offset (regs, code);
 	gpointer res;
 	ERROR_DECL (error);
 
 	UnlockedIncrement (&trampoline_calls);
 
-	res = mono_aot_plt_resolve (aot_module, plt_info_offset, code, error);
+	res = mono_aot_plt_resolve (aot_module, regs, code, error);
 	if (!res) {
 		if (!is_ok (error)) {
 			mono_error_set_pending_exception (error);
@@ -1326,7 +1325,7 @@ mono_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, M
 	guint32 len;
 
 	if (mono_aot_only)
-		code = mono_aot_create_specific_trampoline (mono_defaults.corlib, arg1, tramp_type, domain, &len);
+		code = mono_aot_create_specific_trampoline (arg1, tramp_type, domain, &len);
 	else
 		code = mono_arch_create_specific_trampoline (arg1, tramp_type, domain, &len);
 	mono_lldb_save_specific_trampoline_info (arg1, tramp_type, domain, code, len);

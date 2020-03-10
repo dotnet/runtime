@@ -358,21 +358,21 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (((int)type & (int)PropertyTypes.Indexed) != 0)
             {
-                str.Append("(");
+                str.Append('(');
                 str.Append(PropertyManager.SearchFlags);
                 str.Append(":1.2.840.113556.1.4.804:=");
                 str.Append((int)SearchFlags.IsIndexed);
-                str.Append(")");
+                str.Append(')');
             }
 
             if (((int)type & (int)PropertyTypes.InGlobalCatalog) != 0)
             {
-                str.Append("(");
+                str.Append('(');
                 str.Append(PropertyManager.IsMemberOfPartialAttributeSet);
                 str.Append("=TRUE)");
             }
 
-            str.Append(")"); // end filter
+            str.Append(')'); // end filter
             return GetAllProperties(context, _schemaEntry, str.ToString());
         }
 

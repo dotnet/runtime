@@ -83,7 +83,7 @@ namespace System.Diagnostics
                 // It includes suspended time and is updated based on the system time (settimeofday).
                 const string StatFile = Interop.procfs.ProcStatFilePath;
                 string text = File.ReadAllText(StatFile);
-                int btimeLineStart = text.IndexOf("\nbtime ");
+                int btimeLineStart = text.IndexOf("\nbtime ", StringComparison.Ordinal);
                 if (btimeLineStart >= 0)
                 {
                     int btimeStart = btimeLineStart + "\nbtime ".Length;

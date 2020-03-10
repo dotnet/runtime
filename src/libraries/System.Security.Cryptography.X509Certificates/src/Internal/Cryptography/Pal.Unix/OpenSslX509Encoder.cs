@@ -14,7 +14,7 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed class OpenSslX509Encoder : ManagedX509ExtensionProcessor, IX509Pal
     {
-        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal)
+        public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal? certificatePal)
         {
             if (oid.Value == Oids.EcPublicKey && certificatePal != null)
             {
@@ -55,7 +55,7 @@ namespace Internal.Cryptography.Pal
         public X509ContentType GetCertContentType(byte[] rawData)
         {
             {
-                ICertificatePal certPal;
+                ICertificatePal? certPal;
 
                 if (OpenSslX509CertificateReader.TryReadX509Der(rawData, out certPal) ||
                     OpenSslX509CertificateReader.TryReadX509Pem(rawData, out certPal))
@@ -72,7 +72,7 @@ namespace Internal.Cryptography.Pal
             }
 
             {
-                OpenSslPkcs12Reader pfx;
+                OpenSslPkcs12Reader? pfx;
 
                 if (OpenSslPkcs12Reader.TryRead(rawData, out pfx))
                 {
@@ -98,7 +98,7 @@ namespace Internal.Cryptography.Pal
 
                 // X509ContentType.Cert
                 {
-                    ICertificatePal certPal;
+                    ICertificatePal? certPal;
 
                     if (OpenSslX509CertificateReader.TryReadX509Der(fileBio, out certPal))
                     {
@@ -139,7 +139,7 @@ namespace Internal.Cryptography.Pal
 
             // X509ContentType.Pkcs12 (aka PFX)
             {
-                OpenSslPkcs12Reader pkcs12Reader;
+                OpenSslPkcs12Reader? pkcs12Reader;
 
                 if (OpenSslPkcs12Reader.TryRead(File.ReadAllBytes(fileName), out pkcs12Reader))
                 {

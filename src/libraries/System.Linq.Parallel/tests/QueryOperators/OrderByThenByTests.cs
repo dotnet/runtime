@@ -360,7 +360,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(OrderByRandomData), new[] { 0, 1, 2, 16 })]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        // Regression test for the PLINQ version of https://github.com/dotnet/corefx/issues/2239 - comparer returning max/min value.
+        // Regression test for the PLINQ version of https://github.com/dotnet/runtime/issues/14793 - comparer returning max/min value.
         public static void OrderBy_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prev = 0;
@@ -375,7 +375,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(OrderByRandomData), new[] { 0, 1, 2, 16 })]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        // Regression test for the PLINQ version of https://github.com/dotnet/corefx/issues/2239 - comparer returning max/min value.
+        // Regression test for the PLINQ version of https://github.com/dotnet/runtime/issues/14793 - comparer returning max/min value.
         public static void OrderByDescending_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prev = count - 1;
@@ -950,7 +950,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(OrderByRandomData), new[] { 0, 1, 2, 16 })]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        // Regression test for the PLINQ version of https://github.com/dotnet/corefx/issues/2239 - comparer returning max/min value.
+        // Regression test for the PLINQ version of https://github.com/dotnet/runtime/issues/14793 - comparer returning max/min value.
         public static void ThenBy_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prev = 0;
@@ -965,7 +965,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(OrderByRandomData), new[] { 0, 1, 2, 16 })]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        // Regression test for the PLINQ version of https://github.com/dotnet/corefx/issues/2239 - comparer returning max/min value.
+        // Regression test for the PLINQ version of https://github.com/dotnet/runtime/issues/14793 - comparer returning max/min value.
         public static void ThenByDescending_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prev = count - 1;

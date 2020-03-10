@@ -30,7 +30,8 @@ endif ()
 # We compile with -Werror, so we need to make sure these code fragments compile without warnings.
 # Older CMake versions (3.8) do not assign the result of their tests, causing unused-value errors
 # which are not distinguished from the test failing. So no error for that one.
-set(CMAKE_REQUIRED_FLAGS "-Werror -Wno-error=unused-value")
+# For clang-5.0 avoid errors like "unused variable 'err' [-Werror,-Wunused-variable]".
+set(CMAKE_REQUIRED_FLAGS "-Werror -Wno-error=unused-value -Wno-error=unused-variable")
 
 # Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
 # the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
@@ -121,7 +122,7 @@ check_symbol_exists(
 
 check_symbol_exists(
     posix_fadvise64
-    fnctl.h
+    fcntl.h
     HAVE_POSIX_FADVISE64)
 
 check_symbol_exists(
@@ -305,10 +306,11 @@ check_c_source_compiles(
 check_c_source_compiles(
     "
     #include <dirent.h>
+    #include <stddef.h>
     int main(void)
     {
-        DIR* dir;
-        struct dirent* entry;
+        DIR* dir = NULL;
+        struct dirent* entry = NULL;
         struct dirent* result;
         readdir_r(dir, entry, &result);
         return 0;
@@ -410,18 +412,19 @@ set(PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
 set(CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
 check_c_source_compiles(
      "
+     #include <stddef.h>
      #include <sys/types.h>
      #include <netdb.h>
 
      int main(void)
      {
         const struct sockaddr *addr;
-        socklen_t addrlen;
-        char *host;
-        socklen_t hostlen;
-        char *serv;
-        socklen_t servlen;
-        int flags;
+        socklen_t addrlen = 0;
+        char *host = NULL;
+        socklen_t hostlen = 0;
+        char *serv = NULL;
+        socklen_t servlen = 0;
+        int flags = 0;
         int result = getnameinfo(addr, addrlen, host, hostlen, serv, servlen, flags);
         return 0;
      }
@@ -496,13 +499,14 @@ set (CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
 
 check_c_source_compiles(
     "
+    #include <stddef.h>
     #include <sys/socket.h>
 
     int main(void)
     {
-        int fd;
-        struct sockaddr* addr;
-        socklen_t addrLen;
+        int fd = -1;
+        struct sockaddr* addr = NULL;
+        socklen_t addrLen = 0;
 
         int err = bind(fd, addr, addrLen);
         return 0;
@@ -712,7 +716,14 @@ set (CMAKE_REQUIRED_FLAGS "-Werror -Weverything")
 check_c_source_compiles(
     "
     #include <unistd.h>
-    int main(void) { size_t namelen = 20; char name[20]; getdomainname(name, namelen); return 0; }
+    int main(void)
+    {
+        size_t namelen = 20;
+        char name[20];
+        int dummy = getdomainname(name, namelen);
+        (void)dummy;
+        return 0;
+    }
     "
     HAVE_GETDOMAINNAME_SIZET
 )

@@ -244,6 +244,12 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\llvmonly-runtime.c">
       <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
     </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\monovm.h">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\monovm.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MonoSourceLocation)\mono\mini\Makefile.am.in">

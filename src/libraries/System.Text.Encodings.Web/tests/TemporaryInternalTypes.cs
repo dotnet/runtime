@@ -325,8 +325,8 @@ namespace System.Text.Encodings.Web.Tests
 
             // Writes a scalar value as a JavaScript-escaped character (or sequence of characters).
             // See ECMA-262, Sec. 7.8.4, and ECMA-404, Sec. 9
-            // http://www.ecma-international.org/ecma-262/5.1/#sec-7.8.4
-            // http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
+            // https://www.ecma-international.org/ecma-262/5.1/#sec-7.8.4
+            // https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
             protected override void WriteEncodedScalar(ref Writer writer, uint value)
             {
                 // ECMA-262 allows encoding U+000B as "\v", but ECMA-404 does not.

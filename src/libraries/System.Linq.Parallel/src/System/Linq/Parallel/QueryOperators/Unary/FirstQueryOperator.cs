@@ -177,7 +177,7 @@ namespace System.Linq.Parallel
                     while (_source.MoveNext(ref value!, ref key))
                     {
                         if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                            CancellationState.ThrowIfCanceled(_cancellationToken);
+                            _cancellationToken.ThrowIfCancellationRequested();;
 
                         // If the predicate is null or the current element satisfies it, we have found the
                         // current partition's "candidate" for the first element.  Note it.

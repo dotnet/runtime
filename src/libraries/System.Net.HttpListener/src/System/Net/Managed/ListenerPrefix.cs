@@ -95,7 +95,7 @@ namespace System.Net
         private void Parse(string uri)
         {
             ushort default_port = 80;
-            if (uri.StartsWith("https://"))
+            if (uri.StartsWith("https://", StringComparison.Ordinal))
             {
                 default_port = 443;
                 _secure = true;
@@ -112,7 +112,7 @@ namespace System.Net
             {
                 _host = uri.Substring(start_host, colon - start_host);
                 root = uri.IndexOf('/', colon, length - colon);
-                _port = (ushort)int.Parse(uri.Substring(colon + 1, root - colon - 1));
+                _port = (ushort)int.Parse(uri.AsSpan(colon + 1, root - colon - 1));
                 _path = uri.Substring(root);
             }
             else

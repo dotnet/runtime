@@ -19,4 +19,6 @@
 #define c_static_assert(e) c_static_assert_msg(e, "")
 #endif
 
-#define DLLEXPORT __attribute__ ((__visibility__ ("default")))
+#ifndef PALEXPORT
+#define PALEXPORT __attribute__ ((__visibility__ ("default")))
+#endif // ifndef PALEXPORT

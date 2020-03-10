@@ -224,7 +224,7 @@ namespace System.Net.Http.QPack
                     }
                     break;
                 case State.CompressedHeaders:
-                    switch (BitOperations.LeadingZeroCount(b) - 24)
+                    switch (BitOperations.LeadingZeroCount(b) - 24) // byte 'b' is extended to uint, so will have 24 extra 0s.
                     {
                         case 0: // Indexed Header Field
                             prefixInt = IndexedHeaderFieldPrefixMask & b;
@@ -269,6 +269,10 @@ namespace System.Net.Http.QPack
 
                             if (_integerDecoder.BeginTryDecode((byte)prefixInt, LiteralHeaderFieldWithoutNameReferencePrefix, out intResult))
                             {
+                                if (intResult == 0)
+                                {
+                                    throw new QPackDecodingException(SR.Format(SR.net_http_invalid_header_name, ""));
+                                }
                                 OnStringLength(intResult, State.HeaderName);
                             }
                             else
@@ -303,6 +307,10 @@ namespace System.Net.Http.QPack
                 case State.HeaderNameLength:
                     if (_integerDecoder.TryDecode(b, out intResult))
                     {
+                        if (intResult == 0)
+                        {
+                            throw new QPackDecodingException(SR.Format(SR.net_http_invalid_header_name, ""));
+                        }
                         OnStringLength(intResult, nextState: State.HeaderName);
                     }
                     break;

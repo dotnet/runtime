@@ -20,7 +20,7 @@ class FuncPtrStubs;
 #include "qcall.h"
 #include "ilstubcache.h"
 
-#include "callcounter.h"
+#include "callcounting.h"
 #include "methoddescbackpatchinfo.h"
 #include "crossloaderallocatorhash.h"
 
@@ -274,7 +274,7 @@ private:
     EEMarshalingData* m_pMarshalingData;
 
 #ifdef FEATURE_TIERED_COMPILATION
-    CallCounter m_callCounter;
+    PTR_CallCountingManager m_callCountingManager;
 #endif
 
 #ifndef CROSSGEN_COMPILE
@@ -462,6 +462,7 @@ public:
 
     // The default implementation is a no-op. Only collectible loader allocators implement this method.
     virtual void RegisterHandleForCleanup(OBJECTHANDLE /* objHandle */) { }
+    virtual void UnregisterHandleFromCleanup(OBJECTHANDLE /* objHandle */) { }
     virtual void CleanupHandles() { }
 
     void RegisterFailedTypeInitForCleanup(ListLockEntry *pListLockEntry);
@@ -594,10 +595,10 @@ public:
 
 #ifdef FEATURE_TIERED_COMPILATION
 public:
-    CallCounter* GetCallCounter()
+    PTR_CallCountingManager GetCallCountingManager()
     {
         LIMITED_METHOD_CONTRACT;
-        return &m_callCounter;
+        return m_callCountingManager;
     }
 #endif // FEATURE_TIERED_COMPILATION
 
@@ -666,6 +667,7 @@ public:
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     virtual void RegisterHandleForCleanup(OBJECTHANDLE objHandle);
+    virtual void UnregisterHandleFromCleanup(OBJECTHANDLE objHandle);
     virtual void CleanupHandles();
     CLRPrivBinderAssemblyLoadContext* GetBinder()
     {

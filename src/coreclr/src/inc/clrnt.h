@@ -945,7 +945,7 @@ RtlUnwindEx (
     __in_opt PEXCEPTION_RECORD ExceptionRecord,
     __in PVOID ReturnValue,
     __in PT_CONTEXT ContextRecord,
-    __in_opt PUNWIND_HISTORY_TABLE HistoryTable
+    __in_opt PVOID HistoryTable
     );
 
 EXTERN_C
@@ -956,7 +956,7 @@ RtlVirtualUnwind (
     __in DWORD HandlerType,
     __in DWORD ImageBase,
     __in DWORD ControlPc,
-    __in PRUNTIME_FUNCTION FunctionEntry,
+    __in PT_RUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
     __out PVOID *HandlerData,
     __out PDWORD EstablisherFrame,

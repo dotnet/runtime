@@ -3730,6 +3730,8 @@ sgen_gc_init (void)
 			} else if (!strcmp (opt, "nursery-canaries")) {
 				do_verify_nursery = TRUE;
 				enable_nursery_canaries = TRUE;
+				/* If aot code is used, allocation from there won't expect the layout with canaries enabled */
+				sgen_set_use_managed_allocator (FALSE);
 			} else if (!sgen_client_handle_gc_debug (opt)) {
 				sgen_env_var_error (MONO_GC_DEBUG_NAME, "Ignoring.", "Unknown option `%s`.", opt);
 

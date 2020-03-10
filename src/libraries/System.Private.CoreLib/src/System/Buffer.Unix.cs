@@ -16,7 +16,7 @@ namespace System
 #if TARGET_ARM64
             // Managed code is currently faster than glibc unoptimized memmove
             // TODO-ARM64-UNIX-OPT revisit when glibc optimized memmove is in Linux distros
-            // https://github.com/dotnet/coreclr/issues/13844
+            // https://github.com/dotnet/runtime/issues/8897
             private const nuint MemmoveNativeThreshold = ulong.MaxValue;
 #elif TARGET_ARM
             private const nuint MemmoveNativeThreshold = 512;

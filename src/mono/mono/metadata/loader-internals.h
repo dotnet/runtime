@@ -33,6 +33,7 @@ struct _MonoAssemblyLoadContext {
 	MonoDomain *domain;
 	MonoLoadedImages *loaded_images;
 	GSList *loaded_assemblies;
+	// If taking this with the domain assemblies_lock, always take this second
 	MonoCoopMutex assemblies_lock;
 	/* Handle of the corresponding managed object.  If the ALC is
 	 * collectible, the handle is weak, otherwise it's strong.

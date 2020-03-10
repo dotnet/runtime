@@ -159,7 +159,7 @@ namespace System
             if ((defaultPort >= 0xFFFF || defaultPort < 0) && defaultPort != -1)
                 throw new ArgumentOutOfRangeException(nameof(defaultPort));
 
-            schemeName = schemeName.ToLower();
+            schemeName = schemeName.ToLowerInvariant();
             FetchSyntax(uriParser, schemeName, defaultPort);
         }
 

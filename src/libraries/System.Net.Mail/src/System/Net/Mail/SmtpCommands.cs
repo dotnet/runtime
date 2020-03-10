@@ -641,6 +641,29 @@ namespace System.Net.Mail
         }
     }
 
+    internal static class QuitCommand
+    {
+        private static void PrepareCommand(SmtpConnection conn)
+        {
+            if (conn.IsStreamOpen)
+            {
+                throw new InvalidOperationException(SR.SmtpDataStreamOpen);
+            }
+
+            conn.BufferBuilder.Append(SmtpCommands.Quit);
+        }
+
+        internal static void Send(SmtpConnection conn)
+        {
+            PrepareCommand(conn);
+
+            // We simply flush and don't read the response
+            // to avoid blocking call that will impact users
+            // that are using async api, since this code
+            // will run on Dispose()
+            conn.Flush();
+        }
+    }
 
     internal static class SmtpCommands
     {

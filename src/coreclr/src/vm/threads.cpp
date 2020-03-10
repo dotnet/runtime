@@ -184,8 +184,8 @@ void  Thread::SetFrame(Frame *pFrame)
         if (pFrame == stopFrame)
             _ASSERTE(!"SetFrame frame == stopFrame");
 
-        _ASSERTE(espVal < pFrame);
-        _ASSERTE(pFrame < m_CacheStackBase);
+        _ASSERTE(IsExecutingOnAltStack() || espVal < pFrame);
+        _ASSERTE(IsExecutingOnAltStack() || pFrame < m_CacheStackBase);
         _ASSERTE(pFrame->GetFrameType() < Frame::TYPE_COUNT);
 
         pFrame = pFrame->m_Next;
@@ -294,22 +294,16 @@ bool Thread::DetectHandleILStubsForDebugger()
     return false;
 }
 
-extern "C" {
-#ifndef __GNUC__
-__declspec(thread)
-#else // !__GNUC__
-__thread
-#endif // !__GNUC__
-ThreadLocalInfo gCurrentThreadInfo =
-                                              {
-                                                  NULL,    // m_pThread
-                                                  NULL,    // m_pAppDomain
-                                                  NULL,    // m_EETlsData
-                                              };
-} // extern "C"
+#ifndef _MSC_VER
+__thread ThreadLocalInfo gCurrentThreadInfo;
+#endif
 
 // index into TLS Array. Definition added by compiler
 EXTERN_C UINT32 _tls_index;
+
+#ifndef HOST_WINDOWS
+UINT32 _tls_index;
+#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -848,8 +842,6 @@ void DestroyThread(Thread *th)
 
     _ASSERTE (th == GetThread());
 
-    _ASSERTE(g_fEEShutDown || th->m_dwLockCount == 0 || th->m_fRudeAborted);
-
     GCX_PREEMP_NO_DTOR();
 
     if (th->IsAbortRequested()) {
@@ -934,7 +926,6 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 #endif // FEATURE_COMINTEROP
 
     _ASSERTE(!PreemptiveGCDisabled());
-    _ASSERTE(g_fEEShutDown || m_dwLockCount == 0 || m_fRudeAborted);
 
     _ASSERTE ((m_State & Thread::TS_Detached) == 0);
 
@@ -1088,7 +1079,7 @@ void InitThreadManager()
 
     memcpy(s_barrierCopy, (BYTE*)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
 
-    // Store the JIT_WriteBarrier copy location to a global variable so that the JIT_Stelem_Ref and its helpers
+    // Store the JIT_WriteBarrier copy location to a global variable so that helpers
     // can jump to it.
     JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
 
@@ -1206,31 +1197,6 @@ struct Dbg_TrackSyncStack : public Dbg_TrackSync
     }
 };
 
-// ensure that registers are preserved across this call
-#ifdef _MSC_VER
-#pragma optimize("", off)
-#endif
-// A pain to do all this from ASM, but watch out for trashed registers
-EXTERN_C void EnterSyncHelper    (UINT_PTR caller, void *pAwareLock)
-{
-    BEGIN_ENTRYPOINT_THROWS;
-    WRAPPER_NO_CONTRACT;
-    GetThread()->m_pTrackSync->EnterSync(caller, pAwareLock);
-    END_ENTRYPOINT_THROWS;
-
-}
-EXTERN_C void LeaveSyncHelper    (UINT_PTR caller, void *pAwareLock)
-{
-    BEGIN_ENTRYPOINT_THROWS;
-    WRAPPER_NO_CONTRACT;
-    GetThread()->m_pTrackSync->LeaveSync(caller, pAwareLock);
-    END_ENTRYPOINT_THROWS;
-
-}
-#ifdef _MSC_VER
-#pragma optimize("", on)
-#endif
-
 void Dbg_TrackSyncStack::EnterSync(UINT_PTR caller, void *pAwareLock)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1324,9 +1290,6 @@ Thread::Thread()
     m_pClrDebugState = NULL;
     m_ulEnablePreemptiveGCCount  = 0;
 #endif
-
-    m_dwLockCount = 0;
-    m_dwBeginLockCount = 0;
 
 #ifdef _DEBUG
     dbg_m_cSuspendedThreads = 0;
@@ -7106,9 +7069,9 @@ void CheckRegDisplaySP (REGDISPLAY *pRD)
     if (pRD->SP && pRD->_pThread)
     {
 #ifndef NO_FIXED_STACK_LIMIT
-        _ASSERTE(PTR_VOID(pRD->SP) >= pRD->_pThread->GetCachedStackLimit());
+        _ASSERTE(pRD->_pThread->IsExecutingOnAltStack() || PTR_VOID(pRD->SP) >= pRD->_pThread->GetCachedStackLimit());
 #endif // NO_FIXED_STACK_LIMIT
-        _ASSERTE(PTR_VOID(pRD->SP) <  pRD->_pThread->GetCachedStackBase());
+        _ASSERTE(pRD->_pThread->IsExecutingOnAltStack() || PTR_VOID(pRD->SP) <  pRD->_pThread->GetCachedStackBase());
     }
 }
 
@@ -7240,7 +7203,6 @@ BOOL Thread::HaveExtraWorkForFinalizer()
 
     return m_ThreadTasks
         || ThreadpoolMgr::HaveTimerInfosToFlush()
-        || ExecutionManager::IsCacheCleanupRequired()
         || Thread::CleanupNeededForFinalizedThread()
         || (m_DetachCount > 0)
         || SystemDomain::System()->RequireAppDomainCleanup()
@@ -7285,11 +7247,6 @@ void Thread::DoExtraWorkForFinalizer()
     if(m_DetachCount > 0 || Thread::CleanupNeededForFinalizedThread())
     {
         Thread::CleanupDetachedThreads();
-    }
-
-    if(ExecutionManager::IsCacheCleanupRequired() && GCHeapUtilities::GetGCHeap()->GetCondemnedGeneration()>=1)
-    {
-        ExecutionManager::ClearCaches();
     }
 
     // If there were any TimerInfos waiting to be released, they'll get flushed now

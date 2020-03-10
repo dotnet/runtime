@@ -158,9 +158,9 @@ namespace System.Diagnostics
                         {
                             if (i != 0)
                                 msgBuf.Append(", ");
-                            msgBuf.Append("'");
+                            msgBuf.Append('\'');
                             msgBuf.Append(strings[i]);
-                            msgBuf.Append("'");
+                            msgBuf.Append('\'');
                         }
 
                         msg = msgBuf.ToString();
@@ -418,9 +418,9 @@ namespace System.Diagnostics
                     {
                         result.Append(@"\\");
                         result.Append(owner.MachineName);
-                        result.Append(@"\");
+                        result.Append('\\');
                         result.Append(fileNames[i][0]);
-                        result.Append("$");
+                        result.Append('$');
                         result.Append(fileNames[i], 2, fileNames[i].Length - 2);
                         result.Append(';');
                     }

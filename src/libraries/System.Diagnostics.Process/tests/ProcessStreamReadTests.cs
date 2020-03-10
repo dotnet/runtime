@@ -331,7 +331,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestEOFReceivedWhenStdInClosed()
         {
-            // This is the test for the fix of https://github.com/dotnet/corefx/issues/13447.
+            // This is the test for the fix of https://github.com/dotnet/runtime/issues/19277.
             //
             // Summary of the issue:
             // When an application starts more than one child processes with their standard inputs redirected on Unix,

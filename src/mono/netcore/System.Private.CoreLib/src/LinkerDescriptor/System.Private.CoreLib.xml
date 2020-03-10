@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <linker>
 	<assembly fullname="System.Private.CoreLib">
-	
 		<!-- domain.c: mono_defaults.appdomain_class -->
 		<type fullname="Mono.MonoDomain">
 			<field name="_mono_app_domain"/>
@@ -807,6 +806,10 @@
 		<!-- Used by binary formatter tests -->
 		<type fullname="System.Threading.ThreadStartException">
 			<method name=".ctor" />
+		</type>
+		<!-- Internal API used by System.Globalization tests -->
+		<type fullname="Interop/Globalization">
+			<method name="GetICUVersion" />
 		</type>
 	</assembly>
 </linker>

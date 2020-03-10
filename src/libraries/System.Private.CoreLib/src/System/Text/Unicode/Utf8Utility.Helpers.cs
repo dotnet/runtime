@@ -245,7 +245,7 @@ namespace System.Text.Unicode
             // Little-endian: Given [ #### AAAA ], return whether AAAA is in range [ 0000..007F ].
             // Big-endian: Given [ AAAA #### ], return whether AAAA is in range [ 0000..007F ].
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && (value & 0xFF80u) == 0)
                 || (!BitConverter.IsLittleEndian && value < 0x0080_0000u);
@@ -262,7 +262,7 @@ namespace System.Text.Unicode
             // Little-endian: Given [ #### AAAA ], return whether AAAA is in range [ 0800..FFFF ].
             // Big-endian: Given [ AAAA #### ], return whether AAAA is in range [ 0800..FFFF ].
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && (value & 0xF800u) != 0)
                 || (!BitConverter.IsLittleEndian && value >= 0x0800_0000u);
@@ -278,7 +278,7 @@ namespace System.Text.Unicode
             // Little-endian: Given [ #### AAAA ], return whether AAAA is in range [ D800..DFFF ].
             // Big-endian: Given [ AAAA #### ], return whether AAAA is in range [ D800..DFFF ].
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && ((value - 0xD800u) & 0xF800u) == 0)
                 || (!BitConverter.IsLittleEndian && (value - 0xD800_0000u) < 0x0800_0000u);
@@ -296,9 +296,9 @@ namespace System.Text.Unicode
 
             // TODO: I'd like to be able to write "(ushort)(value - 0x0080u) < 0x0780u" for the little-endian
             // case, but the JIT doesn't currently emit 16-bit comparisons efficiently.
-            // Tracked as https://github.com/dotnet/coreclr/issues/18022.
+            // Tracked as https://github.com/dotnet/runtime/issues/10337.
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && ((value - 0x0080u) & 0xFFFFu) < 0x0780u)
                 || (!BitConverter.IsLittleEndian && UnicodeUtility.IsInRangeInclusive(value, 0x0080_0000u, 0x07FF_FFFFu));
@@ -313,7 +313,7 @@ namespace System.Text.Unicode
         {
             // The JIT won't emit a single 8-bit signed cmp instruction (see IsUtf8ContinuationByte),
             // so the best we can do for now is the lea / cmp pair.
-            // Tracked as https://github.com/dotnet/coreclr/issues/18022.
+            // Tracked as https://github.com/dotnet/runtime/issues/10337.
 
             return (byte)(value - 0x80u) <= 0x3Fu;
         }
@@ -328,7 +328,7 @@ namespace System.Text.Unicode
             // Little-endian: Given [ BBBB #### ], return whether BBBB is in range [ 0000..007F ].
             // Big-endian: Given [ #### BBBB ], return whether BBBB is in range [ 0000..007F ].
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && value < 0x0080_0000u)
                 || (!BitConverter.IsLittleEndian && (value & 0xFF80u) == 0);
@@ -345,7 +345,7 @@ namespace System.Text.Unicode
             // Little-endian: Given [ BBBB #### ], return whether BBBB is in range [ 0800..FFFF ].
             // Big-endian: Given [ #### BBBB ], return whether ABBBBAAA is in range [ 0800..FFFF ].
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && (value & 0xF800_0000u) != 0)
                 || (!BitConverter.IsLittleEndian && (value & 0xF800u) != 0);
@@ -361,7 +361,7 @@ namespace System.Text.Unicode
             // Little-endian: Given [ BBBB #### ], return whether BBBB is in range [ D800..DFFF ].
             // Big-endian: Given [ #### BBBB ], return whether BBBB is in range [ D800..DFFF ].
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && (value - 0xD800_0000u) < 0x0800_0000u)
                 || (!BitConverter.IsLittleEndian && ((value - 0xD800u) & 0xF800u) == 0);
@@ -379,9 +379,9 @@ namespace System.Text.Unicode
 
             // TODO: I'd like to be able to write "(ushort)(value - 0x0080u) < 0x0780u" for the big-endian
             // case, but the JIT doesn't currently emit 16-bit comparisons efficiently.
-            // Tracked as https://github.com/dotnet/coreclr/issues/18022.
+            // Tracked as https://github.com/dotnet/runtime/issues/10337.
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && UnicodeUtility.IsInRangeInclusive(value, 0x0080_0000u, 0x07FF_FFFFu))
                 || (!BitConverter.IsLittleEndian && ((value - 0x0080u) & 0xFFFFu) < 0x0780u);
@@ -422,7 +422,7 @@ namespace System.Text.Unicode
             // is a whole power of 2, which means that a CMP is really just a glorified TEST operation. Two TESTs *can*
             // be performed in parallel. The logic below then becomes 3 operations: "add/lea; test; jcc".
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && ((value - 0xDC00_D800u) & 0xFC00_FC00u) == 0)
                 || (!BitConverter.IsLittleEndian && ((value - 0xD800_DC00u) & 0xFC00_FC00u) == 0);
@@ -461,7 +461,7 @@ namespace System.Text.Unicode
             // Since we already validated it's 80 <= ?? <= DF (per mask check earlier), now only need
             // to check that it's < C2.
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && ((byte)value < 0xC2u))
                 || (!BitConverter.IsLittleEndian && (value < 0xC200_0000u));
@@ -493,7 +493,7 @@ namespace System.Text.Unicode
             //     return ((value & mask) == comparand);
             // }
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && (((value - 0x8080_80F0u) & 0xC0C0_C0F8u) == 0))
                 || (!BitConverter.IsLittleEndian && (((value - 0xF080_8000u) & 0xF8C0_C0C0u) == 0));
@@ -525,7 +525,7 @@ namespace System.Text.Unicode
             //     return ((value & mask) == comparand);
             // }
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && (((value - 0x0080_80E0u) & 0x00C0_C0F0u) == 0))
                 || (!BitConverter.IsLittleEndian && (((value - 0xE080_8000u) & 0xF0C0_C000u) == 0));
@@ -557,7 +557,7 @@ namespace System.Text.Unicode
             //     return ((value & mask) == comparand);
             // }
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && (((value - 0x0000_80C0u) & 0x0000_C0E0u) == 0))
                 || (!BitConverter.IsLittleEndian && (((value - 0xC080_0000u) & 0xE0C0_0000u) == 0));
@@ -583,7 +583,7 @@ namespace System.Text.Unicode
             // This means that we can AND the leading byte with the mask 0001 1110 (1E),
             // and if the result is zero the sequence is overlong.
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && ((value & 0x001E_0000u) == 0))
                 || (!BitConverter.IsLittleEndian && ((value & 0x1E00u) == 0));
@@ -615,7 +615,7 @@ namespace System.Text.Unicode
             //     return ((value & mask) == comparand);
             // }
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && (((value - 0x80C0_0000u) & 0xC0E0_0000u) == 0))
                 || (!BitConverter.IsLittleEndian && (((value - 0x0000_C080u) & 0x0000_E0C0u) == 0));
@@ -640,7 +640,7 @@ namespace System.Text.Unicode
 
             Debug.Assert(BitConverter.IsLittleEndian);
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && UnicodeUtility.IsInRangeInclusive(value & 0xC0FFu, 0x80C2u, 0x80DFu))
                 || (!BitConverter.IsLittleEndian && false);
@@ -659,7 +659,7 @@ namespace System.Text.Unicode
 
             Debug.Assert(BitConverter.IsLittleEndian);
 
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && UnicodeUtility.IsInRangeInclusive(value & 0xC0FF_0000u, 0x80C2_0000u, 0x80DF_0000u))
                 || (!BitConverter.IsLittleEndian && false);
@@ -672,7 +672,7 @@ namespace System.Text.Unicode
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool UInt32FirstByteIsAscii(uint value)
         {
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && ((value & 0x80u) == 0))
                 || (!BitConverter.IsLittleEndian && ((int)value >= 0));
@@ -685,7 +685,7 @@ namespace System.Text.Unicode
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool UInt32FourthByteIsAscii(uint value)
         {
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && ((int)value >= 0))
                 || (!BitConverter.IsLittleEndian && ((value & 0x80u) == 0));
@@ -698,7 +698,7 @@ namespace System.Text.Unicode
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool UInt32SecondByteIsAscii(uint value)
         {
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && ((value & 0x8000u) == 0))
                 || (!BitConverter.IsLittleEndian && ((value & 0x0080_0000u) == 0));
@@ -711,7 +711,7 @@ namespace System.Text.Unicode
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool UInt32ThirdByteIsAscii(uint value)
         {
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+            // Return statement is written this way to work around https://github.com/dotnet/runtime/issues/4207.
 
             return (BitConverter.IsLittleEndian && ((value & 0x0080_0000u) == 0))
                 || (!BitConverter.IsLittleEndian && ((value & 0x8000u) == 0));

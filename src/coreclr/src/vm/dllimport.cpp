@@ -3652,8 +3652,7 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
                                 TRUE,
                                 isInstanceMethod,
                                 pMD,
-                                TRUE,
-                                FALSE
+                                TRUE
                                 DEBUG_ARG(pDebugName)
                                 DEBUG_ARG(pDebugClassName)
                                 DEBUG_ARG(0)
@@ -3983,10 +3982,10 @@ static void CreateNDirectStubWorker(StubState*         pss,
         // For functions with value type class, managed and unmanaged calling convention differ
         fMarshalReturnValueFirst = HasRetBuffArgUnmanagedFixup(&msig);
 #elif defined(TARGET_ARM)
-        fMarshalReturnValueFirst = HasRetBuffArg(&msig);
+        fMarshalReturnValueFirst = (isInstanceMethod && isReturnTypeValueType) && HasRetBuffArg(&msig);
 #else
         // On Windows-X86, the native signature might need a return buffer when the managed doesn't (specifically when the native signature is a member function).
-        fMarshalReturnValueFirst = HasRetBuffArg(&msig) || (isInstanceMethod && isReturnTypeValueType);
+        fMarshalReturnValueFirst = (!SF_IsReverseStub(dwStubFlags) && HasRetBuffArg(&msig)) || (isInstanceMethod && isReturnTypeValueType);
 #endif // UNIX_X86_ABI
 #elif defined(TARGET_AMD64) || defined (TARGET_ARM64)
         fMarshalReturnValueFirst = isInstanceMethod && isReturnTypeValueType;
@@ -4043,8 +4042,7 @@ static void CreateNDirectStubWorker(StubState*         pss,
                                                  TRUE,
                                                  isInstanceMethod ? TRUE : FALSE,
                                                  pMD,
-                                                 TRUE,
-                                                 FALSE
+                                                 TRUE
                                                  DEBUG_ARG(pSigDesc->m_pDebugName)
                                                  DEBUG_ARG(pSigDesc->m_pDebugClassName)
                                                  DEBUG_ARG(i + 1));
@@ -4287,42 +4285,6 @@ static void CreateNDirectStubWorker(StubState*         pss,
     pss->FinishEmit(pMD);
 }
 
-static CorNativeLinkType GetLinkTypeOfMethodTable(MethodTable* pMT)
-{
-    CorNativeLinkType nltType;
-
-    IMDInternalImport* pInternalImport = pMT->GetModule()->GetMDImport();
-
-    DWORD clFlags;
-    if (FAILED(pInternalImport->GetTypeDefProps(pMT->GetTypeDefRid(), &clFlags, NULL)))
-    {
-        UNREACHABLE_MSG("Structs that are generating interop marshalling stubs have already been verified to have valid metadata");
-    }
-
-    if (IsTdAnsiClass(clFlags))
-    {
-        nltType = nltAnsi;
-    }
-    else if (IsTdUnicodeClass(clFlags))
-    {
-        nltType = nltUnicode;
-    }
-    else if (IsTdAutoClass(clFlags))
-    {
-#ifdef TARGET_WINDOWS
-        nltType = nltUnicode;
-#else
-        nltType = nltAnsi; // We don't have a utf8 charset in metadata yet, but ANSI == UTF-8 off-Windows
-#endif
-    }
-    else
-    {
-        UNREACHABLE_MSG("Structs that are generating interop marshalling stubs have already been verified to have valid metadata");
-    }
-
-    return nltType;
-}
-
 static void CreateStructStub(ILStubState* pss,
     StubSigDesc* pSigDesc,
     MethodTable* pMT,
@@ -4363,7 +4325,9 @@ static void CreateStructStub(ILStubState* pss,
     }
 #endif // FEATURE_COMINTEROP
 
-    int numFields = pMT->GetNumInstanceFields();
+    EEClassNativeLayoutInfo const* pNativeLayoutInfo = pMT->GetNativeLayoutInfo();
+
+    int numFields = pNativeLayoutInfo->GetNumFields();
     // Build up marshaling information for each of the method's parameters
     SIZE_T cbFieldMarshalInfo;
     if (!ClrSafeInt<SIZE_T>::multiply(sizeof(MarshalInfo), numFields, cbFieldMarshalInfo))
@@ -4371,16 +4335,14 @@ static void CreateStructStub(ILStubState* pss,
         COMPlusThrowHR(COR_E_OVERFLOW);
     }
 
-    CorNativeLinkType nlType = GetLinkTypeOfMethodTable(pMT);
-    NativeFieldDescriptor* pFieldDescriptors = pMT->GetLayoutInfo()->GetNativeFieldDescriptors();
+    CorNativeLinkType nlType = pMT->GetCharSet();
+
+    NativeFieldDescriptor const* pFieldDescriptors = pNativeLayoutInfo->GetNativeFieldDescriptors();
 
     for (int i = 0; i < numFields; ++i)
     {
-        NativeFieldDescriptor& nativeFieldDescriptor = pFieldDescriptors[i];
-
-        nativeFieldDescriptor.Restore();
-
-        FieldDesc* pFD = nativeFieldDescriptor.GetFieldDesc();
+        NativeFieldDescriptor const& nativeFieldDescriptor = pFieldDescriptors[i];
+        PTR_FieldDesc pFD = nativeFieldDescriptor.GetFieldDesc();
         SigPointer fieldSig = pFD->GetSigPointer();
         // The first byte in a field signature is always 0x6 per ECMA 335. Skip over this byte to get to the rest of the signature for the MarshalInfo constructor.
         (void)fieldSig.GetByte(nullptr);
@@ -4389,7 +4351,7 @@ static void CreateStructStub(ILStubState* pss,
         MarshalInfo mlInfo(pFD->GetModule(),
             fieldSig,
             &context,
-            nativeFieldDescriptor.GetFieldDesc()->GetMemberDef(),
+            pFD->GetMemberDef(),
             ms,
             nlType,
             nlfNone,
@@ -4401,8 +4363,7 @@ static void CreateStructStub(ILStubState* pss,
             TRUE,
             FALSE,
             pMD,
-            TRUE,
-            FALSE
+            TRUE
             DEBUG_ARG(pSigDesc->m_pDebugName)
             DEBUG_ARG(pSigDesc->m_pDebugClassName)
             DEBUG_ARG(-1 /* field */));
@@ -4828,7 +4789,7 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
     if (callConv == pmCallConvThiscall)
         ndirectflags |= NDirectMethodDesc::kThisCall;
 
-    if (pNMD->GetLoaderModule()->IsSystem() && strcmp(szLibName, "QCall") == 0)
+    if (pNMD->GetLoaderModule()->IsSystem() && (strcmp(szLibName, "QCall") == 0 || strcmp(szLibName, "System.Globalization.Native") == 0))
     {
         ndirectflags |= NDirectMethodDesc::kIsQCall;
     }
@@ -4847,7 +4808,11 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
         if (argit.HasRetBuffArg())
         {
             MethodTable *pRetMT = msig.GetRetTypeHandleThrowing().AsMethodTable();
-            if (IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
+            // The System.DateTime type itself technically doesn't have a native representation,
+            // so we have to special-case it here.
+            // If a type doesn't have a native representation, we won't set this flag.
+            // We'll throw an exception later when setting up the marshalling.
+            if (pRetMT != MscorlibBinder::GetClass(CLASS__DATE_TIME) && pRetMT->HasLayout() && IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
             {
                 ndirectflags |= NDirectMethodDesc::kStdCallWithRetBuf;
             }

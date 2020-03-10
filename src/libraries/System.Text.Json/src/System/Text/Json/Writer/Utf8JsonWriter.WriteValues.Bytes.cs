@@ -46,7 +46,7 @@ namespace System.Text.Json
             }
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteBase64Minimized(ReadOnlySpan<byte> bytes)
         {
             int encodingLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
@@ -75,7 +75,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Quote;
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/36958
+        // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteBase64Indented(ReadOnlySpan<byte> bytes)
         {
             int indent = Indentation;

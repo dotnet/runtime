@@ -17,6 +17,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public Win32ResourcesNode(ResourceData resourceData)
         {
             _resourceData = resourceData;
+            _size = -1;
         }
 
         public override ObjectNodeSection Section => ObjectNodeSection.TextSection;
@@ -36,6 +37,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
+            return GetDataInternal();
+        }
+
+        private ObjectData GetDataInternal()
+        {
             ObjectDataBuilder builder = new ObjectDataBuilder();
             builder.AddSymbol(this);
             _resourceData.WriteResources(this, ref builder);
@@ -48,6 +54,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return "____Win32Resources";
         }
 
-        public int Size => _size;
+        public int Size
+        {
+            get
+            {
+                if (_size < 0)
+                {
+                    GetDataInternal();
+                }
+                return _size;
+            }
+        }
     }
 }

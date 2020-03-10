@@ -1298,7 +1298,7 @@ namespace System.Runtime.Serialization
                 getEnumeratorMethod = type.GetMethod(Globals.GetEnumeratorMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
                 if (getEnumeratorMethod == null || !Globals.TypeOfIEnumerator.IsAssignableFrom(getEnumeratorMethod.ReturnType))
                 {
-                    Type ienumerableInterface = interfaceType.GetInterfaces().Where(t => t.FullName.StartsWith("System.Collections.Generic.IEnumerable")).FirstOrDefault();
+                    Type ienumerableInterface = interfaceType.GetInterfaces().Where(t => t.FullName.StartsWith("System.Collections.Generic.IEnumerable", StringComparison.Ordinal)).FirstOrDefault();
                     if (ienumerableInterface == null)
                         ienumerableInterface = Globals.TypeOfIEnumerable;
                     getEnumeratorMethod = GetTargetMethodWithName(Globals.GetEnumeratorMethodName, type, ienumerableInterface);

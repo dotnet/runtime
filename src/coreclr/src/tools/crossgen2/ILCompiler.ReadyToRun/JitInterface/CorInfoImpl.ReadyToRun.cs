@@ -1011,6 +1011,11 @@ namespace Internal.JitInterface
                     }
                     else
                     {
+                        if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0)
+                        {
+                            throw new RequiresRuntimeJitException("https://github.com/dotnet/runtime/issues/32663: CORINFO_FIELD_STATIC_ADDRESS");
+                        }
+
                         helperId = field.HasGCStaticBase ?
                             ReadyToRunHelperId.GetGCStaticBase :
                             ReadyToRunHelperId.GetNonGCStaticBase;
@@ -1018,13 +1023,16 @@ namespace Internal.JitInterface
                         //
                         // Currently, we only do this optimization for regular statics, but it
                         // looks like it may be permissible to do this optimization for
-                        // thread statics as well.
-                        //
+                        // thread statics as well. Currently there's no reason to do this
+                        // as this code is not reachable until we implement CORINFO_FIELD_STATIC_ADDRESS
+                        // which is something Crossgen1 doesn't do (cf. the above GitHub issue 32663).
+                        /*
                         if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0 &&
                             (fieldAccessor != CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS))
                         {
                             fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN;
                         }
+                        */
                     }
 
                     if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType) &&
@@ -1449,6 +1457,8 @@ namespace Internal.JitInterface
 
             pResult->methodFlags = getMethodAttribsInternal(methodToCall);
 
+            pResult->wrapperDelegateInvoke = false;
+
             Get_CORINFO_SIG_INFO(methodToCall, &pResult->sig, useInstantiatingStub);
         }
 
@@ -1486,7 +1496,7 @@ namespace Internal.JitInterface
                 }
                 else if (_TARGET_ARM64_)
                 {
-                    fIsPlatformHWIntrinsic = (namespaceName == "System.Runtime.Intrinsics.Arm.Arm64");
+                    fIsPlatformHWIntrinsic = (namespaceName == "System.Runtime.Intrinsics.Arm");
                 }
 
                 fIsHWIntrinsic = fIsPlatformHWIntrinsic || (namespaceName == "System.Runtime.Intrinsics");
@@ -1542,6 +1552,37 @@ namespace Internal.JitInterface
                             // However, we don't know the ISAs the target machine supports so we should
                             // fallback to the method call implementation instead.
                             fTreatAsRegularMethodCall = (methodName == "Round");
+                        }
+                    }
+                    else if (namespaceName == "System.Numerics")
+                    {
+                        if ((className == "Vector3") || (className == "Vector4"))
+                        {
+                            if (methodName == ".ctor")
+                            {
+                                // Vector3 and Vector4 have constructors which take a smaller Vector and create bolt on
+                                // a larger vector. This uses insertps instruction when compiled with SSE4.1 instruction support
+                                // which must not be generated inline in R2R images that actually support an SSE2 only mode.
+                                if ((method.Signature.Length > 1) && (method.Signature[0].IsValueType && !method.Signature[0].IsPrimitive))
+                                {
+                                    fTreatAsRegularMethodCall = true;
+                                }
+                            }
+                            else if (methodName == "Dot")
+                            {
+                                // The dot product operations uses the dpps instruction when compiled with SSE4.1 instruction
+                                // support. This must not be generated inline in R2R images that actually support an SSE2 only mode.
+                                fTreatAsRegularMethodCall = true;
+                            }
+                        }
+                        else if ((className == "Vector2") || (className == "Vector") || (className == "Vector`1"))
+                        {
+                            if (methodName == "Dot")
+                            {
+                                // The dot product operations uses the dpps instruction when compiled with SSE4.1 instruction
+                                // support. This must not be generated inline in R2R images that actually support an SSE2 only mode.
+                                fTreatAsRegularMethodCall = true;
+                            }
                         }
                     }
                 }
@@ -1732,6 +1773,7 @@ namespace Internal.JitInterface
 
             // Unless we decide otherwise, just do the lookup via a helper function
             pResult.indirections = CORINFO.USEHELPER;
+            pResult.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
 
             MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
             TypeDesc contextType = typeFromContext(pResolvedToken.tokenContext);
@@ -2051,8 +2093,7 @@ namespace Internal.JitInterface
             {
                 if (pMT.IsValueType)
                 {
-                    // ENCODE_CHECK_FIELD_OFFSET
-                    // TODO: root field check import
+                    throw new NotImplementedException("https://github.com/dotnet/runtime/issues/32630: ENCODE_CHECK_FIELD_OFFSET: root field check import");
                 }
                 else
                 {
@@ -2088,6 +2129,7 @@ namespace Internal.JitInterface
                 PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
 
                 // ENCODE_FIELD_BASE_OFFSET
+                Debug.Assert(pResult->offset >= (uint)pMT.BaseType.InstanceByteCount.AsInt);
                 pResult->offset -= (uint)pMT.BaseType.InstanceByteCount.AsInt;
                 pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
                 pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldBaseOffset(field.OwningType));

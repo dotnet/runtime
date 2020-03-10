@@ -44,7 +44,7 @@ namespace Internal.Cryptography.Pal
         private readonly SafeX509StoreCtxHandle _storeCtx;
         private readonly DateTime _verificationTime;
         private TimeSpan _remainingDownloadTime;
-        private WorkingChain _workingChain;
+        private WorkingChain? _workingChain;
 
         private OpenSslX509ChainProcessor(
             SafeX509Handle leafHandle,
@@ -70,19 +70,19 @@ namespace Internal.Cryptography.Pal
             _workingChain?.Dispose();
 
             // We don't own this one.
-            _leafHandle = null;
+            _leafHandle = null!;
         }
 
-        public bool? Verify(X509VerificationFlags flags, out Exception exception)
+        public bool? Verify(X509VerificationFlags flags, out Exception? exception)
         {
             exception = null;
-            return ChainVerifier.Verify(ChainElements, flags);
+            return ChainVerifier.Verify(ChainElements!, flags);
         }
 
-        public X509ChainElement[] ChainElements { get; private set; }
-        public X509ChainStatus[] ChainStatus { get; private set; }
+        public X509ChainElement[]? ChainElements { get; private set; }
+        public X509ChainStatus[]? ChainStatus { get; private set; }
 
-        public SafeX509ChainHandle SafeHandle
+        public SafeX509ChainHandle? SafeHandle
         {
             get { return null; }
         }
@@ -98,9 +98,9 @@ namespace Internal.Cryptography.Pal
                 out SafeX509StackHandle systemTrust,
                 out SafeX509StackHandle systemIntermediate);
 
-            SafeX509StoreHandle store = null;
-            SafeX509StackHandle untrusted = null;
-            SafeX509StoreCtxHandle storeCtx = null;
+            SafeX509StoreHandle? store = null;
+            SafeX509StackHandle? untrusted = null;
+            SafeX509StoreCtxHandle? storeCtx = null;
 
             try
             {
@@ -150,7 +150,7 @@ namespace Internal.Cryptography.Pal
                     foreach (X509Certificate2 cert in customTrustStore)
                     {
                         SafeX509StackHandle toAdd = cert.SubjectName.RawData.ContentsEqual(cert.IssuerName.RawData) ? customTrust : untrusted;
-                        AddToStackAndUpRef(((OpenSslX509CertificateReader)cert.Pal).SafeHandle, toAdd);
+                        AddToStackAndUpRef(((OpenSslX509CertificateReader)cert.Pal!).SafeHandle, toAdd);
                     }
 
                     return Interop.Crypto.X509ChainNew(customTrust, SafeX509StackHandle.InvalidHandle);
@@ -160,7 +160,7 @@ namespace Internal.Cryptography.Pal
             return Interop.Crypto.X509ChainNew(systemTrust, s_userRootStore.GetNativeCollection());
         }
 
-        internal Interop.Crypto.X509VerifyStatusCode FindFirstChain(X509Certificate2Collection extraCerts)
+        internal Interop.Crypto.X509VerifyStatusCode FindFirstChain(X509Certificate2Collection? extraCerts)
         {
             SafeX509StoreCtxHandle storeCtx = _storeCtx;
 
@@ -179,7 +179,7 @@ namespace Internal.Cryptography.Pal
             {
                 foreach (X509Certificate2 cert in extraCerts)
                 {
-                    AddToStackAndUpRef(((OpenSslX509CertificateReader)cert.Pal).SafeHandle, untrusted);
+                    AddToStackAndUpRef(((OpenSslX509CertificateReader)cert.Pal!).SafeHandle, untrusted);
                 }
 
                 Interop.Crypto.X509StoreCtxRebuildChain(storeCtx);
@@ -202,7 +202,7 @@ namespace Internal.Cryptography.Pal
         }
 
         internal Interop.Crypto.X509VerifyStatusCode FindChainViaAia(
-            ref List<X509Certificate2> downloadedCerts)
+            ref List<X509Certificate2>? downloadedCerts)
         {
             IntPtr lastCert = IntPtr.Zero;
             SafeX509StoreCtxHandle storeCtx = _storeCtx;
@@ -234,12 +234,12 @@ namespace Internal.Cryptography.Pal
                         break;
                     }
 
-                    X509Certificate2 downloaded = DownloadCertificate(
+                    X509Certificate2? downloaded = DownloadCertificate(
                         authorityInformationAccess,
                         ref _remainingDownloadTime);
 
                     // The AIA record is contained in a public structure, so no need to clear it.
-                    CryptoPool.Return(authorityInformationAccess.Array, clearSize: 0);
+                    CryptoPool.Return(authorityInformationAccess.Array!, clearSize: 0);
 
                     if (downloaded == null)
                     {
@@ -265,7 +265,7 @@ namespace Internal.Cryptography.Pal
                 {
                     int chainSize = Interop.Crypto.GetX509StackFieldCount(chainStack);
                     Span<IntPtr> tempChain = stackalloc IntPtr[DefaultChainCapacity];
-                    byte[] tempChainRent = null;
+                    byte[]? tempChainRent = null;
 
                     if (chainSize <= tempChain.Length)
                     {
@@ -565,7 +565,7 @@ namespace Internal.Cryptography.Pal
             }
 
             WorkingChain workingChain = new WorkingChain();
-            WorkingChain extraDispose = null;
+            WorkingChain? extraDispose = null;
 
             Interop.Crypto.X509StoreCtxReset(_storeCtx);
             Interop.Crypto.X509StoreVerifyCallback workingCallback = workingChain.VerifyCallback;
@@ -602,7 +602,7 @@ namespace Internal.Cryptography.Pal
 
         internal void Finish(OidCollection applicationPolicy, OidCollection certificatePolicy)
         {
-            WorkingChain workingChain = _workingChain;
+            WorkingChain? workingChain = _workingChain;
 
             // If the chain had any errors during the previous build we need to walk it again with
             // the error collector running.
@@ -613,7 +613,7 @@ namespace Internal.Cryptography.Pal
 
             X509ChainElement[] elements = BuildChainElements(
                 workingChain,
-                out List<X509ChainStatus> overallStatus);
+                out List<X509ChainStatus>? overallStatus);
 
             workingChain?.Dispose();
 
@@ -631,7 +631,7 @@ namespace Internal.Cryptography.Pal
 
         private void CloneChainForSignatureErrors()
         {
-            SafeX509StoreHandle newStore;
+            SafeX509StoreHandle? newStore;
             Interop.Crypto.X509StoreCtxResetForSignatureError(_storeCtx, out newStore);
 
             if (newStore != null)
@@ -660,7 +660,7 @@ namespace Internal.Cryptography.Pal
                 return Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL;
             }
 
-            string baseUri = GetOcspEndpoint(certHandle);
+            string? baseUri = GetOcspEndpoint(certHandle);
 
             if (baseUri == null)
             {
@@ -678,8 +678,8 @@ namespace Internal.Cryptography.Pal
                 string requestUrl = UrlPathAppend(baseUri, urlEncoded);
 
                 // Nothing sensitive is in the encoded request (it was sent via HTTP-non-S)
-                CryptoPool.Return(encoded.Array, clearSize: 0);
-                ArrayPool<char>.Shared.Return(urlEncoded.Array);
+                CryptoPool.Return(encoded.Array!, clearSize: 0);
+                ArrayPool<char>.Shared.Return(urlEncoded.Array!);
 
                 // https://tools.ietf.org/html/rfc6960#appendix-A describes both a GET and a POST
                 // version of an OCSP responder.
@@ -689,7 +689,7 @@ namespace Internal.Cryptography.Pal
                 // (On-line Revocation Checking Requirements) says that the GET method must be supported.
                 //
                 // So, for now, only try GET.
-                SafeOcspResponseHandle resp =
+                SafeOcspResponseHandle? resp =
                     CertificateAssetDownloader.DownloadOcspGet(requestUrl, ref _remainingDownloadTime);
 
                 using (resp)
@@ -802,13 +802,13 @@ namespace Internal.Cryptography.Pal
         }
 
         private X509ChainElement[] BuildChainElements(
-            WorkingChain workingChain,
-            out List<X509ChainStatus> overallStatus)
+            WorkingChain? workingChain,
+            out List<X509ChainStatus>? overallStatus)
         {
             X509ChainElement[] elements;
             overallStatus = null;
 
-            List<X509ChainStatus> statusBuilder = null;
+            List<X509ChainStatus>? statusBuilder = null;
 
             using (SafeX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetChain(_storeCtx))
             {
@@ -849,8 +849,8 @@ namespace Internal.Cryptography.Pal
 
         private static void ProcessPolicy(
             X509ChainElement[] elements,
-            ref List<X509ChainStatus> overallStatus,
-            OidCollection applicationPolicy,
+            ref List<X509ChainStatus>? overallStatus,
+            OidCollection? applicationPolicy,
             OidCollection certificatePolicy)
         {
             List<X509Certificate2> certsToRead = new List<X509Certificate2>();
@@ -1070,7 +1070,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private static X509Certificate2 DownloadCertificate(
+        private static X509Certificate2? DownloadCertificate(
             ReadOnlyMemory<byte> authorityInformationAccess,
             ref TimeSpan remainingDownloadTime)
         {
@@ -1080,7 +1080,7 @@ namespace Internal.Cryptography.Pal
                 return null;
             }
 
-            string uri = FindHttpAiaRecord(authorityInformationAccess, Oids.CertificateAuthorityIssuers);
+            string? uri = FindHttpAiaRecord(authorityInformationAccess, Oids.CertificateAuthorityIssuers);
 
             if (uri == null)
             {
@@ -1090,7 +1090,7 @@ namespace Internal.Cryptography.Pal
             return CertificateAssetDownloader.DownloadCertificate(uri, ref remainingDownloadTime);
         }
 
-        private static string GetOcspEndpoint(SafeX509Handle cert)
+        private static string? GetOcspEndpoint(SafeX509Handle cert)
         {
             ArraySegment<byte> authorityInformationAccess =
                 OpenSslX509CertificateReader.FindFirstExtension(
@@ -1102,12 +1102,12 @@ namespace Internal.Cryptography.Pal
                 return null;
             }
 
-            string baseUrl = FindHttpAiaRecord(authorityInformationAccess, Oids.OcspEndpoint);
-            CryptoPool.Return(authorityInformationAccess.Array, clearSize: 0);
+            string? baseUrl = FindHttpAiaRecord(authorityInformationAccess, Oids.OcspEndpoint);
+            CryptoPool.Return(authorityInformationAccess.Array!, clearSize: 0);
             return baseUrl;
         }
 
-        private static string FindHttpAiaRecord(ReadOnlyMemory<byte> authorityInformationAccess, string recordTypeOid)
+        private static string? FindHttpAiaRecord(ReadOnlyMemory<byte> authorityInformationAccess, string recordTypeOid)
         {
             try
             {
@@ -1122,7 +1122,7 @@ namespace Internal.Cryptography.Pal
                     {
                         GeneralNameAsn name = description.AccessLocation;
                         if (name.Uri != null &&
-                            Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri uri) &&
+                            Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri? uri) &&
                             uri.Scheme == "http")
                         {
                             return name.Uri;
@@ -1180,7 +1180,7 @@ namespace Internal.Cryptography.Pal
             private const long OpenSSL_1_1_0_RTM = 0x10100000L;
             private static readonly bool s_defaultAbort = SafeEvpPKeyHandle.OpenSslVersion < OpenSSL_1_1_0_RTM;
 
-            private ErrorCollection[] _errors;
+            private ErrorCollection[]? _errors;
 
             internal bool AbortOnSignatureError { get; }
             internal bool AbortedForSignatureError { get; private set; }
@@ -1197,11 +1197,11 @@ namespace Internal.Cryptography.Pal
                 AbortOnSignatureError = abortOnSignatureError;
             }
 
-            internal ref ErrorCollection this[int idx] => ref _errors[idx];
+            internal ref ErrorCollection this[int idx] => ref _errors![idx];
 
             public void Dispose()
             {
-                ErrorCollection[] toReturn = _errors;
+                ErrorCollection[]? toReturn = _errors;
                 _errors = null;
 
                 if (toReturn != null)

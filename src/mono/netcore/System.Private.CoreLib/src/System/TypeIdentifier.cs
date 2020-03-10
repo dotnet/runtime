@@ -21,6 +21,8 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System
 {
 	// A TypeName is wrapper around type names in display form
@@ -68,7 +70,7 @@ namespace System
 
 			public abstract TypeName NestedName (TypeIdentifier innerName);
 
-			public bool Equals (TypeName other)
+			public bool Equals ([AllowNull] TypeName other)
 			{
 				return other != null && DisplayName == other.DisplayName;
 			}

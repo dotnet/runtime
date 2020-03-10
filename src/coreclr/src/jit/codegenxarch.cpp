@@ -3000,15 +3000,16 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 #endif
         }
 
+        instruction simdMov = simdUnalignedMovIns();
         for (unsigned regSize = XMM_REGSIZE_BYTES; size >= regSize; size -= regSize, dstOffset += regSize)
         {
             if (dstLclNum != BAD_VAR_NUM)
             {
-                emit->emitIns_S_R(INS_movdqu, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
+                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
             }
             else
             {
-                emit->emitIns_ARX_R(INS_movdqu, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
                                     dstAddrIndexScale, dstOffset);
             }
         }
@@ -3198,26 +3199,27 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     {
         regNumber tempReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
+        instruction simdMov = simdUnalignedMovIns();
         for (unsigned regSize = XMM_REGSIZE_BYTES; size >= regSize;
              size -= regSize, srcOffset += regSize, dstOffset += regSize)
         {
             if (srcLclNum != BAD_VAR_NUM)
             {
-                emit->emitIns_R_S(INS_movdqu, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+                emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
             }
             else
             {
-                emit->emitIns_R_ARX(INS_movdqu, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
                                     srcAddrIndexScale, srcOffset);
             }
 
             if (dstLclNum != BAD_VAR_NUM)
             {
-                emit->emitIns_S_R(INS_movdqu, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
             }
             else
             {
-                emit->emitIns_ARX_R(INS_movdqu, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
                                     dstAddrIndexScale, dstOffset);
             }
         }
@@ -3808,14 +3810,14 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 
     jmpTabOffs = 0;
 
-    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", Compiler::s_compMethodsCount, jmpTabBase);
+    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
 
     for (unsigned i = 0; i < jumpCount; i++)
     {
         BasicBlock* target = *jumpTable++;
         noway_assert(target->bbFlags & BBF_JMP_TARGET);
 
-        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", Compiler::s_compMethodsCount, target->bbNum);
+        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
 
         GetEmitter()->emitDataGenData(i, target);
     };
@@ -4574,8 +4576,9 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         }
 #endif // defined(FEATURE_SIMD) && defined(TARGET_X86)
 
-        GetEmitter()->emitIns_R_S(ins_Load(tree->TypeGet(), compiler->isSIMDTypeLocalAligned(tree->GetLclNum())),
-                                  emitTypeSize(tree), tree->GetRegNum(), tree->GetLclNum(), 0);
+        var_types type = varDsc->GetRegisterType(tree);
+        GetEmitter()->emitIns_R_S(ins_Load(type, compiler->isSIMDTypeLocalAligned(tree->GetLclNum())),
+                                  emitTypeSize(type), tree->GetRegNum(), tree->GetLclNum(), 0);
         genProduceReg(tree);
     }
 }
@@ -4624,9 +4627,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 {
     assert(tree->OperIs(GT_STORE_LCL_VAR));
 
-    var_types targetType = tree->TypeGet();
-    regNumber targetReg  = tree->GetRegNum();
-    emitter*  emit       = GetEmitter();
+    regNumber targetReg = tree->GetRegNum();
+    emitter*  emit      = GetEmitter();
 
     GenTree* op1 = tree->gtGetOp1();
 
@@ -4638,14 +4640,24 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     }
     else
     {
-        noway_assert(targetType != TYP_STRUCT);
-        assert(!varTypeIsFloating(targetType) || (targetType == op1->TypeGet()));
-
         unsigned   lclNum = tree->GetLclNum();
-        LclVarDsc* varDsc = &(compiler->lvaTable[lclNum]);
+        LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
 
-        // Ensure that lclVar nodes are typed correctly.
-        assert(!varDsc->lvNormalizeOnStore() || (targetType == genActualType(varDsc->TypeGet())));
+        var_types targetType = varDsc->GetRegisterType(tree);
+
+#ifdef DEBUG
+        var_types op1Type = op1->TypeGet();
+        if (op1Type == TYP_STRUCT)
+        {
+            assert(op1->IsLocal());
+            GenTreeLclVar* op1LclVar = op1->AsLclVar();
+            unsigned       op1lclNum = op1LclVar->GetLclNum();
+            LclVarDsc*     op1VarDsc = compiler->lvaGetDesc(op1lclNum);
+            op1Type                  = op1VarDsc->GetRegisterType(op1LclVar);
+        }
+        assert(varTypeUsesFloatReg(targetType) == varTypeUsesFloatReg(op1Type));
+        assert(!varTypeUsesFloatReg(targetType) || (emitTypeSize(targetType) == emitTypeSize(op1Type)));
+#endif
 
 #if !defined(TARGET_64BIT)
         if (targetType == TYP_LONG)

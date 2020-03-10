@@ -78,7 +78,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 var sectionType = (ReadyToRunSectionType)type;
                 if (!Enum.IsDefined(typeof(ReadyToRunSectionType), type))
                 {
-                    Console.WriteLine("Warning: Invalid ReadyToRun section type");
+                    throw new BadImageFormatException("Warning: Invalid ReadyToRun section type");
                 }
                 int sectionStartRva = NativeReader.ReadInt32(image, ref curOffset);
                 int sectionLength = NativeReader.ReadInt32(image, ref curOffset);

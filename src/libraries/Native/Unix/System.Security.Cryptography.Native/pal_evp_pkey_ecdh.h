@@ -6,8 +6,8 @@
 #include "pal_compiler.h"
 #include "opensslshim.h"
 
-DLLEXPORT EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreate(EVP_PKEY* pkey, EVP_PKEY* peerkey, uint32_t* secretLength);
+PALEXPORT EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreate(EVP_PKEY* pkey, EVP_PKEY* peerkey, uint32_t* secretLength);
 
-DLLEXPORT int32_t CryptoNative_EvpPKeyDeriveSecretAgreement(uint8_t* secret, uint32_t secretLength, EVP_PKEY_CTX* ctx);
+PALEXPORT int32_t CryptoNative_EvpPKeyDeriveSecretAgreement(uint8_t* secret, uint32_t secretLength, EVP_PKEY_CTX* ctx);
 
-DLLEXPORT void CryptoNative_EvpPKeyCtxDestroy(EVP_PKEY_CTX* ctx);
+PALEXPORT void CryptoNative_EvpPKeyCtxDestroy(EVP_PKEY_CTX* ctx);

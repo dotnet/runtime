@@ -35,4 +35,6 @@ G_EXTERN_C void mini_llvm_init_gshared_method_vtable  (MonoAotFileInfo *info, gp
 
 G_EXTERN_C void mini_llvmonly_throw_nullref_exception (void);
 
+G_EXTERN_C void mini_llvmonly_throw_missing_method_exception (void);
+
 #endif

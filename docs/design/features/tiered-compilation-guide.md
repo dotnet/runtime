@@ -2,7 +2,7 @@
 
 # Introduction
 
-.NET Core and ASP.NET ship mostly as [ReadyToRun](https://github.com/dotnet/coreclr/blob/master/Documentation/botr/readytorun-overview.md) (R2R) for better startup performance, but steady-state performance is lower compared to only using the JIT due to some R2R versioning constraints.
+.NET Core and ASP.NET ship mostly as [ReadyToRun](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/readytorun-overview.md) (R2R) for better startup performance, but steady-state performance is lower compared to only using the JIT due to some R2R versioning constraints.
 
 Tiered Compilation aims to get the best of both:
 - Using pregenerated code or jitting methods more quickly with fewer optimizations first, it aims to produce at least as good startup performance
@@ -51,5 +51,5 @@ Tiered compilation is enabled by default from .NET Core 2.2 preview 2 and in 3.0
 
 # Other links
 
-- [Design doc](https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/tiered-compilation.md)
+- [Design doc](https://github.com/dotnet/runtime/blob/master/docs/design/features/tiered-compilation.md)
 - [Some design discussion](https://github.com/dotnet/coreclr/issues/4331)

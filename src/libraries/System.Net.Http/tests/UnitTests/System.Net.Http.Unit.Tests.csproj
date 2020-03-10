@@ -415,6 +415,7 @@
     <Compile Include="MockContent.cs" />
     <Compile Include="StreamToStreamCopyTest.cs" />
     <Compile Include="HttpEnvironmentProxyTest.cs" />
+    <Compile Include="HttpRequestExceptionTests.cs" />
     <Compile Include="HttpWindowsProxyTest.cs" />
     <Compile Include="SystemProxyInfoTest.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs">

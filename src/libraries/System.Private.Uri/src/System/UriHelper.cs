@@ -575,12 +575,12 @@ namespace System
                     if (iriParsing)
                     {
                         if (!isHighSurr)
+                        {
                             inIriRange = IriHelper.CheckIriUnicodeRange(unescapedChars[j], isQuery);
+                        }
                         else
                         {
-                            bool surrPair = false;
-                            inIriRange = IriHelper.CheckIriUnicodeRange(unescapedChars[j], unescapedChars[j + 1],
-                                                                   ref surrPair, isQuery);
+                            inIriRange = IriHelper.CheckIriUnicodeRange(unescapedChars[j], unescapedChars[j + 1], out _, isQuery);
                         }
                     }
 

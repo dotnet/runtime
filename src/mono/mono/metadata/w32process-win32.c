@@ -136,7 +136,7 @@ mono_process_create_process (MonoCreateProcessCoop *coop, MonoW32ProcessInfo *mo
 	PROCESS_INFORMATION *process_info)
 {
 	gboolean result = FALSE;
-	gchandle_t cmd_gchandle = 0;
+	MonoGCHandle cmd_gchandle = NULL;
 	gunichar2 *cmd_chars = MONO_HANDLE_IS_NULL (cmd) ? NULL : mono_string_handle_pin_chars (cmd, &cmd_gchandle);
 
 	MONO_ENTER_GC_SAFE;
@@ -302,7 +302,7 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 
 		for (gsize i = 0; i < array_length; i++) {
 			MONO_HANDLE_ARRAY_GETREF (var, array, i);
-			gchandle_t gchandle = 0;
+			MonoGCHandle gchandle = NULL;
 			memcpy (ptr, mono_string_handle_pin_chars (var, &gchandle), mono_string_handle_length (var) * sizeof (gunichar2));
 			mono_gchandle_free_internal (gchandle);
 			ptr += mono_string_handle_length (var);

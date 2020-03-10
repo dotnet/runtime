@@ -65,7 +65,15 @@ void bzero (void *to, size_t count) { memset (to, 0, count); }
 
 #endif
 
-static AllocCodeMemoryCb *alloc_code_mem_cb;
+static MonoNativeTlsKey current_cfg_tls_id;
+
+static unsigned char *
+alloc_code (LLVMValueRef function, int size)
+{
+	auto cfg = (MonoCompile *)mono_native_tls_get_value (current_cfg_tls_id);
+	g_assert (cfg);
+	return (unsigned char *)mono_domain_code_reserve (cfg->domain, size);
+}
 
 class MonoJitMemoryManager : public RTDyldMemoryManager
 {
@@ -118,7 +126,7 @@ MonoJitMemoryManager::allocateCodeSection(uintptr_t Size,
 										  unsigned SectionID,
 										  StringRef SectionName)
 {
-	uint8_t *mem = alloc_code_mem_cb (NULL, Size);
+	uint8_t *mem = alloc_code (NULL, Size);
 	PendingCodeMem.push_back (sys::MemoryBlock ((void *)mem, Size));
 	return mem;
 }
@@ -254,11 +262,6 @@ struct MonoLLVMJIT {
 	}
 };
 
-static void
-init_mono_llvm_jit ()
-{
-}
-
 static MonoLLVMJIT *
 make_mono_llvm_jit (TargetMachine *target_machine)
 {
@@ -266,6 +269,12 @@ make_mono_llvm_jit (TargetMachine *target_machine)
 }
 
 #elif LLVM_API_VERSION > 600
+
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#define NO_CALL_FRAME_OPT " -no-x86-call-frame-opt"
+#else
+#define NO_CALL_FRAME_OPT ""
+#endif
 
 // The OptimizationList is automatically populated with registered Passes by the
 // PassNameParser.
@@ -300,7 +309,7 @@ public:
 		// FIXME: find optimal mono specific order of passes
 		// see https://llvm.org/docs/Frontend/PerformanceTips.html#pass-ordering
 		// the following order is based on a stripped version of "OPT -O2"
-		const char *default_opts = " -simplifycfg -sroa -lower-expect -instcombine -jump-threading -loop-rotate -licm -simplifycfg -lcssa -loop-idiom -indvars -loop-deletion -gvn -memcpyopt -sccp -bdce -instcombine -dse -simplifycfg -enable-implicit-null-checks";
+		const char *default_opts = " -simplifycfg -sroa -lower-expect -instcombine -jump-threading -loop-rotate -licm -simplifycfg -lcssa -loop-idiom -indvars -loop-deletion -gvn -memcpyopt -sccp -bdce -instcombine -dse -simplifycfg -enable-implicit-null-checks" NO_CALL_FRAME_OPT;
 		const char *opts = g_getenv ("MONO_LLVM_OPT");
 		if (opts == NULL)
 			opts = default_opts;
@@ -420,15 +429,10 @@ private:
 
 static MonoJitMemoryManager *mono_mm;
 
-static void
-init_mono_llvm_jit ()
-{
-	mono_mm = new MonoJitMemoryManager ();
-}
-
 static MonoLLVMJIT *
 make_mono_llvm_jit (TargetMachine *target_machine)
 {
+	mono_mm = new MonoJitMemoryManager ();
 	return new MonoLLVMJIT(target_machine, mono_mm);
 }
 
@@ -436,10 +440,12 @@ make_mono_llvm_jit (TargetMachine *target_machine)
 
 static MonoLLVMJIT *jit;
 
-MonoEERef
-mono_llvm_create_ee (AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, LLVMExecutionEngineRef *ee)
+void
+mono_llvm_jit_init ()
 {
-	alloc_code_mem_cb = alloc_cb;
+	if (jit != nullptr) return;
+
+	mono_native_tls_alloc (&current_cfg_tls_id, NULL);
 
 	InitializeNativeTarget ();
 	InitializeNativeTargetAsmPrinter();
@@ -464,9 +470,12 @@ mono_llvm_create_ee (AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb,
 	auto TM = EB.selectTarget ();
 	assert (TM);
 
-	init_mono_llvm_jit ();
 	jit = make_mono_llvm_jit (TM);
+}
 
+MonoEERef
+mono_llvm_create_ee (LLVMExecutionEngineRef *ee)
+{
 	return NULL;
 }
 
@@ -477,9 +486,12 @@ mono_llvm_create_ee (AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb,
  * CALLEE_ADDRS. Return the EH frame address in EH_FRAME.
  */
 gpointer
-mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame)
+mono_llvm_compile_method (MonoEERef mono_ee, MonoCompile *cfg, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame)
 {
-	return jit->compile (unwrap<Function> (method), nvars, callee_vars, callee_addrs, eh_frame);
+	mono_native_tls_set_value (current_cfg_tls_id, cfg);
+	auto ret = jit->compile (unwrap<Function> (method), nvars, callee_vars, callee_addrs, eh_frame);
+	mono_native_tls_set_value (current_cfg_tls_id, nullptr);
+	return ret;
 }
 
 void
@@ -494,15 +506,20 @@ mono_llvm_set_unhandled_exception_handler (void)
 {
 }
 
+void
+mono_llvm_jit_init ()
+{
+}
+
 MonoEERef
-mono_llvm_create_ee (AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, LLVMExecutionEngineRef *ee)
+mono_llvm_create_ee (LLVMExecutionEngineRef *ee)
 {
 	g_error ("LLVM JIT not supported on this platform.");
 	return NULL;
 }
 
 gpointer
-mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame)
+mono_llvm_compile_method (MonoEERef mono_ee, MonoCompile *cfg, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame)
 {
 	g_assert_not_reached ();
 	return NULL;

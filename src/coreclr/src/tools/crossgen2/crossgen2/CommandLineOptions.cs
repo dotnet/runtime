@@ -11,6 +11,7 @@ namespace ILCompiler
     public class CommandLineOptions
     {
         public FileInfo[] InputFilePaths { get; set; }
+        public FileInfo[] UnrootedInputFilePaths { get; set; }
         public FileInfo[] Mibc { get; set; }
         public string[] Reference { get; set; }
         public FileInfo OutputFilePath { get; set; }
@@ -20,6 +21,7 @@ namespace ILCompiler
         public bool InputBubble { get; set; }
         public bool CompileBubbleGenerics { get; set; }
         public bool Verbose { get; set; }
+        public bool Composite { get; set; }
 
         public FileInfo DgmlLogFileName { get; set; }
         public bool GenerateFullDgmlLog { get; set; }
@@ -55,8 +57,15 @@ namespace ILCompiler
                     Description = SR.InputFilesToCompile,
                     Arity = arbitraryArity,
                 },
+                new Option(new[] { "--unrooted-input-file-paths", "-u" }, SR.UnrootedInputFilesToCompile)
+                {
+                    Argument = new Argument<FileInfo[]>()
+                    {
+                        Arity = arbitraryArity
+                    }
+                },
                 new Option(new[] { "--reference", "-r" }, SR.ReferenceFiles)
-                { 
+                {
                     Argument = new Argument<string[]>() 
                     { 
                         Arity = arbitraryArity
@@ -83,6 +92,7 @@ namespace ILCompiler
                 },
                 new Option(new[] { "--optimize-time", "--Ot" }, SR.OptimizeSpeedOption),
                 new Option(new[] { "--inputbubble" }, SR.InputBubbleOption),
+                new Option(new[] { "--composite" }, SR.CompositeBuildMode),
                 new Option(new[] { "--tuning" }, SR.TuningImageOption) 
                 {
                     Argument = new Argument<bool>() 

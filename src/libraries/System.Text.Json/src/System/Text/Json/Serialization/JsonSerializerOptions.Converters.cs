@@ -48,16 +48,16 @@ namespace System.Text.Json
             var converters = new List<JsonConverter>(NumberOfConverters);
 
             // Nullable converter should always be first since it forwards to any nullable type.
-            converters.Add(new JsonValueConverterNullableFactory());
+            converters.Add(new NullableConverterFactory());
 
-            converters.Add(new JsonConverterEnum());
-            converters.Add(new JsonKeyValuePairConverter());
+            converters.Add(new EnumConverterFactory());
+            converters.Add(new KeyValuePairConverterFactory());
 
             // IEnumerable should always be last since they can convert any IEnumerable.
-            converters.Add(new JsonIEnumerableConverterFactory());
+            converters.Add(new IEnumerableConverterFactory());
 
             // Object should always be last since it converts any type.
-            converters.Add(new JsonObjectConverterFactory());
+            converters.Add(new ObjectConverterFactory());
 
             Debug.Assert(NumberOfConverters == converters.Count);
 
@@ -72,30 +72,36 @@ namespace System.Text.Json
         /// </remarks>
         public IList<JsonConverter> Converters { get; }
 
-        internal JsonConverter? DetermineConverter(Type parentClassType, Type runtimePropertyType, PropertyInfo? propertyInfo)
+        internal JsonConverter DetermineConverter(Type? parentClassType, Type runtimePropertyType, PropertyInfo? propertyInfo)
         {
-            JsonConverter? converter = null;
+            JsonConverter converter = null!;
 
             // Priority 1: attempt to get converter from JsonConverterAttribute on property.
             if (propertyInfo != null)
             {
+                Debug.Assert(parentClassType != null);
+
                 JsonConverterAttribute? converterAttribute = (JsonConverterAttribute?)
-                    GetAttributeThatCanHaveMultiple(parentClassType, typeof(JsonConverterAttribute), propertyInfo);
+                    GetAttributeThatCanHaveMultiple(parentClassType!, typeof(JsonConverterAttribute), propertyInfo);
 
                 if (converterAttribute != null)
                 {
-                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: runtimePropertyType, classTypeAttributeIsOn: parentClassType, propertyInfo);
+                    converter = GetConverterFromAttribute(converterAttribute, typeToConvert: runtimePropertyType, classTypeAttributeIsOn: parentClassType!, propertyInfo);
                 }
             }
 
             if (converter == null)
             {
                 converter = GetConverter(runtimePropertyType);
+                Debug.Assert(converter != null);
             }
 
             if (converter is JsonConverterFactory factory)
             {
                 converter = factory.GetConverterInternal(runtimePropertyType, this);
+
+                // A factory cannot return null; GetConverterInternal checked for that.
+                Debug.Assert(converter != null);
             }
 
             return converter;
@@ -106,12 +112,13 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="typeToConvert">The type to return a converter for.</param>
         /// <returns>
-        /// The first converter that supports the given type, or null if there is no converter.
+        /// The converter for the given type.
         /// </returns>
-        public JsonConverter? GetConverter(Type typeToConvert)
+        public JsonConverter GetConverter(Type typeToConvert)
         {
             if (_converters.TryGetValue(typeToConvert, out JsonConverter? converter))
             {
+                Debug.Assert(converter != null);
                 return converter;
             }
 
@@ -143,6 +150,7 @@ namespace System.Text.Json
             {
                 if (s_defaultSimpleConverters.TryGetValue(typeToConvert, out JsonConverter? foundConverter))
                 {
+                    Debug.Assert(foundConverter != null);
                     converter = foundConverter;
                 }
                 else
@@ -155,6 +163,9 @@ namespace System.Text.Json
                             break;
                         }
                     }
+
+                    // Since the object and IEnumerable converters cover all types, we should have a converter.
+                    Debug.Assert(converter != null);
                 }
             }
 
@@ -162,19 +173,17 @@ namespace System.Text.Json
             if (converter is JsonConverterFactory factory)
             {
                 converter = factory.GetConverterInternal(typeToConvert, this);
-                // Allow null converters from the factory. This will result in a NotSupportedException later
-                // and with a nice exception that indicates the parent type.
+
+                // A factory cannot return null; GetConverterInternal checked for that.
+                Debug.Assert(converter != null);
             }
 
-            if (converter != null)
-            {
-                Type converterTypeToConvert = converter.TypeToConvert!;
+            Type converterTypeToConvert = converter.TypeToConvert;
 
-                if (!converterTypeToConvert.IsAssignableFrom(typeToConvert) &&
-                    !typeToConvert.IsAssignableFrom(converterTypeToConvert))
-                {
-                    ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
-                }
+            if (!converterTypeToConvert.IsAssignableFrom(typeToConvert) &&
+                !typeToConvert.IsAssignableFrom(converterTypeToConvert))
+            {
+                ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
             }
 
             // Only cache the value once (de)serialization has occurred since new converters can be added that may change the result.
@@ -217,6 +226,13 @@ namespace System.Text.Json
             Debug.Assert(converter != null);
             if (!converter.CanConvert(typeToConvert))
             {
+                Type? underlyingType = Nullable.GetUnderlyingType(typeToConvert);
+                if (underlyingType != null && converter.CanConvert(underlyingType))
+                {
+                    // Allow nullable handling to forward to the underlying type's converter.
+                    return NullableConverterFactory.CreateValueConverter(underlyingType, converter);
+                }
+
                 ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(classTypeAttributeIsOn, propertyInfo, typeToConvert);
             }
 
@@ -259,27 +275,27 @@ namespace System.Text.Json
             {
                 // When adding to this, update NumberOfSimpleConverters above.
 
-                yield return new JsonConverterBoolean();
-                yield return new JsonConverterByte();
-                yield return new JsonConverterByteArray();
-                yield return new JsonConverterChar();
-                yield return new JsonConverterDateTime();
-                yield return new JsonConverterDateTimeOffset();
-                yield return new JsonConverterDouble();
-                yield return new JsonConverterDecimal();
-                yield return new JsonConverterGuid();
-                yield return new JsonConverterInt16();
-                yield return new JsonConverterInt32();
-                yield return new JsonConverterInt64();
-                yield return new JsonConverterJsonElement();
-                yield return new JsonConverterObject();
-                yield return new JsonConverterSByte();
-                yield return new JsonConverterSingle();
-                yield return new JsonConverterString();
-                yield return new JsonConverterUInt16();
-                yield return new JsonConverterUInt32();
-                yield return new JsonConverterUInt64();
-                yield return new JsonConverterUri();
+                yield return new BooleanConverter();
+                yield return new ByteConverter();
+                yield return new ByteArrayConverter();
+                yield return new CharConverter();
+                yield return new DateTimeConverter();
+                yield return new DateTimeOffsetConverter();
+                yield return new DoubleConverter();
+                yield return new DecimalConverter();
+                yield return new GuidConverter();
+                yield return new Int16Converter();
+                yield return new Int32Converter();
+                yield return new Int64Converter();
+                yield return new JsonElementConverter();
+                yield return new ObjectConverter();
+                yield return new SByteConverter();
+                yield return new SingleConverter();
+                yield return new StringConverter();
+                yield return new UInt16Converter();
+                yield return new UInt32Converter();
+                yield return new UInt64Converter();
+                yield return new UriConverter();
             }
         }
     }

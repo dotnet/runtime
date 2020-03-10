@@ -315,7 +315,7 @@ namespace System.Net.Test.Common
 
         private static (int bytesConsumed, int value) DecodeInteger(ReadOnlySpan<byte> headerBlock, byte prefixMask)
         {
-            return QPackDecoder.DecodeInteger(headerBlock, prefixMask);
+            return QPackTestDecoder.DecodeInteger(headerBlock, prefixMask);
         }
 
         private static (int bytesConsumed, string value) DecodeString(ReadOnlySpan<byte> headerBlock)

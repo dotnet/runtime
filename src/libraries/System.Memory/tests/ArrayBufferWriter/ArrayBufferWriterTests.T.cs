@@ -39,6 +39,7 @@ namespace System.Buffers.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15002", TestRuntimes.Mono)]
         public void Invalid_Ctor()
         {
             Assert.Throws<ArgumentException>(() => new ArrayBufferWriter<T>(0));

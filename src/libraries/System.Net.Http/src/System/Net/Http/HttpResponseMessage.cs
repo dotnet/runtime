@@ -169,11 +169,14 @@ namespace System.Net.Http
         {
             if (!IsSuccessStatusCode)
             {
-                throw new HttpRequestException(SR.Format(
-                    System.Globalization.CultureInfo.InvariantCulture,
-                    SR.net_http_message_not_success_statuscode,
-                    (int)_statusCode,
-                    ReasonPhrase));
+                throw new HttpRequestException(
+                    SR.Format(
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        SR.net_http_message_not_success_statuscode,
+                        (int)_statusCode,
+                        ReasonPhrase),
+                    inner: null,
+                    _statusCode);
             }
 
             return this;

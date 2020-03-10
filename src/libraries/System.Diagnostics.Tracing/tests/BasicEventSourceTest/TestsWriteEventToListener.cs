@@ -18,7 +18,7 @@ namespace BasicEventSourceTests
     public partial class TestsWriteEventToListener
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19462", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21569", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_ArgsBasicTypes()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -172,7 +172,7 @@ namespace BasicEventSourceTests
         static partial void Test_WriteEvent_ArgsBasicTypes_Etw_Validate_DateTime(EventSourceTest log);
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19462", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21569", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_ArgsCornerCases()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -241,7 +241,7 @@ namespace BasicEventSourceTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19462", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21569", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_ZeroKwds()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");

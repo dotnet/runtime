@@ -10,6 +10,7 @@
 #include <search.h>
 #include <string.h>
 
+#include "pal_errors_internal.h"
 #include "pal_collation.h"
 
 c_static_assert_msg(UCOL_EQUAL == 0, "managed side requires 0 for equal strings");

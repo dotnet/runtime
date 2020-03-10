@@ -58,7 +58,7 @@ namespace System.Text.Json
                 else if (metadata == MetadataPropertyName.Ref)
                 {
                     state.Current.JsonPropertyName = propertyName.ToArray();
-                    if (converter.TypeToConvert.IsValueType)
+                    if (converter.IsValueType)
                     {
                         ThrowHelper.ThrowJsonException_MetadataInvalidReferenceToValueType(converter.TypeToConvert);
                     }
@@ -108,7 +108,7 @@ namespace System.Text.Json
 
                 string key = reader.GetString()!;
 
-                // todo: verify value is converter.TypeToConvert and throw JsonException? (currently no test)
+                // todo: https://github.com/dotnet/runtime/issues/32354
                 state.Current.ReturnValue = state.ReferenceResolver.ResolveReferenceOnDeserialize(key);
                 state.Current.ObjectState = StackFrameObjectState.MetadataRefPropertyEndObject;
             }

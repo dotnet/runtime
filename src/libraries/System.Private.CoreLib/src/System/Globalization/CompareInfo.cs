@@ -284,7 +284,7 @@ namespace System.Globalization
             return CompareString(string1.AsSpan(), string2.AsSpan(), options);
         }
 
-        // TODO https://github.com/dotnet/coreclr/issues/13827:
+        // TODO https://github.com/dotnet/runtime/issues/8890:
         // This method shouldn't be necessary, as we should be able to just use the overload
         // that takes two spans.  But due to this issue, that's adding significant overhead.
         internal int Compare(ReadOnlySpan<char> string1, string? string2, CompareOptions options)
@@ -621,7 +621,7 @@ namespace System.Globalization
                 }
 
                 // The ternary operator below seems redundant but helps RyuJIT generate more optimal code.
-                // See https://github.com/dotnet/coreclr/issues/914.
+                // See https://github.com/dotnet/runtime/issues/4207.
                 return (valueA == (valueB | 0x20u)) ? true : false;
             }
 

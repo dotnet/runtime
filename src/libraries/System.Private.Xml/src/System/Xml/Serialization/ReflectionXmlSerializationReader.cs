@@ -1558,7 +1558,7 @@ namespace System.Xml.Serialization
             {
                 if (structMapping.TypeDesc.Type != null && typeof(XmlSchemaObject).IsAssignableFrom(structMapping.TypeDesc.Type))
                 {
-                    // https://github.com/dotnet/corefx/issues/10589:
+                    // https://github.com/dotnet/runtime/issues/1399:
                     // To Support Serializing XmlSchemaObject
                     throw new NotImplementedException(nameof(XmlSchemaObject));
                 }
@@ -1927,7 +1927,7 @@ namespace System.Xml.Serialization
                 }
                 else if (special.TypeDesc.CanBeAttributeValue)
                 {
-                    // https://github.com/dotnet/corefx/issues/10590:
+                    // https://github.com/dotnet/runtime/issues/1398:
                     // To Support special.TypeDesc.CanBeAttributeValue == true
                     throw new NotImplementedException("special.TypeDesc.CanBeAttributeValue");
                 }

@@ -91,15 +91,16 @@ namespace System.Security.Cryptography
             int kdfCount)
         {
             bool ret = ExportPkcs8KeyBlob(
-                true,
+                allocate: true,
                 _keyHandle,
                 password,
                 kdfCount,
                 Span<byte>.Empty,
                 out _,
-                out byte[] allocated);
+                out byte[]? allocated);
 
             Debug.Assert(ret);
+            Debug.Assert(allocated != null); // since `allocate: true`
             return allocated;
         }
 
@@ -130,7 +131,7 @@ namespace System.Security.Cryptography
             int kdfCount,
             Span<byte> destination,
             out int bytesWritten,
-            out byte[] allocated)
+            out byte[]? allocated)
         {
             using (SafeUnicodeStringHandle stringHandle = new SafeUnicodeStringHandle(password))
             {
@@ -226,7 +227,7 @@ namespace System.Security.Cryptography
                     {
                         byte[] trimmed = new byte[numBytesNeeded];
                         destination.Slice(0, numBytesNeeded).CopyTo(trimmed);
-                        Array.Clear(allocated, 0, numBytesNeeded);
+                        Array.Clear(allocated!, 0, numBytesNeeded);
                         allocated = trimmed;
                     }
 

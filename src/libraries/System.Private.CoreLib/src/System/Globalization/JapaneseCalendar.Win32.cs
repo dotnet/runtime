@@ -153,14 +153,11 @@ namespace System.Globalization
             // yyyy.mm.dd although the . can be any character
             if (value.Length != 10) return null;
 
-            int year;
-            int month;
-            int day;
 
             ReadOnlySpan<char> valueSpan = value.AsSpan();
-            if (!int.TryParse(valueSpan.Slice(0, 4), NumberStyles.None, NumberFormatInfo.InvariantInfo, out year) ||
-                !int.TryParse(valueSpan.Slice(5, 2), NumberStyles.None, NumberFormatInfo.InvariantInfo, out month) ||
-                !int.TryParse(valueSpan.Slice(8, 2), NumberStyles.None, NumberFormatInfo.InvariantInfo, out day))
+            if (!int.TryParse(valueSpan.Slice(0, 4), NumberStyles.None, NumberFormatInfo.InvariantInfo, out int year) ||
+                !int.TryParse(valueSpan.Slice(5, 2), NumberStyles.None, NumberFormatInfo.InvariantInfo, out int month) ||
+                !int.TryParse(valueSpan.Slice(8, 2), NumberStyles.None, NumberFormatInfo.InvariantInfo, out int day))
             {
                 // Couldn't convert integer, fail
                 return null;

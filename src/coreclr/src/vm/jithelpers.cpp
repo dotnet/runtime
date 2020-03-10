@@ -23,7 +23,6 @@
 #include "dllimport.h"
 #include "gcheaputilities.h"
 #include "comdelegate.h"
-#include "jitperf.h" // to track jit perf
 #include "corprof.h"
 #include "eeprofinterfaces.h"
 
@@ -2807,32 +2806,6 @@ HCIMPL3(Object*, JIT_NewMDArrNonVarArg, CORINFO_CLASS_HANDLE classHnd, unsigned 
 }
 HCIMPLEND
 
-/*************************************************************/
-/* returns '&array[idx], after doing all the proper checks */
-
-#include <optsmallperfcritical.h>
-HCIMPL3(void*, JIT_Ldelema_Ref, PtrArray* array, unsigned idx, CORINFO_CLASS_HANDLE type)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind except;
-       // This has been carefully arranged to ensure that in the common
-        // case the branches are predicted properly (fall through).
-        // and that we dont spill registers unnecessarily etc.
-    if (array != 0)
-        if (idx < array->GetNumComponents())
-            if (array->GetArrayElementTypeHandle() == TypeHandle(type))
-                return(&array->m_Array[idx]);
-            else
-                except = kArrayTypeMismatchException;
-        else
-            except = kIndexOutOfRangeException;
-    else
-        except = kNullReferenceException;
-
-    FCThrow(except);
-}
-HCIMPLEND
 #include <optdefault.h>
 
 //===========================================================================
@@ -2857,66 +2830,6 @@ HCIMPL2(LPVOID, ArrayStoreCheck, Object** pElement, PtrArray** pArray)
     return (LPVOID)0; // Used to aid epilog walker
 }
 HCIMPLEND
-
-/****************************************************************************/
-/* assigns 'val to 'array[idx], after doing all the proper checks */
-
-HCIMPL3(void, JIT_Stelem_Ref_Portable, PtrArray* array, unsigned idx, Object *val)
-{
-    FCALL_CONTRACT;
-
-    if (!array)
-    {
-        FCThrowVoid(kNullReferenceException);
-    }
-    if (idx >= array->GetNumComponents())
-    {
-        FCThrowVoid(kIndexOutOfRangeException);
-    }
-
-    if (val)
-    {
-        MethodTable *valMT = val->GetMethodTable();
-        TypeHandle arrayElemTH = array->GetArrayElementTypeHandle();
-
-        if (arrayElemTH != TypeHandle(valMT) && arrayElemTH != TypeHandle(g_pObjectClass))
-        {
-            TypeHandle::CastResult result = ObjIsInstanceOfCached(val, arrayElemTH);
-            if (result != TypeHandle::CanCast)
-            {
-                // FCALL_CONTRACT increase ForbidGC count.  Normally, HELPER_METHOD_FRAME macros decrease the count.
-                // But to avoid perf hit, we manually decrease the count here before calling another HCCALL.
-                ENDFORBIDGC();
-
-                if (HCCALL2(ArrayStoreCheck,(Object**)&val, (PtrArray**)&array) != NULL)
-                {
-                    // This return is never executed. It helps epilog walker to find its way out.
-                    return;
-                }
-            }
-        }
-
-#ifdef TARGET_ARM64
-        SetObjectReference((OBJECTREF*)&array->m_Array[idx], ObjectToOBJECTREF(val));
-#else
-        // The performance gain of the optimized JIT_Stelem_Ref in
-        // jitinterfacex86.cpp is mainly due to calling JIT_WriteBarrier
-        // By calling write barrier directly here,
-        // we can avoid translating in-line assembly from MSVC to gcc
-        // while keeping most of the performance gain.
-        HCCALL2(JIT_WriteBarrier, (Object **)&array->m_Array[idx], val);
-#endif
-
-    }
-    else
-    {
-        // no need to go through write-barrier for NULL
-        ClearObjectReference(&array->m_Array[idx]);
-    }
-}
-HCIMPLEND
-
-
 
 //========================================================================
 //
@@ -2972,6 +2885,7 @@ NOINLINE HCIMPL3(VOID, JIT_Unbox_Nullable_Framed, void * destPtr, MethodTable* t
     {
         COMPlusThrowInvalidCastException(&objRef, TypeHandle(typeMT));
     }
+    HELPER_METHOD_POLL(); 
     HELPER_METHOD_FRAME_END();
 }
 HCIMPLEND
@@ -2991,6 +2905,7 @@ HCIMPL3(VOID, JIT_Unbox_Nullable, void * destPtr, CORINFO_CLASS_HANDLE type, Obj
     if (Nullable::UnBoxNoGC(destPtr, objRef, typeMT))
     {
         // exact match (type equivalence not needed)
+        FC_GC_POLL();
         return;
     }
 
@@ -3001,23 +2916,33 @@ HCIMPL3(VOID, JIT_Unbox_Nullable, void * destPtr, CORINFO_CLASS_HANDLE type, Obj
 HCIMPLEND
 
 /*************************************************************/
-/* framed helper that handles full-blown type equivalence */
-NOINLINE HCIMPL2(LPVOID, JIT_Unbox_Helper_Framed, CORINFO_CLASS_HANDLE type, Object* obj)
+/* framed Unbox helper that handles enums and full-blown type equivalence */
+NOINLINE HCIMPL2(LPVOID, Unbox_Helper_Framed, MethodTable* pMT1, Object* obj)
 {
     FCALL_CONTRACT;
 
     LPVOID result = NULL;
+    MethodTable* pMT2 = obj->GetMethodTable();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
-    if (TypeHandle(type).IsEquivalentTo(objRef->GetTypeHandle()))
+    HELPER_METHOD_POLL(); 
+
+    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+            (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
+    {
+        // we allow enums and their primitive type to be interchangable
+        result = objRef->GetData();
+    }
+    else if (pMT1->IsEquivalentTo(pMT2))
     {
         // the structures are equivalent
         result = objRef->GetData();
     }
     else
     {
-        COMPlusThrowInvalidCastException(&objRef, TypeHandle(type));
+        COMPlusThrowInvalidCastException(&objRef, TypeHandle(pMT1));
     }
     HELPER_METHOD_FRAME_END();
 
@@ -3026,59 +2951,34 @@ NOINLINE HCIMPL2(LPVOID, JIT_Unbox_Helper_Framed, CORINFO_CLASS_HANDLE type, Obj
 HCIMPLEND
 
 /*************************************************************/
-/* the uncommon case for the helper below (allowing enums to be unboxed
-   as their underlying type */
-LPVOID __fastcall JIT_Unbox_Helper(CORINFO_CLASS_HANDLE type, Object* obj)
+/* Unbox helper that handles enums */
+HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
 {
     FCALL_CONTRACT;
 
     TypeHandle typeHnd(type);
+    // boxable types have method tables
+    _ASSERTE(!typeHnd.IsTypeDesc());
 
-    CorElementType type1 = typeHnd.GetInternalCorElementType();
-
-        // we allow enums and their primtive type to be interchangable
+    MethodTable* pMT1 = typeHnd.AsMethodTable();
+    // must be a value type
+    _ASSERTE(pMT1->IsValueType());
 
     MethodTable* pMT2 = obj->GetMethodTable();
-    CorElementType type2 = pMT2->GetInternalCorElementType();
-    if (type1 == type2)
+
+    // we allow enums and their primitive type to be interchangable.
+    // if suspension is requested, defer to the framed helper.
+    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+            (pMT2->IsEnum() || pMT2->IsTruePrimitive()) &&
+            g_TrapReturningThreads.LoadWithoutBarrier() == 0)
     {
-        MethodTable* pMT1 = typeHnd.AsMethodTable();
-        if (pMT1 && (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
-            (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
-        {
-            _ASSERTE(CorTypeInfo::IsPrimitiveType_NoThrow(type1));
-            return(obj->GetData());
-        }
+        return obj->GetData();
     }
 
-    // Even less common cases (type equivalence) go to a framed helper.
+    // Fall back to a framed helper that can also handle GC suspension and type equivalence.
     ENDFORBIDGC();
-    return HCCALL2(JIT_Unbox_Helper_Framed, type, obj);
-}
-
-/*************************************************************/
-HCIMPL2(LPVOID, JIT_Unbox, CORINFO_CLASS_HANDLE type, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd(type);
-    VALIDATEOBJECT(obj);
-    _ASSERTE(!typeHnd.IsTypeDesc());   // boxable types have method tables
-
-        // This has been tuned so that branch predictions are good
-        // (fall through for forward branches) for the common case
-    if (obj != NULL) {
-        if (obj->GetMethodTable() == typeHnd.AsMethodTable())
-            return(obj->GetData());
-        else {
-                // Stuff the uncommon case into a helper so that
-                // its register needs don't cause spills that effect
-                // the common case above.
-            return JIT_Unbox_Helper(type, obj);
-        }
-    }
-
-    FCThrow(kNullReferenceException);
+    return HCCALL2(Unbox_Helper_Framed, pMT1, obj);
 }
 HCIMPLEND
 
@@ -3320,12 +3220,11 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-    MethodTable * pDeclaringMT = NULL;
+     ULONG dictionaryIndex = 0;
+     MethodTable * pDeclaringMT = NULL;
 
     if (pMT != NULL)
     {
-        ULONG dictionaryIndex = 0;
-
         if (pModule != NULL)
         {
 #ifdef _DEBUG
@@ -3398,6 +3297,20 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         // inherited types are faster next time rather than just just for this specific pMT.
         JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature, pDictDomain);
         AddToGenericHandleCache(&key, (HashDatum)result);
+    }
+
+    if (pMT != NULL && pDeclaringMT != pMT)
+    {
+        // If the dictionary on the base type got expanded, update the current type's base type dictionary
+        // pointer to use the new one on the base type.
+
+        Dictionary* pMTDictionary = pMT->GetPerInstInfo()[dictionaryIndex].GetValue();
+        Dictionary* pDeclaringMTDictionary = pDeclaringMT->GetPerInstInfo()[dictionaryIndex].GetValue();
+        if (pMTDictionary != pDeclaringMTDictionary)
+        {
+            TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo()->GetValuePtr();
+            FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
+        }
     }
 
     return result;
@@ -3807,17 +3720,12 @@ NOINLINE static void JIT_MonEnter_Helper(Object* obj, BYTE* pbLockTaken, LPVOID 
 
     GCPROTECT_BEGININTERIOR(pbLockTaken);
 
-#ifdef _DEBUG
-    Thread *pThread = GetThread();
-    DWORD lockCount = pThread->m_dwLockCount;
-#endif
     if (GET_THREAD()->CatchAtSafePointOpportunistic())
     {
         GET_THREAD()->PulseGCMode();
     }
     objRef->EnterObjMonitor();
-    _ASSERTE ((objRef->GetSyncBlock()->GetMonitor()->GetRecursionLevel() == 1 && pThread->m_dwLockCount == lockCount + 1) ||
-              pThread->m_dwLockCount == lockCount);
+
     if (pbLockTaken != 0) *pbLockTaken = 1;
 
     GCPROTECT_END();

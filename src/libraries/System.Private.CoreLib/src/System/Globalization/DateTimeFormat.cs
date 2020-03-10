@@ -125,7 +125,7 @@ namespace System
     class DateTimeFormat
     {
         internal const int MaxSecondsFractionDigits = 7;
-        internal static readonly TimeSpan NullOffset = TimeSpan.MinValue;
+        internal const long NullOffset = long.MinValue;
 
         internal static char[] allStandardFormats =
         {
@@ -778,7 +778,7 @@ namespace System
         private static void FormatCustomizedTimeZone(DateTime dateTime, TimeSpan offset, int tokenLen, bool timeOnly, StringBuilder result)
         {
             // See if the instance already has an offset
-            bool dateTimeFormat = (offset == NullOffset);
+            bool dateTimeFormat = (offset.Ticks == NullOffset);
             if (dateTimeFormat)
             {
                 // No offset. The instance is a DateTime and the output should be the local time zone
@@ -791,14 +791,14 @@ namespace System
                 }
                 else if (dateTime.Kind == DateTimeKind.Utc)
                 {
-                    offset = TimeSpan.Zero;
+                    offset = default; // TimeSpan.Zero
                 }
                 else
                 {
                     offset = TimeZoneInfo.GetLocalUtcOffset(dateTime, TimeZoneInfoOptions.NoThrowOnInvalidTime);
                 }
             }
-            if (offset >= TimeSpan.Zero)
+            if (offset.Ticks >= 0)
             {
                 result.Append('+');
             }
@@ -833,7 +833,7 @@ namespace System
             // For DateTime it should round-trip the Kind value and preserve the time zone.
             // DateTimeOffset instance, it should do so by using the internal time zone.
 
-            if (offset == NullOffset)
+            if (offset.Ticks == NullOffset)
             {
                 // source is a date time, so behavior depends on the kind.
                 switch (dateTime.Kind)
@@ -845,14 +845,14 @@ namespace System
                         break;
                     case DateTimeKind.Utc:
                         // The 'Z' constant is a marker for a UTC date
-                        result.Append("Z");
+                        result.Append('Z');
                         return;
                     default:
                         // If the kind is unspecified, we output nothing here
                         return;
                 }
             }
-            if (offset >= TimeSpan.Zero)
+            if (offset.Ticks >= 0)
             {
                 result.Append('+');
             }
@@ -940,7 +940,7 @@ namespace System
         // This method also convert the dateTime if necessary (e.g. when the format is in Universal time),
         // and change dtfi if necessary (e.g. when the format should use invariant culture).
         //
-        private static string ExpandPredefinedFormat(ReadOnlySpan<char> format, ref DateTime dateTime, ref DateTimeFormatInfo dtfi, ref TimeSpan offset)
+        private static string ExpandPredefinedFormat(ReadOnlySpan<char> format, ref DateTime dateTime, ref DateTimeFormatInfo dtfi, TimeSpan offset)
         {
             switch (format[0])
             {
@@ -951,7 +951,7 @@ namespace System
                 case 'r':
                 case 'R':       // RFC 1123 Standard
                 case 'u':       // Universal time in sortable format.
-                    if (offset != NullOffset)
+                    if (offset.Ticks != NullOffset)
                     {
                         // Convert to UTC invariants mean this will be in range
                         dateTime -= offset;
@@ -962,7 +962,7 @@ namespace System
                     dtfi = DateTimeFormatInfo.InvariantInfo;
                     break;
                 case 'U':       // Universal time in culture dependent format.
-                    if (offset != NullOffset)
+                    if (offset.Ticks != NullOffset)
                     {
                         // This format is not supported by DateTimeOffset
                         throw new FormatException(SR.Format_InvalidString);
@@ -984,7 +984,7 @@ namespace System
 
         internal static string Format(DateTime dateTime, string? format, IFormatProvider? provider)
         {
-            return Format(dateTime, format, provider, NullOffset);
+            return Format(dateTime, format, provider, new TimeSpan(NullOffset));
         }
 
         internal static string Format(DateTime dateTime, string? format, IFormatProvider? provider, TimeSpan offset)
@@ -1019,7 +1019,7 @@ namespace System
         }
 
         internal static bool TryFormat(DateTime dateTime, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
-            TryFormat(dateTime, destination, out charsWritten, format, provider, NullOffset);
+            TryFormat(dateTime, destination, out charsWritten, format, provider, new TimeSpan(NullOffset));
 
         internal static bool TryFormat(DateTime dateTime, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider, TimeSpan offset)
         {
@@ -1093,7 +1093,7 @@ namespace System
                             break;
                     }
                 }
-                if (offset == NullOffset)
+                if (offset.Ticks == NullOffset)
                 {
                     // Default DateTime.ToString case.
                     format = timeOnlySpecialCase ? "s" : "G";
@@ -1107,7 +1107,7 @@ namespace System
 
             if (format.Length == 1)
             {
-                format = ExpandPredefinedFormat(format, ref dateTime, ref dtfi, ref offset);
+                format = ExpandPredefinedFormat(format, ref dateTime, ref dtfi, offset);
             }
 
             return FormatCustomized(dateTime, format, dtfi, offset, result: null);
@@ -1126,7 +1126,7 @@ namespace System
             int charsRequired = MinimumBytesNeeded;
             DateTimeKind kind = DateTimeKind.Local;
 
-            if (offset == NullOffset)
+            if (offset.Ticks == NullOffset)
             {
                 kind = dateTime.Kind;
                 if (kind == DateTimeKind.Local)
@@ -1217,7 +1217,7 @@ namespace System
                 return false;
             }
 
-            if (offset != NullOffset)
+            if (offset.Ticks != NullOffset)
             {
                 // Convert to UTC invariants.
                 dateTime -= offset;

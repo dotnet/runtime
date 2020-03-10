@@ -29,7 +29,7 @@ namespace Internal.Cryptography.Pal.Windows
 
         public static string ToStringAnsi(this IntPtr psz)
         {
-            return Marshal.PtrToStringAnsi(psz);
+            return Marshal.PtrToStringAnsi(psz)!;
         }
 
         // Used for binary blobs without internal pointers.
@@ -221,10 +221,10 @@ namespace Internal.Cryptography.Pal.Windows
             switch (subjectIdentifierType)
             {
                 case SubjectIdentifierType.IssuerAndSerialNumber:
-                    return new SubjectIdentifierOrKey(SubjectIdentifierOrKeyType.IssuerAndSerialNumber, subjectIdentifier.Value);
+                    return new SubjectIdentifierOrKey(SubjectIdentifierOrKeyType.IssuerAndSerialNumber, subjectIdentifier.Value!);
 
                 case SubjectIdentifierType.SubjectKeyIdentifier:
-                    return new SubjectIdentifierOrKey(SubjectIdentifierOrKeyType.SubjectKeyIdentifier, subjectIdentifier.Value);
+                    return new SubjectIdentifierOrKey(SubjectIdentifierOrKeyType.SubjectKeyIdentifier, subjectIdentifier.Value!);
 
                 default:
                     Debug.Fail("Only the framework can construct SubjectIdentifier's so if we got a bad value here, that's our fault.");
@@ -400,7 +400,7 @@ namespace Internal.Cryptography.Pal.Windows
                 ((CspProviderFlags)keysetType & CspProviderFlags.UseMachineKeyStore) |
                 CspProviderFlags.UseExistingKey;
 
-            byte[] rented = null;
+            byte[]? rented = null;
             Span<byte> asciiStringBuf = stackSpan;
 
             string provName = GetStringProvParam(handle, CryptProvParam.PP_NAME, ref asciiStringBuf, ref rented, 0);
@@ -425,7 +425,7 @@ namespace Internal.Cryptography.Pal.Windows
             SafeProvOrNCryptKeyHandle handle,
             CryptProvParam dwParam,
             ref Span<byte> buf,
-            ref byte[] rented,
+            ref byte[]? rented,
             int clearLen)
         {
             int len = buf.Length;

@@ -436,7 +436,7 @@ namespace System.Globalization
                         _ymdFlags |= FoundDatePattern.FoundMonthPatternFlag;
                         break;
                     case 'y':
-                        i = ScanRepeatChar(pattern, 'y', i, out chCount);
+                        i = ScanRepeatChar(pattern, 'y', i, out _);
                         _ymdFlags |= FoundDatePattern.FoundYearPatternFlag;
                         break;
                     case 'd':

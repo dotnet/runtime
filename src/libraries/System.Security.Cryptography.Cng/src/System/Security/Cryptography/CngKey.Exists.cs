@@ -39,7 +39,7 @@ namespace System.Security.Cryptography
 
             using (SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider())
             {
-                SafeNCryptKeyHandle keyHandle = null;
+                SafeNCryptKeyHandle? keyHandle = null;
                 try
                 {
                     ErrorCode errorCode = Interop.NCrypt.NCryptOpenKey(providerHandle, out keyHandle, keyName, 0, options);

@@ -246,89 +246,30 @@ mono_os_cond_broadcast (mono_cond_t *cond)
 
 #else
 
-/* Vanilla MinGW is missing some defs, load them from MinGW-w64. */
-#if defined __MINGW32__ && !defined __MINGW64_VERSION_MAJOR && (_WIN32_WINNT >= 0x0600)
+// FIXME mono_mutex_t and mono_mutex_recursive_t.
+typedef struct mono_mutex_t {
+	union {
+		CRITICAL_SECTION critical_section;
+		SRWLOCK srwlock;
+	};
+	gboolean recursive;
+} mono_mutex_t;
 
-/* Fixme: Opaque structs */
-typedef PVOID RTL_CONDITION_VARIABLE;
-typedef PVOID RTL_SRWLOCK;
-
-#ifndef _RTL_RUN_ONCE_DEF
-#define _RTL_RUN_ONCE_DEF 1
-typedef PVOID RTL_RUN_ONCE, *PRTL_RUN_ONCE;
-typedef DWORD (WINAPI *PRTL_RUN_ONCE_INIT_FN)(PRTL_RUN_ONCE, PVOID, PVOID *);
-#define RTL_RUN_ONCE_INIT 0
-#define RTL_RUN_ONCE_CHECK_ONLY 1UL
-#define RTL_RUN_ONCE_ASYNC 2UL
-#define RTL_RUN_ONCE_INIT_FAILED 4UL
-#define RTL_RUN_ONCE_CTX_RESERVED_BITS 2
-#endif /* _RTL_RUN_ONCE_DEF */
-#define RTL_SRWLOCK_INIT 0
-#define RTL_CONDITION_VARIABLE_INIT 0
-#define RTL_CONDITION_VARIABLE_LOCKMODE_SHARED 1
-
-#define CONDITION_VARIABLE_INIT RTL_CONDITION_VARIABLE_INIT
-#define CONDITION_VARIABLE_LOCKMODE_SHARED RTL_CONDITION_VARIABLE_LOCKMODE_SHARED
-#define SRWLOCK_INIT RTL_SRWLOCK_INIT
-
-/*Condition Variables http://msdn.microsoft.com/en-us/library/ms682052%28VS.85%29.aspx*/
-typedef RTL_CONDITION_VARIABLE CONDITION_VARIABLE, *PCONDITION_VARIABLE;
-typedef RTL_SRWLOCK SRWLOCK, *PSRWLOCK;
-
-WINBASEAPI VOID WINAPI InitializeConditionVariable(PCONDITION_VARIABLE ConditionVariable);
-WINBASEAPI WINBOOL WINAPI SleepConditionVariableCS(PCONDITION_VARIABLE ConditionVariable, PCRITICAL_SECTION CriticalSection, DWORD dwMilliseconds);
-WINBASEAPI WINBOOL WINAPI SleepConditionVariableSRW(PCONDITION_VARIABLE ConditionVariable, PSRWLOCK SRWLock, DWORD dwMilliseconds, ULONG Flags);
-WINBASEAPI VOID WINAPI WakeAllConditionVariable(PCONDITION_VARIABLE ConditionVariable);
-WINBASEAPI VOID WINAPI WakeConditionVariable(PCONDITION_VARIABLE ConditionVariable);
-
-/*Slim Reader/Writer (SRW) Locks http://msdn.microsoft.com/en-us/library/aa904937%28VS.85%29.aspx*/
-WINBASEAPI VOID WINAPI AcquireSRWLockExclusive(PSRWLOCK SRWLock);
-WINBASEAPI VOID WINAPI AcquireSRWLockShared(PSRWLOCK SRWLock);
-WINBASEAPI VOID WINAPI InitializeSRWLock(PSRWLOCK SRWLock);
-WINBASEAPI VOID WINAPI ReleaseSRWLockExclusive(PSRWLOCK SRWLock);
-WINBASEAPI VOID WINAPI ReleaseSRWLockShared(PSRWLOCK SRWLock);
-
-WINBASEAPI BOOLEAN TryAcquireSRWLockExclusive(PSRWLOCK SRWLock);
-WINBASEAPI BOOLEAN TryAcquireSRWLockShared(PSRWLOCK SRWLock);
-
-/*One-Time Initialization http://msdn.microsoft.com/en-us/library/aa363808(VS.85).aspx*/
-#define INIT_ONCE_ASYNC 0x00000002UL
-#define INIT_ONCE_INIT_FAILED 0x00000004UL
-
-typedef PRTL_RUN_ONCE PINIT_ONCE;
-typedef PRTL_RUN_ONCE LPINIT_ONCE;
-typedef WINBOOL CALLBACK (*PINIT_ONCE_FN) (PINIT_ONCE InitOnce, PVOID Parameter, PVOID *Context);
-
-WINBASEAPI WINBOOL WINAPI InitOnceBeginInitialize(LPINIT_ONCE lpInitOnce, DWORD dwFlags, PBOOL fPending, LPVOID *lpContext);
-WINBASEAPI WINBOOL WINAPI InitOnceComplete(LPINIT_ONCE lpInitOnce, DWORD dwFlags, LPVOID lpContext);
-WINBASEAPI WINBOOL WINAPI InitOnceExecuteOnce(PINIT_ONCE InitOnce, PINIT_ONCE_FN InitFn, PVOID Parameter, LPVOID *Context);
-
-/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms683477(v=vs.85).aspx */
-WINBASEAPI BOOL WINAPI InitializeCriticalSectionEx(LPCRITICAL_SECTION lpCriticalSection, DWORD dwSpinCount, DWORD Flags);
-
-#define CRITICAL_SECTION_NO_DEBUG_INFO 0x01000000
-
-#endif /* defined __MINGW32__ && !defined __MINGW64_VERSION_MAJOR && (_WIN32_WINNT >= 0x0600) */
-
-typedef CRITICAL_SECTION mono_mutex_t;
 typedef CONDITION_VARIABLE mono_cond_t;
 
 static inline void
 mono_os_mutex_init (mono_mutex_t *mutex)
 {
-	BOOL res;
-
-	res = InitializeCriticalSectionEx (mutex, 0, CRITICAL_SECTION_NO_DEBUG_INFO);
-	if (G_UNLIKELY (res == 0))
-		g_error ("%s: InitializeCriticalSectionEx failed with error %d", __func__, GetLastError ());
+	mutex->recursive = FALSE;
+	InitializeSRWLock (&mutex->srwlock);
 }
 
 static inline void
 mono_os_mutex_init_recursive (mono_mutex_t *mutex)
 {
-	BOOL res;
+	mutex->recursive = TRUE;
+	const BOOL res = InitializeCriticalSectionEx (&mutex->critical_section, 0, CRITICAL_SECTION_NO_DEBUG_INFO);
 
-	res = InitializeCriticalSectionEx (mutex, 0, CRITICAL_SECTION_NO_DEBUG_INFO);
 	if (G_UNLIKELY (res == 0))
 		g_error ("%s: InitializeCriticalSectionEx failed with error %d", __func__, GetLastError ());
 }
@@ -336,25 +277,33 @@ mono_os_mutex_init_recursive (mono_mutex_t *mutex)
 static inline void
 mono_os_mutex_destroy (mono_mutex_t *mutex)
 {
-	DeleteCriticalSection (mutex);
+	// There is no way to destroy a Win32 SRWLOCK.
+	if (mutex->recursive)
+		DeleteCriticalSection (&mutex->critical_section);
 }
 
 static inline void
 mono_os_mutex_lock (mono_mutex_t *mutex)
 {
-	EnterCriticalSection (mutex);
+	mutex->recursive ?
+		EnterCriticalSection (&mutex->critical_section) :
+		AcquireSRWLockExclusive (&mutex->srwlock);
 }
 
 static inline int
 mono_os_mutex_trylock (mono_mutex_t *mutex)
 {
-	return TryEnterCriticalSection (mutex) == 0 ? -1 : 0;
+	return (mutex->recursive ?
+		TryEnterCriticalSection (&mutex->critical_section) :
+		TryAcquireSRWLockExclusive (&mutex->srwlock)) ? 0 : -1;
 }
 
 static inline void
 mono_os_mutex_unlock (mono_mutex_t *mutex)
 {
-	LeaveCriticalSection (mutex);
+	mutex->recursive ?
+		LeaveCriticalSection (&mutex->critical_section) :
+		ReleaseSRWLockExclusive (&mutex->srwlock);
 }
 
 static inline void
@@ -366,29 +315,31 @@ mono_os_cond_init (mono_cond_t *cond)
 static inline void
 mono_os_cond_destroy (mono_cond_t *cond)
 {
-	/* Beauty of win32 API: do not destroy it */
+	// There is no way to destroy a Win32 condition variable.
 }
 
 static inline void
 mono_os_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 {
-	BOOL res;
+	const BOOL res = mutex->recursive ?
+		SleepConditionVariableCS (cond, &mutex->critical_section, INFINITE) :
+		SleepConditionVariableSRW (cond, &mutex->srwlock, INFINITE, 0);
 
-	res = SleepConditionVariableCS (cond, mutex, INFINITE);
 	if (G_UNLIKELY (res == 0))
-		g_error ("%s: SleepConditionVariableCS failed with error %d", __func__, GetLastError ());
+		g_error ("%s: SleepConditionVariable failed with error %d", __func__, GetLastError ());
 }
 
 static inline int
 mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
 {
-	BOOL res;
+	const BOOL res = mutex->recursive ?
+		SleepConditionVariableCS (cond, &mutex->critical_section, timeout_ms) :
+		SleepConditionVariableSRW (cond, &mutex->srwlock, timeout_ms, 0);
 
-	res = SleepConditionVariableCS (cond, mutex, timeout_ms);
 	if (G_UNLIKELY (res == 0 && GetLastError () != ERROR_TIMEOUT))
-		g_error ("%s: SleepConditionVariableCS failed with error %d", __func__, GetLastError ());
+		g_error ("%s: SleepConditionVariable failed with error %d", __func__, GetLastError ());
 
-	return res == 0 ? -1 : 0;
+	return res ? 0 : -1;
 }
 
 static inline void

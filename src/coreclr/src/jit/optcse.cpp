@@ -498,8 +498,22 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
                 /* Start the list with the first CSE candidate recorded */
 
-                hashDsc->csdTreeList = newElem;
-                hashDsc->csdTreeLast = newElem;
+                hashDsc->csdTreeList  = newElem;
+                hashDsc->csdTreeLast  = newElem;
+                hashDsc->csdStructHnd = NO_CLASS_HANDLE;
+
+                hashDsc->csdStructHndMismatch = false;
+
+                if (varTypeIsStruct(tree->gtType))
+                {
+                    // When we have a GT_IND node with a SIMD type then we don't have a reliable
+                    // struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
+                    //
+                    if ((hashDsc->csdTree->OperGet() != GT_IND) || !varTypeIsSIMD(tree))
+                    {
+                        hashDsc->csdStructHnd = gtGetStructHandleIfPresent(hashDsc->csdTree);
+                    }
+                }
             }
 
             noway_assert(hashDsc->csdTreeList);
@@ -515,6 +529,38 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
             hashDsc->csdTreeLast->tslNext = newElem;
             hashDsc->csdTreeLast          = newElem;
+
+            if (varTypeIsStruct(newElem->tslTree->gtType))
+            {
+                // When we have a GT_IND node with a SIMD type then we don't have a reliable
+                // struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
+                //
+                if ((newElem->tslTree->OperGet() != GT_IND) || !varTypeIsSIMD(newElem->tslTree))
+                {
+                    CORINFO_CLASS_HANDLE newElemStructHnd = gtGetStructHandleIfPresent(newElem->tslTree);
+                    if (newElemStructHnd != NO_CLASS_HANDLE)
+                    {
+                        if (hashDsc->csdStructHnd == NO_CLASS_HANDLE)
+                        {
+                            // The previous node(s) were GT_IND's and didn't carry the struct handle info
+                            // The current node does have the struct handle info, so record it now
+                            //
+                            hashDsc->csdStructHnd = newElemStructHnd;
+                        }
+                        else if (newElemStructHnd != hashDsc->csdStructHnd)
+                        {
+                            hashDsc->csdStructHndMismatch = true;
+#ifdef DEBUG
+                            if (verbose)
+                            {
+                                printf("Abandoned - CSE candidate has mismatching struct handles!\n");
+                                printTreeID(newElem->tslTree);
+                            }
+#endif // DEBUG
+                        }
+                    }
+                }
+            }
 
             optDoCSE = true; // Found a duplicate CSE tree
 
@@ -2415,6 +2461,36 @@ public:
                     extra_yes_cost *= 2; // full cost if we are being Conservative
                 }
             }
+
+#ifdef FEATURE_SIMD
+            // SIMD types may cause a SIMD register to be spilled/restored in the prolog and epilog.
+            //
+            if (varTypeIsSIMD(candidate->Expr()->TypeGet()))
+            {
+                // We don't have complete information about when these extra spilled/restore will be needed.
+                // Instead we are conservative and assume that each SIMD CSE that is live across a call
+                // will cause an additional spill/restore in the prolog and epilog.
+                //
+                int spillSimdRegInProlog = 1;
+
+                // If we have a SIMD32 that is live across a call we have even higher spill costs
+                //
+                if (candidate->Expr()->TypeGet() == TYP_SIMD32)
+                {
+                    // Additionally for a simd32 CSE candidate we assume that and second spilled/restore will be needed.
+                    // (to hold the upper half of the simd32 register that isn't preserved across the call)
+                    //
+                    spillSimdRegInProlog++;
+
+                    // We also increase the CSE use cost here to because we may have to generate instructions
+                    // to move the upper half of the simd32 before and after a call.
+                    //
+                    cse_use_cost += 2;
+                }
+
+                extra_yes_cost = (BB_UNITY_WEIGHT * spillSimdRegInProlog) * 3;
+            }
+#endif // FEATURE_SIMD
         }
 
         // estimate the cost from lost codesize reduction if we do not perform the CSE
@@ -2558,9 +2634,10 @@ public:
         var_types cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
         if (varTypeIsStruct(cseLclVarTyp))
         {
-            // After call args have been morphed, we don't need a handle for SIMD types.
-            // They are only required where the size is not implicit in the type and/or there are GC refs.
-            CORINFO_CLASS_HANDLE structHnd = m_pCompiler->gtGetStructHandleIfPresent(successfulCandidate->Expr());
+            // Retrieve the struct handle that we recorded while bulding the list of CSE candidates.
+            // If all occurances were in GT_IND nodes it could still be NO_CLASS_HANDLE
+            //
+            CORINFO_CLASS_HANDLE structHnd = successfulCandidate->CseDsc()->csdStructHnd;
             assert((structHnd != NO_CLASS_HANDLE) || (cseLclVarTyp != TYP_STRUCT));
             if (structHnd != NO_CLASS_HANDLE)
             {
@@ -2696,7 +2773,9 @@ public:
             GenTree*      cse = nullptr;
             bool          isDef;
             FieldSeqNode* fldSeq               = nullptr;
-            bool          hasZeroMapAnnotation = m_pCompiler->GetZeroOffsetFieldMap()->Lookup(exp, &fldSeq);
+            bool          commaOnly            = true;
+            GenTree*      effectiveExp         = exp->gtEffectiveVal(commaOnly);
+            const bool    hasZeroMapAnnotation = m_pCompiler->GetZeroOffsetFieldMap()->Lookup(effectiveExp, &fldSeq);
 
             if (IS_CSE_USE(exp->gtCSEnum))
             {
@@ -2907,12 +2986,6 @@ public:
                 // Assign the ssa num for the ref use. Note it may be the reserved num.
                 ref->AsLclVarCommon()->SetSsaNum(cseSsaNum);
 
-                // If it has a zero-offset field seq, copy annotation to the ref
-                if (hasZeroMapAnnotation)
-                {
-                    m_pCompiler->fgAddFieldSeqForZeroOffset(ref, fldSeq);
-                }
-
                 /* Create a comma node for the CSE assignment */
                 cse           = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, origAsg, ref);
                 cse->gtVNPair = ref->gtVNPair; // The comma's value is the same as 'val'
@@ -2974,13 +3047,19 @@ public:
         for (; (cnt > 0); cnt--, ptr++)
         {
             Compiler::CSEdsc* dsc = *ptr;
+            CSE_Candidate     candidate(this, dsc);
+
             if (dsc->defExcSetPromise == ValueNumStore::NoVN)
             {
-                JITDUMP("Abandoned CSE #%02u because we had defs with different Exc sets\n");
+                JITDUMP("Abandoned CSE #%02u because we had defs with different Exc sets\n", candidate.CseIndex());
                 continue;
             }
 
-            CSE_Candidate candidate(this, dsc);
+            if (dsc->csdStructHndMismatch)
+            {
+                JITDUMP("Abandoned CSE #%02u because we had mismatching struct handles\n", candidate.CseIndex());
+                continue;
+            }
 
             candidate.InitializeCounts();
 
@@ -3280,10 +3359,58 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_LE:
         case GT_GE:
         case GT_GT:
-            return true; // Also CSE these Comparison Operators
+            return true; // Allow the CSE of Comparison operators
+
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+            return true; // allow SIMD intrinsics to be CSE-ed
+
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+        {
+            GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
+            assert(hwIntrinsicNode != nullptr);
+            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(hwIntrinsicNode->gtHWIntrinsicId);
+
+            switch (category)
+            {
+                case HW_Category_SimpleSIMD:
+                case HW_Category_IMM:
+                case HW_Category_Scalar:
+                case HW_Category_SIMDScalar:
+                case HW_Category_Helper:
+                    break;
+
+                case HW_Category_MemoryLoad:
+                case HW_Category_MemoryStore:
+                case HW_Category_Special:
+                default:
+                    return false;
+            }
+
+            if (hwIntrinsicNode->OperIsMemoryStore())
+            {
+                // NI_BMI2_MultiplyNoFlags, etc...
+                return false;
+            }
+            if (hwIntrinsicNode->OperIsMemoryLoad())
+            {
+                // NI_AVX2_BroadcastScalarToVector128, NI_AVX2_GatherVector128, etc...
+                return false;
+            }
+
+            return true; // allow Hardware Intrinsics to be CSE-ed
+        }
+
+#endif // FEATURE_HW_INTRINSICS
 
         case GT_INTRINSIC:
-            return true; // Intrinsics
+            return true; // allow Intrinsics to be CSE-ed
+
+        case GT_OBJ:
+            return varTypeIsEnregisterable(type); // Allow enregisterable GT_OBJ's to be CSE-ed. (i.e. SIMD types)
 
         case GT_COMMA:
             return true; // Allow GT_COMMA nodes to be CSE-ed.

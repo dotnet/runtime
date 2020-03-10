@@ -60,7 +60,7 @@ void SampleProfiler::Initialize(EventPipeProviderCallbackDataQueue* pEventPipePr
     }
 }
 
-void SampleProfiler::Enable(EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue)
+void SampleProfiler::Enable()
 {
     CONTRACTL
     {

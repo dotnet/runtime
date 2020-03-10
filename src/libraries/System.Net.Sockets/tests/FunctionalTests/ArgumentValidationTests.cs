@@ -1025,7 +1025,7 @@ namespace System.Net.Sockets.Tests
         public void BeginConnect_EndPoint_AddressFamily_Throws_NotSupported()
         {
             // Unlike other tests that reuse a static Socket instance, this test avoids doing so
-            // to work around a behavior of .NET 4.7.2. See https://github.com/dotnet/corefx/issues/29481
+            // to work around a behavior of .NET 4.7.2. See https://github.com/dotnet/runtime/issues/26062
             // for more details.
 
             using (var s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

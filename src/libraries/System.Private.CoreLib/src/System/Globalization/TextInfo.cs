@@ -45,9 +45,7 @@ namespace System.Globalization
         private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
 
         // Invariant text info
-        internal static TextInfo Invariant => s_invariant ??= new TextInfo(CultureData.Invariant);
-
-        private static volatile TextInfo? s_invariant;
+        internal static readonly TextInfo Invariant = new TextInfo(CultureData.Invariant, readOnly: true);
 
         internal TextInfo(CultureData cultureData)
         {
@@ -57,6 +55,12 @@ namespace System.Globalization
             _textInfoName = _cultureData.TextInfoName;
 
             FinishInitialization();
+        }
+
+        private TextInfo(CultureData cultureData, bool readOnly)
+            : this(cultureData)
+        {
+            SetReadOnlyState(readOnly);
         }
 
         void IDeserializationCallback.OnDeserialization(object? sender)
@@ -642,8 +646,7 @@ namespace System.Globalization
 
             for (int i = 0; i < str.Length; i++)
             {
-                int charLen;
-                UnicodeCategory charType = CharUnicodeInfo.GetUnicodeCategoryInternal(str, i, out charLen);
+                UnicodeCategory charType = CharUnicodeInfo.GetUnicodeCategoryInternal(str, i, out int charLen);
                 if (char.CheckLetter(charType))
                 {
                     // Special case to check for Dutch specific titlecasing with "IJ" characters

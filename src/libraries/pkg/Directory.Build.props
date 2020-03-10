@@ -35,30 +35,11 @@
     <Project Include="@(_project->'$(MSBuildProjectName).pkgproj')" />
   </ItemGroup>
 
-  <!-- Add path globs specific to native binaries to exclude unnecessary files from packages. -->
-  <Choose>
-    <When Condition="$(PackageTargetRuntime.StartsWith('win'))"/>
-    <When Condition="$(PackageTargetRuntime.StartsWith('osx'))">
-      <PropertyGroup>
-        <LibraryFileExtension>.dylib</LibraryFileExtension>
-        <SymbolFileExtension>.dwarf</SymbolFileExtension>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <LibraryFileExtension>.so</LibraryFileExtension>
-        <SymbolFileExtension>.dbg</SymbolFileExtension>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
-  <ItemGroup>
-    <AdditionalLibPackageExcludes Condition="'$(SymbolFileExtension)' != ''" Include="%2A%2A\%2A$(SymbolFileExtension)" />
-    <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
-  </ItemGroup>
-
   <PropertyGroup>
     <!-- SuppressFinalPackageVersion on private packages by default -->
     <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(MSBuildProjectName.Contains('Private'))">true</SuppressFinalPackageVersion>
   </PropertyGroup>
+
+  <Import Project="$(RepoRoot)eng\native\naming.props" />
 
 </Project>

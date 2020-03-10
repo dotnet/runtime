@@ -451,6 +451,7 @@ void
 mono_set_pinvoke_search_directories (int dir_count, char **dirs)
 {
 	pinvoke_search_directories_count = dir_count;
+	g_strfreev (pinvoke_search_directories);
 	pinvoke_search_directories = dirs;
 }
 
@@ -1444,6 +1445,7 @@ leave:
 
 leave_nolock:
 	ERROR_LOCAL_END (local_error);
+	g_free (symbol_name);
 
 	return symbol;
 }
@@ -1494,6 +1496,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadByName (MonoStringHan
 
 leave:
 	ERROR_LOCAL_END (local_error);
+	g_free (lib_name);
 
 	return handle;
 }
@@ -1527,6 +1530,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadFromPath (MonoStringH
 
 leave:
 	ERROR_LOCAL_END (local_error);
+	g_free (lib_path);
 
 	return handle;
 }

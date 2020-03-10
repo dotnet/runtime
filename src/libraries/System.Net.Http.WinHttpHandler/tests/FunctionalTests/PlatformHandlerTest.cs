@@ -10,6 +10,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [ActiveIssue("https://github.com/mono/mono/issues/15005", TestRuntimes.Mono)]
     public class PlatformHandler_HttpClientHandler : HttpClientHandlerTestBase
     {
         public PlatformHandler_HttpClientHandler(ITestOutputHelper output) : base(output) { }

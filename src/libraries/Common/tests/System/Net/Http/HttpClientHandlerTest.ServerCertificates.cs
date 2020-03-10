@@ -84,7 +84,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler && PlatformDetection.IsWindows7)
             {
-                // Issue https://github.com/dotnet/corefx/issues/27612
+                // Issue https://github.com/dotnet/runtime/issues/25268
                 return;
             }
 
@@ -201,7 +201,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.NotNull(request);
 
                     X509ChainStatusFlags flags = chain.ChainStatus.Aggregate(X509ChainStatusFlags.NoError, (cur, status) => cur | status.Status);
-                    bool ignoreErrors = // https://github.com/dotnet/corefx/issues/21922#issuecomment-315555237
+                    bool ignoreErrors = // https://github.com/dotnet/runtime/issues/22644#issuecomment-315555237
                         RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
                         checkRevocation &&
                         errors == SslPolicyErrors.RemoteCertificateChainErrors &&
@@ -350,7 +350,7 @@ namespace System.Net.Http.Functional.Tests
                 e.InnerException.HResult == SEC_E_BUFFER_TOO_SMALL &&
                 !PlatformDetection.IsWindows10Version1607OrGreater)
             {
-                // Testing on old Windows versions can hit https://github.com/dotnet/corefx/issues/7812
+                // Testing on old Windows versions can hit https://github.com/dotnet/runtime/issues/17005
                 // Ignore SEC_E_BUFFER_TOO_SMALL error on such cases.
             }
         }

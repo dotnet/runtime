@@ -16,6 +16,17 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
+        /// <summary>
+        /// HTTP/3 tests by default use prenegotiated HTTP/3. To test Alt-Svc upgrades, that must be disabled.
+        /// </summary>
+        protected override HttpClient CreateHttpClient()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler(HttpVersion.Version30);
+            SetUsePrenegotiatedHttp3(handler, usePrenegotiatedHttp3: false);
+
+            return CreateHttpClient(handler);
+        }
+
         [Fact]
         public async Task AltSvc_Header_UpgradeFrom11_Success()
         {
@@ -32,7 +43,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using GenericLoopbackServer firstServer = GetFactoryForVersion(fromVersion).CreateServer();
             using Http3LoopbackServer secondServer = new Http3LoopbackServer();
-            using HttpClient client = CreateHttpClient(CreateHttpClientHandler(HttpVersion.Version30));
+            using HttpClient client = CreateHttpClient();
 
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
 
@@ -52,7 +63,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = new Http3LoopbackServer();
-            using HttpClient client = CreateHttpClient(CreateHttpClientHandler(HttpVersion.Version30));
+            using HttpClient client = CreateHttpClient();
 
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
 
@@ -74,7 +85,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = new Http3LoopbackServer();
-            using HttpClient client = CreateHttpClient(CreateHttpClientHandler(HttpVersion.Version30));
+            using HttpClient client = CreateHttpClient();
 
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
 

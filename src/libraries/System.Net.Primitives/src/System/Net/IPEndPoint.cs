@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Sockets;
 
@@ -85,12 +87,12 @@ namespace System.Net
             }
         }
 
-        public static bool TryParse(string s, out IPEndPoint result)
+        public static bool TryParse(string s, [NotNullWhen(true)] out IPEndPoint? result)
         {
             return TryParse(s.AsSpan(), out result);
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, out IPEndPoint result)
+        public static bool TryParse(ReadOnlySpan<char> s, [NotNullWhen(true)] out IPEndPoint? result)
         {
             int addressLength = s.Length;  // If there's no port then send the entire string to the address parser
             int lastColonPos = s.LastIndexOf(':');
@@ -109,7 +111,7 @@ namespace System.Net
                 }
             }
 
-            if (IPAddress.TryParse(s.Slice(0, addressLength), out IPAddress address))
+            if (IPAddress.TryParse(s.Slice(0, addressLength), out IPAddress? address))
             {
                 uint port = 0;
                 if (addressLength == s.Length ||
@@ -137,7 +139,7 @@ namespace System.Net
 
         public static IPEndPoint Parse(ReadOnlySpan<char> s)
         {
-            if (TryParse(s, out IPEndPoint result))
+            if (TryParse(s, out IPEndPoint? result))
             {
                 return result;
             }
@@ -173,7 +175,7 @@ namespace System.Net
             return socketAddress.GetIPEndPoint();
         }
 
-        public override bool Equals(object comparand)
+        public override bool Equals(object? comparand)
         {
             return comparand is IPEndPoint other && other._address.Equals(_address) && other._port == _port;
         }

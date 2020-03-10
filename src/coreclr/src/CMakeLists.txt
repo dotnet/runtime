@@ -13,6 +13,7 @@ if(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
     include_directories("${GENERATED_INCLUDE_DIR}/etw")
 endif(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
 
+add_subdirectory(debug/dbgutil)
 
 if(CLR_CMAKE_HOST_UNIX)
   if(CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86)
@@ -73,6 +74,7 @@ add_subdirectory(tools)
 add_subdirectory(unwinder)
 add_subdirectory(ildasm)
 add_subdirectory(ilasm)
+add_subdirectory(interop)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_subdirectory(palrt)

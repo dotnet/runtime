@@ -16,12 +16,12 @@ namespace Internal.Cryptography.Pal
     {
         public bool ImplicitAnyCertificatePolicy { get; set; }
         public bool SpecifiedAnyCertificatePolicy { get; set; }
-        public ISet<string> DeclaredCertificatePolicies { get; set; }
+        public ISet<string>? DeclaredCertificatePolicies { get; set; }
         public bool ImplicitAnyApplicationPolicy { get; set; }
         public bool SpecifiedAnyApplicationPolicy { get; set; }
-        public ISet<string> DeclaredApplicationPolicies { get; set; }
+        public ISet<string>? DeclaredApplicationPolicies { get; set; }
         public int? InhibitAnyDepth { get; set; }
-        public List<CertificatePolicyMappingAsn> PolicyMapping { get; set; }
+        public List<CertificatePolicyMappingAsn>? PolicyMapping { get; set; }
         public int? InhibitMappingDepth { get; set; }
         public int? RequireExplicitPolicyDepth { get; set; }
 
@@ -68,7 +68,7 @@ namespace Internal.Cryptography.Pal
                 return false;
             }
 
-            string nextOid = policyOid.Value;
+            string nextOid = policyOid.Value!;
 
             for (int i = 1; i <= _policies.Length; i++)
             {
@@ -127,7 +127,7 @@ namespace Internal.Cryptography.Pal
 
         internal bool MatchesApplicationPolicies(Oid policyOid)
         {
-            string oidToCheck = policyOid.Value;
+            string oidToCheck = policyOid.Value!;
 
             for (int i = 1; i <= _policies.Length; i++)
             {
@@ -232,8 +232,8 @@ namespace Internal.Cryptography.Pal
         {
             // If no ApplicationCertPolicies extension is provided then it uses the EKU
             // OIDS.
-            ISet<string> applicationCertPolicies = null;
-            ISet<string> ekus = null;
+            ISet<string>? applicationCertPolicies = null;
+            ISet<string>? ekus = null;
             CertificatePolicy policy = new CertificatePolicy();
 
             PolicyData policyData = cert.Pal.GetPolicyData();
@@ -280,7 +280,7 @@ namespace Internal.Cryptography.Pal
             return policy;
         }
 
-        private static bool CheckExplicitAnyPolicy(ISet<string> declaredPolicies)
+        private static bool CheckExplicitAnyPolicy(ISet<string>? declaredPolicies)
         {
             if (declaredPolicies == null)
             {

@@ -11,8 +11,6 @@
 include <AsmMacros.inc>
 include AsmConstants.inc
 
-gfHostConfig                            equ ?g_fHostConfig@@3KA
-
 extern CreateThreadBlockThrow:proc
 extern TheUMEntryPrestubWorker:proc
 extern UMEntryPrestubUnwindFrameChainHandler:proc

@@ -53,7 +53,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             if (pingReply.Status == IPStatus.TimedOut && pingReply.Address.AddressFamily == AddressFamily.InterNetworkV6 && PlatformDetection.IsOSX)
             {
-                // Workaround OSX ping6 bug, see https://github.com/dotnet/corefx/issues/15018
+                // Workaround OSX ping6 bug, see https://github.com/dotnet/runtime/issues/19861
                 return;
             }
 

@@ -138,8 +138,14 @@
   <data name="InputBubbleOption" xml:space="preserve">
     <value>True when the entire input forms a version bubble (default = per-assembly bubble)</value>
   </data>
+  <data name="CompositeBuildMode" xml:space="preserve">
+    <value>Emit a composite R2R image comprising a number of input assemblies</value>
+  </data>
   <data name="InputFilesToCompile" xml:space="preserve">
     <value>Input file(s) to compile</value>
+  </data>
+  <data name="UnrootedInputFilesToCompile" xml:space="preserve">
+    <value>"Input files without automatic rooting of all methods</value>
   </data>
   <data name="JitPathOption" xml:space="preserve">
     <value>Path to JIT compiler library</value>
@@ -236,5 +242,8 @@
   </data>
   <data name="WarningOverridingOptimizeSpace" xml:space="preserve">
     <value>Warning: overriding -Ot with -Os</value>
+  </data>
+  <data name="ErrorMultipleInputFilesCompositeModeOnly" xml:space="preserve">
+    <value>Error: multiple input files are only supported in composite build mode: {0}</value>
   </data>
 </root>

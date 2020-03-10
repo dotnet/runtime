@@ -97,7 +97,7 @@ namespace System
         {
             if (m_value)
             {
-                if ((uint)destination.Length > 3) // uint cast, per https://github.com/dotnet/coreclr/issues/18688
+                if ((uint)destination.Length > 3) // uint cast, per https://github.com/dotnet/runtime/issues/10596
                 {
                     destination[0] = 'T';
                     destination[1] = 'r';

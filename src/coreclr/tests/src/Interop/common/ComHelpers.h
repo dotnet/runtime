@@ -109,7 +109,7 @@ private:
     std::atomic<ULONG> _refCount = 1;
 };
 
-// Marco to use for defining ref counting impls
+// Macro to use for defining ref counting impls
 #define DEFINE_REF_COUNTING() \
     STDMETHOD_(ULONG, AddRef)(void) { return UnknownImpl::DoAddRef(); } \
     STDMETHOD_(ULONG, Release)(void) { return UnknownImpl::DoRelease(); }
@@ -330,4 +330,77 @@ public: // IUnknown
     }
 
     DEFINE_REF_COUNTING();
+};
+
+template<typename T>
+struct ComSmartPtr
+{
+    T* p;
+
+    ComSmartPtr()
+        : p{ nullptr }
+    { }
+
+    ComSmartPtr(_In_ T* t)
+        : p{ t }
+    {
+        if (p != nullptr)
+            (void)p->AddRef();
+    }
+
+    ComSmartPtr(_In_ const ComSmartPtr&) = delete;
+
+    ComSmartPtr(_Inout_ ComSmartPtr&& other)
+        : p{ other.Detach() }
+    { }
+
+    ~ComSmartPtr()
+    {
+        Release();
+    }
+
+    ComSmartPtr& operator=(_In_ const ComSmartPtr&) = delete;
+
+    ComSmartPtr& operator=(_Inout_ ComSmartPtr&& other)
+    {
+        Attach(other.Detach());
+        return (*this);
+    }
+
+    operator T*()
+    {
+        return p;
+    }
+
+    T** operator&()
+    {
+        return &p;
+    }
+
+    T* operator->()
+    {
+        return p;
+    }
+
+    void Attach(_In_opt_ T* t) noexcept
+    {
+        Release();
+        p = t;
+    }
+
+    T* Detach() noexcept
+    {
+        T* tmp = p;
+        p = nullptr;
+        return tmp;
+    }
+
+    void Release() noexcept
+    {
+        if (p != nullptr)
+        {
+            (void)p->Release();
+            p = nullptr;
+        }
+    }
 };

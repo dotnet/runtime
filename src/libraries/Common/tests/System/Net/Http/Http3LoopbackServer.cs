@@ -22,17 +22,18 @@ namespace System.Net.Test.Common
         {
             options ??= new GenericLoopbackOptions();
 
-            _cert = Configuration.Certificates.GetServerCertificate();
+            _cert = Configuration.Certificates.GetSelfSigned13ServerCertificate();
 
             var sslOpts = new SslServerAuthenticationOptions
             {
                 EnabledSslProtocols = options.SslProtocols,
                 ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http3 },
-                ServerCertificate = _cert,
+                //ServerCertificate = _cert,
                 ClientCertificateRequired = false
             };
 
             _listener = new QuicListener(new IPEndPoint(options.Address, 0), sslOpts);
+            _listener.Start();
         }
 
         public override void Dispose()
@@ -55,10 +56,11 @@ namespace System.Net.Test.Common
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            using GenericLoopbackConnection con = await EstablishGenericConnectionAsync().ConfigureAwait(false);
+            using var con = (Http3LoopbackConnection)await EstablishGenericConnectionAsync().ConfigureAwait(false);
 
             HttpRequestData request = await con.ReadRequestDataAsync().ConfigureAwait(false);
             await con.SendResponseAsync(statusCode, headers, content).ConfigureAwait(false);
+            await con.CloseAsync(Http3LoopbackConnection.H3_NO_ERROR);
             return request;
         }
     }
@@ -67,11 +69,7 @@ namespace System.Net.Test.Common
     {
         public static Http3LoopbackServerFactory Singleton { get; } = new Http3LoopbackServerFactory();
 
-        public override bool IsHttp11 => false;
-
-        public override bool IsHttp2 => false;
-
-        public override bool IsHttp3 => true;
+        public override Version Version => HttpVersion.Version30;
 
         public override GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null)
         {

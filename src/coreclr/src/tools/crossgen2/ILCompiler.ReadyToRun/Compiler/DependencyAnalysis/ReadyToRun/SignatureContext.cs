@@ -97,17 +97,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int GetHashCode()
         {
-            return GlobalContext.GetHashCode()
-                ^ (LocalContext.GetHashCode() * 31);
+            return (GlobalContext?.GetHashCode() ?? 0) ^ ((LocalContext?.GetHashCode() ?? 0) * 31);
         }
 
         public int CompareTo(SignatureContext other, TypeSystemComparer comparer)
         {
+            if (GlobalContext == null || other.GlobalContext == null)
+            {
+                return (GlobalContext != null ? 1 : other.GlobalContext != null ? -1 : 0);
+            }
+
             int result = GlobalContext.CompareTo(other.GlobalContext);
             if (result != 0)
                 return result;
 
+            if (LocalContext == null || other.LocalContext == null)
+            {
+                return (LocalContext != null ? 1 : other.LocalContext != null ? -1 : 0);
+            }
+
             return LocalContext.CompareTo(other.LocalContext);
+        }
+
+        public override string ToString()
+        {
+            return (GlobalContext != null ? GlobalContext.Assembly.GetName().Name : "<Composite>");
         }
     }
 }

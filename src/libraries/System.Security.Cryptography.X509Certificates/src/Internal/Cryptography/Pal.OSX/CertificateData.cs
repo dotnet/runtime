@@ -39,7 +39,7 @@ namespace Internal.Cryptography.Pal
                 Parameters = algorithmIdentifier.Parameters?.ToArray() ?? Array.Empty<byte>();
             }
 
-            internal string AlgorithmId;
+            internal string? AlgorithmId;
             internal byte[] Parameters;
         }
 
@@ -62,9 +62,9 @@ namespace Internal.Cryptography.Pal
 
         internal byte[] PublicKey => certificate.TbsCertificate.SubjectPublicKeyInfo.SubjectPublicKey.ToArray();
 
-        internal byte[] IssuerUniqueId => certificate.TbsCertificate.IssuerUniqueId?.ToArray();
+        internal byte[]? IssuerUniqueId => certificate.TbsCertificate.IssuerUniqueId?.ToArray();
 
-        internal byte[] SubjectUniqueId => certificate.TbsCertificate.SubjectUniqueId?.ToArray();
+        internal byte[]? SubjectUniqueId => certificate.TbsCertificate.SubjectUniqueId?.ToArray();
 
         internal AlgorithmIdentifier SignatureAlgorithm => new AlgorithmIdentifier(certificate.SignatureAlgorithm);
 
@@ -128,7 +128,7 @@ namespace Internal.Cryptography.Pal
             if (nameType == X509NameType.SimpleName)
             {
                 X500DistinguishedName name = forIssuer ? Issuer : Subject;
-                string candidate = GetSimpleNameInfo(name);
+                string? candidate = GetSimpleNameInfo(name);
 
                 if (candidate != null)
                 {
@@ -140,7 +140,7 @@ namespace Internal.Cryptography.Pal
             {
                 string extensionId = forIssuer ? Oids.IssuerAltName : Oids.SubjectAltName;
                 GeneralNameType? matchType = null;
-                string otherOid = null;
+                string? otherOid = null;
 
                 // Currently all X509NameType types have a path where they look at the SAN/IAN,
                 // but we need to figure out which kind they want.
@@ -167,9 +167,9 @@ namespace Internal.Cryptography.Pal
                 {
                     foreach (X509Extension extension in Extensions)
                     {
-                        if (extension.Oid.Value == extensionId)
+                        if (extension.Oid!.Value == extensionId)
                         {
-                            string candidate = FindAltNameMatch(extension.RawData, matchType.Value, otherOid);
+                            string? candidate = FindAltNameMatch(extension.RawData, matchType.Value, otherOid);
 
                             if (candidate != null)
                             {
@@ -186,7 +186,7 @@ namespace Internal.Cryptography.Pal
 
             // Subject-based fallback
             {
-                string expectedKey = null;
+                string? expectedKey = null;
 
                 switch (nameType)
                 {
@@ -217,12 +217,12 @@ namespace Internal.Cryptography.Pal
             return "";
         }
 
-        private static string GetSimpleNameInfo(X500DistinguishedName name)
+        private static string? GetSimpleNameInfo(X500DistinguishedName name)
         {
-            string ou = null;
-            string o = null;
-            string e = null;
-            string firstRdn = null;
+            string? ou = null;
+            string? o = null;
+            string? e = null;
+            string? firstRdn = null;
 
             foreach (var kvp in ReadReverseRdns(name))
             {
@@ -257,7 +257,7 @@ namespace Internal.Cryptography.Pal
             return ou ?? o ?? e ?? firstRdn;
         }
 
-        private static string FindAltNameMatch(byte[] extensionBytes, GeneralNameType matchType, string otherOid)
+        private static string? FindAltNameMatch(byte[] extensionBytes, GeneralNameType matchType, string? otherOid)
         {
             // If Other, have OID, else, no OID.
             Debug.Assert(

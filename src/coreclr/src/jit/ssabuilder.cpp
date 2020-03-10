@@ -772,6 +772,7 @@ void SsaBuilder::RenameDef(GenTreeOp* asgNode, BasicBlock* block)
             }
             else
             {
+                assert((lclNode->gtFlags & GTF_VAR_USEASG) == 0);
                 lclNode->SetSsaNum(ssaNum);
             }
 

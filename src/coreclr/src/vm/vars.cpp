@@ -207,9 +207,6 @@ GVAL_IMPL(SIZE_T, g_runtimeVirtualSize);
 Volatile<LONG> g_fForbidEnterEE = false;
 bool g_fManagedAttach = false;
 bool g_fNoExceptions = false;
-#ifdef FEATURE_COMINTEROP
-bool g_fShutDownCOM = false;
-#endif //FEATURE_COMINTEROP
 
 DWORD g_FinalizerWaiterStatus = 0;
 

@@ -6,6 +6,7 @@ MembersMustExist : Member 'System.AppContext.remove_FirstChanceException(System.
 MembersMustExist : Member 'System.AppContext.remove_ProcessExit(System.EventHandler)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.AppContext.remove_UnhandledException(System.UnhandledExceptionEventHandler)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.AppContext.SetData(System.String, System.Object)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Environment.FailFast(System.String, System.Exception, System.String)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.WeakReference..ctor()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.Diagnostics.Debug.SetProvider(System.Diagnostics.DebugProvider)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.Reflection.Module.GetModuleHandleImpl()' does not exist in the reference but it does exist in the implementation.
@@ -16,4 +17,4 @@ MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.StartD
 MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.ThrowIfDeserializationInProgress()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.ThrowIfDeserializationInProgress(System.String, System.Int32)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.UpdateValue(System.String, System.Object, System.Type)' does not exist in the reference but it does exist in the implementation.
-Total Issues: 17
+Total Issues: 18

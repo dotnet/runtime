@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Extensions\HashCodeCombiner\HashCodeCombiner.cs">
+      <Link>Common\src\Extensions\HashCodeCombiner\HashCodeCombiner.cs</Link>
+    </Compile>
+    <Compile Include="CancellationChangeToken.cs" />
+    <Compile Include="ChangeToken.cs" />
+    <Compile Include="CompositeChangeToken.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="IChangeToken.cs" />
+    <Compile Include="InplaceStringBuilder.cs" />
+    <Compile Include="StringSegment.cs" />
+    <Compile Include="StringSegmentComparer.cs" />
+    <Compile Include="StringTokenizer.cs" />
+    <Compile Include="StringValues.cs" />
+    <Compile Include="ThrowHelper.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+  </ItemGroup>
+</Project>

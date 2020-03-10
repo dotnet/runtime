@@ -26,17 +26,17 @@ typedef struct ProcessCpuInformation
  *
  * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
-DLLEXPORT int32_t SystemNative_UTimensat(const char* path, TimeSpec* times);
+PALEXPORT int32_t SystemNative_UTimensat(const char* path, TimeSpec* times);
 
 /**
  * Gets the resolution of the timestamp, in counts per second.
  */
-DLLEXPORT uint64_t SystemNative_GetTimestampResolution(void);
+PALEXPORT uint64_t SystemNative_GetTimestampResolution(void);
 
 /**
  * Gets a high-resolution timestamp that can be used for time-interval measurements.
  */
-DLLEXPORT uint64_t SystemNative_GetTimestamp(void);
+PALEXPORT uint64_t SystemNative_GetTimestamp(void);
 
 /**
  * The main purpose of this function is to compute the overall CPU utilization
@@ -47,4 +47,4 @@ DLLEXPORT uint64_t SystemNative_GetTimestamp(void);
  * returned is sum of utilization accross all processors, e.g. this function will
  * return 200 when two cores are running at 100%.
  */
-DLLEXPORT int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo);
+PALEXPORT int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo);

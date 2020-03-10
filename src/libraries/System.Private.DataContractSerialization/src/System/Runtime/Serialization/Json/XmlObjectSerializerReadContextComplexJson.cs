@@ -165,7 +165,7 @@ namespace System.Runtime.Serialization.Json
                     switch (serverTypeNamespace[0])
                     {
                         case '#':
-                            serverTypeNamespace = string.Concat(Globals.DataContractXsdBaseNamespace, serverTypeNamespace.Substring(1));
+                            serverTypeNamespace = string.Concat(Globals.DataContractXsdBaseNamespace, serverTypeNamespace.AsSpan(1));
                             break;
                         case '\\':
                             if (serverTypeNamespace.Length >= 2)
@@ -198,7 +198,7 @@ namespace System.Runtime.Serialization.Json
                 switch (serverTypeNamespace[0])
                 {
                     case '#':
-                        serverTypeNamespace = string.Concat(Globals.DataContractXsdBaseNamespace, serverTypeNamespace.Substring(1));
+                        serverTypeNamespace = string.Concat(Globals.DataContractXsdBaseNamespace, serverTypeNamespace.AsSpan(1));
                         break;
                     case '\\':
                         if (serverTypeNamespace.Length >= 2)

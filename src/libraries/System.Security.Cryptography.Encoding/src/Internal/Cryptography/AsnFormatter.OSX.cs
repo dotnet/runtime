@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Text;
@@ -25,7 +24,7 @@ namespace Internal.Cryptography
         {
             if (oid == null || string.IsNullOrEmpty(oid.Value))
             {
-                return EncodeHexString(rawData, true);
+                return EncodeSpaceSeparatedHexString(rawData);
             }
 
             switch (oid.Value)

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Text;
 
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.Runtime;
@@ -42,8 +43,8 @@ namespace R2RDump
 
         internal override void WriteDivider(string title)
         {
-            int len = 61 - title.Length - 2;
-            _writer.WriteLine(new String('=', len / 2) + " " + title + " " + new String('=', (int)Math.Ceiling(len / 2.0)));
+            int len = Math.Max(61 - title.Length - 2, 2);
+            _writer.WriteLine(new String('=', len / 2) + " " + title + " " + new String('=', (len + 1) / 2));
             SkipLine();
         }
 
@@ -76,9 +77,26 @@ namespace R2RDump
                 _writer.WriteLine($"{_r2r.ReadyToRunHeader.Sections.Count} sections");
                 SkipLine();
 
-                foreach (ReadyToRunSection section in NormalizedSections())
+                foreach (ReadyToRunSection section in NormalizedSections(_r2r.ReadyToRunHeader))
                 {
                     DumpSection(section);
+                }
+
+                if (_r2r.Composite)
+                {
+                    WriteDivider("Component Assembly Sections");
+                    int assemblyIndex = 0;
+                    foreach (string assemblyName in _r2r.ManifestReferenceAssemblies.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key))
+                    {
+                        WriteDivider($@"Component Assembly [{assemblyIndex}]: {assemblyName}");
+                        ReadyToRunCoreHeader assemblyHeader = _r2r.ReadyToRunAssemblyHeaders[assemblyIndex];
+                        foreach (ReadyToRunSection section in NormalizedSections(assemblyHeader))
+                        {
+                            DumpSection(section);
+                        }
+                        assemblyIndex++;
+                    }
+
                 }
             }
             SkipLine();
@@ -212,9 +230,18 @@ namespace R2RDump
                     }
                 }
 
-                if (rtf.Method.GcInfo?.Transitions != null && rtf.Method.GcInfo.Transitions.ContainsKey(codeOffset))
+                if (!_options.HideTransitions && rtf.Method.GcInfo?.Transitions != null && rtf.Method.GcInfo.Transitions.TryGetValue(codeOffset, out List<BaseGcTransition> transitionsForOffset))
                 {
-                    foreach (BaseGcTransition transition in rtf.Method.GcInfo.Transitions[codeOffset])
+                    string[] formattedTransitions = new string[transitionsForOffset.Count];
+                    for (int transitionIndex = 0; transitionIndex < formattedTransitions.Length; transitionIndex++)
+                    {
+                        formattedTransitions[transitionIndex] = transitionsForOffset[transitionIndex].ToString();
+                    }
+                    if (_options.Normalize)
+                    {
+                        Array.Sort(formattedTransitions);
+                    }
+                    foreach (string transition in formattedTransitions)
                     {
                         _writer.WriteLine($"{indentString}{transition}");
                     }
@@ -279,9 +306,13 @@ namespace R2RDump
                         _writer.WriteLine(availableTypes.ToString());
                     }
 
-                    foreach (string name in _r2r.AvailableTypes)
+                    if (_r2r.AvailableTypes.TryGetValue(section, out List<string> sectionTypes))
                     {
-                        _writer.WriteLine(name);
+                        _writer.WriteLine();
+                        foreach (string name in sectionTypes)
+                        {
+                            _writer.WriteLine(name);
+                        }
                     }
                     break;
                 case ReadyToRunSectionType.MethodDefEntryPoints:
@@ -289,6 +320,15 @@ namespace R2RDump
                     {
                         NativeArray methodEntryPoints = new NativeArray(_r2r.Image, (uint)_r2r.GetOffset(section.RelativeVirtualAddress));
                         _writer.Write(methodEntryPoints.ToString());
+                    }
+
+                    if (_r2r.Methods.TryGetValue(section, out List<ReadyToRunMethod> sectionMethods))
+                    {
+                        _writer.WriteLine();
+                        foreach (ReadyToRunMethod method in sectionMethods)
+                        {
+                            _writer.WriteLine($@"{MetadataTokens.GetToken(method.MethodHandle):X8}: {method.SignatureString}");
+                        }
                     }
                     break;
                 case ReadyToRunSectionType.InstanceMethodEntryPoints:
@@ -371,7 +411,7 @@ namespace R2RDump
                     if (!_r2r.Composite)
                     {
                         MetadataReader globalReader = _r2r.GetGlobalMetadataReader();
-                        assemblyRefCount = globalReader.GetTableRowCount(TableIndex.AssemblyRef);
+                        assemblyRefCount = globalReader.GetTableRowCount(TableIndex.AssemblyRef) + 1;
                         _writer.WriteLine($"MSIL AssemblyRef's ({assemblyRefCount} entries):");
                         for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
                         {
@@ -381,11 +421,11 @@ namespace R2RDump
                         }
                     }
 
-                    _writer.WriteLine($"Manifest metadata AssemblyRef's ({_r2r.ManifestReferenceAssemblies.Count()} entries):");
+                    _writer.WriteLine($"Manifest metadata AssemblyRef's ({_r2r.ManifestReferenceAssemblies.Count} entries):");
                     int manifestAsmIndex = 0;
-                    foreach (string manifestReferenceAssembly in _r2r.ManifestReferenceAssemblies)
+                    foreach (string manifestReferenceAssembly in _r2r.ManifestReferenceAssemblies.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key))
                     {
-                        _writer.WriteLine($"[ID 0x{manifestAsmIndex + assemblyRefCount + 2:X2}]: {manifestReferenceAssembly}");
+                        _writer.WriteLine($"[ID 0x{manifestAsmIndex + assemblyRefCount + 1:X2}]: {manifestReferenceAssembly}");
                         manifestAsmIndex++;
                     }
                     break;
@@ -407,6 +447,15 @@ namespace R2RDump
                     int ii2EndOffset = ii2Offset + section.Size;
                     InliningInfoSection2 inliningInfoSection2 = new InliningInfoSection2(_r2r, ii2Offset, ii2EndOffset);
                     _writer.WriteLine(inliningInfoSection2.ToString());
+                    break;
+                case ReadyToRunSectionType.OwnerCompositeExecutable:
+                    int oceOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    Decoder decoder = Encoding.UTF8.GetDecoder();
+                    int charLength = decoder.GetCharCount(_r2r.Image, oceOffset, section.Size - 1); // exclude the zero terminator
+                    char[] charArray = new char[charLength];
+                    decoder.GetChars(_r2r.Image, oceOffset, section.Size, charArray, 0, flush: true);
+                    string ownerCompositeExecutable = new string(charArray);
+                    _writer.WriteLine("Composite executable: {0}", ownerCompositeExecutable);
                     break;
             }
         }

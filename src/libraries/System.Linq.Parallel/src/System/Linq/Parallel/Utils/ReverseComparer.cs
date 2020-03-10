@@ -9,6 +9,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Parallel
 {
@@ -26,7 +27,7 @@ namespace System.Linq.Parallel
             _comparer = comparer;
         }
 
-        public int Compare(T x, T y)
+        public int Compare([AllowNull] T x, [AllowNull] T y)
         {
             return _comparer.Compare(y, x);
         }

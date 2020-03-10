@@ -270,7 +270,7 @@ namespace System.Resources
                                   StringComparison.OrdinalIgnoreCase) == 0 &&
                    // Ensure wzPackagePath is not just a prefix, but a path prefix
                    // This says: packagepath is c:\foo || c:\foo\
-                   (libpath[packagepath.Length] == '\\' || packagepath.EndsWith("\\"));
+                   (libpath[packagepath.Length] == '\\' || packagepath.EndsWith("\\", StringComparison.Ordinal));
         }
 
 #if NETSTANDARD2_0 || NETCOREAPP

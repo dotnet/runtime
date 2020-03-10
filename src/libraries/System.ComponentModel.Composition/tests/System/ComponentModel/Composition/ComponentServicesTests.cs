@@ -14,7 +14,7 @@ namespace System.ComponentModel.Composition
     public class ComponentServicesTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void GetValuesByType()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -74,6 +74,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void NoResolverExceptionTest()
         {
             var container = ContainerFactory.Create();

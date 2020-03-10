@@ -776,8 +776,6 @@ public:
 
     static void ExecuteWorkRequest(bool* foundWork, bool* wasNotRecalled);
 
-    static DWORD WINAPI ExecuteHostRequest(PVOID pArg);
-
 #ifndef DACCESS_COMPILE
 
     inline static void AppendWorkRequest(WorkRequest* entry)

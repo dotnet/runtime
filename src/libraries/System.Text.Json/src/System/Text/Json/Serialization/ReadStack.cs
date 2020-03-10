@@ -71,20 +71,21 @@ namespace System.Text.Json
             _count++;
         }
 
-        public void InitializeRoot(Type type, JsonSerializerOptions options)
+        public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
             JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
-            Debug.Assert(jsonClassInfo.ClassType != ClassType.Invalid);
 
             Current.JsonClassInfo = jsonClassInfo;
 
             // The initial JsonPropertyInfo will be used to obtain the converter.
-            Current.JsonPropertyInfo = jsonClassInfo.PolicyProperty!;
+            Current.JsonPropertyInfo = jsonClassInfo.PolicyProperty;
 
             if (options.ReferenceHandling.ShouldReadPreservedReferences())
             {
                 ReferenceResolver = new DefaultReferenceResolver(writing: false);
             }
+
+            SupportContinuation = supportContinuation;
         }
 
         public void Push()
@@ -113,7 +114,7 @@ namespace System.Text.Json
                     Current.Reset();
 
                     Current.JsonClassInfo = jsonClassInfo;
-                    Current.JsonPropertyInfo = jsonClassInfo.PolicyProperty!;
+                    Current.JsonPropertyInfo = jsonClassInfo.PolicyProperty;
                 }
             }
             else if (_continuationCount == 1)
@@ -227,9 +228,9 @@ namespace System.Text.Json
                     // Once all elements are read, the exception is not within the array.
                     if (frame.ObjectState < StackFrameObjectState.ReadElements)
                     {
-                        sb.Append(@"[");
+                        sb.Append('[');
                         sb.Append(GetCount(enumerable));
-                        sb.Append(@"]");
+                        sb.Append(']');
                     }
                 }
             }

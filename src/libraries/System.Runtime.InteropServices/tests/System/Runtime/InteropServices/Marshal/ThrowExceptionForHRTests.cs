@@ -11,6 +11,7 @@ namespace System.Runtime.InteropServices.Tests
     public class ThrowExceptionForHRTests
     {
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15093", TestRuntimes.Mono)]
         [InlineData(unchecked((int)0x80020006))]
         [InlineData(unchecked((int)0x80020101))]
         public void ThrowExceptionForHR_NoErrorInfo_ReturnsValidException(int errorCode)
@@ -54,6 +55,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15093", TestRuntimes.Mono)]
         [MemberData(nameof(ThrowExceptionForHR_ErrorInfo_TestData))]
         public void ThrowExceptionForHR_ErrorInfo_ReturnsValidException(int errorCode, IntPtr errorInfo)
         {

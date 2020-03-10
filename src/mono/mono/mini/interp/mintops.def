@@ -638,26 +638,32 @@ OPDEF(MINT_CONV_U8_R8, "conv.u8.r8", 1, Pop1, Push1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_OVF_I1_I4, "conv.ovf.i1.i4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I1_I8, "conv.ovf.i1.i8", 1, Pop1, Push1, MintOpNoArgs)
+OPDEF(MINT_CONV_OVF_I1_R4, "conv.ovf.i1.r4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I1_R8, "conv.ovf.i1.r8", 1, Pop1, Push1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_OVF_I1_U4, "conv.ovf.i1.u4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I1_U8, "conv.ovf.i1.u8", 1, Pop1, Push1, MintOpNoArgs)
+OPDEF(MINT_CONV_OVF_I1_UN_R4, "conv.ovf.i1.un.r4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I1_UN_R8, "conv.ovf.i1.un.r8", 1, Pop1, Push1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_OVF_U1_I4, "conv.ovf.u1.i4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_U1_I8, "conv.ovf.u1.i8", 1, Pop1, Push1, MintOpNoArgs)
+OPDEF(MINT_CONV_OVF_U1_R4, "conv.ovf.u1.r4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_U1_R8, "conv.ovf.u1.r8", 1, Pop1, Push1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_OVF_I2_I4, "conv.ovf.i2.i4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I2_I8, "conv.ovf.i2.i8", 1, Pop1, Push1, MintOpNoArgs)
+OPDEF(MINT_CONV_OVF_I2_R4, "conv.ovf.i2.r4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I2_R8, "conv.ovf.i2.r8", 1, Pop1, Push1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_OVF_I2_U4, "conv.ovf.i2.u4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I2_U8, "conv.ovf.i2.u8", 1, Pop1, Push1, MintOpNoArgs)
+OPDEF(MINT_CONV_OVF_I2_UN_R4, "conv.ovf.i2.un.r4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I2_UN_R8, "conv.ovf.i2.un.r8", 1, Pop1, Push1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_OVF_U2_I4, "conv.ovf.u2.i4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_U2_I8, "conv.ovf.u2.i8", 1, Pop1, Push1, MintOpNoArgs)
+OPDEF(MINT_CONV_OVF_U2_R4, "conv.ovf.u2.r4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_U2_R8, "conv.ovf.u2.r8", 1, Pop1, Push1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_OVF_I4_U4, "conv.ovf.i4.u4", 1, Pop1, Push1, MintOpNoArgs)

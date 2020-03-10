@@ -15,7 +15,7 @@ namespace Microsoft.NET.HostModel.ComHost
         private const int ClsidmapResourceType = 1024;
 
         /// <summary>
-        /// Create an ComHost with an embedded CLSIDMap file to map CLSIDs to .NET Classes.
+        /// Create a ComHost with an embedded CLSIDMap file to map CLSIDs to .NET Classes.
         /// </summary>
         /// <param name="comHostSourceFilePath">The path of Apphost template, which has the place holder</param>
         /// <param name="comHostDestinationFilePath">The destination path for desired location to place, including the file name</param>

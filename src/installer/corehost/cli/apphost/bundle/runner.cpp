@@ -46,21 +46,15 @@ StatusCode runner_t::extract()
         reader.set_offset(marker_t::header_offset());
         header_t header = header_t::read(reader);
 
-        extractor_t extractor(header.bundle_id(), m_bundle_path);
-        m_extraction_dir = extractor.extraction_dir();
-
-        // Determine if embedded files are already extracted, and available for reuse
-        if (extractor.can_reuse_extraction())
-        {
-            return StatusCode::Success;
-        }
-
+        // Read the bundle manifest
+        // Reader is at the correct offset
         manifest_t manifest = manifest_t::read(reader, header.num_embedded_files());
 
-        extractor.extract(manifest, reader);
+        // Extract the files 
+        extractor_t extractor(header.bundle_id(), m_bundle_path, manifest);
+        m_extraction_dir = extractor.extract(reader);
 
         unmap_host();
-
         return StatusCode::Success;
     }
     catch (StatusCode e)

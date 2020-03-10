@@ -5,9 +5,14 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
+    /// <summary>
+    /// Provides functionality to serialize objects or value types to JSON and
+    /// deserialize JSON into objects or value types.
+    /// </summary>
     public static partial class JsonSerializer
     {
         /// <summary>
@@ -30,7 +35,12 @@ namespace System.Text.Json
         [return: MaybeNull]
         public static TValue Deserialize<TValue>(string json, JsonSerializerOptions? options = null)
         {
-            return (TValue)Deserialize(json, typeof(TValue), options)!;
+            if (json == null)
+            {
+                throw new ArgumentNullException(nameof(json));
+            }
+
+            return Deserialize<TValue>(json, typeof(TValue), options)!;
         }
 
         /// <summary>
@@ -53,8 +63,6 @@ namespace System.Text.Json
         /// </remarks>
         public static object? Deserialize(string json, Type returnType, JsonSerializerOptions? options = null)
         {
-            const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
-
             if (json == null)
             {
                 throw new ArgumentNullException(nameof(json));
@@ -65,12 +73,20 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(returnType));
             }
 
+            object? value = Deserialize<object?>(json, returnType, options)!;
+
+            return value;
+        }
+
+        private static TValue Deserialize<TValue>(string json, Type returnType, JsonSerializerOptions? options)
+        {
+            const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
+
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
-            object? result;
             byte[]? tempArray = null;
 
             // For performance, avoid obtaining actual byte count unless memory usage is higher than the threshold.
@@ -88,10 +104,13 @@ namespace System.Text.Json
 
                 var readerState = new JsonReaderState(options.GetReaderOptions());
                 var reader = new Utf8JsonReader(utf8, isFinalBlock: true, readerState);
-                result = ReadCore(returnType, options, ref reader);
+
+                TValue value = ReadCore<TValue>(ref reader, returnType, options);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(reader.BytesConsumed == actualByteCount);
+
+                return value;
             }
             finally
             {
@@ -101,8 +120,6 @@ namespace System.Text.Json
                     ArrayPool<byte>.Shared.Return(tempArray);
                 }
             }
-
-            return result;
         }
     }
 }

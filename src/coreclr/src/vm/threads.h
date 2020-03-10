@@ -284,9 +284,6 @@ public:
     void EnablePreemptiveGC() { }
     void DisablePreemptiveGC() { }
 
-    inline void IncLockCount() { }
-    inline void DecLockCount() { }
-
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD) { return NULL; }
 
     PTR_AppDomain GetDomain() { return ::GetAppDomain(); }
@@ -498,9 +495,6 @@ struct Dbg_TrackSync
     virtual void EnterSync    (UINT_PTR caller, void *pAwareLock) = 0;
     virtual void LeaveSync    (UINT_PTR caller, void *pAwareLock) = 0;
 };
-
-EXTERN_C void EnterSyncHelper    (UINT_PTR caller, void *pAwareLock);
-EXTERN_C void LeaveSyncHelper    (UINT_PTR caller, void *pAwareLock);
 
 #endif  // TRACK_SYNC
 
@@ -1035,16 +1029,12 @@ public:
         if(STSGuarantee_Force == fScope)
             return TRUE;
 
-        //The runtime must be hosted to have escalation policy
-        //If escalation policy is enabled but StackOverflow is not part of the policy
-        //   then we don't use SetThreadStackGuarantee
-        if(!CLRHosted() ||
-            GetEEPolicy()->GetActionOnFailure(FAIL_StackOverflow) == eRudeExitProcess)
-        {
-            //FAIL_StackOverflow is ProcessExit so don't use SetThreadStackGuarantee
-            return FALSE;
-        }
+#ifdef DEBUG
+        // For debug, always enable setting thread stack guarantee so that we can print the stack trace
         return TRUE;
+#else
+        return FALSE;
+#endif
     }
 
 public:
@@ -1081,7 +1071,7 @@ public:
 
         TS_LegalToJoin            = 0x00000020,    // Is it now legal to attempt a Join()
 
-        // unused                 = 0x00000040,
+        TS_ExecutingOnAltStack    = 0x00000040,    // Runtime is executing on an alternate stack located anywhere in the memory
 
 #ifdef FEATURE_HIJACK
         TS_Hijacked               = 0x00000080,    // Return address has been hijacked
@@ -1184,9 +1174,7 @@ public:
         // unused                       = 0x00080000,
         TSNC_RaiseUnloadEvent           = 0x00100000, // Finalize thread is raising managed unload event which
                                                       // may call AppDomain.Unload.
-        TSNC_UnbalancedLocks            = 0x00200000, // Do not rely on lock accounting for this thread:
-                                                      // we left an app domain with a lock count different from
-                                                      // when we entered it
+        // unused                       = 0x00200000,
         // unused                       = 0x00400000,
         TSNC_IgnoreUnhandledExceptions  = 0x00800000, // Set for a managed thread born inside an appdomain created with the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag.
         TSNC_ProcessedUnhandledException = 0x01000000,// Set on a thread on which we have done unhandled exception processing so that
@@ -1416,6 +1404,18 @@ public:
     }
 #endif // DACCESS_COMPILE
 
+    DWORD IsExecutingOnAltStack()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_State & TS_ExecutingOnAltStack);
+    }
+
+    void SetExecutingOnAltStack()
+    {
+        LIMITED_METHOD_CONTRACT;
+        FastInterlockOr((ULONG *) &m_State, TS_ExecutingOnAltStack);
+    }
+
     DWORD IsBackground()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1488,10 +1488,6 @@ public:
     // its Domain.
     //-----------------------------------------------------------
     PTR_AppDomain       m_pDomain;
-
-    // Track the number of locks (critical section, spin lock, syncblock lock,
-    // EE Crst, GC lock) held by the current thread.
-    DWORD                m_dwLockCount;
 
     // Unique thread id used for thin locks - kept as small as possible, as we have limited space
     // in the object header to store it.
@@ -1620,12 +1616,7 @@ public:
     // Flags for thread states that have no concurrency issues.
     ThreadStateNoConcurrency m_StateNC;
 
-    inline void IncLockCount();
-    inline void DecLockCount();
-
 private:
-    DWORD m_dwBeginLockCount;  // lock count when the thread enters current domain
-
 #ifdef _DEBUG
     DWORD dbg_m_cSuspendedThreads;
     // Count of suspended threads that we know are not in native code (and therefore cannot hold OS lock which prevents us calling out to host)
@@ -1705,21 +1696,6 @@ private:
     DWORD m_dwHashCodeSeed;
 
 public:
-
-    inline BOOL HasLockInCurrentDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(m_dwLockCount >= m_dwBeginLockCount);
-
-        // Equivalent to (m_dwLockCount != m_dwBeginLockCount ||
-        //                m_dwCriticalRegionCount ! m_dwBeginCriticalRegionCount),
-        // but without branching instructions
-        BOOL fHasLock = (m_dwLockCount ^ m_dwBeginLockCount);
-
-        return fHasLock;
-    }
-
     inline DWORD GetNewHashCode()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1841,7 +1817,7 @@ public:
         {
             void* curSP;
             curSP = (void *)GetCurrentSP();
-            _ASSERTE((curSP <= m_pFrame && m_pFrame < m_CacheStackBase) || m_pFrame == (Frame*) -1);
+            _ASSERTE(IsExecutingOnAltStack() || (curSP <= m_pFrame && m_pFrame < m_CacheStackBase) || m_pFrame == (Frame*) -1);
         }
 #endif
 
@@ -4722,8 +4698,6 @@ private:
 
     // By the time a frame is scanned by the runtime, m_pHijackReturnKind always
     // identifies the gc-ness of the return register(s)
-    // If the ReturnKind information is not available from the GcInfo, the runtime
-    // computes it using the return types's class handle.
 
     ReturnKind m_HijackReturnKind;
 

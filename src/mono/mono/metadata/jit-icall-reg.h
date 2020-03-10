@@ -142,6 +142,7 @@ MONO_JIT_ICALL (mini_llvmonly_resolve_generic_virtual_iface_call) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_iface_call_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_throw_nullref_exception) \
+MONO_JIT_ICALL (mini_llvmonly_throw_missing_method_exception) \
 MONO_JIT_ICALL (mono_amd64_resume_unwind)	\
 MONO_JIT_ICALL (mono_amd64_start_gsharedvt_call)	\
 MONO_JIT_ICALL (mono_amd64_throw_corlib_exception)	\
@@ -359,20 +360,9 @@ MONO_JIT_ICALLS
 	MonoJitICallInfo array [MONO_JIT_ICALL_count];
 } MonoJitICallInfos;
 
-// Indirect mono_jit_icall_info access through a function or macro due to loaded LLVM.
-//
-#if MONO_LLVM_LOADED
-
-MONO_LLVM_INTERNAL MonoJitICallInfos*
-mono_get_jit_icall_info (void);
-
-#else
-
 extern MonoJitICallInfos mono_jit_icall_info;
 
 #define mono_get_jit_icall_info() (&mono_jit_icall_info)
-
-#endif
 
 // Convert MonoJitICallInfo* to an int or enum.
 //

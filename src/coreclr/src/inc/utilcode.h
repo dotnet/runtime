@@ -694,11 +694,8 @@ public:
     {
         // This constructor will be fired up on startup. Make sure it doesn't
         // do anything besides zero-out out values.
-        m_bUseFallback = FALSE;
-
         m_fpGetThreadUICultureId = NULL;
         m_fpGetThreadUICultureNames = NULL;
-
 
         m_pHash = NULL;
         m_nHashSize = 0;
@@ -710,14 +707,8 @@ public:
 
     }// CCompRC
 
-    HRESULT Init(LPCWSTR pResourceFile, BOOL bUseFallback = FALSE);
+    HRESULT Init(LPCWSTR pResourceFile);
     void Destroy();
-
-    BOOL ShouldUseFallback()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_bUseFallback;
-    };
 
     HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
     HRESULT LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed);
@@ -732,10 +723,9 @@ public:
         FPGETTHREADUICULTUREID* fpGetThreadUICultureId
     );
 
-    // Get the default resource location (mscorrc.dll for desktop, mscorrc.debug.dll for CoreCLR)
+    // Get the default resource location (mscorrc.dll)
     static CCompRC* GetDefaultResourceDll();
-    // Get the generic messages dll (Silverlight only, mscorrc.dll)
-    static CCompRC* GetFallbackResourceDll();
+
     static void GetDefaultCallbacks(
                     FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
                     FPGETTHREADUICULTUREID* fpGetThreadUICultureId)
@@ -758,10 +748,6 @@ public:
         m_DefaultResourceDll.SetResourceCultureCallbacks(
                 fpGetThreadUICultureNames,
                 fpGetThreadUICultureId);
-
-        m_FallbackResourceDll.SetResourceCultureCallbacks(
-                fpGetThreadUICultureNames,
-                fpGetThreadUICultureId);
     }
 
 private:
@@ -779,11 +765,6 @@ private:
     static CCompRC  m_DefaultResourceDll;
     static LPCWSTR  m_pDefaultResource;
 
-    // fallback resources if debug pack is not installed
-    static LONG     m_dwFallbackInitialized;
-    static CCompRC  m_FallbackResourceDll;
-    static LPCWSTR  m_pFallbackResource;
-
     // We must map between a thread's int and a dll instance.
     // Since we only expect 1 language almost all of the time, we'll special case
     // that and then use a variable size map for everything else.
@@ -797,7 +778,6 @@ private:
 #ifdef HOST_UNIX
     // Resource domain is an ANSI string identifying a native resources file
     static LPCSTR  m_pDefaultResourceDomain;
-    static LPCSTR  m_pFallbackResourceDomain;
     LPCSTR m_pResourceDomain;
 #endif // HOST_UNIX
 
@@ -807,8 +787,6 @@ private:
 
     FPGETTHREADUICULTUREID m_fpGetThreadUICultureId;
     FPGETTHREADUICULTURENAMES m_fpGetThreadUICultureNames;
-
-    BOOL m_bUseFallback;
 };
 
 HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResouceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax);
@@ -1058,9 +1036,8 @@ public:
         COR_CONFIG_ENV          = 0x01,
         COR_CONFIG_USER         = 0x02,
         COR_CONFIG_MACHINE      = 0x04,
-        COR_CONFIG_FUSION       = 0x08,
 
-        COR_CONFIG_REGISTRY     = (COR_CONFIG_USER|COR_CONFIG_MACHINE|COR_CONFIG_FUSION),
+        COR_CONFIG_REGISTRY     = (COR_CONFIG_USER|COR_CONFIG_MACHINE),
         COR_CONFIG_ALL          = (COR_CONFIG_ENV|COR_CONFIG_USER|COR_CONFIG_MACHINE),
     };
 
@@ -1114,9 +1091,6 @@ public:
 
 private:
     static LPWSTR EnvGetString(LPCWSTR name, BOOL fPrependCOMPLUS);
-public:
-
-    static BOOL UseRegistry();
 
 private:
 //*****************************************************************************
@@ -1161,8 +1135,6 @@ private:
     static BOOL s_fUseRegCache; // Enable registry cache; if FALSE, CCVNSP
                                  // always returns TRUE.
     static BOOL s_fUseEnvCache; // Enable env cache.
-
-    static BOOL s_fUseRegistry; // Allow lookups in the registry
 
     // Open the .NetFramework keys once and cache the handles
     static HKEY s_hMachineFrameworkKey;
