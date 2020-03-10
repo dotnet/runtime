@@ -1,15 +1,14 @@
 <Project>
   <Import Project="Directory.Build.props" />
 
-  <ItemGroup>
-    <Project Condition="'$(DotNetBuildFromSource)' != 'true'" Include="analyzers/analyzers.depproj" />
+  <PropertyGroup>
+    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
+  </PropertyGroup>
 
-    <!-- Build for all configurations -->
-    <Project Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp/netcoreapp.depproj" />
+  <ItemGroup>
+    <Project Include="netcoreapp/netcoreapp.depproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <Project Include="netstandard/netstandard.depproj" />
     <Project Include="netfx/netfx.depproj" />
-    <Project Include="tools/tools.depproj" />
-    <Project Include="harvestPackages/harvestPackages.depproj" />
     <Project Include="binplacePackages/binplacePackages.depproj" />
   </ItemGroup>
 
