@@ -48,6 +48,7 @@ IF_DEF(LARGELDC, IS_NONE, JMP) // large constant pseudo-op (adrp + ldr)
 
 IF_DEF(EN9, IS_NONE, NONE)  // Instruction has 9 possible encoding types
 IF_DEF(EN6A, IS_NONE, NONE) // Instruction has 6 possible encoding types, type A
+IF_DEF(EN6B, IS_NONE, NONE) // Instruction has 6 possible encoding types, type B
 IF_DEF(EN5A, IS_NONE, NONE) // Instruction has 5 possible encoding types, type A
 IF_DEF(EN5B, IS_NONE, NONE) // Instruction has 5 possible encoding types, type B
 IF_DEF(EN5C, IS_NONE, NONE) // Instruction has 5 possible encoding types, type C
@@ -60,7 +61,6 @@ IF_DEF(EN4F, IS_NONE, NONE) // Instruction has 4 possible encoding types, type F
 IF_DEF(EN4G, IS_NONE, NONE) // Instruction has 4 possible encoding types, type G
 IF_DEF(EN4H, IS_NONE, NONE) // Instruction has 4 possible encoding types, type H
 IF_DEF(EN4I, IS_NONE, NONE) // Instruction has 4 possible encoding types, type I
-IF_DEF(EN4J, IS_NONE, NONE) // Instruction has 4 possible encoding types, type J
 IF_DEF(EN3A, IS_NONE, NONE) // Instruction has 3 possible encoding types, type A
 IF_DEF(EN3B, IS_NONE, NONE) // Instruction has 3 possible encoding types, type B
 IF_DEF(EN3C, IS_NONE, NONE) // Instruction has 3 possible encoding types, type C
@@ -70,6 +70,7 @@ IF_DEF(EN3F, IS_NONE, NONE) // Instruction has 3 possible encoding types, type F
 IF_DEF(EN3G, IS_NONE, NONE) // Instruction has 3 possible encoding types, type G
 IF_DEF(EN3H, IS_NONE, NONE) // Instruction has 3 possible encoding types, type H
 IF_DEF(EN3I, IS_NONE, NONE) // Instruction has 3 possible encoding types, type I
+IF_DEF(EN3J, IS_NONE, NONE) // Instruction has 3 possible encoding types, type J
 IF_DEF(EN2A, IS_NONE, NONE) // Instruction has 2 possible encoding types, type A
 IF_DEF(EN2B, IS_NONE, NONE) // Instruction has 2 possible encoding types, type B
 IF_DEF(EN2C, IS_NONE, NONE) // Instruction has 2 possible encoding types, type C

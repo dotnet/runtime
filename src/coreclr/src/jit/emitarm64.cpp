@@ -1533,6 +1533,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode9[9] = {IF_DR_2E, IF_DR_2G, IF_DI_1B, IF_DI_1D, IF_DV_3C,
                                                IF_DV_2B, IF_DV_2C, IF_DV_2E, IF_DV_2F};
     const static insFormat formatEncode6A[6] = {IF_DR_3A, IF_DR_3B, IF_DR_3C, IF_DI_2A, IF_DV_3A, IF_DV_3E};
+    const static insFormat formatEncode6B[6] = {IF_LS_2D, IF_LS_3F, IF_LS_2E, IF_LS_2F, IF_LS_3G, IF_LS_2G};
     const static insFormat formatEncode5A[5] = {IF_LS_2A, IF_LS_2B, IF_LS_2C, IF_LS_3A, IF_LS_1A};
     const static insFormat formatEncode5B[5] = {IF_DV_2G, IF_DV_2H, IF_DV_2I, IF_DV_1A, IF_DV_1B};
     const static insFormat formatEncode5C[5] = {IF_DR_3A, IF_DR_3B, IF_DI_2C, IF_DV_3C, IF_DV_1B};
@@ -1545,7 +1546,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode4G[4] = {IF_DR_2E, IF_DR_2F, IF_DV_2M, IF_DV_2L};
     const static insFormat formatEncode4H[4] = {IF_DV_3E, IF_DV_3A, IF_DV_2L, IF_DV_2M};
     const static insFormat formatEncode4I[4] = {IF_DV_3D, IF_DV_3B, IF_DV_2G, IF_DV_2A};
-    const static insFormat formatEncode4J[4] = {IF_LS_2D, IF_LS_3F, IF_LS_2E, IF_LS_3G};
     const static insFormat formatEncode3A[3] = {IF_DR_3A, IF_DR_3B, IF_DI_2C};
     const static insFormat formatEncode3B[3] = {IF_DR_2A, IF_DR_2B, IF_DI_1C};
     const static insFormat formatEncode3C[3] = {IF_DR_3A, IF_DR_3B, IF_DV_3C};
@@ -1555,6 +1555,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode3G[3] = {IF_DV_2A, IF_DV_2G, IF_DV_2I};
     const static insFormat formatEncode3H[3] = {IF_DR_3A, IF_DV_3A, IF_DV_3AI};
     const static insFormat formatEncode3I[3] = {IF_DR_2E, IF_DR_2F, IF_DV_2M};
+    const static insFormat formatEncode3J[3] = {IF_LS_2D, IF_LS_3F, IF_LS_2E};
     const static insFormat formatEncode2A[2] = {IF_DR_2E, IF_DR_2F};
     const static insFormat formatEncode2B[2] = {IF_DR_3A, IF_DR_3B};
     const static insFormat formatEncode2C[2] = {IF_DR_3A, IF_DI_2D};
@@ -1595,6 +1596,17 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             for (index = 0; index < 6; index++)
             {
                 if (fmt == formatEncode6A[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
+            break;
+
+        case IF_EN6B:
+            for (index = 0; index < 6; index++)
+            {
+                if (fmt == formatEncode6B[index])
                 {
                     encoding_found = true;
                     break;
@@ -1734,17 +1746,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             }
             break;
 
-        case IF_EN4J:
-            for (index = 0; index < 4; index++)
-            {
-                if (fmt == formatEncode4J[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
         case IF_EN3A:
             for (index = 0; index < 3; index++)
             {
@@ -1837,6 +1838,17 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             for (index = 0; index < 3; index++)
             {
                 if (fmt == formatEncode3I[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
+            break;
+
+        case IF_EN3J:
+            for (index = 0; index < 3; index++)
+            {
+                if (fmt == formatEncode3J[index])
                 {
                     encoding_found = true;
                     break;
