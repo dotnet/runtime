@@ -6282,7 +6282,8 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
  *  Add an instruction referencing two registers and two constants.
  */
 
-void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2)
+void emitter::emitIns_R_R_I_I(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt)
 {
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
@@ -6295,6 +6296,7 @@ void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, re
         int        lsb;
         int        width;
         bitMaskImm bmi;
+        unsigned   selem;
 
         case INS_bfm:
         case INS_sbfm:
@@ -6303,6 +6305,7 @@ void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, re
             assert(isGeneralRegister(reg2));
             assert(isValidImmShift(imm1, size));
             assert(isValidImmShift(imm2, size));
+            assert(insOptsNone(opt));
             bmi.immNRS = 0;
             bmi.immN   = (size == EA_8BYTE);
             bmi.immR   = imm1;
@@ -6320,6 +6323,7 @@ void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, re
             width = imm2 - 1;
             assert(isValidImmShift(lsb, size));
             assert(isValidImmShift(width, size));
+            assert(insOptsNone(opt));
             bmi.immNRS = 0;
             bmi.immN   = (size == EA_8BYTE);
             bmi.immR   = lsb;
@@ -6337,6 +6341,7 @@ void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, re
             width = imm2 + imm1 - 1;
             assert(isValidImmShift(lsb, size));
             assert(isValidImmShift(width, size));
+            assert(insOptsNone(opt));
             bmi.immNRS = 0;
             bmi.immN   = (size == EA_8BYTE);
             bmi.immR   = imm1;
@@ -6353,8 +6358,34 @@ void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, re
             assert(isValidVectorElemsize(elemsize));
             assert(isValidVectorIndex(EA_16BYTE, elemsize, imm1));
             assert(isValidVectorIndex(EA_16BYTE, elemsize, imm2));
+            assert(insOptsNone(opt));
             immOut = (imm1 << 4) + imm2;
             fmt    = IF_DV_2F;
+            break;
+
+        case INS_ld1:
+        case INS_ld2:
+        case INS_ld3:
+        case INS_ld4:
+        case INS_st1:
+        case INS_st2:
+        case INS_st3:
+        case INS_st4:
+            assert(isVectorRegister(reg1));
+            assert(isGeneralRegisterOrSP(reg2));
+
+            elemsize = size;
+            assert(isValidVectorElemsize(elemsize));
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm1));
+
+            selem = insGetLoadStoreVectorSelem(ins);
+            assert((elemsize * selem) == (unsigned)imm2);
+            assert(insOptsPostIndex(opt));
+
+            // Load/Store single structure  post-indexed by an immediate
+            reg2   = encodingSPtoZR(reg2);
+            immOut = imm1;
+            fmt    = IF_LS_2G;
             break;
 
         default:
@@ -6367,6 +6398,7 @@ void emitter::emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, re
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+    id->idInsOpt(opt);
 
     id->idReg1(reg1);
     id->idReg2(reg2);
