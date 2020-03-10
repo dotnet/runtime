@@ -123,17 +123,21 @@ namespace Foo {
 
 That is compiled against the linker to `Foo.dll` assembly.
 
-You can ask the linker to add it at the end of the pipeline:
+To tell the linker where this assembly is located, you have to append its full path after two commas that separate the custom step's name from the custom assembly's path:
 
-`illinker -s Foo.FooStep,Foo -a program.exe`
+`--custom-step [custom step],[custom assembly]`
+
+You can now ask the linker to add the custom step at the end of the pipeline:
+
+`illinker --custom-step Foo.FooStep,D:\Bar\Foo.dll`
 
 Or you can ask the linker to add it after a specific step:
 
-`illinker -s MarkStep:Foo.FooStep,Foo -a program.exe`
+`illinker --custom-step +MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a program.exe`
 
 Or before a specific step:
 
-`illinker -s Foo.FooStep,Foo:MarkStep`
+`illinker --custom-step -MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a program.exe`
 
 ## Mono specific options
 
