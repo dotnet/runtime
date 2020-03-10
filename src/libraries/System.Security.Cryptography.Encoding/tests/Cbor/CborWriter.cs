@@ -28,6 +28,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         }
 
+        public int BytesWritten => _offset;
         // Returns true iff a complete CBOR document has been written to buffer
         public bool IsWriteCompleted => _remainingDataItems == 0 && (_nestedDataItemStack?.Count ?? 0) == 0;
 

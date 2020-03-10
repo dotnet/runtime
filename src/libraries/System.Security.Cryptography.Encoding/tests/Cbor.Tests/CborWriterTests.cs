@@ -34,5 +34,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             writer.WriteInt64(42);
             Assert.Throws<InvalidOperationException>(() => writer.WriteTextString("lorem ipsum"));
         }
+
+        [Fact]
+        public static void BytesWritten_SingleValue_ShouldReturnBytesWritten()
+        {
+            using var writer = new CborWriter();
+            Assert.Equal(0, writer.BytesWritten);
+            writer.WriteTextString("test");
+            Assert.Equal(5, writer.BytesWritten);
+        }
     }
 }

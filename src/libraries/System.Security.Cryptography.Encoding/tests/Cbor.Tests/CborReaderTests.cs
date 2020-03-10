@@ -18,6 +18,37 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.Equal(CborReaderState.EndOfData, reader.Peek());
         }
 
+        [Fact]
+        public static void BytesRead_NoReads_ShouldReturnZero()
+        {
+            var reader = new CborReader(new byte[10]);
+            Assert.Equal(0, reader.BytesRead);
+        }
+
+        [Fact]
+        public static void BytesRemaining_NoReads_ShouldReturnBufferSize()
+        {
+            var reader = new CborReader(new byte[10]);
+            Assert.Equal(10, reader.BytesRemaining);
+        }
+
+
+        [Fact]
+        public static void BytesRead_SingleRead_ShouldReturnConsumedBytes()
+        {
+            var reader = new CborReader(new byte[] { 24, 24 });
+            reader.ReadInt64();
+            Assert.Equal(2, reader.BytesRead);
+        }
+
+        [Fact]
+        public static void BytesRemaining_SingleRead_ShouldReturnRemainingBytes()
+        {
+            var reader = new CborReader(new byte[] { 24, 24 });
+            reader.ReadInt64();
+            Assert.Equal(0, reader.BytesRemaining);
+        }
+
         [Theory]
         [InlineData(CborMajorType.UnsignedInteger, CborReaderState.UnsignedInteger)]
         [InlineData(CborMajorType.NegativeInteger, CborReaderState.NegativeInteger)]

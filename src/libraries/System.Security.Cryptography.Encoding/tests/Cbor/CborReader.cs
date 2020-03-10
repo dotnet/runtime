@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal enum CborReaderState
     {
-        UnsignedInteger = 0,
+        UnsignedInteger = 1,
         NegativeInteger,
         ByteString,
         TextString,
@@ -26,6 +26,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     internal partial class CborReader
     {
         private ReadOnlyMemory<byte> _buffer;
+        private int _bytesRead = 0;
 
         // remaining number of data items in current cbor context
         // with null representing indefinite length data items.
@@ -37,6 +38,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             _buffer = buffer;
         }
+
+        public int BytesRead => _bytesRead;
+        public int BytesRemaining => _buffer.Length;
 
         public CborReaderState Peek()
         {
@@ -148,6 +152,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         private void AdvanceBuffer(int length)
         {
             _buffer = _buffer.Slice(length);
+            _bytesRead += length;
         }
 
         private void EnsureBuffer(int length)
