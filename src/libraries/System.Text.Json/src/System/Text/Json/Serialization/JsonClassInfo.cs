@@ -122,7 +122,7 @@ namespace System.Text.Json
                 Options);
 
             ClassType = converter.ClassType;
-            PolicyProperty = CreatePolicyProperty(Type, runtimeType, converter, Options);
+            TypeProperty = CreateTypeProperty(Type, runtimeType, converter, Options);
 
             switch (ClassType)
             {
@@ -391,7 +391,15 @@ namespace System.Text.Json
             return new Dictionary<string, JsonPropertyInfo>(capacity, comparer);
         }
 
-        public JsonPropertyInfo? PolicyProperty { get; private set; }
+        /// <summary>
+        /// The "type property" for the current JsonClassInfo.
+        /// A "type property" is not a real property on a type; instead it represents a collection element type,
+        /// a generic type parameter, or the root type passed into the root serialization APIs.
+        /// The "type property" is used to obtain the converter for the given type.
+        /// For example, for a property returning <see cref="Collections.Generic.List{T}"/> where T is a string,
+        /// a JsonClassInfo will be created with .Type=typeof(string) and .TypeProperty=JsonPropertyInfo{string}.
+        /// </summary>
+        public JsonPropertyInfo TypeProperty { get; private set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryIsPropertyRefEqual(in PropertyRef propertyRef, ReadOnlySpan<byte> propertyName, ulong key, [NotNullWhen(true)] ref JsonPropertyInfo? info)
