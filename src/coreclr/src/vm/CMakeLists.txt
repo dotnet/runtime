@@ -100,6 +100,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     methodtable.cpp
     nativeimage.cpp
     object.cpp
+    onstackreplacement.cpp
     pefile.cpp
     peimage.cpp
     peimagelayout.cpp
@@ -207,6 +208,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     methodtable.inl
     object.h
     object.inl
+    onstackreplacement.h
     pefile.h
     pefile.inl
     peimage.h

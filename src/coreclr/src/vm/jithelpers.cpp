@@ -54,6 +54,7 @@
 
 #include "runtimehandles.h"
 #include "castcache.h"
+#include "onstackreplacement.h"
 
 //========================================================================
 //
@@ -4993,54 +4994,15 @@ HCIMPLEND
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-// Runtime state for a patchpoint.
-//
-// Patchpoint identity is currently the return address
-// of the helper call in the jitted code.
-//
-// Todo: handle cases where IP addresses get recycled
-struct PerPatchpointInfo
-{
-    PerPatchpointInfo() : 
-        m_osrMethodCode(0),
-        m_patchpointCount(0),
-        m_flags(0),
-        m_patchpointId(0)
-    {
-    }
-
-    enum 
-    {
-        patchpoint_triggered = 0x1,
-        patchpoint_invalid = 0x2
-    };
-
-    PCODE m_osrMethodCode;
-    LONG m_patchpointCount;
-    LONG m_flags;
-
-    int m_patchpointId;
-};
-
-typedef EEPtrHashTable JitPatchpointTable;
-JitPatchpointTable *g_pJitPatchpointTable = NULL;
-CrstStatic g_pJitPatchpointCrst;
-static int s_patchpointId = 0;
-static bool s_warnedLimitedRange = false;
-
 // Helper method to jit the OSR version of a method.
 //
 // Returns the address of the jitted code.
 // Returns NULL if osr method can't be created.
-static PCODE JitPatchpointWorker(void* ip, int ilOffset)
+static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOffset)
 {
     PCODE osrVariant = NULL;
 
     GCX_PREEMP();
-
-    // Find the method desc for this bit of code
-    EECodeInfo codeInfo((PCODE)ip);
-    MethodDesc* pMD = codeInfo.GetMethodDesc();
 
     // Fetch the patchpoint info for the current method
     EEJitManager* jitMgr = ExecutionManager::GetEEJitManager();
@@ -5078,13 +5040,13 @@ static PCODE JitPatchpointWorker(void* ip, int ilOffset)
 }
 
 // Helper method wrapper to set up a frame so we can invoke methods that might GC
-HCIMPL2(PCODE, JIT_Patchpoint_Framed, void* ip, int ilOffset)
+HCIMPL3(PCODE, JIT_Patchpoint_Framed, MethodDesc* pMD, EECodeInfo& codeInfo, int ilOffset)
 {
     PCODE result = NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    result = JitPatchpointWorker(ip, ilOffset);
+    result = JitPatchpointWorker(pMD, codeInfo, ilOffset);
 
     HELPER_METHOD_FRAME_END();
 
@@ -5110,25 +5072,14 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     // Patchpoint identity is the helper return address
-    void* const ip = _ReturnAddress();
+    PCODE ip = (PCODE)_ReturnAddress();
 
     // Fetch or setup patchpoint info for this patchpoint.
-    PerPatchpointInfo * ppInfo = NULL;
-    BOOL hasData = g_pJitPatchpointTable->GetValueSpeculative(ip, (HashDatum*)&ppInfo);
-
-    if (!hasData)
-    {
-        CrstHolder lock(&g_pJitPatchpointCrst);
-        hasData = g_pJitPatchpointTable->GetValue(ip, (HashDatum*)&ppInfo);
-
-        if (!hasData)
-        {
-            // Todo: find right heap for this data
-            ppInfo = new (nothrow) PerPatchpointInfo();
-            g_pJitPatchpointTable->InsertValue(ip, (HashDatum)ppInfo);
-            ppInfo->m_patchpointId = ++s_patchpointId;
-        }
-    }
+    EECodeInfo codeInfo(ip);
+    MethodDesc* pMD = codeInfo.GetMethodDesc();
+    LoaderAllocator* allocator = pMD->GetLoaderAllocator();
+    OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
+    PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
 
     const int verbose = g_pConfig->OSR_Verbose();
     const int ppId = ppInfo->m_patchpointId;
@@ -5186,12 +5137,6 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         // a later one.
         const int lowId = g_pConfig->OSR_LowId();
         const int highId = g_pConfig->OSR_HighId();
-        
-        if (!s_warnedLimitedRange && ((lowId != -1) || (highId != 10000000)))
-        {
-            printf("\n### Runtime: PATCHPOINTS LIMITED to range [%d,%d]\n\n", lowId, highId);
-            s_warnedLimitedRange = true;
-        }
         
         if ((ppId < lowId) || (ppId > highId))
         {
@@ -5286,9 +5231,6 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 #if _DEBUG
         if (verbose > 0)
         {
-            EECodeInfo codeInfo((PCODE)ip);
-            MethodDesc* pMD = codeInfo.GetMethodDesc();
-            
             printf("### Runtime: patchpoint [%d] 0x%p TRIGGER hit:%d bump:%d native:0x%x il:0x%x in 0x%p %s::%s %s\n",
                 ppId,
                 ip,
@@ -5300,7 +5242,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 #endif
         
         // Invoke the helper to build the OSR method
-        osrMethodCode = HCCALL2(JIT_Patchpoint_Framed, ip, ilOffset);
+        osrMethodCode = HCCALL3(JIT_Patchpoint_Framed, pMD, codeInfo, ilOffset);
         
         // If that failed, mark the patchpoint as invaild.
         if (osrMethodCode == NULL)
@@ -5352,11 +5294,11 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     }
     
     // Now unwind back to the original method caller frame.
-    EECodeInfo codeInfo(GetIP(&frameContext));
+    EECodeInfo callerCodeInfo(GetIP(&frameContext));
     frameContext.ContextFlags = CONTEXT_FULL;
     ULONG_PTR establisherFrame = 0;
     PVOID handlerData = NULL;
-    RtlVirtualUnwind(UNW_FLAG_NHANDLER, codeInfo.GetModuleBase(), GetIP(&frameContext), codeInfo.GetFunctionEntry(), 
+    RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(&frameContext), callerCodeInfo.GetFunctionEntry(), 
         &frameContext, &handlerData, &establisherFrame, NULL);
     
     // Now, set FP and SP back to the values they had just before this helper was called,
@@ -5529,17 +5471,6 @@ void InitJITHelpers2()
     if (!tempGenericHandleCache->Init(59, &sLock))
         COMPlusThrowOM();
     g_pJitGenericHandleCache = tempGenericHandleCache.Extract();
-
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-    g_pJitPatchpointCrst.Init(CrstJitPatchpoint, CRST_UNSAFE_COOPGC);
-
-    // Allocate and initialize the patchpoint table
-    NewHolder <JitPatchpointTable> tempJitPatchpointTable (new JitPatchpointTable());
-    LockOwner sLock2 = {&g_pJitPatchpointCrst, IsOwnerOfCrst};
-    if (!tempJitPatchpointTable->Init(59, &sLock2))
-        COMPlusThrowOM();
-    g_pJitPatchpointTable = tempJitPatchpointTable.Extract();
-#endif // FEATURE_ON_STACK_REPLACEMENT
 }
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM)

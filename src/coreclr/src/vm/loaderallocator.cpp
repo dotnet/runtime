@@ -58,6 +58,10 @@ LoaderAllocator::LoaderAllocator()
     m_callCountingManager = NULL;
 #endif
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    m_onStackReplacementManager = NULL;
+#endif
+
     m_fGCPressure = false;
     m_fTerminated = false;
     m_fUnloaded = false;
@@ -1222,6 +1226,10 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
         m_callCountingManager = new CallCountingManager();
     }
 #endif
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    m_onStackReplacementManager = new OnStackReplacementManager();
+#endif
 }
 
 
@@ -1340,6 +1348,14 @@ void LoaderAllocator::Terminate()
     {
         delete m_callCountingManager;
         m_callCountingManager = NULL;
+    }
+#endif
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    if (m_onStackReplacementManager != NULL)
+    {
+        delete m_onStackReplacementManager;
+        m_onStackReplacementManager = NULL;
     }
 #endif
 
