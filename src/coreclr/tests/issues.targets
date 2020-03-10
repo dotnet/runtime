@@ -565,6 +565,15 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/LeakWheel/leakwheel/*">
             <Issue>https://github.com/dotnet/runtime/issues/9270</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Tailcall/TailcallVerifyWithPrefix/*">
+            <Issue>Condition17::Test1 checks that we tail call via helper when security cookie is needed; on arm64 we fast tail call in this case.</Issue>	
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_d/*">
+            <Issue>https://github.com/dotnet/runtime/issues/31729</Issue>	
+        </ExcludeList>	
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_do/*">
+            <Issue>https://github.com/dotnet/runtime/issues/31729</Issue>	
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DefaultInterfaceMethods/sharedgenerics/sharedgenerics_r/*">
             <Issue>https://github.com/dotnet/runtime/issues/7430</Issue>
         </ExcludeList>
