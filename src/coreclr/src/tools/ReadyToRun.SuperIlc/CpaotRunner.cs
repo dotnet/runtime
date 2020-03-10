@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace ReadyToRun.SuperIlc
 {
@@ -22,8 +22,6 @@ namespace ReadyToRun.SuperIlc
         protected override string CompilerFileName => "corerun".AppendOSExeSuffix();
 
         private string Crossgen2Path => Path.Combine(_options.CoreRootDirectory.FullName, "crossgen2", "crossgen2.dll");
-
-        private IEnumerable<string> _resolvedReferences;
 
         public CpaotRunner(BuildOptions options, IEnumerable<string> referencePaths)
             : base(options, referencePaths)
@@ -86,25 +84,20 @@ namespace ReadyToRun.SuperIlc
                 yield return $"--parallelism={_options.Crossgen2Parallelism}";
             }
 
-            HashSet<string> uniqueFolders = new HashSet<string>();
+            HashSet<string> uniqueFolders = new HashSet<string>(
+                RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? StringComparer.OrdinalIgnoreCase
+                : StringComparer.Ordinal);
             foreach (string assemblyFileName in assemblyFileNames)
             {
                 uniqueFolders.Add(Path.GetDirectoryName(assemblyFileName));
             }
 
+            uniqueFolders.UnionWith(_referenceFolders);
+
             foreach (string reference in ResolveReferences(uniqueFolders))
             {
                 yield return reference;
-            }
-
-            if (_resolvedReferences == null)
-            {
-                _resolvedReferences = ResolveReferences(_referenceFolders);
-            }
-
-            foreach (string asmRef in _resolvedReferences)
-            {
-                yield return asmRef;
             }
         }
 
