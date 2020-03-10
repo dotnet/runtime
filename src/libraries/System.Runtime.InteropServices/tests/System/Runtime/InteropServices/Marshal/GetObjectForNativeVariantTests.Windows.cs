@@ -494,10 +494,9 @@ namespace System.Runtime.InteropServices.Tests
             };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(GetObjectForNativeVariant_PrimitivesByRef_TestData))]
         [MemberData(nameof(GetObjectForNativeVariant_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_Normal_ReturnsExpected(Variant variant, object expected)
         {
             try
@@ -510,9 +509,8 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(GetObjectForNativeVariant_PrimitivesByRef_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetObjectForNativeVariant_NestedVariant_ReturnsExpected(Variant source, object expected)
         {
             IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<Variant>());
@@ -531,9 +529,8 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(GetObjectForNativeVariant_PrimitivesByRef_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public unsafe void GetObjectForNativeVariant_ByRef_ReturnsExpected(Variant source, object value)
         {
             try
