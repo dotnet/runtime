@@ -467,6 +467,26 @@ INST3(st1_4regs,"st1",   0,ST, IF_EN3J,   0x0C002000,  0x0C802000,  0x0C9F2000)
                                    //  st1     {Vt-Vt4},[Xn],Xm     LS_3F  0Q001100100mmmmm 0010XXnnnnnttttt   0C80 2000   post-indexed by a register
                                    //  st1     {Vt-Vt4},[Xn],#imm   LS_2E  0Q00110010011111 0010XXnnnnnttttt   0C9F 2000   post-indexed by an immediate
 
+INST3(ld1r,    "ld1r",   0,LD, IF_EN3J,   0x0D40C000,  0x0DC0C000,  0x0DDFC000)
+                                   //  ld1r    {Vt},[Xn]            LS_2D  0Q00110101000000 1100ssnnnnnttttt   0D40 C000   base register
+                                   //  ld1r    {Vt},[Xn],Xm         LS_3F  0Q001101110mmmmm 1100ssnnnnnttttt   0DC0 C000   post-indexed by a register
+                                   //  ld1r    {Vt},[Xn],#1         LS_2E  0Q00110111011111 1100ssnnnnnttttt   0DDF C000   post-indexed by an immediate
+
+INST3(ld2r,    "ld2r",   0,LD, IF_EN3J,   0x0D60C000,  0x0DE0C000,  0x0DFFC000)
+                                   //  ld2r    {Vt,Vt2},[Xn]        LS_2D  0Q00110101100000 1100ssnnnnnttttt   0D60 C000   base register
+                                   //  ld2r    {Vt,Vt2},[Xn],Xm     LS_3F  0Q001101111mmmmm 1100ssnnnnnttttt   0DE0 C000   post-indexed by a register
+                                   //  ld2r    {Vt,Vt2},[Xn],#2     LS_2E  0Q00110111111111 1100ssnnnnnttttt   0DFF C000   post-indexed by an immediate
+
+INST3(ld3r,    "ld3r",   0,LD, IF_EN3J,   0x0D40E000,  0x0DC0E000,  0x0DDFE000)
+                                   //  ld3r    {Vt-Vt3},[Xn]        LS_2D  0Q00110101000000 1110ssnnnnnttttt   0D40 E000   base register
+                                   //  ld3r    {Vt-Vt3},[Xn],Xm     LS_3F  0Q001101110mmmmm 1110ssnnnnnttttt   0DC0 E000   post-indexed by a register
+                                   //  ld3r    {Vt-Vt3},[Xn],#4     LS_2E  0Q00110111011111 1110ssnnnnnttttt   0DDF E000   post-indexed by an immediate
+
+INST3(ld4r,    "ld4r",   0,LD, IF_EN3J,   0x0D60E000,  0x0DE0E000,  0x0DFFE000)
+                                   //  ld4r    {Vt-Vt4},[Xn]        LS_2D  0Q00110101100000 1110ssnnnnnttttt   0D60 E000   base register
+                                   //  ld4r    {Vt-Vt4},[Xn],Xm     LS_3F  0Q001101111mmmmm 1110ssnnnnnttttt   0DE0 E000   post-indexed by a register
+                                   //  ld4r    {Vt-Vt4},[Xn],#8     LS_2E  0Q00110111111111 1110ssnnnnnttttt   0DFF E000   post-indexed by an immediate
+
 //    enum     name     FP LD/ST            DR_2E        DR_2F
 INST2(negs,    "negs",   0, 0, IF_EN2A,   0x6B0003E0,  0x6B0003E0)
                                    //  negs    Rd,Rm                DR_2E  X1101011000mmmmm 00000011111ddddd   6B00 03E0
