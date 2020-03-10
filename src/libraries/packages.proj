@@ -94,7 +94,7 @@
   <Target Name="BuildAllProjects">
     <MSBuild Targets="Build"
              Projects="@(ProjectReference)"
-             Properties="BuildAllProjects=true;%(Project.AdditionalProperties)"
+             Properties="BuildAllProjects=true;%(ProjectReference.AdditionalProperties)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
   </Target>
