@@ -357,5 +357,23 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.TryReadTextString(buffer, out int _);
             });
         }
+
+        [Fact]
+        public static void ReadTextString_EmptyBuffer_ShouldThrowFormatException()
+        {
+            byte[] encoding = Array.Empty<byte>();
+            var reader = new CborReader(encoding);
+
+            Assert.Throws<FormatException>(() => reader.ReadTextString());
+        }
+
+        [Fact]
+        public static void ReadByteString_EmptyBuffer_ShouldThrowFormatException()
+        {
+            byte[] encoding = Array.Empty<byte>();
+            var reader = new CborReader(encoding);
+
+            Assert.Throws<FormatException>(() => reader.ReadByteString());
+        }
     }
 }

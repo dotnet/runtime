@@ -30,8 +30,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // remaining number of data items in current cbor context
         // with null representing indefinite length data items.
         // The root context ony permits one data item to be read.
-        private uint? _remainingDataItems = 1;
-        private Stack<(CborMajorType type, uint? remainingDataItems)>? _nestedDataItemStack;
+        private ulong? _remainingDataItems = 1;
+        private Stack<(CborMajorType type, ulong? remainingDataItems)>? _nestedDataItemStack;
 
         internal CborReader(ReadOnlyMemory<byte> buffer)
         {
@@ -49,12 +49,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             {
                 if (_nestedDataItemStack?.Count > 0)
                 {
-                    switch (_nestedDataItemStack.Peek().type)
+                    return _nestedDataItemStack.Peek().type switch
                     {
-                        case CborMajorType.Array: return CborReaderState.EndArray;
-                        case CborMajorType.Map: return CborReaderState.EndMap;
-                        default: throw new Exception("CborReader internal error. Invalid CBOR major type pushed in stack.");
-                    }
+                        CborMajorType.Array => CborReaderState.EndArray,
+                        CborMajorType.Map => CborReaderState.EndMap,
+                        _ => throw new Exception("CborReader internal error. Invalid CBOR major type pushed to stack."),
+                    };
                 }
                 else
                 {
@@ -85,9 +85,14 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private CborInitialByte PeekInitialByte()
         {
+            if (_remainingDataItems == 0)
+            {
+                throw new InvalidOperationException("Reading a CBOR data item in the current context exceeds its definite length.");
+            }
+
             if (_buffer.IsEmpty)
             {
-                throw new InvalidOperationException("end of buffer");
+                throw new FormatException("unexpected end of buffer.");
             }
 
             return new CborInitialByte(_buffer.Span[0]);
@@ -95,12 +100,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         private CborInitialByte PeekInitialByte(CborMajorType expectedType)
         {
-            if (_buffer.IsEmpty)
-            {
-                throw new InvalidOperationException("end of buffer");
-            }
-
-            var result = new CborInitialByte(_buffer.Span[0]);
+            CborInitialByte result = PeekInitialByte();
 
             if (expectedType != result.MajorType)
             {
@@ -110,9 +110,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return result;
         }
 
-        private void PushDataItem(CborMajorType type, uint? expectedNestedItems)
+        private void PushDataItem(CborMajorType type, ulong? expectedNestedItems)
         {
-            _nestedDataItemStack ??= new Stack<(CborMajorType, uint?)>();
+            _nestedDataItemStack ??= new Stack<(CborMajorType, ulong?)>();
             _nestedDataItemStack.Push((type, _remainingDataItems));
             _remainingDataItems = expectedNestedItems;
         }
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 throw new InvalidOperationException("No active CBOR nested data item to pop");
             }
 
-            (CborMajorType actualType, uint? remainingItems) = _nestedDataItemStack.Peek();
+            (CborMajorType actualType, ulong? remainingItems) = _nestedDataItemStack.Peek();
 
             if (expectedType != actualType)
             {
@@ -155,14 +155,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             if (_buffer.Length < length)
             {
                 throw new FormatException("Unexpected end of buffer.");
-            }
-        }
-
-        private void EnsureCanReadNewDataItem()
-        {
-            if (_remainingDataItems == 0)
-            {
-                throw new InvalidOperationException("Adding a CBOR data item to the current context exceeds its definite length.");
             }
         }
     }

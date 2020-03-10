@@ -13,7 +13,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Implements major type 2 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public byte[] ReadByteString()
         {
-            EnsureCanReadNewDataItem();
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
             int length = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
             EnsureBuffer(1 + additionalBytes + length);
@@ -26,7 +25,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public bool TryReadByteString(Span<byte> destination, out int bytesWritten)
         {
-            EnsureCanReadNewDataItem();
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
             int length = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
             EnsureBuffer(1 + additionalBytes + length);
@@ -48,7 +46,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Implements major type 3 decoding per https://tools.ietf.org/html/rfc7049#section-2.1
         public string ReadTextString()
         {
-            EnsureCanReadNewDataItem();
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
             int length = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
             EnsureBuffer(1 + additionalBytes + length);
@@ -61,7 +58,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
         public bool TryReadTextString(Span<char> destination, out int charsWritten)
         {
-            EnsureCanReadNewDataItem();
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
             int byteLength = checked((int)ReadUnsignedInteger(header, out int additionalBytes));
             EnsureBuffer(1 + additionalBytes + byteLength);

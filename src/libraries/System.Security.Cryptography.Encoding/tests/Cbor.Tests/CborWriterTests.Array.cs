@@ -121,7 +121,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
     }
 
-    static class ArrayHelper
+    static class ArrayWriterHelper
     {
         public static void WriteArray(this CborWriter writer, params object[] values)
         {
