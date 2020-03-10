@@ -5012,7 +5012,8 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOf
 
     if (patchpointInfo == NULL)
     {
-        // log ...
+        // Unexpected, but not fatal
+        STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "JitPatchpointWorker: failed to restore patchpoint info for Method=0x%pM\n", pMD);
         return NULL;
     }
 
@@ -5026,12 +5027,16 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOf
         HRESULT hr = ilCodeVersion.AddNativeCodeVersion(pMD, NativeCodeVersion::OptimizationTier1OSR, &osrNativeCodeVersion, patchpointInfo, ilOffset);
         if (FAILED(hr))
         {
-            // log ...
+            // Unexpected, but not fatal
+            STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "JitPatchpointWorker: failed to add native code version for Method=0x%pM\n", pMD);
             return NULL;
         }
     }
 
     // Invoke the jit to compile the OSR version
+    LOG((LF_TIEREDCOMPILATION, LL_INFO10, "JitPatchpointWorker: creating OSR version of Method=0x%pM (%s::%s) at offset %d\n",
+        pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+
     PrepareCodeConfigBuffer configBuffer(osrNativeCodeVersion);
     PrepareCodeConfig *config = configBuffer.GetConfig();
     osrVariant = pMD->PrepareCode(config);
@@ -5081,7 +5086,6 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
     PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
 
-    const int verbose = g_pConfig->OSR_Verbose();
     const int ppId = ppInfo->m_patchpointId;
     const int counterBump = g_pConfig->OSR_CounterBump();
 
@@ -5100,22 +5104,11 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     // so we can update it without worrying about other threads.
     *counter = counterBump;
 
-    // OSR is only supported on x64, currently.
-#if !defined(TARGET_AMD64)
-    if (verbose > 1)
-    {
-        printf("### Runtime: no OSR for this isa/abi yet [%d] 0x%p\n", ppId, ip);
-    }
-    return;
-#endif
-
-    // Is this an invalid patchpoint? If so, just return to the Tier0 method.
+    // Is this a patchpoint that was previously marked as invalid? If so, just return to the Tier0 method.
     if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
     {
-        if (verbose > 1)
-        {
-            printf("### Runtime: INVALID patchpoint [%d] 0x%p\n", ppId, ip);
-        }
+        LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+                ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
         return;
     }
     
@@ -5135,18 +5128,19 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         // that point until the method returns, if we trigger on an
         // early patchpoint in a method, we may never see triggers on
         // a later one.
+
+#ifdef _DEBUG
         const int lowId = g_pConfig->OSR_LowId();
         const int highId = g_pConfig->OSR_HighId();
         
         if ((ppId < lowId) || (ppId > highId))
         {
-            if (verbose > 0)
-            {
-                printf("### Runtime: IGNORING patchpoint [%d] 0x%p\n", ppId, ip);
-            }
+            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: ignoring patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+                    ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
             return;
         }
-        
+#endif
+
         // Second, only request the OSR method if this patchpoint has
         // been hit often enough.
         //
@@ -5173,14 +5167,13 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         // we're not too eager to create OSR methods (since there is
         // some jit cost), but are eager enough to transition before
         // we run too much Tier0 code.
-        
+        //
         const int hitLimit = g_pConfig->OSR_HitLimit();
         const int hitCount = InterlockedIncrement(&ppInfo->m_patchpointCount);
-        
-        if ((verbose > 1) || ((verbose > 0) && (hitCount == 1)))
-        {
-            printf("### Runtime: patchpoint [%d] 0x%p hit:%d (limit %d)\n", ppId, ip, hitCount, hitLimit);
-        }
+        const int hitLogLevel = (hitCount == 1) ? LL_INFO10 : LL_INFO1000;
+
+        LOG((LF_TIEREDCOMPILATION, hitLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) hit %d in Method=0x%pM (%s::%s) [il offset %d] (limit %d)\n",
+            ppId, ip, hitCount, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset, hitLimit));
         
         // Defer, if we haven't yet reached the limit 
         if (hitCount < hitLimit)
@@ -5192,11 +5185,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         LONG oldFlags = ppInfo->m_flags;
         if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
         {
-            // Some other thread is already working on the OSR method, just come back later.
-            if (verbose > 1)
-            {
-                printf("### Runtime: AWAITING patchpoint [%d] 0x%p\n", ppId, ip);
-            }
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
             return;
         }
         
@@ -5205,11 +5194,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         
         if (!triggerTransition)
         {
-            // Some other thread won the race, just come back later.
-            if (verbose > 1)
-            {
-                printf("### Runtime: (lost race) AWAITING patchpoint [%d] 0x%p\n", ppId, ip);
-            }
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
             return;
         }
         
@@ -5227,19 +5212,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         //
         // In this prototype we want to expose bugs in the jitted code
         // for OSR methods, so we stick with synchronous creation.
-        
-#if _DEBUG
-        if (verbose > 0)
-        {
-            printf("### Runtime: patchpoint [%d] 0x%p TRIGGER hit:%d bump:%d native:0x%x il:0x%x in 0x%p %s::%s %s\n",
-                ppId,
-                ip,
-                hitCount, counterBump,
-                codeInfo.GetRelOffset(), ilOffset,
-                pMD,
-                pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, pMD->m_pszDebugMethodSignature);
-        }
-#endif
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRIGGER at count %d\n", ppId, ip, hitCount));
         
         // Invoke the helper to build the OSR method
         osrMethodCode = HCCALL3(JIT_Patchpoint_Framed, pMD, codeInfo, ilOffset);
@@ -5247,10 +5220,9 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         // If that failed, mark the patchpoint as invaild.
         if (osrMethodCode == NULL)
         {
-            if (verbose > 0)
-            {
-                printf("### Runtime: unable to create OSR method, marking patchpoint [%d] 0x%p INVALID\n", ppId, ip);
-            }
+            // Unexpected, but not fatal
+            STRESS_LOG5(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_Patchpoint: patchpoint [%d] (0x%p) OSR method creation failed,"
+                " marking patchpoint invalid for Method=0x%pM il offset %d\n", ppId, ip, hitCount, pMD, ilOffset);
             
             InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
             return;
@@ -5289,8 +5261,9 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     // We expect to be back at the right IP
     if ((UINT_PTR)ip != GetIP(&frameContext))
     {
-        printf("### Runtime: patchpoint [%d] 0x%p TRANSITION -- odd that context has ip %p\n",
-            ppId, ip, GetIP(&frameContext));
+        // Should be fatal
+        STRESS_LOG3(LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRANSITION"
+            " unexpected context IP 0x%p\n", ppId, ip, GetIP(&frameContext));
     }
     
     // Now unwind back to the original method caller frame.
@@ -5319,12 +5292,9 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     
     // Note we can get here w/o triggering, if there is an existing OSR method and
     // we hit the patchpoint.
-    if (((verbose > 0) && isNewMethod) || (verbose > 1))
-    {
-        printf("### Runtime: patchpoint [%d] 0x%p TRANSITION%s RSP %p RBP %p RIP %p (prev RBP %p)\n",
-            ppId, ip, isNewMethod ? "" : " (existing)", currentSP, currentFP, osrMethodCode , *(char**)currentFP);
-    }
-    
+    const int transitionLogLevel = isNewMethod ? LL_INFO10 : LL_INFO1000;
+    LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, ip, osrMethodCode));
+
     // Install new entry point as IP
     SetIP(&frameContext, osrMethodCode);
     
