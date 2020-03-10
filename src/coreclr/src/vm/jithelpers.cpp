@@ -5088,7 +5088,10 @@ EXTERN_C void JIT_ReversePInvokeExit(ReversePInvokeFrame* frame)
     _ASSERTE(frame != NULL);
     _ASSERTE(frame->currentThread == GetThread());
 
-    frame->currentThread->EnablePreemptiveGC();
+    // Manually inline the fast path in Thread::EnablePreemptiveGC().
+    // This is a trade off with GC suspend performance. We are opting
+    // to make this exit faster.
+    frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 }
 
 //========================================================================
