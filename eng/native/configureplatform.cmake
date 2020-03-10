@@ -1,4 +1,5 @@
 include(CheckPIESupported)
+include(${CMAKE_CURRENT_LIST_DIR}/functions.cmake)
 
 #----------------------------------------
 # Detect and set platform variable names
@@ -320,3 +321,5 @@ if(NOT CLR_CMAKE_HOST_ARCH_WASM)
     endif()
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
+
+set(CLR_CMAKE_CONFIGURE_PLATFORM_INCLUDED 1)
