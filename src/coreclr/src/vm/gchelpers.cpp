@@ -404,20 +404,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     }
     else
     {
-#ifdef FEATURE_64BIT_ALIGNMENT
-        MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
-        if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
-        {
-            // This platform requires that certain fields are 8-byte aligned (and the runtime doesn't provide
-            // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
-            // header that requires alignment we need to be careful. However it just so happens that all the
-            // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
-            // in their headers so the alignment requirements for the header and the payload are the same.
-            _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
-            orArray = (ArrayBase*)Alloc(totalSize, flags | GC_ALLOC_ALIGN8);
-        }
-        else
-#else
+#ifndef FEATURE_64BIT_ALIGNMENT
         if ((DATA_ALIGNMENT < sizeof(double)) && (elemType == ELEMENT_TYPE_R8) &&
             (totalSize < g_pConfig->GetGCLOHThreshold() - MIN_OBJECT_SIZE))
         {
@@ -453,9 +440,20 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
             orDummyObject->SetMethodTable(g_pObjectClass);
         }
         else
-#endif  // FEATURE_64BIT_ALIGNMENT
-
         {
+#else   // ! FEATURE_64BIT_ALIGNMENT
+            MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
+            if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
+            {
+                // This platform requires that certain fields are 8-byte aligned (and the runtime doesn't provide
+                // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
+                // header that requires alignment we need to be careful. However it just so happens that all the
+                // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
+                // in their headers so the alignment requirements for the header and the payload are the same.
+                _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
+                flags |= GC_ALLOC_ALIGN8;
+            }
+#endif
             orArray = (ArrayBase*)Alloc(totalSize, flags);
         }
         orArray->SetArrayMethodTable(pArrayMT);
@@ -671,13 +669,10 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
             // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
             // in their headers so the alignment requirements for the header and the payload are the same.
             _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
-            orArray = (ArrayBase*)Alloc(totalSize, flags | GC_ALLOC_ALIGN8);
+            flags |= GC_ALLOC_ALIGN8;
         }
-        else
 #endif
-        {
-            orArray = (ArrayBase *) Alloc(totalSize, flags);
-        }
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
         orArray->SetArrayMethodTable(pArrayMT);
     }
 
@@ -1054,7 +1049,6 @@ OBJECTREF AllocateObject(MethodTable *pMT
         PRECONDITION(pMT->CheckInstanceActivated());
     } CONTRACTL_END;
 
-    Object     *orObject = NULL;
     // use unchecked oref here to avoid triggering assert in Validate that the AD is
     // not set becuase it isn't until near the end of the fcn at which point we can allow
     // the check.
@@ -1092,17 +1086,15 @@ OBJECTREF AllocateObject(MethodTable *pMT
             // first field is aligned relative to the header) and true for boxed value types (where we can't
             // do the same padding without introducing more complexity in type layout and unboxing stubs).
             _ASSERTE(sizeof(Object) == 4);
-            flags |= pMT->IsValueType() ?
-                (GC_ALLOC_ALIGN8_BIAS | GC_ALLOC_ALIGN8) :
-                GC_ALLOC_ALIGN8;
-
-            orObject = (Object *) Alloc(baseSize, flags);
+            flags |= GC_ALLOC_ALIGN8;
+            if (pMT->IsValueType())
+            {
+                flags |= GC_ALLOC_ALIGN8_BIAS;
+            }
         }
-        else
 #endif // FEATURE_64BIT_ALIGNMENT
-        {
-            orObject = (Object*)Alloc(baseSize, flags);
-        }
+
+        Object* orObject = (Object*)Alloc(baseSize, flags);
 
         // verify zero'd memory (at least for sync block)
         _ASSERTE( orObject->HasEmptySyncBlockInfo() );
