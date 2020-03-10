@@ -1,4 +1,4 @@
-<Project>
+<Project Sdk="Microsoft.Build.NoTargets">
   <Import Project="Directory.Build.props" />
   <Import Project="Directory.Build.targets" />
 
@@ -22,19 +22,7 @@
     <CoreClrTestCoreRoot>$(ArtifactsDir)tests\coreclr\$(TargetOS).$(Platform).$(CoreClrTestConfig)\Tests\Core_Root</CoreClrTestCoreRoot>
     <LibrariesTesthostRoot>$(ArtifactsDir)bin\testhost\$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesTestConfig)-$(Platform)\</LibrariesTesthostRoot>
     <LibrariesTesthostRuntimeDir>$(LibrariesTesthostRoot)shared\Microsoft.NETCore.App\$(ProductVersion)\</LibrariesTesthostRuntimeDir>
-
-    <!-- In order to obtain .dotnet runtime version we have to parse SDK Version in global.json and then 
-         parse the actual runtime version in .dotnet\sdk\$(LocalDotnetVersion)\dotnet.runtimeconfig.json -->
-    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
-    <LocalDotnetVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</LocalDotnetVersion>
-    <LocalDotnetConfig>$(LocalDotnetDir)\sdk\$(LocalDotnetVersion)\dotnet.runtimeconfig.json</LocalDotnetConfig>
-    <LocalDotnetConfigContent Condition="Exists('$(LocalDotnetConfig)')">$([System.IO.File]::ReadAllText('$(LocalDotnetConfig)'))</LocalDotnetConfigContent>
-    <LocalDotnetRuntimeVersion>$([System.Text.RegularExpressions.Regex]::Match($(LocalDotnetConfigContent), '(%3F&lt;="version": ").*(%3F=")'))</LocalDotnetRuntimeVersion>
   </PropertyGroup>
-
-  <Target Name="GetLocalDotnetRuntimeVersion">
-    <Message Importance="High" Text="$(LocalDotnetRuntimeVersion)" />
-  </Target>
 
   <!-- OSX/Linux Mono runtime build -->
   <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac" Outputs="$(MonoObjDir)config.h">
@@ -209,7 +197,7 @@
   <!-- Copy Mono runtime bits to the local .dotnet-mono (clone of .dotnet) dir for local experiments (temp solution) -->
   <Target Name="PatchLocalMonoDotnet" DependsOnTargets="CloneLocalDotnet">
       <MSBuild Projects ="$(MSBuildProjectFullPath)"
-               Properties="Destination=$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App\$(LocalDotnetRuntimeVersion)"
+               Properties="Destination=$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App\$(BundledNETCoreAppPackageVersion)"
                Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
   </Target>
 
@@ -272,7 +260,7 @@
 
   <Target Name="ValidateLocalDotnet">
     <Error Condition="!Exists('$(LocalDotnet)')" Text="'$(LocalDotnet)' doesn't exist." />
-    <Error Condition="'$(LocalDotnetRuntimeVersion)'==''" Text="LocalDotnetRuntimeVersion shouldn't be empty" />
+    <Error Condition="!Exists('$(LocalDotnet)\shared\Microsoft.NETCore.App\$(BundledNETCoreAppPackageVersion)')'" Text="$(LocalDotnet)' doesn't contain $(BundledNETCoreAppPackageVersion) runtime" />
   </Target>
 
 </Project>

@@ -23,17 +23,14 @@ ifeq ($(words $(wildcard ../../../artifacts/bin/testhost/*-*-*-*)), 1)
 	LIBRARIES_TESTS_CONFIG := $(word 3,$(subst -, ,$(notdir $(wildcard ../../../artifacts/bin/testhost/*-*-*-*))))
 endif
 
-MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:LibrariesTestConfig=$(LIBRARIES_TESTS_CONFIG) /p:Configuration=$(MONO_RUNTIME_CONFIG) ../mono.proj -nologo
-
-# current .dotnet runtime version
-RUNTIME_VER=$(strip $(shell $(DOTNET) msbuild /t:GetLocalDotnetRuntimeVersion $(MONO_PROJ)))
+MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:LibrariesTestConfig=$(LIBRARIES_TESTS_CONFIG) /p:Configuration=$(MONO_RUNTIME_CONFIG) ../mono.proj
 
 # run sample using local .dotnet-mono
 # build it with .dotnet first in order to be able to use LLVM only for the actual sample
 run-sample: patch-mono-dotnet
 	$(DOTNET) build -c Release sample/HelloWorld
 	MONO_ENV_OPTIONS="--llvm" COMPlus_DebugWriteToStdErr=1 \
-	$(DOTNET_MONO) --fx-version $(RUNTIME_VER) sample/HelloWorld/bin/HelloWorld.dll
+	$(DOTNET_MONO) sample/HelloWorld/bin/HelloWorld.dll
 
 # run sample using local .dotnet (coreclr)
 run-sample-coreclr:
