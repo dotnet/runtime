@@ -1230,6 +1230,13 @@
     ]
   },
   {
+    "Name": "System.Net.Http.Json",
+    "Description": "ToDO: Insert the package description approved by Immo here",
+    "CommonTypes": [
+      "ToDo: Insert Commonly Used types here"
+    ]
+  },
+  {
     "Name": "System.Net.Requests",
     "Description": "Provides older classes (such as HttpWebRequest and HttpWebResponse) for sending HTTP requests and receiving HTTP responses from a resource identified by a URI. Developers should prefer the classes in the System.Net.Http package.",
     "CommonTypes": [

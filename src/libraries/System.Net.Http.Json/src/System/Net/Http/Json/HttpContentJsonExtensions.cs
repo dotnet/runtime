@@ -84,7 +84,7 @@ namespace System.Net.Http.Json
                 }
             }
 
-            byte[] contentBytes = await content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+            byte[] contentBytes = await content.ReadAsByteArrayAsync().ConfigureAwait(false);
 
             // Transcode to UTF-8.
             if (encoding != null && encoding != Encoding.UTF8)
