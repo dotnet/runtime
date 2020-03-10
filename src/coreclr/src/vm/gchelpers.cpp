@@ -194,13 +194,12 @@ inline void CheckObjectSize(size_t alloc_size)
 }
 
 
-// There are only three ways to get into allocate an object.
+// There are only two ways to allocate an object.
 //     * Call optimized helpers that were generated on the fly. This is how JIT compiled code does most
 //         allocations, however they fall back code:Alloc, when for all but the most common code paths. These
 //         helpers are NOT used if profiler has asked to track GC allocation (see code:TrackAllocations)
 //     * Call code:Alloc - When the jit helpers fall back, or we do allocations within the runtime code
 //         itself, we ultimately call here.
-//     * Call code:AllocLHeap - Used very rarely to force allocation to be on the large object heap.
 //
 // While this is a choke point into allocating an object, it is primitive (it does not want to know about
 // MethodTable and thus does not initialize that pointer. It also does not know if the object is finalizable
@@ -295,48 +294,6 @@ inline Object* AllocAlign8(size_t size, GC_ALLOC_FLAGS flags)
     return retVal;
 }
 #endif // FEATURE_64BIT_ALIGNMENT
-
-// This is one of three ways of allocating an object (see code:Alloc for more). This variation is used in the
-// rare circumstance when you want to allocate an object on the large object heap but the object is not big
-// enough to naturally go there.
-//
-// One (and only?) example of where this is needed is 8 byte aligning of arrays of doubles. See
-// code:EEConfig.GetDoubleArrayToLargeObjectHeapThreshold and code:CORINFO_HELP_NEWARR_1_ALIGN8 for more.
-inline Object* AllocLHeap(size_t size, GC_ALLOC_FLAGS flags)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE; // returns an objref without pinning it => cooperative (don't assume large heap doesn't compact!)
-    } CONTRACTL_END;
-
-
-    _ASSERTE(!NingenEnabled() && "You cannot allocate managed objects inside the ngen compilation process.");
-
-#ifdef _DEBUG
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif
-
-    if (flags & GC_ALLOC_CONTAINS_REF)
-        flags &= ~GC_ALLOC_ZEROING_OPTIONAL;
-
-    Object *retVal = NULL;
-    CheckObjectSize(size);
-
-    retVal = GCHeapUtilities::GetGCHeap()->AllocLHeap(size, flags);
-
-    if (!retVal)
-    {
-        ThrowOutOfMemory();
-    }
-
-    return retVal;
-}
-
 
 #ifdef  _LOGALLOC
 int g_iNumAllocs = 0;
@@ -482,7 +439,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     ArrayBase* orArray = NULL;
     if (bAllocateInLargeHeap)
     {
-        orArray = (ArrayBase*)AllocLHeap(totalSize, flags);
+        orArray = (ArrayBase*)Alloc(totalSize, flags | GC_ALLOC_LARGE_OBJECT_HEAP);
         orArray->SetArrayMethodTableForLargeObject(pArrayMT);
     }
     else
@@ -739,7 +696,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
 
     if (bAllocateInLargeHeap)
     {
-        orArray = (ArrayBase *) AllocLHeap(totalSize, flags);
+        orArray = (ArrayBase *) Alloc(totalSize, flags | GC_ALLOC_LARGE_OBJECT_HEAP);
         orArray->SetArrayMethodTableForLargeObject(pArrayMT);
     }
     else

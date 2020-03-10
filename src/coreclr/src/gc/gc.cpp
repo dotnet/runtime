@@ -37120,6 +37120,8 @@ GCHeap::AllocAlign8(gc_alloc_context* ctx, size_t size, uint32_t flags )
         GC_TRIGGERS;
     } CONTRACTL_END;
 
+    TRIGGERSGC();
+
     alloc_context* acontext = static_cast<alloc_context*>(ctx);
 
 #ifdef MULTIPLE_HEAPS
@@ -37134,33 +37136,21 @@ GCHeap::AllocAlign8(gc_alloc_context* ctx, size_t size, uint32_t flags )
     gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
 
-    return AllocAlign8Common(hp, acontext, size, flags);
-#else
-    UNREFERENCED_PARAMETER(ctx);
-    UNREFERENCED_PARAMETER(size);
-    UNREFERENCED_PARAMETER(flags);
-    assert(!"should not call GCHeap::AllocAlign8 without FEATURE_64BIT_ALIGNMENT defined!");
-    return nullptr;
-#endif  //FEATURE_64BIT_ALIGNMENT
-}
-
-// Common code used by both variants of AllocAlign8 above.
-Object*
-GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint32_t flags)
-{
-#ifdef FEATURE_64BIT_ALIGNMENT
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    gc_heap* hp = (gc_heap*)_hp;
-
-    TRIGGERSGC();
-
     Object* newAlloc = NULL;
 
-    if (size < loh_size_threshold)
+    if (size >= loh_size_threshold || (flags & GC_ALLOC_LARGE_OBJECT_HEAP))
+    {
+        // The LOH always guarantees at least 8-byte alignment, regardless of platform. Moreover it doesn't
+        // support mis-aligned object headers so we can't support biased headers as above. Luckily for us
+        // we've managed to arrange things so the only case where we see a bias is for boxed value types and
+        // these can never get large enough to be allocated on the LOH.
+        ASSERT(65536 < loh_size_threshold);
+        ASSERT((flags & GC_ALLOC_ALIGN8_BIAS) == 0);
+
+        newAlloc = (Object*) hp->allocate_uoh_object (size, flags, loh_generation, acontext->alloc_bytes_uoh);
+        ASSERT(((size_t)newAlloc & 7) == 0);
+    }
+    else
     {
 #ifdef TRACE_GC
         AllocSmallCount++;
@@ -37219,20 +37209,6 @@ GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint3
             }
         }
     }
-    else
-    {
-        // The LOH always guarantees at least 8-byte alignment, regardless of platform. Moreover it doesn't
-        // support mis-aligned object headers so we can't support biased headers as above. Luckily for us
-        // we've managed to arrange things so the only case where we see a bias is for boxed value types and
-        // these can never get large enough to be allocated on the LOH.
-        ASSERT(65536 < loh_size_threshold);
-        ASSERT((flags & GC_ALLOC_ALIGN8_BIAS) == 0);
-
-        alloc_context* acontext = generation_alloc_context (hp->generation_of (loh_generation));
-
-        newAlloc = (Object*) hp->allocate_uoh_object (size, flags, loh_generation, acontext->alloc_bytes_uoh);
-        ASSERT(((size_t)newAlloc & 7) == 0);
-    }
 
     CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
 
@@ -37241,51 +37217,11 @@ GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint3
 #endif //TRACE_GC
     return newAlloc;
 #else
-    UNREFERENCED_PARAMETER(_hp);
-    UNREFERENCED_PARAMETER(acontext);
     UNREFERENCED_PARAMETER(size);
     UNREFERENCED_PARAMETER(flags);
-    assert(!"Should not call GCHeap::AllocAlign8Common without FEATURE_64BIT_ALIGNMENT defined!");
+    assert(!"Should not call GCHeap::AllocAlign8 without FEATURE_64BIT_ALIGNMENT defined!");
     return nullptr;
 #endif // FEATURE_64BIT_ALIGNMENT
-}
-
-Object *
-GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    TRIGGERSGC();
-
-    Object* newAlloc = NULL;
-
-#ifdef MULTIPLE_HEAPS
-    //take the first heap....
-    gc_heap* hp = gc_heap::g_heaps[0];
-#else
-    gc_heap* hp = pGenGCHeap;
-#ifdef _PREFAST_
-    // prefix complains about us dereferencing hp in wks build even though we only access static members
-    // this way. not sure how to shut it up except for this ugly workaround:
-    PREFIX_ASSUME(hp != NULL);
-#endif //_PREFAST_
-#endif //MULTIPLE_HEAPS
-
-    alloc_context* acontext = generation_alloc_context (hp->generation_of (loh_generation));
-    newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, loh_generation, acontext->alloc_bytes_uoh);
-
-#ifdef FEATURE_STRUCTALIGN
-    newAlloc = (Object*) hp->pad_for_alignment_large ((uint8_t*) newAlloc, requiredAlignment, size);
-#endif // FEATURE_STRUCTALIGN
-    CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
-
-#ifdef TRACE_GC
-    AllocCount++;
-#endif //TRACE_GC
-    return newAlloc;
 }
 
 Object*
@@ -37317,9 +37253,15 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
 #endif //_PREFAST_
 #endif //MULTIPLE_HEAPS
 
-    if (size < loh_size_threshold)
+    if (size >= loh_size_threshold || (flags & GC_ALLOC_LARGE_OBJECT_HEAP))
     {
-
+        newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, loh_generation, acontext->alloc_bytes_uoh);
+#ifdef FEATURE_STRUCTALIGN
+        newAlloc = (Object*) hp->pad_for_alignment_large ((uint8_t*) newAlloc, requiredAlignment, size);
+#endif // FEATURE_STRUCTALIGN
+    }
+    else
+    {
 #ifdef TRACE_GC
         AllocSmallCount++;
 #endif //TRACE_GC
@@ -37328,13 +37270,6 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
         newAlloc = (Object*) hp->pad_for_alignment ((uint8_t*) newAlloc, requiredAlignment, size, acontext);
 #endif // FEATURE_STRUCTALIGN
 //        ASSERT (newAlloc);
-    }
-    else
-    {
-        newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, loh_generation, acontext->alloc_bytes_uoh);
-#ifdef FEATURE_STRUCTALIGN
-        newAlloc = (Object*) hp->pad_for_alignment_large ((uint8_t*) newAlloc, requiredAlignment, size);
-#endif // FEATURE_STRUCTALIGN
     }
 
     CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
