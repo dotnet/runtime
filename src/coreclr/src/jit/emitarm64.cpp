@@ -10815,6 +10815,61 @@ void emitter::emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t i
 }
 
 //------------------------------------------------------------------------
+// emitDispVectorRegList: Display a SIMD vector register list
+//
+void emitter::emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma)
+{
+    assert(isVectorRegister(firstReg));
+
+    regNumber currReg = firstReg;
+
+    printf("{");
+    for (unsigned i = 0; i < listSize; i++)
+    {
+        const bool notLastRegister = (i != listSize - 1);
+        emitDispVectorReg(currReg, opt, notLastRegister);
+        currReg = (currReg == REG_V31) ? REG_V0 : REG_NEXT(currReg);
+    }
+    printf("}");
+
+    if (addComma)
+    {
+        printf(", ");
+    }
+}
+
+//------------------------------------------------------------------------
+// emitDispVectorElemList: Display a SIMD vector element list
+//
+void emitter::emitDispVectorElemList(
+    regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma)
+{
+    assert(isVectorRegister(firstReg));
+
+    regNumber currReg = firstReg;
+
+    printf("{");
+    for (unsigned i = 0; i < listSize; i++)
+    {
+        printf(emitVectorRegName(currReg));
+        emitDispElemsize(elemsize);
+        const bool notLastRegister = (i != listSize - 1);
+        if (notLastRegister)
+        {
+            printf(", ");
+        }
+        currReg = (currReg == REG_V31) ? REG_V0 : REG_NEXT(currReg);
+    }
+    printf("}");
+    printf("[%d]", index);
+
+    if (addComma)
+    {
+        printf(", ");
+    }
+}
+
+//------------------------------------------------------------------------
 // emitDispArrangement: Display a SIMD vector arrangement suffix
 //
 void emitter::emitDispArrangement(insOpts opt)
