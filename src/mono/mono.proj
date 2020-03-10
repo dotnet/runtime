@@ -1,7 +1,6 @@
-<Project Sdk="Microsoft.Build.NoTargets">
+<Project>
   <Import Project="Directory.Build.props" />
   <Import Project="Directory.Build.targets" />
-
   <PropertyGroup>
     <MonoObjDir>$(ArtifactsObjDir)mono/$(PlatformConfigPathPart)/</MonoObjDir>
     <MonoEnableLLVM Condition="'$(MonoEnableLLVM)' == ''">false</MonoEnableLLVM>
@@ -197,7 +196,7 @@
   <!-- Copy Mono runtime bits to the local .dotnet-mono (clone of .dotnet) dir for local experiments (temp solution) -->
   <Target Name="PatchLocalMonoDotnet" DependsOnTargets="CloneLocalDotnet">
       <MSBuild Projects ="$(MSBuildProjectFullPath)"
-               Properties="Destination=$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App\$(BundledNETCoreAppPackageVersion)"
+               Properties="Destination=$([System.IO.Directory]::GetDirectories('$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App')[0])"
                Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
   </Target>
 
@@ -259,8 +258,9 @@
   </Target>
 
   <Target Name="ValidateLocalDotnet">
+    <Error Condition="$([System.IO.Directory]::GetDirectories('$(LocalDotnetDir)\shared\Microsoft.NETCore.App').get_Length()) > 1" Text="$(LocalDotnetDir) contains more than one sdk" />
+    <Error Condition="$([System.IO.Directory]::GetDirectories('$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App').get_Length()) > 1" Text="$(LocalMonoDotnetDir) contains more than one sdk" />
     <Error Condition="!Exists('$(LocalDotnet)')" Text="'$(LocalDotnet)' doesn't exist." />
-    <Error Condition="!Exists('$(LocalDotnet)\shared\Microsoft.NETCore.App\$(BundledNETCoreAppPackageVersion)')'" Text="$(LocalDotnet)' doesn't contain $(BundledNETCoreAppPackageVersion) runtime" />
   </Target>
 
 </Project>
