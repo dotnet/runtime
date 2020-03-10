@@ -55,6 +55,16 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			{
 				var ca = additionalArgumentAttr.ConstructorArguments;
 				var values = ((CustomAttributeArgument [])ca [1].Value)?.Select (arg => arg.Value.ToString ()).ToArray ();
+				// Since custom attribute arguments need to be constant expressions, we need to add
+				// the path to the temp directory (where the custom assembly is located) here.
+				if ((string)ca [0].Value == "--custom-step") {
+					int pos = values [0].IndexOf (",");
+					if (pos != -1) {
+						string custom_assembly_path = values [0].Substring (pos + 1);
+						if (!Path.IsPathRooted (custom_assembly_path))
+							values [0] = values [0].Substring (0, pos + 1) + Path.Combine (inputPath, custom_assembly_path);
+					}
+				}
 				tclo.AdditionalArguments.Add (new KeyValuePair<string, string []> ((string)ca [0].Value, values));
 			}
 

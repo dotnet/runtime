@@ -27,8 +27,9 @@
 //
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Xml.XPath;
 
@@ -588,11 +589,33 @@ namespace Mono.Linker {
 
 		partial void PreProcessPipeline (Pipeline pipeline);
 
+		private static Assembly GetCustomAssembly (string arg) {
+			if (Path.IsPathRooted (arg)) {
+				var assemblyPath = Path.GetFullPath (arg);
+				if (File.Exists (assemblyPath))
+					return Assembly.Load (File.ReadAllBytes (assemblyPath));
+				Console.WriteLine ($"The assembly '{arg}' specified for '--custom-step' option could not be found");
+			}
+			else
+				Console.WriteLine ($"The path to the assembly '{arg}' specified for '--custom-step' must be fully qualified");
+
+			return null;
+		}
+
 		protected static bool AddCustomStep (Pipeline pipeline, string arg)
 		{
-			int pos = arg.IndexOf (":");
+			Assembly custom_assembly = null;
+			int pos = arg.IndexOf (",");
+			if (pos != -1) {
+				custom_assembly = GetCustomAssembly (arg.Substring (pos + 1));
+				if (custom_assembly == null)
+					return false;
+				arg = arg.Substring (0, pos);
+			}
+
+			pos = arg.IndexOf (":");
 			if (pos == -1) {
-				var step = ResolveStep (arg);
+				var step = ResolveStep (arg, custom_assembly);
 				if (step == null)
 					return false;
 
@@ -620,7 +643,7 @@ namespace Mono.Linker {
 				return false;
 			}
 
-			IStep newStep = ResolveStep (parts [1]);
+			IStep newStep = ResolveStep (parts [1], custom_assembly);
 			if (newStep == null)
 				return false;
 
@@ -643,9 +666,10 @@ namespace Mono.Linker {
 			return null;
 		}
 
-		static IStep ResolveStep (string type)
+		static IStep ResolveStep (string type, Assembly assembly)
 		{
-			Type step = Type.GetType (type, false);
+			Type step = assembly != null ? assembly.GetType(type) : Type.GetType (type, false);
+
 			if (step == null) {
 				Console.WriteLine ($"Custom step '{type}' could not be found");
 				return null;
@@ -842,9 +866,9 @@ namespace Mono.Linker {
 			Console.WriteLine ("Advanced");
 			Console.WriteLine ("  --custom-step CFG         Add a custom step <config> to the existing pipeline");
 			Console.WriteLine ("                            Step can use one of following configurations");
-			Console.WriteLine ("                            TYPE: Add user defined type as last step to the pipeline");
-			Console.WriteLine ("                            +NAME:TYPE: Inserts step type before existing step with name");
-			Console.WriteLine ("                            -NAME:TYPE: Add step type after existing step");
+			Console.WriteLine ("                            TYPE,PATH_TO_ASSEMBLY: Add user defined type as last step to the pipeline");
+			Console.WriteLine ("                            +NAME:TYPE,PATH_TO_ASSEMBLY: Inserts step type before existing step with name");
+			Console.WriteLine ("                            -NAME:TYPE,PATH_TO_ASSEMBLY: Add step type after existing step");
 			Console.WriteLine ("  --ignore-descriptors      Skips reading embedded descriptors (short -z). Defaults to false");
 			Console.WriteLine ("  --keep-facades            Keep assemblies with type-forwarders (short -t). Defaults to false");
 			Console.WriteLine ("  --skip-unresolved         Ignore unresolved types, methods, and assemblies. Defaults to false");
