@@ -26,7 +26,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <MonoTestSimpleCsprojTemplateTestDriver>$(MSBuildProjectDirectory)\mono\mini\TestDriver.cs</MonoTestSimpleCsprojTemplateTestDriver>
+    <MonoTestSimpleCsprojTemplateTestDriver>$(MonoProjectRoot)\mono\mini\TestDriver.cs</MonoTestSimpleCsprojTemplateTestDriver>
     <!-- FIXME: Not sure if I need to set anything up so that Restore in this template does the right thing -->
     <MonoTestsSimpleCsprojTemplate>
       <![CDATA[
