@@ -4469,6 +4469,11 @@ TypeCompareState CEEInfo::compareTypesForCast(
     {
         result = TypeCompareState::May;
     }
+    // If casting from Nullable<T> to T, try to optimizze
+    else if (Nullable::IsNullableForTypeNoGC(fromHnd, toHnd.GetMethodTable()))
+    {
+        result = TypeCompareState::MustNullable;
+    }
     // If the types are not shared, we can check directly.
     else if (!fromHnd.IsCanonicalSubtype() && !toHnd.IsCanonicalSubtype())
     {

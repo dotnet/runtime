@@ -1925,9 +1925,10 @@ const int MAX_EnC_HANDLER_NESTING_LEVEL = 6;
 // Results from type comparison queries
 enum class TypeCompareState
 {
-    MustNot = -1, // types are not equal
-    May = 0,      // types may be equal (must test at runtime)
-    Must = 1,     // type are equal
+    MustNot = -1,     // types are not equal
+    May = 0,          // types may be equal (must test at runtime)
+    Must = 1,         // types are equal,
+    MustNullable = 2, // types represent nullable and underlying
 };
 
 //

@@ -10242,6 +10242,19 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
             JITDUMP("Cast will succeed, optimizing to simply return input\n");
             return op1;
         }
+        else if (castResult == TypeCompareState::MustNullable)
+        {
+            if (!isCastClass && op1->IsBoxedValue())
+            {
+                JITDUMP("Cast will succeed, optimizing to return the hasValue field\n");
+
+                CORINFO_CLASS_HANDLE nullableHnd = gtGetStructHandle(op1->AsBox()->BoxOp());
+                CORINFO_FIELD_HANDLE fieldHnd    = info.compCompHnd->getFieldInClass(nullableHnd, 0);
+
+                gtTryRemoveBoxUpstreamEffects(op1);
+                return gtNewFieldRef(TYP_BOOL, fieldHnd, op1, 0);
+            }
+        }
         else if (castResult == TypeCompareState::MustNot)
         {
             // See if we can sharpen exactness by looking for final classes
@@ -10278,23 +10291,6 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
         }
         else
         {
-            if (!isCastClass && op1->IsBoxedValue())
-            {
-                TypeHandle fromType(fromClass);
-                TypeHandle toType(toClass);
-
-                if (Nullable::IsNullableForTypeNoGC(fromType, toType.GetMethodTable()))
-                {
-                    JITDUMP("Cast will succeed, optimizing to return has value field\n");
-
-                    CORINFO_CLASS_HANDLE nullableHnd = gtGetStructHandle(op1->AsBox()->BoxOp());
-                    CORINFO_FIELD_HANDLE fieldHnd = info.compCompHnd->getFieldInClass(nullableHnd, 0);
-
-                    gtTryRemoveBoxUpstreamEffects(op1);
-                    return gtNewFieldRef(TYP_BOOL, fieldHnd, arg, 0);
-                }
-            }
-            
             JITDUMP("Result of cast unknown, must generate runtime test\n");
         }
     }
