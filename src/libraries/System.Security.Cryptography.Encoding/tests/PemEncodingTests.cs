@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Encoding.Tests
             string label = new string('A', 275);
             string content = $"-----BEGIN {label}-----\nZm9v\n-----END {label}-----";
             PemFields fields = AssertPemFound(content,
-                expectedLocation: 0..587,
+                expectedLocation: 0..586,
                 expectedBase64: 292..296,
                 expectedLabel: 11..286);
 
@@ -548,6 +548,10 @@ Zm9v
             Assert.Equal(fields.Location, tryFields.Location);
             Assert.Equal(fields.Label, tryFields.Label);
             Assert.Equal(fields.DecodedDataLength, tryFields.DecodedDataLength);
+
+            Assert.Equal(expectedBase64, tryFields.Base64Data);
+            Assert.Equal(expectedLocation, tryFields.Location);
+            Assert.Equal(expectedLabel, tryFields.Label);
 
             return fields;
         }

@@ -75,8 +75,8 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            const int postebStackBufferSize = 256;
-            Span<char> postebStackBuffer = stackalloc char[postebStackBufferSize];
+            const int PostebStackBufferSize = 256;
+            Span<char> postebStackBuffer = stackalloc char[PostebStackBufferSize];
             int areaOffset = 0;
             int preebIndex;
             ReadOnlySpan<char> pemArea = pemData;
@@ -85,6 +85,8 @@ namespace System.Security.Cryptography
                 int labelStartIndex = preebIndex + PreEBPrefix.Length;
                 int preebIndexInFullData = preebIndex + areaOffset;
 
+                // If there are any previous characters, the one prior to the PreEB
+                // must be a white space character.
                 if (preebIndexInFullData > 0 &&
                     !char.IsWhiteSpace(pemData[preebIndexInFullData - 1]))
                 {
@@ -97,7 +99,8 @@ namespace System.Security.Cryptography
                 int preebEndIndex = pemArea[labelStartIndex..].IndexOf(Ending);
 
                 // There is no ending sequence, -----, in the remainder of
-                // the document. Therefore, there can never be a complete PreEB.
+                // the document. Therefore, there can never be a complete PreEB
+                // and we can exit.
                 if (preebEndIndex < 0)
                 {
                     fields = default;
@@ -111,7 +114,7 @@ namespace System.Security.Cryptography
                 // label, so move from there.
                 if (!IsValidLabel(label))
                 {
-                    goto next_after_label;
+                    goto NextAfterLabel;
                 }
 
                 int contentStartIndex = labelEndingIndex + Ending.Length;
@@ -119,7 +122,7 @@ namespace System.Security.Cryptography
                                    (areaOffset + labelEndingIndex);
                 int postebLength = PostEBPrefix.Length + label.Length + Ending.Length;
 
-                Span<char> postebBuffer = postebLength > postebStackBufferSize
+                Span<char> postebBuffer = postebLength > PostebStackBufferSize
                     ? new char[postebLength]
                     : postebStackBuffer;
                 ReadOnlySpan<char> posteb = WritePostEB(label, postebBuffer);
@@ -127,16 +130,18 @@ namespace System.Security.Cryptography
 
                 if (postebStartIndex < 0)
                 {
-                    goto next_after_label;
+                    goto NextAfterLabel;
                 }
 
                 int contentEndIndex = postebStartIndex + contentStartIndex;
                 int pemEndIndex = contentEndIndex + postebLength;
 
+                // The PostEB must either end at the end of the string, or
+                // have at least one white space character after it.
                 if (pemEndIndex < pemArea.Length - 1 &&
                     !char.IsWhiteSpace(pemArea[pemEndIndex]))
                 {
-                    goto next_after_label;
+                    goto NextAfterLabel;
                 }
 
                 Range contentRange = (areaOffset + contentStartIndex)..
@@ -147,16 +152,16 @@ namespace System.Security.Cryptography
                                    out int base64end,
                                    out int decodedSize))
                 {
-                    goto next_after_label;
+                    goto NextAfterLabel;
                 }
 
                 Range pemRange = (areaOffset + preebIndex)..(areaOffset + pemEndIndex);
                 Range base64range = (contentStartIndex + base64start + areaOffset)..
-                                    (contentEndIndex + base64end + areaOffset);
+                                    (contentStartIndex + base64end + areaOffset);
                 fields = new PemFields(labelRange, base64range, pemRange, decodedSize);
                 return true;
 
-                next_after_label:
+                NextAfterLabel:
                 if (labelEndingIndex <= 0)
                 {
                     // We somehow ended up in a situation where we will advance
@@ -241,7 +246,7 @@ namespace System.Security.Cryptography
             {
                 char ch = str[i];
 
-                // Match whitespace characters from Convert.Base64
+                // Match white space characters from Convert.Base64
                 if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r')
                 {
                     if (significantCharacters == 0)
@@ -281,7 +286,7 @@ namespace System.Security.Cryptography
         {
             uint c = (uint)ch;
             return c == '+' || c == '/' ||
-                c - '0' < 10 || c - 'A' < 26 || c - 'a' < 26;
+                   c - '0' < 10 || c - 'A' < 26 || c - 'a' < 26;
         }
 
         /// <summary>
