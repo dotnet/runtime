@@ -7,6 +7,7 @@
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Diagnostics;
+using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {

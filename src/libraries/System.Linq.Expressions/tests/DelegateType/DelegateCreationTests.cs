@@ -6,7 +6,6 @@ using System.Collections.Generic;
 
 namespace System.Linq.Expressions.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public abstract class DelegateCreationTests
     {
         public static IEnumerable<object[]> ValidTypeArgs(bool includesReturnType)
