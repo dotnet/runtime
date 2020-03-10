@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         Tag,
         Special,
         Finished,
-        EOF
+        EOF,
     }
 
     internal partial class CborReader
