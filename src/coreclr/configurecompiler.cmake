@@ -423,7 +423,16 @@ if (MSVC)
   add_compile_options(/MP) # Build with Multiple Processes (number of processes equal to the number of processors)
   add_compile_options(/GS) # Buffer Security Check
   add_compile_options(/Zm200) # Specify Precompiled Header Memory Allocation Limit of 150MB
+
   add_compile_options(/wd4960 /wd4961 /wd4603 /wd4627 /wd4838 /wd4456 /wd4457 /wd4458 /wd4459 /wd4091 /we4640)
+
+  # 4291: Delete not defined for new, c++ exception may cause leak.
+  # 4302: Truncation from '%$S' to '%$S'.
+  # 4311: Pointer truncation from '%$S' to '%$S'.
+  # 4312: '<function-style-cast>' : conversion from '%$S' to '%$S' of greater size.
+  # 4477: format string '%$S' requires an argument of type '%$S', but variadic argument %d has type '%$S'.
+  add_compile_options(/wd4291 /wd4302 /wd4311 /wd4312 /wd4477)
+
   add_compile_options(/Zi) # enable debugging information
   add_compile_options(/ZH:SHA_256) # use SHA256 for generating hashes of compiler processed source files.
   add_compile_options(/source-charset:utf-8) # Force MSVC to compile source as UTF-8.

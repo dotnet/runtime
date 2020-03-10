@@ -23,11 +23,6 @@
 #pragma warning(3       :4132)   // const object should be initialized
 #pragma warning(4       :4177)   // pragma data_seg s/b at global scope
 #pragma warning(3       :4212)   // function declaration used ellipsis
-#pragma warning(disable :4291)   // delete not defined for new, c++ exception may cause leak
-#pragma warning(disable :4302)   // truncation from '%$S' to '%$S'
-#pragma warning(disable :4311)   // pointer truncation from '%$S' to '%$S'
-#pragma warning(disable :4312)   // '<function-style-cast>' : conversion from '%$S' to '%$S' of greater size
-#pragma warning(disable :4477)   // format string '%$S' requires an argument of type '%$S', but variadic argument %d has type '%$S'
 #pragma warning(3       :4530)   // C++ exception handler used, but unwind semantics are not enabled. Specify -GX
 #pragma warning(error   :4551)   // Function call missing argument list
 
