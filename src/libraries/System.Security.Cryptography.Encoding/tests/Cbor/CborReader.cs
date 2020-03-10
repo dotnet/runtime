@@ -9,7 +9,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal enum CborReaderState
     {
-        UnsignedInteger = 1,
+        Unknown = 0,
+        UnsignedInteger,
         NegativeInteger,
         ByteString,
         TextString,
