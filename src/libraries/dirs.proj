@@ -6,11 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
-    <!-- <ProjectReference Include="ref.proj" />
+    <ProjectReference Include="ref.proj" />
     <ProjectReference Include="Native\native-binplace.proj" />
     <ProjectReference Include="src.proj" />
     <ProjectReference Include="shims\manual\*.csproj" />
-    <ProjectReference Include="shims\ApiCompat.proj" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'" /> -->
+    <ProjectReference Include="shims\ApiCompat.proj" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'" />
     <ProjectReference Include="pretest.proj" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" />
   </ItemGroup>
 
