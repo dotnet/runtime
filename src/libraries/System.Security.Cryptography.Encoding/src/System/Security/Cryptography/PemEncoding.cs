@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Security.Cryptography
 {
@@ -95,6 +96,8 @@ namespace System.Security.Cryptography
 
                 int preebEndIndex = pemArea[labelStartIndex..].IndexOf(Ending);
 
+                // There is no ending sequence, -----, in the remainder of
+                // the document. Therefore, there can never be a complete PreEB.
                 if (preebEndIndex < 0)
                 {
                     fields = default;
@@ -139,15 +142,12 @@ namespace System.Security.Cryptography
                 Range contentRange = (areaOffset + contentStartIndex)..
                                      (areaOffset + contentEndIndex);
 
-                if (!IsValidBase64(pemArea[contentStartIndex..contentEndIndex],
+                if (!TryCountBase64(pemArea[contentStartIndex..contentEndIndex],
                                    out int base64start,
                                    out int base64end,
                                    out int decodedSize))
                 {
-                    Debug.Assert(labelEndingIndex > 0);
-                    areaOffset += labelEndingIndex;
-                    pemArea = pemArea[labelEndingIndex..];
-                    continue;
+                    goto next_after_label;
                 }
 
                 Range pemRange = (areaOffset + preebIndex)..(areaOffset + pemEndIndex);
@@ -163,7 +163,6 @@ namespace System.Security.Cryptography
                     // 0 or -1 characters, which means we'll probably end up here again,
                     // advancing 0 or -1 characters, in a loop. To avoid getting stuck,
                     // detect this situation and return.
-                    Debug.Assert(labelEndingIndex > 0);
                     fields = default;
                     return false;
                 }
@@ -220,55 +219,69 @@ namespace System.Security.Cryptography
             return true;
         }
 
-        private static bool IsValidBase64(
-            ReadOnlySpan<char> data,
+        private static bool TryCountBase64(
+            ReadOnlySpan<char> str,
             out int base64Start,
             out int base64End,
-            out int decodedSize)
+            out int base64DecodedSize)
         {
-            static bool IsBase64Char(char c) =>
-                (c >= '0' && c <= '9') ||
-                (c >= 'A' && c <= 'Z') ||
-                (c >= 'a' && c <= 'z') ||
-                c == '+' || c == '/' || c == '=';
+            base64Start = 0;
+            base64End = str.Length;
 
-            int base64chars = 0;
-            int precedingWhiteSpace = 0;
-            int trailingWhiteSpace = 0;
-            for (int index = 0; index < data.Length; index++)
+            if (str.IsEmpty)
             {
-                char c = data[index];
+                base64DecodedSize = 0;
+                return true;
+            }
 
-                if (IsBase64Char(c))
+            int significantCharacters = 0;
+            int paddingCharacters = 0;
+
+            for (int i = 0; i < str.Length; i++)
+            {
+                char ch = str[i];
+
+                // Match whitespace characters from Convert.Base64
+                if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r')
                 {
-                    trailingWhiteSpace = 0;
-                    base64chars++;
-                }
-                else if (c == ' ' || c == '\n' || c == '\r' ||
-                         c == '\t' || c == '\v')
-                {
-                    if (base64chars == 0)
-                    {
-                        precedingWhiteSpace++;
-                    }
+                    if (significantCharacters == 0)
+                        base64Start++;
                     else
-                    {
-                        trailingWhiteSpace++;
-                    }
+                        base64End--;
+
+                    continue;
                 }
+
+                base64End = str.Length;
+
+                if (ch == '=')
+                    paddingCharacters++;
+                else if (paddingCharacters == 0 && IsBase64Character(ch))
+                    significantCharacters++;
                 else
                 {
-                    base64Start = default;
-                    base64End = default;
-                    decodedSize = 0;
+                    base64DecodedSize = 0;
                     return false;
                 }
             }
 
-            base64Start = precedingWhiteSpace;
-            base64End = -trailingWhiteSpace;
-            decodedSize = (base64chars * 3) / 4;
+            if (paddingCharacters > 2 ||
+               (paddingCharacters + significantCharacters & 0b11) != 0)
+            {
+                base64DecodedSize = 0;
+                return false;
+            }
+
+            base64DecodedSize = (int)((significantCharacters * 3L) >> 2);
             return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsBase64Character(char ch)
+        {
+            uint c = (uint)ch;
+            return c == '+' || c == '/' ||
+                c - '0' < 10 || c - 'A' < 26 || c - 'a' < 26;
         }
 
         /// <summary>
