@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            reader.ReadArray(expectedValues);
+            ArrayReaderHelper.VerifyArray(reader, expectedValues);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            reader.ReadArray(expectedValues);
+            ArrayReaderHelper.VerifyArray(reader, expectedValues);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
@@ -258,7 +258,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         Assert.Equal(expected, b);
                         break;
                     case object[] nested:
-                        reader.ReadArray(nested);
+                        VerifyArray(reader, nested);
                         break;
                     default:
                         throw new ArgumentException($"Unrecognized argument type {value.GetType()}");

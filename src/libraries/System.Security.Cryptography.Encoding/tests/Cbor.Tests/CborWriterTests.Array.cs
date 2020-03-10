@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            writer.WriteArray(values);
+            ArrayWriterHelper.WriteArray(writer, values);
             byte[] actualEncoding = writer.ToArray();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            writer.WriteArray(values);
+            ArrayWriterHelper.WriteArray(writer, values);
             byte[] actualEncoding = writer.ToArray();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
@@ -133,7 +133,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     case int i: writer.WriteInt64(i); break;
                     case string s: writer.WriteTextString(s); break;
                     case byte[] b: writer.WriteByteString(b); break;
-                    case object[] nested: writer.WriteArray(nested); break;
+                    case object[] nested: ArrayWriterHelper.WriteArray(writer, nested); break;
                     default: throw new ArgumentException($"Unrecognized argument type {value.GetType()}");
                 };
             }

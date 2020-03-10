@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [Fact]
         public static void CborReader_ReadingTwoPrimitiveValues_ShouldThrowInvalidOperationException()
         {
-            ReadOnlyMemory<byte> buffer = new byte[] { 0 };
+            ReadOnlyMemory<byte> buffer = new byte[] { 0, 0 };
             var reader = new CborReader(buffer);
             reader.ReadInt64();
             Assert.Equal(CborReaderState.Finished, reader.Peek());
