@@ -24,6 +24,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(encoding);
             byte[] output = reader.ReadByteString();
             Assert.Equal(expectedValue, output);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
         [Theory]
@@ -40,6 +41,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.True(result);
             Assert.Equal(expectedValue.Length, bytesWritten);
             Assert.Equal(expectedValue, buffer[..bytesWritten]);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
         [Theory]
@@ -57,6 +59,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(data);
             string actualResult = reader.ReadTextString();
             Assert.Equal(expectedValue, actualResult);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
         [Theory]
@@ -77,6 +80,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             Assert.True(result);
             Assert.Equal(expectedValue.Length, charsWritten);
             Assert.Equal(expectedValue.ToCharArray(), buffer[..charsWritten]);
+            Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
         [Theory]
