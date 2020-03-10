@@ -261,6 +261,7 @@ public:
     }
 
 protected:
+    DAC_ALIGNAS(StubSigBuilder) // Align the first member to the alignment of the base class
     CorCallingConvention m_callingConv;
     CQuickBytes          m_qbReturnSig;
 };  // class FunctionSigBuilder
