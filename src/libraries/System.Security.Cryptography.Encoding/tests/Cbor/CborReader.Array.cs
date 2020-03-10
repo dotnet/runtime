@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal partial class CborReader
     {
-        public ulong? BeginReadArray()
+        public ulong? ReadStartArray()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Array);
             ulong arrayLength = checked((ulong)ReadUnsignedInteger(header, out int additionalBytes));
@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             return arrayLength;
         }
 
-        public void EndReadArray()
+        public void ReadEndArray()
         {
             PopDataItem(expectedType: CborMajorType.Array);
         }

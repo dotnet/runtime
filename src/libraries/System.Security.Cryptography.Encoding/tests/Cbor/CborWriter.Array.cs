@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 {
     internal partial class CborWriter
     {
-        public void BeginWriteArray(int definiteLength)
+        public void WriteStartArray(int definiteLength)
         {
             if (definiteLength < 0)
             {
@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             PushDataItem(CborMajorType.Array, (uint)definiteLength);
         }
 
-        public void EndWriteArray()
+        public void WriteEndArray()
         {
             PopDataItem(CborMajorType.Array);
         }

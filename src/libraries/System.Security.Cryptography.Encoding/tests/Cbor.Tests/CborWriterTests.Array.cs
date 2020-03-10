@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void WriteArray_DefiniteLengthExceeded_ShouldThrowInvalidOperationException(int definiteLength)
         {
             using var writer = new CborWriter();
-            writer.BeginWriteArray(definiteLength);
+            writer.WriteStartArray(definiteLength);
             for (int i = 0; i < definiteLength; i++)
             {
                 writer.WriteInt64(i);
@@ -68,12 +68,12 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void WriteArray_DefiniteLengthExceeded_WithNestedData_ShouldThrowInvalidOperationException(int definiteLength)
         {
             using var writer = new CborWriter();
-            writer.BeginWriteArray(definiteLength);
+            writer.WriteStartArray(definiteLength);
             for (int i = 0; i < definiteLength; i++)
             {
-                writer.BeginWriteArray(definiteLength: 1);
+                writer.WriteStartArray(definiteLength: 1);
                 writer.WriteInt64(i);
-                writer.EndWriteArray();
+                writer.WriteEndArray();
             }
 
             Assert.Throws<InvalidOperationException>(() => writer.WriteInt64(0));
@@ -86,13 +86,13 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void EndWriteArray_DefiniteLengthNotMet_ShouldThrowInvalidOperationException(int definiteLength)
         {
             using var writer = new CborWriter();
-            writer.BeginWriteArray(definiteLength);
+            writer.WriteStartArray(definiteLength);
             for (int i = 1; i < definiteLength; i++)
             {
                 writer.WriteInt64(i);
             }
 
-            Assert.Throws<InvalidOperationException>(() => writer.EndWriteArray());
+            Assert.Throws<InvalidOperationException>(() => writer.WriteEndArray());
         }
 
         [Theory]
@@ -102,22 +102,22 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void EndWriteArray_DefiniteLengthNotMet_WithNestedData_ShouldThrowInvalidOperationException(int definiteLength)
         {
             using var writer = new CborWriter();
-            writer.BeginWriteArray(definiteLength);
+            writer.WriteStartArray(definiteLength);
             for (int i = 1; i < definiteLength; i++)
             {
-                writer.BeginWriteArray(definiteLength: 1);
+                writer.WriteStartArray(definiteLength: 1);
                 writer.WriteInt64(i);
-                writer.EndWriteArray();
+                writer.WriteEndArray();
             }
 
-            Assert.Throws<InvalidOperationException>(() => writer.EndWriteArray());
+            Assert.Throws<InvalidOperationException>(() => writer.WriteEndArray());
         }
 
         [Fact]
         public static void EndWriteArray_ImbalancedCall_ShouldThrowInvalidOperationException()
         {
             using var writer = new CborWriter();
-            Assert.Throws<InvalidOperationException>(() => writer.EndWriteArray());
+            Assert.Throws<InvalidOperationException>(() => writer.WriteEndArray());
         }
     }
 
@@ -125,7 +125,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
     {
         public static void WriteArray(CborWriter writer, params object[] values)
         {
-            writer.BeginWriteArray(values.Length);
+            writer.WriteStartArray(values.Length);
             foreach (object value in values)
             {
                 switch (value)
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                     default: throw new ArgumentException($"Unrecognized argument type {value.GetType()}");
                 };
             }
-            writer.EndWriteArray();
+            writer.WriteEndArray();
         }
     }
 }

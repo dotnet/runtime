@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.BeginReadArray();
+            ulong? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < expectedLength; i++)
@@ -69,15 +69,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.BeginReadArray();
+            ulong? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < expectedLength; i++)
             {
-                ulong? nestedLength = reader.BeginReadArray();
+                ulong? nestedLength = reader.ReadStartArray();
                 Assert.Equal(1, (int)nestedLength!.Value);
                 reader.ReadInt64();
-                reader.EndReadArray();
+                reader.ReadEndArray();
             }
 
             Assert.Throws<InvalidOperationException>(() => reader.ReadInt64());
@@ -91,7 +91,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.BeginReadArray();
+            ulong? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 1; i < expectedLength; i++)
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                 reader.ReadInt64();
             }
 
-            Assert.Throws<InvalidOperationException>(() => reader.EndReadArray());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
         }
 
         [Theory]
@@ -110,18 +110,18 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.BeginReadArray();
+            ulong? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 1; i < expectedLength; i++)
             {
-                ulong? nestedLength = reader.BeginReadArray();
+                ulong? nestedLength = reader.ReadStartArray();
                 Assert.Equal(1, (int)nestedLength!.Value);
                 reader.ReadInt64();
-                reader.EndReadArray();
+                reader.ReadEndArray();
             }
 
-            Assert.Throws<InvalidOperationException>(() => reader.EndReadArray());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
         }
 
         [Fact]
@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = "80".HexToByteArray(); // []
             var reader = new CborReader(encoding);
-            Assert.Throws<InvalidOperationException>(() => reader.EndReadArray());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadEndArray());
         }
 
         [Theory]
@@ -141,7 +141,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.BeginReadArray();
+            ulong? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < actualLength; i++)
@@ -161,15 +161,15 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            ulong? length = reader.BeginReadArray();
+            ulong? length = reader.ReadStartArray();
             Assert.Equal(expectedLength, (int)length!.Value);
 
             for (int i = 0; i < actualLength; i++)
             {
-                ulong? innerLength = reader.BeginReadArray();
+                ulong? innerLength = reader.ReadStartArray();
                 Assert.Equal(1, (int)innerLength!.Value);
                 reader.ReadInt64();
-                reader.EndReadArray();
+                reader.ReadEndArray();
             }
 
             Assert.Throws<FormatException>(() => reader.ReadInt64());
@@ -181,7 +181,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] encoding = Array.Empty<byte>();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<FormatException>(() => reader.BeginReadArray());
+            Assert.Throws<FormatException>(() => reader.ReadStartArray());
         }
 
         [Theory]
@@ -197,7 +197,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
-            Assert.Throws<InvalidOperationException>(() => reader.BeginReadArray());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadStartArray());
         }
 
         [Theory]
@@ -215,7 +215,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
 
-            Assert.Throws<FormatException>(() => reader.BeginReadArray());
+            Assert.Throws<FormatException>(() => reader.ReadStartArray());
         }
     }
 
@@ -225,7 +225,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             Assert.Equal(CborReaderState.StartArray, reader.Peek());
 
-            ulong? length = reader.BeginReadArray();
+            ulong? length = reader.ReadStartArray();
 
             Assert.NotNull(length);
             Assert.Equal(expectedValues.Length, (int)length!.Value);
@@ -266,7 +266,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             }
 
             Assert.Equal(CborReaderState.EndArray, reader.Peek());
-            reader.EndReadArray();
+            reader.ReadEndArray();
         }
     }
 }
