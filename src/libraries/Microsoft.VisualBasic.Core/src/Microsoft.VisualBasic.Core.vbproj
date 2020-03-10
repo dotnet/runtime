@@ -18,6 +18,8 @@
     <RootNamespace />
     <!-- Disable this as it seems to break windows builds for now. -->
     <DocumentationFile />
+    <!-- No plans to fix the analyzer issues. -->
+    <EnableAnalyzers>false</EnableAnalyzers>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

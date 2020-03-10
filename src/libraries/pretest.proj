@@ -2,16 +2,15 @@
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
+    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
     <BuildDependsOnTargets>GenerateLaunchSettingsFiles</BuildDependsOnTargets>
     <BuildDependsOnTargets Condition="'$(BinplaceTestSharedFramework)' == 'true'">$(BuildDependsOnTargets);GenerateTestSharedFrameworkDepsFile</BuildDependsOnTargets>
     <BuildDependsOnTargets Condition="'$(PlatformManifestFile)' != ''">$(BuildDependsOnTargets);GenerateFileVersionProps</BuildDependsOnTargets>
-    <TargetFrameworkIdentifier>netcoreapp</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>5.0</TargetFrameworkVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- This is necessary as inside VS project references that aren't part of the sln aren't built. -->
-    <Project Include="$(CommonTestPath)\CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
+    <ProjectReference Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
   </ItemGroup>
 
   <!-- Microsoft.XmlSerializer.Generator should not be marked as a platform item and be copy-local instead. -->
@@ -58,6 +57,7 @@
       <_TestProjectRootDir>$(LibrariesProjectRoot)</_TestProjectRootDir>
       <_TestProjectRootDir Condition="'$(DirectoryToBuild)'!=''">$(DirectoryToBuild)</_TestProjectRootDir>
     </PropertyGroup>
+
     <ItemGroup>
       <!-- Keep in sync with pattern for test projects in tests.proj -->
       <TestProjects Include="$(_TestProjectRootDir)*\tests\**\*.Tests.csproj" />
@@ -65,7 +65,7 @@
 
     <MSBuild Projects="@(TestProjects)"
              Targets="GenerateLaunchSettingsFile"
-             ContinueOnError="ErrorAndContinue" />
+             ContinueOnError="ErrorAndStop" />
   </Target>
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
@@ -73,15 +73,9 @@
   <Target Name="Build"
           Condition="'$(SkipPrepareTest)' != 'true'"
           DependsOnTargets="GenerateLaunchSettingsFiles;GenerateTestSharedFrameworkDepsFile;GenerateFileVersionProps">
-
     <MSBuild Targets="Build"
-             Projects="@(Project)"
-             Properties="TargetFramework=$(BuildTargetFramework);%(Project.AdditionalProperties)"
+             Projects="@(ProjectReference)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
-
-    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
-    <Error Condition="'$(MSBuildLastTaskResult)' == 'false'" />
-
   </Target>
 </Project>

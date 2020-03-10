@@ -48,15 +48,6 @@
   -->
 
   <PropertyGroup>
-    <LibrariesProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'libraries'))</LibrariesProjectRoot>
-    <CoreClrProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr'))</CoreClrProjectRoot>
-    <MonoProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono'))</MonoProjectRoot>
-    <InstallerProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'installer'))</InstallerProjectRoot>
-    <RepoToolsLocalDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'tools-local'))</RepoToolsLocalDir>
-    <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(RepoToolsLocalDir)', 'tasks'))</RepoTasksDir>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <DefaultSubsetCategories>libraries-installer-coreclr-mono</DefaultSubsetCategories>
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <!-- TODO: Split into multiple sets. -->
