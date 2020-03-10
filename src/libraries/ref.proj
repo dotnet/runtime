@@ -10,8 +10,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
-    <ProjectReference Include="shims\generated\*.csproj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\ref\*.*proj" Exclude="@(ProjectExclusions)" />
+    <ProjectReference Include="shims\generated\*.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(DirectoryToBuild)' != ''">
     <ProjectReference Include="$(DirectoryToBuild)\ref\*.*proj" />

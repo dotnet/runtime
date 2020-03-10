@@ -25,8 +25,6 @@
   <!-- Need the PackageIndexFile file property from baseline.props -->
   <Import Project="$(RepositoryEngineeringDir)restore\harvestPackages.targets" />
 
-  <UsingTask TaskName="UpdatePackageIndex" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll"/>
-
   <!--
     Updates the package index to mark all packages we are building that can go stable as stable.
     this will allow for a kicked off build to control package stability at queue time. This does edit
