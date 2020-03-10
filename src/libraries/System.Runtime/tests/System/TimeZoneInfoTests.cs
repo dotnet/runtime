@@ -2275,7 +2275,6 @@ namespace System.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
-                CultureInfo ci = CultureInfo.CurrentUICulture;
                 // We call ICU to get the names. When passing invariant culture name to ICU, it fail and we'll use the abbreviated names at that time.
                 // We fixed this issue by avoid sending the invariant culture name to ICU and this test is confirming we work fine at that time.
                 CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
