@@ -25,7 +25,7 @@
     <MSBuild Targets="Build"
              Projects="@(ProjectReference)"
              Properties="BuildAllProjects=true;%(Project.AdditionalProperties)"
-             BuildInParallel="true"
+             BuildInParallel="false"
              ContinueOnError="ErrorAndStop" />
   </Target>
 </Project>
