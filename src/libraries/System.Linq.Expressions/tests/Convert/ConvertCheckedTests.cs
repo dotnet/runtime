@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static class ConvertCheckedTests
     {
         #region Test methods
@@ -3305,7 +3306,8 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
+        [ClassData(typeof(CompilationTypes))]
         public static void ConvertCheckedNullableFloatToSByteTest(bool useInterpreter)
         {
             foreach (float? value in new float?[] { null, 0, 1, -1, float.MinValue, float.MaxValue, float.Epsilon, float.NegativeInfinity, float.PositiveInfinity, float.NaN })

@@ -30,6 +30,7 @@ using Xunit;
 
 namespace System.Text.Json.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class DateTimeConverterTests
     {
         internal static string GetUtcOffsetText(DateTime d)

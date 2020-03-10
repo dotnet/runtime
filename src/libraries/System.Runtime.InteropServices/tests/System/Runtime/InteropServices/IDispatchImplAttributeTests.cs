@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class IDispatchImplAttributeTests
     {
         private const string TypeName = "System.Runtime.InteropServices.IDispatchImplAttribute";

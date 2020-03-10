@@ -9,6 +9,7 @@ using System.Reflection.Emit;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public sealed class DynamicMethodILProvider : IILProvider
     {
         private static readonly FieldInfo s_fiLen = typeof(ILGenerator).GetFieldAssert("m_length");

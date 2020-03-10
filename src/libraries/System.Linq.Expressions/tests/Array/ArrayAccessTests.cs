@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static class ArrayAccessTests
     {
         public static IEnumerable<object[]> Ranks() => Enumerable.Range(1, 5).Select(i => new object[] {i});

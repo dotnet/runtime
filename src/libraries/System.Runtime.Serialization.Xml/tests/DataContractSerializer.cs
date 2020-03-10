@@ -1261,7 +1261,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.Id, actual.Id);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static void DCS_Nullables()
     {
         // Arrange

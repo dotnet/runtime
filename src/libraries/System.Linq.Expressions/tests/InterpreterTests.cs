@@ -12,6 +12,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static class InterpreterTests
     {
         private static readonly PropertyInfo s_debugView = typeof(LightLambda).GetPropertyAssert("DebugView");

@@ -203,7 +203,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.statements.
 {
     public class Test
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));

@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Text.Json.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static partial class BitStackTests
     {
         private static readonly Random s_random = new Random(42);

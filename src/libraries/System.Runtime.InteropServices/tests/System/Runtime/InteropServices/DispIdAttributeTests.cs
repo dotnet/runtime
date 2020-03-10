@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class DispIdAttributeTests
     {
         [Theory]

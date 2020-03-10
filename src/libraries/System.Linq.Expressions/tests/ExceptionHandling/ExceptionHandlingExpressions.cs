@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class ExceptionHandlingExpressions
     {
         // As this class is only used here, it is distinguished from an exception

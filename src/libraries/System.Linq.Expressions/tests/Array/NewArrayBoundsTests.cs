@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static class ArrayBoundsTests
     {
         private const int MaxArraySize = 0X7FEFFFFF;

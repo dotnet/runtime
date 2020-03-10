@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.IO.Compression
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class GzipStreamUnitTests : CompressionStreamUnitTestBase
     {
         public override Stream CreateStream(Stream stream, CompressionMode mode) => new GZipStream(stream, mode);

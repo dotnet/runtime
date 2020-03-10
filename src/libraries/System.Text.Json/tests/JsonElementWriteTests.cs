@@ -9,6 +9,7 @@ using System.Text.Encodings.Web;
 
 namespace System.Text.Json.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public sealed class JsonDocumentWriteTests : JsonDomWriteTests
     {
         protected override JsonDocument PrepareDocument(string jsonIn)
@@ -37,6 +38,51 @@ namespace System.Text.Json.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
+    public sealed class JsonNodeWriteTests : JsonDomWriteTests
+    {
+        protected override JsonDocument PrepareDocument(string jsonIn)
+        {
+            JsonNode jsonNode = JsonNode.Parse(jsonIn, new JsonNodeOptions
+            {
+                AllowTrailingCommas = s_options.AllowTrailingCommas,
+                CommentHandling = s_options.CommentHandling,
+                MaxDepth = s_options.MaxDepth
+            });
+
+            using (MemoryStream stream = new MemoryStream())
+            {
+                using (Utf8JsonWriter writer = new Utf8JsonWriter(stream))
+                {
+                    jsonNode.WriteTo(writer);
+                    stream.Seek(0, SeekOrigin.Begin);
+                    JsonDocument jsonDocument = JsonDocument.Parse(stream, s_options);
+                    return jsonDocument;
+                }
+            }
+        }
+
+        protected override void WriteSingleValue(JsonDocument document, Utf8JsonWriter writer)
+        {
+            document.WriteTo(writer);
+        }
+
+        protected override void WriteDocument(JsonDocument document, Utf8JsonWriter writer)
+        {
+            document.WriteTo(writer);
+        }
+
+        [Fact]
+        public static void CheckByPassingNullWriter()
+        {
+            using (JsonDocument doc = JsonDocument.Parse("true", default))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("writer", () => doc.WriteTo(null));
+            }
+        }
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public sealed class JsonElementWriteTests : JsonDomWriteTests
     {
         protected override JsonDocument PrepareDocument(string jsonIn)
@@ -169,6 +215,7 @@ namespace System.Text.Json.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public abstract class JsonDomWriteTests
     {
         protected static readonly JsonDocumentOptions s_options =

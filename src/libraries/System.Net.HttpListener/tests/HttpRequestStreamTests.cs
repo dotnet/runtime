@@ -15,7 +15,7 @@ using Xunit.Abstractions;
 namespace System.Net.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotMonoInterpreter))] // httpsys component missing in Nano.
     public class HttpRequestStreamTests : IDisposable
     {
         private HttpListenerFactory _factory;
@@ -224,7 +224,7 @@ namespace System.Net.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Read_LargeLengthAsynchronous_Success(bool transferEncodingChunked)
@@ -264,7 +264,7 @@ namespace System.Net.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Read_LargeLengthSynchronous_Success(bool transferEncodingChunked)

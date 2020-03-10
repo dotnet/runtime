@@ -12,6 +12,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class IntPtrTests
     {
         public static IEnumerable<object[]> ReadWrite_TestData()

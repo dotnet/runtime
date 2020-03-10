@@ -334,7 +334,7 @@ namespace System.Text.Json.Tests
             Assert.Throws<ArgumentException>(() => JsonEncodedText.Encode(new string(valid).Substring(0, 4)));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         [MemberData(nameof(UTF8ReplacementCharacterStrings))]
         public static void ReplacementCharacterUTF8(byte[] dataUtf8, string expected)
         {

@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class IntPtrArrayTests
     {
         public static IEnumerable<object[]> CopyTo_TestData()

@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata.Tests
 {
     public class ImmutableByteArrayInteropTest
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         public void DangerousCreateFromUnderlyingArray()
         {
             byte[] array = new byte[3] { 1, 2, 3 };

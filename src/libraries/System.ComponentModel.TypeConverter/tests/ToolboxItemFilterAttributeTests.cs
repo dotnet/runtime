@@ -58,7 +58,7 @@ namespace System.ComponentModel.Tests
             yield return new object[] { attribute, null, false };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         [MemberData(nameof(Equals_TestData))]
         public void Equals_Object_ReturnsExpected(ToolboxItemFilterAttribute attribute, object other, bool expected)
         {

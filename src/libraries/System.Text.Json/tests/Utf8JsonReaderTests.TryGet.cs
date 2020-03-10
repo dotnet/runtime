@@ -12,6 +12,7 @@ using Xunit;
 
 namespace System.Text.Json.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static partial class Utf8JsonReaderTests
     {
         [Fact]

@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static partial class ValueTests
     {
         public static bool IsX64 { get; } = Environment.Is64BitProcess;

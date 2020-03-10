@@ -6,6 +6,7 @@ using System.Collections.Generic;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public abstract class GotoExpressionTests
     {
         protected static class Unreadable<T>

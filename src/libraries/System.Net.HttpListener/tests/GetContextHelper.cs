@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class GetContextHelper : IDisposable
     {
         private HttpClient _client;

@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public partial class GetObjectForNativeVariantTests
     {
         [StructLayout(LayoutKind.Sequential)]

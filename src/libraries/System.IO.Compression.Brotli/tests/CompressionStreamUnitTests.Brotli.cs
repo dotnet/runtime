@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.IO.Compression
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class BrotliStreamUnitTests : CompressionStreamUnitTestBase
     {
         public override Stream CreateStream(Stream stream, CompressionMode mode) => new BrotliStream(stream, mode);

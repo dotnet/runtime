@@ -16,6 +16,7 @@ namespace System.Linq.Expressions.Tests
     // due to static state being affected. For this reason some tests have to be done
     // in a particular order, with those for the old constructor coming after most of
     // the tests, and those affected by this being repeated after that.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     [TestCaseOrderer("System.Linq.Expressions.Tests.TestOrderer", "System.Linq.Expressions.Tests")]
     public class ExpressionTests
     {

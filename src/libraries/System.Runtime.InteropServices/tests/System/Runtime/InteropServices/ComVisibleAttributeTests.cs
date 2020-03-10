@@ -7,6 +7,7 @@ using Xunit;
 namespace System.Runtime.InteropServices.Tests
 {
     [ComVisible(true)]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class ComVisibleAttributeTests
     {
         [Fact]

@@ -1783,7 +1783,7 @@ public static partial class XmlSerializerTests
         Assert.True(value.SequenceEqual(actual));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static void Xml_Soap_WithNullables()
     {
         var mapping = new SoapReflectionImporter().ImportTypeMapping(typeof(WithNullables));

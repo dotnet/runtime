@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.IO.Compression
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class DeflateStreamUnitTests : CompressionStreamUnitTestBase
     {
         public override Stream CreateStream(Stream stream, CompressionMode mode) => new DeflateStream(stream, mode);

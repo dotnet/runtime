@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
     public static class StackSpillerTests
     {

@@ -10,6 +10,7 @@ using System.Diagnostics;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     internal sealed class DynamicScopeTokenResolver : ITokenResolver
     {
         private static readonly PropertyInfo s_indexer;

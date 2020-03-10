@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class MakeGoto
     {
         public static IEnumerable<object[]> GotoTypes

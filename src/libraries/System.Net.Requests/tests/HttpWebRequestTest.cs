@@ -25,6 +25,7 @@ namespace System.Net.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public partial class HttpWebRequestTest
     {
         public class HttpWebRequestParameters

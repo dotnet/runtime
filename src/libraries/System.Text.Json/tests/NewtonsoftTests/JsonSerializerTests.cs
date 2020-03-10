@@ -35,6 +35,7 @@ namespace System.Text.Json.Tests
         public int Key { get; set; }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class JsonSerializerTests
     {
         [Fact]

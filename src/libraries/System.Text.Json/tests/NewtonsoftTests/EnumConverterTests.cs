@@ -32,6 +32,7 @@ using System.Text.Json.Serialization;
 
 namespace System.Text.Json.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class EnumConverterTests
     {
         [Fact]

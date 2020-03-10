@@ -7,6 +7,7 @@ using Xunit;
 namespace System.Runtime.InteropServices.Tests
 {
     [ComConversionLoss]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class ComConversionLossAttributeTests
     {
         [Fact]

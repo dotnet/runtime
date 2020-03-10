@@ -50,6 +50,7 @@ namespace System.Text.Json.Tests
         public string[] Sizes { get; set; }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))] 
     public class CamelCaseTests
     {
         private static readonly JsonSerializerOptions s_camelCaseAndIndentedOption = new JsonSerializerOptions

@@ -1282,7 +1282,7 @@ public static partial class DataContractJsonSerializerTests
 
 
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static void DCJS_Nullables()
     {
         // Arrange

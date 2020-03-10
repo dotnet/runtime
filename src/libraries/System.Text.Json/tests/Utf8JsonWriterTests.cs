@@ -18,6 +18,7 @@ using Xunit;
 
 namespace System.Text.Json.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class Utf8JsonWriterTests
     {
         private const int MaxExpansionFactorWhileEscaping = 6;

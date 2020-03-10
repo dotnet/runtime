@@ -995,7 +995,7 @@ namespace System.Net.Sockets.Tests
             }, maxAttempts: 10);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend)

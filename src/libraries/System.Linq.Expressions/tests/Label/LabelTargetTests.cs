@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class LabelTargetTests
     {
         // The actual use of label targets when compiling, interpreting or otherwise acting upon an expression

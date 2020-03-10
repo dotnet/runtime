@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static class EnumTests
     {
         private const string UInt64MaxPlus1 = "18446744073709551616"; // ulong.MaxValue + 1;

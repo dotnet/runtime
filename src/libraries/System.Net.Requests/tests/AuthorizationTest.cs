@@ -68,7 +68,7 @@ namespace System.Net.Tests
             yield return new object[] { new Authorization(null, true), true, true };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         [MemberData(nameof(GetMutuallyAuthenticatedValues))]
         public void MutuallyAuthenticated_Values_ExpectEqualValues(Authorization authorization, bool setValue, bool expectedValue)
         {

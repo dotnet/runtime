@@ -612,7 +612,7 @@ namespace System.Collections.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_Generic_Add_DuplicateValue(int count)
         {

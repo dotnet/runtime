@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static class CacheTests
     {
         [Fact, OuterLoop]

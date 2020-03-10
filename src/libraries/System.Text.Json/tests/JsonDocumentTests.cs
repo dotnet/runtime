@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 
 namespace System.Text.Json.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static class JsonDocumentTests
     {
         private static readonly byte[] Utf8Bom = { 0xEF, 0xBB, 0xBF };

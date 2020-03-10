@@ -32,6 +32,7 @@ using Xunit;
 
 namespace System.Text.Json.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class ImmutableCollectionsTests
     {
         private static readonly JsonSerializerOptions s_indentedOption = new JsonSerializerOptions { WriteIndented = true };

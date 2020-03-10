@@ -10,6 +10,7 @@ namespace System.Text.Json.Serialization.Tests
     /// Catch-all location for combined read scenarios (user reported and otherwise) that aren't
     /// specific to one serialization feature.
     /// </summary>
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class ReadScenarioTests
     {
         [Fact]

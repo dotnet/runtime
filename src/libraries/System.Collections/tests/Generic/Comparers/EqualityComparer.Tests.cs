@@ -9,6 +9,8 @@ using Xunit;
 
 namespace System.Collections.Generic.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
+    
     public class EqualityComparerTests
     {
         public class EqualsData<T> : TheoryData<T, T, bool>

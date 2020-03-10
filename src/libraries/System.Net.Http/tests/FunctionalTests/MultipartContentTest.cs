@@ -185,7 +185,7 @@ namespace System.Net.Http.Functional.Tests
                 await MultipartContentToStringAsync(mc, mode));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         public async Task ReadAsStreamAsync_LargeContent_AllBytesRead()
         {
             var form = new MultipartFormDataContent();

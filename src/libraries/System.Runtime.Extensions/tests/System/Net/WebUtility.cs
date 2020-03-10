@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Net.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public partial class WebUtilityTests
     {
         // HtmlEncode + HtmlDecode

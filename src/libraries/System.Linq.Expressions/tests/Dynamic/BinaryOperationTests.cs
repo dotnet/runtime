@@ -563,7 +563,8 @@ namespace System.Dynamic.Tests
             Assert.Equal(x <= y, dX <= dY);
         }
 
-        [Theory, MemberData(nameof(CrossJoinDouble))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
+        [MemberData(nameof(CrossJoinDouble))]
         public void ModuloDouble(double x, double y)
         {
             dynamic dX = x;

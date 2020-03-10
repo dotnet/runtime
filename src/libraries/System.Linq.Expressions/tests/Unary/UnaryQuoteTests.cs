@@ -10,6 +10,7 @@ using static System.Linq.Expressions.Expression;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class UnaryQuoteTests
     {
         [Theory, ClassData(typeof(CompilationTypes))]

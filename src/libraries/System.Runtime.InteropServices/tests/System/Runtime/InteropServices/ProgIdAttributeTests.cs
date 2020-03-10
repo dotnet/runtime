@@ -7,6 +7,7 @@ using Xunit;
 namespace System.Runtime.InteropServices.Tests
 {
     [ProgId("pizza")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class ProgIdAttributeTests
     {
         [Fact]

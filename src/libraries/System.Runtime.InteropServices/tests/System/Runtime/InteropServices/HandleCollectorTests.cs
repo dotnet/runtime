@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class HandleCollectorTests
     {
         private const int LowLimitSize = 20;

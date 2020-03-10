@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static class BinaryLogicalTests
     {
         //TODO: Need tests on the short-circuit and non-short-circuit nature of the two forms.

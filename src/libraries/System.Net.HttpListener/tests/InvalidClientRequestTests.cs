@@ -12,7 +12,7 @@ using Xunit;
 namespace System.Net.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotMonoInterpreter))] // httpsys component missing in Nano.
     public class InvalidClientRequestTests : IDisposable
     {
         public HttpListenerFactory Factory { get; }

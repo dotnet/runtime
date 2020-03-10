@@ -283,7 +283,8 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/33231", TestRuntimes.Mono)]
         public static void FindServicePoint_Collectible()
         {
             RemoteExecutor.Invoke(() =>

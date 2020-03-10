@@ -48,7 +48,7 @@ namespace System.Net.Tests
             Assert.Equal(42000, request.Timeout);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
         public void InvalidArguments_Throws()
         {
             WebRequest request = WebRequest.Create("file://anything");

@@ -8,7 +8,7 @@ using System.Collections.Immutable;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
-{
+{    
     public class PolymorphicTests_Span : PolymorphicTests
     {
         public PolymorphicTests_Span() : base(SerializationWrapper.SpanSerializer) { }
@@ -34,6 +34,7 @@ namespace System.Text.Json.Serialization.Tests
         public PolymorphicTests_Writer() : base(SerializationWrapper.WriterSerializer) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public abstract class PolymorphicTests
     {
         private SerializationWrapper Serializer { get; }

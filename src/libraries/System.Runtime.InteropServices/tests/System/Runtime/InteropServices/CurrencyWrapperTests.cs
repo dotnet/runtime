@@ -7,6 +7,7 @@ using Xunit;
 namespace System.Runtime.InteropServices.Tests
 {
 #pragma warning disable 0618 // CurrencyWrapper is marked as Obsolete.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public class CurrencyWrapperTests
     {
         [Theory]
