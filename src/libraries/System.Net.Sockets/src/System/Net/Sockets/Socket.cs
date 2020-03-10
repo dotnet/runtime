@@ -1821,7 +1821,7 @@ namespace System.Net.Sockets
         /// <summary>Sets a socket option value using platform-specific level and name identifiers.</summary>
         /// <param name="optionLevel">The platform-defined option level.</param>
         /// <param name="optionName">The platform-defined option name.</param>
-        /// <param name="optionValue">The value to which to the option should be set.</param>
+        /// <param name="optionValue">The value to which the option should be set.</param>
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         /// <remarks>
