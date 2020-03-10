@@ -39,14 +39,14 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: debug
     platforms:
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_arm64
-    - Linux_musl_x64
-    - Linux_x64
-    - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    - linux_arm
+    - linux_arm64
+    - linux_musl_arm64
+    - linux_musl_x64
+    - linux_x64
+    - osx_x64
+    - win_arm
+    - win_arm64
     jobParameters:
       testGroup: outerloop
 
@@ -69,11 +69,11 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: release
     platforms:
-    - Linux_arm
-    - Linux_musl_arm64
-    - Linux_x64
-    - OSX_x64
-    - Windows_NT_x86
+    - linux_arm
+    - linux_musl_arm64
+    - linux_x64
+    - osx_x64
+    - win_x86
     jobParameters:
       testGroup: outerloop
 
@@ -97,13 +97,13 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm
-    - Linux_arm64
-    - OSX_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - linux_arm
+    - linux_arm64
+    - osx_x64
+    - win_arm
+    - win_arm64
+    - win_x64
+    - win_x86
     testGroup: outerloop
     jobParameters:
       liveLibrariesBuildConfig: Release
@@ -130,15 +130,15 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm64
-    - Linux_musl_x64
-    - Linux_musl_arm64
-    - Linux_x64
-    - OSX_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    - linux_arm64
+    - linux_musl_x64
+    - linux_musl_arm64
+    - linux_x64
+    - osx_x64
+    - win_x64
+    - win_x86
+    - win_arm
+    - win_arm64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -168,5 +168,5 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
     platforms:
-    - Linux_x64
-    - Windows_NT_x64
+    - linux_x64
+    - win_x64

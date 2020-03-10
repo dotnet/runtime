@@ -60,7 +60,7 @@ jobs:
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
         value: '/p:officialBuildId=$(Build.BuildNumber)'
-    - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
+    - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'linux')) }}:
       # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
       # lowercase for RID format. (Detection normally converts, but we're preventing it.)
       - name: OutputRidArg
@@ -75,7 +75,7 @@ jobs:
     # Linux builds use docker images with dependencies preinstalled,
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
-    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+    - ${{ if eq(parameters.osGroup, 'osx') }}:
       - script: sh $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
     - ${{ if eq(parameters.osGroup, 'win') }}:

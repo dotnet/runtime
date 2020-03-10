@@ -77,7 +77,7 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/crossgen-comparison-job.yml
     buildConfig: release
     platforms:
-    - Linux_arm
+    - linux_arm
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

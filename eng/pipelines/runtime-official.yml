@@ -47,16 +47,16 @@ stages:
       jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
       buildConfig: release
       platforms:
-      - OSX_x64
-      - Linux_x64
-      - Linux_arm
-      - Linux_arm64
-      - Linux_musl_x64
-      - Linux_musl_arm64
-      - Windows_NT_x86
-      - Windows_NT_x64
-      - Windows_NT_arm
-      - Windows_NT_arm64
+      - osx_x64
+      - linux_x64
+      - linux_arm
+      - linux_arm64
+      - linux_musl_x64
+      - linux_musl_arm64
+      - win_x86
+      - win_x64
+      - win_arm
+      - win_arm64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
 
@@ -69,16 +69,16 @@ stages:
       runtimeFlavor: mono
       buildConfig: release
       platforms:
-      - OSX_x64
-      - Linux_x64
-      - Linux_arm
-      - Linux_arm64
-      - Linux_musl_x64
-      # - Linux_musl_arm64
-      - Windows_NT_x64
-      # - Windows_NT_x86
-      # - Windows_NT_arm
-      # - Windows_NT_arm64
+      - osx_x64
+      - linux_x64
+      - linux_arm
+      - linux_arm64
+      - linux_musl_x64
+      # - linux_musl_arm64
+      - win_x64
+      # - win_x86
+      # - win_arm
+      # - win_arm64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
 
@@ -90,16 +90,16 @@ stages:
       jobTemplate: /eng/pipelines/libraries/build-job.yml
       buildConfig: Release
       platforms:
-      - OSX_x64
-      - Linux_x64
-      - Linux_arm
-      - Linux_arm64
-      - Linux_musl_x64
-      - Linux_musl_arm64
-      - Windows_NT_x86
-      - Windows_NT_x64
-      - Windows_NT_arm
-      - Windows_NT_arm64
+      - osx_x64
+      - linux_x64
+      - linux_arm
+      - linux_arm64
+      - linux_musl_x64
+      - linux_musl_arm64
+      - win_x86
+      - win_x64
+      - win_arm
+      - win_arm64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         liveRuntimeBuildConfig: release
@@ -112,7 +112,7 @@ stages:
       jobTemplate: /eng/pipelines/libraries/build-job.yml
       buildConfig: Release
       platforms:
-      - Windows_NT_x64
+      - win_x64
       jobParameters:
         framework: allConfigurations
         isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -131,16 +131,16 @@ stages:
         useOfficialAllConfigurations: true
         buildFullPlatformManifest: true
       platforms:
-      - OSX_x64
-      - Linux_x64
-      - Linux_arm
-      - Linux_arm64
-      - Linux_musl_x64
-      - Linux_musl_arm64
-      - Windows_NT_x86
-      - Windows_NT_x64
-      - Windows_NT_arm
-      - Windows_NT_arm64
+      - osx_x64
+      - linux_x64
+      - linux_arm
+      - linux_arm64
+      - linux_musl_x64
+      - linux_musl_arm64
+      - win_x86
+      - win_x64
+      - win_arm
+      - win_arm64
 
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml

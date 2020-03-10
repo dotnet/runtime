@@ -21,10 +21,10 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
-    - Linux_x64
-    - OSX_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - linux_x64
+    - osx_x64
+    - win_x64
+    - win_x86
     jobParameters:
       testGroup: jitstress-isas-x86
 
@@ -33,9 +33,9 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
     buildConfig: checked
     platforms:
-    - OSX_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - osx_x64
+    - win_x64
+    - win_x86
     jobParameters:
       testGroup: jitstress-isas-x86
       liveLibrariesBuildConfig: Release
@@ -45,10 +45,10 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
     buildConfig: checked
     platforms:
-    - Linux_x64
-    - OSX_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - linux_x64
+    - osx_x64
+    - win_x64
+    - win_x86
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

@@ -11,7 +11,7 @@ parameters:
                                                                # Usage:
                                                                #  artifactNames:
                                                                #    - 'BlobArtifacts'
-                                                               #    - 'Artifacts_Windows_NT_Release'
+                                                               #    - 'Artifacts_Windows_Release'
 
 jobs:
 - job: Run_SDL

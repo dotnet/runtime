@@ -42,8 +42,8 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: release
     platforms:
-    - Windows_NT_x86
-    - OSX_x64
+    - win_x86
+    - osx_x64
     jobParameters:
       testGroup: innerloop
       nameSuffix: Runtime_Debug
@@ -57,7 +57,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: debug
     platforms:
-    - Linux_x64
+    - linux_x64
     jobParameters:
       testGroup: innerloop
       nameSuffix: Runtime_Release
@@ -72,7 +72,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: debug
     platforms:
-    - Linux_x64
+    - linux_x64
     jobParameters:
       testGroup: innerloop
       nameSuffix: RuntimeFlavor_Mono
@@ -87,7 +87,7 @@ jobs:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     buildConfig: debug
     platforms:
-    - Windows_NT_x64
+    - win_x64
     jobParameters:
       testGroup: innerloop
       nameSuffix: Mono_Libraries

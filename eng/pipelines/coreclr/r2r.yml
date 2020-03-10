@@ -21,11 +21,11 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - linux_arm
+    - linux_arm64
+    - linux_x64
+    - win_x64
+    - win_x86
     jobParameters:
       testGroup: outerloop
 
@@ -34,11 +34,11 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/test-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - Windows_NT_x64
-    - Windows_NT_x86
+    - linux_arm
+    - linux_arm64
+    - linux_x64
+    - win_x64
+    - win_x86
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     managedOsxBuild: false

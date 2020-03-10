@@ -127,14 +127,14 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: checked
     platforms:
-    - Linux_x64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_x64
-    - Windows_NT_x86
-    - Windows_NT_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    - linux_x64
+    - linux_arm
+    - linux_arm64
+    - linux_musl_x64
+    - win_x86
+    - win_x64
+    - win_arm
+    - win_arm64
     jobParameters:
       testGroup: innerloop
       condition: >-
@@ -151,7 +151,7 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: checked
     platforms:
-    - OSX_x64
+    - osx_x64
     jobParameters:
       testGroup: innerloop
       condition: >-
@@ -169,16 +169,16 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: release
     platforms:
-    - OSX_x64
-    - Linux_x64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_x64
-    - Linux_musl_arm64
-    - Windows_NT_x64
-    - Windows_NT_x86
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    - osx_x64
+    - linux_x64
+    - linux_arm
+    - linux_arm64
+    - linux_musl_x64
+    - linux_musl_arm64
+    - win_x64
+    - win_x86
+    - win_arm
+    - win_arm64
     jobParameters:
       testGroup: innerloop
 
@@ -190,8 +190,8 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
     platforms:
-    - Linux_x64
-    - Windows_NT_x64
+    - linux_x64
+    - win_x64
     jobParameters:
       condition: >-
         or(
@@ -208,16 +208,16 @@ jobs:
     runtimeFlavor: mono
     buildConfig: debug
     platforms:
-    - OSX_x64
-    - Linux_x64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_x64
-    # - Linux_musl_arm64
-    - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm
-    # - Windows_NT_arm64
+    - osx_x64
+    - linux_x64
+    - linux_arm
+    - linux_arm64
+    - linux_musl_x64
+    # - linux_musl_arm64
+    - win_x64
+    # - win_x86
+    # - win_arm
+    # - win_arm64
     jobParameters:
       condition: >-
         or(
@@ -235,16 +235,16 @@ jobs:
     runtimeFlavor: mono
     buildConfig: release
     platforms:
-    - OSX_x64
-    - Linux_x64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_x64
-    # - Linux_musl_arm64
-    - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm
-    # - Windows_NT_arm64
+    - osx_x64
+    - linux_x64
+    - linux_arm
+    - linux_arm64
+    - linux_musl_x64
+    # - linux_musl_arm64
+    - win_x64
+    # - win_x86
+    # - win_arm
+    # - win_arm64
     jobParameters:
       condition: >-
         or(
@@ -262,16 +262,16 @@ jobs:
     runtimeFlavor: mono
     buildConfig: debug
     platforms:
-    - OSX_x64
-    - Linux_x64
-    # - Linux_arm
-    # - Linux_arm64
-    # - Linux_musl_x64
-    # - Linux_musl_arm64
-    # - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm
-    # - Windows_NT_arm64
+    - osx_x64
+    - linux_x64
+    # - linux_arm
+    # - linux_arm64
+    # - linux_musl_x64
+    # - linux_musl_arm64
+    # - win_x64
+    # - win_x86
+    # - win_arm
+    # - win_arm64
     jobParameters:
       llvm: true
       condition: >-
@@ -290,16 +290,16 @@ jobs:
     runtimeFlavor: mono
     buildConfig: release
     platforms:
-    - OSX_x64
-    - Linux_x64
-    # - Linux_arm
-    # - Linux_arm64
-    # - Linux_musl_x64
-    # - Linux_musl_arm64
-    # - Windows_NT_x64
-    # - Windows_NT_x86
-    # - Windows_NT_arm
-    # - Windows_NT_arm64
+    - osx_x64
+    - linux_x64
+    # - linux_arm
+    # - linux_arm64
+    # - linux_musl_x64
+    # - linux_musl_arm64
+    # - win_x64
+    # - win_x86
+    # - win_arm
+    # - win_arm64
     jobParameters:
       llvm: true
       condition: >-
@@ -319,11 +319,11 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: Release
     platforms:
-    - Linux_arm
-    - Linux_musl_arm64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    - Windows_NT_x86
+    - linux_arm
+    - linux_musl_arm64
+    - win_arm
+    - win_arm64
+    - win_x86
     jobParameters:
       liveRuntimeBuildConfig: release
 
@@ -332,11 +332,11 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Linux_arm64
-    - Linux_musl_x64
-    - Linux_x64
-    - OSX_x64
-    - Windows_NT_x64
+    - linux_arm64
+    - linux_musl_x64
+    - linux_x64
+    - osx_x64
+    - win_x64
     jobParameters:
       liveRuntimeBuildConfig: release
 #
@@ -349,7 +349,7 @@ jobs:
     platforms:
     - WebAssembly_wasm
     - ${{ if eq(variables['isFullMatrix'], false) }}:
-      - Windows_NT_x86
+      - win_x86
     jobParameters:
       liveRuntimeBuildConfig: release
       condition: >-
@@ -362,9 +362,9 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: Release
     platforms:
-    - Windows_NT_x86
+    - win_x86
     - ${{ if eq(variables['isFullMatrix'], true) }}:
-      - Windows_NT_x64
+      - win_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
@@ -381,7 +381,7 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Windows_NT_x64
+    - win_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
@@ -402,11 +402,11 @@ jobs:
   parameters:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-      - Linux_arm
-      - Linux_musl_arm64
-      - Windows_NT_x86
-      - Windows_NT_arm
-      - Windows_NT_arm64
+      - linux_arm
+      - linux_musl_arm64
+      - win_x86
+      - win_arm
+      - win_arm64
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: Release
@@ -415,11 +415,11 @@ jobs:
   parameters:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-      - OSX_x64
-      - Linux_x64
-      - Linux_arm64
-      - Linux_musl_x64
-      - Windows_NT_x64
+      - osx_x64
+      - linux_x64
+      - linux_arm64
+      - linux_musl_x64
+      - win_x64
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -433,9 +433,9 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-test-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - OSX_x64
-    - Linux_x64
-    - Windows_NT_x64
+    - osx_x64
+    - linux_x64
+    - win_x64
     jobParameters:
       isOfficialBuild: false
       liveRuntimeBuildConfig: release
@@ -456,7 +456,7 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/crossgen-comparison-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm
+    - linux_arm
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -475,10 +475,10 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm 
-    - Windows_NT_x86
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    - linux_arm 
+    - win_x86
+    - win_arm
+    - win_arm64
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: Release
@@ -496,10 +496,10 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
     buildConfig: checked
     platforms:
-    - OSX_x64
-    - Linux_x64
-    - Linux_arm64
-    - Windows_NT_x64
+    - osx_x64
+    - linux_x64
+    - linux_arm64
+    - win_x64
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -517,10 +517,10 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm
-    - Windows_NT_x86
-    - Windows_NT_arm
-    - Windows_NT_arm64
+    - linux_arm
+    - win_x86
+    - win_arm
+    - win_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -536,10 +536,10 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
     buildConfig: checked
     platforms:
-    - OSX_x64
-    - Linux_x64
-    - Linux_arm64
-    - Windows_NT_x64
+    - osx_x64
+    - linux_x64
+    - linux_arm64
+    - win_x64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -560,10 +560,10 @@ jobs:
     runtimeFlavor: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    # - Windows_NT_x64
-    - OSX_x64
-    - Linux_arm64
-    - Linux_x64
+    # - win_x64
+    - osx_x64
+    - linux_arm64
+    - linux_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false
@@ -587,7 +587,7 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: Release
     platforms:
-    - Windows_NT_x86
+    - win_x86
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false
@@ -610,16 +610,16 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Windows_NT_x64
-    - OSX_x64
-    - Linux_x64
-    - Linux_musl_x64
+    - win_x64
+    - osx_x64
+    - linux_x64
+    - linux_musl_x64
     - ${{ if eq(variables['isFullMatrix'], true) }}:
-      - Linux_arm
-      - Linux_arm64
-      - Linux_musl_arm64
+      - linux_arm
+      - linux_arm64
+      - linux_musl_arm64
     - ${{ if eq(variables['isFullMatrix'], false) }}:
-      - Windows_NT_x86
+      - win_x86
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isOfficialBuild: false
@@ -642,8 +642,8 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: Release
     platforms:
-    # - Windows_NT_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
-    - Windows_NT_x86
+    # - Windows_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
+    - win_x86
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
@@ -661,9 +661,9 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Windows_NT_x64
-    - Linux_x64
-    - Linux_musl_x64
+    - win_x64
+    - linux_x64
+    - linux_musl_x64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
@@ -685,7 +685,7 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - OSX_x64
+    - osx_x64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:

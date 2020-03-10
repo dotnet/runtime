@@ -21,9 +21,9 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
-    - Linux_x64
-    - OSX_x64
-    - Windows_NT_x64
+    - linux_x64
+    - osx_x64
+    - win_x64
     jobParameters:
       testGroup: innerloop
 
@@ -32,8 +32,8 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
     buildConfig: checked
     platforms:
-    - OSX_x64
-    - Windows_NT_x64
+    - osx_x64
+    - win_x64
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: Release
@@ -44,9 +44,9 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     buildConfig: checked
     platforms:
-    - Linux_x64
-    - OSX_x64
-    - Windows_NT_x64
+    - linux_x64
+    - osx_x64
+    - win_x64
     jobParameters:
       testGroup: innerloop
       readyToRun: true

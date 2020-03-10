@@ -21,19 +21,19 @@ jobs:
     helixQueues:
 
     # Linux arm
-    - ${{ if eq(parameters.platform, 'Linux_arm') }}:
+    - ${{ if eq(parameters.platform, 'linux_arm') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
         - (Debian.9.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm32v7-bfcd90a-20200121150037
 
     # Linux arm64
-    - ${{ if eq(parameters.platform, 'Linux_arm64') }}:
+    - ${{ if eq(parameters.platform, 'linux_arm64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
         - (Ubuntu.1804.ArmArch.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-bfcd90a-20200127194925
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
         - (Ubuntu.1804.ArmArch.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-bfcd90a-20200127194925
 
     # Linux musl x64
-    - ${{ if eq(parameters.platform, 'Linux_musl_x64') }}:
+    - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
         - (Alpine.311.Amd64.Open)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.11-helix-bfcd90a-20200123191053
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
@@ -42,12 +42,12 @@ jobs:
         - (Alpine.311.Amd64.Open)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.11-helix-bfcd90a-20200123191053
 
     # Linux musl arm64
-    - ${{ if eq(parameters.platform, 'Linux_musl_arm64') }}:
+    - ${{ if eq(parameters.platform, 'linux_musl_arm64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
         - (Alpine.38.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-a45aeeb-20190620184035
 
     # Linux x64
-    - ${{ if eq(parameters.platform, 'Linux_x64') }}:
+    - ${{ if eq(parameters.platform, 'linux_x64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
         - Centos.7.Amd64.Open
         - RedHat.7.Amd64.Open
@@ -70,7 +70,7 @@ jobs:
         - (Fedora.29.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-29-helix-a12566d-20191210224553
 
     # OSX x64
-    - ${{ if eq(parameters.platform, 'OSX_x64') }}:
+    - ${{ if eq(parameters.platform, 'osx_x64') }}:
       - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
         - OSX.1013.Amd64.Open
         - OSX.1014.Amd64.Open
@@ -81,8 +81,8 @@ jobs:
         - OSX.1013.Amd64.Open
         - OSX.1014.Amd64.Open
 
-    # Windows_NT x64
-    - ${{ if eq(parameters.platform, 'Windows_NT_x64') }}:
+    # Windows x64
+    - ${{ if eq(parameters.platform, 'win_x64') }}:
       # netcoreapp
       - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
@@ -105,8 +105,8 @@ jobs:
       - ${{ if eq(parameters.jobParameters.framework, 'allConfigurations') }}:
         - Windows.10.Amd64.Server19H1.Open
 
-    # Windows_NT x86
-    - ${{ if eq(parameters.platform, 'Windows_NT_x86') }}:
+    # Windows x86
+    - ${{ if eq(parameters.platform, 'win_x86') }}:
       # netcoreapp
       - ${{ if notIn(parameters.jobParameters.framework, 'allConfigurations', 'net472') }}:
         - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:

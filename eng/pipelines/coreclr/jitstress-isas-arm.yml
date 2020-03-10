@@ -21,8 +21,8 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm64
-    - Windows_NT_arm64
+    - linux_arm64
+    - win_arm64
     jobParameters:
       testGroup: jitstress-isas-arm
 
@@ -31,8 +31,8 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/test-job.yml
     buildConfig: checked
     platforms:
-    - Linux_arm64
-    - Windows_NT_arm64
+    - linux_arm64
+    - win_arm64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

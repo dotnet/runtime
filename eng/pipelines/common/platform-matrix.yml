@@ -29,14 +29,14 @@ jobs:
 
 # Linux arm
 
-- ${{ if or(containsValue(parameters.platforms, 'Linux_arm'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'linux_arm'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: linux
       archType: arm
-      platform: Linux_arm
+      platform: linux_arm
       container:
         image: ubuntu-16.04-cross-14.04-23cacb0-20200121150126
         registry: mcr
@@ -53,14 +53,14 @@ jobs:
 
 # Linux arm64
 
-- ${{ if or(containsValue(parameters.platforms, 'Linux_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'linux_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: linux
       archType: arm64
-      platform: Linux_arm64
+      platform: linux_arm64
       container:
         image: ubuntu-16.04-cross-arm64-cfdd435-20200121150126
         registry: mcr
@@ -77,7 +77,7 @@ jobs:
 
 # Linux musl x64
 
-- ${{ if or(containsValue(parameters.platforms, 'Linux_musl_x64'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'linux_musl_x64'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
@@ -85,7 +85,7 @@ jobs:
       osGroup: linux
       osSubgroup: _musl
       archType: x64
-      platform: Linux_musl_x64
+      platform: linux_musl_x64
       container:
         # alpine coreclr cmake errors on newer builds
         ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
@@ -109,7 +109,7 @@ jobs:
 
 # Linux musl arm64
 
-- ${{ if or(containsValue(parameters.platforms, 'Linux_musl_arm64'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'linux_musl_arm64'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
@@ -117,7 +117,7 @@ jobs:
       osGroup: linux
       osSubgroup: _musl
       archType: arm64
-      platform: Linux_musl_arm64
+      platform: linux_musl_arm64
       container:
         image: ubuntu-16.04-cross-arm64-alpine-406629a-20200127195039
         registry: mcr
@@ -134,14 +134,14 @@ jobs:
 
 # Linux x64
 
-- ${{ if or(containsValue(parameters.platforms, 'Linux_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'linux_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: linux
       archType: x64
-      platform: Linux_x64
+      platform: linux_x64
       container:
         image: centos-7-203142e-20200131220214
         registry: mcr
@@ -200,14 +200,14 @@ jobs:
 
 # macOS x64
 
-- ${{ if or(containsValue(parameters.platforms, 'OSX_x64'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'osx_x64'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: osx
       archType: x64
-      platform: OSX_x64
+      platform: osx_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -220,14 +220,14 @@ jobs:
 
 # Windows x64
 
-- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'win_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: win
       archType: x64
-      platform: Windows_NT_x64
+      platform: win_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -240,14 +240,14 @@ jobs:
 
 # Windows x86
 
-- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_x86'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'win_x86'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: win
       archType: x86
-      platform: Windows_NT_x86
+      platform: win_x86
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -259,14 +259,14 @@ jobs:
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Windows arm
-- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_arm'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'win_arm'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: win
       archType: arm
-      platform: Windows_NT_arm
+      platform: win_arm
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -279,14 +279,14 @@ jobs:
 
 # Windows arm64
 
-- ${{ if or(containsValue(parameters.platforms, 'Windows_NT_arm64'), eq(parameters.platformGroup, 'all')) }}:
+- ${{ if or(containsValue(parameters.platforms, 'win_arm64'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       osGroup: win
       archType: arm64
-      platform: Windows_NT_arm64
+      platform: win_arm64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}

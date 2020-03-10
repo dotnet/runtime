@@ -21,10 +21,10 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: release
     platforms:
-    - Linux_x64
-    - Linux_arm64
-    - Windows_NT_x64
-    - Windows_NT_arm64
+    - linux_x64
+    - linux_arm64
+    - win_x64
+    - win_arm64
     jobParameters:
       testGroup: gc-longrunning
 
@@ -33,10 +33,10 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
     buildConfig: release
     platforms:
-    - Linux_x64
-    - Linux_arm64
-    - Windows_NT_x64
-    - Windows_NT_arm64
+    - linux_x64
+    - linux_arm64
+    - win_x64
+    - win_arm64
     jobParameters:
       testGroup: gc-longrunning
       liveLibrariesBuildConfig: Release
@@ -46,10 +46,10 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
     buildConfig: release
     platforms:
-    - Linux_x64
-    - Linux_arm64
-    - Windows_NT_x64
-    - Windows_NT_arm64
+    - linux_x64
+    - linux_arm64
+    - win_x64
+    - win_arm64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     managedOsxBuild: false

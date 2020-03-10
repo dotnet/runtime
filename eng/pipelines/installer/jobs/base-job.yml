@@ -320,7 +320,7 @@ jobs:
         parameters.archType,
         parameters.liveLibrariesBuildConfig) }}
   - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
-    - libraries_build_allconfigurations_Windows_NT_x64_Release
+    - libraries_build_allconfigurations_Windows_x64_Release
   - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
     - ${{ each platform in parameters.platforms }}:
       - ${{ parameters.runtimeFlavor }}_product_build_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}
