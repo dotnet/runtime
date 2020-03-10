@@ -5989,6 +5989,29 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             isLdSt = true;
             break;
 
+        case INS_ld1:
+        case INS_ld2:
+        case INS_ld3:
+        case INS_ld4:
+        case INS_st1:
+        case INS_st2:
+        case INS_st3:
+        case INS_st4:
+            assert(isVectorRegister(reg1));
+            assert(isGeneralRegisterOrSP(reg2));
+            assert(isGeneralRegister(reg3));
+
+            assert(insOptsPostIndex(opt));
+
+            elemsize = size;
+            assert(isValidVectorElemsize(elemsize));
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+
+            // Load/Store single structure  post-indexed by a register
+            reg2 = encodingSPtoZR(reg2);
+            fmt  = IF_LS_3G;
+            break;
+
         default:
             unreached();
             break;
