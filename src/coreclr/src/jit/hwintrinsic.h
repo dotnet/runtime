@@ -302,43 +302,6 @@ struct HWIntrinsicInfo
     }
 };
 
-struct HWIntrinsicArgsInfo final
-{
-    Compiler*           comp;
-    CORINFO_SIG_INFO*   sig;
-    NamedIntrinsic      intrinsic = NI_Illegal;
-    HWIntrinsicCategory category;
-    unsigned int        numArgs;
-    bool                mustExpand;
-    GenTree*            op1      = nullptr;
-    GenTree*            op2      = nullptr;
-    GenTree*            op3      = nullptr;
-    var_types           baseType = TYP_UNKNOWN;
-
-    HWIntrinsicArgsInfo(Compiler*           compiler,
-                        NamedIntrinsic      intrinsicId,
-                        HWIntrinsicCategory intrinsicCategory,
-                        CORINFO_SIG_INFO*   intrinsicSig,
-                        var_types           intrinsicBaseType,
-                        bool                intrinsicOpMustExpand)
-    {
-        comp       = compiler;
-        sig        = intrinsicSig;
-        intrinsic  = intrinsicId;
-        category   = intrinsicCategory;
-        baseType   = intrinsicBaseType;
-        mustExpand = intrinsicOpMustExpand;
-        numArgs    = sig->numArgs;
-
-        InitializeBaseType();
-    }
-    GenTreeHWIntrinsic* gtNewHWIntrinsicNode(var_types retType, unsigned simdSize);
-    void PopArgsForHWIntrinsic();
-
-private:
-    void InitializeBaseType();
-};
-
 #endif // FEATURE_HW_INTRINSICS
 
 #endif // _HW_INTRINSIC_H_

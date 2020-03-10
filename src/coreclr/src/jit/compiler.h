@@ -2031,7 +2031,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 struct HWIntrinsicInfo;
-struct HWIntrinsicArgsInfo;
 
 class Compiler
 {
@@ -2058,7 +2057,6 @@ class Compiler
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct HWIntrinsicInfo;
-    friend struct HWIntrinsicArgsInfo;
 #endif // FEATURE_HW_INTRINSICS
 
 #ifndef TARGET_64BIT
@@ -2609,6 +2607,10 @@ public:
         var_types type, GenTree* op1, GenTree* op2, GenTree* op3, NamedIntrinsic hwIntrinsicID);
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
     CORINFO_CLASS_HANDLE gtGetStructHandleForHWSIMD(var_types simdType, var_types simdBaseType);
+    var_types            getBaseTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
+                                                   CORINFO_CLASS_HANDLE clsHnd,
+                                                   CORINFO_SIG_INFO*    sig,
+                                                   var_types            baseType);
 #endif // FEATURE_HW_INTRINSICS
 
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
