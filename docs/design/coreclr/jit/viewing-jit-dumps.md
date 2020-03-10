@@ -2,7 +2,7 @@
 
 This document is intended for people interested in seeing the disassembly, GC info, or other details the JIT generates for a managed program.
 
-To make sense of the results, it is recommended you also read the [Reading a JitDump](/docs/design/coreclr/botr/ryujit-overview.md#reading-a-jitdump) section of the RyuJIT Overview.
+To make sense of the results, it is recommended you also read the [Reading a JitDump](ryujit-overview.md#reading-a-jitdump) section of the RyuJIT Overview.
 
 ## Setting up our environment
 
@@ -148,7 +148,7 @@ The wildcard character `*` can be used for `<ClassName>` and `<MethodName>`. In 
 
 Below are some of the most useful `COMPlus` variables. Where {method-list} is specified in the list below, you can supply a space-separated list of either fully-qualified or simple method names (the former is useful when running something that has many methods of the same name), or you can specify `*` to mean all methods.
 
-* `COMPlus_JitDump`={method-list} – dump lots of useful information about what the JIT is doing. See [Reading a JitDump](/docs/design/coreclr/botr/ryujit-overview.md#reading-a-jitdump) for more on how to analyze this data.
+* `COMPlus_JitDump`={method-list} – dump lots of useful information about what the JIT is doing. See [Reading a JitDump](ryujit-overview.md#reading-a-jitdump) for more on how to analyze this data.
 * `COMPlus_JitDisasm`={method-list} – dump a disassembly listing of each method.
 * `COMPlus_JitDiffableDasm` – set to 1 to tell the JIT to avoid printing things like pointer values that can change from one invocation to the next, so that the disassembly can be more easily compared.
 * `COMPlus_JitGCDump`={method-list} – dump the GC information.
