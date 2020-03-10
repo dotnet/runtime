@@ -28,16 +28,12 @@ elif [ "$1" = "iOS" ]; then
     if [ "$?" != "0" ]; then
         exit 1;
     fi
-    brew install icu4c openssl autoconf automake libtool pkg-config python3
-    if [ "$?" != "0" ]; then
-        exit 1;
-    fi
-    brew link --force icu4c
+    brew install openssl autoconf automake libtool pkg-config python3
     if [ "$?" != "0" ]; then
         exit 1;
     fi
 else
-    echo "Must pass \"Linux\" or \"OSX\" as first argument."
+    echo "Must pass \"Linux\", \"iOS\" or \"OSX\" as first argument."
     exit 1
 fi
 
