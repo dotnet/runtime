@@ -62,7 +62,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     int idx = escapedPropertyName.IndexOf(JsonConstants.BackSlash);
                     Debug.Assert(idx != -1);
-                    unescapedPropertyName = JsonSerializer.GetUnescapedString(escapedPropertyName, idx);
+                    unescapedPropertyName = JsonReaderHelper.GetUnescapedSpan(escapedPropertyName, idx);
                 }
                 else
                 {

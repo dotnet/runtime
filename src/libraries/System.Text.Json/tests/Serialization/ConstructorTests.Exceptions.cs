@@ -218,15 +218,13 @@ namespace System.Text.Json.Serialization.Tests
             Exception e;
 
             e = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithInvalidArray>(@"{""UnsupportedArray"":[]}"));
-
-            // The exception should contain the parent type and the property name.
-            Assert.Contains("ClassWithInvalidArray.UnsupportedArray", e.ToString());
+            Assert.Contains("System.Int32[,]", e.ToString());
+            // The exception for element types do not contain the parent type and the property name
+            // since the verification occurs later and is no longer bound to the parent type.
+            Assert.DoesNotContain("ClassWithInvalidArray.UnsupportedArray", e.ToString());
 
             e = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithInvalidDictionary>(@"{""UnsupportedDictionary"":{}}"));
             Assert.Contains("System.Int32[,]", e.ToString());
-
-            // The exception for element types do not contain the parent type and the property name
-            // since the verification occurs later and is no longer bound to the parent type.
             Assert.DoesNotContain("ClassWithInvalidDictionary.UnsupportedDictionary", e.ToString());
         }
 

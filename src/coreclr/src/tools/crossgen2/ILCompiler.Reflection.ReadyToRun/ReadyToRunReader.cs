@@ -386,6 +386,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
                 _readyToRunHeaderRVA = r2rHeaderDirectory.RelativeVirtualAddress;
+                Debug.Assert(!Composite);
             }
             else if (!TryLocateNativeReadyToRunHeader())
             {

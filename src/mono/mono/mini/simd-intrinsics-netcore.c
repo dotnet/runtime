@@ -55,6 +55,15 @@ enum {
 
 static int register_size;
 
+typedef struct {
+	// One of the SN_ constants
+	guint16 id;
+	// ins->opcode
+	int op;
+	// ins->inst_c0
+	int instc0;
+} SimdIntrinsic;
+
 void
 mono_simd_intrinsics_init (void)
 {
@@ -80,23 +89,44 @@ simd_intrinsic_compare_by_name (const void *key, const void *value)
 }
 
 static int
+simd_intrinsic_info_compare_by_name (const void *key, const void *value)
+{
+	SimdIntrinsic *info = (SimdIntrinsic*)value;
+	return strcmp ((const char*)key, method_name (info->id));
+}
+
+static int
 lookup_intrins (guint16 *intrinsics, int size, MonoMethod *cmethod)
 {
 	const guint16 *result = (const guint16 *)mono_binary_search (cmethod->name, intrinsics, size / sizeof (guint16), sizeof (guint16), &simd_intrinsic_compare_by_name);
-
-#if FALSE
-	for (int i = 0; i < (size / sizeof (guint16)) - 1; ++i) {
-		if (method_name (intrinsics [i])[0] > method_name (intrinsics [i + 1])[0]) {
-			printf ("%s %s\n",method_name (intrinsics [i]), method_name (intrinsics [i + 1]));
-			g_assert_not_reached ();
-		}
-	}
-#endif
 	
 	if (result == NULL)
 		return -1;
 	else
 		return (int)*result;
+}
+
+static SimdIntrinsic*
+lookup_intrins_info (SimdIntrinsic *intrinsics, int size, MonoMethod *cmethod)
+{
+#if 0
+	for (int i = 0; i < (size / sizeof (SimdIntrinsic)) - 1; ++i) {
+		const char *n1 = method_name (intrinsics [i].id);
+		const char *n2 = method_name (intrinsics [i + 1].id);
+		int len1 = strlen (n1);
+		int len2 = strlen (n2);
+		for (int j = 0; j < len1 && j < len2; ++j) {
+			if (n1 [j] > n2 [j]) {
+				printf ("%s %s\n", n1, n2);
+				g_assert_not_reached ();
+			} else if (n1 [j] < n2 [j]) {
+				break;
+			}
+		}
+	}
+#endif
+
+	return (SimdIntrinsic *)mono_binary_search (cmethod->name, intrinsics, size / sizeof (SimdIntrinsic), sizeof (SimdIntrinsic), &simd_intrinsic_info_compare_by_name);
 }
 
 static int
@@ -181,6 +211,9 @@ emit_simd_ins (MonoCompile *cfg, MonoClass *klass, int opcode, int sreg1, int sr
 	} else if (spec [MONO_INST_DEST] == 'i') {
 		ins->dreg = alloc_ireg (cfg);
 		ins->type = STACK_I4;
+	} else if (spec [MONO_INST_DEST] == 'l') {
+		ins->dreg = alloc_lreg (cfg);
+		ins->type = STACK_I8;
 	}
 	ins->sreg1 = sreg1;
 	ins->sreg2 = sreg2;
@@ -639,44 +672,115 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 
 #ifdef TARGET_AMD64
 
-static guint16 sse_methods [] = {
-	SN_Add,
-	SN_And,
-	SN_AndNot,
-	SN_CompareEqual,
-	SN_CompareNotEqual,
-	SN_Divide,
-	SN_LoadAlignedVector128,
-	SN_LoadVector128,
-	SN_MoveHighToLow,
-	SN_MoveLowToHigh,
-	SN_MoveMask,
-	SN_MoveScalar,
-	SN_Multiply,
-	SN_Or,
-	SN_Shuffle,
-	SN_Store,
-	SN_StoreAligned,
-	SN_Subtract,
-	SN_UnpackHigh,
-	SN_UnpackLow,
-	SN_Xor,
-	SN_get_IsSupported
+static SimdIntrinsic sse_methods [] = {
+	{SN_Add, OP_XBINOP, OP_FADD},
+	{SN_AddScalar, OP_SSE_ADDSS},
+	{SN_And, OP_SSE_AND},
+	{SN_AndNot, OP_SSE_ANDN},
+	{SN_CompareEqual, OP_XCOMPARE_FP, CMP_EQ},
+	{SN_CompareGreaterThan, OP_XCOMPARE_FP,CMP_GT},
+	{SN_CompareGreaterThanOrEqual, OP_XCOMPARE_FP, CMP_GE},
+	{SN_CompareLessThan, OP_XCOMPARE_FP, CMP_LT},
+	{SN_CompareLessThanOrEqual, OP_XCOMPARE_FP, CMP_LE},
+	{SN_CompareNotEqual, OP_XCOMPARE_FP, CMP_NE},
+	{SN_CompareNotGreaterThan, OP_XCOMPARE_FP, CMP_LE},
+	{SN_CompareNotGreaterThanOrEqual, OP_XCOMPARE_FP, CMP_LT},
+	{SN_CompareNotLessThan, OP_XCOMPARE_FP, CMP_GE},
+	{SN_CompareNotLessThanOrEqual, OP_XCOMPARE_FP, CMP_GT},
+	{SN_CompareOrdered, OP_XCOMPARE_FP, CMP_ORD},
+	{SN_CompareScalarEqual, OP_SSE_CMPSS, CMP_EQ},
+	{SN_CompareScalarGreaterThan, OP_SSE_CMPSS, CMP_GT},
+	{SN_CompareScalarGreaterThanOrEqual, OP_SSE_CMPSS, CMP_GE},
+	{SN_CompareScalarLessThan, OP_SSE_CMPSS, CMP_LT},
+	{SN_CompareScalarLessThanOrEqual, OP_SSE_CMPSS, CMP_LE},
+	{SN_CompareScalarNotEqual, OP_SSE_CMPSS, CMP_NE},
+	{SN_CompareScalarNotGreaterThan, OP_SSE_CMPSS, CMP_LE},
+	{SN_CompareScalarNotGreaterThanOrEqual, OP_SSE_CMPSS, CMP_LT},
+	{SN_CompareScalarNotLessThan, OP_SSE_CMPSS, CMP_GE},
+	{SN_CompareScalarNotLessThanOrEqual, OP_SSE_CMPSS, CMP_GT},
+	{SN_CompareScalarOrdered, OP_SSE_CMPSS, CMP_ORD},
+	{SN_CompareScalarOrderedEqual, OP_SSE_COMISS, CMP_EQ},
+	{SN_CompareScalarOrderedGreaterThan, OP_SSE_COMISS, CMP_GT},
+	{SN_CompareScalarOrderedGreaterThanOrEqual, OP_SSE_COMISS, CMP_GE},
+	{SN_CompareScalarOrderedLessThan, OP_SSE_COMISS, CMP_LT},
+	{SN_CompareScalarOrderedLessThanOrEqual, OP_SSE_COMISS, CMP_LE},
+	{SN_CompareScalarOrderedNotEqual, OP_SSE_COMISS, CMP_NE},
+	{SN_CompareScalarUnordered, OP_SSE_CMPSS, CMP_UNORD},
+	{SN_CompareScalarUnorderedEqual, OP_SSE_UCOMISS, CMP_EQ},
+	{SN_CompareScalarUnorderedGreaterThan, OP_SSE_UCOMISS, CMP_GT},
+	{SN_CompareScalarUnorderedGreaterThanOrEqual, OP_SSE_UCOMISS, CMP_GE},
+	{SN_CompareScalarUnorderedLessThan, OP_SSE_UCOMISS, CMP_LT},
+	{SN_CompareScalarUnorderedLessThanOrEqual, OP_SSE_UCOMISS, CMP_LE},
+	{SN_CompareScalarUnorderedNotEqual, OP_SSE_UCOMISS, CMP_NE},
+	{SN_CompareUnordered, OP_XCOMPARE_FP, CMP_UNORD},
+	{SN_ConvertScalarToVector128Single},
+	{SN_ConvertToInt32, OP_XOP_I4_X, SIMD_OP_SSE_CVTSS2SI},
+	{SN_ConvertToInt32WithTruncation, OP_XOP_I4_X, SIMD_OP_SSE_CVTTSS2SI},
+	{SN_ConvertToInt64, OP_XOP_I8_X, SIMD_OP_SSE_CVTSS2SI64},
+	{SN_ConvertToInt64WithTruncation, OP_XOP_I8_X, SIMD_OP_SSE_CVTTSS2SI64},
+	{SN_Divide, OP_XBINOP, OP_FDIV},
+	{SN_DivideScalar, OP_SSE_DIVSS},
+	{SN_LoadAlignedVector128, OP_SSE_LOADU, 16 /* alignment */},
+	{SN_LoadHigh, OP_SSE_MOVHPS_LOAD},
+	{SN_LoadLow, OP_SSE_MOVLPS_LOAD},
+	{SN_LoadScalarVector128, OP_SSE_MOVSS},
+	{SN_LoadVector128, OP_SSE_LOADU, 1 /* alignment */},
+	{SN_Max, OP_XOP_X_X_X, SIMD_OP_SSE_MAXPS},
+	{SN_MaxScalar, OP_XOP_X_X_X, SIMD_OP_SSE_MAXSS},
+	{SN_Min, OP_XOP_X_X_X, SIMD_OP_SSE_MINPS},
+	{SN_MinScalar, OP_XOP_X_X_X, SIMD_OP_SSE_MINSS},
+	{SN_MoveHighToLow, OP_SSE_MOVEHL},
+	{SN_MoveLowToHigh, OP_SSE_MOVELH},
+	{SN_MoveMask, OP_SSE_MOVMSK},
+	{SN_MoveScalar, OP_SSE_MOVS2},
+	{SN_Multiply, OP_XBINOP, OP_FMUL},
+	{SN_MultiplyScalar, OP_SSE_MULSS},
+	{SN_Or, OP_SSE_OR},
+	{SN_Prefetch0, OP_SSE_PREFETCHT0},
+	{SN_Prefetch1, OP_SSE_PREFETCHT1},
+	{SN_Prefetch2, OP_SSE_PREFETCHT2},
+	{SN_PrefetchNonTemporal, OP_SSE_PREFETCHNTA},
+	{SN_Reciprocal, OP_XOP_X_X, SIMD_OP_SSE_RCPPS},
+	{SN_ReciprocalScalar, 0, SIMD_OP_SSE_RCPSS},
+	{SN_ReciprocalSqrt, OP_XOP_X_X, SIMD_OP_SSE_RSQRTPS},
+	{SN_ReciprocalSqrtScalar, 0, SIMD_OP_SSE_RSQRTSS},
+	{SN_Sqrt, OP_XOP_X_X, SIMD_OP_SSE_SQRTPS},
+	{SN_SqrtScalar, 0, SIMD_OP_SSE_SQRTSS},
+	{SN_Shuffle},
+	{SN_Store, OP_SSE_STORE, 1 /* alignment */},
+	{SN_StoreAligned, OP_SSE_STORE, 16 /* alignment */},
+	{SN_StoreAlignedNonTemporal, OP_SSE_MOVNTPS},
+	{SN_StoreFence, OP_XOP, SIMD_OP_SSE_SFENCE},
+	{SN_StoreHigh, OP_SSE_MOVHPS_STORE},
+	{SN_StoreLow, OP_SSE_MOVLPS_STORE},
+	{SN_StoreScalar, OP_SSE_MOVSS_STORE},
+	{SN_Subtract, OP_XBINOP, OP_FSUB},
+	{SN_SubtractScalar, OP_SSE_SUBSS},
+	{SN_UnpackHigh, OP_SSE_UNPACKHI},
+	{SN_UnpackLow, OP_SSE_UNPACKLO},
+	{SN_Xor, OP_SSE_XOR},
+	{SN_get_IsSupported}
 };
 
 static guint16 sse2_methods [] = {
 	SN_Add,
 	SN_AddSaturate,
+	SN_AddScalar,
 	SN_And,
 	SN_AndNot,
+	SN_Average,
 	SN_CompareEqual,
 	SN_CompareGreaterThan,
 	SN_CompareLessThan,
 	SN_CompareNotEqual,
+	SN_CompareScalarEqual,
+	SN_ConvertScalarToVector128Double,
 	SN_ConvertScalarToVector128Int32,
 	SN_ConvertScalarToVector128Int64,
 	SN_ConvertScalarToVector128UInt32,
 	SN_ConvertScalarToVector128UInt64,
+	SN_ConvertToInt64,
+	SN_ConvertToInt64WithTruncation,
 	SN_ConvertToUInt32,
 	SN_ConvertToUInt64,
 	SN_LoadAlignedVector128,
@@ -751,50 +855,28 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 	gboolean supported, is_64bit;
 	MonoClass *klass = cmethod->klass;
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
+	SimdIntrinsic *info;
+	gboolean is_corlib = m_class_get_image (cfg->method->klass) == mono_get_corlib ();
 
 	if (is_hw_intrinsics_class (klass, "Sse", &is_64bit)) {
 		if (!COMPILE_LLVM (cfg))
 			return NULL;
-		id = lookup_intrins (sse_methods, sizeof (sse_methods), cmethod);
-		if (id == -1)
+		info = lookup_intrins_info (sse_methods, sizeof (sse_methods), cmethod);
+		if (!info)
 			return NULL;
+		int id = info->id;
 
-		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE) != 0 &&
-			m_class_get_image (cfg->method->klass) == mono_get_corlib (); // We only support the subset used by corelib
-		
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE) != 0;
+
+		/* Common case */
+		if (info->op != 0)
+			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
+
 		switch (id) {
 		case SN_get_IsSupported:
 			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
 			ins->type = STACK_I4;
 			return ins;
-		case SN_LoadAlignedVector128:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_LOADU, 16 /*alignment*/, arg0_type, fsig, args);
-		case SN_LoadVector128:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_LOADU, 1 /*alignment*/, arg0_type, fsig, args);
-		case SN_MoveMask:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_MOVMSK, -1, arg0_type, fsig, args);
-		case SN_MoveScalar:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_MOVS2, -1, arg0_type, fsig, args);
-		case SN_CompareNotEqual:
-			return emit_simd_ins_for_sig (cfg, klass, OP_XCOMPARE_FP, CMP_NE, arg0_type, fsig, args);
-		case SN_CompareEqual:
-			return emit_simd_ins_for_sig (cfg, klass, OP_XCOMPARE_FP, CMP_EQ, arg0_type, fsig, args);
-		case SN_And:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_AND, -1, arg0_type, fsig, args);
-		case SN_AndNot:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_ANDN, -1, arg0_type, fsig, args);
-		case SN_Or:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_OR, -1, arg0_type, fsig, args);
-		case SN_Xor:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_XOR, -1, arg0_type, fsig, args);
-		case SN_Multiply:
-			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FMUL, arg0_type, fsig, args);
-		case SN_Divide:
-			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FDIV, arg0_type, fsig, args);
-		case SN_Add:
-			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FADD, arg0_type, fsig, args);
-		case SN_Subtract:
-			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FSUB, arg0_type, fsig, args);
 		case SN_Shuffle: {
 			if (args [2]->opcode != OP_ICONST) {
 				mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
@@ -804,18 +886,23 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_SHUFFLE, args [2]->inst_c0 /*mask*/, arg0_type, fsig, args);
 		}
-		case SN_MoveHighToLow:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_MOVEHL, -1, arg0_type, fsig, args);
-		case SN_MoveLowToHigh:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_MOVELH, -1, arg0_type, fsig, args);
-		case SN_UnpackLow:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_UNPACKLO, -1, arg0_type, fsig, args);
-		case SN_UnpackHigh:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_UNPACKHI, -1, arg0_type, fsig, args);
-		case SN_Store:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_STORE, 1 /*alignment*/, arg0_type, fsig, args);
-		case SN_StoreAligned:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_STORE, 16 /*alignment*/, arg0_type, fsig, args);
+		case SN_ConvertScalarToVector128Single:
+			if (fsig->params [1]->type == MONO_TYPE_I4)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I4, SIMD_OP_SSE_CVTSI2SS, 0, fsig, args);
+			else if (fsig->params [1]->type == MONO_TYPE_I8)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_I8, SIMD_OP_SSE_CVTSI2SS64, 0, fsig, args);
+			else
+				g_assert_not_reached ();
+			break;
+		case SN_ReciprocalScalar:
+		case SN_ReciprocalSqrtScalar:
+		case SN_SqrtScalar:
+			if (fsig->param_count == 1)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, info->instc0, arg0_type, fsig, args);
+			else
+				return NULL;
+		case SN_LoadScalarVector128:
+			return NULL;
 		default:
 			return NULL;
 		}
@@ -828,8 +915,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (id == -1)
 			return NULL;
 
-		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE2) != 0 &&
-			m_class_get_image (cfg->method->klass) == mono_get_corlib (); // We only support the subset used by corelib
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE3) != 0 && is_corlib;// We only support the subset used by corelib
 		
 		switch (id) {
 		case SN_get_IsSupported: {
@@ -843,10 +929,19 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, arg0_type == MONO_TYPE_R8 ? OP_FADD : OP_IADD, arg0_type, fsig, args);
 		case SN_AddSaturate:
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_ADDS, -1, arg0_type, fsig, args);
+		case SN_AddScalar:
+			return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_ADDSD, -1, arg0_type, fsig, args);
 		case SN_And:
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_AND, -1, arg0_type, fsig, args);
 		case SN_AndNot:
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_ANDN, -1, arg0_type, fsig, args);
+		case SN_Average:
+			if (arg0_type == MONO_TYPE_U1)
+				return emit_simd_ins_for_sig (cfg, klass, OP_PAVGB_UN, -1, arg0_type, fsig, args);
+			else if (arg0_type == MONO_TYPE_U2)
+				return emit_simd_ins_for_sig (cfg, klass, OP_PAVGW_UN, -1, arg0_type, fsig, args);
+			else
+				return NULL;
 		case SN_CompareNotEqual:
 			return emit_simd_ins_for_sig (cfg, klass, arg0_type == MONO_TYPE_R8 ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_NE, arg0_type, fsig, args);
 		case SN_CompareEqual:
@@ -855,6 +950,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return emit_simd_ins_for_sig (cfg, klass, arg0_type == MONO_TYPE_R8 ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_GT, arg0_type, fsig, args);
 		case SN_CompareLessThan:
 			return emit_simd_ins_for_sig (cfg, klass, arg0_type == MONO_TYPE_R8 ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_LT, arg0_type, fsig, args);
+		case SN_CompareScalarEqual:
+			return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_CMPSD, CMP_EQ, arg0_type, fsig, args);
 		case SN_ConvertScalarToVector128Int32:
 		case SN_ConvertScalarToVector128Int64:
 		case SN_ConvertScalarToVector128UInt32:
@@ -924,8 +1021,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (id == -1)
 			return NULL;
 
-		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE3) != 0 &&
-			m_class_get_image (cfg->method->klass) == mono_get_corlib (); // We only support the subset used by corelib
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE3) != 0 && is_corlib; // We only support the subset used by corelib
 
 		switch (id) {
 		case SN_get_IsSupported:
@@ -946,8 +1042,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (id == -1)
 			return NULL;
 
-		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSSE3) != 0 &&
-			m_class_get_image (cfg->method->klass) == mono_get_corlib (); // We only support the subset used by corelib
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSSE3) != 0 && is_corlib; // We only support the subset used by corelib
 
 		switch (id) {
 		case SN_get_IsSupported:
@@ -968,8 +1063,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (id == -1)
 			return NULL;
 
-		supported = COMPILE_LLVM (cfg) && (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE41) != 0 &&
-			m_class_get_image (cfg->method->klass) == mono_get_corlib (); // We only support the subset used by corelib
+		supported = COMPILE_LLVM (cfg) && (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE41) != 0 && is_corlib; // We only support the subset used by corelib
 
 		switch (id) {
 		case SN_get_IsSupported:
@@ -1360,7 +1454,8 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #ifdef TARGET_AMD64 // TODO: test and enable for x86 too
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics.X86")) {
-		return emit_x86_intrinsics (cfg ,cmethod, fsig, args);
+		MonoInst *ins = emit_x86_intrinsics (cfg ,cmethod, fsig, args);
+		return ins;
 	}
 #endif
 

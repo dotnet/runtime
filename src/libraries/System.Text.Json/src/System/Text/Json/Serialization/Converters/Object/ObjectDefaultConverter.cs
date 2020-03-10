@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Default base class implementation of <cref>JsonObjectConverter{T}</cref>.
     /// </summary>
-    internal sealed class ObjectDefaultConverter<T> : JsonObjectConverter<T>
+    internal sealed class ObjectDefaultConverter<T> : JsonObjectConverter<T> where T : notnull
     {
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
@@ -273,16 +273,10 @@ namespace System.Text.Json.Serialization.Converters
         internal override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
             // Minimize boxing for structs by only boxing once here
-            object? objectValue = value;
+            object objectValue = value!;
 
             if (!state.SupportContinuation)
             {
-                if (objectValue == null)
-                {
-                    writer.WriteNullValue();
-                    return true;
-                }
-
                 writer.WriteStartObject();
 
                 if (options.ReferenceHandling.ShouldWritePreservedReferences())
@@ -338,12 +332,6 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (!state.Current.ProcessedStartToken)
                 {
-                    if (objectValue == null)
-                    {
-                        writer.WriteNullValue();
-                        return true;
-                    }
-
                     writer.WriteStartObject();
 
                     if (options.ReferenceHandling.ShouldWritePreservedReferences())

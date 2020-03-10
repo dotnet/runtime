@@ -99,6 +99,11 @@ namespace System.Runtime.CompilerServices
 			RunModuleConstructor (module.Value);
 		}
 
+		public static IntPtr AllocateTypeAssociatedMemory (Type type, int size)
+		{
+			throw new PlatformNotSupportedException ();
+		}
+
 		[Intrinsic]
 		public static bool IsReferenceOrContainsReferences<T> () => IsReferenceOrContainsReferences<T> ();
 

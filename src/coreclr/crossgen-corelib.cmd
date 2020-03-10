@@ -13,11 +13,11 @@ set __ThisScriptDir="%~dp0"
 :: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
 ::      __BuildArch         -- default: x64
 ::      __BuildType         -- default: Debug
-::      __BuildOS           -- default: Windows_NT
+::      __TargetOS           -- default: Windows_NT
 ::      __ProjectDir        -- default: directory of the dir.props file
 ::      __RepoRootDir       -- default: directory two levels above the dir.props file
 ::      __RootBinDir        -- default: %__RepoRootDir%\artifacts\
-::      __BinDir            -- default: %__RootBinDir%\%__BuildOS%.%__BuildArch.%__BuildType%\
+::      __BinDir            -- default: %__RootBinDir%\%__TargetOS%.%__BuildArch.%__BuildType%\
 ::      __IntermediatesDir
 ::      __PackagesBinDir    -- default: %__BinDir%\.nuget
 ::
@@ -26,7 +26,7 @@ set __ThisScriptDir="%~dp0"
 :: Set the default arguments for build
 set __BuildArch=x64
 set __BuildType=Debug
-set __BuildOS=Windows_NT
+set __TargetOS=Windows_NT
 
 set "__ProjectDir=%~dp0"
 :: remove trailing slash
@@ -120,13 +120,13 @@ if %__BuildTypeDebug%==1    set __BuildType=Debug
 if %__BuildTypeChecked%==1  set __BuildType=Checked
 if %__BuildTypeRelease%==1  set __BuildType=Release
 
-set "__BinDir=%__RootBinDir%\bin\coreclr\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
+set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
 set "__CrossComponentBinDir=%__BinDir%"
 
 
 if NOT "%__CrossArch%" == "" set __CrossComponentBinDir=%__CrossComponentBinDir%\%__CrossArch%
-set "__CrossGenCoreLibLog=%__LogsDir%\CrossgenCoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+set "__CrossGenCoreLibLog=%__LogsDir%\CrossgenCoreLib_%__TargetOS%__%__BuildArch%__%__BuildType%.log"
 set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
 
 if not exist "%__BinDir%"              md "%__BinDir%"
@@ -167,7 +167,7 @@ if not defined VSINSTALLDIR (
 )
 if not exist "!VSINSTALLDIR!DIA SDK" goto NoDIA
 
-echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%. Logging to "%__CrossGenCoreLibLog%".
+echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__TargetOS%.%__BuildArch%.%__BuildType%. Logging to "%__CrossGenCoreLibLog%".
 if exist "%__CrossGenCoreLibLog%" del "%__CrossGenCoreLibLog%"
 
 REM Need VS native tools environment for the **target** arch when running instrumented binaries

@@ -203,6 +203,7 @@ namespace System.Text.Json.Serialization.Tests
             options.ReadCommentHandling = JsonCommentHandling.Skip;
 
             int value = JsonSerializer.Deserialize<int>("1 /* commment */", options);
+            Assert.Equal(1, value);
         }
 
         [Theory]

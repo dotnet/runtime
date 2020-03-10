@@ -36,7 +36,7 @@ namespace System.Text.Json
             {
                 int idx = propertyName.IndexOf(JsonConstants.BackSlash);
                 Debug.Assert(idx != -1);
-                unescapedPropertyName = GetUnescapedString(propertyName, idx);
+                unescapedPropertyName = JsonReaderHelper.GetUnescapedSpan(propertyName, idx);
             }
             else
             {

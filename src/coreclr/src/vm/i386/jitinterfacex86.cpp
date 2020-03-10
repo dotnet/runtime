@@ -1101,7 +1101,6 @@ void InitJITHelpers1()
 #endif
 
     // Leave the patched region writable for StompWriteBarrierEphemeral(), StompWriteBarrierResize()
-    // and CTPMethodTable::ActivatePrecodeRemotingThunk
 
     // Initialize g_TailCallFrameVptr for JIT_TailCall helper
     g_TailCallFrameVptr = (void*)TailCallFrame::GetMethodFrameVPtr();

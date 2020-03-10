@@ -17,20 +17,12 @@ namespace System.Text.Json
                 return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(propertyInfo, options);
             }
 
-            JsonConverter? converter;
-            ClassType classType = GetClassType(
+            JsonConverter converter = GetConverter(
                 propertyType,
                 parentClassType,
                 propertyInfo,
-                out Type? runtimeType,
-                out Type? _,
-                out converter,
+                out Type runtimeType,
                 options);
-
-            if (converter == null)
-            {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(propertyType, parentClassType, propertyInfo);
-            }
 
             return CreateProperty(
                 declaredPropertyType: propertyType,
@@ -38,7 +30,6 @@ namespace System.Text.Json
                 propertyInfo,
                 parentClassType,
                 converter,
-                classType,
                 options);
         }
 
@@ -48,7 +39,6 @@ namespace System.Text.Json
             PropertyInfo? propertyInfo,
             Type parentClassType,
             JsonConverter converter,
-            ClassType classType,
             JsonSerializerOptions options)
         {
             // Create the JsonPropertyInfo instance.
@@ -58,7 +48,7 @@ namespace System.Text.Json
                 parentClassType,
                 declaredPropertyType,
                 runtimePropertyType,
-                runtimeClassType: classType,
+                runtimeClassType: converter.ClassType,
                 propertyInfo,
                 converter,
                 options);
@@ -74,9 +64,8 @@ namespace System.Text.Json
         /// </summary>
         internal static JsonPropertyInfo CreatePolicyProperty(
             Type declaredPropertyType,
-            Type? runtimePropertyType,
+            Type runtimePropertyType,
             JsonConverter converter,
-            ClassType classType,
             JsonSerializerOptions options)
         {
             return CreateProperty(
@@ -85,7 +74,6 @@ namespace System.Text.Json
                 propertyInfo: null, // Not a real property so this is null.
                 parentClassType: typeof(object), // a dummy value (not used)
                 converter : converter,
-                classType : classType,
                 options);
         }
     }

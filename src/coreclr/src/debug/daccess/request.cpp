@@ -371,7 +371,7 @@ HRESULT ClrDataAccess::GetThreadStoreData(struct DacpThreadStoreData *threadStor
         threadStoreData->backgroundThreadCount = threadStore->m_BackgroundThreadCount;
         threadStoreData->pendingThreadCount = threadStore->m_PendingThreadCount;
         threadStoreData->deadThreadCount = threadStore->m_DeadThreadCount;
-        threadStoreData->fHostConfig = g_fHostConfig;
+        threadStoreData->fHostConfig = FALSE;
 
         // identify the "important" threads
         threadStoreData->firstThread = HOST_CDADDR(threadStore->m_ThreadList.GetHead());

@@ -79,8 +79,6 @@ add_library(System.Globalization.Native-Static
     ${NATIVEGLOBALIZATION_SOURCES}
 )
 
-# Disable the "lib" prefix and override default name
-set_target_properties(System.Globalization.Native-Static PROPERTIES PREFIX "")
 set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
 
 install (TARGETS System.Globalization.Native-Static DESTINATION .)

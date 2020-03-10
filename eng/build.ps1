@@ -14,7 +14,7 @@ Param(
   [string]$arch = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant(),
   [string]$subsetCategory,
   [string]$subset,
-  [ValidateSet("Debug","Release","Checked")][string]$runtimeConfiguration,
+  [ValidateSet("Debug","Release","Checked")][string]$runtimeConfiguration = "Debug",
   [ValidateSet("Debug","Release")][string]$librariesConfiguration,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
@@ -102,6 +102,9 @@ if ($vs) {
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
 
+  # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
+  $env:RUNTIMECONFIGURATION=$runtimeConfiguration
+
   # Launch Visual Studio with the locally defined environment variables
   ."$vs"
 
@@ -144,7 +147,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "configuration"        { $arguments += " -configuration $((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "runtimeConfiguration" { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"            { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
-    "os"                   { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }
+    "os"                   { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
     "allconfigurations"    { $arguments += " /p:BuildAllConfigurations=true" }
     "arch"                 { $arch = $PSBoundParameters[$argument]; $arguments += " /p:ArchGroup=$arch /p:TargetArchitecture=$arch" }
     "properties"           { $arguments += " " + $properties }
