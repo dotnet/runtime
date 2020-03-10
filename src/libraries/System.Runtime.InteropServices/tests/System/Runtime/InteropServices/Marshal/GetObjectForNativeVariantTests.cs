@@ -119,15 +119,6 @@ namespace System.Runtime.InteropServices.Tests
         public const ushort VT_ILLEGALMASKED = 0xfff;
         public const ushort VT_TYPEMASK = 0xfff;
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void GetObjectForNativeVariant_ErrorMissing_ReturnsTypeMissing()
-        {
-            // This cannot be in the [MemberData] as XUnit uses reflection to invoke the test method
-            // and Type.Missing is handled specially by the runtime.
-            GetObjectForNativeVariant_Normal_ReturnsExpected(CreateVariant(VT_ERROR, new UnionTypes { _error = unchecked((int)0x80020004) }), Type.Missing);
-        }
-
         public static IEnumerable<object[]> GetObjectForNativeVariant_Decimal_TestData()
         {
             // VT_DECIMAL => decimal.
@@ -146,41 +137,6 @@ namespace System.Runtime.InteropServices.Tests
             var variant = new Variant { m_decimal = d };
             variant.m_Variant.vt = VT_DECIMAL;
             Assert.Equal(d, GetObjectForNativeVariant(variant));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/27015", TargetFrameworkMonikers.Netcoreapp)]
-        public void GetObjectForNativeVariant_Record_ReturnsExpected()
-        {
-            int record = 10;
-            var recordInfo = new RecordInfo { Guid = typeof(int).GUID };
-            IntPtr pRecord = Marshal.AllocHGlobal(Marshal.SizeOf<int>());
-            IntPtr pRecordInfo = Marshal.GetComInterfaceForObject<RecordInfo, IRecordInfo>(recordInfo);
-            try
-            {
-                Marshal.StructureToPtr(record, pRecord, fDeleteOld: false);
-
-                Variant variant = CreateVariant(VT_RECORD, new UnionTypes
-                {
-                    _record = new Record
-                    {
-                        _record = pRecord,
-                        _recordInfo = pRecordInfo
-                    }
-                });
-                Assert.Equal(10, GetObjectForNativeVariant(variant));
-                GetObjectForNativeVariant_NestedVariant_ReturnsExpected(variant, record);
-
-                variant.m_Variant.vt |= VT_BYREF;
-                Assert.Equal(10, GetObjectForNativeVariant(variant));
-            }
-            finally
-            {
-                Marshal.DestroyStructure<int>(pRecord);
-                Marshal.FreeHGlobal(pRecord);
-                Marshal.Release(pRecordInfo);
-            }
         }
 
         [Theory]
