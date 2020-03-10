@@ -216,7 +216,11 @@ if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
 endif()
+if (NOT CLR_CMAKE_TARGET_IOS)
+    # disable System.Security.Cryptography.Native build on iOS,
+    # only used for interacting with OpenSSL which isn't useful there
     add_subdirectory(System.Security.Cryptography.Native)
+endif()
 endif()
 
 if(CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_IOS)
