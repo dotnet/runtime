@@ -15,14 +15,14 @@ namespace System.Net.NetworkInformation
         // These are valid for all interfaces.
         private readonly bool _dnsEnabled = false;
         private readonly bool _dynamicDnsEnabled = false;
-        private readonly InternalIPAddressCollection _dnsAddresses = null;
-        private readonly UnicastIPAddressInformationCollection _unicastAddresses = null;
-        private readonly MulticastIPAddressInformationCollection _multicastAddresses = null;
-        private readonly IPAddressInformationCollection _anycastAddresses = null;
+        private readonly InternalIPAddressCollection _dnsAddresses;
+        private readonly UnicastIPAddressInformationCollection _unicastAddresses;
+        private readonly MulticastIPAddressInformationCollection _multicastAddresses;
+        private readonly IPAddressInformationCollection _anycastAddresses;
         private readonly Interop.IpHlpApi.AdapterFlags _adapterFlags;
         private readonly string _dnsSuffix;
-        private readonly SystemIPv4InterfaceProperties _ipv4Properties;
-        private readonly SystemIPv6InterfaceProperties _ipv6Properties;
+        private readonly SystemIPv4InterfaceProperties? _ipv4Properties;
+        private readonly SystemIPv6InterfaceProperties? _ipv6Properties;
         private readonly InternalIPAddressCollection _winsServersAddresses;
         private readonly GatewayIPAddressInformationCollection _gatewayAddresses;
         private readonly InternalIPAddressCollection _dhcpServers;
@@ -80,7 +80,7 @@ namespace System.Net.NetworkInformation
                 throw new NetworkInformationException(SocketError.ProtocolNotSupported);
             }
 
-            return _ipv4Properties;
+            return _ipv4Properties!;
         }
 
         public override IPv6InterfaceProperties GetIPv6Properties()
@@ -90,7 +90,7 @@ namespace System.Net.NetworkInformation
                 throw new NetworkInformationException(SocketError.ProtocolNotSupported);
             }
 
-            return _ipv6Properties;
+            return _ipv6Properties!;
         }
 
         public override string DnsSuffix
