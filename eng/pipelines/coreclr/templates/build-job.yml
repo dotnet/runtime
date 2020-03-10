@@ -14,6 +14,7 @@ parameters:
   pool: ''
   isOfficialBuild: false
   condition: true
+  useGCC: false
 
 ### Product build
 jobs:
@@ -32,8 +33,12 @@ jobs:
     condition: ${{ parameters.condition }}
 
     # Compute job name from template parameters
-    name: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('CoreCLR Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    ${{ if eq(parameters.useGCC, true) }}:
+      name: ${{ format('coreclr_gcc_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('CoreCLR GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    ${{ if eq(parameters.useGCC, false) }}:
+      name: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('CoreCLR Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -57,6 +62,16 @@ jobs:
         value: '-stripsymbols'
     - name: clangArg
       value: ''
+    - name: gccArg
+      value: ''
+    - ${{ if eq(parameters.useGCC, true) }}:
+      - name: gccArg
+        value: '-gcc'
+      # workaround for gcc directory not in PATH
+      - name: CLR_CC
+        value: /opt/rh/devtoolset-7/root/usr/bin/gcc
+      - name: CLR_CXX
+        value: /opt/rh/devtoolset-7/root/usr/bin/g++
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - name: clangArg
         value: '-clang9'
@@ -65,7 +80,7 @@ jobs:
         - name: clangArg
           value: '-clang6.0'
       # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
-      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
+      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64'), not(parameters.useGCC)) }}:
         - name: clangArg
           value: ''
       # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
@@ -120,7 +135,7 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
+      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clangArg) $(gccArg) $(stripSymbolsArg) $(officialBuildIdArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg)
