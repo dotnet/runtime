@@ -166,9 +166,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>e793fcc19797f407a1b7e98d5f81b04e25a551c3</Sha>
     </Dependency>
-    <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.20158.2">
+    <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.20159.1">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>1189b999f3ddea64a7bdfd2904b238147176fe70</Sha>
+      <Sha>b2f8980a6628a97bc907704890e76462be7aac0d</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
