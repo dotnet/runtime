@@ -4532,15 +4532,37 @@ void emitter::emitIns_R_R(
             fmt = IF_DV_2P;
             break;
 
+        case INS_ld2:
+        case INS_ld3:
+        case INS_ld4:
+        case INS_st2:
+        case INS_st3:
+        case INS_st4:
+            assert(opt != INS_OPTS_1D); // .1D format only permitted with LD1 & ST1
+            __fallthrough;
+
         case INS_ld1:
-        {
+        case INS_ld1_2regs:
+        case INS_ld1_3regs:
+        case INS_ld1_4regs:
+        case INS_st1:
+        case INS_st1_2regs:
+        case INS_st1_3regs:
+        case INS_st1_4regs:
+        case INS_ld1r:
+        case INS_ld2r:
+        case INS_ld3r:
+        case INS_ld4r:
             assert(isVectorRegister(reg1));
-            assert(isIntegerRegister(reg2));
+            assert(isGeneralRegisterOrSP(reg2));
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
-            fmt = IF_LS_2D;
+
+            // Load/Store multiple structures       base register
+            // Load single structure and replicate  base register
+            reg2 = encodingSPtoZR(reg2);
+            fmt  = IF_LS_2D;
             break;
-        }
 
         default:
             unreached();
