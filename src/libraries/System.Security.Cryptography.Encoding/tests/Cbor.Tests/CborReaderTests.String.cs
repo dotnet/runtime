@@ -124,12 +124,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void ReadByteString_InvalidType_ShouldThrowInvalidOperationException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
 
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                var reader = new CborReader(data);
-                reader.ReadByteString();
-            });
+            Assert.Throws<InvalidOperationException>(() => reader.ReadByteString());
         }
 
         [Theory]
@@ -144,12 +141,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void ReadTextString_InvalidType_ShouldThrowInvalidOperationException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
+            var reader = new CborReader(data);
             
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                var reader = new CborReader(data);
-                reader.ReadTextString();
-            });
+            Assert.Throws<InvalidOperationException>(() => reader.ReadTextString());
         }
 
         [Theory]
@@ -165,12 +159,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] data = hexEncoding.HexToByteArray();
             byte[] buffer = new byte[32];
+            var reader = new CborReader(data);
 
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                var reader = new CborReader(data);
-                reader.TryReadByteString(buffer, out int _);
-            });
+            Assert.Throws<InvalidOperationException>(() => reader.TryReadByteString(buffer, out int _));
         }
 
         [Theory]
@@ -186,12 +177,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] data = hexEncoding.HexToByteArray();
             char[] buffer = new char[32];
+            var reader = new CborReader(data);
 
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                var reader = new CborReader(data);
-                reader.TryReadTextString(buffer, out int _);
-            });
+            Assert.Throws<InvalidOperationException>(() => reader.TryReadTextString(buffer, out int _));
         }
 
         [Theory]
@@ -213,11 +201,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void ReadByteString_InvalidData_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            Assert.Throws<FormatException>(() =>
-            {
-                var reader = new CborReader(data);
-                reader.ReadByteString();
-            });
+            var reader = new CborReader(data);
+            Assert.Throws<FormatException>(() => reader.ReadByteString());
         }
 
         [Theory]
@@ -239,11 +224,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void ReadTextString_InvalidData_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            Assert.Throws<FormatException>(() =>
-            {
-                var reader = new CborReader(data);
-                reader.ReadTextString();
-            });
+            var reader = new CborReader(data);
+            Assert.Throws<FormatException>(() => reader.ReadTextString());
         }
 
         [Theory]
@@ -266,12 +248,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] data = hexEncoding.HexToByteArray();
             byte[] buffer = new byte[32];
+            var reader = new CborReader(data);
 
-            Assert.Throws<FormatException>(() =>
-            {
-                var reader = new CborReader(data);
-                reader.TryReadByteString(buffer, out int _);
-            });
+            Assert.Throws<FormatException>(() => reader.TryReadByteString(buffer, out int _));
         }
 
         [Theory]
@@ -294,12 +273,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] data = hexEncoding.HexToByteArray();
             char[] buffer = new char[32];
+            var reader = new CborReader(data);
 
-            Assert.Throws<FormatException>(() =>
-            {
-                var reader = new CborReader(data);
-                reader.TryReadTextString(buffer, out int _);
-            });
+            Assert.Throws<FormatException>(() => reader.TryReadTextString(buffer, out int _));
         }
 
         [Theory]
@@ -309,11 +285,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void ReadByteString_StringLengthTooLarge_ShouldThrowOverflowException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            Assert.Throws<OverflowException>(() =>
-            {
-                var reader = new CborReader(data);
-                reader.ReadByteString();
-            });
+            var reader = new CborReader(data);
+            Assert.Throws<OverflowException>(() => reader.ReadByteString());
         }
 
         [Theory]
@@ -323,11 +296,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void ReadTextString_StringLengthTooLarge_ShouldThrowOverflowException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            Assert.Throws<OverflowException>(() =>
-            {
-                var reader = new CborReader(data);
-                reader.ReadTextString();
-            });
+            var reader = new CborReader(data);
+            Assert.Throws<OverflowException>(() => reader.ReadTextString());
         }
 
         [Theory]
@@ -336,11 +306,8 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         public static void ReadTextString_InvalidUnicode_ShouldThrowDecoderFallbackException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
-            Assert.Throws<System.Text.DecoderFallbackException>(() =>
-            {
-                var reader = new CborReader(data);
-                reader.ReadTextString();
-            });
+            var reader = new CborReader(data);
+            Assert.Throws<System.Text.DecoderFallbackException>(() => reader.ReadTextString());
         }
 
         [Theory]
@@ -350,12 +317,9 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] data = hexEncoding.HexToByteArray();
             char[] buffer = new char[32];
+            var reader = new CborReader(data);
 
-            Assert.Throws<System.Text.DecoderFallbackException>(() =>
-            {
-                var reader = new CborReader(data);
-                reader.TryReadTextString(buffer, out int _);
-            });
+            Assert.Throws<System.Text.DecoderFallbackException>(() => reader.TryReadTextString(buffer, out int _));
         }
 
         [Fact]
