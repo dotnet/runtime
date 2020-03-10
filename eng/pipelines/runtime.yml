@@ -208,6 +208,9 @@ jobs:
     runtimeFlavor: mono
     buildConfig: debug
     platforms:
+    - iOS_x64
+    - iOS_arm
+    - iOS_arm64
     - OSX_x64
     - Linux_x64
     - Linux_arm
@@ -235,6 +238,9 @@ jobs:
     runtimeFlavor: mono
     buildConfig: release
     platforms:
+    - iOS_x64
+    - iOS_arm
+    - iOS_arm64
     - OSX_x64
     - Linux_x64
     - Linux_arm
