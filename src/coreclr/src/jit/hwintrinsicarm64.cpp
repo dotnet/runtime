@@ -337,27 +337,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Crc32_ComputeCrc32:
-        case NI_Crc32_ComputeCrc32C:
-        case NI_Crc32_Arm64_ComputeCrc32:
-        case NI_Crc32_Arm64_ComputeCrc32C:
-        {
-            assert(numArgs == 2);
-            CORINFO_ARG_LIST_HANDLE argList = sig->args;
-            CORINFO_CLASS_HANDLE    argClass;
-
-            var_types argType = JITtype2varType(
-                strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(argList), &argClass)));
-            op2 = getArgForHWIntrinsic(argType, argClass);
-
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
-            op1     = getArgForHWIntrinsic(argType, argClass);
-
-            retNode                                  = gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic);
-            retNode->AsHWIntrinsic()->gtSIMDBaseType = baseType;
-            break;
-        }
-
         default:
         {
             return nullptr;

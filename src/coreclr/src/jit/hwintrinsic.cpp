@@ -738,8 +738,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             case 2:
             {
-                argType = JITtype2varType(
-                    strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(argList), &argClass)));
+                CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(argList);
+                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
                 op2 = getArgForHWIntrinsic(argType, argClass);
 
                 op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand);
@@ -749,6 +749,21 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
                 retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic)
                                    : gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, baseType, simdSize);
+#ifdef TARGET_XARCH
+                if (intrinsic == NI_SSE42_Crc32 || intrinsic == NI_SSE42_X64_Crc32)
+#endif
+#ifdef TARGET_ARMARCH
+                if (intrinsic == NI_Crc32_ComputeCrc32 || intrinsic == NI_Crc32_ComputeCrc32C ||
+                    intrinsic == NI_Crc32_Arm64_ComputeCrc32 || intrinsic == NI_Crc32_Arm64_ComputeCrc32C)
+#endif
+                {
+                    // type of the second argument
+                    CorInfoType corType = strip(info.compCompHnd->getArgType(sig, arg2, &argClass));
+
+                    // TODO - currently we use the BaseType to bring the type of the second argument
+                    // to the code generator. May encode the overload info in other way.
+                    retNode->AsHWIntrinsic()->gtSIMDBaseType = JITtype2varType(corType);
+                }
                 break;
             }
 

@@ -388,9 +388,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             return impSSEIntrinsic(intrinsic, method, sig);
         case InstructionSet_SSE2:
             return impSSE2Intrinsic(intrinsic, method, sig);
-        case InstructionSet_SSE42:
-        case InstructionSet_SSE42_X64:
-            return impSSE42Intrinsic(intrinsic, method, sig);
         case InstructionSet_AVX:
         case InstructionSet_AVX2:
             return impAvxOrAvx2Intrinsic(intrinsic, method, sig);
@@ -1269,41 +1266,6 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, NI_SSE2_StoreNonTemporal, op2->TypeGet(), 0);
             break;
         }
-
-        default:
-            JITDUMP("Not implemented hardware intrinsic");
-            break;
-    }
-    return retNode;
-}
-
-GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
-{
-    GenTree*  retNode  = nullptr;
-    GenTree*  op1      = nullptr;
-    GenTree*  op2      = nullptr;
-    var_types callType = JITtype2varType(sig->retType);
-
-    CORINFO_ARG_LIST_HANDLE argList = sig->args;
-    CORINFO_CLASS_HANDLE    argClass;
-    CorInfoType             corType;
-
-    switch (intrinsic)
-    {
-        case NI_SSE42_Crc32:
-        case NI_SSE42_X64_Crc32:
-            assert(sig->numArgs == 2);
-            op2     = impPopStack().val;
-            op1     = impPopStack().val;
-            argList = info.compCompHnd->getArgNext(argList);                        // the second argument
-            corType = strip(info.compCompHnd->getArgType(sig, argList, &argClass)); // type of the second argument
-
-            retNode = gtNewScalarHWIntrinsicNode(callType, op1, op2, intrinsic);
-
-            // TODO - currently we use the BaseType to bring the type of the second argument
-            // to the code generator. May encode the overload info in other way.
-            retNode->AsHWIntrinsic()->gtSIMDBaseType = JITtype2varType(corType);
-            break;
 
         default:
             JITDUMP("Not implemented hardware intrinsic");
