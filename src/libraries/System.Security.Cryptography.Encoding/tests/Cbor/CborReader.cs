@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         Tag,
         Special,
         Finished,
-        EOF,
+        EndOfData,
     }
 
     internal partial class CborReader
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             if (_buffer.IsEmpty)
             {
-                return CborReaderState.EOF;
+                return CborReaderState.EndOfData;
             }
 
             CborInitialByte initialByte = new CborInitialByte(_buffer.Span[0]);
