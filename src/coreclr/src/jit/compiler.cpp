@@ -4987,8 +4987,7 @@ void Compiler::generatePatchpointInfo()
 
     // The +TARGET_POINTER_SIZE here is to account for the extra slot the runtime
     // creates when it simulates calling the OSR method (the "pseudo return address" slot).
-    patchpointInfo->Initialize(info.compLocalsCount, info.compILCodeSize,
-                               codeGen->genSPtoFPdelta() + TARGET_POINTER_SIZE);
+    patchpointInfo->Initialize(info.compLocalsCount, codeGen->genSPtoFPdelta() + TARGET_POINTER_SIZE);
 
     JITDUMP("--OSR--- FP-SP delta is %d\n", patchpointInfo->FpToSpDelta());
 

@@ -34,10 +34,8 @@ struct PatchpointInfo
     }
 
     // Initialize
-    void Initialize(unsigned localCount, unsigned ilSize, int fpToSpDelta)
+    void Initialize(unsigned localCount, int fpToSpDelta)
     {
-        m_patchpointInfoSize      = ComputeSize(localCount);
-        m_ilSize                  = ilSize;
         m_fpToSpDelta             = fpToSpDelta;
         m_numberOfLocals          = localCount;
         m_genericContextArgOffset = -1;
@@ -48,13 +46,7 @@ struct PatchpointInfo
     // Total size of this patchpoint info record, in bytes
     unsigned PatchpointInfoSize() const
     {
-        return m_patchpointInfoSize;
-    }
-
-    // IL Size of the original method
-    unsigned ILSize() const
-    {
-        return m_ilSize;
+        return ComputeSize(m_numberOfLocals);
     }
 
     // FP to SP delta of the original method
@@ -140,8 +132,6 @@ private:
         EXPOSURE_MASK = 0x1
     };
 
-    unsigned m_patchpointInfoSize;
-    unsigned m_ilSize;
     unsigned m_numberOfLocals;
     int      m_fpToSpDelta;
     int      m_genericContextArgOffset;

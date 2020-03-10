@@ -6663,7 +6663,6 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
         // basic sanity checks (make sure we're OSRing the right method)
         assert(patchpointInfo->NumberOfLocals() == compiler->info.compLocalsCount);
-        assert(patchpointInfo->ILSize() == compiler->info.compILCodeSize);
 
         const int      originalFrameSize = patchpointInfo->FpToSpDelta();
         const unsigned patchpointInfoLen = patchpointInfo->NumberOfLocals();
