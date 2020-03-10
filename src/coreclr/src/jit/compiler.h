@@ -9135,6 +9135,8 @@ public:
 
     ArenaAllocator* compGetArenaAllocator();
 
+    void generatePatchpointInfo();
+
 #if MEASURE_MEM_ALLOC
     static bool s_dspMemStats; // Display per-phase memory statistics for every function
 #endif                         // MEASURE_MEM_ALLOC

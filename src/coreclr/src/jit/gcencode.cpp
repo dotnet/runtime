@@ -3938,11 +3938,11 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
         if (compiler->opts.IsOSR())
         {
             // The offset computed above already includes the OSR frame adjustment, plus the
-            // pop of the "pseudo0RA" from the OSR frame.
+            // pop of the "pseudo return address" from the OSR frame.
             //
             // To get to caller-SP, we need to subtract off the original frame size and the
             // pushed RA and RBP for that frame. But ppInfo's FpToSpDelta also accounts for the
-            // pseudo-RA between the original method frame and the OSR frame. So the net adjustment
+            // pseudo RA between the original method frame and the OSR frame. So the net adjustment
             // is simply FpToSpDelta plus one register.
             PatchpointInfo* ppInfo     = compiler->info.compPatchpointInfo;
             int             adjustment = ppInfo->FpToSpDelta() + REGSIZE_BYTES;

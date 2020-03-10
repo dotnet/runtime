@@ -4936,74 +4936,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 #endif
 
     // Generate PatchpointInfo
-    if (doesMethodHavePatchpoints())
-    {
-        // Currently we always transition from Tier0 unoptimized code, and
-        // so we expect the method to have a frame pointer.
-        assert(codeGen->isFramePointerUsed());
-
-        // Allocate patchpoint info storage from runtime, and fill in initial bits of data.
-        const unsigned        patchpointInfoSize = PatchpointInfo::ComputeSize(info.compLocalsCount);
-        PatchpointInfo* const patchpointInfo     = (PatchpointInfo*)info.compCompHnd->allocateArray(patchpointInfoSize);
-        patchpointInfo->Initialize(info.compLocalsCount, info.compILCodeSize,
-                                   codeGen->genSPtoFPdelta() + TARGET_POINTER_SIZE);
-
-        JITDUMP("--OSR--- FP-SP delta is %d\n", patchpointInfo->FpToSpDelta());
-
-        // We record offsets for all the "locals" here. Could restrict
-        // this to just the IL locals with some extra logic, and save a bit of space,
-        // but would need to adjust all consumers, too.
-        for (unsigned lclNum = 0; lclNum < info.compLocalsCount; lclNum++)
-        {
-            LclVarDsc* const varDsc = lvaGetDesc(lclNum);
-
-            // We expect all these to have stack homes, and be FP relative
-            assert(varDsc->lvOnFrame);
-            assert(varDsc->lvFramePointerBased);
-
-            // Record FramePtr relative offset (no localloc yet)
-            patchpointInfo->SetOffset(lclNum, varDsc->lvStkOffs);
-
-            // Note if IL stream contained an address-of that potentially leads to exposure.
-            // This bit of IL may be skipped by OSR partial importation.
-            if (varDsc->lvHasLdAddrOp)
-            {
-                patchpointInfo->SetIsExposed(lclNum);
-            }
-
-            JITDUMP("--OSR-- V%02u is at offset %d%s\n", lclNum, patchpointInfo->Offset(lclNum),
-                    patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "");
-        }
-
-        // Special offsets
-
-        if (lvaReportParamTypeArg() || lvaKeepAliveAndReportThis())
-        {
-            const int offset = lvaToCallerSPRelativeOffset(lvaCachedGenericContextArgOffset(), true);
-            patchpointInfo->SetGenericContextArgOffset(offset);
-            JITDUMP("--OSR-- cached generic context offset is CallerSP %d\n",
-                    patchpointInfo->GenericContextArgOffset());
-        }
-
-        if (lvaKeepAliveAndReportThis())
-        {
-            const int offset = lvaCachedGenericContextArgOffset();
-            patchpointInfo->SetKeptAliveThisOffset(offset);
-            JITDUMP("--OSR-- kept-alive this offset is FP %d\n", patchpointInfo->KeptAliveThisOffset());
-        }
-
-        if (compGSReorderStackLayout)
-        {
-            assert(lvaGSSecurityCookie != BAD_VAR_NUM);
-            LclVarDsc* const varDsc = lvaGetDesc(lvaGSSecurityCookie);
-            patchpointInfo->SetSecurityCookieOffset(varDsc->lvStkOffs);
-            JITDUMP("--OSR-- security cookie V%02u offset is FP %d\n", lvaGSSecurityCookie,
-                    patchpointInfo->SecurityCookieOffset());
-        }
-
-        // Register this with the runtime.
-        info.compCompHnd->setPatchpointInfo(patchpointInfo);
-    }
+    generatePatchpointInfo();
 
     RecordStateAtEndOfCompilation();
 
@@ -5030,6 +4963,87 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         fprintf(compJitFuncInfoFile, ""); // in our logic this causes a flush
     }
 #endif // FUNC_INFO_LOGGING
+}
+
+//------------------------------------------------------------------------
+// generatePatchpointInfo: allocate and fill in patchpoint info data,
+//    and report it to the VM
+//
+void Compiler::generatePatchpointInfo()
+{
+    if (!doesMethodHavePatchpoints())
+    {
+        // Nothing to report
+        return;
+    }
+
+    // Patchpoints are only found in Tier0 code, which is unoptimized, and so
+    // should always have frame pointer.
+    assert(codeGen->isFramePointerUsed());
+
+    // Allocate patchpoint info storage from runtime, and fill in initial bits of data.
+    const unsigned        patchpointInfoSize = PatchpointInfo::ComputeSize(info.compLocalsCount);
+    PatchpointInfo* const patchpointInfo     = (PatchpointInfo*)info.compCompHnd->allocateArray(patchpointInfoSize);
+
+    // The +TARGET_POINTER_SIZE here is to account for the extra slot the runtime
+    // creates when it simulates calling the OSR method (the "pseudo return address" slot).
+    patchpointInfo->Initialize(info.compLocalsCount, info.compILCodeSize,
+                               codeGen->genSPtoFPdelta() + TARGET_POINTER_SIZE);
+
+    JITDUMP("--OSR--- FP-SP delta is %d\n", patchpointInfo->FpToSpDelta());
+
+    // We record offsets for all the "locals" here. Could restrict
+    // this to just the IL locals with some extra logic, and save a bit of space,
+    // but would need to adjust all consumers, too.
+    for (unsigned lclNum = 0; lclNum < info.compLocalsCount; lclNum++)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+
+        // We expect all these to have stack homes, and be FP relative
+        assert(varDsc->lvOnFrame);
+        assert(varDsc->lvFramePointerBased);
+
+        // Record FramePtr relative offset (no localloc yet)
+        patchpointInfo->SetOffset(lclNum, varDsc->lvStkOffs);
+
+        // Note if IL stream contained an address-of that potentially leads to exposure.
+        // This bit of IL may be skipped by OSR partial importation.
+        if (varDsc->lvHasLdAddrOp)
+        {
+            patchpointInfo->SetIsExposed(lclNum);
+        }
+
+        JITDUMP("--OSR-- V%02u is at offset %d%s\n", lclNum, patchpointInfo->Offset(lclNum),
+                patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "");
+    }
+
+    // Special offsets
+
+    if (lvaReportParamTypeArg() || lvaKeepAliveAndReportThis())
+    {
+        const int offset = lvaToCallerSPRelativeOffset(lvaCachedGenericContextArgOffset(), true);
+        patchpointInfo->SetGenericContextArgOffset(offset);
+        JITDUMP("--OSR-- cached generic context offset is CallerSP %d\n", patchpointInfo->GenericContextArgOffset());
+    }
+
+    if (lvaKeepAliveAndReportThis())
+    {
+        const int offset = lvaCachedGenericContextArgOffset();
+        patchpointInfo->SetKeptAliveThisOffset(offset);
+        JITDUMP("--OSR-- kept-alive this offset is FP %d\n", patchpointInfo->KeptAliveThisOffset());
+    }
+
+    if (compGSReorderStackLayout)
+    {
+        assert(lvaGSSecurityCookie != BAD_VAR_NUM);
+        LclVarDsc* const varDsc = lvaGetDesc(lvaGSSecurityCookie);
+        patchpointInfo->SetSecurityCookieOffset(varDsc->lvStkOffs);
+        JITDUMP("--OSR-- security cookie V%02u offset is FP %d\n", lvaGSSecurityCookie,
+                patchpointInfo->SecurityCookieOffset());
+    }
+
+    // Register this with the runtime.
+    info.compCompHnd->setPatchpointInfo(patchpointInfo);
 }
 
 //------------------------------------------------------------------------

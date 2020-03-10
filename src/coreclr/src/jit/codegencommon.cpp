@@ -7983,9 +7983,11 @@ void CodeGen::genFnProlog()
     // Update the arg initial register locations.
     compiler->lvaUpdateArgsWithInitialReg();
 
+    // Home incoming arguments and generate any required inits.
+    // OSR handles this by moving the values from the original frame.
+    //
     if (!compiler->opts.IsOSR())
     {
-        // OSR handles this by moving the values from the original frame.
         FOREACH_REGISTER_FILE(regState)
         {
             if (regState->rsCalleeRegArgMaskLiveIn)
@@ -8591,7 +8593,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         // Extra OSR adjust to get to where RBP was saved by the original frame, and
         // restore RBP.
         //
-        // Note the other callee saves made in that frame are dead, the current method
+        // Note the other callee saves made in that frame are dead, the OSR method
         // will save and restore what it needs.
         if (compiler->opts.IsOSR())
         {
