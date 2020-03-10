@@ -806,7 +806,6 @@ public:
 #define GTF_FLD_INITCLASS           0x20000000 // GT_FIELD/GT_CLS_VAR -- field access requires preceding class/static init helper
 
 #define GTF_INX_RNGCHK              0x80000000 // GT_INDEX/GT_INDEX_ADDR -- the array reference should be range-checked.
-#define GTF_INX_REFARR_LAYOUT       0x20000000 // GT_INDEX -- TODO: Delete, no longer necessary (https://github.com/dotnet/runtime/issues/32647)
 #define GTF_INX_STRING_LAYOUT       0x40000000 // GT_INDEX -- this uses the special string array layout
 
 #define GTF_IND_TGT_NOT_HEAP        0x80000000 // GT_IND   -- the target is not on the heap
@@ -4633,11 +4632,6 @@ struct GenTreeIndex : public GenTreeOp
         {
             // Do bounds check
             gtFlags |= GTF_INX_RNGCHK;
-        }
-
-        if (type == TYP_REF)
-        {
-            gtFlags |= GTF_INX_REFARR_LAYOUT;
         }
 
         gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;

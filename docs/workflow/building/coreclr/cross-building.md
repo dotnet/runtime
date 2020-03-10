@@ -137,10 +137,10 @@ To build System.Private.CoreLib for Linux, run the following command:
     lgs@ubuntu ~/git/coreclr/ $ build.sh arm debug verbose
 ```
 
-The output is at artifacts/Product/<TargetOS>.arm.Debug/System.Private.CoreLib.dll.
+The output is at `artifacts/bin/coreclr/<TargetOS>.arm.Debug/IL/System.Private.CoreLib.dll`.
 
 ```
-    lgs@ubuntu ~/git/coreclr/ $ file ./artifacts/Product/Linux.arm.Debug/System.Private.CoreLib.dll
-    ./artifacts/Product/Linux.arm.Debug/System.Private.CoreLib.dll: PE32 executable (DLL)
+    lgs@ubuntu ~/git/coreclr/ $ file ./artifacts/bin/coreclr/Linux.arm.Debug/IL/System.Private.CoreLib.dll
+    ./artifacts/bin/coreclr/Linux.arm.Debug/IL/System.Private.CoreLib.dll: PE32 executable (DLL)
     (console) ARMv7 Thumb Mono/.NET assembly, for MS Windows
 ```

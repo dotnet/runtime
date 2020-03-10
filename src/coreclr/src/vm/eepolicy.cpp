@@ -851,16 +851,13 @@ public:
 // Return Value:
 //    None
 //
-inline void LogCallstackForLogWorker(bool isStackOverflow = false)
+inline void LogCallstackForLogWorker(Thread* pThread)
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread* pThread = GetThread();
-    _ASSERTE (pThread);
-
     SmallStackSString WordAt;
 
-    if (isStackOverflow || !WordAt.LoadResource(CCompRC::Optional, IDS_ER_WORDAT))
+    if (!WordAt.LoadResource(CCompRC::Optional, IDS_ER_WORDAT))
     {
         WordAt.Set(W("   at"));
     }
@@ -872,7 +869,7 @@ inline void LogCallstackForLogWorker(bool isStackOverflow = false)
 
     CallStackLogger logger;
 
-    pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, QUICKUNWIND | FUNCTIONSONLY);
+    pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 
     logger.PrintStackTrace(WordAt.GetUnicode());
 
@@ -929,7 +926,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 
         if (pThread && errorSource == NULL)
         {
-            LogCallstackForLogWorker();
+            LogCallstackForLogWorker(GetThread());
 
             if (argExceptionString != NULL) {
                 PrintToStdErrW(argExceptionString);
@@ -1127,6 +1124,13 @@ void DisplayStackOverflowException()
     PrintToStdErrA("Stack overflow.\n");
 }
 
+DWORD LogStackOverflowStackTraceThread(void* arg)
+{
+    LogCallstackForLogWorker((Thread*)arg);
+
+    return 0;
+}
+
 void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pExceptionInfo, BOOL fSkipDebugger)
 {
     // This is fatal error.  We do not care about SO mode any more.
@@ -1155,7 +1159,15 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     if (InterlockedCompareExchange(&g_stackOverflowCallStackLogged, 1, 0) == 0)
     {
         DisplayStackOverflowException();
-        LogCallstackForLogWorker(true /* isStackOverflow */);
+
+        HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThread(), W(".NET Stack overflow trace logger"));
+        if (stackDumpThreadHandle != INVALID_HANDLE_VALUE)
+        {
+            // Wait for the stack trace logging completion
+            DWORD res = WaitForSingleObject(stackDumpThreadHandle, INFINITE);
+            _ASSERTE(res == WAIT_OBJECT_0);
+        }
+
         g_stackOverflowCallStackLogged = 2;
     }
     else

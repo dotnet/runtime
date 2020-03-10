@@ -399,8 +399,10 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
                 pInstOrPerInstInfo[i] = methodInst[i];
 
-            if (pDL != NULL && pDL->GetMaxSlots() > 0)
+            if (pDL != NULL)
             {
+                _ASSERTE(pDL->GetMaxSlots() > 0);
+
                 // Has to be at least larger than the first slots containing the instantiation arguments,
                 // and the slot with size information. Otherwise, we shouldn't really have a size slot
                 _ASSERTE(infoSize > sizeof(TypeHandle*) * (methodInst.GetNumArgs() + 1));

@@ -354,7 +354,7 @@ CallCountingManager::MethodDescForwarderStubHashTraits::count_t
 CallCountingManager::MethodDescForwarderStubHashTraits::Hash(const key_t &k)
 {
     WRAPPER_NO_CONTRACT;
-    return (count_t)k;
+    return (count_t)(size_t)k;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

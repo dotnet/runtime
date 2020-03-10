@@ -1616,17 +1616,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = @"{""MyDictionary"":{""Key"":""Value""}}";
 
-            try
-            {
-                JsonSerializer.Deserialize<ClassWithNotSupportedDictionary>(json);
-                Assert.True(false, "Expected NotSupportedException to be thrown.");
-            }
-            catch (NotSupportedException e)
-            {
-                // The exception should contain className.propertyName and the invalid type.
-                Assert.Contains("ClassWithNotSupportedDictionary.MyDictionary", e.Message);
-                Assert.Contains("Dictionary`2[System.Int32,System.Int32]", e.Message);
-            }
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithNotSupportedDictionary>(json));
+
+            // The exception contains the type.
+            Assert.Contains(typeof(Dictionary<int, int>).ToString(), ex.Message);
+            Assert.DoesNotContain("Path: ", ex.Message);
         }
 
         [Fact]

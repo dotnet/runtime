@@ -10381,8 +10381,10 @@ MethodTableBuilder::SetupMethodTable2(
         }
 
         PTR_DictionaryLayout pLayout = pClass->GetDictionaryLayout();
-        if (pLayout != NULL && pLayout->GetMaxSlots() > 0)
+        if (pLayout != NULL)
         {
+            _ASSERTE(pLayout->GetMaxSlots() > 0);
+
             PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[bmtGenerics->numDicts - 1].GetValue();
             DWORD* pSizeSlot = (DWORD*)(pDictionarySlots + bmtGenerics->GetNumGenericArgs());
             *pSizeSlot = cbDict;
