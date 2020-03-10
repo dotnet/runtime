@@ -2263,8 +2263,8 @@ void CodeHeapRequestInfo::Init()
 
     if (m_pAllocator == NULL)
         m_pAllocator = m_pMD->GetLoaderAllocator();
-    m_isDynamicDomain = (m_pMD != NULL) ? m_pMD->IsLCGMethod() : false;
-    m_isCollectible = m_pAllocator->IsCollectible() ? true : false;
+    m_isDynamicDomain = (m_pMD != NULL) && m_pMD->IsLCGMethod();
+    m_isCollectible = m_pAllocator->IsCollectible();
     m_throwOnOutOfMemoryWithinRange = true;
 }
 

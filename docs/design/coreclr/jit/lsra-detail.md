@@ -28,7 +28,7 @@ Overview
 
 This document provides additional detail on the linear scan register
 allocator (LSRA) in RyuJIT. It is expected that the reader has already
-read the [RyuJIT Overview document](https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/ryujit-overview.md).
+read the [RyuJIT Overview document](ryujit-overview.md).
 
 Register allocation is performed using a linear scan register allocation
 scheme, implemented by the `LinearScan` class.

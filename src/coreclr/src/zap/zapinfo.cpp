@@ -462,7 +462,7 @@ void ZapInfo::CompileMethod()
         const char* namespaceName;
         getMethodNameFromMetadata(m_currentMethodHandle, nullptr, &namespaceName, nullptr);
         if (strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0
-            || strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0
+            || strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0
             || strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
         {
             if (m_zapper->m_pOpt->m_verbose)
@@ -2121,7 +2121,7 @@ DWORD FilterNamedIntrinsicMethodAttribs(ZapInfo* pZapInfo, DWORD attribs, CORINF
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
         fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0;
 #elif TARGET_ARM64
-        fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0;
+        fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0;
 #endif
 
         fIsHWIntrinsic = fIsPlatformHWIntrinsic || (strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);

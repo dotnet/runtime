@@ -101,14 +101,12 @@ namespace System
             return Number.TryFormatUInt32(m_value, format, provider, destination, out charsWritten);
         }
 
-        [CLSCompliant(false)]
         public static uint Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseUInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
-        [CLSCompliant(false)]
         public static uint Parse(string s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -116,14 +114,12 @@ namespace System
             return Number.ParseUInt32(s, style, NumberFormatInfo.CurrentInfo);
         }
 
-        [CLSCompliant(false)]
         public static uint Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseUInt32(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
-        [CLSCompliant(false)]
         public static uint Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -131,14 +127,12 @@ namespace System
             return Number.ParseUInt32(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        [CLSCompliant(false)]
         public static uint Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.ParseUInt32(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        [CLSCompliant(false)]
         public static bool TryParse(string? s, out uint result)
         {
             if (s == null)
@@ -150,13 +144,11 @@ namespace System
             return Number.TryParseUInt32IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
         }
 
-        [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<char> s, out uint result)
         {
             return Number.TryParseUInt32IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
         }
 
-        [CLSCompliant(false)]
         public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out uint result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
@@ -170,7 +162,6 @@ namespace System
             return Number.TryParseUInt32(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
-        [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out uint result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);

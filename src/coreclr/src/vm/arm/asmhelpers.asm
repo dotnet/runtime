@@ -13,9 +13,6 @@
 
 #include "asmmacros.h"
 
-    SETALIAS CTPMethodTable__s_pThunkTable, ?s_pThunkTable@CTPMethodTable@@0PAVMethodTable@@A
-    SETALIAS g_pObjectClass, ?g_pObjectClass@@3PAVMethodTable@@A
-
     IMPORT JIT_InternalThrow
     IMPORT JIT_WriteBarrier
     IMPORT TheUMEntryPrestubWorker

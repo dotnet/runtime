@@ -7,9 +7,6 @@ project(CoreCLR)
 
 include(${CLR_ENG_NATIVE_DIR}/configureplatform.cmake)
 
-# Include cmake functions
-include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
-
 if (CLR_CMAKE_HOST_WIN32)
   message(STATUS "VS_PLATFORM_TOOLSET is ${CMAKE_VS_PLATFORM_TOOLSET}")
   message(STATUS "VS_PLATFORM_NAME is ${CMAKE_VS_PLATFORM_NAME}")

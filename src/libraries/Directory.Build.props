@@ -119,12 +119,6 @@
     <IsShipping Condition="'$(IsTestProject)' == 'true'">false</IsShipping>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <EnableProjectRestore Condition="'$(IsTestProject)' == 'true'">true</EnableProjectRestore>
-  </PropertyGroup>
-
-  <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.props" />
-
   <!-- Common repo directories -->
   <PropertyGroup>
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
@@ -145,6 +139,14 @@
     <RunMatchingRefApiCompat>$(IsSourceProject)</RunMatchingRefApiCompat>
     <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</ApiCompatExcludeAttributeList>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.DotNet.ApiCompat" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetApiCompatVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.DotNet.GenAPI" Condition="'$(DotNetBuildOffline)' != 'true'" Version="$(MicrosoftDotNetGenApiVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="illink.tasks" Version="$(ILLinkTasksVersion)" PrivateAssets="all" IsImplicitlyDefined="true" ExcludeAssets="build" GeneratePathProperty="true" />
+  </ItemGroup>
 
   <PropertyGroup>
     <_runtimeOSVersionIndex>$(RuntimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
@@ -170,6 +172,7 @@
     <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(TargetOS)' == 'Windows_NT'">win-x64</ToolRuntimeRID>
     <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(TargetOS)' != 'Windows_NT' and $(_buildingInOSX)">osx-x64</ToolRuntimeRID>
     <ToolRuntimeRID Condition="'$(RuntimeOS)' == 'webassembly' and '$(TargetOS)' != 'Windows_NT' and !$(_buildingInOSX)">linux-x64</ToolRuntimeRID>
+    <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolRuntimeRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
     <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
     <_portableOS Condition="'$(TargetOS)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl'">linux</_portableOS>
@@ -268,10 +271,10 @@
     <Features>strict;nullablePublicOnly</Features>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <!-- We decided to keep this disabled by default to see some history of way have a look at https://github.com/dotnet/corefx/issues/3140 -->
+    <!-- We decided to keep this disabled by default: https://github.com/dotnet/runtime/issues/15152 -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
-    <EnableAnalyzers Condition="'$(EnableProjectRestore)' == 'true' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.ilproj'">true</EnableAnalyzers>
+    <EnableAnalyzers Condition="'$(EnableAnalyzers)' == '' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.ilproj'">true</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- Set up some common paths -->
@@ -296,7 +299,6 @@
     <NetStandard20RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.0'))</NetStandard20RefPath>
     <NetStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.1'))</NetStandard21RefPath>
     <NetFxRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(NetFrameworkCurrent)'))</NetFxRefPath>
-    <ILAsmToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsToolsetDir)', 'ilasm'))</ILAsmToolPath>
 
     <!-- Helix properties -->
     <OSPlatformConfig>$(TargetOS).$(Platform).$(Configuration)</OSPlatformConfig>
@@ -334,6 +336,12 @@
 
   <!-- Import it at the end of the props file to override the OutputPath for reference assemblies and use common directory props -->
   <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" />
+
+  <PropertyGroup>
+    <EnableProjectRestore Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssembly)' == 'true' or '$(IsTestProject)' == 'true'">true</EnableProjectRestore>
+  </PropertyGroup>
+
+  <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.props" />
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>

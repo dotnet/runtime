@@ -16,7 +16,6 @@ namespace System
 		IntPtr Type;
 		#endregion
 
-		[CLSCompliant (false)]
 		public static TypedReference MakeTypedReference (object target, FieldInfo[] flds)
 		{
 			if (target == null)

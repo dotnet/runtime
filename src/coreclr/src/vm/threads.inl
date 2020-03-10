@@ -23,11 +23,11 @@
 
 #ifndef DACCESS_COMPILE
 
-#ifndef __GNUC__
-EXTERN_C __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
-#else // !__GNUC__
+#ifdef _MSC_VER
+__declspec(selectany) __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
+#else
 EXTERN_C __thread ThreadLocalInfo gCurrentThreadInfo;
-#endif // !__GNUC__
+#endif
 
 EXTERN_C inline Thread* STDCALL GetThread()
 {
