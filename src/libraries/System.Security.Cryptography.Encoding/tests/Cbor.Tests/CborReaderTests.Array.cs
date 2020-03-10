@@ -258,7 +258,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
                         Assert.Equal(expected, b);
                         break;
                     case object[] nested:
-                        Assert.Equal(CborReaderState.StartArray, reader.Peek());
                         reader.ReadArray(nested);
                         break;
                     default:
