@@ -2785,8 +2785,8 @@ protected:
 };
 #endif // TARGET_X86 && !TARGET_UNIX
 
-// Frame for the fast Reverse PInvoke (i.e. NativeCallableAttribute).
-struct FastReversePInvokeFrame
+// Frame for the Reverse PInvoke (i.e. NativeCallableAttribute).
+struct ReversePInvokeFrame
 {
     Thread* currentThread;
 };
