@@ -915,7 +915,7 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		if (id == -1)
 			return NULL;
 
-		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE3) != 0 && is_corlib;// We only support the subset used by corelib
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE2) != 0 && is_corlib;// We only support the subset used by corelib
 		
 		switch (id) {
 		case SN_get_IsSupported: {
