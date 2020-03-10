@@ -123,7 +123,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
     static class ArrayWriterHelper
     {
-        public static void WriteArray(this CborWriter writer, params object[] values)
+        public static void WriteArray(CborWriter writer, params object[] values)
         {
             writer.BeginWriteArray(values.Length);
             foreach (object value in values)
