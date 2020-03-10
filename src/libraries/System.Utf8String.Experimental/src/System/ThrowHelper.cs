@@ -68,6 +68,12 @@ namespace System
         {
             return new ArgumentOutOfRangeException(argument.ToString(), resource);
         }
+
+        [DoesNotReturn]
+        internal static void ThrowNotSupportedException(string message)
+        {
+            throw new NotSupportedException(message);
+        }
     }
 
     //

@@ -200,5 +200,10 @@ namespace System.Tests
             (_, int actualLength) = range.GetOffsetAndLength(length);
             return (actualLength == 0);
         }
+
+        public static bool IsTryFindSupported(StringComparison comparison) =>
+            !PlatformDetection.IsNetFramework ||
+                comparison == StringComparison.Ordinal ||
+                comparison == StringComparison.OrdinalIgnoreCase;
     }
 }

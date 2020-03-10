@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 #if NETSTANDARD2_0
 using System.Numerics.Hashing;

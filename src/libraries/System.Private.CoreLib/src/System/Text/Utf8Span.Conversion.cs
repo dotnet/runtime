@@ -43,11 +43,7 @@ namespace System.Text
         {
             // TODO_UTF8STRING: Reduce allocations in this code path.
 
-            ReadOnlySpan<char> normalized = this.ToString().Normalize(normalizationForm)
-#if NETSTANDARD2_0
-                .AsSpan()
-#endif
-                ;
+            ReadOnlySpan<char> normalized = this.ToString().Normalize(normalizationForm).AsSpan();
             OperationStatus status = Utf8.FromUtf16(normalized, destination, out int _, out int bytesWritten, replaceInvalidSequences: false, isFinalBlock: true);
 
             Debug.Assert(status == OperationStatus.Done || status == OperationStatus.DestinationTooSmall, "Normalize shouldn't have produced malformed Unicode string.");
@@ -162,11 +158,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
             }
 
-            ReadOnlySpan<char> asLower = this.ToString().ToLower(culture)
-#if NETSTANDARD2_0
-                .AsSpan()
-#endif
-                ;
+            ReadOnlySpan<char> asLower = this.ToString().ToLower(culture).AsSpan();
             OperationStatus status = Utf8.FromUtf16(asLower, destination, out int _, out int bytesWritten, replaceInvalidSequences: false, isFinalBlock: true);
 
             Debug.Assert(status == OperationStatus.Done || status == OperationStatus.DestinationTooSmall, "ToLower shouldn't have produced malformed Unicode string.");
@@ -214,11 +206,7 @@ namespace System.Text
         {
             // TODO_UTF8STRING: Avoid intermediate allocations.
 
-            ReadOnlySpan<char> asLowerInvariant = this.ToString().ToLowerInvariant()
-#if NETSTANDARD2_0
-                .AsSpan()
-#endif
-                ;
+            ReadOnlySpan<char> asLowerInvariant = this.ToString().ToLowerInvariant().AsSpan();
             OperationStatus status = Utf8.FromUtf16(asLowerInvariant, destination, out int _, out int bytesWritten, replaceInvalidSequences: false, isFinalBlock: true);
 
             Debug.Assert(status == OperationStatus.Done || status == OperationStatus.DestinationTooSmall, "ToLowerInvariant shouldn't have produced malformed Unicode string.");
@@ -274,11 +262,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
             }
 
-            ReadOnlySpan<char> asUpper = this.ToString().ToUpper(culture)
-#if NETSTANDARD2_0
-                .AsSpan()
-#endif
-                ;
+            ReadOnlySpan<char> asUpper = this.ToString().ToUpper(culture).AsSpan();
             OperationStatus status = Utf8.FromUtf16(asUpper, destination, out int _, out int bytesWritten, replaceInvalidSequences: false, isFinalBlock: true);
 
             Debug.Assert(status == OperationStatus.Done || status == OperationStatus.DestinationTooSmall, "ToUpper shouldn't have produced malformed Unicode string.");
@@ -326,11 +310,7 @@ namespace System.Text
         {
             // TODO_UTF8STRING: Avoid intermediate allocations.
 
-            ReadOnlySpan<char> asUpperInvariant = this.ToString().ToUpperInvariant()
-#if NETSTANDARD2_0
-                .AsSpan()
-#endif
-                ;
+            ReadOnlySpan<char> asUpperInvariant = this.ToString().ToUpperInvariant().AsSpan();
             OperationStatus status = Utf8.FromUtf16(asUpperInvariant, destination, out int _, out int bytesWritten, replaceInvalidSequences: false, isFinalBlock: true);
 
             Debug.Assert(status == OperationStatus.Done || status == OperationStatus.DestinationTooSmall, "ToUpperInvariant shouldn't have produced malformed Unicode string.");

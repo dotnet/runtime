@@ -248,6 +248,11 @@ namespace System.Text
 #if !NETSTANDARD2_0
             return Encoding.UTF8.GetString(Bytes);
 #else
+            if (IsEmpty)
+            {
+                return string.Empty;
+            }
+
             unsafe
             {
                 fixed (byte* pBytes = Bytes)

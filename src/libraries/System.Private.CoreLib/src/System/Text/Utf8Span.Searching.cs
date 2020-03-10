@@ -221,7 +221,7 @@ namespace System.Text
                 // TODO_UTF8STRING: We should take advantage of the property described above to avoid the UTF-16
                 // transcoding step entirely.
 
-                if (compareOptions != CompareOptions.None)
+                if (compareOptions == CompareOptions.None)
                 {
                     return (fromBeginning)
                         ? TryFind(value, out range)
@@ -239,7 +239,11 @@ namespace System.Text
 
                     case StringComparison.OrdinalIgnoreCase:
                         // TODO_UTF8STRING: Can probably optimize this case.
+#if SYSTEM_PRIVATE_CORELIB
+                        compareInfo = CompareInfo.Invariant;
+#else
                         compareInfo = CultureInfo.InvariantCulture.CompareInfo;
+#endif
                         break;
 
                     case StringComparison.CurrentCulture:
@@ -249,7 +253,11 @@ namespace System.Text
 
                     default:
                         Debug.Assert(comparisonType == StringComparison.InvariantCulture || comparisonType == StringComparison.InvariantCultureIgnoreCase);
+#if SYSTEM_PRIVATE_CORELIB
+                        compareInfo = CompareInfo.Invariant;
+#else
                         compareInfo = CultureInfo.InvariantCulture.CompareInfo;
+#endif
                         break;
                 }
             }
@@ -276,6 +284,8 @@ namespace System.Text
                 idx = compareInfo.IndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, 0, thisTranscodedToUtf16.Length, compareOptions, &matchLength, fromBeginning);
             }
 #else
+            Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase);
+
             if (fromBeginning)
             {
                 idx = compareInfo.IndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, 0, thisTranscodedToUtf16.Length, compareOptions);
@@ -284,7 +294,6 @@ namespace System.Text
             {
                 idx = compareInfo.LastIndexOf(thisTranscodedToUtf16, otherTranscodedToUtf16, thisTranscodedToUtf16.Length, thisTranscodedToUtf16.Length, compareOptions);
             }
-            // TODO_UTF8STRING: matchLength is not correct here. Need to figure this out outside of CoreLib.
             matchLength = otherTranscodedToUtf16.Length;
 #endif
 
@@ -528,6 +537,14 @@ namespace System.Text
             if ((uint)comparisonType > (uint)StringComparison.OrdinalIgnoreCase)
             {
                 ThrowHelper.ThrowArgumentException(SR.NotSupported_StringComparison, ExceptionArgument.comparisonType);
+            }
+
+            // There's no API that would allow getting the correct match length
+            // for other StringComparisons.
+            if (comparisonType != StringComparison.Ordinal &&
+                comparisonType != StringComparison.OrdinalIgnoreCase)
+            {
+                ThrowHelper.ThrowNotSupportedException(SR.Utf8Span_TryFindOnlySupportsOrdinal);
             }
 #endif
         }

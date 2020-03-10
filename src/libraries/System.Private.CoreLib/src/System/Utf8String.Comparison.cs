@@ -58,11 +58,7 @@ namespace System
                 return false;
             }
 
-            return AreEquivalentOrdinalSkipShortCircuitingChecks(utf8Text.AsBytes(), utf16Text
-#if NETSTANDARD2_0
-                .AsSpan()
-#endif
-                );
+            return AreEquivalentOrdinalSkipShortCircuitingChecks(utf8Text.AsBytes(), utf16Text.AsSpan());
         }
 
         /// <summary>

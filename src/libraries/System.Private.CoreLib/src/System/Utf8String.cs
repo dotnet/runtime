@@ -272,6 +272,11 @@ namespace System
 #if !NETSTANDARD2_0
             return Encoding.UTF8.GetString(this.AsBytesSkipNullCheck());
 #else
+            if (Length == 0)
+            {
+                return string.Empty;
+            }
+
             unsafe
             {
                 fixed (byte* pBytes = this.AsBytesSkipNullCheck())
