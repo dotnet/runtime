@@ -3220,12 +3220,11 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-    MethodTable * pDeclaringMT = NULL;
+     ULONG dictionaryIndex = 0;
+     MethodTable * pDeclaringMT = NULL;
 
     if (pMT != NULL)
     {
-        ULONG dictionaryIndex = 0;
-
         if (pModule != NULL)
         {
 #ifdef _DEBUG
@@ -3298,6 +3297,20 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         // inherited types are faster next time rather than just just for this specific pMT.
         JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature, pDictDomain);
         AddToGenericHandleCache(&key, (HashDatum)result);
+    }
+
+    if (pMT != NULL && pDeclaringMT != pMT)
+    {
+        // If the dictionary on the base type got expanded, update the current type's base type dictionary
+        // pointer to use the new one on the base type.
+
+        Dictionary* pMTDictionary = pMT->GetPerInstInfo()[dictionaryIndex].GetValue();
+        Dictionary* pDeclaringMTDictionary = pDeclaringMT->GetPerInstInfo()[dictionaryIndex].GetValue();
+        if (pMTDictionary != pDeclaringMTDictionary)
+        {
+            TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo()->GetValuePtr();
+            FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
+        }
     }
 
     return result;

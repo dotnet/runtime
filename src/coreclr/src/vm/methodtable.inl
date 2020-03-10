@@ -1253,7 +1253,7 @@ inline DWORD MethodTable::GetInstAndDictSize()
     if (!HasInstantiation())
         return 0;
     else
-        return DictionaryLayout::GetFirstDictionaryBucketSize(GetNumGenericArgs(), GetClass()->GetDictionaryLayout());
+        return DictionaryLayout::GetDictionarySizeFromLayout(GetNumGenericArgs(), GetClass()->GetDictionaryLayout());
 }
 
 //==========================================================================================

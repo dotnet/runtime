@@ -838,49 +838,6 @@ _PrecodeFixupThunk@0 proc public
 
 _PrecodeFixupThunk@0 endp
 
-; LPVOID __stdcall CTPMethodTable__CallTargetHelper2(
-;     const void *pTarget,
-;     LPVOID pvFirst,
-;     LPVOID pvSecond)
-CTPMethodTable__CallTargetHelper2 proc stdcall public,
-                                  pTarget : DWORD,
-                                  pvFirst : DWORD,
-                                  pvSecond : DWORD
-    mov     ecx, pvFirst
-    mov     edx, pvSecond
-
-    call    pTarget
-ifdef _DEBUG
-    nop                         ; Mark this as a special call site that can
-                                ; directly call unmanaged code
-endif
-    ret
-CTPMethodTable__CallTargetHelper2 endp
-
-; LPVOID __stdcall CTPMethodTable__CallTargetHelper3(
-;     const void *pTarget,
-;     LPVOID pvFirst,
-;     LPVOID pvSecond,
-;     LPVOID pvThird)
-CTPMethodTable__CallTargetHelper3 proc stdcall public,
-                                  pTarget : DWORD,
-                                  pvFirst : DWORD,
-                                  pvSecond : DWORD,
-                                  pvThird : DWORD
-    push    pvThird
-
-    mov     ecx, pvFirst
-    mov     edx, pvSecond
-
-    call    pTarget
-ifdef _DEBUG
-    nop                         ; Mark this as a special call site that can
-                                ; directly call unmanaged code
-endif
-    ret
-CTPMethodTable__CallTargetHelper3 endp
-
-
 ; void __stdcall setFPReturn(int fpSize, INT64 retVal)
 _setFPReturn@12 proc public
     mov     ecx, [esp+4]

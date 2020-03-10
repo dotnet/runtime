@@ -20,9 +20,6 @@
 
 #include "mdinfo.h"
 
-#define LEGACY_ACTIVATION_SHIM_LOAD_LIBRARY WszLoadLibrary
-#define LEGACY_ACTIVATION_SHIM_DEFINE_CoInitializeEE
-
 #define ENUM_BUFFER_SIZE 10
 #define TAB_SIZE 8
 

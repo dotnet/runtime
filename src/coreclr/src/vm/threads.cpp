@@ -329,22 +329,16 @@ bool Thread::DetectHandleILStubsForDebugger()
     return false;
 }
 
-extern "C" {
-#ifndef __GNUC__
-__declspec(thread)
-#else // !__GNUC__
-__thread
-#endif // !__GNUC__
-ThreadLocalInfo gCurrentThreadInfo =
-                                              {
-                                                  NULL,    // m_pThread
-                                                  NULL,    // m_pAppDomain
-                                                  NULL,    // m_EETlsData
-                                              };
-} // extern "C"
+#ifndef _MSC_VER
+__thread ThreadLocalInfo gCurrentThreadInfo;
+#endif
 
 // index into TLS Array. Definition added by compiler
 EXTERN_C UINT32 _tls_index;
+
+#ifndef HOST_WINDOWS
+UINT32 _tls_index;
+#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -1237,31 +1231,6 @@ struct Dbg_TrackSyncStack : public Dbg_TrackSync
         LIMITED_METHOD_CONTRACT;
     }
 };
-
-// ensure that registers are preserved across this call
-#ifdef _MSC_VER
-#pragma optimize("", off)
-#endif
-// A pain to do all this from ASM, but watch out for trashed registers
-EXTERN_C void EnterSyncHelper    (UINT_PTR caller, void *pAwareLock)
-{
-    BEGIN_ENTRYPOINT_THROWS;
-    WRAPPER_NO_CONTRACT;
-    GetThread()->m_pTrackSync->EnterSync(caller, pAwareLock);
-    END_ENTRYPOINT_THROWS;
-
-}
-EXTERN_C void LeaveSyncHelper    (UINT_PTR caller, void *pAwareLock)
-{
-    BEGIN_ENTRYPOINT_THROWS;
-    WRAPPER_NO_CONTRACT;
-    GetThread()->m_pTrackSync->LeaveSync(caller, pAwareLock);
-    END_ENTRYPOINT_THROWS;
-
-}
-#ifdef _MSC_VER
-#pragma optimize("", on)
-#endif
 
 void Dbg_TrackSyncStack::EnterSync(UINT_PTR caller, void *pAwareLock)
 {

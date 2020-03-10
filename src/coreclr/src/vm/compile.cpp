@@ -110,7 +110,7 @@ HRESULT CEECompileInfo::Startup(  BOOL fForceDebug,
 
         // When NGEN'ing this call may execute EE code, e.g. the managed code to set up
         // the SharedDomain.
-        hr = InitializeEE(COINITEE_DEFAULT);
+        hr = EnsureEEStarted();
     }
 
     //

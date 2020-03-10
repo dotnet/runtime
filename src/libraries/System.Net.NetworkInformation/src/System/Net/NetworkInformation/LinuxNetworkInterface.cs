@@ -23,10 +23,10 @@ namespace System.Net.NetworkInformation
 
         internal class LinuxNetworkInterfaceSystemProperties
         {
-            internal string[] IPv4Routes;
-            internal string[] IPv6Routes;
-            internal string DnsSuffix;
-            internal IPAddressCollection DnsAddresses;
+            internal string[]? IPv4Routes;
+            internal string[]? IPv6Routes;
+            internal string? DnsSuffix;
+            internal IPAddressCollection? DnsAddresses;
 
             internal LinuxNetworkInterfaceSystemProperties()
             {
@@ -82,7 +82,7 @@ namespace System.Net.NetworkInformation
 
                 for (int i = 0; i < interfaceCount; i++)
                 {
-                    var lni = new LinuxNetworkInterface(Marshal.PtrToStringAnsi((IntPtr)nii->Name), nii->InterfaceIndex, systemProperties);
+                    var lni = new LinuxNetworkInterface(Marshal.PtrToStringAnsi((IntPtr)nii->Name)!, nii->InterfaceIndex, systemProperties);
                     lni._interfaceType = (NetworkInterfaceType)nii->HardwareType;
                     lni._speed = nii->Speed;
                     lni._operationalStatus = (OperationalStatus)nii->OperationalState;
@@ -102,7 +102,7 @@ namespace System.Net.NetworkInformation
                         address.ScopeId = ai->InterfaceIndex;
                     }
 
-                    if (interfacesByIndex.TryGetValue(ai->InterfaceIndex, out LinuxNetworkInterface lni))
+                    if (interfacesByIndex.TryGetValue(ai->InterfaceIndex, out LinuxNetworkInterface? lni))
                     {
                         lni.AddAddress(address, ai->PrefixLength);
                     }
