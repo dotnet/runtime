@@ -23,9 +23,10 @@
       <_RestoreProjects Include="@(_RestoreBuildProjects)" />
     </ItemGroup>
 
-    <ItemGroup>
-      <_RestoreProjects Include="$(MSBuildThisFileDirectory)dirs.proj" Condition="'$(RestoreAll)' == 'true'" />
-      <_RestoreProjects Include="$(MSBuildThisFileDirectory)tests.proj" Condition="'$(RestoreAll)' == 'true' and '$(DotNetBuildFromSource)' != 'true'" />
+    <ItemGroup Condition="'$(RestoreAll)' == 'true'">
+      <_RestoreProjects Include="$(MSBuildThisFileDirectory)dirs.proj"  />
+      <_RestoreProjects Include="$(MSBuildThisFileDirectory)tests.proj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+      <_RestoreProjects Include="$(MSBuildThisFileDirectory)packages.proj" />
     </ItemGroup>
 
     <MSBuild Projects="@(_RestoreProjects)"
