@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static partial class CustomConverterTests
     {
         // A custom data type representing a point where JSON is "XValue,YValue".

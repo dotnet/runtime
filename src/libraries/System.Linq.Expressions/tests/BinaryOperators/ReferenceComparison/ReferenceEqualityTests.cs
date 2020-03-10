@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public abstract class ReferenceEqualityTests
     {
         protected static IEnumerable<object[]> ReferenceObjectsData()

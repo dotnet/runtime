@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static partial class ReferenceHandlingTests
     {
         private static readonly JsonSerializerOptions s_deserializerOptionsPreserve = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve };

@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static partial class CustomConverterTests
     {
         // A custom long[] converter as comma-delimited string "1,2,3".

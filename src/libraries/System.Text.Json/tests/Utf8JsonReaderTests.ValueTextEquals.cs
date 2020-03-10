@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.Text.Json.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public static partial class Utf8JsonReaderTests
     {
         public static bool IsX64 { get; } = IntPtr.Size >= 8;
