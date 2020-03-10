@@ -79,7 +79,7 @@ namespace System.Security.Cryptography
             Span<char> postebStackBuffer = stackalloc char[PostebStackBufferSize];
             int areaOffset = 0;
             int preebIndex;
-            while ((preebIndex = pemData.IndexOf(PreEBPrefix, areaOffset)) >= 0)
+            while ((preebIndex = pemData.IndexOfByOffset(PreEBPrefix, areaOffset)) >= 0)
             {
                 int labelStartIndex = preebIndex + PreEBPrefix.Length;
 
@@ -91,7 +91,7 @@ namespace System.Security.Cryptography
                     continue;
                 }
 
-                int preebEndIndex = pemData.IndexOf(Ending, labelStartIndex);
+                int preebEndIndex = pemData.IndexOfByOffset(Ending, labelStartIndex);
 
                 // There is no ending sequence, -----, in the remainder of
                 // the document. Therefore, there can never be a complete PreEB
@@ -119,7 +119,7 @@ namespace System.Security.Cryptography
                     ? new char[postebLength]
                     : postebStackBuffer;
                 ReadOnlySpan<char> posteb = WritePostEB(label, postebBuffer);
-                int postebStartIndex = pemData.IndexOf(posteb, contentStartIndex);
+                int postebStartIndex = pemData.IndexOfByOffset(posteb, contentStartIndex);
 
                 if (postebStartIndex < 0)
                 {
@@ -179,16 +179,10 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static int IndexOf(this ReadOnlySpan<char> str, ReadOnlySpan<char> value, int startPosition)
+        private static int IndexOfByOffset(this ReadOnlySpan<char> str, ReadOnlySpan<char> value, int startPosition)
         {
             int index = str[startPosition..].IndexOf(value);
-
-            if (index == -1)
-            {
-                return -1;
-            }
-
-            return index + startPosition;
+            return index == -1 ? -1 : index + startPosition;
         }
 
         private static bool IsValidLabel(ReadOnlySpan<char> data)
