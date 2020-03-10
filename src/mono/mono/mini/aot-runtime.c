@@ -79,6 +79,12 @@
 #define ENABLE_AOT_CACHE
 #endif
 
+#ifdef MONO_ARCH_CODE_EXEC_ONLY
+extern guint8* mono_aot_arch_get_plt_entry_exec_only (gpointer amodule_info, host_mgreg_t *regs, guint8 *code, guint8 *plt);
+extern guint32 mono_arch_get_plt_info_offset_exec_only (gpointer amodule_info, guint8 *plt_entry, host_mgreg_t *regs, guint8 *code, MonoAotResolvePltInfoOffset resolver, gpointer amodule);
+extern void mono_arch_patch_plt_entry_exec_only (gpointer amodule_info, guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr);
+#endif
+
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 
 typedef struct {
@@ -1861,7 +1867,7 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, guint8 *blob, char 
 	guint32 excluded_cpu_optimizations;
 
 	if (strcmp (assembly->image->guid, (const char*)info->assembly_guid)) {
-		msg = g_strdup_printf ("doesn't match assembly");
+		msg = g_strdup ("doesn't match assembly");
 		usable = FALSE;
 	}
 
@@ -1877,41 +1883,41 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, guint8 *blob, char 
 
 	if (mono_aot_only && !full_aot) {
 		if (!interp) {
-			msg = g_strdup_printf ("not compiled with --aot=full");
+			msg = g_strdup ("not compiled with --aot=full");
 			usable = FALSE;
 		}
 	}
 	if (!mono_aot_only && full_aot) {
-		msg = g_strdup_printf ("compiled with --aot=full");
+		msg = g_strdup ("compiled with --aot=full");
 		usable = FALSE;
 	}
 	if (mono_use_interpreter && !interp && !strcmp (assembly->aname.name, "mscorlib")) {
 		/* mscorlib contains necessary interpreter trampolines */
-		msg = g_strdup_printf ("not compiled with --aot=interp");
+		msg = g_strdup ("not compiled with --aot=interp");
 		usable = FALSE;
 	}
 	if (mono_llvm_only && !(info->flags & MONO_AOT_FILE_FLAG_LLVM_ONLY)) {
-		msg = g_strdup_printf ("not compiled with --aot=llvmonly");
+		msg = g_strdup ("not compiled with --aot=llvmonly");
 		usable = FALSE;
 	}
 	if (mono_use_llvm && !(info->flags & MONO_AOT_FILE_FLAG_WITH_LLVM)) {
 		/* Prefer LLVM JITted code when using --llvm */
-		msg = g_strdup_printf ("not compiled with --aot=llvm");
+		msg = g_strdup ("not compiled with --aot=llvm");
 		usable = FALSE;
 	}
 	if (mini_debug_options.mdb_optimizations && !(info->flags & MONO_AOT_FILE_FLAG_DEBUG) && !full_aot && !interp) {
-		msg = g_strdup_printf ("not compiled for debugging");
+		msg = g_strdup ("not compiled for debugging");
 		usable = FALSE;
 	}
 
 	mono_arch_cpu_optimizations (&excluded_cpu_optimizations);
 	if (info->opts & excluded_cpu_optimizations) {
-		msg = g_strdup_printf ("compiled with unsupported CPU optimizations");
+		msg = g_strdup ("compiled with unsupported CPU optimizations");
 		usable = FALSE;
 	}
 
 	if (!mono_aot_only && (info->simd_opts & ~mono_arch_cpu_enumerate_simd_versions ())) {
-		msg = g_strdup_printf ("compiled with unsupported SIMD extensions");
+		msg = g_strdup ("compiled with unsupported SIMD extensions");
 		usable = FALSE;
 	}
 
@@ -1928,9 +1934,21 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, guint8 *blob, char 
 	safepoints = info->flags & MONO_AOT_FILE_FLAG_SAFEPOINTS;
 
 	if (!safepoints && mono_threads_are_safepoints_enabled ()) {
-		msg = g_strdup_printf ("not compiled with safepoints");
+		msg = g_strdup ("not compiled with safepoints");
 		usable = FALSE;
 	}
+
+#ifdef MONO_ARCH_CODE_EXEC_ONLY
+	if (!(info->flags & MONO_AOT_FILE_FLAG_CODE_EXEC_ONLY)) {
+		msg = g_strdup ("not compiled targeting a runtime configured as CODE_EXEC_ONLY");
+		usable = FALSE;
+	}
+#else
+	if (info->flags & MONO_AOT_FILE_FLAG_CODE_EXEC_ONLY) {
+		msg = g_strdup ("compiled targeting a runtime configured as CODE_EXEC_ONLY");
+		usable = FALSE;
+	}
+#endif
 
 	*out_msg = msg;
 	return usable;
@@ -2392,7 +2410,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 			addr = get_method (i);
 		}
 
-		if (amodule->info.flags & MONO_AOT_FILE_FLAG_METHOD_TABLE_AS_DATA) {
+		if (amodule->info.flags & MONO_AOT_FILE_FLAG_CODE_EXEC_ONLY) {
 			addr = ((gpointer*)amodule->info.method_addresses) [i];
 		} else {
 			/* method_addresses () contains a table of branches, since the ios linker can update those correctly */
@@ -5065,10 +5083,19 @@ find_aot_module (guint8 *code)
 	return user_data.module;
 }
 
-void
-mono_aot_patch_plt_entry (guint8 *code, guint8 *plt_entry, gpointer *got, host_mgreg_t *regs, guint8 *addr)
+#ifdef MONO_ARCH_CODE_EXEC_ONLY
+static guint32
+aot_resolve_plt_info_offset (gpointer amodule, guint32 plt_entry_index)
 {
-	MonoAotModule *amodule;
+	MonoAotModule *module = (MonoAotModule*)amodule;
+	return mono_aot_get_offset (module->got_info_offsets, module->info.plt_got_info_offset_base + plt_entry_index);
+}
+#endif
+
+void
+mono_aot_patch_plt_entry (gpointer aot_module, guint8 *code, guint8 *plt_entry, gpointer *got, host_mgreg_t *regs, guint8 *addr)
+{
+	MonoAotModule *amodule = (MonoAotModule *)aot_module;
 
 	/*
 	 * Since AOT code is only used in the root domain, 
@@ -5077,12 +5104,14 @@ mono_aot_patch_plt_entry (guint8 *code, guint8 *plt_entry, gpointer *got, host_m
 	 * mono_method_same_domain () but without loading the metadata for the method.
 	 */
 	if (mono_domain_get () == mono_get_root_domain ()) {
-		if (!got) {
+		if (!amodule) {
 			amodule = find_aot_module (code);
-			if (amodule)
-				got = amodule->got;
 		}
-		mono_arch_patch_plt_entry (plt_entry, got, regs, addr);
+#ifdef MONO_ARCH_CODE_EXEC_ONLY
+		mono_arch_patch_plt_entry_exec_only (&amodule->info, plt_entry, amodule->got, regs, addr);
+#else
+		mono_arch_patch_plt_entry (plt_entry, amodule->got, regs, addr);
+#endif
 	}
 }
 
@@ -5094,10 +5123,11 @@ mono_aot_patch_plt_entry (guint8 *code, guint8 *plt_entry, gpointer *got, host_m
  * Returns NULL if the something cannot be loaded.
  */
 gpointer
-mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code, MonoError *error)
+mono_aot_plt_resolve (gpointer aot_module, host_mgreg_t *regs, guint8 *code, MonoError *error)
 {
 #ifdef MONO_ARCH_AOT_SUPPORTED
 	guint8 *p, *target, *plt_entry;
+	guint32 plt_info_offset;
 	MonoJumpInfo ji;
 	MonoAotModule *module = (MonoAotModule*)aot_module;
 	gboolean res, no_ftnptr = FALSE;
@@ -5105,6 +5135,11 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	gboolean using_gsharedvt = FALSE;
 
 	error_init (error);
+
+	plt_entry = mono_aot_get_plt_entry (regs, code);
+	g_assert (plt_entry);
+
+	plt_info_offset = mono_aot_get_plt_info_offset (aot_module, plt_entry, regs, code);
 
 	//printf ("DYN: %p %d\n", aot_module, plt_info_offset);
 
@@ -5178,9 +5213,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	mono_mempool_destroy (mp);
 
 	/* Patch the PLT entry with target which might be the actual method not a trampoline */
-	plt_entry = mono_aot_get_plt_entry (code);
-	g_assert (plt_entry);
-	mono_aot_patch_plt_entry (code, plt_entry, module->got, NULL, target);
+	mono_aot_patch_plt_entry (aot_module, code, plt_entry, module->got, regs, target);
 
 	return target;
 #else
@@ -5240,7 +5273,7 @@ init_plt (MonoAotModule *amodule)
  *   Return the address of the PLT entry called by the code at CODE if exists.
  */
 guint8*
-mono_aot_get_plt_entry (guint8 *code)
+mono_aot_get_plt_entry (host_mgreg_t *regs, guint8 *code)
 {
 	MonoAotModule *amodule = find_aot_module (code);
 	guint8 *target = NULL;
@@ -5254,7 +5287,11 @@ mono_aot_get_plt_entry (guint8 *code)
 #endif
 
 #ifdef MONO_ARCH_AOT_SUPPORTED
+#ifdef MONO_ARCH_CODE_EXEC_ONLY
+	target = mono_aot_arch_get_plt_entry_exec_only (&amodule->info, regs, code, amodule->plt);
+#else
 	target = mono_arch_get_call_target (code);
+#endif
 #else
 	g_assert_not_reached ();
 #endif
@@ -5284,15 +5321,20 @@ mono_aot_get_plt_entry (guint8 *code)
  *   Return the PLT info offset belonging to the plt entry called by CODE.
  */
 guint32
-mono_aot_get_plt_info_offset (host_mgreg_t *regs, guint8 *code)
+mono_aot_get_plt_info_offset (gpointer aot_module, guint8 *plt_entry, host_mgreg_t *regs, guint8 *code)
 {
-	guint8 *plt_entry = mono_aot_get_plt_entry (code);
-
-	g_assert (plt_entry);
+	if (!plt_entry) {
+		plt_entry = mono_aot_get_plt_entry (regs, code);
+		g_assert (plt_entry);
+	}
 
 	/* The offset is embedded inside the code after the plt entry */
 #ifdef MONO_ARCH_AOT_SUPPORTED
+#ifdef MONO_ARCH_CODE_EXEC_ONLY
+	return mono_arch_get_plt_info_offset_exec_only (&((MonoAotModule*)aot_module)->info, plt_entry, regs, code, aot_resolve_plt_info_offset, aot_module);
+#else
 	return mono_arch_get_plt_info_offset (plt_entry, regs, code);
+#endif
 #else
 	g_assert_not_reached ();
 	return 0;
@@ -6362,13 +6404,13 @@ mono_aot_get_plt_entry (guint8 *code)
 }
 
 gpointer
-mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code, MonoError *error)
+mono_aot_plt_resolve (gpointer aot_module, host_mgreg_t *regs, guint8 *code, MonoError *error)
 {
 	return NULL;
 }
 
 void
-mono_aot_patch_plt_entry (guint8 *code, guint8 *plt_entry, gpointer *got, host_mgreg_t *regs, guint8 *addr)
+mono_aot_patch_plt_entry (gpointer aot_module, guint8 *code, guint8 *plt_entry, gpointer *got, host_mgreg_t *regs, guint8 *addr)
 {
 }
 
