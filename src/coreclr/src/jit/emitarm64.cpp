@@ -10775,10 +10775,9 @@ void emitter::emitDispLSExtendOpts(insOpts opt)
         assert(!"Bad value");
 }
 
-/*****************************************************************************
- *
- *  Display a register
- */
+//------------------------------------------------------------------------
+// emitDispReg: Display a general-purpose register name or SIMD and floating-point scalar register name
+//
 void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 {
     emitAttr size = EA_SIZE(attr);
@@ -10788,10 +10787,9 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
         printf(", ");
 }
 
-/*****************************************************************************
- *
- *  Display a vector register with an arrangement suffix
- */
+//------------------------------------------------------------------------
+// emitDispVectorReg: Display a SIMD vector register name with with an arrangement suffix
+//
 void emitter::emitDispVectorReg(regNumber reg, insOpts opt, bool addComma)
 {
     assert(isVectorRegister(reg));
@@ -10802,10 +10800,9 @@ void emitter::emitDispVectorReg(regNumber reg, insOpts opt, bool addComma)
         printf(", ");
 }
 
-/*****************************************************************************
- *
- *  Display an vector register index suffix
- */
+//------------------------------------------------------------------------
+// emitDispVectorRegIndex: Display a SIMD vector register name with element index
+//
 void emitter::emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma)
 {
     assert(isVectorRegister(reg));
@@ -10817,10 +10814,9 @@ void emitter::emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t i
         printf(", ");
 }
 
-/*****************************************************************************
- *
- *  Display an arrangement suffix
- */
+//------------------------------------------------------------------------
+// emitDispArrangement: Display a SIMD vector arrangement suffix
+//
 void emitter::emitDispArrangement(insOpts opt)
 {
     const char* str = "???";
@@ -10889,10 +10885,9 @@ void emitter::emitDispElemsize(emitAttr elemsize)
     printf(str);
 }
 
-/*****************************************************************************
- *
- *  Display a register with an optional shift operation
- */
+//------------------------------------------------------------------------
+// emitDispShiftedReg: Display a register with an optional shift operation
+//
 void emitter::emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr)
 {
     emitAttr size = EA_SIZE(attr);
