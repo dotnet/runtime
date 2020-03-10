@@ -172,7 +172,7 @@ jobs:
             mkdir -p     $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
             python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py crossgen_framework
             --crossgen   $HELIX_WORKITEM_PAYLOAD/Core_Root/crossgen
-            --il_corelib $HELIX_WORKITEM_PAYLOAD/bin/Core_Root/IL/System.Private.CoreLib.dll
+            --il_corelib $HELIX_WORKITEM_PAYLOAD/Core_Root/IL/System.Private.CoreLib.dll
             --core_root  $HELIX_WORKITEM_PAYLOAD/Core_Root
             --result_dir $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
             python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py compare

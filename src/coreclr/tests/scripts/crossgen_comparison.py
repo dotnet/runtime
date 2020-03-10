@@ -526,6 +526,12 @@ def crossgen_corelib(args):
     ni_corelib_dirname, debugging_files_dirname = create_output_folders()
     ni_corelib_filename = os.path.join(ni_corelib_dirname, assembly_name)
     platform_assemblies_paths = [os.path.dirname(il_corelib_filename)]
+
+    # Validate the paths are correct.
+    if not os.path.exists(il_corelib_filename):
+        print("IL Corelib path does not exist.")
+        sys.exit(1)
+
     crossgen_results = run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
     shutil.rmtree(ni_corelib_dirname, ignore_errors=True)
     save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
