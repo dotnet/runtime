@@ -121,7 +121,7 @@ namespace ReadyToRun.SuperIlc
             }
             else
             {
-                processParameters.TimeoutMilliseconds = ProcessParameters.DefaultIlcTimeout;
+                processParameters.TimeoutMilliseconds = (_options.Composite ? ProcessParameters.DefaultIlcCompositeTimeout : ProcessParameters.DefaultIlcTimeout);
             }
             processParameters.LogPath = outputFileName + ".ilc.log";
             processParameters.InputFileNames = inputAssemblyFileNames;

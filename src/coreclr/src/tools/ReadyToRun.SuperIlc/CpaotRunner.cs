@@ -23,7 +23,7 @@ namespace ReadyToRun.SuperIlc
 
         private string Crossgen2Path => Path.Combine(_options.CoreRootDirectory.FullName, "crossgen2", "crossgen2.dll");
 
-        private List<string> _resolvedReferences;
+        private IEnumerable<string> _resolvedReferences;
 
         public CpaotRunner(BuildOptions options, IEnumerable<string> referencePaths)
             : base(options, referencePaths)
@@ -86,27 +86,20 @@ namespace ReadyToRun.SuperIlc
                 yield return $"--parallelism={_options.Crossgen2Parallelism}";
             }
 
-            char referenceOption = (_options.Composite ? 'u' : 'r');
             HashSet<string> uniqueFolders = new HashSet<string>();
             foreach (string assemblyFileName in assemblyFileNames)
             {
                 uniqueFolders.Add(Path.GetDirectoryName(assemblyFileName));
             }
-            foreach (string folder in uniqueFolders)
+
+            foreach (string reference in ResolveReferences(uniqueFolders))
             {
-                foreach (string reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(folder))
-                {
-                    string simpleName = Path.GetFileNameWithoutExtension(reference);
-                    if (!FrameworkExclusion.Exclude(simpleName, Index, out string reason))
-                    {
-                        yield return $"-{referenceOption}:{reference}";
-                    }
-                }
+                yield return reference;
             }
 
             if (_resolvedReferences == null)
             {
-                _resolvedReferences = ResolveReferences();
+                _resolvedReferences = ResolveReferences(_referenceFolders);
             }
 
             foreach (string asmRef in _resolvedReferences)
@@ -115,22 +108,21 @@ namespace ReadyToRun.SuperIlc
             }
         }
 
-        private List<string> ResolveReferences()
+        private IEnumerable<string> ResolveReferences(IEnumerable<string> folders)
         {
             char referenceOption = (_options.Composite ? 'u' : 'r');
-            List<string> references = new List<string>();
-            foreach (string referenceFolder in _referenceFolders)
+
+            foreach (string referenceFolder in folders)
             {
                 foreach (string reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(referenceFolder))
                 {
                     string simpleName = Path.GetFileNameWithoutExtension(reference);
                     if (!FrameworkExclusion.Exclude(simpleName, Index, out string reason))
                     {
-                        references.Add($"-{referenceOption}:{reference}");
+                        yield return $"-{referenceOption}:{reference}";
                     }
                 }
             }
-            return references;
         }
     }
 }
