@@ -247,7 +247,7 @@ namespace ReadyToRun.SuperIlc
                     foreach (string frameworkDll in ComputeManagedAssemblies.GetManagedAssembliesInFolder(_options.CoreRootDirectory.FullName))
                     {
                         string simpleName = Path.GetFileNameWithoutExtension(frameworkDll);
-                        if (!FrameworkExclusion.Exclude(simpleName, runner.Index, out string reason))
+                        if (FrameworkExclusion.Exclude(simpleName, runner.Index, out string reason))
                         {
                             _frameworkExclusions[simpleName] = reason;
                         }
@@ -277,12 +277,16 @@ namespace ReadyToRun.SuperIlc
                     compilationsPerRunner.Add(new KeyValuePair<string, ProcessInfo[]>(frameworkDll, processes));
                     foreach (CompilerRunner runner in frameworkRunners)
                     {
-                        if (!FrameworkExclusion.Exclude(simpleName, runner.Index, out string reason))
+                        if (FrameworkExclusion.Exclude(simpleName, runner.Index, out string reason))
                         {
                             _frameworkExclusions[simpleName] = reason;
                             continue;
                         }
-                        var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, _options.CoreRootDirectory.FullName, new string[] { frameworkDll }));
+                        var compilationProcess = new ProcessInfo(
+                            new CompilationProcessConstructor(
+                                runner,
+                                Path.Combine(runner.GetOutputPath(_options.CoreRootDirectory.FullName), Path.GetFileName(frameworkDll)),
+                                new string[] { frameworkDll }));
                         compilationsToRun.Add(compilationProcess);
                         processes[(int)runner.Index] = compilationProcess;
                     }
