@@ -428,6 +428,95 @@ namespace Microsoft.Extensions.Logging.Test
             }
         }
 
+        [Fact]
+        public void Logs_AsExpected_FormattedMessage_WithNullString()
+        {
+            using (var testListener = new TestEventListener())
+            {
+                var factory = CreateLoggerFactory();
+
+                var listenerSettings = new TestEventListener.ListenerSettings();
+                listenerSettings.Keywords = LoggingEventSource.Keywords.FormattedMessage;
+                listenerSettings.FilterSpec = null;
+                listenerSettings.Level = EventLevel.Verbose;
+                testListener.EnableEvents(listenerSettings);
+
+                LogStuff(factory);
+
+                var containsNullEventName = false;
+
+                foreach (var eventJson in testListener.Events)
+                {
+                    if (eventJson.Contains(@"""__EVENT_NAME"":""FormattedMessage""") && eventJson.Contains(@"""EventName"":"""","))
+                    {
+                        containsNullEventName = true;
+                    }
+                }
+
+                Assert.True(containsNullEventName, "EventName is supposed to be null but it isn't.");
+            }
+        }
+
+        [Fact]
+        public void Logs_AsExpected_MessageJson_WithNullString()
+        {
+            using (var testListener = new TestEventListener())
+            {
+                var listenerSettings = new TestEventListener.ListenerSettings();
+                listenerSettings.Keywords = LoggingEventSource.Keywords.JsonMessage;
+                listenerSettings.FilterSpec = null;
+                listenerSettings.Level = EventLevel.Verbose;
+                testListener.EnableEvents(listenerSettings);
+
+                // Write some MessageJson events with null string.
+                for (var i = 0; i < 100; i++)
+                {
+                    LoggingEventSource.Instance.MessageJson(LogLevel.Trace, 1, "MyLogger", 5, null, null, "testJson");
+                }
+
+                bool containsNullEventName = false;
+                foreach (var eventJson in testListener.Events)
+                {
+                    if (eventJson.Contains(@"""__EVENT_NAME"":""MessageJson""") && eventJson.Contains(@"""EventName"":"""","))
+                    {
+                        containsNullEventName = true;
+                    }
+                }
+
+                Assert.True(containsNullEventName, "EventName and ExceptionJson is supposed to be null but it isn't.");
+            }
+        }
+
+        [Fact]
+        public void Logs_AsExpected_ActivityJson_WithNullString()
+        {
+            using (var testListener = new TestEventListener())
+            {
+                var listenerSettings = new TestEventListener.ListenerSettings();
+                listenerSettings.Keywords = LoggingEventSource.Keywords.JsonMessage;
+                listenerSettings.FilterSpec = null;
+                listenerSettings.Level = EventLevel.Verbose;
+                testListener.EnableEvents(listenerSettings);
+
+                // Write some MessageJson events with null string.
+                for (var i = 0; i < 100; i++)
+                {
+                    LoggingEventSource.Instance.ActivityJsonStart(6, 1, null, "someJson");
+                }
+
+                bool containsNullLoggerName = false;
+                foreach (var eventJson in testListener.Events)
+                {
+                    if (eventJson.Contains(@"""__EVENT_NAME"":""ActivityJsonStart""") && eventJson.Contains(@"""LoggerName"":"""","))
+                    {
+                        containsNullLoggerName = true;
+                    }
+                }
+
+                Assert.True(containsNullLoggerName, "LoggerName is supposed to be null but it isn't.");
+            }
+        }
+
         private void LogStuff(ILoggerFactory factory)
         {
             var logger1 = factory.CreateLogger("Logger1");
