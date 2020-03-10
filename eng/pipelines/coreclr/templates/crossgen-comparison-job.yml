@@ -65,7 +65,7 @@ jobs:
         value: $(artifactsDirectory)\bin
       - name: productDirectory
         value: $(binDirectory)\coreclr
-        - name: workItemDirectory
+      - name: workItemDirectory
         value: $(artifactsDirectory)\cross-crossgen
 
     - ${{ parameters.variables }}
