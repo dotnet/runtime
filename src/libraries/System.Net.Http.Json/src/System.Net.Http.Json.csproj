@@ -5,7 +5,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Get.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Helpers.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Post.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Put.cs" />
     <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.cs" />
     <Compile Include="System\Net\Http\Json\JsonContent.cs" />
   </ItemGroup>

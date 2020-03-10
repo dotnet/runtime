@@ -5,87 +5,39 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.IO;
-using System.Net.Http.Headers;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace System.Net.Http.Json
 {
-    public static class HttpClientJsonExtensions
+    public static partial class HttpClientJsonExtensions
     {
-        public static Task<object?> GetFromJsonAsync(
-            this HttpClient client,
-            string requestUri,
-            Type type,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
-        {
-            throw null;
-        }
-
-        public static Task<object?> GetFromJsonAsync(
-            this HttpClient client,
-            Uri requestUri,
-            Type type,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
-        {
-            throw null;
-        }
-
-        public static Task<T> GetFromJsonAsync<T>(
-            this HttpClient client,
-            string requestUri,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
-        {
-            throw null;
-        }
-
-        public static Task<T> GetFromJsonAsync<T>(
-            this HttpClient client,
-            Uri requestUri,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
-        {
-            throw null;
-        }
-
-        public static Task<HttpResponseMessage> PostAsJsonAsync(
-            this HttpClient client,
-            string requestUri,
-            Type type,
-            object? value,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
-        {
-            throw null;
-        }
+        public static System.Threading.Tasks.Task<object?> GetFromJsonAsync(this System.Net.Http.HttpClient client, string requestUri, System.Type type, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<object?> GetFromJsonAsync(this System.Net.Http.HttpClient client, System.Uri requestUri, System.Type type, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<T> GetFromJsonAsync<T>(this System.Net.Http.HttpClient client, string requestUri, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<T> GetFromJsonAsync<T>(this System.Net.Http.HttpClient client, System.Uri requestUri, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsJsonAsync(this System.Net.Http.HttpClient client, string requestUri, System.Type type, object value, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsJsonAsync(this System.Net.Http.HttpClient client, System.Uri requestUri, System.Type type, object? value, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsJsonAsync<T>(this System.Net.Http.HttpClient client, string requestUri, T value, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsJsonAsync<T>(this System.Net.Http.HttpClient client, System.Uri requestUri, T value, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsJsonAsync(this System.Net.Http.HttpClient client, string requestUri, System.Type type, object? value, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsJsonAsync(this System.Net.Http.HttpClient client, System.Uri requestUri, System.Type type, object? value, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsJsonAsync<T>(this System.Net.Http.HttpClient client, string requestUri, T value, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsJsonAsync<T>(this System.Net.Http.HttpClient client, System.Uri requestUri, T value, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
-
-    public static class HttpContentJsonExtensions { }
-
-    public class JsonContent : HttpContent
+    public static partial class HttpContentJsonExtensions
     {
-        public Type ObjectType { get; }
-        public object? Value { get; }
-
-        public static JsonContent Create<T>(T value, JsonSerializerOptions options = null) { throw null; }
-
-        public static JsonContent Create<T>(T value, MediaTypeHeaderValue mediaType, JsonSerializerOptions options = null) { throw null; }
-
-        public static JsonContent Create<T>(T value, string mediaType, JsonSerializerOptions options = null) { throw null; }
-
-        public JsonContent(Type type, object? value, JsonSerializerOptions options = null) { throw null; }
-
-        public JsonContent(Type type, object? value, MediaTypeHeaderValue mediaType, JsonSerializerOptions options = null) { throw null; }
-
-        public JsonContent(Type type, object? value, string mediaType, JsonSerializerOptions options = null) { throw null; }
-
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) { throw null; }
-
+        public static System.Threading.Tasks.Task<object> ReadFromJsonAsync(this System.Net.Http.HttpContent content, System.Type type, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<T> ReadFromJsonAsync<T>(this System.Net.Http.HttpContent content, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public partial class JsonContent : System.Net.Http.HttpContent
+    {
+        public JsonContent(System.Type type, object? value, System.Net.Http.Headers.MediaTypeHeaderValue mediaType, System.Text.Json.JsonSerializerOptions options = null) { }
+        public JsonContent(System.Type type, object? value, string mediaType, System.Text.Json.JsonSerializerOptions options = null) { }
+        public JsonContent(System.Type type, object? value, System.Text.Json.JsonSerializerOptions options = null) { }
+        public System.Type ObjectType { get { throw null; } }
+        public object? Value { get { throw null; } }
+        public static System.Net.Http.Json.JsonContent Create<T>(T value, System.Net.Http.Headers.MediaTypeHeaderValue mediaType, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
+        public static System.Net.Http.Json.JsonContent Create<T>(T value, string mediaType, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
+        public static System.Net.Http.Json.JsonContent Create<T>(T value, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context) { throw null; }
         protected override bool TryComputeLength(out long length) { throw null; }
     }
 }

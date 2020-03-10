@@ -10,15 +10,51 @@ namespace System.Net.Http.Json
 {
     public static partial class HttpClientJsonExtensions
     {
-        public static Task<HttpResponseMessage> PostAsJsonAsync(
-            this HttpClient client,
-            string requestUri,
-            Type type,
-            object? value,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+        // It would be nice to funnel object methods to the generic methods, but since I choose to make JsonContent.ObjectType = type arg on object signatures; we can't funnel
+        // and therefore validations need to be duplicated.
+
+        public static Task<HttpResponseMessage> PostAsJsonAsync(this HttpClient client, string requestUri, Type type, object? value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw null!;
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            JsonContent content = CreateJsonContent(type, value, options);
+            return client.PostAsync(requestUri, content, cancellationToken);
+        }
+
+        public static Task<HttpResponseMessage> PostAsJsonAsync(this HttpClient client, Uri requestUri, Type type, object? value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            JsonContent content = CreateJsonContent(type, value, options);
+            return client.PostAsync(requestUri, content, cancellationToken);
+        }
+
+        public static Task<HttpResponseMessage> PostAsJsonAsync<T>(this HttpClient client, string requestUri, T value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            JsonContent content = CreateJsonContent<T>(value, options);
+            return client.PostAsync(requestUri, content, cancellationToken);
+        }
+
+        public static Task<HttpResponseMessage> PostAsJsonAsync<T>(this HttpClient client, Uri requestUri, T value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            JsonContent content = CreateJsonContent<T>(value, options);
+            return client.PostAsync(requestUri, content, cancellationToken);
         }
     }
 }

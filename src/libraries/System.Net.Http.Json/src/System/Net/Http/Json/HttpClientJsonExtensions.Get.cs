@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,7 +30,7 @@ namespace System.Net.Http.Json
             CancellationToken cancellationToken = default)
         {
             Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, cancellationToken);
-            return ProcessTaskResponseAsync(taskResponse, type, options, cancellationToken);
+            return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
         }
 
         /// <summary>
@@ -51,7 +50,7 @@ namespace System.Net.Http.Json
             CancellationToken cancellationToken = default)
         {
             Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, cancellationToken);
-            return ProcessTaskResponseAsync(taskResponse, type, options, cancellationToken);
+            return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
         }
 
         /// <summary>
@@ -70,7 +69,7 @@ namespace System.Net.Http.Json
             CancellationToken cancellationToken = default)
         {
              Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, cancellationToken);
-            return ProcessTaskResponseAsync<T>(taskResponse, options, cancellationToken);
+            return GetFromJsonAsyncCore<T>(taskResponse, options, cancellationToken);
         }
 
         /// <summary>
@@ -89,44 +88,22 @@ namespace System.Net.Http.Json
             CancellationToken cancellationToken = default)
         {
             Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, cancellationToken);
-            return ProcessTaskResponseAsync<T>(taskResponse, options, cancellationToken);
+            return GetFromJsonAsyncCore<T>(taskResponse, options, cancellationToken);
         }
 
-        private static async Task<TValue> ProcessTaskResponseAsync<TValue>(
-            Task<HttpResponseMessage> taskResponse,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+        private static async Task<object?> GetFromJsonAsyncCore(Task<HttpResponseMessage> taskResponse, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
-            Stream jsonStream = await GetUtf8StreamFromResponseAsync(taskResponse).ConfigureAwait(false);
-            TValue value = await JsonSerializer.DeserializeAsync<TValue>(jsonStream, options, cancellationToken);
-            return value;
-        }
-
-        private static async Task<object?> ProcessTaskResponseAsync(
-            Task<HttpResponseMessage> taskResponse,
-            Type type,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
-        {
-            Stream jsonStream = await GetUtf8StreamFromResponseAsync(taskResponse).ConfigureAwait(false);
-            object? value = await JsonSerializer.DeserializeAsync(jsonStream, type, options, cancellationToken);
-            return value;
-        }
-
-        private static async Task<Stream> GetUtf8StreamFromResponseAsync(Task<HttpResponseMessage> taskResponse)
-        {
-            // Is CofigureAwait the right thing here?
             HttpResponseMessage response = await taskResponse.ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
 
-            // TODO: Is there any other validation that we should do?
-            if (response.StatusCode != HttpStatusCode.OK)
-            {
-                throw new Exception();
-            }
+            return await response.Content.ReadFromJsonAsync(type, options, cancellationToken).ConfigureAwait(false);
+        }
+        private static async Task<T> GetFromJsonAsyncCore<T>(Task<HttpResponseMessage> taskResponse, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            HttpResponseMessage response = await taskResponse.ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
 
-            // TODO: Validate that this is Utf8 or plain text.
-
-            return await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<T>(options, cancellationToken).ConfigureAwait(false);
         }
     }
 }
