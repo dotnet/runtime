@@ -1543,7 +1543,7 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 		mono_assembly_addref (ass);
 		g_hash_table_add (ht, ass);
 		domain->domain_assemblies = g_slist_append (domain->domain_assemblies, ass);
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to domain %s, ref_count=%d", ass->aname.name, ass, domain->friendly_name, ass->ref_count);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to domain %s, ref_count=%d", ass->aname.name, ass, domain->friendly_name, ass->ref_count);
 	}
 
 #ifndef ENABLE_NETCORE
@@ -1585,7 +1585,7 @@ add_assembly_to_alc (MonoAssemblyLoadContext *alc, MonoAssembly *ass)
 	mono_assembly_addref (ass);
 	// Prepending here will break the test suite with frequent InvalidCastExceptions, so we have to append
 	alc->loaded_assemblies = g_slist_append (alc->loaded_assemblies, ass);
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to ALC (%p), ref_count=%d", ass->aname.name, ass, (gpointer)alc, ass->ref_count);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to ALC (%p), ref_count=%d", ass->aname.name, ass, (gpointer)alc, ass->ref_count);
 
 }
 #endif

@@ -149,7 +149,7 @@ leave:
 	if (!result) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "netcore preload hook: did not find '%s'.", aname->name);
 	} else {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "netcore preload hook: loading '%s' from '%s'.", aname->name, result->image->name);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "netcore preload hook: loading '%s' from '%s'.", aname->name, result->image->name);
 	}
 	return result;
 }
