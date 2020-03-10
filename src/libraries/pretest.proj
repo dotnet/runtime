@@ -75,7 +75,6 @@
           DependsOnTargets="GenerateLaunchSettingsFiles;GenerateTestSharedFrameworkDepsFile;GenerateFileVersionProps">
     <MSBuild Targets="Build"
              Projects="@(ProjectReference)"
-             Properties="%(ProjectReference.AdditionalProperties)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
   </Target>

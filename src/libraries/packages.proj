@@ -7,19 +7,12 @@
 
   <PropertyGroup>
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
-    <AdditionalBuildTargetFrameworks>$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
+    <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">
-    <ProjectReference Include="$(PkgDir)*\*.builds" >
-      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
-    </ProjectReference>
-    <ProjectReference Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' OR '$(DotNetBuildFromSource)' == 'true'">
-      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
-    </ProjectReference>
+    <ProjectReference Include="$(PkgDir)*\*.builds" />
+    <ProjectReference Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true'" />
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
@@ -92,7 +85,7 @@
   <Target Name="BuildAllProjects">
     <MSBuild Targets="Build"
              Projects="@(ProjectReference)"
-             Properties="BuildAllProjects=true;%(ProjectReference.AdditionalProperties)"
+             Properties="BuildAllProjects=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
   </Target>

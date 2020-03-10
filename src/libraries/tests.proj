@@ -40,7 +40,7 @@
   <Target Name="BuildAllProjects">
     <MSBuild Targets="Build"
              Projects="@(ProjectReference)"
-             Properties="BuildAllProjects=true;%(ProjectReference.AdditionalProperties)"
+             Properties="BuildAllProjects=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
   </Target>
@@ -52,18 +52,17 @@
     <MSBuild Targets="Test"
              Projects="@(ProjectReference)"
              Condition="'$(SerializeProjects)' == 'true' and '%(Identity)' != ''"
-             Properties="TestAllProjects=true;%(ProjectReference.AdditionalProperties)"
+             Properties="TestAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="Test"
              Projects="@(ProjectReference)"
              Condition="'$(SerializeProjects)' != 'true'"
-             Properties="TestAllProjects=true;%(ProjectReference.AdditionalProperties)"
+             Properties="TestAllProjects=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 
     <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
     <Error Condition="'$(MSBuildLastTaskResult)' == 'false'" />
   </Target>
-
 </Project>
