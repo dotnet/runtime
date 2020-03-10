@@ -375,10 +375,6 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a*a*?", "a*")]
         [InlineData("a*?a*", "a*")]
         [InlineData("a*[^a]*", "a*")]
-        [InlineData("[ab]*[^a]", "(?>[ab]*)[^a]")]
-        [InlineData("[ab]*[^a]*", "(?>[ab]*)[^a]*")]
-        [InlineData("[ab]*[^a]*?", "(?>[ab]*)[^a]*?")]
-        [InlineData("[ab]*(?>[^a]*)", "(?>[ab]*)(?>[^a]*)")]
         [InlineData("[^a]*a*", "a*")]
         [InlineData("a{2147483646}a", "a{2147483647}")]
         [InlineData("a{2147483647}a", "a{2147483647}")]
@@ -407,9 +403,14 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("abc(?:(?i:e)|f)", "abc[ef]")]
         // Not applying auto-atomicity
         [InlineData("a*b*", "(?>a*)b*")]
+        [InlineData("[ab]*[^a]", "(?>[ab]*)[^a]")]
+        [InlineData("[ab]*[^a]*", "(?>[ab]*)[^a]*")]
+        [InlineData("[ab]*[^a]*?", "(?>[ab]*)[^a]*?")]
+        [InlineData("[ab]*(?>[^a]*)", "(?>[ab]*)(?>[^a]*)")]
         [InlineData("[^\n]*\n*", "(?>[^\n]*)\n")]
         [InlineData("(a[bcd]a*)*fg", "(a[bcd](?>a*))*fg")]
         [InlineData("(\\w[bcd]\\d*)*fg", "(\\w[bcd](?>\\d*))*fg")]
+        [InlineData("a*(?<=[^a])b", "(?>a*)(?<=[^a])b")]
         public void PatternsReduceDifferently(string pattern1, string pattern2)
         {
             var r1 = new Regex(pattern1);
