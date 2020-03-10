@@ -1261,11 +1261,9 @@ static const char * const  bRegNames[] =
 };
 // clang-format on
 
-/*****************************************************************************
- *
- *  Return a string that represents the given register.
- */
-
+//------------------------------------------------------------------------
+// emitRegName: Returns a string that a general-purpose register name or SIMD and floating-point scalar register name
+//
 const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName)
 {
     assert(reg < REG_COUNT);
@@ -1301,11 +1299,9 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName)
     return rn;
 }
 
-/*****************************************************************************
- *
- *  Return a string that represents the given register.
- */
-
+//------------------------------------------------------------------------
+// emitVectorRegName: Returns a string that represents a SIMD vector register name
+//
 const char* emitter::emitVectorRegName(regNumber reg)
 {
     assert((reg >= REG_V0) && (reg <= REG_V31));
@@ -1314,6 +1310,7 @@ const char* emitter::emitVectorRegName(regNumber reg)
 
     return vRegNames[index];
 }
+
 #endif // DEBUG
 
 /*****************************************************************************
@@ -3228,6 +3225,53 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         }
     }
     return false;
+}
+
+//------------------------------------------------------------------------
+// insGetLoadStoreVectorSelem: Returns a number of structure elements for a Load/Store Vector instruction
+//
+/*static*/ unsigned emitter::insGetLoadStoreVectorSelem(instruction ins)
+{
+    unsigned selem = 0;
+
+    switch (ins)
+    {
+        case INS_ld1:
+        case INS_ld1r:
+        case INS_st1:
+            selem = 1;
+            break;
+
+        case INS_ld1_2regs:
+        case INS_ld2:
+        case INS_ld2r:
+        case INS_st1_2regs:
+        case INS_st2:
+            selem = 2;
+            break;
+
+        case INS_ld1_3regs:
+        case INS_ld3:
+        case INS_ld3r:
+        case INS_st1_3regs:
+        case INS_st3:
+            selem = 3;
+            break;
+
+        case INS_ld1_4regs:
+        case INS_ld4:
+        case INS_ld4r:
+        case INS_st1_4regs:
+        case INS_st4:
+            selem = 4;
+            break;
+
+        default:
+            assert(!"Unexpected instruction");
+            break;
+    }
+
+    return selem;
 }
 
 //  For the given 'arrangement' returns the 'datasize' specified by the vector register arrangement
