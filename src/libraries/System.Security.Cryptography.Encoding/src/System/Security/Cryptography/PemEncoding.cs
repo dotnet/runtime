@@ -79,24 +79,19 @@ namespace System.Security.Cryptography
             Span<char> postebStackBuffer = stackalloc char[PostebStackBufferSize];
             int areaOffset = 0;
             int preebIndex;
-            ReadOnlySpan<char> pemArea = pemData;
-            while ((preebIndex = pemArea.IndexOf(PreEBPrefix)) >= 0)
+            while ((preebIndex = pemData.IndexOf(PreEBPrefix, areaOffset)) >= 0)
             {
                 int labelStartIndex = preebIndex + PreEBPrefix.Length;
-                int preebIndexInFullData = preebIndex + areaOffset;
 
                 // If there are any previous characters, the one prior to the PreEB
                 // must be a white space character.
-                if (preebIndexInFullData > 0 &&
-                    !char.IsWhiteSpace(pemData[preebIndexInFullData - 1]))
+                if (preebIndex > 0 && !char.IsWhiteSpace(pemData[preebIndex - 1]))
                 {
-                    Debug.Assert(labelStartIndex > 0);
                     areaOffset += labelStartIndex;
-                    pemArea = pemArea[labelStartIndex..];
                     continue;
                 }
 
-                int preebEndIndex = pemArea[labelStartIndex..].IndexOf(Ending);
+                int preebEndIndex = pemData.IndexOf(Ending, labelStartIndex);
 
                 // There is no ending sequence, -----, in the remainder of
                 // the document. Therefore, there can never be a complete PreEB
@@ -107,8 +102,8 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
-                int labelEndingIndex = labelStartIndex + preebEndIndex;
-                ReadOnlySpan<char> label = pemArea[labelStartIndex..labelEndingIndex];
+                Range labelRange = labelStartIndex..preebEndIndex;
+                ReadOnlySpan<char> label = pemData[labelRange];
 
                 // There could be a preeb that is valid after this one if it has an invalid
                 // label, so move from there.
@@ -117,37 +112,33 @@ namespace System.Security.Cryptography
                     goto NextAfterLabel;
                 }
 
-                int contentStartIndex = labelEndingIndex + Ending.Length;
-                Range labelRange = (areaOffset + labelStartIndex)..
-                                   (areaOffset + labelEndingIndex);
+                int contentStartIndex = preebEndIndex + Ending.Length;
                 int postebLength = PostEBPrefix.Length + label.Length + Ending.Length;
 
                 Span<char> postebBuffer = postebLength > PostebStackBufferSize
                     ? new char[postebLength]
                     : postebStackBuffer;
                 ReadOnlySpan<char> posteb = WritePostEB(label, postebBuffer);
-                int postebStartIndex = pemArea[contentStartIndex..].IndexOf(posteb);
+                int postebStartIndex = pemData.IndexOf(posteb, contentStartIndex);
 
                 if (postebStartIndex < 0)
                 {
                     goto NextAfterLabel;
                 }
 
-                int contentEndIndex = postebStartIndex + contentStartIndex;
-                int pemEndIndex = contentEndIndex + postebLength;
+                int pemEndIndex = postebStartIndex + postebLength;
 
                 // The PostEB must either end at the end of the string, or
                 // have at least one white space character after it.
-                if (pemEndIndex < pemArea.Length - 1 &&
-                    !char.IsWhiteSpace(pemArea[pemEndIndex]))
+                if (pemEndIndex < pemData.Length - 1 &&
+                    !char.IsWhiteSpace(pemData[pemEndIndex]))
                 {
                     goto NextAfterLabel;
                 }
 
-                Range contentRange = (areaOffset + contentStartIndex)..
-                                     (areaOffset + contentEndIndex);
+                Range contentRange = contentStartIndex..postebStartIndex;
 
-                if (!TryCountBase64(pemArea[contentStartIndex..contentEndIndex],
+                if (!TryCountBase64(pemData[contentRange],
                                    out int base64start,
                                    out int base64end,
                                    out int decodedSize))
@@ -155,14 +146,14 @@ namespace System.Security.Cryptography
                     goto NextAfterLabel;
                 }
 
-                Range pemRange = (areaOffset + preebIndex)..(areaOffset + pemEndIndex);
-                Range base64range = (contentStartIndex + base64start + areaOffset)..
-                                    (contentStartIndex + base64end + areaOffset);
+                Range pemRange = preebIndex..pemEndIndex;
+                Range base64range = (contentStartIndex + base64start)..
+                                    (contentStartIndex + base64end);
                 fields = new PemFields(labelRange, base64range, pemRange, decodedSize);
                 return true;
 
                 NextAfterLabel:
-                if (labelEndingIndex <= 0)
+                if (preebEndIndex <= 0)
                 {
                     // We somehow ended up in a situation where we will advance
                     // 0 or -1 characters, which means we'll probably end up here again,
@@ -171,8 +162,7 @@ namespace System.Security.Cryptography
                     fields = default;
                     return false;
                 }
-                areaOffset += labelEndingIndex;
-                pemArea = pemArea[labelEndingIndex..];
+                areaOffset += preebEndIndex;
             }
 
             fields = default;
@@ -187,6 +177,18 @@ namespace System.Security.Cryptography
                 Ending.AsSpan().CopyTo(destination[(PostEBPrefix.Length + label.Length)..]);
                 return destination[..size];
             }
+        }
+
+        private static int IndexOf(this ReadOnlySpan<char> str, ReadOnlySpan<char> value, int startPosition)
+        {
+            int index = str[startPosition..].IndexOf(value);
+
+            if (index == -1)
+            {
+                return -1;
+            }
+
+            return index + startPosition;
         }
 
         private static bool IsValidLabel(ReadOnlySpan<char> data)
