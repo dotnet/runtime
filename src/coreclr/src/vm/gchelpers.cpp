@@ -69,7 +69,7 @@ inline gc_alloc_context* GetThreadAllocContext()
 //   1) JIT_TrialAllocFastSP (and related assembly alloc helpers), which attempt to
 //      acquire it but move into an alloc slow path if acquiring fails
 //      (but does not decrement the lock variable when doing so)
-//   2) Alloc and AllocAlign8 in gchelpers.cpp, which acquire the lock using
+//   2) Alloc in gchelpers.cpp, which acquire the lock using
 //      the Acquire and Release methods below.
 class GlobalAllocLock {
     friend struct AsmOffsets;
@@ -255,46 +255,6 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
     return retVal;
 }
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-// Helper for allocating 8-byte aligned objects (on platforms where this doesn't happen naturally, e.g. 32-bit
-// platforms).
-inline Object* AllocAlign8(size_t size, GC_ALLOC_FLAGS flags)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
-    } CONTRACTL_END;
-
-    if (flags & GC_ALLOC_CONTAINS_REF)
-        flags &= ~ GC_ALLOC_ZEROING_OPTIONAL;
-
-    Object *retVal = NULL;
-    CheckObjectSize(size);
-
-    if (GCHeapUtilities::UseThreadAllocationContexts())
-    {
-        gc_alloc_context *threadContext = GetThreadAllocContext();
-        GCStress<gc_on_alloc>::MaybeTrigger(threadContext);
-        retVal = GCHeapUtilities::GetGCHeap()->AllocAlign8(threadContext, size, flags);
-    }
-    else
-    {
-        GlobalAllocLockHolder holder(&g_global_alloc_lock);
-        gc_alloc_context *globalContext = &g_global_alloc_context;
-        GCStress<gc_on_alloc>::MaybeTrigger(globalContext);
-        retVal = GCHeapUtilities::GetGCHeap()->AllocAlign8(globalContext, size, flags);
-    }
-
-    if (!retVal)
-    {
-        ThrowOutOfMemory();
-    }
-
-    return retVal;
-}
-#endif // FEATURE_64BIT_ALIGNMENT
-
 #ifdef  _LOGALLOC
 int g_iNumAllocs = 0;
 
@@ -454,7 +414,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
             // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
             // in their headers so the alignment requirements for the header and the payload are the same.
             _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
-            orArray = (ArrayBase*)AllocAlign8(totalSize, flags);
+            orArray = (ArrayBase*)Alloc(totalSize, flags | GC_ALLOC_ALIGN8);
         }
         else
 #else
@@ -711,7 +671,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
             // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
             // in their headers so the alignment requirements for the header and the payload are the same.
             _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
-            orArray = (ArrayBase *) AllocAlign8(totalSize, flags);
+            orArray = (ArrayBase*)Alloc(totalSize, flags | GC_ALLOC_ALIGN8);
         }
         else
 #endif
@@ -1132,8 +1092,11 @@ OBJECTREF AllocateObject(MethodTable *pMT
             // first field is aligned relative to the header) and true for boxed value types (where we can't
             // do the same padding without introducing more complexity in type layout and unboxing stubs).
             _ASSERTE(sizeof(Object) == 4);
-            flags |= pMT->IsValueType() ? GC_ALLOC_ALIGN8_BIAS : GC_ALLOC_NO_FLAGS;
-            orObject = (Object *) AllocAlign8(baseSize, flags);
+            flags |= pMT->IsValueType() ?
+                (GC_ALLOC_ALIGN8_BIAS | GC_ALLOC_ALIGN8) :
+                GC_ALLOC_ALIGN8;
+
+            orObject = (Object *) Alloc(baseSize, flags);
         }
         else
 #endif // FEATURE_64BIT_ALIGNMENT
