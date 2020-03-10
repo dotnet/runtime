@@ -54,14 +54,19 @@ typedef EEPtrHashTable JitPatchpointTable;
 //
 class OnStackReplacementManager
 {
+#if DACCESS_COMPILE
+public:
+    OnStackReplacementManager() {};
+#else
 public:
     static void StaticInitialize();
 
 public:
     OnStackReplacementManager();
-    
+
 public:
     PerPatchpointInfo* GetPerPatchpointInfo(PCODE ip);
+#endif // DACCESS_COMPILE
 
 private:
 

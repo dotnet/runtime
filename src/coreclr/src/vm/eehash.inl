@@ -633,7 +633,7 @@ FORCEINLINE EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>:
     // from m_pVolatileBucketTable!!!!!!! A racing condition would occur.
     DWORD dwOldNumBuckets;
 
-    BucketTable* pBucketTable=(BucketTable*)(PTR_BucketTable)m_pVolatileBucketTable.Load();
+    BucketTable* pBucketTable=m_pVolatileBucketTable;
     dwOldNumBuckets = pBucketTable->m_dwNumBuckets;
 
     _ASSERTE(pBucketTable->m_dwNumBuckets != 0);

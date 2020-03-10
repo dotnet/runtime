@@ -14,6 +14,8 @@
 int OnStackReplacementManager::s_patchpointId = 0;
 CrstStatic OnStackReplacementManager::s_lock;
 
+#ifndef DACCESS_COMPILE
+
 void OnStackReplacementManager::StaticInitialize()
 {
     WRAPPER_NO_CONTRACT;
@@ -65,6 +67,8 @@ PerPatchpointInfo* OnStackReplacementManager::GetPerPatchpointInfo(PCODE ip)
 
     return ppInfo;
 }
+
+#endif // !DACCESS_COMPILE
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
  
