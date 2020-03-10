@@ -85,6 +85,15 @@ INST6(sub,     "sub",    0, 0, IF_EN6A,   0x4B000000,  0x4B000000,  0x4B200000, 
                                    //  sub     Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 100001nnnnnddddd   2E20 8400   Vd,Vn,Vm  (vector)
                                    //  sub     Vd,Vn,Vm             DV_3E  01111110111mmmmm 100001nnnnnddddd   7EE0 8400   Vd,Vn,Vm  (scalar)
 
+//    enum     name     FP LD/ST            LS_2D        LS_3F        LS_2E        LS_2F        LS_3G        LS_2G
+INST6(ld1,     "ld1",   0, LD, IF_EN6B,   0x0C407000,  0x0CC07000,  0x0CDF7000,  0x0D400000,  0x0DC00000,  0x0DDF0000)
+                                   //  ld1     {Vt},[Xn]            LS_2D  0Q00110001000000 0111ssnnnnnttttt   0C40 7000   base register
+                                   //  ld1     {Vt},[Xn],Xm         LS_3F  0Q001100110mmmmm 0111ssnnnnnttttt   0CC0 7000   post-indexed by a register
+                                   //  ld1     {Vt},[Xn],#imm       LS_2E  0Q00110011011111 0111ssnnnnnttttt   0CDF 7000   post-indexed by an immediate
+                                   //  ld1     {Vt}[],[Xn]          LS_2F  0Q00110101000000 xx0Sssnnnnnttttt   0D40 0000   base register
+                                   //  ld1     {Vt}[],[Xn],Xm       LS_3G  0Q001101110mmmmm xx0Sssnnnnnttttt   0DC0 0000   post-indexed by a register
+                                   //  ld1     {Vt}[],[Xn],#imm     LS_2G  0Q00110111011111 xx0Sssnnnnnttttt   0DDF 0000   post-indexed by an immediate
+
 //    enum     name     FP LD/ST            LS_2A        LS_2B        LS_2C        LS_3A        LS_1A
 INST5(ldr,     "ldr",    0,LD, IF_EN5A,   0xB9400000,  0xB9400000,  0xB8400000,  0xB8600800,  0x18000000)
                                    //  ldr     Rt,[Xn]              LS_2A  1X11100101000000 000000nnnnnttttt   B940 0000
@@ -262,13 +271,6 @@ INST4(fcmgt,   "fcmgt", 0, 0, IF_EN4I,   0x7EA0E400,  0x2EA0E400,  0x5EA0C800,  
                                    //  fcmgt   Vd,Vn,Vm             DV_3B  0Q1011101X1mmmmm 111001nnnnnddddd   2EA0 E400   Vd,Vn,Vm   (vector)
                                    //  fcmgt   Vd,Vn                DV_2G  010111101X100000 110010nnnnnddddd   5EA0 E800   Vd Vn      (scalar)
                                    //  fcmgt   Vd,Vn                DV_2A  0Q0011101X100000 110010nnnnnddddd   0EA0 C800   Vd Vn      (vector)
-
-//    enum     name     FP LD/ST            LS_2D        LS_3F      LS_2E        LS_3G
-INST4(ld1,     "ld1",   0, LD,IF_EN4J,   0x0C402000,  0x0CC02000,  0x0D400000,  0x0DC00000)
-                                   //  ld1     Vd,Rn                LS_2D  0Q00110001000000 xx1xssnnnnnttttt   0C40 2000   Vd,Rn        (vector - multiple structures)
-                                   //  ld1     Vd,Rn,Rm             LS_3F  0Q001100110mmmmm xx1xssnnnnnttttt   0CC0 2000   Vd,Rn,Rm     (vector - multiple structures)
-                                   //  ld1     Vd[],Rn              LS_2E  0Q00110101000000 xx0Sssnnnnnttttt   0D40 0000   Vd[],Rn      (vector - single structure)
-                                   //  ld1     Vd[],Rn,Rm           LS_3G  0Q001101110mmmmm xx0Sssnnnnnttttt   0DC0 0000   Vd[],Rn,Rm   (vector - single structure)
 
 //    enum     name     FP LD/ST            DR_3A        DR_3B        DI_2C
 INST3(ands,    "ands",   0, 0, IF_EN3A,   0x6A000000,  0x6A000000,  0x72000000)
