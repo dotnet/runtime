@@ -209,7 +209,7 @@ jobs:
       archType: x64
       platform: iOS_x64
       jobParameters:
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
@@ -229,7 +229,7 @@ jobs:
       archType: arm
       platform: iOS_x64
       jobParameters:
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
@@ -249,7 +249,7 @@ jobs:
       archType: arm64
       platform: iOS_x64
       jobParameters:
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
