@@ -6,6 +6,32 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="**\*.cs" />
+    <Compile Include="$(CommonPath)Extensions\Microsoft.AspNetCore.Testing\src\xunit\OSSkipConditionAttribute.cs">
+      <Link>Common\src\Extensions\Microsoft.AspNetCore.Testing\src\xunit\OSSkipConditionAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\Microsoft.AspNetCore.Testing\src\xunit\OperatingSystems.cs">
+      <Link>Common\src\Extensions\Microsoft.AspNetCore.Testing\src\xunit\OperatingSystems.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs">
+      <Link>Common\src\Extensions\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs">
+      <Link>Common\src\Extensions\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <DefaultReferenceExclusions Include="Microsoft.Extensions.FileProviders.Physical" />
+    <ReferenceFromRuntime Include="Microsoft.Extensions.FileProviders.Physical" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Microsoft.Extensions.FileProviders.Abstractions" />
     <Reference Include="Microsoft.Extensions.FileProviders.Physical" />
     <Reference Include="Microsoft.Extensions.FileSystemGlobbing" />

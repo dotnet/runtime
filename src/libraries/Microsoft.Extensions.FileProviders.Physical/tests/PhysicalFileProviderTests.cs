@@ -555,6 +555,7 @@ namespace Microsoft.Extensions.FileProviders
         [InlineData("/C:\\Windows\\System32")]
         [InlineData("/\0/")]
         [MemberData(nameof(InvalidPaths))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetDirectoryContentsReturnsNotFoundDirectoryContentsForInvalidPath_Windows(string path)
         {
             GetDirectoryContentsReturnsNotFoundDirectoryContentsForInvalidPath(path);
@@ -566,6 +567,7 @@ namespace Microsoft.Extensions.FileProviders
         [InlineData("/\\/")]
         [InlineData("\\/\\/")]
         [MemberData(nameof(InvalidPaths))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void GetDirectoryContentsReturnsNotFoundDirectoryContentsForInvalidPath_Unix(string path)
         {
             GetDirectoryContentsReturnsNotFoundDirectoryContentsForInvalidPath(path);

@@ -7,11 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Microsoft.Extensions.FileProviders.Physical.Tests" />
-    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="$(CommonPath)Extensions\EmptyDisposable.cs">
       <Link>Common\src\Extensions\EmptyDisposable.cs</Link>
     </Compile>
@@ -20,15 +15,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs">
       <Link>Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Extensions\ProviderAliasUtilities\ProviderAliasUtilities.cs">
-      <Link>Common\src\Extensions\NonCapturingTimer\ProviderAliasUtilities.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Extensions\TypeNameHelper\*.cs">
-      <Link>Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Extensions\ValueStopWatch\*.cs">
-      <Link>Common\src\Extensions\ValueStopWatch\ValueStopWatch.cs</Link>
     </Compile>
     <Compile Include="**\*.cs" />
   </ItemGroup>
