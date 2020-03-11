@@ -1,27 +1,10 @@
-Compat issues with assembly mscorlib:
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.TypedReference.SetTypedReference(System.TypedReference, System.Object)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToBSTR(System.Security.SecureString)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToCoTaskMemAnsi(System.Security.SecureString)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToCoTaskMemUnicode(System.Security.SecureString)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocAnsi(System.Security.SecureString)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocUnicode(System.Security.SecureString)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute' exists on 'System.Threading.SynchronizationContext.Wait(System.IntPtr[], System.Boolean, System.Int32)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute' exists on 'System.Threading.SynchronizationContext.WaitHelper(System.IntPtr[], System.Boolean, System.Int32)' in the contract but not the implementation.
 Compat issues with assembly netstandard:
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.TypedReference.SetTypedReference(System.TypedReference, System.Object)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerReportsProgress' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerSupportsCancellation' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.Process.EnableRaisingEvents' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
 CannotChangeAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' on 'System.Diagnostics.ProcessStartInfo.Verb' changed from '[DefaultValueAttribute(null)]' in the contract to '[DefaultValueAttribute("")]' in the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WindowStyle' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToBSTR(System.Security.SecureString)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToCoTaskMemAnsi(System.Security.SecureString)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToCoTaskMemUnicode(System.Security.SecureString)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocAnsi(System.Security.SecureString)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocUnicode(System.Security.SecureString)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute' exists on 'System.Threading.SynchronizationContext.Wait(System.IntPtr[], System.Boolean, System.Int32)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute' exists on 'System.Threading.SynchronizationContext.WaitHelper(System.IntPtr[], System.Boolean, System.Int32)' in the contract but not the implementation.
 Compat issues with assembly System:
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerReportsProgress' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerSupportsCancellation' in the contract but not the implementation.
@@ -37,15 +20,4 @@ CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' 
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
 CannotChangeAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' on 'System.Diagnostics.ProcessStartInfo.Verb' changed from '[DefaultValueAttribute(null)]' in the contract to '[DefaultValueAttribute("")]' in the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WindowStyle' in the contract but not the implementation.
-Compat issues with assembly System.Runtime:
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.TypedReference.SetTypedReference(System.TypedReference, System.Object)' in the contract but not the implementation.
-Compat issues with assembly System.Runtime.InteropServices:
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToBSTR(System.Security.SecureString)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToCoTaskMemAnsi(System.Security.SecureString)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToCoTaskMemUnicode(System.Security.SecureString)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocAnsi(System.Security.SecureString)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.InteropServices.Marshal.SecureStringToGlobalAllocUnicode(System.Security.SecureString)' in the contract but not the implementation.
-Compat issues with assembly System.Threading:
-CannotRemoveAttribute : Attribute 'System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute' exists on 'System.Threading.SynchronizationContext.Wait(System.IntPtr[], System.Boolean, System.Int32)' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute' exists on 'System.Threading.SynchronizationContext.WaitHelper(System.IntPtr[], System.Boolean, System.Int32)' in the contract but not the implementation.
-Total Issues: 42
+Total Issues: 18
