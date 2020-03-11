@@ -494,7 +494,7 @@ namespace
         HRESULT hr;
 
         SafeComHolder<IUnknown> newWrapper;
-        void* wrapperRaw = NULL;
+        void* wrapperRawMaybe = NULL;
 
         struct
         {
@@ -513,7 +513,7 @@ namespace
         _ASSERTE(syncBlock->IsPrecious());
 
         // Query the associated InteropSyncBlockInfo for an existing managed object wrapper.
-        if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRaw))
+        if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRawMaybe))
         {
             // Compute VTables for the new existing COM object using the supplied COM Wrappers implementation.
             //
@@ -524,7 +524,7 @@ namespace
             void* vtables = CallComputeVTables(&gc.implRef, &gc.instRef, flags, &vtableCount);
 
             // Re-query the associated InteropSyncBlockInfo for an existing managed object wrapper.
-            if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRaw)
+            if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRawMaybe)
                 && ((vtables != nullptr && vtableCount > 0) || (vtableCount == 0)))
             {
                 OBJECTHANDLE instHandle = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
@@ -551,7 +551,7 @@ namespace
 
                     // If the managed object wrapper couldn't be set, then
                     // it should be possible to get the current one.
-                    if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRaw))
+                    if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRawMaybe))
                     {
                         UNREACHABLE();
                     }
@@ -564,18 +564,18 @@ namespace
         {
             // A new managed object wrapper was created, remove the object from the holder.
             // No AddRef() here since the wrapper should be created with a reference.
-            wrapperRaw = newWrapper.Extract();
-            STRESS_LOG1(LF_INTEROP, LL_INFO100, "Created MOW: 0x%p\n", wrapperRaw);
+            wrapperRawMaybe = newWrapper.Extract();
+            STRESS_LOG1(LF_INTEROP, LL_INFO100, "Created MOW: 0x%p\n", wrapperRawMaybe);
         }
-        else if (wrapperRaw != NULL)
+        else if (wrapperRawMaybe != NULL)
         {
             // It is possible the supplied wrapper is no longer valid. If so, reactivate the
             // wrapper using the protected OBJECTREF.
-            IUnknown* wrapper = static_cast<IUnknown*>(wrapperRaw);
+            IUnknown* wrapper = static_cast<IUnknown*>(wrapperRawMaybe);
             hr = InteropLib::Com::IsActiveWrapper(wrapper);
             if (hr == S_FALSE)
             {
-                STRESS_LOG1(LF_INTEROP, LL_INFO100, "Reactivating MOW: 0x%p\n", wrapperRaw);
+                STRESS_LOG1(LF_INTEROP, LL_INFO100, "Reactivating MOW: 0x%p\n", wrapperRawMaybe);
                 OBJECTHANDLE h = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
                 hr = InteropLib::Com::ReactivateWrapper(wrapper, static_cast<InteropLib::OBJECTHANDLE>(h));
             }
@@ -586,7 +586,7 @@ namespace
 
         GCPROTECT_END();
 
-        RETURN wrapperRaw;
+        RETURN wrapperRawMaybe;
     }
 
     OBJECTREF GetOrCreateObjectForComInstanceInternal(
@@ -610,7 +610,7 @@ namespace
         {
             OBJECTREF implRef;
             OBJECTREF wrapperMaybeRef;
-            OBJECTREF objRef;
+            OBJECTREF objRefMaybe;
         } gc;
         ::ZeroMemory(&gc, sizeof(gc));
         GCPROTECT_BEGIN(gc);
@@ -631,7 +631,7 @@ namespace
 
         if (extObjCxt != NULL)
         {
-            gc.objRef = extObjCxt->GetObjectRef();
+            gc.objRefMaybe = extObjCxt->GetObjectRef();
         }
         else
         {
@@ -646,15 +646,18 @@ namespace
                 COMPlusThrowHR(hr);
 
             // The user could have supplied a wrapper so assign that now.
-            gc.objRef = gc.wrapperMaybeRef;
+            gc.objRefMaybe = gc.wrapperMaybeRef;
 
             // If the wrapper hasn't been set yet, call the implementation to create one.
-            if (gc.objRef == NULL)
+            if (gc.objRefMaybe == NULL)
             {
-                gc.objRef = CallGetObject(&gc.implRef, identity, flags);
+                gc.objRefMaybe = CallGetObject(&gc.implRef, identity, flags);
             }
 
-            if (gc.objRef != NULL)
+            // The object may be null if the specified ComWrapper implementation returns null
+            // or there is no registered global instance. It is the caller's responsibility
+            // to handle this case and error if necessary.
+            if (gc.objRefMaybe != NULL)
             {
                 // Construct the new context with the object details.
                 DWORD flags = (resultHolder.Result.FromTrackerRuntime
@@ -667,7 +670,7 @@ namespace
                     resultHolder.GetContext(),
                     identity,
                     GetCurrentCtxCookie(),
-                    gc.objRef->GetSyncBlockIndex(),
+                    gc.objRefMaybe->GetSyncBlockIndex(),
                     flags);
 
                 if (uniqueInstance)
@@ -686,7 +689,7 @@ namespace
                 if (extObjCxt == resultHolder.GetContext())
                 {
                     // Update the object's SyncBlock with a handle to the context for runtime cleanup.
-                    SyncBlock* syncBlock = gc.objRef->GetSyncBlock();
+                    SyncBlock* syncBlock = gc.objRefMaybe->GetSyncBlock();
                     InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
                     _ASSERTE(syncBlock->IsPrecious());
 
@@ -714,7 +717,7 @@ namespace
 
         GCPROTECT_END();
 
-        RETURN gc.objRef;
+        RETURN gc.objRefMaybe;
     }
 }
 

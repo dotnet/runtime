@@ -332,7 +332,7 @@ namespace System.Runtime.InteropServices
             }
 
             // Passing null as the ComWrapper implementation will use the globally registered wrappper (if available)
-            IntPtr ptrMaybe = ComWrappers.GetOrCreateComInterfaceForObjectInternal(impl: null, o, CreateComInterfaceFlags.None);
+            IntPtr ptrMaybe = ComWrappers.GetOrCreateComInterfaceForObjectInternal(impl: null, o, CreateComInterfaceFlags.TrackerSupport);
             if (ptrMaybe != IntPtr.Zero)
                 return ptrMaybe;
 
@@ -421,7 +421,7 @@ namespace System.Runtime.InteropServices
             }
 
             // Passing null as the ComWrapper implementation will use the globally registered wrappper (if available)
-            object? objMaybe = ComWrappers.GetOrCreateObjectForComInstanceInternal(impl: null, pUnk, CreateObjectFlags.None, wrapperMaybe: null);
+            object? objMaybe = ComWrappers.GetOrCreateObjectForComInstanceInternal(impl: null, pUnk, CreateObjectFlags.TrackerObject, wrapperMaybe: null);
             if (objMaybe != null)
                 return objMaybe;
 
@@ -439,7 +439,7 @@ namespace System.Runtime.InteropServices
             }
 
             // Passing null as the ComWrapper implementation will use the globally registered wrappper (if available)
-            object? objMaybe = ComWrappers.GetOrCreateObjectForComInstanceInternal(impl: null, unknown, CreateObjectFlags.UniqueInstance, wrapperMaybe: null);
+            object? objMaybe = ComWrappers.GetOrCreateObjectForComInstanceInternal(impl: null, unknown, CreateObjectFlags.TrackerObject | CreateObjectFlags.UniqueInstance, wrapperMaybe: null);
             if (objMaybe != null)
                 return objMaybe;
 
