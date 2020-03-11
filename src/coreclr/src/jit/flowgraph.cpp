@@ -498,7 +498,7 @@ void Compiler::fgEnsureFirstBBisScratch()
 }
 
 //------------------------------------------------------------------------
-// fgFirstBBisScratch: Check if fgFirstBB is a scratch block
+// fgIsFirstBBScratch: Check if fgFirstBB is a scratch block
 //
 // Returns:
 //   true if fgFirstBB is a scratch block.
@@ -20911,6 +20911,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 #endif // DEBUG
 
     fgDebugCheckBlockLinks();
+    fgFirstBBisScratch();
 
     if (fgBBcount > 10000 && expensiveDebugCheckLevel < 1)
     {
