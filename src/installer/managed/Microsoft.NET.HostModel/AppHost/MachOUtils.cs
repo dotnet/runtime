@@ -143,29 +143,17 @@ namespace Microsoft.NET.HostModel.AppHost
             }
         }
 
-        unsafe public static bool IsMachOImage(string filePath)
+        public static bool IsMachOImage(string filePath)
         {
-            using (var mappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, mapName: null, capacity: 0, MemoryMappedFileAccess.Read))
+            using (BinaryReader reader = new BinaryReader(File.OpenRead(filePath)))
             {
-                using (var accessor = mappedFile.CreateViewAccessor())
+                if (reader.BaseStream.Length < 256) // Header size
                 {
-                    byte* file = null;
-                    RuntimeHelpers.PrepareConstrainedRegions();
-                    try
-                    {
-                        accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref file);
-                        MachHeader* header = (MachHeader*)file;
-
-                        return header->IsValid();
-                    }
-                    finally
-                    {
-                        if (file != null)
-                        {
-                            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
-                        }
-                    }
+                    return false;
                 }
+
+                uint magic = reader.ReadUInt32();
+                return Enum.IsDefined(typeof(Magic), magic);
             }
         }
 

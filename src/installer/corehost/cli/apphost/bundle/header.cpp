@@ -9,17 +9,22 @@
 
 using namespace bundle;
 
+// The AppHost expects the bundle_header to be an exact_match for which it was built.
+// The framework accepts backwards compatible header versions.
 bool header_fixed_t::is_valid(bool exact_match) const
 {
-    // The AppHost expects the bundle_header to be an exact_match for which it was built.
-    // The framework accepts backwards compatible header versions.
+    if (num_embedded_files <= 0)
+    {
+        return false;
+    }
 
-    return num_embedded_files > 0 &&
-          (exact_match) ?
-              (major_version == header_t::major_version) && (minor_version == header_t::minor_version) :
-              ((major_version < header_t::major_version) ||
-                   (major_version == header_t::major_version && minor_version <= header_t::minor_version));
+    if (exact_match)
+    {
+        return (major_version == header_t::major_version) && (minor_version == header_t::minor_version);
+    }
 
+    return ((major_version < header_t::major_version) ||
+            (major_version == header_t::major_version && minor_version <= header_t::minor_version));
 }
 
 header_t header_t::read(reader_t& reader, bool need_exact_version)

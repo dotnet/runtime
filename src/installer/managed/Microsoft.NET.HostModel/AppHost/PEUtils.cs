@@ -66,14 +66,17 @@ namespace Microsoft.NET.HostModel.AppHost
             }
         }
 
-        unsafe public static bool IsPEImage(string filePath)
+        public static bool IsPEImage(string filePath)
         {
-            using (var mappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, mapName: null, capacity: 0, MemoryMappedFileAccess.Read))
+            using (BinaryReader reader = new BinaryReader(File.OpenRead(filePath)))
             {
-                using (var accessor = mappedFile.CreateViewAccessor())
+                if (reader.BaseStream.Length < PEHeaderPointerOffset + sizeof(UInt32))
                 {
-                    return IsPEImage(accessor);
+                    return false;
                 }
+
+                ushort signature = reader.ReadUInt16();
+                return signature == PEFileSignature;
             }
         }
 

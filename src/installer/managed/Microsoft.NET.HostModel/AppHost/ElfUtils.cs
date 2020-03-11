@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
-using System.IO.MemoryMappedFiles;
-using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Microsoft.NET.HostModel.AppHost
 {
@@ -29,32 +25,27 @@ namespace Microsoft.NET.HostModel.AppHost
                        EI_MAG2 == 0x4C &&
                        EI_MAG3 == 0x46;
             }
+
+
         }
 #pragma warning restore 0649
 
-        unsafe public static bool IsElfImage(string filePath)
+        public static bool IsElfImage(string filePath)
         {
-            using (var mappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, mapName: null, capacity: 0, MemoryMappedFileAccess.Read))
+            using (BinaryReader reader = new BinaryReader(File.OpenRead(filePath)))
             {
-                using (var accessor = mappedFile.CreateViewAccessor())
+                if (reader.BaseStream.Length < 16) // EI_NIDENT = 16
                 {
-                    byte* file = null;
-                    RuntimeHelpers.PrepareConstrainedRegions();
-                    try
-                    {
-                        accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref file);
-                        ElfHeader* header = (ElfHeader*)file;
-
-                        return header->IsValid();
-                    }
-                    finally
-                    {
-                        if (file != null)
-                        {
-                            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
-                        }
-                    }
+                    return false;
                 }
+
+                byte[] eIdent = reader.ReadBytes(4);
+
+                // Check that the first four bytes are 0x7f, 'E', 'L', 'F'
+                return eIdent[0] == 0x7f &&
+                       eIdent[1] == 0x45 &&
+                       eIdent[2] == 0x4C &&
+                       eIdent[3] == 0x46;
             }
         }
     }
