@@ -1,3 +1,7 @@
+if(NOT CLR_CMAKE_CONFIGURE_PLATFORM_INCLUDED)
+  message(FATAL_ERROR "configuretools.cmake needs to be included after configureplatform.cmake")
+endif()
+
 # Get the version of the compiler that is in the file name for tool location.
 set (CLR_CMAKE_COMPILER_FILE_NAME_VERSION "")
 if (CMAKE_C_COMPILER MATCHES "-?[0-9]+(\.[0-9]+)?$")
@@ -45,7 +49,7 @@ if(NOT WIN32)
     locate_toolchain_exec(ranlib CMAKE_RANLIB)
   endif()
 
-  if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
+  if(NOT CLR_CMAKE_TARGET_DARWIN AND NOT CLR_CMAKE_TARGET_IOS)
     locate_toolchain_exec(objdump CMAKE_OBJDUMP)
 
     if(CMAKE_CROSSCOMPILING AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD AND (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR
