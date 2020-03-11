@@ -26,7 +26,7 @@ void OnStackReplacementManager::StaticInitialize()
     s_lock.Init(CrstJitPatchpoint, CrstFlags(CRST_UNSAFE_COOPGC));
 }
 
-OnStackReplacementManager::OnStackReplacementManager(LoaderAllocator * loaderAllocator) : m_jitPatchpointTable(), m_allocator(loaderAllocator)
+OnStackReplacementManager::OnStackReplacementManager(LoaderAllocator * loaderAllocator) : m_allocator(loaderAllocator), m_jitPatchpointTable()
 {
     CONTRACTL
     {
