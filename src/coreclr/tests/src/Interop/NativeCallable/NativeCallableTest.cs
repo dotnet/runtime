@@ -35,6 +35,7 @@ public class Program
         {
             TestNativeCallableValid();
             TestNativeCallableValid_OnNewNativeThread();
+            TestNativeCallableValid_PrepareMethod();
             NegativeTest_NonStaticMethod();
             NegativeTest_ViaDelegate();
             NegativeTest_NonBlittable();
@@ -151,6 +152,59 @@ public class Program
 
         int expected = DoubleImpl(n);
         Assert.AreEqual(expected, testNativeMethod());
+    }
+
+    [NativeCallable]
+    public static int ManagedCallback_Prepared(int n)
+    {
+        return DoubleImpl(n);
+    }
+
+    // This test is about the interaction between Tiered Compilation and the NativeCallableAttribute.
+    public static void TestNativeCallableValid_PrepareMethod()
+    {
+        Console.WriteLine($"Running {nameof(TestNativeCallableValid_PrepareMethod)}...");
+
+        /*
+           void NativeCallableOnNewNativeThread()
+           {
+                .locals init ([0] native int ptr)
+                IL_0000:  nop
+                IL_0001:  ldftn      int32 ManagedCallback_Prepared(int32)
+                IL_0007:  stloc.0
+
+                IL_0008:  ldloc.0
+                IL_0009:  ldc.i4     <n> local
+                IL_000e:  call       bool NativeCallableDll::CallManagedProcOnNewThread(native int, int)
+
+                IL_0013:  ret
+             }
+        */
+        DynamicMethod testNativeCallable = new DynamicMethod("NativeCallableValid_PrepareMethod", typeof(int), null, typeof(Program).Module);
+        ILGenerator il = testNativeCallable.GetILGenerator();
+        il.DeclareLocal(typeof(IntPtr));
+        il.Emit(OpCodes.Nop);
+
+        // Prepare the managed callback.
+        var preparedCallback = typeof(Program).GetMethod(nameof(ManagedCallback_Prepared));
+        RuntimeHelpers.PrepareMethod(preparedCallback.MethodHandle);
+
+        // Get native function pointer of the callback
+        il.Emit(OpCodes.Ldftn, preparedCallback);
+        il.Emit(OpCodes.Stloc_0);
+        il.Emit(OpCodes.Ldloc_0);
+
+        int n = 12345;
+        il.Emit(OpCodes.Ldc_I4, n);
+        il.Emit(OpCodes.Call, typeof(NativeCallableDll).GetMethod("CallManagedProcOnNewThread"));
+        il.Emit(OpCodes.Ret);
+        var testNativeMethod = (IntNativeMethodInvoker)testNativeCallable.CreateDelegate(typeof(IntNativeMethodInvoker));
+
+        // Call enough to attempt to trigger Tiered Compilation from a new thread.
+        for (int i = 0; i < 100; ++i)
+        {
+            testNativeMethod();
+        }
     }
 
     private const int CallbackThrowsErrorCode = 27;
