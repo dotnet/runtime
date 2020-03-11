@@ -119,10 +119,28 @@ namespace System.Runtime.InteropServices
         /// <returns>The generated COM interface that can be passed outside the .NET runtime.</returns>
         public IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
         {
+            IntPtr ptr = GetOrCreateComInterfaceForObjectInternal(this, instance, flags);
+            if (ptr == IntPtr.Zero)
+                throw new ArgumentException();
+
+            return ptr;
+        }
+
+        /// <summary>
+        /// Create a COM representation of the supplied object that can be passed to a non-managed environment.
+        /// </summary>
+        /// <param name="impl">The <see cref="ComWrappers" /> implemenentation to use when creating the COM representation.</param>
+        /// <param name="instance">The managed object to expose outside the .NET runtime.</param>
+        /// <param name="flags">Flags used to configure the generated interface.</param>
+        /// <returns>The generated COM interface that can be passed outside the .NET runtime or IntPtr.Zero if it could not be created.</returns>
+        /// <remarks>
+        /// If <paramref name="impl" /> is <c>null</c>, the global instance (if registered) will be used.
+        /// </remarks>
+        internal static IntPtr GetOrCreateComInterfaceForObjectInternal(ComWrappers? impl, object instance, CreateComInterfaceFlags flags)
+        {
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
 
-            ComWrappers impl = this;
             return GetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack.Create(ref impl), ObjectHandleOnStack.Create(ref instance), flags);
         }
 
@@ -146,7 +164,16 @@ namespace System.Runtime.InteropServices
 
         // Call to execute the abstract instance function
         internal static unsafe void* CallComputeVtables(ComWrappers? comWrappersImpl, object obj, CreateComInterfaceFlags flags, out int count)
-            => (comWrappersImpl ?? s_globalInstance!).ComputeVtables(obj, flags, out count);
+        {
+            ComWrappers? impl = comWrappersImpl ?? s_globalInstance;
+            if (impl is null)
+            {
+                count = -1;
+                return null;
+            }
+
+            return impl.ComputeVtables(obj, flags, out count);
+        }
 
         /// <summary>
         /// Get the currently registered managed object or creates a new managed object and registers it.
@@ -156,7 +183,11 @@ namespace System.Runtime.InteropServices
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
         public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {
-            return GetOrCreateObjectForComInstanceInternal(externalComObject, flags, null);
+            object? obj =  GetOrCreateObjectForComInstanceInternal(this, externalComObject, flags, null);
+            if (obj == null)
+                throw new ArgumentNullException();
+
+            return obj;
         }
 
         /// <summary>
@@ -172,7 +203,13 @@ namespace System.Runtime.InteropServices
 
         // Call to execute the abstract instance function
         internal static object? CallCreateObject(ComWrappers? comWrappersImpl, IntPtr externalComObject, CreateObjectFlags flags)
-            => (comWrappersImpl ?? s_globalInstance!).CreateObject(externalComObject, flags);
+        {
+            ComWrappers? impl = comWrappersImpl ?? s_globalInstance;
+            if (impl == null)
+                return null;
+
+            return impl.CreateObject(externalComObject, flags);
+        }
 
         /// <summary>
         /// Get the currently registered managed object or uses the supplied managed object and registers it.
@@ -189,20 +226,34 @@ namespace System.Runtime.InteropServices
             if (wrapper == null)
                 throw new ArgumentNullException(nameof(externalComObject));
 
-            return GetOrCreateObjectForComInstanceInternal(externalComObject, flags, wrapper);
+            object? obj = GetOrCreateObjectForComInstanceInternal(this, externalComObject, flags, wrapper);
+            if (obj == null)
+                throw new ArgumentNullException();
+
+            return obj;
         }
 
-        private object GetOrCreateObjectForComInstanceInternal(IntPtr externalComObject, CreateObjectFlags flags, object? wrapperMaybe)
+        /// <summary>
+        /// Get the currently registered managed object or creates a new managed object and registers it.
+        /// </summary>
+        /// <param name="impl">The <see cref="ComWrappers" /> implemenentation to use when creating the managed object.</param>
+        /// <param name="externalComObject">Object to import for usage into the .NET runtime.</param>
+        /// <param name="flags">Flags used to describe the external object.</param>
+        /// <param name="wrapperMaybe">The <see cref="object"/> to be used as the wrapper for the external object.</param>
+        /// <returns>Returns a managed object associated with the supplied external COM object or <c>null</c> if it could not be created.</returns>
+        /// <remarks>
+        /// If <paramref name="impl" /> is <c>null</c>, the global instance (if registered) will be used.
+        /// </remarks>
+        internal static object? GetOrCreateObjectForComInstanceInternal(ComWrappers? impl, IntPtr externalComObject, CreateObjectFlags flags, object? wrapperMaybe)
         {
             if (externalComObject == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(externalComObject));
 
-            ComWrappers impl = this;
             object? wrapperMaybeLocal = wrapperMaybe;
             object? retValue = null;
             GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack.Create(ref impl), externalComObject, flags, ObjectHandleOnStack.Create(ref wrapperMaybeLocal), ObjectHandleOnStack.Create(ref retValue));
 
-            return retValue!;
+            return retValue;
         }
 
         [DllImport(RuntimeHelpers.QCall)]

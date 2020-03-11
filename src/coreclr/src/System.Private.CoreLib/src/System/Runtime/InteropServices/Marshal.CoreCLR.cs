@@ -326,6 +326,16 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static IntPtr /* IUnknown* */ GetIUnknownForObject(object o)
         {
+            if (o is null)
+            {
+                throw new ArgumentNullException(nameof(o));
+            }
+
+            // Passing null as the ComWrapper implementation will use the globally registered wrappper (if available)
+            IntPtr ptrMaybe = ComWrappers.GetOrCreateComInterfaceForObjectInternal(impl: null, o, CreateComInterfaceFlags.None);
+            if (ptrMaybe != IntPtr.Zero)
+                return ptrMaybe;
+
             return GetIUnknownForObjectNative(o, false);
         }
 
@@ -344,6 +354,11 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static IntPtr /* IDispatch */ GetIDispatchForObject(object o)
         {
+            if (o is null)
+            {
+                throw new ArgumentNullException(nameof(o));
+            }
+
             return GetIDispatchForObjectNative(o, false);
         }
 
@@ -356,6 +371,16 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T)
         {
+            if (o is null)
+            {
+                throw new ArgumentNullException(nameof(o));
+            }
+
+            if (T is null)
+            {
+                throw new ArgumentNullException(nameof(T));
+            }
+
             return GetComInterfaceForObjectNative(o, T, false, true);
         }
 
@@ -368,15 +393,58 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T, CustomQueryInterfaceMode mode)
         {
+            if (o is null)
+            {
+                throw new ArgumentNullException(nameof(o));
+            }
+
+            if (T is null)
+            {
+                throw new ArgumentNullException(nameof(T));
+            }
+
             bool bEnableCustomizedQueryInterface = ((mode == CustomQueryInterfaceMode.Allow) ? true : false);
             return GetComInterfaceForObjectNative(o, T, false, bEnableCustomizedQueryInterface);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr /* IUnknown* */ GetComInterfaceForObjectNative(object o, Type t, bool onlyInContext, bool fEnalbeCustomizedQueryInterface);
+        private static extern IntPtr /* IUnknown* */ GetComInterfaceForObjectNative(object o, Type t, bool onlyInContext, bool fEnableCustomizedQueryInterface);
+
+        /// <summary>
+        /// Return the managed object representing the IUnknown*
+        /// </summary>
+        public static object GetObjectForIUnknown(IntPtr /* IUnknown* */ pUnk)
+        {
+            if (pUnk == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(pUnk));
+            }
+
+            // Passing null as the ComWrapper implementation will use the globally registered wrappper (if available)
+            object? objMaybe = ComWrappers.GetOrCreateObjectForComInstanceInternal(impl: null, pUnk, CreateObjectFlags.None, wrapperMaybe: null);
+            if (objMaybe != null)
+                return objMaybe;
+
+            return GetObjectForIUnknownNative(pUnk);
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern object GetObjectForIUnknown(IntPtr /* IUnknown* */ pUnk);
+        private static extern object GetObjectForIUnknownNative(IntPtr /* IUnknown* */ pUnk);
+
+        public static object GetUniqueObjectForIUnknown(IntPtr unknown)
+        {
+            if (unknown == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(unknown));
+            }
+
+            // Passing null as the ComWrapper implementation will use the globally registered wrappper (if available)
+            object? objMaybe = ComWrappers.GetOrCreateObjectForComInstanceInternal(impl: null, unknown, CreateObjectFlags.UniqueInstance, wrapperMaybe: null);
+            if (objMaybe != null)
+                return objMaybe;
+
+            return GetUniqueObjectForIUnknownNative(unknown);
+        }
 
         /// <summary>
         /// Return a unique Object given an IUnknown.  This ensures that you receive a fresh
@@ -385,7 +453,7 @@ namespace System.Runtime.InteropServices
         /// ReleaseComObject on a RCW and not worry about other active uses ofsaid RCW.
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern object GetUniqueObjectForIUnknown(IntPtr unknown);
+        private static extern object GetUniqueObjectForIUnknownNative(IntPtr unknown);
 
         /// <summary>
         /// Return an Object for IUnknown, using the Type T.

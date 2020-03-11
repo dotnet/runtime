@@ -155,8 +155,20 @@ namespace ComWrappersTests
         {
             public static readonly TestComWrappers Global = new TestComWrappers();
 
+            public bool ReturnInvalid { get; set; }
+
+            public object LastComputeVtablesObject { get; private set; }
+
             protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
             {
+                LastComputeVtablesObject = obj;
+
+                if (ReturnInvalid)
+                {
+                    count = -1;
+                    return null;
+                }
+
                 Assert.IsTrue(obj is Test);
 
                 IntPtr fpQueryInteface = default;
@@ -187,10 +199,13 @@ namespace ComWrappersTests
 
             protected override object? CreateObject(IntPtr externalComObject, CreateObjectFlags flag)
             {
+                if (ReturnInvalid)
+                    return null;
+
                 var iid = typeof(ITrackerObject).GUID;
                 IntPtr iTestComObject;
                 int hr = Marshal.QueryInterface(externalComObject, ref iid, out iTestComObject);
-                Assert.AreEqual(hr, 0);
+                Assert.AreEqual(0, hr);
 
                 return new ITrackerObjectWrapper(iTestComObject);
             }
@@ -479,6 +494,9 @@ namespace ComWrappersTests
                     wrappers2.RegisterAsGlobalInstance();
                 }, "Should not be able to reset for global ComWrappers");
 
+            ValidateMarshalAPIs(wrappers1, true);
+            ValidateMarshalAPIs(wrappers1, false);
+
             Console.WriteLine($"Validate NotifyEndOfReferenceTrackingOnThread()...");
 
             int hr;
@@ -487,6 +505,41 @@ namespace ComWrappersTests
             // Trigger the thread lifetime end API and verify the callback occurs.
             hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
             Assert.AreEqual(TestComWrappers.ReleaseObjectsCallAck, hr);
+        }
+
+        private static void ValidateMarshalAPIs(TestComWrappers registeredWrapper, bool validateUseRegistered)
+        {
+            registeredWrapper.ReturnInvalid = !validateUseRegistered;
+
+            string scenario = validateUseRegistered ? "use registered wrapper" : "fall back to runtime";
+            Console.WriteLine($"Validate Marshal.GetIUnknownForObject: {scenario}...");
+
+            var testObj = new Test();
+            IntPtr comWrapper1 = Marshal.GetIUnknownForObject(testObj);
+            Assert.AreNotEqual(IntPtr.Zero, comWrapper1);
+            Assert.AreEqual(testObj, registeredWrapper.LastComputeVtablesObject, "Registered ComWrappers instance should have been called");
+
+            IntPtr comWrapper2 = Marshal.GetIUnknownForObject(testObj);
+            Assert.AreEqual(comWrapper1, comWrapper2);
+
+            Marshal.Release(comWrapper1);
+            Marshal.Release(comWrapper2);
+
+            Console.WriteLine($"Validate Marshal.GetObjectForIUnknown: {scenario}...");
+
+            IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+            object objWrapper1 = Marshal.GetObjectForIUnknown(trackerObjRaw);
+            Assert.AreEqual(validateUseRegistered, objWrapper1 is ITrackerObjectWrapper, $"GetObjectForIUnknown should{(validateUseRegistered ? string.Empty : "not")} have returned {nameof(ITrackerObjectWrapper)} instance");
+            object objWrapper2 = Marshal.GetObjectForIUnknown(trackerObjRaw);
+            Assert.AreEqual(objWrapper1, objWrapper2);
+
+            Console.WriteLine($"Validate Marshal.GetUniqueObjectForIUnknown: {scenario}...");
+
+            object objWrapper3 = Marshal.GetUniqueObjectForIUnknown(trackerObjRaw);
+            Assert.AreEqual(validateUseRegistered, objWrapper3 is ITrackerObjectWrapper, $"GetObjectForIUnknown should{(validateUseRegistered ? string.Empty : "not")} have returned {nameof(ITrackerObjectWrapper)} instance");
+            Assert.AreNotEqual(objWrapper1, objWrapper3);
+
+            Marshal.Release(trackerObjRaw);
         }
 
         static int Main(string[] doNotUse)

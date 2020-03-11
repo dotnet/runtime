@@ -488,7 +488,6 @@ namespace
             THROWS;
             MODE_COOPERATIVE;
             PRECONDITION(instance != NULL);
-            POSTCONDITION(CheckPointer(RETVAL));
         }
         CONTRACT_END;
 
@@ -525,7 +524,8 @@ namespace
             void* vtables = CallComputeVTables(&gc.implRef, &gc.instRef, flags, &vtableCount);
 
             // Re-query the associated InteropSyncBlockInfo for an existing managed object wrapper.
-            if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRaw))
+            if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRaw)
+                && ((vtables != nullptr && vtableCount > 0) || (vtableCount == 0)))
             {
                 OBJECTHANDLE instHandle = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
 
@@ -567,10 +567,8 @@ namespace
             wrapperRaw = newWrapper.Extract();
             STRESS_LOG1(LF_INTEROP, LL_INFO100, "Created MOW: 0x%p\n", wrapperRaw);
         }
-        else
+        else if (wrapperRaw != NULL)
         {
-            _ASSERTE(wrapperRaw != NULL);
-
             // It is possible the supplied wrapper is no longer valid. If so, reactivate the
             // wrapper using the protected OBJECTREF.
             IUnknown* wrapper = static_cast<IUnknown*>(wrapperRaw);
@@ -602,7 +600,6 @@ namespace
             THROWS;
             MODE_COOPERATIVE;
             PRECONDITION(identity != NULL);
-            POSTCONDITION(RETVAL != NULL);
         }
         CONTRACT_END;
 
@@ -655,63 +652,64 @@ namespace
             if (gc.objRef == NULL)
             {
                 gc.objRef = CallGetObject(&gc.implRef, identity, flags);
-                if (gc.objRef == NULL)
-                    COMPlusThrow(kArgumentNullException);
             }
 
-            // Construct the new context with the object details.
-            DWORD flags = (resultHolder.Result.FromTrackerRuntime
-                            ? ExternalObjectContext::Flags_ReferenceTracker
-                            : ExternalObjectContext::Flags_None) |
-                          (uniqueInstance
-                            ? ExternalObjectContext::Flags_None
-                            : ExternalObjectContext::Flags_InCache);
-            ExternalObjectContext::Construct(
-                resultHolder.GetContext(),
-                identity,
-                GetCurrentCtxCookie(),
-                gc.objRef->GetSyncBlockIndex(),
-                flags);
-
-            if (uniqueInstance)
+            if (gc.objRef != NULL)
             {
-                extObjCxt = resultHolder.GetContext();
-            }
-            else
-            {
-                // Attempt to insert the new context into the cache.
-                ExtObjCxtCache::LockHolder lock(cache);
-                extObjCxt = cache->FindOrAdd(identity, resultHolder.GetContext());
-            }
+                // Construct the new context with the object details.
+                DWORD flags = (resultHolder.Result.FromTrackerRuntime
+                                ? ExternalObjectContext::Flags_ReferenceTracker
+                                : ExternalObjectContext::Flags_None) |
+                            (uniqueInstance
+                                ? ExternalObjectContext::Flags_None
+                                : ExternalObjectContext::Flags_InCache);
+                ExternalObjectContext::Construct(
+                    resultHolder.GetContext(),
+                    identity,
+                    GetCurrentCtxCookie(),
+                    gc.objRef->GetSyncBlockIndex(),
+                    flags);
 
-            // If the returned context matches the new context it means the
-            // new context was inserted or a unique instance was requested.
-            if (extObjCxt == resultHolder.GetContext())
-            {
-                // Update the object's SyncBlock with a handle to the context for runtime cleanup.
-                SyncBlock* syncBlock = gc.objRef->GetSyncBlock();
-                InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
-                _ASSERTE(syncBlock->IsPrecious());
-
-                // Since the caller has the option of providing a wrapper, it is
-                // possible the supplied wrapper already has an associated external
-                // object and an object can only be associated with one external object.
-                if (!interopInfo->TrySetExternalComObjectContext((void**)extObjCxt))
+                if (uniqueInstance)
                 {
-                    // Failed to set the context; one must already exist.
-                    // Remove from the cache above as well.
+                    extObjCxt = resultHolder.GetContext();
+                }
+                else
+                {
+                    // Attempt to insert the new context into the cache.
                     ExtObjCxtCache::LockHolder lock(cache);
-                    cache->Remove(resultHolder.GetContext());
-
-                    COMPlusThrow(kNotSupportedException);
+                    extObjCxt = cache->FindOrAdd(identity, resultHolder.GetContext());
                 }
 
-                // Detach from the holder to avoid cleanup.
-                (void)resultHolder.DetachContext();
-                STRESS_LOG2(LF_INTEROP, LL_INFO100, "Created EOC (Unique Instance: %d): 0x%p\n", (int)uniqueInstance, extObjCxt);
-            }
+                // If the returned context matches the new context it means the
+                // new context was inserted or a unique instance was requested.
+                if (extObjCxt == resultHolder.GetContext())
+                {
+                    // Update the object's SyncBlock with a handle to the context for runtime cleanup.
+                    SyncBlock* syncBlock = gc.objRef->GetSyncBlock();
+                    InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
+                    _ASSERTE(syncBlock->IsPrecious());
 
-            _ASSERTE(extObjCxt->IsActive());
+                    // Since the caller has the option of providing a wrapper, it is
+                    // possible the supplied wrapper already has an associated external
+                    // object and an object can only be associated with one external object.
+                    if (!interopInfo->TrySetExternalComObjectContext((void**)extObjCxt))
+                    {
+                        // Failed to set the context; one must already exist.
+                        // Remove from the cache above as well.
+                        ExtObjCxtCache::LockHolder lock(cache);
+                        cache->Remove(resultHolder.GetContext());
+
+                        COMPlusThrow(kNotSupportedException);
+                    }
+
+                    // Detach from the holder to avoid cleanup.
+                    (void)resultHolder.DetachContext();
+                    STRESS_LOG2(LF_INTEROP, LL_INFO100, "Created EOC (Unique Instance: %d): 0x%p\n", (int)uniqueInstance, extObjCxt);
+                }
+
+                _ASSERTE(extObjCxt->IsActive());
+            }
         }
 
         GCPROTECT_END();
@@ -957,6 +955,9 @@ namespace InteropLibImports
                 externalObjectFlags,
                 gc.wrapperMaybeRef);
 
+            if (gc.objRef == NULL)
+                COMPlusThrow(kArgumentNullException);
+
             // Get wrapper for managed object
             *trackerTarget = GetOrCreateComInterfaceForObjectInternal(
                 gc.implRef,
@@ -1078,7 +1079,6 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
 
     END_QCALL;
 
-    _ASSERTE(wrapper != NULL);
     return wrapper;
 }
 
