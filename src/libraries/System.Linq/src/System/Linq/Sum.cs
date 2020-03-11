@@ -18,9 +18,19 @@ namespace System.Linq
             int sum = 0;
             checked
             {
-                foreach (int v in source)
+                if (source is int[] array)
                 {
-                    sum += v;
+                    for (int i = 0; i < array.Length; i++)
+                    {
+                        sum += array[i];
+                    }
+                }
+                else
+                {
+                    foreach (int v in source)
+                    {
+                        sum += v;
+                    }
                 }
             }
 
@@ -37,11 +47,21 @@ namespace System.Linq
             int sum = 0;
             checked
             {
-                foreach (int? v in source)
+                if (source is int?[] array)
                 {
-                    if (v != null)
+                    for (int i = 0; i < array.Length; i++)
                     {
-                        sum += v.GetValueOrDefault();
+                        sum += array[i].GetValueOrDefault();
+                    }
+                }
+                else
+                {
+                    foreach (int? v in source)
+                    {
+                        if (v != null)
+                        {
+                            sum += v.GetValueOrDefault();
+                        }
                     }
                 }
             }
@@ -59,9 +79,19 @@ namespace System.Linq
             long sum = 0;
             checked
             {
-                foreach (long v in source)
+                if (source is long[] array)
                 {
-                    sum += v;
+                    for (int i = 0; i < array.Length; i++)
+                    {
+                        sum += array[i];
+                    }
+                }
+                else
+                {
+                    foreach (long v in source)
+                    {
+                        sum += v;
+                    }
                 }
             }
 
@@ -78,11 +108,21 @@ namespace System.Linq
             long sum = 0;
             checked
             {
-                foreach (long? v in source)
+                if (source is long?[] array)
                 {
-                    if (v != null)
+                    for (int i = 0; i < array.Length; i++)
                     {
-                        sum += v.GetValueOrDefault();
+                        sum += array[i].GetValueOrDefault();
+                    }
+                }
+                else
+                {
+                    foreach (long? v in source)
+                    {
+                        if (v != null)
+                        {
+                            sum += v.GetValueOrDefault();
+                        }
                     }
                 }
             }
@@ -98,9 +138,19 @@ namespace System.Linq
             }
 
             double sum = 0;
-            foreach (float v in source)
+            if (source is float[] array)
             {
-                sum += v;
+                for (int i = 0; i < array.Length; i++)
+                {
+                    sum += array[i];
+                }
+            }
+            else
+            {
+                foreach (float v in source)
+                {
+                    sum += v;
+                }
             }
 
             return (float)sum;
@@ -114,11 +164,21 @@ namespace System.Linq
             }
 
             double sum = 0;
-            foreach (float? v in source)
+            if (source is float?[] array)
             {
-                if (v != null)
+                for (int i = 0; i < array.Length; i++)
                 {
-                    sum += v.GetValueOrDefault();
+                    sum += array[i].GetValueOrDefault();
+                }
+            }
+            else
+            {
+                foreach (float? v in source)
+                {
+                    if (v != null)
+                    {
+                        sum += v.GetValueOrDefault();
+                    }
                 }
             }
 
@@ -133,9 +193,19 @@ namespace System.Linq
             }
 
             double sum = 0;
-            foreach (double v in source)
+            if (source is double[] array)
             {
-                sum += v;
+                for (int i = 0; i < array.Length; i++)
+                {
+                    sum += array[i];
+                }
+            }
+            else
+            {
+                foreach (double v in source)
+                {
+                    sum += v;
+                }
             }
 
             return sum;
@@ -149,11 +219,21 @@ namespace System.Linq
             }
 
             double sum = 0;
-            foreach (double? v in source)
+            if (source is double?[] array)
             {
-                if (v != null)
+                for (int i = 0; i < array.Length; i++)
                 {
-                    sum += v.GetValueOrDefault();
+                    sum += array[i].GetValueOrDefault();
+                }
+            }
+            else
+            {
+                foreach (double? v in source)
+                {
+                    if (v != null)
+                    {
+                        sum += v.GetValueOrDefault();
+                    }
                 }
             }
 
@@ -168,9 +248,19 @@ namespace System.Linq
             }
 
             decimal sum = 0;
-            foreach (decimal v in source)
+            if (source is decimal[] array)
             {
-                sum += v;
+                for (int i = 0; i < array.Length; i++)
+                {
+                    sum += array[i];
+                }
+            }
+            else
+            {
+                foreach (decimal v in source)
+                {
+                    sum += v;
+                }
             }
 
             return sum;
@@ -184,11 +274,21 @@ namespace System.Linq
             }
 
             decimal sum = 0;
-            foreach (decimal? v in source)
+            if (source is decimal?[] array)
             {
-                if (v != null)
+                for (int i = 0; i < array.Length; i++)
                 {
-                    sum += v.GetValueOrDefault();
+                    sum += array[i].GetValueOrDefault();
+                }
+            }
+            else
+            {
+                foreach (decimal? v in source)
+                {
+                    if (v != null)
+                    {
+                        sum += v.GetValueOrDefault();
+                    }
                 }
             }
 
