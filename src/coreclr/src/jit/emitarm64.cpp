@@ -12632,6 +12632,8 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
             case IF_LS_2C:
             case IF_LS_2D:
             case IF_LS_2E:
+            case IF_LS_2F:
+            case IF_LS_2G:
             case IF_LS_3A:
             case IF_LS_3F:
             case IF_LS_3G:
@@ -13033,22 +13035,375 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_LS_2D: // ld1                         (vector - multiple structures)
-        case IF_LS_2E: // ld1                         (vector - single structure)
-        case IF_LS_3F: // ld1                         (vector - multiple structures)
-        case IF_LS_3G: // ld1                         (vector - single structure)
-            if (id->idOpSize() == EA_8BYTE)
+        case IF_LS_2D:
+        case IF_LS_2E:
+        case IF_LS_3F:
+            // Load/Store multiple structures
+            // Load single structure and replicate
+            switch (ins)
             {
-                // D-form
-                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency    = PERFSCORE_LATENCY_3C;
+                case INS_ld1:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    break;
+
+                case INS_ld1_2regs:
+                case INS_ld2:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                        result.insLatency    = PERFSCORE_LATENCY_6C;
+                    }
+                    break;
+
+                case INS_ld1_3regs:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                        result.insLatency    = PERFSCORE_LATENCY_5C;
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_6C;
+                        result.insLatency    = PERFSCORE_LATENCY_8C;
+                    }
+                    break;
+
+                case INS_ld1_4regs:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                        result.insLatency    = PERFSCORE_LATENCY_6C;
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_8C;
+                        result.insLatency    = PERFSCORE_LATENCY_10C;
+                    }
+                    break;
+
+                case INS_ld3:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        if (optGetElemsize(id->idInsOpt()) == EA_4BYTE)
+                        {
+                            // S
+                            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                            result.insLatency    = PERFSCORE_LATENCY_5C;
+                        }
+                        else
+                        {
+                            // B/H
+                            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                            result.insLatency    = PERFSCORE_LATENCY_6C;
+                        }
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        if ((optGetElemsize(id->idInsOpt()) == EA_4BYTE) ||
+                            (optGetElemsize(id->idInsOpt()) == EA_8BYTE))
+                        {
+                            // S/D
+                            result.insThroughput = PERFSCORE_THROUGHPUT_6C;
+                            result.insLatency    = PERFSCORE_LATENCY_8C;
+                        }
+                        else
+                        {
+                            // B/H
+                            result.insThroughput = PERFSCORE_THROUGHPUT_7C;
+                            result.insLatency    = PERFSCORE_LATENCY_9C;
+                        }
+                    }
+                    break;
+
+                case INS_ld4:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        if (optGetElemsize(id->idInsOpt()) == EA_4BYTE)
+                        {
+                            // S
+                            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                            result.insLatency    = PERFSCORE_LATENCY_6C;
+                        }
+                        else
+                        {
+                            // B/H
+                            result.insThroughput = PERFSCORE_THROUGHPUT_5C;
+                            result.insLatency    = PERFSCORE_LATENCY_7C;
+                        }
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        if ((optGetElemsize(id->idInsOpt()) == EA_4BYTE) ||
+                            (optGetElemsize(id->idInsOpt()) == EA_8BYTE))
+                        {
+                            // S/D
+                            result.insThroughput = PERFSCORE_THROUGHPUT_8C;
+                            result.insLatency    = PERFSCORE_LATENCY_10C;
+                        }
+                        else
+                        {
+                            // B/H
+                            result.insThroughput = PERFSCORE_THROUGHPUT_9C;
+                            result.insLatency    = PERFSCORE_LATENCY_11C;
+                        }
+                    }
+                    break;
+
+                case INS_ld1r:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_ld2r:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    else
+                    {
+                        // B/H/S
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    break;
+
+                case INS_ld3r:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D
+                        result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                        result.insLatency    = PERFSCORE_LATENCY_5C;
+                    }
+                    else
+                    {
+                        // B/H/S
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    break;
+
+                case INS_ld4r:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D
+                        result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                        result.insLatency    = PERFSCORE_LATENCY_6C;
+                    }
+                    else
+                    {
+                        // B/H/S
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    break;
+
+                case INS_st1:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+
+                case INS_st1_2regs:
+                case INS_st2:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_1C;
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
+                    break;
+
+                case INS_st1_3regs:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    break;
+
+                case INS_st1_4regs:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
+                    else
+                    {
+                        // Q-form
+                        assert(id->idOpSize() == EA_16BYTE);
+                        result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    break;
+
+                case INS_st3:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_st4:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    else
+                    {
+                        assert(id->idOpSize() == EA_16BYTE);
+                        if (optGetElemsize(id->idInsOpt()) == EA_8BYTE)
+                        {
+                            // D
+                            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                            result.insLatency    = PERFSCORE_LATENCY_4C;
+                        }
+                        else
+                        {
+                            // B/H/S
+                            result.insThroughput = PERFSCORE_THROUGHPUT_5C;
+                            result.insLatency    = PERFSCORE_LATENCY_5C;
+                        }
+                    }
+                    break;
+
+                default:
+                    unreached();
             }
-            else
+            break;
+
+        case IF_LS_2F:
+        case IF_LS_2G:
+        case IF_LS_3G:
+            // Load/Store single structure
+            switch (ins)
             {
-                // Q-form
-                assert(id->idOpSize() == EA_16BYTE);
-                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
-                result.insLatency    = PERFSCORE_LATENCY_4C;
+                case INS_ld1:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+
+                case INS_ld2:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    else
+                    {
+                        // B/H/S
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_3C;
+                    }
+                    break;
+
+                case INS_ld3:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D
+                        result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+                        result.insLatency    = PERFSCORE_LATENCY_5C;
+                    }
+                    else
+                    {
+                        // B/H/S
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    break;
+
+                case INS_ld4:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D
+                        result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+                        result.insLatency    = PERFSCORE_LATENCY_6C;
+                    }
+                    else
+                    {
+                        // B/H/S
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_4C;
+                    }
+                    break;
+
+                case INS_st1:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+
+                case INS_st2:
+                    if (id->idOpSize() == EA_8BYTE)
+                    {
+                        // D
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
+                    else
+                    {
+                        // B/H/S
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_1C;
+                    }
+                    break;
+
+                case INS_st3:
+                case INS_st4:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                default:
+                    unreached();
             }
             break;
 
