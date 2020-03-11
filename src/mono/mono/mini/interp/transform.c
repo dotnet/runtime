@@ -1447,45 +1447,82 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "ByReference`1")) {
 		g_assert (!strcmp (tm, "get_Value"));
 		*op = MINT_INTRINS_BYREFERENCE_GET_VALUE;
-	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Math") && csignature->param_count == 1 && csignature->params [0]->type == MONO_TYPE_R8) {
-		if (tm [0] == 'A') {
-			if (strcmp (tm, "Abs") == 0 && csignature->params [0]->type == MONO_TYPE_R8) {
-				*op = MINT_ABS;
-			} else if (strcmp (tm, "Asin") == 0){
-				*op = MINT_ASIN;
-			} else if (strcmp (tm, "Asinh") == 0){
-				*op = MINT_ASINH;
-			} else if (strcmp (tm, "Acos") == 0){
-				*op = MINT_ACOS;
-			} else if (strcmp (tm, "Acosh") == 0){
-				*op = MINT_ACOSH;
-			} else if (strcmp (tm, "Atan") == 0){
-				*op = MINT_ATAN;
-			} else if (strcmp (tm, "Atanh") == 0){
-				*op = MINT_ATANH;
+	} else if (in_corlib && !strcmp (klass_name_space, "System") &&
+			(!strcmp (klass_name, "Math") || !strcmp (klass_name, "MathF"))) {
+		gboolean is_float = strcmp (klass_name, "MathF") == 0;
+		int param_type = is_float ? MONO_TYPE_R4 : MONO_TYPE_R8;
+		// FIXME add also intrinsic for Round
+		if (csignature->param_count == 1 && csignature->params [0]->type == param_type) {
+			// unops
+			if (tm [0] == 'A') {
+				if (strcmp (tm, "Abs") == 0) {
+					*op = MINT_ABS;
+				} else if (strcmp (tm, "Asin") == 0){
+					*op = MINT_ASIN;
+				} else if (strcmp (tm, "Asinh") == 0){
+					*op = MINT_ASINH;
+				} else if (strcmp (tm, "Acos") == 0){
+					*op = MINT_ACOS;
+				} else if (strcmp (tm, "Acosh") == 0){
+					*op = MINT_ACOSH;
+				} else if (strcmp (tm, "Atan") == 0){
+					*op = MINT_ATAN;
+				} else if (strcmp (tm, "Atanh") == 0){
+					*op = MINT_ATANH;
+				}
+			} else if (tm [0] == 'C') {
+				if (strcmp (tm, "Ceiling") == 0) {
+					*op = MINT_CEILING;
+				} else if (strcmp (tm, "Cos") == 0) {
+					*op = MINT_COS;
+				} else if (strcmp (tm, "Cbrt") == 0){
+					*op = MINT_CBRT;
+				} else if (strcmp (tm, "Cosh") == 0){
+					*op = MINT_COSH;
+				}
+			} else if (strcmp (tm, "Exp") == 0) {
+				*op = MINT_EXP;
+			} else if (strcmp (tm, "Floor") == 0) {
+				*op = MINT_FLOOR;
+			} else if (strcmp (tm, "ILogB") == 0) {
+				*op = MINT_ILOGB;
+			} else if (tm [0] == 'L') {
+				if (strcmp (tm, "Log") == 0) {
+					*op = MINT_LOG;
+				} else if (strcmp (tm, "Log2") == 0) {
+					*op = MINT_LOG2;
+				} else if (strcmp (tm, "Log10") == 0) {
+					*op = MINT_LOG10;
+				}
+			} else if (tm [0] == 'S') {
+				if (strcmp (tm, "Sin") == 0) {
+					*op = MINT_SIN;
+				} else if (strcmp (tm, "Sqrt") == 0) {
+					*op = MINT_SQRT;
+				} else if (strcmp (tm, "Sinh") == 0){
+					*op = MINT_SINH;
+				}
+			} else if (tm [0] == 'T') {
+				if (strcmp (tm, "Tan") == 0) {
+					*op = MINT_TAN;
+				} else if (strcmp (tm, "Tanh") == 0){
+					*op = MINT_TANH;
+				}
 			}
-		} else if (tm [0] == 'C') {
-			if (strcmp (tm, "Cos") == 0) {
-				*op = MINT_COS;
-			} else if (strcmp (tm, "Cbrt") == 0){
-				*op = MINT_CBRT;
-			} else if (strcmp (tm, "Cosh") == 0){
-				*op = MINT_COSH;
-			}
-		} else if (tm [0] == 'S') {
-			if (strcmp (tm, "Sin") == 0) {
-				*op = MINT_SIN;
-			} else if (strcmp (tm, "Sqrt") == 0) {
-				*op = MINT_SQRT;
-			} else if (strcmp (tm, "Sinh") == 0){
-				*op = MINT_SINH;
-			}
-		} else if (tm [0] == 'T') {
-			if (strcmp (tm, "Tan") == 0) {
-				*op = MINT_TAN;
-			} else if (strcmp (tm, "Tanh") == 0){
-				*op = MINT_TANH;
-			}
+		} else if (csignature->param_count == 2 && csignature->params [0]->type == param_type && csignature->params [1]->type == param_type) {
+			if (strcmp (tm, "Atan2") == 0)
+				*op = MINT_ATAN2;
+			else if (strcmp (tm, "Pow") == 0)
+				*op = MINT_POW;
+		} else if (csignature->param_count == 3 && csignature->params [0]->type == param_type && csignature->params [1]->type == param_type && csignature->params [2]->type == param_type) {
+			if (strcmp (tm, "FusedMultiplyAdd") == 0)
+				*op = MINT_FMA;
+		} else if (csignature->param_count == 2 && csignature->params [0]->type == param_type && csignature->params [1]->type == MONO_TYPE_I4 && strcmp (tm, "ScaleB") == 0) {
+			*op = MINT_SCALEB;
+		}
+
+		if (*op != -1 && is_float) {
+			*op = *op + (MINT_ABSF - MINT_ABS);
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && (!strcmp (klass_name, "Span`1") || !strcmp (klass_name, "ReadOnlySpan`1"))) {
 		if (!strcmp (tm, "get_Item")) {

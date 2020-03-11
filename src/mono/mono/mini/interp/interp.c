@@ -7007,6 +7007,11 @@ call_newobj:
 	sp [-1].data.f = mathfunc (sp [-1].data.f); \
 	++ip;
 
+#define MATH_BINOP(mathfunc) \
+	sp--; \
+	sp [-1].data.f = mathfunc (sp [-1].data.f, sp [0].data.f); \
+	++ip;
+
 		MINT_IN_CASE(MINT_ABS) MATH_UNOP(fabs); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ASIN) MATH_UNOP(asin); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ASINH) MATH_UNOP(asinh); MINT_IN_BREAK;
@@ -7014,14 +7019,102 @@ call_newobj:
 		MINT_IN_CASE(MINT_ACOSH) MATH_UNOP(acosh); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ATAN) MATH_UNOP(atan); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ATANH) MATH_UNOP(atanh); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CEILING) MATH_UNOP(ceil); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_COS) MATH_UNOP(cos); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CBRT) MATH_UNOP(cbrt); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_COSH) MATH_UNOP(cosh); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_EXP) MATH_UNOP(exp); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_FLOOR) MATH_UNOP(floor); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG) MATH_UNOP(log); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG2) MATH_UNOP(log2); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG10) MATH_UNOP(log10); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SIN) MATH_UNOP(sin); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SQRT) MATH_UNOP(sqrt); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SINH) MATH_UNOP(sinh); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TAN) MATH_UNOP(tan); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TANH) MATH_UNOP(tanh); MINT_IN_BREAK;
+
+		MINT_IN_CASE(MINT_ATAN2) MATH_BINOP(atan2); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_POW) MATH_BINOP(pow); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_FMA)
+			sp -= 2;
+			sp [-1].data.f = fma (sp [-1].data.f, sp [0].data.f, sp [1].data.f);
+			ip++;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SCALEB)
+			sp--;
+			sp [-1].data.f = scalbn (sp [-1].data.f, sp [0].data.i);
+			ip++;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ILOGB) {
+			int result;
+			double x = sp [-1].data.f;
+			if (FP_ILOGB0 != INT_MIN && x == 0.0)
+				result = INT_MIN;
+			else if (FP_ILOGBNAN != INT_MAX && isnan(x))
+				result = INT_MAX;
+			else
+				result = ilogb (x);
+			sp [-1].data.i = result;
+			ip++;
+			MINT_IN_BREAK;
+		}
+
+#define MATH_UNOPF(mathfunc) \
+	sp [-1].data.f_r4 = mathfunc (sp [-1].data.f_r4); \
+	++ip;
+
+#define MATH_BINOPF(mathfunc) \
+	sp--; \
+	sp [-1].data.f_r4 = mathfunc (sp [-1].data.f_r4, sp [0].data.f_r4); \
+	++ip;
+		MINT_IN_CASE(MINT_ABSF) MATH_UNOPF(fabsf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ASINF) MATH_UNOPF(asinf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ASINHF) MATH_UNOPF(asinhf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ACOSF) MATH_UNOPF(acosf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ACOSHF) MATH_UNOPF(acoshf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ATANF) MATH_UNOPF(atanf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ATANHF) MATH_UNOPF(atanhf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CEILINGF) MATH_UNOPF(ceilf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_COSF) MATH_UNOPF(cosf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CBRTF) MATH_UNOPF(cbrtf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_COSHF) MATH_UNOPF(coshf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_EXPF) MATH_UNOPF(expf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_FLOORF) MATH_UNOPF(floorf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOGF) MATH_UNOPF(logf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG2F) MATH_UNOPF(log2f); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG10F) MATH_UNOPF(log10f); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SINF) MATH_UNOPF(sinf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SQRTF) MATH_UNOPF(sqrtf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SINHF) MATH_UNOPF(sinhf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_TANF) MATH_UNOPF(tanf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_TANHF) MATH_UNOPF(tanhf); MINT_IN_BREAK;
+
+		MINT_IN_CASE(MINT_ATAN2F) MATH_BINOPF(atan2f); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_POWF) MATH_BINOPF(powf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_FMAF)
+			sp -= 2;
+			sp [-1].data.f_r4 = fmaf (sp [-1].data.f_r4, sp [0].data.f_r4, sp [1].data.f_r4);
+			ip++;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SCALEBF)
+			sp--;
+			sp [-1].data.f_r4 = scalbnf (sp [-1].data.f_r4, sp [0].data.i);
+			ip++;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ILOGBF) {
+			int result;
+			float x = sp [-1].data.f_r4;
+			if (FP_ILOGB0 != INT_MIN && x == 0.0)
+				result = INT_MIN;
+			else if (FP_ILOGBNAN != INT_MAX && isnan(x))
+				result = INT_MAX;
+			else
+				result = ilogbf (x);
+			sp [-1].data.i = result;
+			ip++;
+			MINT_IN_BREAK;
+		}
 
 		MINT_IN_CASE(MINT_INTRINS_ENUM_HASFLAG) {
 			MonoClass *klass = (MonoClass*)frame->imethod->data_items[ip [1]];
