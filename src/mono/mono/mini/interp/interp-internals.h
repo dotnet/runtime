@@ -176,31 +176,20 @@ struct InterpMethod {
 	unsigned int needs_thread_attach : 1;
 };
 
-typedef struct _StackFragment StackFragment;
-struct _StackFragment {
-	guint8 *pos, *end;
-	struct _StackFragment *next;
-	double data [1];
-};
-
-typedef struct {
-	StackFragment *first, *current;
-	/* For GC sync */
-	int inited;
-} FrameStack;
-
-
 /* Arguments that are passed when invoking only a finally/filter clause from the frame */
 typedef struct FrameClauseArgs FrameClauseArgs;
 
+#define INTERP_STATE		\
+	const guint16 *ip;	\
+	stackval *sp;		\
+	guchar *vt_sp;		\
+	GSList *finally_ips;	\
+	guchar *vtalloc G_GNUC_UNUSED; /* only for DEBUG_INTERP */
+
 /* State of the interpreter main loop */
+/* This is valid if ip != NULL */
 typedef struct {
-	stackval *sp;
-	unsigned char *vt_sp;
-	const unsigned short  *ip;
-	GSList *finally_ips;
-	FrameClauseArgs *clause_args;
-	gboolean is_void : 1;
+	INTERP_STATE
 } InterpState;
 
 struct InterpFrame {
@@ -209,14 +198,8 @@ struct InterpFrame {
 	stackval       *stack_args; /* parent */
 	stackval       *retval; /* parent */
 	stackval       *stack;
-	InterpFrame    *next_free;
-	/* Stack fragments this frame was allocated from */
-	StackFragment *data_frag;
 	/* exception info */
-	const unsigned short  *ip;
-	/* State saved before calls */
-	/* This is valid if state.ip != NULL */
-	InterpState state;
+	const guint16 *ip;
 };
 
 #define frame_locals(frame) (((guchar*)((frame)->stack)) + (frame)->imethod->stack_size + (frame)->imethod->vt_stack_size)
@@ -232,8 +215,6 @@ typedef struct {
 	MonoJitExceptionInfo *handler_ei;
 	/* Exception that is being thrown. Set with rest of resume state */
 	MonoGCHandle exc_gchandle;
-	/* Stack of frame data */
-	FrameStack data_stack;
 } ThreadContext;
 
 typedef struct {
