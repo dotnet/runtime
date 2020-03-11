@@ -67,12 +67,14 @@ jobs:
     - ${{ if eq(parameters.useGCC, true) }}:
       - name: gccArg
         value: '-gcc'
+      - name: clangArg
+        value: ''
       # workaround for gcc directory not in PATH
       - name: CLR_CC
         value: /opt/rh/devtoolset-7/root/usr/bin/gcc
       - name: CLR_CXX
         value: /opt/rh/devtoolset-7/root/usr/bin/g++
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), not(parameters.useGCC)) }}:
       - name: clangArg
         value: '-clang9'
       # Our FreeBSD doesn't yet detect available clang versions, so pass it explicitly.
@@ -80,7 +82,7 @@ jobs:
         - name: clangArg
           value: '-clang6.0'
       # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
-      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64'), not(parameters.useGCC)) }}:
+      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
         - name: clangArg
           value: ''
       # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
