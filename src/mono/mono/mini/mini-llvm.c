@@ -8026,64 +8026,27 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SSE2_PSRLW_IMM:
 		case OP_SSE2_PSRLD_IMM:
 		case OP_SSE2_PSRLQ_IMM: {
-			LLVMBasicBlockRef bbs [64 + 1];
-			LLVMValueRef switch_ins;
 			LLVMValueRef value = lhs;
 			LLVMValueRef index = rhs;
-			LLVMValueRef phi_values [64 + 1];
 			IntrinsicId id;
-			int ncases;
 
 			// FIXME: Optimize const index case
 
+			/* Use the non-immediate version */
 			switch (ins->opcode) {
-			case OP_SSE2_PSRAW_IMM:
-				id = INTRINS_SSE_PSRAI_W;
-				ncases = 16;
-				break;
-			case OP_SSE2_PSRAD_IMM:
-				id = INTRINS_SSE_PSRAI_D;
-				ncases = 32;
-				break;
-			case OP_SSE2_PSRLW_IMM:
-				id = INTRINS_SSE_PSRLI_W;
-				ncases = 16;
-				break;
-			case OP_SSE2_PSRLD_IMM:
-				id = INTRINS_SSE_PSRLI_D;
-				ncases = 32;
-				break;
-			case OP_SSE2_PSRLQ_IMM:
-				id = INTRINS_SSE_PSRLI_Q;
-				ncases = 64;
-				break;
-			default:
-				g_assert_not_reached ();
+			case OP_SSE2_PSRAW_IMM: id = INTRINS_SSE_PSRA_W; break;
+			case OP_SSE2_PSRAD_IMM: id = INTRINS_SSE_PSRA_D; break;
+			case OP_SSE2_PSRLW_IMM: id = INTRINS_SSE_PSRL_W; break;
+			case OP_SSE2_PSRLD_IMM: id = INTRINS_SSE_PSRL_D; break;
+			case OP_SSE2_PSRLQ_IMM: id = INTRINS_SSE_PSRL_Q; break;
+			default: g_assert_not_reached (); break;
 			}
-				
-			for (int i = 0; i < ncases + 1; ++i)
-				bbs [i] = gen_bb (ctx, "PSLLDQ_CASE_BB");
-			cbb = gen_bb (ctx, "PSLLDQ_COND_BB");
 
-			switch_ins = LLVMBuildSwitch (builder, index, bbs [ncases], 0);
-			for (int i = 0; i < ncases; ++i) {
-				LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i, FALSE), bbs [i]);
-				LLVMPositionBuilderAtEnd (builder, bbs [i]);
-
-				LLVMValueRef args [] = { value, const_int32 (i) };
-				phi_values [i] = call_intrins (ctx, id, args, "");
-				LLVMBuildBr (builder, cbb);
-			}
-			/* Default case */
-			LLVMPositionBuilderAtEnd (builder, bbs [ncases]);
-			phi_values [ncases] = LLVMConstNull (LLVMTypeOf (value));
-			LLVMBuildBr (builder, cbb);
-
-			LLVMPositionBuilderAtEnd (builder, cbb);
-			values [ins->dreg] = LLVMBuildPhi (builder, LLVMTypeOf (phi_values [0]), "");
-			LLVMAddIncoming (values [ins->dreg], phi_values, bbs, ncases + 1);
-
-			ctx->bblocks [bb->block_num].end_bblock = cbb;
+			LLVMTypeRef t = LLVMTypeOf (value);
+			LLVMValueRef index_vect = LLVMBuildInsertElement (builder, LLVMConstNull (t), convert (ctx, index, LLVMGetElementType (t)), const_int32 (0), "");
+			LLVMDumpValue (index_vect);
+			LLVMValueRef args [] = { value, index_vect };
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
 
