@@ -3048,7 +3048,7 @@ interp_emit_ldsflda (TransformData *td, MonoClassField *field, MonoError *error)
 static gboolean
 interp_emit_load_const (TransformData *td, gpointer field_addr, int mt)
 {
-	if (mt >= MINT_TYPE_I1 && mt <= MINT_TYPE_I4
+	if ((mt >= MINT_TYPE_I1 && mt <= MINT_TYPE_I4)
 #if SIZEOF_VOID_P == 4
 		|| mt == MINT_TYPE_P
 #endif
