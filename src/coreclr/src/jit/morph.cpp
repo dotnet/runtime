@@ -7295,14 +7295,14 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // Return a zero con node to exit morphing of the old trees without asserts
         // and forbid POST_ORDER morphing doing something wrong with our call.
         var_types callType;
-        if (varTypeIsStruct(call))
+        if (varTypeIsStruct(origCallType))
         {
             CORINFO_CLASS_HANDLE retClsHnd = call->gtRetClsHnd;
             callType                       = getReturnTypeForStruct(retClsHnd);
         }
         else
         {
-            callType = call->TypeGet();
+            callType = origCallType;
         }
         GenTree* zero = gtNewZeroConNode(callType);
         return fgMorphTree(zero);
