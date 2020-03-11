@@ -205,6 +205,8 @@ public:
 
 };  // class LocalSigBuilder
 
+#ifndef DACCESS_COMPILE
+
 //---------------------------------------------------------------------------------------
 //
 class FunctionSigBuilder : protected StubSigBuilder
@@ -261,10 +263,11 @@ public:
     }
 
 protected:
-    DAC_ALIGNAS(StubSigBuilder) // Align the first member to the alignment of the base class
     CorCallingConvention m_callingConv;
     CQuickBytes          m_qbReturnSig;
 };  // class FunctionSigBuilder
+
+#endif // DACCESS_COMPILE
 
 #ifdef _DEBUG
 // exercise the resize code
@@ -389,6 +392,8 @@ struct ILStubEHClause
 
 class ILCodeLabel;
 class ILCodeStream;
+class ILStubLinker;
+#ifndef DACCESS_COMPILE
 //---------------------------------------------------------------------------------------
 //
 class ILStubLinker
@@ -551,7 +556,6 @@ protected:
     // SigTypeContext info, if needed.
     MethodDesc * m_pMD;
 };  // class ILStubLinker
-
 
 //---------------------------------------------------------------------------------------
 //
@@ -792,6 +796,7 @@ protected:
     const static UINT32 SPECIAL_VALUE_NAN_64_ON_32 = 0xFFFFFFFF;
 #endif // HOST_64BIT
 };
+#endif // DACCESS_COMPILE
 
 #define TOKEN_ILSTUB_TARGET_SIG (TokenFromRid(0xFFFFFF, mdtSignature))
 

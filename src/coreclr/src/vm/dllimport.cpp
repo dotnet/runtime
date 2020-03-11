@@ -5586,6 +5586,8 @@ MethodDesc* NDirect::CreateFieldAccessILStub(
 }
 #endif // FEATURE_COMINTEROP
 
+#ifndef DACCESS_COMPILE
+
 MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
 {
     CONTRACT(MethodDesc*)
@@ -5708,6 +5710,8 @@ PCODE NDirect::GetEntryPointForStructMarshalStub(MethodTable* pMT)
 
     return pMD->GetMultiCallableAddrOfCode();
 }
+
+#endif // DACCESS_COMPILE
 
 MethodDesc* NDirect::CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
                          DWORD dwStubFlags,

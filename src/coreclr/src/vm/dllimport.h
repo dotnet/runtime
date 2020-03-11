@@ -438,6 +438,7 @@ private:
 
 #include "stubgen.h"
 
+#ifndef DACCESS_COMPILE
 class NDirectStubLinker : public ILStubLinker
 {
 public:
@@ -564,6 +565,7 @@ protected:
 
     DWORD               m_dwStubFlags;
 };
+#endif // DACCESS_COMPILE
 
 // This attempts to guess whether a target is an API call that uses SetLastError to communicate errors.
 BOOL HeuristicDoesThisLooksLikeAnApiCall(LPBYTE pTarget);
