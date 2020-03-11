@@ -3616,6 +3616,76 @@ main_loop:
 			ip = frame->imethod->code;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_CALL_DELEGATE) {
+			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [1]];
+			is_void = csignature->ret->type == MONO_TYPE_VOID;
+			int param_count = csignature->param_count;
+			MonoDelegate *del = (MonoDelegate*) sp [-param_count - 1].data.o;
+			gboolean is_multicast = del->method == NULL;
+			InterpMethod *del_imethod = (InterpMethod*)del->interp_invoke_impl;
+
+			frame->ip = ip;
+			if (!del_imethod) {
+				if (is_multicast) {
+					error_init_reuse (error);
+					MonoMethod *invoke = mono_get_delegate_invoke_internal (del->object.vtable->klass);
+					del_imethod = mono_interp_get_imethod (del->object.vtable->domain, mono_marshal_get_delegate_invoke (invoke, del), error);
+					del->interp_invoke_impl = del_imethod;
+					mono_error_assert_ok (error);
+				} else if (!del->interp_method) {
+					// Not created from interpreted code
+					error_init_reuse (error);
+					g_assert (del->method);
+					del_imethod = mono_interp_get_imethod (del->object.vtable->domain, del->method, error);
+					del->interp_method = del_imethod;
+					del->interp_invoke_impl = del_imethod;
+					mono_error_assert_ok (error);
+				} else {
+					del_imethod = (InterpMethod*)del->interp_method;
+					if (del_imethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+						error_init_reuse (error);
+						del_imethod = mono_interp_get_imethod (frame->imethod->domain, mono_marshal_get_native_wrapper (del_imethod->method, FALSE, FALSE), error);
+						mono_error_assert_ok (error);
+						del->interp_invoke_impl = del_imethod;
+					} else if (del_imethod->method->flags & METHOD_ATTRIBUTE_VIRTUAL && !del->target) {
+						// 'this' is passed dynamically, we need to recompute the target method
+						// with each call
+						del_imethod = get_virtual_method (del_imethod, sp [-param_count].data.o->vtable);
+					} else {
+						del->interp_invoke_impl = del_imethod;
+					}
+				}
+			}
+			cmethod = del_imethod;
+			retval = sp;
+			sp->data.p = vt_sp;
+			sp -= param_count + 1;
+			if (!is_multicast) {
+				if (cmethod->param_count == param_count + 1) {
+					// Target method is static but the delegate has a target object. We handle
+					// this separately from the case below, because, for these calls, the instance
+					// is allowed to be null.
+					sp [0].data.o = del->target;
+				} else if (del->target) {
+					MonoObject *this_arg = del->target;
+
+					// replace the MonoDelegate* on the stack with 'this' pointer
+					if (m_class_is_valuetype (this_arg->vtable->klass)) {
+						gpointer unboxed = mono_object_unbox_internal (this_arg);
+						sp [0].data.p = unboxed;
+					} else {
+						sp [0].data.o = this_arg;
+					}
+				} else {
+					// skip the delegate pointer for static calls
+					// FIXME we could avoid memmove
+					memmove (sp, sp + 1, param_count * sizeof (stackval));
+				}
+			}
+			ip += 2;
+
+			goto call;
+		}
 		MINT_IN_CASE(MINT_CALLI) {
 			MonoMethodSignature *csignature;
 
