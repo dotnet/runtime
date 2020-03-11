@@ -21,30 +21,32 @@ namespace Microsoft.NET.HostModel.Bundle
     public class TargetInfo
     {
         public readonly OSPlatform OS;
-        public readonly float FrameworkVersion;
+        public readonly Version FrameworkVersion;
         public readonly uint BundleVersion;
         public readonly BundleOptions DefaultOptions;
 
-        public TargetInfo(OSPlatform? os, float targetFrameworkVersion)
+        public TargetInfo(OSPlatform? os, Version targetFrameworkVersion)
         {
+            Version net50 = new Version(5, 0);
+
             OS = os ?? HostOS;
-            FrameworkVersion = targetFrameworkVersion;
+            FrameworkVersion = targetFrameworkVersion ?? net50;
 
             Debug.Assert(IsLinux || IsOSX || IsWindows);
 
-            if (targetFrameworkVersion == 3.0 || targetFrameworkVersion == 3.1)
-            {
-                BundleVersion = 1u;
-                DefaultOptions = BundleOptions.BundleAllContent;
-            }
-            else if(targetFrameworkVersion >= 5.0)
+            if(FrameworkVersion.CompareTo(net50) >= 0)
             {
                 BundleVersion = 2u;
                 DefaultOptions = BundleOptions.None;
             }
+            else if(FrameworkVersion.Major == 3 && (FrameworkVersion.Minor == 0 || FrameworkVersion.Minor == 1))
+            {
+                BundleVersion = 1u;
+                DefaultOptions = BundleOptions.BundleAllContent;
+            }
             else
             {
-                throw new ArgumentException("Invalid input: Unsupported Target Framework");
+                throw new ArgumentException($"Invalid input: Unsupported Target Framework Version {targetFrameworkVersion}");
             }
         }
 

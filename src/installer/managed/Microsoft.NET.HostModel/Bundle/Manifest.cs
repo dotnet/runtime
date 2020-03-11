@@ -54,7 +54,7 @@ namespace Microsoft.NET.HostModel.Bundle
         // NetcoreApp3CompatMode flag is set on a .net5 app,
         // which chooses to build single-file apps in .netcore3.x compat mode,
         // by constructing the bundler with BundleAllConent option.
-        // This mode is expected to be depricated in future versions of .net.
+        // This mode is expected to be deprecated in future versions of .NET.
         [Flags]
         enum HeaderFlags : ulong
         {

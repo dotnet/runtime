@@ -4,8 +4,10 @@
 
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.Bundle;
+using System;
 using System.IO;
 using System.Xml.Linq;
+
 namespace BundleTests.Helpers
 {
     public static class BundleHelper
@@ -63,7 +65,7 @@ namespace BundleTests.Helpers
         // The default should be BundleOptions.None once host/runtime no longer requires full-extraction.
         public static string BundleApp(TestProjectFixture fixture,
                                        BundleOptions options = BundleOptions.BundleAllContent,                                       
-                                       float targetFrameworkVersion = 5.0f)
+                                       Version targetFrameworkVersion = null)
         {
             var hostName = GetHostName(fixture);
             string publishPath = GetPublishPath(fixture);

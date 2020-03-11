@@ -48,7 +48,7 @@ namespace Microsoft.NET.HostModel.Bundle
                        string outputDir,
                        BundleOptions options = BundleOptions.None,
                        OSPlatform? targetOS = null,
-                       float targetFrameworkVersion = 5.0f,
+                       Version targetFrameworkVersion = null,
                        bool diagnosticOutput = false)
         {
             Tracer = new Trace(diagnosticOutput);

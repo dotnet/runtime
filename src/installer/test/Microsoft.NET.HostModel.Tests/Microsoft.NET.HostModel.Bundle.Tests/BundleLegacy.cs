@@ -16,20 +16,20 @@ namespace Microsoft.NET.HostModel.Tests
     {
         private SharedTestState sharedTestState;
 
-        public BundleLegacy(BundleLegacy.SharedTestState fixture)
+        public BundleLegacy(SharedTestState fixture)
         {
             sharedTestState = fixture;
         }
 
-        [InlineData(3.0)]
-        [InlineData(3.1)]
+        [InlineData(0)]
+        [InlineData(1)]
         [Theory]
-        public void TestNetCoreApp3xApp(float targetFrameworkVersion)
+        public void TestNetCoreApp3xApp(int minorVersion)
         {
-            var fixture = (targetFrameworkVersion == 3.0) ? sharedTestState.TestFixture30.Copy() : sharedTestState.TestFixture31.Copy();
+            var fixture = (minorVersion == 0) ? sharedTestState.TestFixture30.Copy() : sharedTestState.TestFixture31.Copy();
 
-            // Targetting netcoreap3.0 implies BundleOption.BundleAllContent
-            var singleFile = BundleHelper.BundleApp(fixture, BundleOptions.None, targetFrameworkVersion);
+            // Targetting netcoreap3.x implies BundleOption.BundleAllContent
+            var singleFile = BundleHelper.BundleApp(fixture, BundleOptions.None, new Version(3, minorVersion));
 
             Command.Create(singleFile)
                 .CaptureStdErr()
@@ -41,14 +41,12 @@ namespace Microsoft.NET.HostModel.Tests
                 .HaveStdOutContaining("Hello World!");
         }
 
-        private static TestProjectFixture CreateTestFixture(string netCoreAppFramework, string mnaVersion)
+        private static TestProjectFixture CreatePublishedFixture(string netCoreAppFramework, string mnaVersion)
         {
             var repoDirectories = new RepoDirectoriesProvider(microsoftNETCoreAppVersion: mnaVersion);
             var fixture = new TestProjectFixture("StandaloneApp3x", repoDirectories, framework: netCoreAppFramework, assemblyName: "StandaloneApp");
 
-            fixture
-                .EnsureRestoredForRid(fixture.CurrentRid, repoDirectories.CorehostPackages)
-                .PublishProject(runtime: fixture.CurrentRid, outputDirectory: BundleHelper.GetPublishPath(fixture));
+            fixture.PublishProject(runtime: fixture.CurrentRid, outputDirectory: BundleHelper.GetPublishPath(fixture), restore: true);
 
             return fixture;
         }
@@ -62,8 +60,8 @@ namespace Microsoft.NET.HostModel.Tests
 
             public SharedTestState()
             {
-                TestFixture30 = CreateTestFixture("netcoreapp3.0", "3.0.0");
-                TestFixture31 = CreateTestFixture("netcoreapp3.1", "3.1.0");
+                TestFixture30 = CreatePublishedFixture("netcoreapp3.0", "3.0.0");
+                TestFixture31 = CreatePublishedFixture("netcoreapp3.1", "3.1.0");
             }
 
             public void Dispose()
