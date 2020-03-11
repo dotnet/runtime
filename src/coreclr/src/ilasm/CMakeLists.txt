@@ -47,7 +47,6 @@ if(CLR_CMAKE_HOST_UNIX)
   # Clang also produces a bad-codegen on this prebuilt file with optimization.
   # https://github.com/dotnet/coreclr/issues/2305
   add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-Wno-register>")
-  add_compile_options(-Wno-array-bounds)
   add_compile_options(-Wno-unused-label)
   set_source_files_properties( prebuilt/asmparse.cpp PROPERTIES COMPILE_FLAGS "-O0" )
 endif(CLR_CMAKE_HOST_UNIX)
