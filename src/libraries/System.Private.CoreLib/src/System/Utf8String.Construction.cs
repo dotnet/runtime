@@ -525,7 +525,6 @@ namespace System
             return newString;
         }
 
-
         /*
          * HELPER METHODS
          */

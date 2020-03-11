@@ -89,7 +89,6 @@ namespace System
 #else
             return Start.ToString() + ".." + End.ToString();
 #endif
-
         }
 
         /// <summary>Create a Range object starting from start index to the end of the collection.</summary>

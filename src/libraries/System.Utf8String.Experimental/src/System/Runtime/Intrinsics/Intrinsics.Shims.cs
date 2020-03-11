@@ -30,30 +30,30 @@ namespace System.Runtime.Intrinsics.X86
     {
         public abstract class X64
         {
-            public static bool IsSupported { get; } = false;
+            public const bool IsSupported = false;
             public static ulong TrailingZeroCount(ulong value) => throw new PlatformNotSupportedException();
         }
-        public static bool IsSupported { get; } = false;
+        public const bool IsSupported = false;
         public static uint TrailingZeroCount(uint value) => throw new PlatformNotSupportedException();
     }
     internal abstract class Lzcnt
     {
         public abstract class X64
         {
-            public static bool IsSupported { get; } = false;
+            public const bool IsSupported = false;
             public static ulong LeadingZeroCount(ulong value) => throw new PlatformNotSupportedException();
         }
-        public static bool IsSupported { get; } = false;
+        public const bool IsSupported = false;
         public static uint LeadingZeroCount(uint value) => throw new PlatformNotSupportedException();
     }
     internal abstract class Popcnt
     {
         public abstract class X64
         {
-            public static bool IsSupported { get; } = false;
+            public const bool IsSupported = false;
             public static ulong PopCount(ulong value) => throw new PlatformNotSupportedException();
         }
-        public static bool IsSupported { get; } = false;
+        public const bool IsSupported = false;
         public static uint PopCount(uint value) => throw new PlatformNotSupportedException();
     }
 
@@ -61,11 +61,11 @@ namespace System.Runtime.Intrinsics.X86
     {
         public abstract class X64
         {
-            public static bool IsSupported { get; } = false;
+            public const bool IsSupported = false;
             public static Vector128<ulong> ConvertScalarToVector128UInt64(ulong value) => throw new PlatformNotSupportedException();
             public static ulong ConvertToUInt64(Vector128<ulong> value) => throw new PlatformNotSupportedException();
         }
-        public static bool IsSupported { get; } = false;
+        public const bool IsSupported = false;
         public static Vector128<ushort> Add(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
         public static Vector128<ushort> AddSaturate(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
         public static Vector128<ushort> AndNot(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
@@ -95,9 +95,9 @@ namespace System.Runtime.Intrinsics.X86
     {
         public abstract class X64
         {
-            public static bool IsSupported { get; } = false;
+            public const bool IsSupported = false;
         }
-        public static bool IsSupported { get; } = false;
+        public const bool IsSupported = false;
         public static Vector128<ushort> Min(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();
         public static bool TestZ(Vector128<short> left, Vector128<short> right) => throw new PlatformNotSupportedException();
         public static bool TestZ(Vector128<ushort> left, Vector128<ushort> right) => throw new PlatformNotSupportedException();

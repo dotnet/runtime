@@ -881,7 +881,6 @@ namespace System.Text
 #else
             if (IsBmp)
             {
-
                 return ((char)_value).ToString();
             }
             else

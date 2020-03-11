@@ -1,7 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);3019</NoWarn>
+    <!-- CS3019: CLS attributes on internal types. Some shared source files are internal in this project. -->
+    <!-- CS0162: Unreachable code detected from Intrinsics IsSupported being 'false'. -->
+    <NoWarn Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">$(NoWarn);CS3019;CS0162</NoWarn>
     <IsPartialFacadeAssembly Condition="'$(TargetFramework)' != 'netstandard2.0'">true</IsPartialFacadeAssembly>
     <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.0;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <Nullable>enable</Nullable>

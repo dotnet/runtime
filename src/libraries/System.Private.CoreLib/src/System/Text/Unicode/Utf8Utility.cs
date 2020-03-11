@@ -147,5 +147,5 @@ namespace System.Text.Unicode
             return Utf8String.UnsafeCreateWithoutValidation(memStreamBuffer);
         }
 #endif // FEATURE_UTF8STRING
-        }
+    }
 }
