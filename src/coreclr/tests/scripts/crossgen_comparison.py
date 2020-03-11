@@ -92,6 +92,7 @@
 ################################################################################
 
 import argparse
+import datetime
 import glob
 import json
 import hashlib
@@ -694,6 +695,13 @@ def compare_results(args):
 ################################################################################
 
 if __name__ == '__main__':
+    start = datetime.datetime.now()
+
     parser = build_argument_parser()
     args = parser.parse_args()
     func = args.func(args)
+
+    end = datetime.datetime.now()
+    elapsed = end - start
+
+    print("Elapsed time: {}".format(elapsed.total_seconds()))
