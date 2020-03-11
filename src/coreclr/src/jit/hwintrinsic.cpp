@@ -615,11 +615,12 @@ static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 // impHWIntrinsic: Import a hardware intrinsic as a GT_HWINTRINSIC node if possible
 //
 // Arguments:
-//    intrinsic -- id of the intrinsic function.
+//    intrinsic  -- id of the intrinsic function.
 //    clsHnd     -- class handle containing the intrinsic function.
-//    method    -- method handle of the intrinsic function.
-//    sig       -- signature of the intrinsic call
-//
+//    method     -- method handle of the intrinsic function.
+//    sig        -- signature of the intrinsic call
+//    mustExpand -- true if the intrinsic must return a GenTree*; otherwise, false
+
 // Return Value:
 //    The GT_HWINTRINSIC node, or nullptr if not a supported intrinsic
 //
