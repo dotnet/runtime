@@ -57,7 +57,7 @@ jobs:
       - name: productDirectory
         value: $(binDirectory)/coreclr
       - name: workItemDirectory
-        value: $(artifactsDirectory)/cross-crossgen
+        value: $(artifactsDirectory)/tests/coreclr/$(targetFlavor)/Tests/Core_Root
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - name: artifactsDirectory
         value: $(Build.SourcesDirectory)\artifacts
@@ -66,7 +66,7 @@ jobs:
       - name: productDirectory
         value: $(binDirectory)\coreclr
       - name: workItemDirectory
-        value: $(artifactsDirectory)\cross-crossgen
+        value: $(artifactsDirectory)\tests\coreclr\$(targetFlavor)\Tests\Core_Root
 
     - ${{ parameters.variables }}
 
@@ -102,33 +102,20 @@ jobs:
           displayName: 'live-built libraries'
 
 
+    # Populate Core_Root
+    - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
+      displayName: Populate Core_Root
+
     # Create directories and ensure crossgen is executable
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: |
-          chmod +x $(productDirectory)/$(targetFlavor)/$(hostArchType)/crossgen
+          chmod +x $(workItemDirectory)/crossgen
           mkdir -p $(workItemDirectory)/log/$(crossFlavor)
         displayName: Create directories and ensure crossgen is executable
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: |
           mkdir $(workItemDirectory)\log\$(crossFlavor)
         displayName: Create directories
-
-
-    # Populate Core_Root
-    - script: $(coreClrRepoRootDir)build-test$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly
-      displayName: Populate Core_Root
-
-    # Populate the workitem directory
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: |
-          cp -r $(artifactsDirectory)/tests/coreclr/$(targetFlavor)/Tests/Core_Root $(workItemDirectory)/Core_Root
-        displayName: Populate the workitem directory
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: |
-          mkdir $(workItemDirectory)\Core_Root
-          xcopy /s $(artifactsDirectory)\tests\coreclr\$(targetFlavor)\Tests\Core_Root $(workItemDirectory)\Core_Root
-        displayName: Populate the workitem directory
-
 
     # Create baseline output on the host (x64) machine
     - task: PythonScript@0
