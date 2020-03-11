@@ -1,5 +1,5 @@
 if(NOT CLR_CMAKE_CONFIGURE_PLATFORM_INCLUDED)
-  message(FATAL_ERROR "configuretools.cmake needs to be included after configureplatforms.cmake")
+  message(FATAL_ERROR "configuretools.cmake needs to be included after configureplatform.cmake")
 endif()
 
 # Get the version of the compiler that is in the file name for tool location.
