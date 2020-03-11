@@ -42,7 +42,7 @@ jobs:
       variables: ${{ parameters.variables }}
       pool: ${{ parameters.pool }}
 
-- template: /eng/pipelines/coreclr/templates/run-test-job.yml
+- template: /eng/pipelines/common/templates/run-test-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
