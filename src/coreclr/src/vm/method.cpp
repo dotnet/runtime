@@ -5254,6 +5254,8 @@ void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
 }
 
 #ifndef CROSSGEN_COMPILE
+
+#ifdef TARGET_WINDOWS
 FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod, PTR_CUTF8 entryPointName) const
 {
     CONTRACTL
@@ -5264,11 +5266,7 @@ FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod
     }
     CONTRACTL_END;
 
-#ifndef TARGET_UNIX
     FARPROC pFunc = GetProcAddress(hMod, entryPointName);
-#else
-    FARPROC pFunc = PAL_GetProcAddressDirect(hMod, entryPointName);
-#endif
 
 #if defined(TARGET_X86)
 
@@ -5309,6 +5307,7 @@ FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod
 
     return pFunc;
 }
+#endif
 
 //*******************************************************************************
 LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
@@ -5323,21 +5322,21 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
 
     char const * funcName = GetEntrypointName();
 
-    FARPROC pFunc = NULL;
-
-#ifndef TARGET_UNIX
+#ifndef TARGET_WINDOWS
+    return reinterpret_cast<LPVOID>(PAL_GetProcAddressDirect(hMod, funcName));
+#else
     // Handle ordinals.
     if (funcName[0] == '#')
     {
         long ordinal = atol(funcName + 1);
         return reinterpret_cast<LPVOID>(GetProcAddress(hMod, (LPCSTR)(size_t)((UINT16)ordinal)));
     }
-#endif
 
-    // Just look for the user-provided name without charset suffixes.  If it is unicode fcn, we are going
+    // Just look for the user-provided name without charset suffixes.
+    // If  it is unicode fcn, we are going
     // to need to check for the 'W' API because it takes precedence over the
     // unmangled one (on NT some APIs have unmangled ANSI exports).
-    pFunc = FindEntryPointWithMangling(hMod, funcName);
+    FARPROC pFunc = FindEntryPointWithMangling(hMod, funcName);
     if ((pFunc != NULL && IsNativeAnsi()) || IsNativeNoMangled())
     {
         return reinterpret_cast<LPVOID>(pFunc);
@@ -5369,6 +5368,7 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
     }
 
     return reinterpret_cast<LPVOID>(pFunc);
+#endif
 }
 #endif // CROSSGEN_COMPILE
 
