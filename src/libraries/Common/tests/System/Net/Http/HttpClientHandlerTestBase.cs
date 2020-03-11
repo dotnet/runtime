@@ -81,7 +81,7 @@ namespace System.Net.Http.Functional.Tests
                 wrappedHandler = new VersionCheckerHttpHandler(httpClientHandler, remoteServer.HttpVersion);
             }
 
-            return new HttpClient(wrappedHandler) { DefaultRequestVersion = remoteServer.HttpVersion };
+            return new HttpClient(wrappedHandler) { DefaultRequestVersion = remoteServer.HttpVersion, Timeout = TimeSpan.FromMilliseconds(TestHelper.PassingTestTimeoutMilliseconds) };
         }
 
         private sealed class VersionCheckerHttpHandler : DelegatingHandler
