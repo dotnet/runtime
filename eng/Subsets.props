@@ -58,6 +58,7 @@
 
   <PropertyGroup>
     <DefaultSubsetCategories>libraries-installer-coreclr-mono</DefaultSubsetCategories>
+    <DefaultSubsetCategories Condition="'$(TargetOS)' == 'iOS'">libraries-mono</DefaultSubsetCategories>
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <!-- TODO: Split into multiple sets. -->
     <DefaultLibrariesSubsets>all</DefaultLibrariesSubsets>
@@ -66,7 +67,6 @@
 
     <_subsetCategory Condition="'$(SubsetCategory)' != ''">$(SubsetCategory.ToLowerInvariant())</_subsetCategory>
     <_subsetCategory Condition="'$(SubsetCategory)' == ''">$(DefaultSubsetCategories)</_subsetCategory>
-    <_subsetCategory Condition="'$(SubsetCategory)' == '' and '$(TargetOS)' == 'iOS'">libraries-mono</_subsetCategory>
     <_subset Condition="'$(Subset)' != ''">$(Subset.ToLowerInvariant())</_subset>
     <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('installer'))">$(DefaultInstallerSubsets)</_subset>
     <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('libraries'))">$(_subset)-$(DefaultLibrariesSubsets)</_subset>
