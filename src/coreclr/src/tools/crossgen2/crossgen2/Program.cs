@@ -247,7 +247,7 @@ namespace ILCompiler
                     //
 
                     // Single method mode?
-                    MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
+                    IEnumerable<MethodDesc> singleMethods = CheckAndParseSingleMethodModeArguments(typeSystemContext);
 
                     var logger = new Logger(Console.Out, _commandLineOptions.Verbose);
 
@@ -289,7 +289,7 @@ namespace ILCompiler
 
                     ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
-                    if (singleMethod != null)
+                    if (singleMethods != null)
                     {
                         // Compiling just a single method
                         compilationGroup = new SingleMethodCompilationModuleGroup(
@@ -298,8 +298,8 @@ namespace ILCompiler
                             inputModules,
                             versionBubbleModules,
                             _commandLineOptions.CompileBubbleGenerics,
-                            singleMethod);
-                        compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
+                            singleMethods);
+                        compilationRoots.Add(new SingleMethodRootProvider(singleMethods));
                     }
                     else
                     {
@@ -328,7 +328,7 @@ namespace ILCompiler
                     else
                         compilationGroup.ApplyProfilerGuidedCompilationRestriction(null);
 
-                    if (singleMethod == null)
+                    if (singleMethods == null)
                     {
                         // For non-single-method compilations add compilation roots.
                         foreach (var module in rootingModules)
@@ -396,37 +396,60 @@ namespace ILCompiler
             return foundType;
         }
 
-        private MethodDesc CheckAndParseSingleMethodModeArguments(CompilerTypeSystemContext context)
+        private IEnumerable<MethodDesc> CheckAndParseSingleMethodModeArguments(CompilerTypeSystemContext context)
         {
             if (_commandLineOptions.SingleMethodName == null && _commandLineOptions.SingleMethodTypeName == null && _commandLineOptions.SingleMethodGenericArgs == null)
                 return null;
 
-            if (_commandLineOptions.SingleMethodName == null || _commandLineOptions.SingleMethodTypeName == null)
+            return CheckAndParseSingleMethodModeArgumentsHelper(context);
+        }
+
+        private IEnumerable<MethodDesc> CheckAndParseSingleMethodModeArgumentsHelper(CompilerTypeSystemContext context)
+        {
+            if (_commandLineOptions.SingleMethodTypeName == null)
                 throw new CommandLineException(SR.TypeAndMethodNameNeeded);
 
             TypeDesc owningType = FindType(context, _commandLineOptions.SingleMethodTypeName);
 
             // TODO: allow specifying signature to distinguish overloads
-            MethodDesc method = owningType.GetMethod(_commandLineOptions.SingleMethodName, null);
-            if (method == null)
+            bool methodsFound = false;
+            Exception genericArgMismatchException = null;
+            foreach (MethodDesc method in owningType.GetMethods())
+            {
+                if ((_commandLineOptions.SingleMethodName != null) &&
+                    (method.Name != _commandLineOptions.SingleMethodName))
+                    continue;
+
+                if (method.HasInstantiation != (_commandLineOptions.SingleMethodGenericArgs != null) ||
+                    (method.HasInstantiation && (method.Instantiation.Length != _commandLineOptions.SingleMethodGenericArgs.Length)))
+                {
+                    genericArgMismatchException = new CommandLineException(
+                        string.Format(SR.GenericArgCountMismatch, method.Instantiation.Length, _commandLineOptions.SingleMethodName, _commandLineOptions.SingleMethodTypeName));
+                    continue;
+                }
+
+                methodsFound = true; // If we reach here, we will always return a method
+
+                if (method.HasInstantiation)
+                {
+                    List<TypeDesc> genericArguments = new List<TypeDesc>();
+                    foreach (var argString in _commandLineOptions.SingleMethodGenericArgs)
+                        genericArguments.Add(FindType(context, argString));
+                    yield return method.MakeInstantiatedMethod(genericArguments.ToArray());
+                }
+                else
+                {
+                    yield return method;
+                }
+
+            }
+
+            if (!methodsFound)
+            {
+                if (genericArgMismatchException != null)
+                    throw genericArgMismatchException;
                 throw new CommandLineException(string.Format(SR.MethodNotFoundOnType, _commandLineOptions.SingleMethodName, _commandLineOptions.SingleMethodTypeName));
-
-            if (method.HasInstantiation != (_commandLineOptions.SingleMethodGenericArgs != null) ||
-                (method.HasInstantiation && (method.Instantiation.Length != _commandLineOptions.SingleMethodGenericArgs.Length)))
-            {
-                throw new CommandLineException(
-                    string.Format(SR.GenericArgCountMismatch, method.Instantiation.Length, _commandLineOptions.SingleMethodName, _commandLineOptions.SingleMethodTypeName));
             }
-
-            if (method.HasInstantiation)
-            {
-                List<TypeDesc> genericArguments = new List<TypeDesc>();
-                foreach (var argString in _commandLineOptions.SingleMethodGenericArgs)
-                    genericArguments.Add(FindType(context, argString));
-                method = method.MakeInstantiatedMethod(genericArguments.ToArray());
-            }
-
-            return method;
         }
 
         private static bool DumpReproArguments(CodeGenerationFailedException ex)

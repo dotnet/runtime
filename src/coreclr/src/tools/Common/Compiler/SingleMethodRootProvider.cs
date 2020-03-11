@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -11,16 +12,17 @@ namespace ILCompiler
     /// </summary>
     public class SingleMethodRootProvider : ICompilationRootProvider
     {
-        private MethodDesc _method;
+        private IEnumerable<MethodDesc> _methods;
 
-        public SingleMethodRootProvider(MethodDesc method)
+        public SingleMethodRootProvider(IEnumerable<MethodDesc> methods)
         {
-            _method = method;
+            _methods = methods;
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            rootProvider.AddCompilationRoot(_method, "Single method root");
+            foreach (var method in _methods)
+                rootProvider.AddCompilationRoot(method, "Single method root");
         }
     }
 }

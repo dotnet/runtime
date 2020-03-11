@@ -15,7 +15,7 @@ namespace ILCompiler
     /// </summary>
     public class SingleMethodCompilationModuleGroup : ReadyToRunCompilationModuleGroupBase
     {
-        private MethodDesc _method;
+        private HashSet<MethodDesc> _methods;
 
         public SingleMethodCompilationModuleGroup(
             TypeSystemContext context,
@@ -23,19 +23,19 @@ namespace ILCompiler
             IEnumerable<EcmaModule> compilationModuleSet,
             IEnumerable<ModuleDesc> versionBubbleModuleSet,
             bool compileGenericDependenciesFromVersionBubbleModuleSet,
-            MethodDesc method) :
+            IEnumerable<MethodDesc> methods) :
                 base(context,
                      isCompositeBuildMode,
                      compilationModuleSet,
                      versionBubbleModuleSet,
                      compileGenericDependenciesFromVersionBubbleModuleSet)
         {
-            _method = method;
+            _methods = new HashSet<MethodDesc>(methods);
         }
 
         public override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {
-            return method == _method;
+            return _methods.Contains(method);
         }
 
         public override void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction)
