@@ -30,7 +30,7 @@ namespace Microsoft.NET.HostModel.Bundle
         readonly TargetInfo Target;
         readonly BundleOptions Options;
 
-        // Align embedded assemblies such that they can be efficiently mapped from the bundle.
+        // Assemblies are 16 bytes aligned, so that their sections can be memory-mapped cache aligned.
         public const int AssemblyAlignment = 16;
 
         // This constructor will be deleted once the SDK is changed to use the new constructor
@@ -38,10 +38,9 @@ namespace Microsoft.NET.HostModel.Bundle
                        string outputDir,
                        bool embedPDBs,
                        bool diagnosticOutput)
-            :this(hostName, outputDir, 
-                 BundleOptions.BundleAllContent | 
-                 ((embedPDBs) ? BundleOptions.BundleSymbolFiles : BundleOptions.None) |
-                 ((diagnosticOutput) ? BundleOptions.ShowDiagnosticTrace : BundleOptions.None))
+            :this(hostName, outputDir,
+                  BundleOptions.BundleAllContent | ((embedPDBs) ? BundleOptions.BundleSymbolFiles : BundleOptions.None),
+                  diagnosticOutput: diagnosticOutput)
         {
         }
 
@@ -49,9 +48,10 @@ namespace Microsoft.NET.HostModel.Bundle
                        string outputDir,
                        BundleOptions options = BundleOptions.None,
                        OSPlatform? targetOS = null,
-                       string targetFramework = null)
+                       float targetFrameworkVersion = 5.0f,
+                       bool diagnosticOutput = false)
         {
-            Tracer = new Trace(options.HasFlag(BundleOptions.ShowDiagnosticTrace));
+            Tracer = new Trace(diagnosticOutput);
 
             HostName = hostName;
             OutputDir = Path.GetFullPath(string.IsNullOrEmpty(outputDir) ? Environment.CurrentDirectory : outputDir);
@@ -61,7 +61,7 @@ namespace Microsoft.NET.HostModel.Bundle
             RuntimeConfigJson = baseName + ".runtimeconfig.json";
             RuntimeConfigDevJson = baseName + ".runtimeconfig.dev.json";
 
-            Target = new TargetInfo(targetOS, targetFramework);
+            Target = new TargetInfo(targetOS, targetFrameworkVersion);
             BundleManifest = new Manifest(Target.BundleVersion, netcoreapp3CompatMode: options.HasFlag(BundleOptions.BundleAllContent));
             Options = Target.DefaultOptions | options;
         }

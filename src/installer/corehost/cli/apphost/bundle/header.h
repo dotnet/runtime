@@ -36,11 +36,14 @@ namespace bundle
     };
 #pragma pack(pop)
 
+    // netcoreapp3_compat_mode flag is set on a .net5 app, which chooses to build single-file apps in .netcore3.x compat mode,
+    // This indicates that:
+    //   All published files are bundled into the app; some of them will be extracted to disk.
+    //   AppContext.BaseDirectory is set to the extraction directory (and not the AppHost directory).
     enum header_flags_t : uint64_t
     {
         none = 0,
-        needs_extraction = 1,
-        netcoreapp3_compat_mode = 2
+        netcoreapp3_compat_mode = 1
     };
 
 #pragma pack(push, 1)
@@ -51,6 +54,11 @@ namespace bundle
         int64_t size;
     };
 
+    // header_fixed_v2_t is available in single-file apps targetting .net5+ frameworks.
+    // It stores information that facilitates the host to process contents of the bundle without extraction.
+    //
+    // The location of deps.json and runtimeconfig.json is already available in the Bundle manifest.
+    // However, the data is cached here in order to simplify the bundle-processing performed by hostfxr.
     struct header_fixed_v2_t
     {
     public:
@@ -74,7 +82,6 @@ namespace bundle
         static header_t read(reader_t& reader, bool need_exact_version);
         const pal::string_t& bundle_id() { return m_bundle_id; }
         int32_t num_embedded_files() { return m_num_embedded_files; }
-        bool needs_extraction() { return m_v2_header == NULL || (m_v2_header->flags & header_flags_t::needs_extraction); }
 
         static const uint32_t major_version = 2;
         static const uint32_t minor_version = 0;

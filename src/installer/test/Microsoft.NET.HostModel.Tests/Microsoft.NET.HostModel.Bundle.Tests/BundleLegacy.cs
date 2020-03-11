@@ -12,22 +12,24 @@ using BundleTests.Helpers;
 
 namespace Microsoft.NET.HostModel.Tests
 {
-    public class BuncleLegacy : IClassFixture<BuncleLegacy.SharedTestState>
+    public class BundleLegacy : IClassFixture<BundleLegacy.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
-        public BuncleLegacy(BuncleLegacy.SharedTestState fixture)
+        public BundleLegacy(BundleLegacy.SharedTestState fixture)
         {
             sharedTestState = fixture;
         }
 
-        [Fact]
-        public void TestNetCoreApp30Apps()
+        [InlineData(3.0)]
+        [InlineData(3.1)]
+        [Theory]
+        public void TestNetCoreApp3xApp(float targetFrameworkVersion)
         {
-            var fixture = sharedTestState.TestFixture.Copy();
+            var fixture = (targetFrameworkVersion == 3.0) ? sharedTestState.TestFixture30.Copy() : sharedTestState.TestFixture31.Copy();
 
             // Targetting netcoreap3.0 implies BundleOption.BundleAllContent
-            var singleFile = BundleHelper.BundleApp(fixture, BundleOptions.None, "netcoreapp3.0");
+            var singleFile = BundleHelper.BundleApp(fixture, BundleOptions.None, targetFrameworkVersion);
 
             Command.Create(singleFile)
                 .CaptureStdErr()
@@ -39,27 +41,35 @@ namespace Microsoft.NET.HostModel.Tests
                 .HaveStdOutContaining("Hello World!");
         }
 
+        private static TestProjectFixture CreateTestFixture(string netCoreAppFramework, string mnaVersion)
+        {
+            var repoDirectories = new RepoDirectoriesProvider(microsoftNETCoreAppVersion: mnaVersion);
+            var fixture = new TestProjectFixture("StandaloneApp3x", repoDirectories, framework: netCoreAppFramework, assemblyName: "StandaloneApp");
+
+            fixture
+                .EnsureRestoredForRid(fixture.CurrentRid, repoDirectories.CorehostPackages)
+                .PublishProject(runtime: fixture.CurrentRid, outputDirectory: BundleHelper.GetPublishPath(fixture));
+
+            return fixture;
+        }
+
+
         public class SharedTestState : IDisposable
         {
-            public TestProjectFixture TestFixture { get; set; }
-            public RepoDirectoriesProvider RepoDirectories { get; set; }
+            public TestProjectFixture TestFixture30 { get; set; }
+            public TestProjectFixture TestFixture31 { get; set; }
+            
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider(microsoftNETCoreAppVersion: "3.0.0");
-
-                TestFixture = new TestProjectFixture("StandaloneApp30", RepoDirectories,
-                                                     framework: "netcoreapp3.0", assemblyName: "StandaloneApp");
-
-                TestFixture
-                    .EnsureRestoredForRid(TestFixture.CurrentRid, RepoDirectories.CorehostPackages)
-                    .PublishProject(runtime: TestFixture.CurrentRid,
-                                    outputDirectory: BundleHelper.GetPublishPath(TestFixture));
+                TestFixture30 = CreateTestFixture("netcoreapp3.0", "3.0.0");
+                TestFixture31 = CreateTestFixture("netcoreapp3.1", "3.1.0");
             }
 
             public void Dispose()
             {
-                TestFixture.Dispose();
+                TestFixture30.Dispose();
+                TestFixture31.Dispose();
             }
         }
     }

@@ -51,11 +51,14 @@ namespace Microsoft.NET.HostModel.Bundle
     /// </summary>
     public class Manifest
     {
+        // NetcoreApp3CompatMode flag is set on a .net5 app,
+        // which chooses to build single-file apps in .netcore3.x compat mode,
+        // by constructing the bundler with BundleAllConent option.
+        // This mode is expected to be depricated in future versions of .net.
         [Flags]
         enum HeaderFlags : ulong
         {
             None = 0,
-            NeedsExtraction = 1,
             NetcoreApp3CompatMode = 2
         }
 
@@ -105,7 +108,6 @@ namespace Microsoft.NET.HostModel.Bundle
                     break;
 
                 default:
-                    Flags |= HeaderFlags.NeedsExtraction;
                     break;
             }
 
@@ -118,7 +120,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
             // Write the bundle header
             writer.Write(DesiredMajorVersion); 
-            writer.Write(MinorVersion);  // Minor Version
+            writer.Write(MinorVersion);
             writer.Write(Files.Count());
             writer.Write(BundleID);
 

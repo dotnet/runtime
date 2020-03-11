@@ -21,31 +21,30 @@ namespace Microsoft.NET.HostModel.Bundle
     public class TargetInfo
     {
         public readonly OSPlatform OS;
-        public readonly string Framework;
+        public readonly float FrameworkVersion;
         public readonly uint BundleVersion;
         public readonly BundleOptions DefaultOptions;
 
-        public TargetInfo(OSPlatform? os, string framework)
+        public TargetInfo(OSPlatform? os, float targetFrameworkVersion)
         {
             OS = os ?? HostOS;
-            Framework = framework != null ? framework.ToLower() : "net5";
+            FrameworkVersion = targetFrameworkVersion;
 
             Debug.Assert(IsLinux || IsOSX || IsWindows);
-            switch (Framework)
+
+            if (targetFrameworkVersion == 3.0 || targetFrameworkVersion == 3.1)
             {
-                case "netcoreapp3.0":
-                case "netcoreapp3.1":
-                    BundleVersion = 1u;
-                    DefaultOptions = BundleOptions.BundleAllContent;
-                    break;
-
-                case "net5":
-                    BundleVersion = 2u;
-                    DefaultOptions = BundleOptions.None;
-                    break;
-
-                default:
-                    throw new ArgumentException("Invalid input: Unsupported Target Framework");
+                BundleVersion = 1u;
+                DefaultOptions = BundleOptions.BundleAllContent;
+            }
+            else if(targetFrameworkVersion >= 5.0)
+            {
+                BundleVersion = 2u;
+                DefaultOptions = BundleOptions.None;
+            }
+            else
+            {
+                throw new ArgumentException("Invalid input: Unsupported Target Framework");
             }
         }
 
@@ -57,7 +56,7 @@ namespace Microsoft.NET.HostModel.Bundle
         public override string ToString()
         {
             string os = IsWindows ? "win" : IsLinux ? "linux" : "osx";
-            return string.Format($"{os}-{Framework}");
+            return string.Format($"OS: {os} FrameworkVersion: {FrameworkVersion}");
         }
 
         static OSPlatform HostOS => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :
@@ -69,7 +68,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         // The .net core 3 apphost doesn't care about semantics of FileType -- all files are extracted at startup.
         // However, the apphost checks that the FileType value is within expected bounds, so set it to the first enumeration.
-        public FileType TargetSpecificFileType(FileType fileType) => (BundleVersion == 1) ? FileType.Unknown: fileType;
+        public FileType TargetSpecificFileType(FileType fileType) => (BundleVersion == 1) ? FileType.Unknown : fileType;
     }
 }
 

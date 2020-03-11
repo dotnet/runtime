@@ -85,10 +85,11 @@ namespace Microsoft.NET.HostModel.Tests
 
         [InlineData(BundleOptions.None)]
         [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleOtherFiles)]
         [InlineData(BundleOptions.BundleAllContent)]
         [InlineData(BundleOptions.BundleSymbolFiles)]
         [Theory]
-        public void TestFilesAlwaysBundled(BundleOptions? options)
+        public void TestFilesAlwaysBundled(BundleOptions options)
         {
             var fixture = sharedTestState.TestFixture.Copy();
 
@@ -97,7 +98,7 @@ namespace Microsoft.NET.HostModel.Tests
             string publishPath = BundleHelper.GetPublishPath(fixture);
             var bundleDir = BundleHelper.GetBundleDir(fixture);
 
-            var bundler = new Bundler(hostName, bundleDir.FullName, options.Value);
+            var bundler = new Bundler(hostName, bundleDir.FullName, options);
             bundler.GenerateBundle(publishPath);
 
             bundler.BundleManifest.Contains($"{appName}.dll").Should().BeTrue();
@@ -107,10 +108,11 @@ namespace Microsoft.NET.HostModel.Tests
 
         [InlineData(BundleOptions.None)]
         [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleOtherFiles)]
         [InlineData(BundleOptions.BundleAllContent)]
         [InlineData(BundleOptions.BundleSymbolFiles)]
         [Theory]
-        public void TestFilesNeverBundled(BundleOptions? options)
+        public void TestFilesNeverBundled(BundleOptions options)
         {
             var fixture = sharedTestState.TestFixture.Copy();
 
@@ -123,7 +125,7 @@ namespace Microsoft.NET.HostModel.Tests
             File.Copy(Path.Combine(publishPath, $"{appName}.runtimeconfig.json"), 
                       Path.Combine(publishPath, $"{appName}.runtimeconfig.dev.json"));
 
-            var bundler = new Bundler(hostName, bundleDir.FullName, options.Value); 
+            var bundler = new Bundler(hostName, bundleDir.FullName, options); 
             bundler.GenerateBundle(publishPath);
 
             bundler.BundleManifest.Contains($"{appName}.runtimeconfig.dev.json").Should().BeFalse();
@@ -132,7 +134,7 @@ namespace Microsoft.NET.HostModel.Tests
         [InlineData(BundleOptions.None)]
         [InlineData(BundleOptions.BundleSymbolFiles)]
         [Theory]
-        public void TestBundlingSymbols(BundleOptions? options)
+        public void TestBundlingSymbols(BundleOptions options)
         {
             var fixture = sharedTestState.TestFixture.Copy();
 
@@ -141,16 +143,16 @@ namespace Microsoft.NET.HostModel.Tests
             string publishPath = BundleHelper.GetPublishPath(fixture);
             var bundleDir = BundleHelper.GetBundleDir(fixture);
 
-            var bundler = new Bundler(hostName, bundleDir.FullName, options.Value);
+            var bundler = new Bundler(hostName, bundleDir.FullName, options);
             bundler.GenerateBundle(publishPath);
 
-            bundler.BundleManifest.Contains($"{appName}.pdb").Should().Be(options.Value.HasFlag(BundleOptions.BundleSymbolFiles));
+            bundler.BundleManifest.Contains($"{appName}.pdb").Should().Be(options.HasFlag(BundleOptions.BundleSymbolFiles));
         }
 
         [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleSymbolFiles)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
         [Theory]
-        public void TestBundlingNativeBinaries(BundleOptions? options)
+        public void TestBundlingNativeBinaries(BundleOptions options)
         {
             var fixture = sharedTestState.TestFixture.Copy();
 
@@ -159,10 +161,10 @@ namespace Microsoft.NET.HostModel.Tests
             string publishPath = BundleHelper.GetPublishPath(fixture);
             var bundleDir = BundleHelper.GetBundleDir(fixture);
 
-            var bundler = new Bundler(hostName, bundleDir.FullName, options.Value);
+            var bundler = new Bundler(hostName, bundleDir.FullName, options);
             bundler.GenerateBundle(publishPath);
 
-            bundler.BundleManifest.Contains($"{hostfxr}").Should().Be(options.Value.HasFlag(BundleOptions.BundleNativeBinaries));
+            bundler.BundleManifest.Contains($"{hostfxr}").Should().Be(options.HasFlag(BundleOptions.BundleNativeBinaries));
         }
 
         [Fact]
