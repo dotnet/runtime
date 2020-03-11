@@ -33,7 +33,6 @@
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
-    <Compile Include="HttpClientJsonExtensionsTests.Formatter.cs" />
     <Compile Include="HttpContentJsonExtensionsTests.cs" />
     <Compile Include="JsonContentTests.cs" />
     <Compile Include="Person.cs" />

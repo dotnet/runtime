@@ -79,12 +79,11 @@ namespace System.Net.Http.Json.Functional.Tests
                 {
                     using (HttpClient client = new HttpClient())
                     {
+                        // As of now, we pass the message body to the serializer even when its empty which causes the serializer to throw.
                         JsonException ex = await Assert.ThrowsAsync<JsonException>(() => client.GetFromJsonAsync(uri, typeof(Person)));
                         Assert.Contains("Path: $ | LineNumber: 0 | BytePositionInLine: 0", ex.Message);
                     }
                 },
-
-
                 server => server.HandleRequestAsync(headers: _headers));
         }
 

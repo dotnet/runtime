@@ -10,13 +10,7 @@ namespace System.Net.Http.Json
 {
     public static partial class HttpClientJsonExtensions
     {
-        public static Task<HttpResponseMessage> PutAsJsonAsync(
-            this HttpClient client,
-            string requestUri,
-            Type type,
-            object? value,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+        public static Task<HttpResponseMessage> PutAsJsonAsync(this HttpClient client, string requestUri, Type type, object? value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -27,13 +21,7 @@ namespace System.Net.Http.Json
             return client.PutAsync(requestUri, content, cancellationToken);
         }
 
-        public static Task<HttpResponseMessage> PutAsJsonAsync(
-            this HttpClient client,
-            Uri requestUri,
-            Type type,
-            object? value,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+        public static Task<HttpResponseMessage> PutAsJsonAsync(this HttpClient client, Uri requestUri, Type type, object? value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -44,12 +32,7 @@ namespace System.Net.Http.Json
             return client.PutAsync(requestUri, content, cancellationToken);
         }
 
-        public static Task<HttpResponseMessage> PutAsJsonAsync<T>(
-            this HttpClient client,
-            string requestUri,
-            T value,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+        public static Task<HttpResponseMessage> PutAsJsonAsync<T>(this HttpClient client, string requestUri, T value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -60,12 +43,7 @@ namespace System.Net.Http.Json
             return client.PutAsync(requestUri, content, cancellationToken);
         }
 
-        public static Task<HttpResponseMessage> PutAsJsonAsync<T>(
-            this HttpClient client,
-            Uri requestUri,
-            T value,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+        public static Task<HttpResponseMessage> PutAsJsonAsync<T>(this HttpClient client, Uri requestUri, T value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -74,6 +52,16 @@ namespace System.Net.Http.Json
 
             JsonContent content = CreateJsonContent<T>(value, options);
             return client.PutAsync(requestUri, content, cancellationToken);
+        }
+
+        private static JsonContent CreateJsonContent(Type type, object? value, JsonSerializerOptions? options)
+        {
+            return new JsonContent(type, value, options);
+        }
+
+        private static JsonContent CreateJsonContent<T>(T value, JsonSerializerOptions? options)
+        {
+            return JsonContent.Create<T>(value, options);
         }
     }
 }

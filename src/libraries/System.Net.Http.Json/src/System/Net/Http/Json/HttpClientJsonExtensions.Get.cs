@@ -13,21 +13,7 @@ namespace System.Net.Http.Json
     /// </summary>
     public static partial class HttpClientJsonExtensions
     {
-        /// <summary>
-        /// TODO
-        /// </summary>
-        /// <param name="client"></param>
-        /// <param name="requestUri"></param>
-        /// <param name="type"></param>
-        /// <param name="options"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public static Task<object?> GetFromJsonAsync(
-            this HttpClient client,
-            string requestUri,
-            Type type,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, string requestUri, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -38,21 +24,7 @@ namespace System.Net.Http.Json
             return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
         }
 
-        /// <summary>
-        /// TODO
-        /// </summary>
-        /// <param name="client"></param>
-        /// <param name="requestUri"></param>
-        /// <param name="type"></param>
-        /// <param name="options"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public static Task<object?> GetFromJsonAsync(
-            this HttpClient client,
-            Uri requestUri,
-            Type type,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri requestUri, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -63,20 +35,7 @@ namespace System.Net.Http.Json
             return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
         }
 
-        /// <summary>
-        /// TODO
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="client"></param>
-        /// <param name="requestUri"></param>
-        /// <param name="options"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public static Task<T> GetFromJsonAsync<T>(
-            this HttpClient client,
-            string requestUri,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+        public static Task<T> GetFromJsonAsync<T>(this HttpClient client, string requestUri, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -87,20 +46,7 @@ namespace System.Net.Http.Json
             return GetFromJsonAsyncCore<T>(taskResponse, options, cancellationToken);
         }
 
-        /// <summary>
-        /// TODO
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="client"></param>
-        /// <param name="requestUri"></param>
-        /// <param name="options"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public static Task<T> GetFromJsonAsync<T>(
-            this HttpClient client,
-            Uri requestUri,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+        public static Task<T> GetFromJsonAsync<T>(this HttpClient client, Uri requestUri, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
             {
@@ -118,6 +64,7 @@ namespace System.Net.Http.Json
 
             return await response.Content.ReadFromJsonAsync(type, options, cancellationToken).ConfigureAwait(false);
         }
+
         private static async Task<T> GetFromJsonAsyncCore<T>(Task<HttpResponseMessage> taskResponse, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             HttpResponseMessage response = await taskResponse.ConfigureAwait(false);

@@ -12,19 +12,12 @@ namespace System.Net.Http.Json
 {
     public static class HttpContentJsonExtensions
     {
-        public static Task<object?> ReadFromJsonAsync(
-            this HttpContent content,
-            Type type,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+        public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             return ReadFromJsonAsyncCore(content, type, options, cancellationToken);
         }
 
-        public static Task<T> ReadFromJsonAsync<T>(
-            this HttpContent content,
-            JsonSerializerOptions? options = null,
-            CancellationToken cancellationToken = default)
+        public static Task<T> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             return ReadFromJsonAsyncCore<T>(content, options, cancellationToken);
         }
@@ -32,34 +25,27 @@ namespace System.Net.Http.Json
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
             byte[] contentBytes = await GetUtf8JsonBytesFromContentAsync(content, cancellationToken).ConfigureAwait(false);
-            // NOTE: I wanted to use DeserializeAsync and ReadAsStreamAsync, but if we need to transcode, we need the whole content, so it makes more sense to use ReadAsByteArrayAsync.
-            //Stream utf8Stream = await ReadStreamFromContent(content).ConfigureAwait(false);
-            //return await JsonSerializer.DeserializeAsync(utf8Stream, type, options, cancellationToken);
             return JsonSerializer.Deserialize(contentBytes, type, options);
         }
 
         private static async Task<T> ReadFromJsonAsyncCore<T>(HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
             byte[] contentBytes = await GetUtf8JsonBytesFromContentAsync(content, cancellationToken).ConfigureAwait(false);
-            return JsonSerializer.Deserialize<T>(contentBytes, options)!;
+            return JsonSerializer.Deserialize<T>(contentBytes, options);
         }
 
         private static async Task<byte[]> GetUtf8JsonBytesFromContentAsync(HttpContent content, CancellationToken cancellationToken)
         {
             string? mediaType = content.Headers.ContentType?.MediaType;
-            // if Content-Type == null we assume it as "application/octet-stream" in accordance with section 7.2.1 of the HTTP spec.
-            // This is how Formatting API works
 
-            // And at the same time, it is contrary to how HttpContent.ReadAsStringAsync works (allows null content-type and tries to read content using UTF-8 in that case).
-            // IMO, this should default to application/json
             if (mediaType != JsonContent.JsonMediaType &&
                 mediaType != MediaTypeNames.Text.Plain)
             {
                 throw new NotSupportedException("The provided ContentType is not supported; the supported types are 'application/json' and 'text/plain'.");
             }
 
-            // https://source.dot.net/#System.Net.Http/System/Net/Http/HttpContent.cs,047409be2a4d70a8
-            string? charset = content.Headers.ContentType!.CharSet;
+            // Code taken from https://source.dot.net/#System.Net.Http/System/Net/Http/HttpContent.cs,047409be2a4d70a8
+            string? charset = content.Headers.ContentType.CharSet;
             Encoding? encoding = null;
             if (charset != null)
             {

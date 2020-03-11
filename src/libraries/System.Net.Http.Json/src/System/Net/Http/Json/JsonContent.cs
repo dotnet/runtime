@@ -10,9 +10,6 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http.Json
 {
-    /// <summary>
-    /// TODO
-    /// </summary>
     public class JsonContent : HttpContent
     {
         internal const string JsonMediaType = "application/json";
@@ -23,7 +20,6 @@ namespace System.Net.Http.Json
 
         private static MediaTypeHeaderValue CreateMediaType(string mediaTypeAsString)
         {
-            //MediaTypeHeaderValue mediaType = new MediaTypeHeaderValue(mediaTypeAsString); // this one is used by the Formatting API.
             MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse(mediaTypeAsString);
 
             // If the instantiated mediaType does not specify its CharSet, set UTF-8 by default.
@@ -35,9 +31,6 @@ namespace System.Net.Http.Json
             return mediaType;
         }
 
-        // When Create<T> is callled, this is the typeof(T).
-        // When .ctor is called, this is the specified type argument.
-        // As per Formatting, this is always the declared type.
         public Type ObjectType { get; }
 
         public object? Value { get; }
@@ -45,19 +38,9 @@ namespace System.Net.Http.Json
         public JsonContent(Type type, object? value, JsonSerializerOptions? options = null)
             : this(type, value, CreateMediaType(JsonMediaType), options) { }
 
-        /// <summary>
-        /// TODO
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="value"></param>
-        /// <param name="mediaType">The authoritative value of the request's content's Content-Type header. Can be <c>null</c> in which case the default content type will be used.</param>
-        /// <param name="options"></param>
         public JsonContent(Type type, object? value, string mediaType, JsonSerializerOptions? options = null)
             : this(type, value, CreateMediaType(mediaType?? throw new ArgumentNullException(nameof(mediaType))), options) { }
 
-        // What if someone passes a weird Content-Type?
-        // Should we set mediaType.CharSet = UTF-8?
-        // Formatting API allows it.
         public JsonContent(Type type, object? value, MediaTypeHeaderValue mediaType, JsonSerializerOptions? options = null)
             : this(JsonSerializer.SerializeToUtf8Bytes(value, type, options), type, value, mediaType) { }
 
@@ -86,20 +69,9 @@ namespace System.Net.Http.Json
         public static JsonContent Create<T>(T value, MediaTypeHeaderValue mediaType, JsonSerializerOptions? options = null)
             => new JsonContent(JsonSerializer.SerializeToUtf8Bytes(value, options), typeof(T), value, mediaType);
 
-        /// <summary>
-        /// Serialize the HTTP content to a stream as an asynchronous operation.
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="context"></param>
-        /// <returns></returns>
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
             => stream.WriteAsync(_content, _offset, _count);
 
-        /// <summary>
-        /// TODO
-        /// </summary>
-        /// <param name="length"></param>
-        /// <returns></returns>
         protected override bool TryComputeLength(out long length)
         {
             length = _count;

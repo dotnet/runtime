@@ -7,10 +7,7 @@ using Xunit;
 using System.Net.Test.Common;
 using System.Text.Json;
 using System.Linq;
-using System.Text;
-using System.IO;
 using System.Collections.Generic;
-using System.Net.Http.Headers;
 
 namespace System.Net.Http.Json.Functional.Tests
 {

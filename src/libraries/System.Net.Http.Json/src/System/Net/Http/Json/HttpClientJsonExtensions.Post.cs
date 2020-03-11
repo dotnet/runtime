@@ -10,9 +10,6 @@ namespace System.Net.Http.Json
 {
     public static partial class HttpClientJsonExtensions
     {
-        // It would be nice to funnel object methods to the generic methods, but since I choose to make JsonContent.ObjectType = type arg on object signatures; we can't funnel
-        // and therefore validations need to be duplicated.
-
         public static Task<HttpResponseMessage> PostAsJsonAsync(this HttpClient client, string requestUri, Type type, object? value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (client == null)
