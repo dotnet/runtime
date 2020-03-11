@@ -157,7 +157,7 @@ namespace Microsoft.NET.HostModel.Tests
             var fixture = sharedTestState.TestFixture.Copy();
 
             var hostName = BundleHelper.GetHostName(fixture);
-            var hostfxr = fixture.TestProject.HostFxrDll;
+            var hostfxr = Path.GetFileName(fixture.TestProject.HostFxrDll);
             string publishPath = BundleHelper.GetPublishPath(fixture);
             var bundleDir = BundleHelper.GetBundleDir(fixture);
 

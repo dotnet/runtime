@@ -64,7 +64,7 @@ namespace BundleTests.Helpers
         // Therefore, the BundleOption is BundleAllContent by default.
         // The default should be BundleOptions.None once host/runtime no longer requires full-extraction.
         public static string BundleApp(TestProjectFixture fixture,
-                                       BundleOptions options = BundleOptions.BundleAllContent,                                       
+                                       BundleOptions options = BundleOptions.BundleAllContent,
                                        Version targetFrameworkVersion = null)
         {
             var hostName = GetHostName(fixture);
