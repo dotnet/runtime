@@ -957,14 +957,16 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_LS_2A: // LS_2A   .X.......X...... ......nnnnnttttt      Rt Rn
         case IF_LS_2B: // LS_2B   .X.......Xiiiiii iiiiiinnnnnttttt      Rt Rn    imm(0-4095)
         case IF_LS_2C: // LS_2C   .X.......X.iiiii iiiiP.nnnnnttttt      Rt Rn    imm(-256..+255) pre/post inc
-        case IF_LS_2D: // LS_2D   .Q.............. xx.xssnnnnnttttt      Vt Rn
-        case IF_LS_2E: // LS_2E   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
+        case IF_LS_2D: // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn
+        case IF_LS_2E: // LS_2E   .Q.............. ....ssnnnnnttttt      Vt Rn
+        case IF_LS_2F: // LS_2F   .Q.............. ...Sssnnnnnttttt      Vt[] Rn
+        case IF_LS_2G: // LS_2G   .Q.............. ...Sssnnnnnttttt      Vt[] Rn
         case IF_LS_3A: // LS_3A   .X.......X.mmmmm xxxS..nnnnnttttt      Rt Rn Rm ext(Rm) LSL {}
         case IF_LS_3B: // LS_3B   X............... .aaaaannnnnttttt      Rt Ra Rn
         case IF_LS_3C: // LS_3C   X.........iiiiii iaaaaannnnnttttt      Rt Ra Rn imm(im7,sh)
         case IF_LS_3D: // LS_3D   .X.......X.mmmmm ......nnnnnttttt      Wm Rt Rn
-        case IF_LS_3F: // LS_3F   .Q.........mmmmm xx.xssnnnnnttttt      Vt Rn Rm
-        case IF_LS_3G: // LS_3G   .Q.........mmmmm xx.Sssnnnnnttttt      Vt[] Rn Rm
+        case IF_LS_3F: // LS_3F   .Q.........mmmmm ....ssnnnnnttttt      Vt Rn Rm
+        case IF_LS_3G: // LS_3G   .Q.........mmmmm ...Sssnnnnnttttt      Vt[] Rn Rm
 
             // For the Store instructions the "target" register is actually a "source" value
 
