@@ -83,8 +83,11 @@ private:
         INITIAL_TABLE_SIZE = 10
     };
 
-    static int s_patchpointId;
     static CrstStatic s_lock;
+
+#if _DEBUG
+    static int s_patchpointId;
+#endif
 
 private:
 

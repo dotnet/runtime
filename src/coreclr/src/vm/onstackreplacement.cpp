@@ -11,8 +11,12 @@
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-int OnStackReplacementManager::s_patchpointId = 0;
+
 CrstStatic OnStackReplacementManager::s_lock;
+
+#if _DEBUG
+int OnStackReplacementManager::s_patchpointId = 0;
+#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -62,7 +66,11 @@ PerPatchpointInfo* OnStackReplacementManager::GetPerPatchpointInfo(PCODE ip)
             void * pMem = m_allocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PerPatchpointInfo)));
             ppInfo = dac_cast<PTR_PerPatchpointInfo>(new (pMem) PerPatchpointInfo());
             m_jitPatchpointTable.InsertValue(ppId, (HashDatum)ppInfo);
+
+#if _DEBUG
             ppInfo->m_patchpointId = ++s_patchpointId;
+#endif
+
         }
     }
 
