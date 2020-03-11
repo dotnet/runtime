@@ -4705,6 +4705,7 @@ void emitter::emitIns_R_R_I(
     {
         bool       canEncode;
         bitMaskImm bmi;
+        unsigned   selem;
 
         case INS_mov:
             // Check for the 'mov' aliases for the vector registers
@@ -5099,6 +5100,53 @@ void emitter::emitIns_R_R_I(
             unscaledOp = true;
             scale      = 0;
             isLdSt     = true;
+            break;
+
+        case INS_ld2:
+        case INS_ld3:
+        case INS_ld4:
+        case INS_st2:
+        case INS_st3:
+        case INS_st4:
+            assert(opt != INS_OPTS_1D); // .1D format only permitted with LD1 & ST1
+            __fallthrough;
+
+        case INS_ld1:
+        case INS_ld1_2regs:
+        case INS_ld1_3regs:
+        case INS_ld1_4regs:
+        case INS_st1:
+        case INS_st1_2regs:
+        case INS_st1_3regs:
+        case INS_st1_4regs:
+            assert(isVectorRegister(reg1));
+            assert(isGeneralRegisterOrSP(reg2));
+
+            reg2 = encodingSPtoZR(reg2);
+
+            if (insOptsAnyArrangement(opt))
+            {
+                selem = insGetLoadStoreVectorSelem(ins);
+                assert(isValidVectorDatasize(size));
+                assert(isValidArrangement(size, opt));
+                assert((size * selem) == imm);
+
+                // Load/Store multiple structures  post-indexed by an immediate
+                fmt = IF_LS_2E;
+            }
+            else
+            {
+                assert(insOptsNone(opt));
+                assert((ins != INS_ld1_2regs) && (ins != INS_ld1_3regs) && (ins != INS_ld1_4regs) &&
+                       (ins != INS_st1_2regs) && (ins != INS_st1_3regs) && (ins != INS_st1_4regs));
+
+                elemsize = size;
+                assert(isValidVectorElemsize(elemsize));
+                assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+
+                // Load/Store single structure  base register
+                fmt = IF_LS_2F;
+            }
             break;
 
         default:
