@@ -14985,8 +14985,10 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         /* Did we fold the conditional */
 
         noway_assert(lastStmt->GetRootNode()->AsOp()->gtOp1);
+        GenTree* condTree;
+        condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
         GenTree* cond;
-        cond = lastStmt->GetRootNode()->AsOp()->gtOp1;
+        cond = condTree->gtEffectiveVal(true);
 
         if (cond->OperKind() & GTK_CONST)
         {
@@ -14996,10 +14998,17 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
             noway_assert(cond->gtOper == GT_CNS_INT);
             noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
 
-            /* remove the statement from bbTreelist - No need to update
-             * the reference counts since there are no lcl vars */
-            fgRemoveStmt(block, lastStmt);
-
+            if (condTree != cond)
+            {
+                // Preserve any side effects
+                assert(condTree->OperIs(GT_COMMA));
+                lastStmt->SetRootNode(condTree);
+            }
+            else
+            {
+                // no side effects, remove the jump entirely
+                fgRemoveStmt(block, lastStmt);
+            }
             // block is a BBJ_COND that we are folding the conditional for
             // bTaken is the path that will always be taken from block
             // bNotTaken is the path that will never be taken from block
@@ -15198,8 +15207,10 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         /* Did we fold the conditional */
 
         noway_assert(lastStmt->GetRootNode()->AsOp()->gtOp1);
+        GenTree* condTree;
+        condTree = lastStmt->GetRootNode()->AsOp()->gtOp1;
         GenTree* cond;
-        cond = lastStmt->GetRootNode()->AsOp()->gtOp1;
+        cond = condTree->gtEffectiveVal(true);
 
         if (cond->OperKind() & GTK_CONST)
         {
@@ -15208,9 +15219,17 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 
             noway_assert(cond->gtOper == GT_CNS_INT);
 
-            /* remove the statement from bbTreelist - No need to update
-             * the reference counts since there are no lcl vars */
-            fgRemoveStmt(block, lastStmt);
+            if (condTree != cond)
+            {
+                // Preserve any side effects
+                assert(condTree->OperIs(GT_COMMA));
+                lastStmt->SetRootNode(condTree);
+            }
+            else
+            {
+                // no side effects, remove the switch entirely
+                fgRemoveStmt(block, lastStmt);
+            }
 
             /* modify the flow graph */
 
