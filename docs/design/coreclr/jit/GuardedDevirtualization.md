@@ -76,7 +76,7 @@ it takes to invoke `F` on each member of the array (note the JIT will not ever
 be able to devirtualize these calls), and plot the times as a function of `p`.
 The result is something like the following:
 
-![two classes baseline perf](TwoClassesBaseline.JPG)
+![two classes baseline perf](images/TwoClassesBaseline.JPG)
 
 Modern hardware includes an indirect branch target predictor and we can see it
 in action here. When the array element type is predictable (`p` very close to
@@ -95,7 +95,7 @@ performance, and if the element type is mostly `D` (that is `p` near 0.0)
 performance should perhaps slightly worse than the un-optimized case as there is
 now extra code to run check before the call.
 
-![two classes devirt perf](TwoClassesDevirt.JPG)
+![two classes devirt perf](images/TwoClassesDevirt.JPG)
 
 However as you can see the performance of devirtualized case (blue line) is as
 good or better than the un-optimized case for all values of `p`. This is perhaps
@@ -178,7 +178,7 @@ there is a third class `E`. To avoid introducing a 3D plot we'll first simply
 average the results for the various values of `p1` and plot performance as a
 function of `p`:
 
-![three classes devirt perf](ThreeClassesDevirt.JPG)
+![three classes devirt perf](images/ThreeClassesDevirt.JPG)
 
 The right-hand side (`p` near 1.0) looks a lot like the previous chart. This is
 not surprising as there are relatively few instances of that third class. But the
@@ -198,7 +198,7 @@ Because we've averaged over `p1` you might suspect that we're hiding something.
 The following chart shows the min and max values as well as the average, and also
 shows the two-class result (dashed lines).
 
-![three classes devirt perf ranges](ThreeClassesDevirtFull.JPG)
+![three classes devirt perf ranges](images/ThreeClassesDevirtFull.JPG)
 
 You can see the minimum values are very similar to the two class case; these
 are cases where the `p1` is close to 0 or close to 1. And that makes sense because
@@ -214,7 +214,7 @@ For low values of `p` the actual class at the call site is some mixture of `D`
 and `E`. Here's some detail (the x axis now shows `p1` and `p` as upper and
 lower values respectively).
 
-![three classes devirt perf detail](ThreeClassesDevirtDetail.JPG)
+![three classes devirt perf detail](images/ThreeClassesDevirtDetail.JPG)
 
 The worst case for perf for both is when the mixture of `D` and `E` is
 unpredictably 50-50 and there are no `B`s. Once we mix in just 10% of `B` then
@@ -299,7 +299,7 @@ an up-front guarded test. As noted there is some slowdown when the JIT always
 guesses the wrong class, but the break-even point (not shown) is at a relatively
 small probability of a correct guess.
 
-![two classes interface devirt](TwoClassesInterface.JPG)
+![two classes interface devirt](images/TwoClassesInterface.JPG)
 
 ### Interface Calls: The Three Class Case
 
@@ -312,7 +312,7 @@ the JIT's guess doesn't have to be all that good to see payoffs. At around 10%
 correct, guessing wins on average, and around 30% correct guessing is always a
 perf win.
 
-![three classes interface devirt](ThreeClassesInterface.JPG)
+![three classes interface devirt](images/ThreeClassesInterface.JPG)
 
 ### Delegate Speculation
 

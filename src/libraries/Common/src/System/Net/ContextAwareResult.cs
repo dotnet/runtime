@@ -24,7 +24,7 @@ namespace System.Net
         private readonly AsyncCallback? _savedCallback;
         private readonly ExecutionContext? _savedContext;
 
-        internal CallbackClosure(ExecutionContext context, AsyncCallback callback)
+        internal CallbackClosure(ExecutionContext context, AsyncCallback? callback)
         {
             if (callback != null)
             {

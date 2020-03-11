@@ -1,4 +1,5 @@
 include(CheckPIESupported)
+include(${CMAKE_CURRENT_LIST_DIR}/functions.cmake)
 
 #----------------------------------------
 # Detect and set platform variable names

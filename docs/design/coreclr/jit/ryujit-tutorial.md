@@ -342,7 +342,7 @@ This is used by all of the front-end optimizations.
   - It then imports the IL for the candidate, producing IR
     - This is inserted at the call site, if successful
 - This phase has been undergoing significant refactoring and enhancement:
-  - https://github.com/dotnet/runtime/blob/master/docs/design/features/inlining-plans.md
+  - See [inlining plans](inlining-plans.md)
 
 #### Notes
 The inliner re-invokes the importer for each method that is considered a suitable candidate. Along the way, it may determine that the method cannot, or should not, be inlined, at which case it abandons the constructed IR, and leaves the callsite as-is. Otherwise, it inserts the newly created IR at the callsite, adds the local variables of the called method to the callee, and fixes up the arguments and returns.
@@ -676,8 +676,7 @@ Add Pattern Recognition (SampleStep2 shelveset):
 - Run & capture jitdump3.out, search for optCloneLoops
 
 ### Reference
-- The RyuJIT Overview document is available here:
-        https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/ryujit-overview.md
+- The RyuJIT overview document is available [here](ryujit-overview.md)
 
 ## Backup
 
