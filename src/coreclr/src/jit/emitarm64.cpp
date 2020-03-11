@@ -5149,6 +5149,25 @@ void emitter::emitIns_R_R_I(
             }
             break;
 
+        case INS_ld1r:
+        case INS_ld2r:
+        case INS_ld3r:
+        case INS_ld4r:
+            assert(isVectorRegister(reg1));
+            assert(isGeneralRegisterOrSP(reg2));
+
+            assert(isValidVectorDatasize(size));
+            assert(isValidArrangement(size, opt));
+
+            elemsize = optGetElemsize(opt);
+            selem    = insGetLoadStoreVectorSelem(ins);
+            assert((elemsize * selem) == imm);
+
+            // Load single structure and replicate  post-indexed by an immediate
+            reg2 = encodingSPtoZR(reg2);
+            fmt  = IF_LS_2E;
+            break;
+
         default:
             unreached();
             break;
