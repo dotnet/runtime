@@ -8,7 +8,8 @@ WORKDIR /repo
 COPY . .
 
 ARG CONFIGURATION=Release
-RUN ./build.sh -ci -subsetcategory coreclr-libraries -runtimeconfiguration release -c $CONFIGURATION
+RUN ./src/coreclr/build.sh -release -skiptests -clang9 && \
+    ./libraries.sh -c $CONFIGURATION -runtimeconfiguration release
 
 FROM $SDK_BASE_IMAGE as target
 

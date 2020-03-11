@@ -88,7 +88,7 @@ The hardware intrinsics nodes are generally imported as `GenTreeHWIntrinsic` nod
 
 ### Lowering
 
-As described here: https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/ryujit-overview.md#lowering, Lowering is responsible for transforming the IR in such a way that the control flow, and any register requirements, are fully exposed. This includes determining what instructions can be "contained" in another, such as immediates or addressing modes. For the hardware intrinsics, these are done in the target-specific methods `Lowering::LowerHWIntrinsic()` and `Lowering::ContainCheckHWIntrinsic()`.
+As described [here](../coreclr/jit/ryujit-overview.md#lowering), Lowering is responsible for transforming the IR in such a way that the control flow, and any register requirements, are fully exposed. This includes determining what instructions can be "contained" in another, such as immediates or addressing modes. For the hardware intrinsics, these are done in the target-specific methods `Lowering::LowerHWIntrinsic()` and `Lowering::ContainCheckHWIntrinsic()`.
 
 The main consideration here is whether there are child nodes that are folded into the generated instruction. These may be:
 * An immediate operand

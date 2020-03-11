@@ -1,22 +1,23 @@
 <Project>
-  <PropertyGroup>
-    <EnableProjectRestore>true</EnableProjectRestore>
-  </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
 
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
-
-  <PropertyGroup>
-    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
-    <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
+  <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+    <AdditionalBuildTargetFrameworks>$(AdditionalBuildTargetFrameworks);package-$(Configuration)</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">
-    <ProjectReference Include="$(PkgDir)*\*.builds" />
-    <ProjectReference Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' or '$(DotNetBuildFromSource)' == 'true'" />
+    <Project Include="$(PkgDir)*\*.builds" >
+      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
+    <Project Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' OR '$(DotNetBuildFromSource)' == 'true'">
+      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
   </ItemGroup>
 
   <!-- Need the PackageIndexFile file property from baseline.props -->
-  <Import Project="$(RepositoryEngineeringDir)restore\harvestPackages.targets" />
+  <Import Project="$(PkgDir)baseline\baseline.props" />
+
+  <UsingTask TaskName="UpdatePackageIndex" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll"/>
 
   <!--
     Updates the package index to mark all packages we are building that can go stable as stable.
@@ -68,6 +69,8 @@
       Overwrite="true" />
   </Target>
 
+  <Import Project="$(MSBuildThisFileDirectory)dir.traversal.targets" />
+
   <Target Name="SetAzureDevOpsVariableForBuiltPackages"
           Condition="'$(ContinuousIntegrationBuild)' == 'true'"
           AfterTargets="BuildAllProjects">
@@ -76,17 +79,5 @@
     </ItemGroup>
 
     <Message Condition="'@(_PackageReports)' != ''" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
-  </Target>
-
-  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
-
-  <!-- Ordering matters! Overwriting the Build and Test target after the Sdk.targets import. -->
-  <Target Name="Build" DependsOnTargets="BuildAllProjects" />
-  <Target Name="BuildAllProjects">
-    <MSBuild Targets="Build"
-             Projects="@(ProjectReference)"
-             Properties="BuildAllProjects=true"
-             BuildInParallel="true"
-             ContinueOnError="ErrorAndStop" />
   </Target>
 </Project>

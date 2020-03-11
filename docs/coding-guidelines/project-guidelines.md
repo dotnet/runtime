@@ -10,9 +10,9 @@ once before you can iterate and work on a given library project.
  - Netstandard Library - Copy to `bin\ref\netstandard2.0`
  - NetFx targeting pack - Copy to `bin\ref\net472`
 - Build targeting pack
- - Build src\libraries\ref.proj which builds all references assembly projects. For reference assembly project information see [ref](#ref)
+ - Build src\ref.builds which builds all references assembly projects. For reference assembly project information see [ref](#ref)
 - Build product
- - Build src\libraries\src.proj which builds all the source library projects. For source library project information see [src](#src).
+ - Build src\src.builds which builds all the source library projects. For source library project information see [src](#src).
 - Sign product
  - Build src\sign.proj
 
