@@ -7,14 +7,14 @@ using System.Runtime.CompilerServices;
 
 public struct S
 {
-    public long x;
-    public long y;
+    public long s_x;
+    public long s_y;
 }
 
 public struct R
 {
-    public S s;
-    public S t;
+    public S r_s;
+    public S r_t;
 }
 
 // Tail calls with implicit byref parameters as arguments.
@@ -31,12 +31,12 @@ public class ImplicitByrefTailCalls
     public static long Alias(S x, S y)
     {
         Z(); Z(); Z(); Z();
-        y.x++;
+        y.s_x++;
         long result = 0;
         for (int i = 0; i < 100; i++)
         {
-            x.x++;
-            result += x.x + x.y;
+            x.s_x++;
+            result += x.s_x + x.s_y;
         }
         return result;
     }
@@ -49,8 +49,8 @@ public class ImplicitByrefTailCalls
         long result = 0;
         for (int i = 0; i < 100; i++)
         {
-            x.x++;
-            result += x.x + x.y;
+            x.s_x++;
+            result += x.s_x + x.s_y;
         }
         return result;
     }
@@ -59,17 +59,17 @@ public class ImplicitByrefTailCalls
     public static long Alias3(int a, int b, int c, int d, int e, int f, S x, S y)
     {
         Z(); Z(); Z(); Z();
-        y.x++;
+        y.s_x++;
         long result = 0;
         for (int i = 0; i < 100; i++)
         {
-            x.x++;
-            result += x.x + x.y;
+            x.s_x++;
+            result += x.s_x + x.s_y;
         }
         return result;
     }
 
-    // Will return different answers if x and y refer to same struct
+    // Will return different answers if y refers to some part of x
     public static long Alias4(ref long y, int b, int c, int d, int e, int f, S x)
     {
         Z(); Z(); Z(); Z();
@@ -77,8 +77,8 @@ public class ImplicitByrefTailCalls
         long result = 0;
         for (int i = 0; i < 100; i++)
         {
-            x.x++;
-            result += x.x + x.y;
+            x.s_x++;
+            result += x.s_x + x.s_y;
         }
         return result;
     }
@@ -87,12 +87,12 @@ public class ImplicitByrefTailCalls
     public static long Alias5(S x, R r)
     {
         Z(); Z(); Z(); Z();
-        r.s.x++;
+        r.r_s.s_x++;
         long result = 0;
         for (int i = 0; i < 100; i++)
         {
-            x.x++;
-            result += x.x + x.y;
+            x.s_x++;
+            result += x.s_x + x.s_y;
         }
         return result;
     }
@@ -101,12 +101,26 @@ public class ImplicitByrefTailCalls
     public static long Alias6(Span<S> ss, S x)
     {
         Z(); Z(); Z(); Z();
-        ss[0].x++;
+        ss[0].s_x++;
         long result = 0;
         for (int i = 0; i < 100; i++)
         {
-            x.x++;
-            result += x.x + x.y;
+            x.s_x++;
+            result += x.s_x + x.s_y;
+        }
+        return result;
+    }
+
+    // Will return different answers if x and y refer to the same struct.
+    public static long Alias7(S x, ref S y)
+    {
+        Z(); Z(); Z(); Z();
+        y.s_x++;
+        long result = 0;
+        for (int i = 0; i < 100; i++)
+        {
+            x.s_x++;
+            result += x.s_x + x.s_y;
         }
         return result;
     }
@@ -124,7 +138,7 @@ public class ImplicitByrefTailCalls
     public static long B(S x)
     {
         Z(); Z(); Z(); Z();
-        return Alias2(x, ref x.y);
+        return Alias2(x, ref x.s_y);
     }
 
     // C must copy params locally when calling Alias2
@@ -132,7 +146,7 @@ public class ImplicitByrefTailCalls
     // tree is not part of the call.
     public static long C(S x)
     {
-        ref long z = ref x.y;
+        ref long z = ref x.s_y;
         Z(); Z(); Z(); Z();
         return Alias2(x, ref z);
     }
@@ -176,11 +190,11 @@ public class ImplicitByrefTailCalls
 
         if (a != 0)
         {
-            return Alias4(ref x.x, 2, 3, 4, 5, 6, y);
+            return Alias4(ref x.s_x, 2, 3, 4, 5, 6, y);
         }
         else
         {
-            return Alias4(ref y.x, 2, 3, 4, 5, 6, x);
+            return Alias4(ref y.s_x, 2, 3, 4, 5, 6, x);
         }
     }
 
@@ -189,7 +203,7 @@ public class ImplicitByrefTailCalls
     public static long H(R r)
     {
         Z(); Z(); Z(); Z();
-        return Alias(r.s, r.s);
+        return Alias(r.r_s, r.r_s);
     }
 
     // I must copy params locally when calling Alias
@@ -197,14 +211,14 @@ public class ImplicitByrefTailCalls
     public static long I(R r)
     {
         Z(); Z(); Z(); Z();
-        return Alias5(r.s, r);
+        return Alias5(r.r_s, r);
     }
 
     // J can tail call, but we might not recognize this
     public static long J(R r)
     {
         Z(); Z(); Z(); Z();
-        return Alias(r.s, r.t);
+        return Alias(r.r_s, r.r_t);
     }
 
     // K cannot tail call
@@ -215,14 +229,22 @@ public class ImplicitByrefTailCalls
         return Alias6(ss, s);
     }
 
+    // L cannot tail call as the first arg to
+    // Alias7 must be copied locally
+    public static long L(S s)
+    {
+        Z(); Z(); Z(); Z();
+        return Alias7(s, ref s);
+    }
+
     public static int Main()
     {
         S s = new S();
-        s.x = 1;
-        s.y = 2;
+        s.s_x = 1;
+        s.s_y = 2;
         R r = new R();
-        r.s = s;
-        r.t = s;
+        r.r_s = s;
+        r.r_t = s;
         long ra = A(s);
         long rb = B(s);
         long rc = C(s);
@@ -234,12 +256,13 @@ public class ImplicitByrefTailCalls
         long ri = I(r);
         long rj = J(r);
         long rk = K(s);
+        long rl = L(s);
 
-        Console.WriteLine($"{ra},{rb},{rc},{rd},{re},{rf},{rg},{rh},{ri},{rj},{rk}");
+        Console.WriteLine($"{ra},{rb},{rc},{rd},{re},{rf},{rg},{rh},{ri},{rj},{rk},{rl}");
 
         return
         (ra == 5350) && (rb == 5350) && (rc == 5350) && (rd == 5350) &&
         (re == 5350) && (rf == 5350) && (rg == 5350) && (rh == 5350) && 
-        (ri == 5350) && (rj == 5350) && (rk == 5350) ? 100 : -1;
+        (ri == 5350) && (rj == 5350) && (rk == 5350) && (rl == 5350) ? 100 : -1;
     }
 }

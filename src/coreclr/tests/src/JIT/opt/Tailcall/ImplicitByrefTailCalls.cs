@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 
 public class ImplicitByrefTailCalls
 {
-    public static void Z() {}
+    public static void Z() { }
     public static bool Z(bool b) => b;
 
     public static int ZZ(Span<int> x)
@@ -27,8 +27,8 @@ public class ImplicitByrefTailCalls
 
     public static int ZZZ(Span<int> x, int a, int b, int c, int d, int e, int f)
     {
-        Z(); Z();
-        Z(); Z();
+        Z(); Z(); Z(); Z();
+        Z(); Z(); Z(); Z();
         int result = 0;
         for (int i = 0; i < x.Length; i++)
         {
@@ -42,7 +42,7 @@ public class ImplicitByrefTailCalls
     public static int A(Span<int> x)
     {
         Z(); Z(); return ZZ(x);
-    } 
+    }
 
     public static int B(Span<int> x)
     {
@@ -134,7 +134,7 @@ public class ImplicitByrefTailCalls
     {
         Z(); Z();
         return ZZZ(x, 1, 2, 3, 4, 5, 6);
-    } 
+    }
 
     // Must copy at the normal call site
     // but can avoid at tail call site
@@ -143,6 +143,62 @@ public class ImplicitByrefTailCalls
         Z(); Z();
         q = ZZ(x);
         return ZZ(x);
+    }
+
+    // Here ZZZ is called in a loop, so despite
+    // the call argument x being the only reference to
+    // x in the method, we must copy x.
+    // We can't consider it as last use.
+    public static int L(Span<int> x)
+    {
+        Z(); Z();
+        int result = 0;
+        int limit = 10;
+        for (int i = 0; i < limit; i++)
+        {
+            result += ZZZ(x, 1, 2, 3, 4, 5, 6);
+        }
+
+        return result / limit;
+    }
+
+    static void MustThrow(Span<int> x)
+    {
+        x[0]++;
+        throw new Exception();
+    }
+
+    // Because MustThrow must throw
+    // and the argument is the only
+    // mention of x, we do not need to copy x.
+    public static int M(Span<int> x)
+    {
+        Z(); Z(); Z(); Z();
+        if (p)
+        {
+            MustThrow(x);
+        }
+        return 10000;
+    }
+
+    // Although MustThrow must throw,
+    // the argument x is the not only 
+    // mention of x, so we must copy x.
+    public static int N(Span<int> x)
+    {
+        Z(); Z(); Z(); Z();
+        try
+        {
+            if (p)
+            {
+                MustThrow(x);
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        return 10000 + x[0];
     }
 
     static bool p;
@@ -167,9 +223,12 @@ public class ImplicitByrefTailCalls
         int rh = H(s, 46);
         int rs = S(s);
         int rt = T(s, ref q);
+        int rl = L(s);
+        int rm = M(s);
+        int rn = N(s);
 
-        Console.WriteLine($"{ra},{rb},{rc},{rd},{re},{rf},{rg},{rh},{rs},{rt}");
-        
-        return ra + rb + rc + rd + re + rf + rg + rh + rs + rt - 80055;
+        Console.WriteLine($"{ra},{rb},{rc},{rd},{re},{rf},{rg},{rh},{rs},{rt},{rl},{rm},{rn}");
+
+        return ra + rb + rc + rd + re + rf + rg + rh + rs + rt + rl + rm + rn - 110055;
     }
 }
