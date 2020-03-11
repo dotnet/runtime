@@ -448,7 +448,7 @@ bool CallCountingManager::IsCallCountingEnabled(NativeCodeVersion codeVersion)
     CONTRACTL_END;
 
     _ASSERTE(!codeVersion.IsNull());
-    _ASSERTE(codeVersion.IsDefaultVersion());
+    _ASSERTE(codeVersion.IsDefaultVersion() || codeVersion.GetILCodeVersionId() != 0);
     _ASSERTE(codeVersion.GetMethodDesc()->IsEligibleForTieredCompilation());
 
     CodeVersionManager::LockHolder codeVersioningLockHolder;
