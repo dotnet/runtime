@@ -605,6 +605,18 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<float> Divide(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64x2_t vfmaq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
+            ///   A64: FMLA Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> FusedMultiplyAdd(Vector128<double> acc, Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x2_t vfmsq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
+            ///   A64: FMLS Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> FusedMultiplySubtract(Vector128<double> acc, Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FMAX Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -1019,18 +1031,6 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: FSQRT Vd.4S, Vn.4S
             /// </summary>
             public static Vector128<float> Sqrt(Vector128<float> value) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            /// float64x2_t vfmaq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
-            ///   A64: FMLA Vd.2D, Vn.2D, Vm.2D
-            /// </summary>
-            public static Vector128<double> FusedMultiplyAdd(Vector128<double> acc, Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            /// float64x2_t vfmsq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
-            ///   A64: FMLS Vd.2D, Vn.2D, Vm.2D
-            /// </summary>
-            public static Vector128<double> FusedMultiplySubtract(Vector128<double> acc, Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
