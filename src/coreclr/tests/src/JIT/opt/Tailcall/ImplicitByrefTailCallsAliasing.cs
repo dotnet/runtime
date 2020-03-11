@@ -28,9 +28,9 @@ public class ImplicitByrefTailCalls
     public static void Z() { }
 
     // Will return different answers if x and y refer to the same struct.
+    [MethodImpl(MethodImplOptions.NoOptimization)]
     public static long Alias(S x, S y)
     {
-        Z(); Z(); Z(); Z();
         y.s_x++;
         long result = 0;
         for (int i = 0; i < 100; i++)
@@ -42,9 +42,9 @@ public class ImplicitByrefTailCalls
     }
 
     // Will return different answers if y refers to some part of x.
+    [MethodImpl(MethodImplOptions.NoOptimization)]
     public static long Alias2(S x, ref long y)
     {
-        Z(); Z(); Z(); Z();
         y++;
         long result = 0;
         for (int i = 0; i < 100; i++)
@@ -56,9 +56,9 @@ public class ImplicitByrefTailCalls
     }
 
     // Will return different answers if x and y refer to same struct
+    [MethodImpl(MethodImplOptions.NoOptimization)]
     public static long Alias3(int a, int b, int c, int d, int e, int f, S x, S y)
     {
-        Z(); Z(); Z(); Z();
         y.s_x++;
         long result = 0;
         for (int i = 0; i < 100; i++)
@@ -70,9 +70,9 @@ public class ImplicitByrefTailCalls
     }
 
     // Will return different answers if y refers to some part of x
+    [MethodImpl(MethodImplOptions.NoOptimization)]
     public static long Alias4(ref long y, int b, int c, int d, int e, int f, S x)
     {
-        Z(); Z(); Z(); Z();
         y++;
         long result = 0;
         for (int i = 0; i < 100; i++)
@@ -84,9 +84,9 @@ public class ImplicitByrefTailCalls
     }
 
     // Will return different answers if x and r.s refer to the same struct.
+    [MethodImpl(MethodImplOptions.NoOptimization)]
     public static long Alias5(S x, R r)
     {
-        Z(); Z(); Z(); Z();
         r.r_s.s_x++;
         long result = 0;
         for (int i = 0; i < 100; i++)
@@ -98,9 +98,9 @@ public class ImplicitByrefTailCalls
     }
 
     // Will return different answers if ss and x refer to the same struct
+    [MethodImpl(MethodImplOptions.NoOptimization)]
     public static long Alias6(Span<S> ss, S x)
     {
-        Z(); Z(); Z(); Z();
         ss[0].s_x++;
         long result = 0;
         for (int i = 0; i < 100; i++)
@@ -112,9 +112,9 @@ public class ImplicitByrefTailCalls
     }
 
     // Will return different answers if x and y refer to the same struct.
+    [MethodImpl(MethodImplOptions.NoOptimization)]
     public static long Alias7(S x, ref S y)
     {
-        Z(); Z(); Z(); Z();
         y.s_x++;
         long result = 0;
         for (int i = 0; i < 100; i++)

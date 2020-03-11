@@ -15,6 +15,7 @@ public class ImplicitByrefTailCalls
     public static void Z() { }
     public static bool Z(bool b) => b;
 
+    [MethodImpl(MethodImplOptions.NoOptimization)]
     public static int ZZ(Span<int> x)
     {
         int result = 0;
@@ -25,10 +26,9 @@ public class ImplicitByrefTailCalls
         return result;
     }
 
+    [MethodImpl(MethodImplOptions.NoOptimization)]
     public static int ZZZ(Span<int> x, int a, int b, int c, int d, int e, int f)
     {
-        Z(); Z(); Z(); Z();
-        Z(); Z(); Z(); Z();
         int result = 0;
         for (int i = 0; i < x.Length; i++)
         {
@@ -137,7 +137,10 @@ public class ImplicitByrefTailCalls
     }
 
     // Must copy at the normal call site
-    // but can avoid at tail call site
+    // but can avoid at tail call site. However
+    // we're currently blocked because we reuse
+    // the temp used to pass the argument and
+    // it is exposed in the first call.
     public static int T(Span<int> x, ref int q)
     {
         Z(); Z();
