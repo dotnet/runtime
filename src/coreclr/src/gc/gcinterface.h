@@ -770,19 +770,8 @@ public:
     // a lock to ensure that the calling thread has unique ownership over this alloc context;
     virtual Object* Alloc(gc_alloc_context* acontext, size_t size, uint32_t flags) = 0;
 
-    // Allocates an object on the large object heap with the given size and flags.
-    virtual Object* AllocLHeap(size_t size, uint32_t flags) = 0;
-
-    // Allocates an object on the given allocation context, aligned to 64 bits,
-    // with the given size and flags.
-    // It is the responsibility of the caller to ensure that the passed-in alloc context is
-    // owned by the thread that is calling this function. If using per-thread alloc contexts,
-    // no lock is needed; callers not using per-thread alloc contexts will need to acquire
-    // a lock to ensure that the calling thread has unique ownership over this alloc context.
-    virtual Object* AllocAlign8(gc_alloc_context* acontext, size_t size, uint32_t flags) = 0;
-
     // This is for the allocator to indicate it's done allocating a large object during a
-    // background GC as the BGC threads also need to walk LOH.
+    // background GC as the BGC threads also need to walk UOH.
     virtual void PublishObject(uint8_t* obj) = 0;
 
     // Signals the WaitForGCEvent event, indicating that a GC has completed.
@@ -910,6 +899,8 @@ enum GC_ALLOC_FLAGS
     GC_ALLOC_ALIGN8_BIAS        = 4,
     GC_ALLOC_ALIGN8             = 8,
     GC_ALLOC_ZEROING_OPTIONAL   = 16,
+    GC_ALLOC_LARGE_OBJECT_HEAP  = 32,
+    GC_ALLOC_PINNED_OBJECT_HEAP = 64,
 };
 
 inline GC_ALLOC_FLAGS operator|(GC_ALLOC_FLAGS a, GC_ALLOC_FLAGS b)
