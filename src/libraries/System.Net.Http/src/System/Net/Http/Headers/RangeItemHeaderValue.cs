@@ -58,7 +58,8 @@ namespace System.Net.Http.Headers
         {
             if (!_from.HasValue)
             {
-                return "-" + _to!.Value.ToString(NumberFormatInfo.InvariantInfo);
+                Debug.Assert(_to != null);
+                return "-" + _to.Value.ToString(NumberFormatInfo.InvariantInfo);
             }
             else if (!_to.HasValue)
             {

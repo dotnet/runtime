@@ -81,7 +81,7 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            string? baseString = base.ToString();
+            string baseString = base.ToString();
             StringBuilder sb = StringBuilderCache.Acquire();
             sb.Append(baseString);
             NameValueHeaderValue.ToString(_parameters, ';', true, sb);

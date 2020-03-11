@@ -70,7 +70,7 @@ namespace System.Net.Http
         public HttpConnection(
             HttpConnectionPool pool,
             Socket? socket,
-            Stream? stream,
+            Stream stream,
             TransportContext? transportContext)
         {
             Debug.Assert(pool != null);
@@ -1836,7 +1836,7 @@ namespace System.Net.Http
 
     internal sealed class HttpConnectionWithFinalizer : HttpConnection
     {
-        public HttpConnectionWithFinalizer(HttpConnectionPool pool, Socket? socket, Stream? stream, TransportContext? transportContext) : base(pool, socket, stream, transportContext) { }
+        public HttpConnectionWithFinalizer(HttpConnectionPool pool, Socket? socket, Stream stream, TransportContext? transportContext) : base(pool, socket, stream, transportContext) { }
 
         // This class is separated from HttpConnection so we only pay the price of having a finalizer
         // when it's actually needed, e.g. when MaxConnectionsPerServer is enabled.

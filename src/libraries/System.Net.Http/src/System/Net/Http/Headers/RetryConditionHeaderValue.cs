@@ -57,7 +57,8 @@ namespace System.Net.Http.Headers
             {
                 return ((int)_delta.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
             }
-            return HttpDateParser.DateToString(_date!.Value);
+            Debug.Assert(_date != null);
+            return HttpDateParser.DateToString(_date.Value);
         }
 
         public override bool Equals(object? obj)
@@ -74,14 +75,16 @@ namespace System.Net.Http.Headers
                 return (other._delta != null) && (_delta.Value == other._delta.Value);
             }
 
-            return (other._date != null) && (_date!.Value == other._date.Value);
+            Debug.Assert(_date != null);
+            return (other._date != null) && (_date.Value == other._date.Value);
         }
 
         public override int GetHashCode()
         {
             if (_delta == null)
             {
-                return _date!.Value.GetHashCode();
+                Debug.Assert(_date != null);
+                return _date.Value.GetHashCode();
             }
 
             return _delta.Value.GetHashCode();

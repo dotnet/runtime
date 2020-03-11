@@ -58,7 +58,8 @@ namespace System.Net.Http.Headers
         {
             if (_entityTag == null)
             {
-                return HttpDateParser.DateToString(_date!.Value);
+                Debug.Assert(_date != null);
+                return HttpDateParser.DateToString(_date.Value);
             }
             return _entityTag.ToString();
         }
@@ -74,7 +75,8 @@ namespace System.Net.Http.Headers
 
             if (_entityTag == null)
             {
-                return (other._date != null) && (_date!.Value == other._date.Value);
+                Debug.Assert(_date != null);
+                return (other._date != null) && (_date.Value == other._date.Value);
             }
 
             return _entityTag.Equals(other._entityTag);
@@ -84,7 +86,8 @@ namespace System.Net.Http.Headers
         {
             if (_entityTag == null)
             {
-                return _date!.Value.GetHashCode();
+                Debug.Assert(_date != null);
+                return _date.Value.GetHashCode();
             }
 
             return _entityTag.GetHashCode();

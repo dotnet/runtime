@@ -25,7 +25,8 @@ namespace System.Net.Http
     {
         protected DelegatingHandler() { }
         protected DelegatingHandler(System.Net.Http.HttpMessageHandler innerHandler) { }
-        public System.Net.Http.HttpMessageHandler InnerHandler { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public System.Net.Http.HttpMessageHandler? InnerHandler { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
@@ -281,7 +282,8 @@ namespace System.Net.Http
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
         public System.Net.IWebProxy? Proxy { get { throw null; } set { } }
         public System.TimeSpan ResponseDrainTimeout { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.AllowNullAttribute] public System.Net.Security.SslClientAuthenticationOptions SslOptions { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
+        public System.Net.Security.SslClientAuthenticationOptions SslOptions { get { throw null; } set { } }
         public bool UseCookies { get { throw null; } set { } }
         public bool UseProxy { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
@@ -344,7 +346,7 @@ namespace System.Net.Http.Headers
         public static System.Net.Http.Headers.CacheControlHeaderValue Parse(string? input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
-        public static bool TryParse(string? input, out System.Net.Http.Headers.CacheControlHeaderValue? parsedValue) { throw null; }
+        public static bool TryParse(string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.CacheControlHeaderValue? parsedValue) { throw null; }
     }
     public partial class ContentDispositionHeaderValue : System.ICloneable
     {
@@ -533,13 +535,13 @@ namespace System.Net.Http.Headers
         protected NameValueHeaderValue(System.Net.Http.Headers.NameValueHeaderValue source) { }
         public NameValueHeaderValue(string name) { }
         public NameValueHeaderValue(string name, string? value) { }
-        public string? Name { get { throw null; } }
+        public string Name { get { throw null; } }
         public string? Value { get { throw null; } set { } }
         public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Net.Http.Headers.NameValueHeaderValue Parse(string? input) { throw null; }
         object System.ICloneable.Clone() { throw null; }
-        public override string? ToString() { throw null; }
+        public override string ToString() { throw null; }
         public static bool TryParse(string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.NameValueHeaderValue? parsedValue) { throw null; }
     }
     public partial class NameValueWithParametersHeaderValue : System.Net.Http.Headers.NameValueHeaderValue, System.ICloneable

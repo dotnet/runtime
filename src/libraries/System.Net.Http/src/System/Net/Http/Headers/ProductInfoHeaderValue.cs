@@ -59,7 +59,8 @@ namespace System.Net.Http.Headers
         {
             if (_product == null)
             {
-                return _comment!;
+                Debug.Assert(_comment != null);
+                return _comment;
             }
             return _product.ToString();
         }
@@ -86,7 +87,8 @@ namespace System.Net.Http.Headers
         {
             if (_product == null)
             {
-                return _comment!.GetHashCode();
+                Debug.Assert(_comment != null);
+                return _comment.GetHashCode();
             }
             return _product.GetHashCode();
         }

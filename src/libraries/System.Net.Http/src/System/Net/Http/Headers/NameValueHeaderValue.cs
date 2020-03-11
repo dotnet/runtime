@@ -17,10 +17,10 @@ namespace System.Net.Http.Headers
     {
         private static readonly Func<NameValueHeaderValue> s_defaultNameValueCreator = CreateNameValue;
 
-        private string? _name;
+        private string _name = null!; // Name always set after default constructor used
         private string? _value;
 
-        public string? Name
+        public string Name
         {
             get { return _name; }
         }
@@ -135,7 +135,7 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        public override string? ToString()
+        public override string ToString()
         {
             if (!string.IsNullOrEmpty(_value))
             {

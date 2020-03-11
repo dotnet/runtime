@@ -144,7 +144,8 @@ namespace System.Net.Http
 
             private async Task CompleteCopyToAsync(Task copyTask, CancellationToken cancellationToken)
             {
-                CancellationTokenRegistration ctr = _connection!.RegisterCancellation(cancellationToken);
+                Debug.Assert(_connection != null);
+                CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
                 try
                 {
                     await copyTask.ConfigureAwait(false);
@@ -173,8 +174,9 @@ namespace System.Net.Http
             {
                 Debug.Assert(maxBytesToRead > 0);
                 Debug.Assert(_contentBytesRemaining > 0);
+                Debug.Assert(_connection != null);
 
-                ReadOnlyMemory<byte> connectionBuffer = _connection!.RemainingBuffer;
+                ReadOnlyMemory<byte> connectionBuffer = _connection.RemainingBuffer;
                 if (connectionBuffer.Length == 0)
                 {
                     return default;

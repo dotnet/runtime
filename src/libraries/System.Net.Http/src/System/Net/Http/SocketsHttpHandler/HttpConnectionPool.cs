@@ -1119,13 +1119,13 @@ namespace System.Net.Http
                 return (null, failureResponse);
             }
 
-            return (ConstructHttp11Connection(socket, stream, transportContext), null);
+            return (ConstructHttp11Connection(socket, stream!, transportContext), null);
         }
 
-        private HttpConnection ConstructHttp11Connection(Socket? socket, Stream? stream, TransportContext? transportContext)
+        private HttpConnection ConstructHttp11Connection(Socket? socket, Stream stream, TransportContext? transportContext)
         {
             return _maxConnections == int.MaxValue ?
-                new HttpConnection(this, socket, stream!, transportContext) :
+                new HttpConnection(this, socket, stream, transportContext) :
                 new HttpConnectionWithFinalizer(this, socket, stream, transportContext); // finalizer needed to signal the pool when a connection is dropped
         }
 

@@ -209,7 +209,8 @@ namespace System.Net.Http.QPack
 
             if (buffer.Length > 0)
             {
-                int valueLength = separator!.Length * (values.Length - 1);
+                Debug.Assert(separator != null);
+                int valueLength = separator.Length * (values.Length - 1);
                 for (int i = 0; i < values.Length; ++i)
                 {
                     valueLength += values[i].Length;

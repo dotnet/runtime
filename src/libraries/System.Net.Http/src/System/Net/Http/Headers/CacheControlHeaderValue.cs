@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -404,7 +405,7 @@ namespace System.Net.Http.Headers
             return (CacheControlHeaderValue)CacheControlHeaderParser.Parser.ParseValue(input, null, ref index);
         }
 
-        public static bool TryParse(string? input, out CacheControlHeaderValue? parsedValue)
+        public static bool TryParse(string? input, [NotNullWhen(true)] out CacheControlHeaderValue? parsedValue)
         {
             int index = 0;
             parsedValue = null;
@@ -479,7 +480,6 @@ namespace System.Net.Http.Headers
             foreach (NameValueHeaderValue nameValue in nameValueList)
             {
                 bool success = true;
-                Debug.Assert(nameValue.Name != null);
                 string name = nameValue.Name.ToLowerInvariant();
 
                 switch (name)
