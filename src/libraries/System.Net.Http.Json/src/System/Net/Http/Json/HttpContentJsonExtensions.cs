@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Net.Mime;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -48,10 +49,11 @@ namespace System.Net.Http.Json
             string? mediaType = content.Headers.ContentType?.MediaType;
             // if Content-Type == null we assume it as "application/octet-stream" in accordance with section 7.2.1 of the HTTP spec.
             // This is how Formatting API works
-            // And at the same time, it is contrary to how HttpContent.ReadAsStringAsync works.
+
+            // And at the same time, it is contrary to how HttpContent.ReadAsStringAsync works (allows null content-type and tries to read content using UTF-8 in that case).
             // IMO, this should default to application/json
-            if (mediaType != "application/json" &&
-                mediaType != "text/plain")
+            if (mediaType != JsonContent.JsonMediaType &&
+                mediaType != MediaTypeNames.Text.Plain)
             {
                 throw new NotSupportedException("The provided ContentType is not supported; the supported types are 'application/json' and 'text/plain'.");
             }

@@ -15,7 +15,7 @@ namespace System.Net.Http.Json
     /// </summary>
     public class JsonContent : HttpContent
     {
-        private const string JsonMediaType = "application/json";
+        internal const string JsonMediaType = "application/json";
 
         private readonly byte[] _content;
         private readonly int _offset;
@@ -57,9 +57,9 @@ namespace System.Net.Http.Json
 
         // What if someone passes a weird Content-Type?
         // Should we set mediaType.CharSet = UTF-8?
-        // Formatting allows it.
+        // Formatting API allows it.
         public JsonContent(Type type, object? value, MediaTypeHeaderValue mediaType, JsonSerializerOptions? options = null)
-            : this(JsonSerializer.SerializeToUtf8Bytes(value, type, options), type, value, mediaType ?? throw new ArgumentNullException(nameof(mediaType))) { }
+            : this(JsonSerializer.SerializeToUtf8Bytes(value, type, options), type, value, mediaType) { }
 
         private JsonContent(byte[] content, Type type, object? value, MediaTypeHeaderValue mediaType)
         {
@@ -84,7 +84,7 @@ namespace System.Net.Http.Json
             => Create(value, CreateMediaType(mediaType ?? throw new ArgumentNullException(nameof(mediaType))), options);
 
         public static JsonContent Create<T>(T value, MediaTypeHeaderValue mediaType, JsonSerializerOptions? options = null)
-            => new JsonContent(JsonSerializer.SerializeToUtf8Bytes(value, options), typeof(T), value, mediaType ?? throw new ArgumentNullException(nameof(mediaType)));
+            => new JsonContent(JsonSerializer.SerializeToUtf8Bytes(value, options), typeof(T), value, mediaType);
 
         /// <summary>
         /// Serialize the HTTP content to a stream as an asynchronous operation.
@@ -94,12 +94,6 @@ namespace System.Net.Http.Json
         /// <returns></returns>
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
             => stream.WriteAsync(_content, _offset, _count);
-
-        // Should this method even exist? or we just call WriteAsync from above method without cancellationToken?
-        // UPDATE: This does not exists on netstandard
-        // protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
-        //    => stream.WriteAsync(_content, _offset, _count, cancellationToken);
-
 
         /// <summary>
         /// TODO

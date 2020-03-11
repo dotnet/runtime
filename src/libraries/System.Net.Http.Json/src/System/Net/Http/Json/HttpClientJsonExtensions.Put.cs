@@ -18,6 +18,11 @@ namespace System.Net.Http.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
             JsonContent content = CreateJsonContent(type, value, options);
             return client.PutAsync(requestUri, content, cancellationToken);
         }
@@ -30,6 +35,11 @@ namespace System.Net.Http.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
             JsonContent content = CreateJsonContent(type, value, options);
             return client.PutAsync(requestUri, content, cancellationToken);
         }
@@ -41,6 +51,11 @@ namespace System.Net.Http.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
             JsonContent content = CreateJsonContent<T>(value, options);
             return client.PutAsync(requestUri, content, cancellationToken);
         }
@@ -52,6 +67,11 @@ namespace System.Net.Http.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
             JsonContent content = CreateJsonContent<T>(value, options);
             return client.PutAsync(requestUri, content, cancellationToken);
         }

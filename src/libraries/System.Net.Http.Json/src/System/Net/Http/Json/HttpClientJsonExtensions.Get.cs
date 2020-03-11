@@ -29,6 +29,11 @@ namespace System.Net.Http.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
             Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, cancellationToken);
             return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
         }
@@ -49,6 +54,11 @@ namespace System.Net.Http.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
             Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, cancellationToken);
             return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
         }
@@ -68,7 +78,12 @@ namespace System.Net.Http.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-             Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, cancellationToken);
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, cancellationToken);
             return GetFromJsonAsyncCore<T>(taskResponse, options, cancellationToken);
         }
 
@@ -87,6 +102,11 @@ namespace System.Net.Http.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
             Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, cancellationToken);
             return GetFromJsonAsyncCore<T>(taskResponse, options, cancellationToken);
         }
