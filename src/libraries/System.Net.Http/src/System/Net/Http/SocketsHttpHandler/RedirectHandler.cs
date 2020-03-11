@@ -52,9 +52,6 @@ namespace System.Net.Http
 
                 response.Dispose();
 
-                // Clear the authorization header.
-                request.Headers.Authorization = null;
-
                 if (NetEventSource.IsEnabled)
                 {
                     Trace($"Redirecting from {request.RequestUri} to {redirectUri} in response to status code {(int)response.StatusCode} '{response.StatusCode}'.", request.GetHashCode());
