@@ -14999,8 +14999,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
             }
             else
             {
-                // remove the statement from bbTreelist - No need to update
-                // the reference counts since there are no lcl vars
+                // no side effects, remove the switch entirely
                 fgRemoveStmt(block, lastStmt);
             }
 
