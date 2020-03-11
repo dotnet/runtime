@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public partial class GetUniqueObjectForIUnknownTests
     {
         public static IEnumerable<object[]> GetUniqueObjectForIUnknown_ComObject_TestData()

@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoInterpreter))]
     public partial class GetStartComSlotTests
     {
         public static IEnumerable<object[]> GetStartComSlot_TestData()
