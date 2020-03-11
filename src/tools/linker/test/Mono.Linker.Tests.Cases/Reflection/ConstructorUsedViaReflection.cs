@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
+	[SetupCSharpCompilerToUse ("csc")]
 	public class ConstructorUsedViaReflection {
 		public static void Main ()
 		{
