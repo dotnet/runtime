@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Primitives
 
         public int GetHashCode(StringSegment obj)
         {
-#if NETCOREAPP || NETSTANDARD2_1
+#if NETCOREAPP
             return string.GetHashCode(obj.AsSpan(), Comparison);
 #else
             if (!obj.HasValue)

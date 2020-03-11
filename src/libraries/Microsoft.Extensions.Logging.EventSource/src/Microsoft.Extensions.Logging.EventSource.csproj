@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Description>EventSource/EventListener logger provider implementation for Microsoft.Extensions.Logging.</Description>
@@ -20,6 +20,10 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <Reference Include="System.Text.Json" />
     <Reference Include="System.Threading.Tasks.Extensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.Logging.EventSource.Tests" />
   </ItemGroup>
 
 </Project>

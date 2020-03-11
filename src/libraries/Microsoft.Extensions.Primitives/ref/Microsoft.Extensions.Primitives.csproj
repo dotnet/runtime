@@ -1,11 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;$(DefaultNetCoreTargetFramework)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Compile Include="Microsoft.Extensions.Primitives.netstandard2.0.cs" />
     <Reference Include="System.Memory"  />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe"  />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Microsoft.Extensions.Primitives.cs" />
+<ItemGroup Condition="'$(TargetFramework)' == '$(DefaultNetCoreTargetFramework)'">
+    <Compile Include="Microsoft.Extensions.Primitives.netcoreapp.cs" />
+    
   </ItemGroup>
 </Project>
