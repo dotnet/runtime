@@ -14777,8 +14777,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
             }
             else
             {
-                // remove the statement from bbTreelist - No need to update
-                // the reference counts since there are no lcl vars
+                // no side effects, remove the jump entirely
                 fgRemoveStmt(block, lastStmt);
             }
             // block is a BBJ_COND that we are folding the conditional for
