@@ -11,7 +11,11 @@ Install the ARM tools and Windows SDK, as described [here](https://github.com/do
 Cross compiling CoreCLR
 -----------------------
 
-Build using "-arm" as the architecture. For example:
+Build using "arm" as the architecture. For example:
+
+    C:\runtime> .\build.cmd -subsetCategory CoreClr -subset Runtime -arch arm -c debug
+
+-or-
 
     C:\runtime> .\src\coreclr\build-runtime.cmd -arm -debug
 
@@ -97,7 +101,11 @@ Cross compiling CoreCLR
 -----------------------
 `ROOTFS_DIR` must be set when running `build-runtime.sh`.
 
-    ~/runtime/ $ ROOTFS_DIR=/home/arm ./src/coreclr/build-runtime.sh arm debug verbose cross
+    ~/runtime/ $ ROOTFS_DIR=/home/arm ./build.sh --subsetCategory CoreClr --subset Runtime --arch arm -c debug -v verbose --cross
+
+-or-
+
+    ~/runtime/ $ ROOTFS_DIR=/home/arm ./src/coreclr/build-runtime.sh -arm -debug -verbose -cross
 
 As usual, the resulting binaries will be found in `artifacts/bin/coreclr/TargetOS.BuildArch.BuildType/`
 
