@@ -14992,9 +14992,9 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 
             if (condTree != cond)
             {
-                // Preserve the potentially side effecting part of the comma
+                // Preserve any side effects
                 assert(condTree->OperIs(GT_COMMA));
-                lastStmt->SetRootNode(condTree->AsOp()->gtOp1);
+                lastStmt->SetRootNode(condTree);
             }
             else
             {
