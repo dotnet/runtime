@@ -171,7 +171,7 @@ bool DiagnosticServer::Initialize()
 
             if (hServerThread == NULL)
             {
-                for (int i = 0; i < s_rgIpcs.Size(); i++)
+                for (uint32_t i = 0; i < s_rgIpcs.Size(); i++)
                     if (s_rgIpcs[i] != nullptr)
                         delete s_rgIpcs[i];
 
@@ -229,7 +229,7 @@ bool DiagnosticServer::Shutdown()
                     szMessage);                                           // data2
             };
 
-            for (int i = 0; i < s_rgIpcs.Size(); i++)
+            for (uint32_t i = 0; i < s_rgIpcs.Size(); i++)
                 s_rgIpcs[i]->Close(ErrorCallback);
         }
         fSuccess = true;

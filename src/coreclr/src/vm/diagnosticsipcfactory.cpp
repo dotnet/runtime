@@ -21,7 +21,7 @@ IpcStream::DiagnosticsIpc *DiagnosticsIpcFactory::CreateClient(const char *const
 IpcStream *DiagnosticsIpcFactory::GetNextConnectedStream(IpcStream::DiagnosticsIpc **pIpcs, uint32_t nIpcs, ErrorCallback callback)
 {
     CQuickArrayList<IpcStream*> pStreams;
-    for (uint64_t i = 0; i < nIpcs; i++)
+    for (uint32_t i = 0; i < nIpcs; i++)
     {
         if (pIpcs[i]->mode == IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT)
         {
