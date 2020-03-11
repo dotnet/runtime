@@ -18,13 +18,11 @@ namespace System.Text.Json.Serialization.Converters
         private bool _dataExtensionIsObject;
 
         // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
-        private volatile Dictionary<string, JsonPropertyInfo> _propertyCache = null!;
+        private volatile Dictionary<string, JsonPropertyInfo>? _propertyCache;
 
         // All of the serializable properties on a POCO including the optional extension property.
         // Used for performance during serialization instead of 'PropertyCache' above.
         private volatile JsonPropertyInfo[]? _propertyCacheArray;
-
-        protected ConstructorInfo ConstructorInfo = null!;
 
         protected JsonPropertyInfo? DataExtensionProperty;
 
@@ -32,9 +30,9 @@ namespace System.Text.Json.Serialization.Converters
 
         protected int ParameterCount { get; private set; }
 
-        internal override void Initialize(ConstructorInfo constructor, JsonSerializerOptions options)
+        internal override void Initialize(JsonSerializerOptions options)
         {
-            ConstructorInfo = constructor;
+            Debug.Assert(ConstructorInfo != null);
 
             // Properties must be initialized first.
             InitializeProperties(options);
@@ -122,7 +120,7 @@ namespace System.Text.Json.Serialization.Converters
                 PropertyInfo? firstMatch = null;
                 bool isBound = false;
 
-                foreach (JsonPropertyInfo jsonPropertyInfo in _propertyCache.Values)
+                foreach (JsonPropertyInfo jsonPropertyInfo in _propertyCacheArray!)
                 {
                     // This is not null because it is an actual
                     // property on a type, not a "policy property".
@@ -150,7 +148,7 @@ namespace System.Text.Json.Serialization.Converters
                         JsonParameterInfo jsonParameterInfo = AddConstructorParameter(parameterInfo, jsonPropertyInfo, options);
 
                         // One object property cannot map to multiple constructor
-                        // arguments (ConvertName above can't return multiple strings).
+                        // parameters (ConvertName above can't return multiple strings).
                         parameterCache.Add(jsonParameterInfo.NameAsString, jsonParameterInfo);
 
                         isBound = true;
@@ -163,7 +161,7 @@ namespace System.Text.Json.Serialization.Converters
             if (DataExtensionProperty != null &&
                 parameterCache.ContainsKey(DataExtensionProperty.NameAsString!))
             {
-                throw new InvalidOperationException();
+                ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(DataExtensionProperty.PropertyInfo!, TypeToConvert, ConstructorInfo);
             }
 
             ParameterCache = parameterCache;

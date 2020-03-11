@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Tests
             string exStr = ex.ToString();
             Assert.Contains("'X'", exStr);
             Assert.Contains("'x'", exStr);
-            Assert.Contains("Void .ctor(Int32, Int32)", exStr);
+            Assert.Contains("(Int32, Int32)", exStr);
             Assert.Contains("System.Text.Json.Serialization.Tests.Point_MultipleMembers_BindTo_OneConstructorParameter", exStr);
 
             ex = Assert.Throws<InvalidOperationException>(
@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization.Tests
             exStr = ex.ToString();
             Assert.Contains("'X'", exStr);
             Assert.Contains("'x'", exStr);
-            Assert.Contains("Void .ctor(Int32)", exStr);
+            Assert.Contains("(Int32)", exStr);
             Assert.Contains("System.Text.Json.Serialization.Tests.Point_MultipleMembers_BindTo_OneConstructorParameter_Variant", exStr);
         }
 
@@ -38,14 +38,77 @@ namespace System.Text.Json.Serialization.Tests
                 () => JsonSerializer.Deserialize<Point_Without_Members>("{}"));
 
             string exStr = ex.ToString();
-            Assert.Contains("Void .ctor(Int32, Int32)", exStr);
+            Assert.Contains("(Int32, Int32)", exStr);
             Assert.Contains("System.Text.Json.Serialization.Tests.Point_Without_Members", exStr);
 
             ex = Assert.Throws<InvalidOperationException>(
                 () => JsonSerializer.Deserialize<Point_With_MismatchedMembers>("{}"));
             exStr = ex.ToString();
-            Assert.Contains("Void .ctor(Int32, Int32)", exStr);
+            Assert.Contains("(Int32, Int32)", exStr);
             Assert.Contains("System.Text.Json.Serialization.Tests.Point_With_MismatchedMembers", exStr);
+        }
+
+        [Fact]
+        public static void LeadingReferenceMetadataNotSupported()
+        {
+            string json = @"{""$id"":""1"",""Name"":""Jet"",""Manager"":{""$ref"":""1""}}";
+
+            // Metadata ignored by default.
+            var employee = JsonSerializer.Deserialize<Employee>(json);
+
+            Assert.Equal("Jet", employee.Name);
+            Assert.Null(employee.Manager.Name); ;
+            Assert.Null(employee.Manager.Manager);
+
+            // Metadata not supported with preserve ref feature on.
+
+            var options = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve };
+
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(
+                () => JsonSerializer.Deserialize<Employee>(json, options));
+
+            Assert.Contains("System.Text.Json.Serialization.Tests.ConstructorTests+Employee", ex.ToString());
+        }
+
+        private class Employee
+        {
+            public string Name { get; }
+            public Employee Manager { get; set; }
+
+            public Employee(string name)
+            {
+                Name = name;
+            }
+        }
+
+        [Fact]
+        public static void RandomReferenceMetadataNotSupported()
+        {
+            string json = @"{""Name"":""Jet"",""$random"":10}";
+
+            // Metadata not supported with preserve ref feature on.
+
+            var options = new JsonSerializerOptions { ReferenceHandling = ReferenceHandling.Preserve };
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Employee>(json, options));
+        }
+
+        [Fact]
+        public static void ExtensionDataProperty_CannotBindTo_CtorParam()
+        {
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<Class_ExtData_CtorParam>("{}"));
+            string exStr = ex.ToString();
+            Assert.Contains("System.Collections.Generic.Dictionary`2[System.String,System.Text.Json.JsonElement] ExtensionData", exStr);
+            Assert.Contains("System.Text.Json.Serialization.Tests.ConstructorTests+Class_ExtData_CtorParam", exStr);
+            Assert.Contains("(System.Collections.Generic.Dictionary`2[System.String,System.Text.Json.JsonElement])", exStr);
+        }
+
+        public class Class_ExtData_CtorParam
+        {
+            [JsonExtensionData]
+            public Dictionary<string, JsonElement> ExtensionData { get; set; }
+
+            public Class_ExtData_CtorParam(Dictionary<string, JsonElement> extensionData) { }
         }
 
         [Fact]

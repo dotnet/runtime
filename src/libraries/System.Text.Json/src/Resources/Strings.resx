@@ -500,4 +500,7 @@
   <data name="SerializationNotSupportedParentType" xml:space="preserve">
     <value>The unsupported member type is located on type '{0}'.</value>
   </data>
+  <data name="ExtensionDataCannotBindToCtorParam" xml:space="preserve">
+    <value>The extension data property '{0}' on type '{1}' cannot bind with a parameter in constructor '{2}'.</value>
+  </data>
 </root>

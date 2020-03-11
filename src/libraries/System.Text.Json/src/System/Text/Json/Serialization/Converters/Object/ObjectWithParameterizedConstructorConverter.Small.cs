@@ -16,11 +16,11 @@ namespace System.Text.Json.Serialization.Converters
     {
         private JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>? _createObject;
 
-        internal override void Initialize(ConstructorInfo constructor, JsonSerializerOptions options)
+        internal override void Initialize(JsonSerializerOptions options)
         {
-            base.Initialize(constructor, options);
+            base.Initialize(options);
 
-            _createObject = options.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(constructor)!;
+            _createObject = options.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo)!;
         }
 
         protected override object CreateObject(ref ReadStack state)

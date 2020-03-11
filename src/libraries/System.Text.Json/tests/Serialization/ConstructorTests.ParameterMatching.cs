@@ -705,7 +705,7 @@ namespace System.Text.Json.Serialization.Tests
             string input = sb.ToString();
 
             sb = new StringBuilder();
-            sb.Append("Void .ctor(");
+            sb.Append("(");
             for (int i = 0; i < 64; i++)
             {
                 sb.Append("Int32, ");

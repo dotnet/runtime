@@ -125,7 +125,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
-                        value = default!;
+                        value = default;
                         return false;
                     }
                 }
@@ -160,7 +160,7 @@ namespace System.Text.Json.Serialization.Converters
 
                             if (!SingleValueReadWithReadAhead(elementConverter.ClassType, ref reader, ref state))
                             {
-                                value = default!;
+                                value = default;
                                 return false;
                             }
                         }
@@ -180,7 +180,7 @@ namespace System.Text.Json.Serialization.Converters
                             // Get the value from the converter and add it.
                             if (!elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement element))
                             {
-                                value = default!;
+                                value = default;
                                 return false;
                             }
 
@@ -203,7 +203,7 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         if (!reader.Read())
                         {
-                            value = default!;
+                            value = default;
                             return false;
                         }
 

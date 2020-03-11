@@ -405,8 +405,7 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         if (DataExtensionProperty.RuntimeClassInfo.CreateObject == null)
                         {
-                            // TODO: better exception here.
-                            throw new NotSupportedException();
+                            ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(DataExtensionProperty.DeclaredPropertyType);
                         }
 
                         state.Current.DataExtension = DataExtensionProperty.RuntimeClassInfo.CreateObject();

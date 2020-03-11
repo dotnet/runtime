@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using System.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -16,11 +15,11 @@ namespace System.Text.Json.Serialization.Converters
     {
         private JsonClassInfo.ParameterizedConstructorDelegate<T>? _createObject;
 
-        internal override void Initialize(ConstructorInfo constructor, JsonSerializerOptions options)
+        internal override void Initialize(JsonSerializerOptions options)
         {
-            base.Initialize(constructor, options);
+            base.Initialize(options);
 
-            _createObject = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(constructor)!;
+            _createObject = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo)!;
         }
 
         protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo, JsonSerializerOptions options)

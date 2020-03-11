@@ -78,7 +78,9 @@ namespace System.Text.Json.Serialization
         // Whether a type (ClassType.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized => false;
 
+        internal ConstructorInfo ConstructorInfo { get; set; } = null!;
+
         // Provides intialization needed by object converters that deserialize types with parameterized constructors.
-        internal virtual void Initialize(ConstructorInfo constructor, JsonSerializerOptions options) { }
+        internal virtual void Initialize(JsonSerializerOptions options) { }
     }
 }

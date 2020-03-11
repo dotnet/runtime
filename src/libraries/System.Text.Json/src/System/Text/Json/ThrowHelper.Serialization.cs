@@ -181,6 +181,16 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static NotSupportedException ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(
+            PropertyInfo propertyInfo,
+            Type classType,
+            ConstructorInfo constructorInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ExtensionDataCannotBindToCtorParam, propertyInfo, classType, constructorInfo));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ReThrowWithPath(in ReadStack state, JsonReaderException ex)
         {
             Debug.Assert(ex.Path == null);

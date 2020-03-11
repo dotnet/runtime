@@ -110,7 +110,7 @@ namespace System.Text.Json.Serialization.Converters
                         }
                         else
                         {
-                            value = default!;
+                            value = default;
                             return false;
                         }
                     }
@@ -155,7 +155,7 @@ namespace System.Text.Json.Serialization.Converters
                         {
                             // The read-ahead functionality will do the Read().
                             state.Current.ReturnValue = obj;
-                            value = default!;
+                            value = default;
                             return false;
                         }
                     }
@@ -199,7 +199,7 @@ namespace System.Text.Json.Serialization.Converters
                             if (!reader.TrySkip())
                             {
                                 state.Current.ReturnValue = obj;
-                                value = default!;
+                                value = default;
                                 return false;
                             }
 
@@ -215,7 +215,7 @@ namespace System.Text.Json.Serialization.Converters
                             if (!SingleValueReadWithReadAhead(jsonPropertyInfo.ConverterBase.ClassType, ref reader, ref state))
                             {
                                 state.Current.ReturnValue = obj;
-                                value = default!;
+                                value = default;
                                 return false;
                             }
                         }
@@ -225,7 +225,7 @@ namespace System.Text.Json.Serialization.Converters
                             if (!SingleValueReadWithReadAhead(ClassType.Value, ref reader, ref state))
                             {
                                 state.Current.ReturnValue = obj;
-                                value = default!;
+                                value = default;
                                 return false;
                             }
                         }
@@ -239,7 +239,7 @@ namespace System.Text.Json.Serialization.Converters
                             if (!jsonPropertyInfo.ReadJsonAndSetMember(obj, ref state, ref reader))
                             {
                                 state.Current.ReturnValue = obj;
-                                value = default!;
+                                value = default;
                                 return false;
                             }
                         }
@@ -249,7 +249,7 @@ namespace System.Text.Json.Serialization.Converters
                             {
                                 // No need to set 'value' here since JsonElement must be read in full.
                                 state.Current.ReturnValue = obj;
-                                value = default!;
+                                value = default;
                                 return false;
                             }
                         }

@@ -7,14 +7,14 @@ using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
-    internal class JsonParameterInfo<TTypeToConvert> : JsonParameterInfo
+    internal class JsonParameterInfo<T> : JsonParameterInfo
     {
-        private JsonConverter<TTypeToConvert> _converter = null!;
+        private JsonConverter<T> _converter = null!;
         private Type _runtimePropertyType = null!;
 
         public override JsonConverter ConverterBase => _converter;
 
-        public TTypeToConvert TypedDefaultValue { get; private set; } = default!;
+        public T TypedDefaultValue { get; private set; } = default!;
 
         public override void Initialize(
             string matchingPropertyName,
@@ -32,13 +32,13 @@ namespace System.Text.Json
                 converter,
                 options);
 
-            _converter = (JsonConverter<TTypeToConvert>)converter;
+            _converter = (JsonConverter<T>)converter;
             _runtimePropertyType = runtimePropertyType;
 
             if (parameterInfo.HasDefaultValue)
             {
                 DefaultValue = parameterInfo.DefaultValue;
-                TypedDefaultValue = (TTypeToConvert)parameterInfo.DefaultValue!;
+                TypedDefaultValue = (T)parameterInfo.DefaultValue!;
             }
             else
             {
@@ -68,7 +68,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    success = _converter.TryRead(ref reader, _runtimePropertyType, options, ref state, out TTypeToConvert typedValue);
+                    success = _converter.TryRead(ref reader, _runtimePropertyType, options, ref state, out T typedValue);
                     value = typedValue;
                 }
             }
@@ -76,7 +76,7 @@ namespace System.Text.Json
             return success;
         }
 
-        public bool ReadJsonTyped(ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options, out TTypeToConvert value)
+        public bool ReadJsonTyped(ref ReadStack state, ref Utf8JsonReader reader, JsonSerializerOptions options, out T value)
         {
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;

@@ -50,10 +50,10 @@ namespace System.Text.Json
         // Data extension for objects with parameterized ctors and an extension data property.
         public object? DataExtension;
 
-        // When deserializing objects with parameterized ctors, the properties we found on the first pass.
+        // When deserializing objects with parameterized ctors, the properties we find on the first pass.
         public ValueTuple<JsonPropertyInfo, JsonReaderState, long, byte[]?>[]? FoundProperties;
 
-        // When deserializing objects with parameterized ctors asynchronously, the properties we found on the first pass.
+        // When deserializing objects with parameterized ctors asynchronously, the properties we find on the first pass.
         public ValueTuple<JsonPropertyInfo, JsonReaderState, byte[], byte[]?>[]? FoundPropertiesAsync;
 
         public int FoundPropertyCount;

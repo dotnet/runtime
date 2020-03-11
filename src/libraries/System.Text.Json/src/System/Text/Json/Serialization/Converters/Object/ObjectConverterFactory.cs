@@ -66,7 +66,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     converterType = typeof(LargeObjectWithParameterizedConstructorConverter<>).MakeGenericType(typeToConvert);
                 }
-        }
+            }
 
             converter = (JsonConverter)Activator.CreateInstance(
                     converterType,
@@ -75,9 +75,7 @@ namespace System.Text.Json.Serialization.Converters
                     args: null,
                     culture: null)!;
 
-            // This body for this method implemented by ObjectDefaultConverter<> is empty.
-            converter.Initialize(constructor!, options);
-
+            converter.ConstructorInfo = constructor!;
             return converter;
         }
 

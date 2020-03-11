@@ -137,10 +137,9 @@ namespace System.Text.Json
                         // Create the policy property.
                         PolicyProperty = CreatePolicyProperty(type, runtimeType, converter!, options);
 
-                        if (converter != null && converter.ConstructorIsParameterized)
+                        if (converter.ConstructorIsParameterized)
                         {
-                            // Parameter and property caching for objects deserialized with
-                            // parameterized constructors is done in their respective converters.
+                            converter.Initialize(options);
                             return;
                         }
 
@@ -400,7 +399,7 @@ namespace System.Text.Json
             return info;
         }
 
-        public Dictionary<string, JsonPropertyInfo> CreatePropertyCache(int capacity)
+        private Dictionary<string, JsonPropertyInfo> CreatePropertyCache(int capacity)
         {
             StringComparer comparer;
 
@@ -419,7 +418,7 @@ namespace System.Text.Json
         public JsonPropertyInfo? PolicyProperty { get; private set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryIsPropertyRefEqual(in PropertyRef propertyRef, ReadOnlySpan<byte> propertyName, ulong key, [NotNullWhen(true)] ref JsonPropertyInfo? info)
+        private static bool TryIsPropertyRefEqual(in PropertyRef propertyRef, ReadOnlySpan<byte> propertyName, ulong key, [NotNullWhen(true)] ref JsonPropertyInfo? info)
         {
             if (key == propertyRef.Key)
             {
