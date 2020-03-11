@@ -54,7 +54,7 @@
   <ItemGroup>
     <!-- Targeting packs are only patched in extreme cases. -->
     <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="0" />
-    <!-- Setting PatchVersion to "N/A" to not build it now or in the future, as "N/A will never match the actual patch version. -->
+    <!-- Setting PatchVersion to "N/A" to not build it now or in the future, as "N/A" will never match the actual patch version. -->
     <!-- For more info see this issue: https://github.com/dotnet/runtime/issues/2294 -->
     <ProjectServicingConfiguration Include="NETStandard.Library.Ref" PatchVersion="N/A" />
   </ItemGroup>
