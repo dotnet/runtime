@@ -4798,12 +4798,12 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
     //
     if (opts.OptimizationEnabled())
     {
-        GenTreeLclVarCommon* const lcl = argx->IsImplicitByrefParameterValue(this);
+        GenTreeLclVar* const lcl = argx->IsImplicitByrefParameterValue(this);
 
         if (lcl != nullptr)
         {
-            unsigned             varNum           = lcl->AsLclVarCommon()->GetLclNum();
-            LclVarDsc*           varDsc           = lvaGetDesc(varNum);
+            const unsigned       varNum           = lcl->GetLclNum();
+            LclVarDsc* const     varDsc           = lvaGetDesc(varNum);
             const unsigned short totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
 
             // We don't have liveness so we rely on other indications of last use.
@@ -4819,7 +4819,8 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
             //
             // * (may not copy) if the call is noreturn, the use is a last use.
             //   We also check for just one reference here as we are not doing
-            //   alias analysis of the call's parameters.
+            //   alias analysis of the call's parameters, or checking if the call
+            //   site is not within some try region.
             //
             // * (may not copy) if there is exactly one use of the local in the method,
             //   and the call is not in loop, this is a last use.
@@ -6681,9 +6682,9 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     fgInitArgInfo(callee);
     fgArgInfo* argInfo = callee->fgArgInfo;
 
-    bool   hasByrefParameter  = false;
-    size_t calleeArgStackSize = 0;
-    size_t callerArgStackSize = info.compArgStackSize;
+    bool   hasMustCopyByrefParameter = false;
+    size_t calleeArgStackSize        = 0;
+    size_t callerArgStackSize        = info.compArgStackSize;
 
     for (unsigned index = 0; index < argInfo->ArgCount(); ++index)
     {
@@ -6697,31 +6698,34 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
             {
                 // Generally a byref arg will block tail calling, as we have to
                 // make a local copy of the struct for the callee.
-                hasByrefParameter = true;
+                hasMustCopyByrefParameter = true;
 
                 // If we're optimizing, we may be able to pass our caller's byref to our callee,
                 // and so still be able to tail call.
                 if (opts.OptimizationEnabled())
                 {
                     // First, see if this arg is an implicit byref param.
-                    GenTreeLclVarCommon* const lcl = arg->GetNode()->IsImplicitByrefParameterValue(this);
+                    GenTreeLclVar* const lcl = arg->GetNode()->IsImplicitByrefParameterValue(this);
 
-                    // If so, it must not be promoted; if we've promoted, then the arg will be
-                    // a local struct assembled from the promoted fields.
                     if (lcl != nullptr)
                     {
-                        JITDUMP("Arg [%06u] is unpromoted implicit byref V%02u, seeing if we can still tail call\n",
-                                dspTreeID(arg->GetNode()), lcl->GetLclNum());
-
+                        // Yes, the arg is an implicit byref param.
+                        const unsigned   lclNum = lcl->GetLclNum();
                         LclVarDsc* const varDsc = lvaGetDesc(lcl);
 
+                        // The param must not be promoted; if we've promoted, then the arg will be
+                        // a local struct assembled from the promoted fields.
                         if (varDsc->lvPromoted)
                         {
-                            JITDUMP(" ... no, V%02u was promoted\n", lcl->GetLclNum());
+                            JITDUMP("Arg [%06u] is promoted implicit byref V%02u, so no tail call\n",
+                                    dspTreeID(arg->GetNode()), lclNum);
                         }
                         else
                         {
-                            // We also have to worry about introducing aliases if we bypass copying
+                            JITDUMP("Arg [%06u] is unpromoted implicit byref V%02u, seeing if we can still tail call\n",
+                                    dspTreeID(arg->GetNode()), lclNum);
+
+                            // We have to worry about introducing aliases if we bypass copying
                             // the struct at the call. We'll do some limited analysis to see if we
                             // can rule this out.
                             const unsigned argLimit = 6;
@@ -6729,16 +6733,17 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                             // If this is the only appearance of the byref in the method, then
                             // aliasing is not possible.
                             //
-                            if (varDsc->lvRefCnt(RCS_EARLY) == 1)
-                            {
-                                JITDUMP("... yes, arg is the only appearance of V%02u\n", lcl->GetLclNum());
-                                hasByrefParameter = false;
-                            }
                             // If no other call arg refers to this byref, and no other arg is
                             // a pointer which could refer to this byref, we can optimize.
                             //
                             // We only check this for calls with small numbers of arguments,
                             // as the analysis cost will be quadratic.
+                            //
+                            if (varDsc->lvRefCnt(RCS_EARLY) == 1)
+                            {
+                                JITDUMP("... yes, arg is the only appearance of V%02u\n", lclNum);
+                                hasMustCopyByrefParameter = false;
+                            }
                             else if (argInfo->ArgCount() <= argLimit)
                             {
                                 GenTree* interferingArg = nullptr;
@@ -6750,7 +6755,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                                     }
 
                                     fgArgTabEntry* const arg2 = argInfo->GetArgEntry(index2, false);
-                                    JITDUMP("checking other arg [%06u]...\n", dspTreeID(arg2->GetNode()));
+                                    JITDUMP("... checking other arg [%06u]...\n", dspTreeID(arg2->GetNode()));
                                     DISPTREE(arg2->GetNode());
 
                                     // Do we pass 'lcl' more than once to the callee?
@@ -6759,7 +6764,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                                         GenTreeLclVarCommon* const lcl2 =
                                             arg2->GetNode()->IsImplicitByrefParameterValue(this);
 
-                                        if ((lcl2 != nullptr) && (lcl->GetLclNum() == lcl2->GetLclNum()))
+                                        if ((lcl2 != nullptr) && (lclNum == lcl2->GetLclNum()))
                                         {
                                             // not copying would introduce aliased implicit byref structs
                                             // in the callee ... we can't optimize.
@@ -6768,7 +6773,8 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                                         }
                                         else
                                         {
-                                            JITDUMP("... ok, different implicit byref V%02u\n", lcl2->GetLclNum());
+                                            JITDUMP("... arg refers to different implicit byref V%02u\n",
+                                                    lcl2->GetLclNum());
                                             continue;
                                         }
                                     }
@@ -6798,7 +6804,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                                     //
                                     if ((arg2->argType == TYP_BYREF) || (arg2->argType == TYP_I_IMPL))
                                     {
-                                        JITDUMP("... is byref arg...\n", dspTreeID(arg2->GetNode()));
+                                        JITDUMP("...arg is a byref, must run an alias check\n");
                                         bool checkExposure = true;
                                         bool hasExposure   = false;
 
@@ -6807,7 +6813,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                                         if (arg2Node->OperIs(GT_LCL_VAR))
                                         {
                                             GenTreeLclVarCommon* arg2LclNode = arg2Node->AsLclVarCommon();
-                                            assert(arg2LclNode->GetLclNum() != lcl->GetLclNum());
+                                            assert(arg2LclNode->GetLclNum() != lclNum);
                                             LclVarDsc* arg2Dsc = lvaGetDesc(arg2LclNode);
 
                                             // Other params can't alias implicit byref params
@@ -6825,12 +6831,15 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 
                                         if (checkExposure)
                                         {
+                                            JITDUMP(
+                                                "... not sure where byref arg points, checking if V%02u is exposed\n",
+                                                lclNum);
                                             // arg2 might alias arg, see if we've exposed
                                             // arg somewhere in the method.
                                             if (varDsc->lvHasLdAddrOp || varDsc->lvAddrExposed)
                                             {
                                                 // Struct as a whole is exposed, can't optimize
-                                                JITDUMP(" ... V%02u exposed\n", lcl->GetLclNum());
+                                                JITDUMP("... V%02u is exposed\n", lclNum);
                                                 hasExposure = true;
                                             }
                                             else if (varDsc->lvFieldLclStart != 0)
@@ -6841,28 +6850,25 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                                                 // use it to enumerate the fields.
                                                 const unsigned   promotedLcl    = varDsc->lvFieldLclStart;
                                                 LclVarDsc* const promotedVarDsc = lvaGetDesc(promotedLcl);
-                                                JITDUMP("promoted-unpromoted case, checking fields of V%02u\n",
+                                                JITDUMP("...promoted-unpromoted case -- also checking exposure of "
+                                                        "fields of V%02u\n",
                                                         promotedLcl);
 
                                                 for (unsigned fieldIndex = 0; fieldIndex < promotedVarDsc->lvFieldCnt;
                                                      fieldIndex++)
                                                 {
-                                                    JITDUMP("checking field V%02u\n",
-                                                            promotedVarDsc->lvFieldLclStart + fieldIndex);
                                                     LclVarDsc* fieldDsc =
                                                         lvaGetDesc(promotedVarDsc->lvFieldLclStart + fieldIndex);
 
                                                     if (fieldDsc->lvHasLdAddrOp || fieldDsc->lvAddrExposed)
                                                     {
                                                         // Promoted and not yet demoted field is exposed, can't optimize
+                                                        JITDUMP("... field V%02u is exposed\n",
+                                                                promotedVarDsc->lvFieldLclStart + fieldIndex);
                                                         hasExposure = true;
                                                         break;
                                                     }
                                                 }
-                                            }
-                                            else
-                                            {
-                                                JITDUMP("...never promoted case, we're cool\n");
                                             }
                                         }
 
@@ -6874,7 +6880,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                                     }
                                     else
                                     {
-                                        JITDUMP("...not byref or implicit byref (%s), we're cool\n",
+                                        JITDUMP("...arg is not a byref or implicit byref (%s)\n",
                                                 varTypeName(arg2->GetNode()->TypeGet()));
                                     }
                                 }
@@ -6882,12 +6888,12 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                                 if (interferingArg != nullptr)
                                 {
                                     JITDUMP("... no, arg [%06u] may alias with V%02u\n", dspTreeID(interferingArg),
-                                            lcl->GetLclNum());
+                                            lclNum);
                                 }
                                 else
                                 {
-                                    JITDUMP("... yes, no other arg in call can alias V%02u\n", lcl->GetLclNum());
-                                    hasByrefParameter = false;
+                                    JITDUMP("... yes, no other arg in call can alias V%02u\n", lclNum);
+                                    hasMustCopyByrefParameter = false;
                                 }
                             }
                             else
@@ -6899,7 +6905,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                     }
                 }
 
-                if (hasByrefParameter)
+                if (hasMustCopyByrefParameter)
                 {
                     // This arg blocks the tail call. No reason to keep scanning the remaining args.
                     break;
@@ -6993,7 +6999,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     // For Windows some struct parameters are copied on the local frame
     // and then passed by reference. We cannot fast tail call in these situation
     // as we need to keep our frame around.
-    if (hasByrefParameter)
+    if (hasMustCopyByrefParameter)
     {
         reportFastTailCallDecision("Callee has a byref parameter");
         return false;

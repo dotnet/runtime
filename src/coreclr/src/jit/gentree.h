@@ -1843,7 +1843,7 @@ public:
 
     // Determine if this tree represents the value of an entire implict byref parameter,
     // and if so return the tree for the parameter.
-    GenTreeLclVarCommon* IsImplicitByrefParameterValue(Compiler* compiler);
+    GenTreeLclVar* IsImplicitByrefParameterValue(Compiler* compiler);
 
     // Determine if this is a LclVarCommon node and return some additional info about it in the
     // two out parameters.

@@ -16201,17 +16201,17 @@ bool GenTree::IsLocalAddrExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree,
 //    compiler -- compiler instance
 //
 // Return Value:
-//    GenTreeLclVarCommon node for the local, or nullptr.
-
-GenTreeLclVarCommon* GenTree::IsImplicitByrefParameterValue(Compiler* compiler)
+//    GenTreeLclVar node for the local, or nullptr.
+//
+GenTreeLclVar* GenTree::IsImplicitByrefParameterValue(Compiler* compiler)
 {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
-    GenTreeLclVarCommon* lcl = nullptr;
+    GenTreeLclVar* lcl = nullptr;
 
     if (OperIs(GT_LCL_VAR))
     {
-        lcl = AsLclVarCommon();
+        lcl = AsLclVar();
     }
     else if (OperIs(GT_OBJ))
     {
@@ -16219,7 +16219,7 @@ GenTreeLclVarCommon* GenTree::IsImplicitByrefParameterValue(Compiler* compiler)
 
         if (addr->OperIs(GT_LCL_VAR))
         {
-            lcl = addr->AsLclVarCommon();
+            lcl = addr->AsLclVar();
         }
         else if (addr->OperIs(GT_ADDR))
         {
@@ -16227,7 +16227,7 @@ GenTreeLclVarCommon* GenTree::IsImplicitByrefParameterValue(Compiler* compiler)
 
             if (base->OperIs(GT_LCL_VAR))
             {
-                lcl = base->AsLclVarCommon();
+                lcl = base->AsLclVar();
             }
         }
     }
