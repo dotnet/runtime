@@ -436,18 +436,36 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
         {
             LOG_USING_R2R_CODE(this);
 
+#ifdef FEATURE_TIERED_COMPILATION
+            bool shouldTier = pConfig->GetMethodDesc()->IsEligibleForTieredCompilation();
+#if !defined(TARGET_X86) || !defined(TARGET_WINDOWS)
+            // If the method is eligible for tiering and it has already been
+            // update to to be optimized, then update the tier in the code version.
+            if (shouldTier && pConfig->JitSwitchedToOptimized())
+            {
+                NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
+                if (codeVersion.IsDefaultVersion())
+                {
+                    pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
+                }
+                codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
+                shouldTier = false;
+            }
+#endif  // !TARGET_X86 || !TARGET_WINDOWS
+#endif // FEATURE_TIERED_COMPILATION
+
             if (pConfig->SetNativeCode(pCode, &pCode))
             {
-            #ifdef FEATURE_CODE_VERSIONING
+#ifdef FEATURE_CODE_VERSIONING
                 pConfig->SetGeneratedOrLoadedNewCode();
-            #endif
-            #ifdef FEATURE_TIERED_COMPILATION
-                if (pConfig->GetMethodDesc()->IsEligibleForTieredCompilation())
+#endif
+#ifdef FEATURE_TIERED_COMPILATION
+                if (shouldTier)
                 {
                     _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
                     pConfig->SetShouldCountCalls();
                 }
-            #endif
+#endif
             }
         }
     }
@@ -1812,7 +1830,7 @@ static PCODE PreStubWorker_Preemptive(
     pMD->CheckRestore();
     CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
 
-    pbRetVal = pMD->DoPrestub(NULL);
+    pbRetVal = pMD->DoPrestub(NULL, MethodDesc::CallerGCMode_Preempt);
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -1919,7 +1937,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         }
 
         GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
-        pbRetVal = pMD->DoPrestub(pDispatchingMT);
+        pbRetVal = pMD->DoPrestub(pDispatchingMT, MethodDesc::CallerGCMode_Coop);
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -1987,7 +2005,7 @@ static void TestSEHGuardPageRestore()
 // the case of methods that require stubs to be executed first (e.g., remoted methods
 // that require remoting stubs to be executed first), this stable entrypoint would be a
 // pointer to the stub, and not a pointer directly to the JITted code.
-PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
+PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, DWORD callerGCMode)
 {
     CONTRACT(PCODE)
     {
@@ -2092,7 +2110,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     {
         bool doBackpatch = true;
         bool doFullBackpatch = false;
-        pCode = GetCodeVersionManager()->PublishVersionableCodeIfNecessary(this, &doBackpatch, &doFullBackpatch);
+        pCode = GetCodeVersionManager()->PublishVersionableCodeIfNecessary(this, callerGCMode, &doBackpatch, &doFullBackpatch);
 
         if (doBackpatch)
         {
