@@ -617,11 +617,7 @@ public:
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 public:
-    PTR_OnStackReplacementManager GetOnStackReplacementManager()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_onStackReplacementManager;
-    }
+    PTR_OnStackReplacementManager GetOnStackReplacementManager();
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
 };  // class LoaderAllocator

@@ -24,8 +24,10 @@ struct PerPatchpointInfo
     PerPatchpointInfo() : 
         m_osrMethodCode(0),
         m_patchpointCount(0),
-        m_flags(0),
-        m_patchpointId(0)
+        m_flags(0)
+#if _DEBUG
+        , m_patchpointId(0)
+#endif
     {
     }
 
@@ -36,11 +38,17 @@ struct PerPatchpointInfo
         patchpoint_invalid = 0x2
     };
 
+    // The OSR method entry point for this patchpoint.
+    // NULL if no method has yet been jitted, or jitting failed.
     PCODE m_osrMethodCode;
+    // Number of times jitted code has called the helper at this patchpoint.
     LONG m_patchpointCount;
+    // Status of this patchpoint
     LONG m_flags;
 
+#if _DEBUG
     int m_patchpointId;
+#endif
 };
 
 typedef DPTR(PerPatchpointInfo) PTR_PerPatchpointInfo;
@@ -56,13 +64,13 @@ class OnStackReplacementManager
 {
 #if DACCESS_COMPILE
 public:
-    OnStackReplacementManager() {};
+    OnStackReplacementManager(LoaderAllocator *) {};
 #else
 public:
     static void StaticInitialize();
 
 public:
-    OnStackReplacementManager();
+    OnStackReplacementManager(LoaderAllocator * loaderHeaAllocator);
 
 public:
     PerPatchpointInfo* GetPerPatchpointInfo(PCODE ip);
@@ -80,6 +88,7 @@ private:
 
 private:
 
+    PTR_LoaderAllocator m_allocator;
     JitPatchpointTable m_jitPatchpointTable;
 };
 
@@ -91,7 +100,7 @@ public:
     static void StaticInitialize() {}
 public:
 
-    OnStackReplacementManager() {}
+    OnStackReplacementManager(LoaderAllocator *) {}
 };
 
 #endif // FEATURE_TIERED_COMPILATION

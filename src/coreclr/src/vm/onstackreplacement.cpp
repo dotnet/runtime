@@ -22,18 +22,18 @@ void OnStackReplacementManager::StaticInitialize()
     s_lock.Init(CrstJitPatchpoint, CrstFlags(CRST_UNSAFE_COOPGC));
 }
 
-OnStackReplacementManager::OnStackReplacementManager() : m_jitPatchpointTable()
+OnStackReplacementManager::OnStackReplacementManager(LoaderAllocator * loaderAllocator) : m_jitPatchpointTable(), m_allocator(loaderAllocator)
 {
     CONTRACTL
     {
         GC_NOTRIGGER;
         CAN_TAKE_LOCK;
-        MODE_PREEMPTIVE;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
     LockOwner lock = {&s_lock, IsOwnerOfCrst};
-    m_jitPatchpointTable.Init(INITIAL_TABLE_SIZE, &lock);
+    m_jitPatchpointTable.Init(INITIAL_TABLE_SIZE, &lock, m_allocator->GetLowFrequencyHeap());
 }
 
 // Fetch or create patchpoint info for this patchpoint.
@@ -59,7 +59,8 @@ PerPatchpointInfo* OnStackReplacementManager::GetPerPatchpointInfo(PCODE ip)
 
         if (!hasData)
         {
-            ppInfo = dac_cast<PTR_PerPatchpointInfo>(new PerPatchpointInfo());
+            void * pMem = m_allocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PerPatchpointInfo)));
+            ppInfo = dac_cast<PTR_PerPatchpointInfo>(new (pMem) PerPatchpointInfo());
             m_jitPatchpointTable.InsertValue(ppId, (HashDatum)ppInfo);
             ppInfo->m_patchpointId = ++s_patchpointId;
         }

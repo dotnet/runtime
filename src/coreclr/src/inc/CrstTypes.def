@@ -352,6 +352,7 @@ Crst JitGenericHandleCache
 End
 
 Crst JitPatchpoint
+    AcquiredBefore LoaderHeap
 End
 
 Crst JitPerf

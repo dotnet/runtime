@@ -5099,9 +5099,6 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
     PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
 
-    const int ppId = ppInfo->m_patchpointId;
-    const int counterBump = g_pConfig->OSR_CounterBump();
-
     // In the current prototype, counter is shared by all patchpoints
     // in a method, so no matter what happens below, we don't want to
     // impair those other patchpoints.
@@ -5115,7 +5112,12 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     //
     // In the prototype, counter is a location in a stack frame,
     // so we can update it without worrying about other threads.
+    const int counterBump = g_pConfig->OSR_CounterBump();
     *counter = counterBump;
+
+#if _DEBUG
+    const int ppId = ppInfo->m_patchpointId;
+#endif
 
     // Is this a patchpoint that was previously marked as invalid? If so, just return to the Tier0 method.
     if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
@@ -5234,8 +5236,8 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         if (osrMethodCode == NULL)
         {
             // Unexpected, but not fatal
-            STRESS_LOG5(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_Patchpoint: patchpoint [%d] (0x%p) OSR method creation failed,"
-                " marking patchpoint invalid for Method=0x%pM il offset %d\n", ppId, ip, hitCount, pMD, ilOffset);
+            STRESS_LOG4(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_Patchpoint: patchpoint (0x%p) OSR method creation failed,"
+                " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, hitCount, pMD, ilOffset);
             
             InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
             return;
@@ -5275,8 +5277,8 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     if ((UINT_PTR)ip != GetIP(&frameContext))
     {
         // Should be fatal
-        STRESS_LOG3(LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRANSITION"
-            " unexpected context IP 0x%p\n", ppId, ip, GetIP(&frameContext));
+        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
+            " unexpected context IP 0x%p\n", ip, GetIP(&frameContext));
     }
     
     // Now unwind back to the original method caller frame.

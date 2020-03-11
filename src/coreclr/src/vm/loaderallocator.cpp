@@ -1226,10 +1226,6 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
         m_callCountingManager = new CallCountingManager();
     }
 #endif
-
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-    m_onStackReplacementManager = new OnStackReplacementManager();
-#endif
 }
 
 
@@ -2035,3 +2031,34 @@ BOOL LoaderAllocator::InsertComInteropData(MethodTable* pMT, InteropMethodTableD
 #endif // FEATURE_COMINTEROP
 
 #endif // !DACCESS_COMPILE
+
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+#ifndef DACCESS_COMPILE
+PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    if (m_onStackReplacementManager == NULL)
+    {
+        OnStackReplacementManager * newManager = new OnStackReplacementManager(this);
+
+        if (FastInterlockCompareExchangePointer(&m_onStackReplacementManager, newManager, NULL) != NULL)
+        {
+            // some thread swooped in and set the field
+            delete newManager;
+        }
+    }
+    _ASSERTE(m_onStackReplacementManager != NULL);
+    return m_onStackReplacementManager;
+}
+#endif //
+#endif // FEATURE_ON_STACK_REPLACEMENT
+
