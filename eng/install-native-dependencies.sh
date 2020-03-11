@@ -25,6 +25,7 @@ elif [ "$1" = "OSX" ]; then
     fi
 elif [ "$1" = "iOS" ]; then
     brew update
+    brew upgrade
     if [ "$?" != "0" ]; then
         exit 1;
     fi
