@@ -9727,27 +9727,28 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_LS_2D: // LS_2D   .Q.............. xx.xssnnnnnttttt      Vt Rn
+        case IF_LS_2D: // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn
+        case IF_LS_2E: // LS_2E   .Q.............. ....ssnnnnnttttt      Vt Rn
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
 
             code |= insEncodeVectorsize(id->idOpSize()); // Q
-            code |= 0x5000;                         // xxx          - We only support the one register variant right now
-            code |= insEncodeVLSElemsize(elemsize); // ss
-            code |= insEncodeReg_Rn(id->idReg2());  // nnnnn
-            code |= insEncodeReg_Vt(id->idReg1());  // ttttt
+            code |= insEncodeVLSElemsize(elemsize);      // ss
+            code |= insEncodeReg_Rn(id->idReg2());       // nnnnn
+            code |= insEncodeReg_Vt(id->idReg1());       // ttttt
 
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_LS_2E: // LS_2E   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
-            elemsize = optGetElemsize(id->idInsOpt());
-            imm      = emitGetInsSC(id);
+        case IF_LS_2F: // LS_2F   .Q.............. ...Sssnnnnnttttt      Vt[] Rn
+        case IF_LS_2G: // LS_2G   .Q.............. ...Sssnnnnnttttt      Vt[] Rn
+            elemsize = id->idOpSize();
+            index    = id->idSmallCns();
             code     = emitInsCode(ins, fmt);
 
-            code |= insEncodeVLSIndex(elemsize, imm); // Q xx S ss
-            code |= insEncodeReg_Rn(id->idReg2());    // nnnnn
-            code |= insEncodeReg_Vt(id->idReg1());    // ttttt
+            code |= insEncodeVLSIndex(elemsize, index); // Q xx S ss
+            code |= insEncodeReg_Rn(id->idReg2());      // nnnnn
+            code |= insEncodeReg_Vt(id->idReg1());      // ttttt
 
             dst += emitOutput_Instr(dst, code);
             break;
@@ -9849,29 +9850,28 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_LS_3F: // LS_3F   .Q.........mmmmm xx.xssnnnnnttttt      Vt Rn Rm
+        case IF_LS_3F: // LS_3F   .Q.........mmmmm ....ssnnnnnttttt      Vt Rn Rm
             elemsize = optGetElemsize(id->idInsOpt());
             code     = emitInsCode(ins, fmt);
 
-            code |= insEncodeReg_Vt(id->idReg1());  // ttttt
-            code |= insEncodeReg_Rn(id->idReg2());  // nnnnn
-            code |= insEncodeVLSElemsize(elemsize); // ss
-            code |= 0x5000;                         // xx.x         - We only support the one register variant right now
-            code |= insEncodeReg_Rm(id->idReg3());  // mmmmm
             code |= insEncodeVectorsize(id->idOpSize()); // Q
+            code |= insEncodeReg_Rm(id->idReg3());       // mmmmm
+            code |= insEncodeVLSElemsize(elemsize);      // ss
+            code |= insEncodeReg_Rn(id->idReg2());       // nnnnn
+            code |= insEncodeReg_Vt(id->idReg1());       // ttttt
 
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_LS_3G: // LS_3G   .Q.........mmmmm xx.Sssnnnnnttttt      Vt[] Rn Rm
-            elemsize = optGetElemsize(id->idInsOpt());
-            imm      = emitGetInsSC(id);
+        case IF_LS_3G: // LS_3G   .Q.........mmmmm ...Sssnnnnnttttt      Vt[] Rn Rm
+            elemsize = id->idOpSize();
+            index    = id->idSmallCns();
             code     = emitInsCode(ins, fmt);
 
-            code |= insEncodeVLSIndex(elemsize, imm); // Q xx S ss
-            code |= insEncodeReg_Rm(id->idReg3());    // mmmmm
-            code |= insEncodeReg_Rn(id->idReg2());    // nnnnn
-            code |= insEncodeReg_Vt(id->idReg1());    // ttttt
+            code |= insEncodeVLSIndex(elemsize, index); // Q xx S ss
+            code |= insEncodeReg_Rm(id->idReg3());      // mmmmm
+            code |= insEncodeReg_Rn(id->idReg2());      // nnnnn
+            code |= insEncodeReg_Vt(id->idReg1());      // ttttt
 
             dst += emitOutput_Instr(dst, code);
             break;
