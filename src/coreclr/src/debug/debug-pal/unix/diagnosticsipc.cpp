@@ -174,7 +174,7 @@ IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallb
     FD_ZERO(&readSet);
 
     int maxFd = -1;
-    for (int i = 0; i < nStreams; i++)
+    for (uint32_t i = 0; i < nStreams; i++)
     {
         int fd = -1;
         if (pStreams[i]->_mode == DiagnosticsIpc::ConnectionMode::SERVER && pStreams[i]->_clientSocket == -1)
@@ -205,7 +205,7 @@ IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallb
     // determine which FD signalled
     // - decide on policy for which gets checked first so we don't starve one connection
     IpcStream *pStream = nullptr;
-    for (int i = 0; i < nStreams; i++)
+    for (uint32_t i = 0; i < nStreams; i++)
     {
         int fd = -1;
         bool needToAccept = pStreams[i]->_mode == DiagnosticsIpc::ConnectionMode::SERVER && pStreams[i]->_clientSocket == -1;

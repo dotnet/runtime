@@ -20,13 +20,13 @@ IpcStream::DiagnosticsIpc *DiagnosticsIpcFactory::CreateClient(const char *const
 
 IpcStream *DiagnosticsIpcFactory::GetNextConnectedStream(IpcStream::DiagnosticsIpc **pIpcs, uint32_t nIpcs, ErrorCallback callback)
 {
-    IpcStream *pStreams[nIpcs];
-    for (int i = 0; i < nIpcs; i++)
+    CQuickArrayList<IpcStream*> pStreams;
+    for (uint64_t i = 0; i < nIpcs; i++)
     {
         if (pIpcs[i]->mode == IpcStream::DiagnosticsIpc::ConnectionMode::CLIENT)
         {
             // TODO: Should we loop here to ensure connection?
-            pStreams[i] = pIpcs[i]->Connect(callback);
+            pStreams.Push(pIpcs[i]->Connect(callback));
             if (pStreams[i] != nullptr)
             {
                 uint8_t advertiseBuffer[18];
@@ -49,7 +49,7 @@ IpcStream *DiagnosticsIpcFactory::GetNextConnectedStream(IpcStream::DiagnosticsI
         }
         else
         {
-            pStreams[i] = pIpcs[i]->Accept(false, callback);
+            pStreams.Push(pIpcs[i]->Accept(false, callback));
         }
 
         if (pStreams[i] == nullptr)
@@ -60,7 +60,7 @@ IpcStream *DiagnosticsIpcFactory::GetNextConnectedStream(IpcStream::DiagnosticsI
         }
     }
 
-    return IpcStream::Select(pStreams, nIpcs, callback);
+    return IpcStream::Select(pStreams.Ptr(), nIpcs, callback);
 }
 
 #endif // FEATURE_PERFTRACING

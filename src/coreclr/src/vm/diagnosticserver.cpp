@@ -30,7 +30,7 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION(s_pIpc != nullptr);
+        PRECONDITION(s_rgIpcs.Size() != 0);
     }
     CONTRACTL_END;
 
@@ -48,7 +48,7 @@ DWORD WINAPI DiagnosticServer::DiagnosticsServerThread(LPVOID)
     {
         while (!s_shuttingDown)
         {
-            IpcStream *pStream = DiagnosticsIpcFactory::GetNextConnectedStream(s_rgIpcs.Ptr(), s_rgIpcs.Size(), LoggingCallback);
+            IpcStream *pStream = DiagnosticsIpcFactory::GetNextConnectedStream(s_rgIpcs.Ptr(), (uint32_t)s_rgIpcs.Size(), LoggingCallback);
 
             if (pStream == nullptr)
                 continue;
@@ -154,7 +154,7 @@ bool DiagnosticServer::Initialize()
 
         s_rgIpcs.Push(DiagnosticsIpcFactory::CreateServer(nullptr, ErrorCallback));
 
-        if (s_rgIpcs.Ptr() != nullptr)
+        if (s_rgIpcs.Size() != 0)
         {
 #ifdef FEATURE_AUTO_TRACE
             auto_trace_init();
@@ -171,6 +171,10 @@ bool DiagnosticServer::Initialize()
 
             if (hServerThread == NULL)
             {
+                for (int i = 0; i < s_rgIpcs.Size(); i++)
+                    if (s_rgIpcs[i] != nullptr)
+                        delete s_rgIpcs[i];
+
                 // Failed to create IPC thread.
                 STRESS_LOG1(
                     LF_DIAGNOSTICS_PORT,                                 // facility
@@ -214,7 +218,7 @@ bool DiagnosticServer::Shutdown()
 
     EX_TRY
     {
-        if (s_rgIpcs.Ptr() != nullptr)
+        if (s_rgIpcs.Size() != 0)
         {
             auto ErrorCallback = [](const char *szMessage, uint32_t code) {
                 STRESS_LOG2(
@@ -224,6 +228,9 @@ bool DiagnosticServer::Shutdown()
                     code,                                                 // data1
                     szMessage);                                           // data2
             };
+
+            for (int i = 0; i < s_rgIpcs.Size(); i++)
+                s_rgIpcs[i]->Close(ErrorCallback);
         }
         fSuccess = true;
     }
