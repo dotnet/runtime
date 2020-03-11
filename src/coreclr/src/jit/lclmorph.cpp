@@ -1104,12 +1104,12 @@ private:
         varDsc->incLvRefCnt(1, RCS_EARLY);
 
         // See if this struct is an argument to a call. This information is recorded
-        // via the weighted early ref count for the local, and feeds the undo promition
+        // via the weighted early ref count for the local, and feeds the undo promotion
         // heuristic.
         //
         // It can be approximate, so the pattern match below need not be exhaustive.
         // But the pattern should at least subset the implicit byref cases that are
-        // handed in fgCanFastTailCall and fgMakeOutgoingStructArgCopy.
+        // handled in fgCanFastTailCall and fgMakeOutgoingStructArgCopy.
         //
         // CALL(OBJ(ADDR(LCL_VAR...)))
         bool isArgToCall   = false;

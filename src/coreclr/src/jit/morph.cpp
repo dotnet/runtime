@@ -6703,7 +6703,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                 // and so still be able to tail call.
                 if (opts.OptimizationEnabled())
                 {
-                    // First, see if this arg is a byref param.
+                    // First, see if this arg is an implicit byref param.
                     GenTreeLclVarCommon* const lcl = arg->GetNode()->IsImplicitByrefParameterValue(this);
 
                     // If so, it must not be promoted; if we've promoted, then the arg will be
@@ -6835,7 +6835,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
                                             }
                                             else if (varDsc->lvFieldLclStart != 0)
                                             {
-                                                // This the promoted/undone struct case.
+                                                // This is the promoted/undone struct case.
                                                 //
                                                 // The field start is actually the local number of the promoted local,
                                                 // use it to enumerate the fields.

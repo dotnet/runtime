@@ -83,7 +83,7 @@ public class ImplicitByrefTailCalls
         return result;
     }
 
-    // Will return different answers if x and r refer to the same struct.
+    // Will return different answers if x and r.s refer to the same struct.
     public static long Alias5(S x, R r)
     {
         Z(); Z(); Z(); Z();
