@@ -227,22 +227,24 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsNone(id->idInsOpt()) || insOptsIndexed(id->idInsOpt()));
             break;
 
-        case IF_LS_2D: // LS_2D   .Q.............. xx.xssnnnnnttttt      Vt Rn
-            assert(isValidVectorDatasize(id->idOpSize()));
-            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
+        case IF_LS_2D: // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn
+        case IF_LS_2E: // LS_2E   .Q.............. ....ssnnnnnttttt      Vt Rn
+        case IF_LS_2F: // LS_2F   .Q.............. ...Sssnnnnnttttt      Vt[] Rn
+        case IF_LS_2G: // LS_2G   .Q.............. ...Sssnnnnnttttt      Vt[] Rn
             assert(isVectorRegister(id->idReg1()));
-            assert(isIntegerRegister(id->idReg2()));
-            assert(emitGetInsSC(id) == 0);
-            assert(!id->idIsLclVar());
-            break;
-
-        case IF_LS_2E: // LS_2E   .Q.............. xx.Sssnnnnnttttt      Vt[] Rn
-            assert(isValidVectorDatasize(id->idOpSize()));
-            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));
-            assert(isIntegerRegister(id->idReg2()));
-            elemsize = optGetElemsize(id->idInsOpt());
-            assert(isValidVectorIndex(id->idOpSize(), elemsize, emitGetInsSC(id)));
+            assert(isIntegerRegister(id->idReg2())); // SP
+            if (insOptsAnyArrangement(id->idInsOpt()))
+            {
+                datasize = id->idOpSize();
+                assert(isValidVectorDatasize(datasize));
+                assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
+            }
+            else
+            {
+                elemsize = id->idOpSize();
+                assert(isValidVectorElemsize(elemsize));
+                assert(insOptsNone(id->idInsOpt()) || insOptsPostIndex(id->idInsOpt()));
+            }
             assert(!id->idIsLclVar());
             break;
 
@@ -304,24 +306,23 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsNone(id->idInsOpt()));
             break;
 
-        case IF_LS_3F: // LS_3F   .Q.........mmmmm xx.xssnnnnnttttt      Vt Rn Rm
-            assert(isValidVectorDatasize(id->idOpSize()));
-            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
+        case IF_LS_3F: // LS_3F   .Q.........mmmmm ....ssnnnnnttttt      Vt Rn Rm
+        case IF_LS_3G: // LS_3G   .Q.........mmmmm ...Sssnnnnnttttt      Vt[] Rn Rm
             assert(isVectorRegister(id->idReg1()));
-            assert(isIntegerRegister(id->idReg2()));
-            assert(isIntegerRegister(id->idReg3()));
-            assert(emitGetInsSC(id) == 0);
-            assert(!id->idIsLclVar());
-            break;
-
-        case IF_LS_3G: // LS_3G   .Q.........mmmmm xx.Sssnnnnnttttt      Vt[] Rn Rm
-            assert(isValidVectorDatasize(id->idOpSize()));
-            assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1()));
-            assert(isIntegerRegister(id->idReg2()));
-            assert(isIntegerRegister(id->idReg3()));
-            elemsize = optGetElemsize(id->idInsOpt());
-            assert(isValidVectorIndex(id->idOpSize(), elemsize, emitGetInsSC(id)));
+            assert(isIntegerRegister(id->idReg2())); // SP
+            assert(isGeneralRegister(id->idReg3()));
+            if (insOptsAnyArrangement(id->idInsOpt()))
+            {
+                datasize = id->idOpSize();
+                assert(isValidVectorDatasize(datasize));
+                assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
+            }
+            else
+            {
+                elemsize = id->idOpSize();
+                assert(isValidVectorElemsize(elemsize));
+                assert(insOptsNone(id->idInsOpt()) || insOptsPostIndex(id->idInsOpt()));
+            }
             assert(!id->idIsLclVar());
             break;
 
