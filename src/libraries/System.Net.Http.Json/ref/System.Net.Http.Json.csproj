@@ -1,10 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Net.Http.Json.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <!-- Add Compile files that represent API for netcoreapp5.0 only here -->
+
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Net.Http\ref\System.Net.Http.csproj" />
+    <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Text.Json\ref\System.Text.Json.csproj" />
