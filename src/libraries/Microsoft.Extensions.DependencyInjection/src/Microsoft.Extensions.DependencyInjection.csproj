@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(DefaultNetCoreTargetFramework);net461;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461;netstandard2.0;netstandard2.1</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
     <ILEmitBackend Condition="$(TargetFramework) != 'netstandard2.0'">True</ILEmitBackend>
@@ -11,11 +11,6 @@
     <ILEmitBackendSaveAssemblies>False</ILEmitBackendSaveAssemblies>
     <DefineConstants Condition="'$(TargetFramework)' == 'net461' AND '$(ILEmitBackendSaveAssemblies)' == 'True'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>
   </PropertyGroup>
-
-  <ItemGroup>
-    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyInjection.Tests" />
-    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyInjection.Performance" />
-  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
@@ -30,8 +25,12 @@
 
     <Compile Condition="'$(ILEmitBackend)' == 'True'" Include="ServiceLookup\ILEmit\*.cs" />
 
-    <Compile Include="$(SharedSourceRoot)ParameterDefaultValue\*.cs" />
-    <Compile Include="$(SharedSourceRoot)TypeNameHelper\*.cs" />
+    <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs">
+      <Link>Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Extensions\TypeNameHelper\TypeNameHelper.cs">
+      <Link>Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs</Link>
+    </Compile>
   </ItemGroup>
 
 </Project>
