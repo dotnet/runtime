@@ -12,7 +12,9 @@ manifest_t manifest_t::read(reader_t& reader, int32_t num_files)
 
     for (int32_t i = 0; i < num_files; i++)
     {
-        manifest.files.emplace_back(file_entry_t::read(reader));
+        file_entry_t entry = file_entry_t::read(reader);
+        manifest.files.emplace_back(entry);
+        manifest.m_need_extraction |= entry.needs_extraction();
     }
 
     return manifest;

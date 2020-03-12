@@ -164,7 +164,7 @@ namespace pal
     inline bool rmdir (const char_t* path) { return RemoveDirectoryW(path) != 0; }
     inline int rename(const char_t* old_name, const char_t* new_name) { return ::_wrename(old_name, new_name); }
     inline int remove(const char_t* path) { return ::_wremove(path); }
-    inline bool unmap_file(void* addr, size_t length) { return UnmapViewOfFile(addr) != 0; }
+    inline bool munmap(void* addr, size_t length) { return UnmapViewOfFile(addr) != 0; }
     inline int get_pid() { return GetCurrentProcessId(); }
     inline void sleep(uint32_t milliseconds) { Sleep(milliseconds); }
 #else
@@ -221,7 +221,7 @@ namespace pal
     inline bool rmdir(const char_t* path) { return ::rmdir(path) == 0; }
     inline int rename(const char_t* old_name, const char_t* new_name) { return ::rename(old_name, new_name); }
     inline int remove(const char_t* path) { return ::remove(path); }
-    inline bool unmap_file(void* addr, size_t length) { return munmap(addr, length) == 0; }
+    inline bool munmap(void* addr, size_t length) { return ::munmap(addr, length) == 0; }
     inline int get_pid() { return getpid(); }
     inline void sleep(uint32_t milliseconds) { usleep(milliseconds * 1000); }
 
@@ -256,7 +256,8 @@ namespace pal
         return fallbackRid;
     }
 
-    void* map_file_readonly(const string_t& path, size_t& length);
+    void* mmap_read(const string_t& path, size_t* length = nullptr);
+
     bool touch_file(const string_t& path);
     bool realpath(string_t* path, bool skip_error_logging = false);
     bool file_exists(const string_t& path);

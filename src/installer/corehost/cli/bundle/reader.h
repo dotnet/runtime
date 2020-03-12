@@ -13,12 +13,13 @@ namespace bundle
     // Helper class for reading sequentially from the memory-mapped bundle file.
     struct reader_t
     {
-        reader_t(const int8_t* base_ptr, int64_t bound)
+        reader_t(const int8_t* base_ptr, int64_t bound, int64_t start_offset = 0)
             : m_base_ptr(base_ptr)
             , m_ptr(base_ptr)
             , m_bound(bound)
             , m_bound_ptr(add_without_overflow(base_ptr, bound))
         {
+            set_offset(start_offset);
         }
 
     public:
@@ -55,7 +56,7 @@ namespace bundle
         }
 
         size_t read_path_length();
-        void read_path_string(pal::string_t &str);
+        size_t read_path_string(pal::string_t &str);
 
     private:
 

@@ -37,6 +37,13 @@ typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_main_startupinfo_fn)(
     const char_t *host_path,
     const char_t *dotnet_root,
     const char_t *app_path);
+typedef int32_t(HOSTFXR_CALLTYPE* hostfxr_main_bundle_startup_info_fn)(
+    const int argc,
+    const char_t** argv,
+    const char_t* host_path,
+    const char_t* dotnet_root,
+    const char_t* app_path,
+    int64_t bundle_header_offset);
 
 typedef void(HOSTFXR_CALLTYPE *hostfxr_error_writer_fn)(const char_t *message);
 typedef hostfxr_error_writer_fn(HOSTFXR_CALLTYPE *hostfxr_set_error_writer_fn)(hostfxr_error_writer_fn error_writer);

@@ -76,7 +76,7 @@ bool pal::touch_file(const pal::string_t& path)
     return true;
 }
 
-void* pal::map_file_readonly(const pal::string_t& path, size_t &length)
+void* pal::mmap_read(const string_t& path, size_t *length)
 {
     HANDLE file = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
@@ -86,14 +86,17 @@ void* pal::map_file_readonly(const pal::string_t& path, size_t &length)
         return nullptr;
     }
 
-    LARGE_INTEGER fileSize;
-    if (GetFileSizeEx(file, &fileSize) == 0)
+    if (length != nullptr)
     {
-        trace::error(_X("Failed to map file. GetFileSizeEx(%s) failed with error %d"), path.c_str(), GetLastError());
-        CloseHandle(file);
-        return nullptr;
+        LARGE_INTEGER fileSize;
+        if (GetFileSizeEx(file, &fileSize) == 0)
+        {
+            trace::error(_X("Failed to map file. GetFileSizeEx(%s) failed with error %d"), path.c_str(), GetLastError());
+            CloseHandle(file);
+            return nullptr;
+        }
+        *length = (size_t)fileSize.QuadPart;
     }
-    length = (size_t)fileSize.QuadPart;
 
     HANDLE map = CreateFileMappingW(file, NULL, PAGE_READONLY, 0, 0, NULL);
 

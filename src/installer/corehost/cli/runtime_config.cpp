@@ -9,6 +9,7 @@
 #include "runtime_config.h"
 #include "trace.h"
 #include "utils.h"
+#include "bundle/info.h"
 #include <cassert>
 
 // The semantics of applying the runtimeconfig.json values follows, in the following steps from
@@ -338,6 +339,8 @@ bool runtime_config_t::ensure_dev_config_parsed()
         return true;
     }
 
+    // runtimeconfig.dev.json is never bundled into the single-file app.
+    // So, only a file on disk is processed.
     json_parser_t json;
     if (!json.parse_file(m_dev_path))
     {
@@ -398,13 +401,13 @@ bool runtime_config_t::ensure_parsed()
         trace::verbose(_X("Did not successfully parse the runtimeconfig.dev.json"));
     }
 
-    if (!pal::file_exists(m_path))
+    json_parser_t json;
+    if (!bundle::info_t::config_t::probe(m_path) && !pal::file_exists(m_path))
     {
         // Not existing is not an error.
         return true;
     }
 
-    json_parser_t json;
     if (!json.parse_file(m_path))
     {
         return false;

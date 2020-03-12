@@ -21,12 +21,9 @@ class json_parser_t {
         using document_t = rapidjson::GenericDocument<internal_encoding_type_t>;
 
         const document_t& document() const { return m_document; }
+
         bool parse_stream(pal::istream_t& stream, const pal::string_t& context);
-        bool parse_file(const pal::string_t& path)
-        {
-            pal::ifstream_t file{path};
-            return parse_stream(file, path);
-        }
+        bool parse_file(const pal::string_t& path);
 
     private:
         // This is a vector of char and not pal::char_t because JSON data
@@ -37,7 +34,12 @@ class json_parser_t {
         document_t m_document;
 
         void realloc_buffer(size_t size);
-        bool parse_json(const pal::string_t& context);
+#ifdef _WIN32
+        void parse_json(const char* data);
+#else // _WIN32
+        void parse_json(char* data);
+#endif // _WIN32
+        bool validate_json(const char* data, int64_t size, const pal::string_t& context);
 };
 
 #endif // __JSON_PARSER_H__

@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#ifndef __MARKER_H__
-#define __MARKER_H__
+#ifndef __BUNDLE_MARKER_H__
+#define __BUNDLE_MARKER_H__
 
 #include <cstdint>
 
-namespace bundle
-{
 #pragma pack(push, 1)
-    union marker_t
+    union bundle_marker_t
     {
     public:
         uint8_t placeholder[40];
@@ -28,5 +26,5 @@ namespace bundle
     };
 #pragma pack(pop)
 
-}
-#endif // __MARKER_H__
+
+#endif // __BUNDLE_MARKER_H__

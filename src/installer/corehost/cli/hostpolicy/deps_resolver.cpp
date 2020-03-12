@@ -343,6 +343,12 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
                 else
                 {
                     // Non-rid assets, lookup in the published dir.
+                    if (entry.to_bundle_path(deps_dir, candidate))
+                    {
+                        trace::verbose(_X("    Probed bundle and matched '%s'"), candidate->c_str());
+                        return true;
+                    }
+
                     if (entry.to_dir_path(deps_dir, candidate))
                     {
                         trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());

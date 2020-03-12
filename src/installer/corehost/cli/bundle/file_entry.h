@@ -58,6 +58,7 @@ namespace bundle
         int64_t offset() const { return m_offset; }
         int64_t size() const { return m_size; }
         file_type_t type() const { return m_type; }
+        bool needs_extraction() const;
 
         static file_entry_t read(reader_t &reader);
 

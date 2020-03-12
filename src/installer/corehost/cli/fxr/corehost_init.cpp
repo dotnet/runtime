@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "corehost_init.h"
+#include "bundle/info.h"
 
 void make_cstr_arr(const std::vector<pal::string_t>& arr, std::vector<const pal::char_t*>* out)
 {
@@ -131,6 +132,8 @@ const host_interface_t& corehost_init_t::get_host_init_data()
     hi.host_info_host_path = m_host_info_host_path.c_str();
     hi.host_info_dotnet_root = m_host_info_dotnet_root.c_str();
     hi.host_info_app_path = m_host_info_app_path.c_str();
+
+    hi.app_bundle = bundle::info_t::the_app;
 
     return hi;
 }

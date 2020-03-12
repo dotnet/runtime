@@ -12,6 +12,7 @@
 #include <utils.h>
 
 #include "json_parser.h"
+#include "bundle/info.h"
 
 namespace
 {
@@ -29,7 +30,6 @@ namespace
         trace::verbose(_X("--- Resolving %s version from deps json [%s]"), LIBHOSTPOLICY_NAME, deps_json.c_str());
 
         pal::string_t retval;
-
         json_parser_t json;
         if (!json.parse_file(deps_json))
         {
@@ -238,7 +238,8 @@ bool hostpolicy_resolver::try_get_dir(
 
     // Resolve hostpolicy version out of the deps file.
     pal::string_t version = resolve_hostpolicy_version_from_deps(resolved_deps);
-    if (trace::is_enabled() && version.empty() && pal::file_exists(resolved_deps))
+    if (trace::is_enabled() && version.empty() &&
+        (bundle::info_t::config_t::probe(resolved_deps)|| pal::file_exists(resolved_deps)))
     {
         trace::warning(_X("Dependency manifest %s does not contain an entry for %s"),
             resolved_deps.c_str(), _STRINGIFY(HOST_POLICY_PKG_NAME));

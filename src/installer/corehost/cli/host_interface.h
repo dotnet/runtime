@@ -7,6 +7,7 @@
 
 #include <cstddef>
 #include "pal.h"
+#include "bundle/info.h"
 
 enum host_mode_t
 {
@@ -58,6 +59,7 @@ struct host_interface_t
     const pal::char_t* host_info_host_path;
     const pal::char_t* host_info_dotnet_root;
     const pal::char_t* host_info_app_path;
+    const bundle::info_t *app_bundle;
     // !! WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING
     // !! 1. Only append to this structure to maintain compat.
     // !! 2. Any nested structs should not use compiler specific padding (pack with _HOST_INTERFACE_PACK)
@@ -91,7 +93,8 @@ static_assert(offsetof(host_interface_t, host_command) == 26 * sizeof(size_t), "
 static_assert(offsetof(host_interface_t, host_info_host_path) == 27 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, host_info_dotnet_root) == 28 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, host_info_app_path) == 29 * sizeof(size_t), "Struct offset breaks backwards compatibility");
-static_assert(sizeof(host_interface_t) == 30 * sizeof(size_t), "Did you add static asserts for the newly added fields?");
+static_assert(offsetof(host_interface_t, app_bundle) == 30 * sizeof(size_t), "Struct offset breaks backwards compatibility");
+static_assert(sizeof(host_interface_t) == 31 * sizeof(size_t), "Did you add static asserts for the newly added fields?");
 
 #define HOST_INTERFACE_LAYOUT_VERSION_HI 0x16041101 // YYMMDD:nn always increases when layout breaks compat.
 #define HOST_INTERFACE_LAYOUT_VERSION_LO sizeof(host_interface_t)

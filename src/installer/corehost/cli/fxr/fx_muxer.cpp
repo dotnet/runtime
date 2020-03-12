@@ -27,6 +27,7 @@
 #include "sdk_info.h"
 #include "sdk_resolver.h"
 #include "roll_fwd_on_no_candidate_fx_option.h"
+#include "bundle/info.h"
 
 namespace
 {
@@ -262,6 +263,7 @@ namespace
         pal::string_t& runtime_config,
         const runtime_config_t::settings_t& override_settings)
     {
+        // Check for the runtimeconfig.json file specified at the command line
         if (!runtime_config.empty() && !pal::realpath(&runtime_config))
         {
             trace::error(_X("The specified runtimeconfig.json [%s] does not exist"), runtime_config.c_str());
@@ -293,6 +295,11 @@ namespace
 
     host_mode_t detect_operating_mode(const host_startup_info_t& host_info)
     {
+        if (bundle::info_t::is_single_file_bundle())
+        {
+            return host_mode_t::apphost;
+        }
+
         if (coreclr_exists_in_dir(host_info.dotnet_root))
         {
             // Detect between standalone apphost or legacy split mode (specifying --depsfile and --runtimeconfig)
@@ -357,6 +364,7 @@ namespace
     {
         pal::string_t runtime_config = command_line::get_option_value(opts, known_options::runtime_config, _X(""));
 
+        // This check is for --depsfile option, which must be an actual file.
         pal::string_t deps_file = command_line::get_option_value(opts, known_options::deps_file, _X(""));
         if (!deps_file.empty() && !pal::realpath(&deps_file))
         {

@@ -46,7 +46,7 @@ public:
     // counting line and column number
     Ch Take() {
         Ch ch = this->is_.Take();
-        if(ch == '\n') {
+        if (ch == '\n') {
             line_ ++;
             col_ = 0;
         } else {

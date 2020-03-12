@@ -66,6 +66,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_load(host_interface_t* init)
     std::cout << "mock host_info_host_path:" << tostr(init->host_info_host_path).data() << std::endl;
     std::cout << "mock host_info_dotnet_root:" << tostr(init->host_info_dotnet_root).data() << std::endl;
     std::cout << "mock host_info_app_path:" << tostr(init->host_info_app_path).data() << std::endl;
+    std::cout << "mock app_bundle:" << std::hex << init->app_bundle << std::endl;
 
     if (init->fx_names.len == 0)
     {

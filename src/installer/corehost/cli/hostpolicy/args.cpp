@@ -4,6 +4,7 @@
 
 #include "args.h"
 #include <utils.h>
+#include "bundle/runner.h"
 
 arguments_t::arguments_t()
     : host_mode(host_mode_t::invalid)
@@ -115,13 +116,43 @@ bool init_arguments(
     args.host_path = host_info.host_path;
     args.additional_deps_serialized = additional_deps_serialized;
 
-    args.managed_application = managed_application_path;
-    if (!args.managed_application.empty() && !pal::realpath(&args.managed_application))
+    if (!managed_application_path.empty())
+    {
+        pal::string_t managed_application_name = get_filename(managed_application_path);
+        if (bundle::info_t::is_single_file_bundle())
+        {
+            args.app_root = bundle::runner_t::app()->base_path();
+            const bundle::runner_t* app = bundle::runner_t::app();
+
+            // Check for the main app within the bundle.
+            if (!app->locate(managed_application_name, args.managed_application))
+            {
+                // If the main app is not found in the bundle, check beside the bundle
+                // for very unlikely case where the main app.dll was itself excluded from the app bundle.
+                args.managed_application = managed_application_path;
+                if (!pal::realpath(&args.managed_application))
+                {
+                    trace::error(_X("Failed to locate managed application [%s]"), args.managed_application.c_str());
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            args.app_root = get_directory(args.managed_application);
+            args.managed_application = managed_application_path;
+            if (!pal::realpath(&args.managed_application))
+            {
+                trace::error(_X("Failed to locate managed application [%s]"), args.managed_application.c_str());
+                return false;
+            }
+        }
+    }
+    else
     {
         trace::error(_X("Failed to locate managed application [%s]"), args.managed_application.c_str());
         return false;
     }
-    args.app_root = get_directory(args.managed_application);
 
     if (!deps_file.empty())
     {
