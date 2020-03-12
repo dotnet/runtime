@@ -365,7 +365,8 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
     {
         typeHnd = comp->info.compCompHnd->getArgClass(sig, sig->args);
     }
-    else if (HWIntrinsicInfo::BaseTypeFromSecondArg(id))
+    else if ((HWIntrinsicInfo::lookupCategory(id) == HW_Category_MemoryStore) ||
+             HWIntrinsicInfo::BaseTypeFromSecondArg(id))
     {
         CORINFO_ARG_LIST_HANDLE secondArg = comp->info.compCompHnd->getArgNext(sig->args);
         typeHnd                           = comp->info.compCompHnd->getArgClass(sig, secondArg);
