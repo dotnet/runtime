@@ -18,18 +18,13 @@
     <Compile Include="Program.cs" />
   </ItemGroup>
   <PropertyGroup>
-    <CrossArchBatchArguments />
-    <CrossArchBatchArguments Condition="'$(BuildArch)' == 'arm64'">--targetarch $(BuildArch) --jitpath %Core_Root%\x64\clrjit.dll</CrossArchBatchArguments>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
-%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll $(CrossArchBatchArguments) -r:%Core_Root%\*.dll -o:crossgen2smoke.dll crossgen2smoke.ildll
+%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll -r:%Core_Root%\*.dll -o:crossgen2smoke.dll crossgen2smoke.ildll
 ]]></CLRTestBatchPreCommands>
-
-    <CrossArchBashArguments />
-    <CrossArchBashArguments Condition="'$(BuildArch)' == 'arm64'">--targetarch $(BuildArch) --jitpath %Core_Root%/x64/clrjit.dll</CrossArchBashArguments>
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll $(CrossArchBashArguments) -r:$CORE_ROOT/*.dll -o:crossgen2smoke.dll crossgen2smoke.ildll
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll -r:$CORE_ROOT/*.dll -o:crossgen2smoke.dll crossgen2smoke.ildll
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
 </Project>
