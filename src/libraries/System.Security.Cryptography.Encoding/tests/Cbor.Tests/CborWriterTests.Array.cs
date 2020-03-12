@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            CborWriterHelpers.WriteArray(writer, values);
+            Helpers.WriteArray(writer, values);
             byte[] actualEncoding = writer.ToArray();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            CborWriterHelpers.WriteArray(writer, values);
+            Helpers.WriteArray(writer, values);
             byte[] actualEncoding = writer.ToArray();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }

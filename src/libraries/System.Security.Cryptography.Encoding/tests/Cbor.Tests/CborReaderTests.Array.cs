@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            CborReaderHelpers.VerifyArray(reader, expectedValues);
+            Helpers.VerifyArray(reader, expectedValues);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            CborReaderHelpers.VerifyArray(reader, expectedValues);
+            Helpers.VerifyArray(reader, expectedValues);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 

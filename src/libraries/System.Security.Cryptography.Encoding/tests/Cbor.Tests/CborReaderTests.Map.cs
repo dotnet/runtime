@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Data points taken from https://tools.ietf.org/html/rfc7049#appendix-A
         // Additional pairs generated using http://cbor.me/
 
-        public const string Map = CborWriterHelpers.MapPrefixIdentifier;
+        public const string Map = CborWriterTests.Helpers.MapPrefixIdentifier;
 
         [Theory]
         [InlineData(new object[] { Map }, "a0")]
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            CborReaderHelpers.VerifyMap(reader, expectedValues);
+            Helpers.VerifyMap(reader, expectedValues);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            CborReaderHelpers.VerifyMap(reader, expectedValues);
+            Helpers.VerifyMap(reader, expectedValues);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            CborReaderHelpers.VerifyValue(reader, expectedValue);
+            Helpers.VerifyValue(reader, expectedValue);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            CborReaderHelpers.VerifyMap(reader, values);
+            Helpers.VerifyMap(reader, values);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 

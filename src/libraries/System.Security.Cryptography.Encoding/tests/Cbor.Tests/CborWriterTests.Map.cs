@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         // Data points taken from https://tools.ietf.org/html/rfc7049#appendix-A
         // Additional pairs generated using http://cbor.me/
 
-        public const string Map = CborWriterHelpers.MapPrefixIdentifier;
+        public const string Map = Helpers.MapPrefixIdentifier;
 
         [Theory]
         [InlineData(new object[] { Map }, "a0")]
@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            CborWriterHelpers.WriteMap(writer, values);
+            Helpers.WriteMap(writer, values);
             byte[] actualEncoding = writer.ToArray();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            CborWriterHelpers.WriteMap(writer, values);
+            Helpers.WriteMap(writer, values);
             byte[] actualEncoding = writer.ToArray();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            CborWriterHelpers.WriteValue(writer, value);
+            Helpers.WriteValue(writer, value);
             byte[] actualEncoding = writer.ToArray();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] expectedEncoding = expectedHexEncoding.HexToByteArray();
             using var writer = new CborWriter();
-            CborWriterHelpers.WriteMap(writer, values);
+            Helpers.WriteMap(writer, values);
             byte[] actualEncoding = writer.ToArray();
             AssertHelper.HexEqual(expectedEncoding, actualEncoding);
         }
