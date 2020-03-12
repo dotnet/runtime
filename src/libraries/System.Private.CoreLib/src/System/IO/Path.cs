@@ -942,9 +942,8 @@ namespace System.IO
                 return string.Empty;
 
             ValueStringBuilder sb = new ValueStringBuilder(path.Length);
-            ReadOnlySpan<char> pathRoot = GetPathRoot(path.AsSpan());
 
-            if (!PathInternal.TryRemoveRedundantSegments(path.AsSpan(), pathRoot.Length, ref sb))
+            if (!PathInternal.TryRemoveRedundantSegments(path.AsSpan(), ref sb))
             {
                 sb.Dispose();
                 return path;
@@ -964,10 +963,9 @@ namespace System.IO
                 return string.Empty;
 
             ValueStringBuilder sb = new ValueStringBuilder(path.Length);
-            ReadOnlySpan<char> pathRoot = GetPathRoot(path);
 
             string result;
-            if (!PathInternal.TryRemoveRedundantSegments(path, pathRoot.Length, ref sb))
+            if (!PathInternal.TryRemoveRedundantSegments(path, ref sb))
             {
                 result = path.ToString();
                 sb.Dispose();
@@ -996,10 +994,9 @@ namespace System.IO
                 return false;
 
             ValueStringBuilder sb = new ValueStringBuilder(path.Length);
-            ReadOnlySpan<char> pathRoot = GetPathRoot(path);
 
             bool result = false;
-            if (PathInternal.TryRemoveRedundantSegments(path, pathRoot.Length, ref sb))
+            if (PathInternal.TryRemoveRedundantSegments(path, ref sb))
             {
                 result = sb.TryCopyTo(destination, out charsWritten); // Disposes
             }

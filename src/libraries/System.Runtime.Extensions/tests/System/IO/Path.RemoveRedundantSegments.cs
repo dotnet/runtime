@@ -37,12 +37,12 @@ namespace System.IO.Tests
         };
         public static TheoryData<string, string> UnixNormalData => new TheoryData<string, string>
         {
-            // AltDirectorySeparatorChar gets normalized to DirectorySeparatorChar
-            { @"/",                @"\" },
-            { @"/home",            @"\home" },
-            { @"/home/",           @"\home\" },
-            { @"/home/myuser",     @"\home\myuser" },
-            { @"/home/myuser/",    @"\home\myuser\" },
+            // AltDirectorySeparatorChar gets normalized to DirectorySeparatorChar, if they are not the same in the current platform
+            { @"/",                @"/" },
+            { @"/home",            @"/home" },
+            { @"/home/",           @"/home/" },
+            { @"/home/myuser",     @"/home/myuser" },
+            { @"/home/myuser/",    @"/home/myuser/" },
         };
 
         // Paths with '..' to indicate parent backtracking
@@ -75,37 +75,23 @@ namespace System.IO.Tests
         };
         public static TheoryData<string, string> UnixValidParentBacktrackingData => new TheoryData<string, string>
         {
-            { @"/..",                       @"/" }, // This case is not normalizing the root AltDirectorySeparatorChar because no separator is found after the root (which was ignored)
-            { @"/../",                      @"\" },
-            { @"/../home",                  @"\home" },
-            { @"/../home/",                 @"\home\" },
-            { @"/home/..",                  @"\" },
-            { @"/home/../",                 @"\" },
-            { @"/home/../..",               @"/" },
-            { @"/home/../../",              @"\" },
-            { @"/home/../myuser",           @"\myuser" },
-            { @"/home/../myuser/",          @"\myuser\" },
-            { @"/home/../../myuser",        @"\myuser" },
-            { @"/home/../../myuser/",       @"\myuser\" },
-            { @"/home/myuser/..",           @"\home" },
-            { @"/home/myuser/../",          @"\home\" },
-            { @"/home/myuser/../..",        @"\" },
-            { @"/home/myuser/../../",       @"\" },
-            { @"/home/../myuser/..",        @"\" },
-            { @"/home/../myuser/../",       @"\" },
-            { @"/home/../myuser/../..",     @"/" }, // This case is not normalizing the root AltDirectorySeparatorChar
-            { @"/home/../myuser/../../",    @"\" },
-            { @"/home/../myuser/../../..",  @"/" }, // This case is not normalizing the root AltDirectorySeparatorChar
-            { @"/home/../myuser/../../../", @"\" },
-            { @"/home/../../myuser/../..",  @"/" }, // This case is not normalizing the root AltDirectorySeparatorChar
-            { @"/home/../../myuser/../../", @"\" },
+            { @"/home/..",                  @"/" },
+            { @"/home/../",                 @"/" },
+            { @"/home/../myuser",           @"/myuser" },
+            { @"/home/../myuser/",          @"/myuser/" },
+            { @"/home/myuser/..",           @"/home" },
+            { @"/home/myuser/../",          @"/home/" },
+            { @"/home/myuser/../..",        @"/" },
+            { @"/home/myuser/../../",       @"/" },
+            { @"/home/../myuser/..",        @"/" },
+            { @"/home/../myuser/../",       @"/" },
         };
 
         // Paths with '.' to indicate current directory
         public static TheoryData<string, string> WindowsValidCurrentDirectoryData => new TheoryData<string, string>
         {
-            { @"C:\.",                    @"C:\" },
-            { @"C:\.\",                   @"C:\" },
+            { @"C:\.",                     @"C:\" },
+            { @"C:\.\",                    @"C:\" },
             { @"C:\.\.",                   @"C:\" },
             { @"C:\.\.\",                  @"C:\" },
             { @"C:\.\Users",               @"C:\Users" },
@@ -125,28 +111,29 @@ namespace System.IO.Tests
             { @"C:\Users\.\.\myuser\.\.",  @"C:\Users\myuser" },
             { @"C:\Users\.\.\myuser\.\.\", @"C:\Users\myuser\" },
         };
+
         public static TheoryData<string, string> UnixValidCurrentDirectoryData => new TheoryData<string, string>
         {
-            { @"/.",                     @"/" },
-            { @"/./",                    @"\" },
-            { @"/./.",                   @"/" },
-            { @"/././",                  @"\" },
-            { @"/./home",               @"\home" },
-            { @"/./home/",              @"\home\" },
-            { @"/././home",             @"\home" },
-            { @"/././home/",            @"\home\" },
-            { @"/home/.",               @"\home" },
-            { @"/home/./",              @"\home\" },
-            { @"/home/./.",             @"\home" },
-            { @"/home/././",            @"\home\" },
-            { @"/./home/myuser",        @"\home\myuser" },
-            { @"/./home/myuser/",       @"\home\myuser\" },
-            { @"/./home/./myuser",      @"\home\myuser" },
-            { @"/./home/./myuser/",     @"\home\myuser\" },
-            { @"/./home/./myuser/.",    @"\home\myuser" },
-            { @"/./home/./myuser/./",   @"\home\myuser\" },
-            { @"/home/././myuser/./.",  @"\home\myuser" },
-            { @"/home/././myuser/././", @"\home\myuser\" },
+            { @"/.",                    @"/" },
+            { @"/./",                   @"/" },
+            { @"/./.",                  @"/" },
+            { @"/././",                 @"/" },
+            { @"/./home",               @"/home" },
+            { @"/./home/",              @"/home/" },
+            { @"/././home",             @"/home" },
+            { @"/././home/",            @"/home/" },
+            { @"/home/.",               @"/home" },
+            { @"/home/./",              @"/home/" },
+            { @"/home/./.",             @"/home" },
+            { @"/home/././",            @"/home/" },
+            { @"/./home/myuser",        @"/home/myuser" },
+            { @"/./home/myuser/",       @"/home/myuser/" },
+            { @"/./home/./myuser",      @"/home/myuser" },
+            { @"/./home/./myuser/",     @"/home/myuser/" },
+            { @"/./home/./myuser/.",    @"/home/myuser" },
+            { @"/./home/./myuser/./",   @"/home/myuser/" },
+            { @"/home/././myuser/./.",  @"/home/myuser" },
+            { @"/home/././myuser/././", @"/home/myuser/" },
         };
 
         // Combined '.' and '..'
@@ -185,99 +172,145 @@ namespace System.IO.Tests
             { @"C:\..\Users\.\myuser",  @"C:\Users\myuser" },
             { @"C:\..\Users\.\myuser\", @"C:\Users\myuser\" },
         };
+
         public static TheoryData<string, string> UnixCombinedRedundantData => new TheoryData<string, string>
         {
-            { @"/./..",              @"/" },
-            { @"/./../",             @"\" },
-            { @"/../.",              @"/" },
-            { @"/.././",             @"\" },
-            { @"/./../.",            @"/" },
-            { @"/./.././",           @"\" },
-            { @"/.././.",            @"/" },
-            { @"/../././",           @"\" },
-            { @"/./../..",           @"/" },
-            { @"/./../../",          @"\" },
-            { @"/.././..",           @"/" },
-            { @"/.././../",          @"\" },
-            { @"/home/./..",         @"\" },
-            { @"/home/./../",        @"\" },
+            { @"/home/./..",         @"/" },
+            { @"/home/./../",        @"/" },
             { @"/home/../.",         @"/" },
-            { @"/home/.././",        @"\" },
-            { @"/./home/..",         @"\" },
-            { @"/./home/../",        @"\" },
-            { @"/../home/.",         @"\home" },
-            { @"/../home/./",        @"\home\" },
-            { @"/./../home",         @"\home" },
-            { @"/./../home/",        @"\home\" },
-            { @"/.././home",         @"\home" },
-            { @"/.././home/",        @"\home\" },
-            { @"/./home/myuser/..",  @"\home" },
-            { @"/./home/myuser/../", @"\home\" },
-            { @"/../home/myuser/.",  @"\home\myuser" },
-            { @"/../home/myuser/./", @"\home\myuser\" },
-            { @"/./home/../myuser",  @"\myuser" },
-            { @"/./home/../myuser/", @"\myuser\" },
-            { @"/../home/./myuser",  @"\home\myuser" },
-            { @"/../home/./myuser/", @"\home\myuser\" },
+            { @"/home/.././",        @"/" },
+            { @"/./home/..",         @"/" },
+            { @"/./home/../",        @"/" },
+            { @"/./home/myuser/..",  @"/home" },
+            { @"/./home/myuser/../", @"/home/" },
+            { @"/./home/../myuser",  @"/myuser" },
+            { @"/./home/../myuser/", @"/myuser/" },
         };
+
+        public static TheoryData<string, string, string> DifferentBehaviorCurrentDirectoryData => new TheoryData<string, string, string>
+        {
+            // Path                   Unix              Windows
+            { @"/./home",             @"/home",         @"home" },
+            { @"/././home/",          @"/home/",        @"home\" },
+            { @"/home/.",             @"/home",         @"home" },
+            { @"/home/./",            @"/home/",        @"home\" },
+            { @"/home/./.",           @"/home",         @"home" },
+            { @"/home/././",          @"/home/",        @"home\" },
+            { @"/./home/./",          @"/home/",        @"home\" },
+            { @"/./home/./.",         @"/home",         @"home" },
+            { @"/./home/././",        @"/home/",        @"home\" },
+            { @"/./home/././folder",  @"/home/folder",  @"home\folder" },
+            { @"/./home/././folder/", @"/home/folder/", @"home\folder\" },
+        };
+
+        public static TheoryData<string, string, string> DifferentBehaviorBacktrackingData => new TheoryData<string, string, string>
+        {
+            // Path                         Unix              Windows
+            { @"/home/../myuser/../..",     @"/",             @".." },
+            { @"/home/../myuser/../../",    @"/",             @"..\" },
+            { @"/home/../myuser/../../..",  @"/",             @"..\.." },
+            { @"/home/../myuser/../../../", @"/",             @"..\..\" },
+            { @"/home/../..",               @"/",             @".." },
+            { @"/home/../../",              @"/",             @"..\" },
+            { @"/home/../../myuser",        @"/myuser",       @"..\myuser" },
+            { @"/home/../../myuser/",       @"/myuser/",      @"..\myuser\" },
+            { @"/home/../../myuser/../..",  @"/",             @"..\.." },
+            { @"/home/../../myuser/../../", @"/",             @"..\..\" },
+            { @"/..",                       @"/",             @"\.." },
+            { @"/../",                      @"/",             @"\..\" },
+            { @"/../home",                  @"/home",         @"\..\home" },
+            { @"/../home/",                 @"/home/",        @"\..\home\" },
+            { @"/../home/./myuser",         @"/home/myuser",  @"\..\home\myuser" },
+            { @"/../home/./myuser/",        @"/home/myuser/", @"\..\home\myuser\" },
+        };
+
+        // Combined '.' and '..'
+        public static TheoryData<string, string, string> DifferentBehaviorCombinedRedundantData => new TheoryData<string, string, string>
+        {
+            // Path                         Unix                 Windows
+            { @"/./..",                       @"/",             @".." },
+            { @"/./../",                      @"/",             @"..\" },
+            { @"/../.",                       @"/",             @"\.." },
+            { @"/.././",                      @"/",             @"\..\" },
+            { @"/./../.",                     @"/",             @".." },
+            { @"/./.././",                    @"/",             @"..\" },
+            { @"/.././.",                     @"/",             @"\.." },
+            { @"/../././",                    @"/",             @"\..\" },
+            { @"/./../..",                    @"/",             @"..\.." },
+            { @"/./../../",                   @"/",             @"..\..\" },
+            { @"/.././..",                    @"/",             @"\..\.." },
+            { @"/.././../",                   @"/",             @"\..\..\" },
+            { @"/../home/.",                  @"/home",         @"\..\home" },
+            { @"/../home/./",                 @"/home/",        @"\..\home\" },
+            { @"/./../home",                  @"/home",         @"..\home" },
+            { @"/./../home/",                 @"/home/",        @"..\home\" },
+            { @"/.././home",                  @"/home",         @"\..\home" },
+            { @"/.././home/",                 @"/home/",        @"\..\home\" },
+            { @"/../home/myuser/.",           @"/home/myuser",  @"\..\home\myuser" },
+            { @"/../home/myuser/./",          @"/home/myuser/", @"\..\home\myuser\" },
+            { @"/../home/myuser/./../",       @"/home/",        @"\..\home\" },
+            { @"/../home/myuser/./../folder", @"/home/folder",  @"\..\home\folder" },
+        };
+
 
         // Duplicate separators
         public static TheoryData<string, string> WindowsDuplicateSeparatorsData => new TheoryData<string, string>
         {
-            { @"C:\\", @"C:\" },
-            { @"C:\\\", @"C:\" },
-            { @"C://", @"C:\" },
-            { @"C:///", @"C:\" },
-            { @"C:\/", @"C:\" },
-            { @"C:/\", @"C:\" },
-            { @"C:\/\", @"C:\" },
-            { @"C:/\\", @"C:\" },
-            { @"C:\//", @"C:\" },
-            { @"C:/\/", @"C:\" },
-            { @"C:\\Users", @"C:\Users" },
-            { @"C:\\\Users", @"C:\Users" },
-            { @"C:\\Users\\\", @"C:\Users\" },
-            { @"C:\\\Users\\", @"C:\Users\" },
-            { @"C:\\Users\\/\", @"C:\Users\" },
-            { @"C:\\\Users\/\", @"C:\Users\" },
-            { @"C:\/Users", @"C:\Users" },
-            { @"C:\/Users/", @"C:\Users\" },
-            { @"C:\/Users/", @"C:\Users\" },
-            { @"C:\\Users\\.\", @"C:\Users\" },
-            { @"C:\\\Users\..\\", @"C:\" },
-            { @"C:\\Users\\./.\", @"C:\Users\" },
-            { @"C:\.\\Users\/./\\", @"C:\Users\" },
+            { @"C:\\",                 @"C:\" },
+            { @"C:\\\",                @"C:\" },
+            { @"C://",                 @"C:\" },
+            { @"C:///",                @"C:\" },
+            { @"C:\/",                 @"C:\" },
+            { @"C:/\",                 @"C:\" },
+            { @"C:\/\",                @"C:\" },
+            { @"C:/\\",                @"C:\" },
+            { @"C:\//",                @"C:\" },
+            { @"C:/\/",                @"C:\" },
+            { @"C:\\Users",            @"C:\Users" },
+            { @"C:\\\Users",           @"C:\Users" },
+            { @"C:\\Users\\\",         @"C:\Users\" },
+            { @"C:\\\Users\\",         @"C:\Users\" },
+            { @"C:\\Users\\/\",        @"C:\Users\" },
+            { @"C:\\\Users\/\",        @"C:\Users\" },
+            { @"C:\/Users",            @"C:\Users" },
+            { @"C:\/Users/",           @"C:\Users\" },
+            { @"C:\/Users/",           @"C:\Users\" },
+            { @"C:\\Users\\.\",        @"C:\Users\" },
+            { @"C:\\\Users\..\\",      @"C:\" },
+            { @"C:\\Users\\./.\",      @"C:\Users\" },
+            { @"C:\.\\Users\/./\\",    @"C:\Users\" },
             { @"C:\\.\Users\/../\\./", @"C:\" },
         };
+
         public static TheoryData<string, string> UnixDuplicateSeparatorsData => new TheoryData<string, string>
         {
-            { @"/home/", @"\home\" },
-            { @"/home\\\", @"\home\" },
-            { @"/home//", @"\home\" },
-            { @"/home///", @"\home\" },
-            { @"/home\/", @"\home\" },
-            { @"/home/\", @"\home\" },
-            { @"/home\/\", @"\home\" },
-            { @"/home/\\", @"\home\" },
-            { @"/home\//", @"\home\" },
-            { @"/home/\/", @"\home\" },
-            { @"/home\\myuser", @"\home\myuser" },
-            { @"/home\\\myuser", @"\home\myuser" },
-            { @"/home\\myuser\\\", @"\home\myuser\" },
-            { @"/home\\\myuser\\", @"\home\myuser\" },
-            { @"/home\\myuser\\/\", @"\home\myuser\" },
-            { @"/home\\\myuser\/\", @"\home\myuser\" },
-            { @"/home\/myuser", @"\home\myuser" },
-            { @"/home\/myuser/", @"\home\myuser\" },
-            { @"/home\/myuser/", @"\home\myuser\" },
-            { @"/home\\myuser\\.\", @"\home\myuser\" },
-            { @"/home\\\myuser\..\\", @"\home\" },
-            { @"/home\\myuser\\./.\", @"\home\myuser\" },
-            { @"/home\.\\myuser\/./\\", @"\home\myuser\" },
-            { @"/home\\.\myuser\/../\\./", @"\home\" },
+            { @"/home/",                   @"/home/" },
+            { @"/home\\\",                 @"/home/" },
+            { @"/home//",                  @"/home/" },
+            { @"/home///",                 @"/home/" },
+            { @"/home\/",                  @"/home/" },
+            { @"/home/\",                  @"/home/" },
+            { @"/home\/\",                 @"/home/" },
+            { @"/home/\\",                 @"/home/" },
+            { @"/home\//",                 @"/home/" },
+            { @"/home/\/",                 @"/home/" },
+            { @"/home\\myuser",            @"/home/myuser" },
+            { @"/home\\\myuser",           @"/home/myuser" },
+            { @"/home\\myuser\\\",         @"/home/myuser/" },
+            { @"/home\\\myuser\\",         @"/home/myuser/" },
+            { @"/home\\myuser\\/\",        @"/home/myuser/" },
+            { @"/home\\\myuser\/\",        @"/home/myuser/" },
+            { @"/home\/myuser",            @"/home/myuser" },
+            { @"/home\/myuser/",           @"/home/myuser/" },
+            { @"/home\/myuser/",           @"/home/myuser/" },
+            { @"/home\\myuser\\.\",        @"/home/myuser/" },
+            { @"/home\\\myuser\..\\",      @"/home/" },
+            { @"/home\\myuser\\./.\",      @"/home/myuser/" },
+            { @"/home\.\\myuser\/./\\",    @"/home/myuser/" },
+            { @"/home\\.\myuser\/../\\./", @"/home/" },
         };
 
-        // Network locations - Prefixes get prepended in the tests
+        // Network locations - "Server\Share" always stays. UNC prefixes get prepended in the tests.
         public static TheoryData<string, string> UncData => new TheoryData<string, string>
         {
             { @"Server\Share\git\runtime",              @"Server\Share\git\runtime"},
@@ -295,45 +328,57 @@ namespace System.IO.Tests
             { @"Server\Share\git\temp\..\runtime\",     @"Server\Share\git\runtime\"},
         };
 
-        // Relative paths (no root)
-        public static TheoryData<string, string> UnrootedData => new TheoryData<string, string>
+        // Paths that are not rooted
+        public static TheoryData<string, string> UnqualifiedPathsData => new TheoryData<string, string>
         {
-            { @"Users\myuser\..\", @"Users\" },
-            { @"myuser\..\",       @"\" },
-            { @"myuser",           @"myuser" },
-            { @".\myuser",         @".\myuser" },
-            { @".\myuser\",        @".\myuser\" },
-            { @"..\myuser",        @"..\myuser" },
-            { @"..\myuser\",       @"..\myuser\" },
-            { @"..\\myuser\",      @"..\myuser\" },
+            { @"Users\myuser\..\",             @"Users\" },
+            { @"Users\myuser\..",              @"Users" },
+            { @"Users\..\..",                  @".." },
+            { @"Users\..\..\",                 @"..\" },
+            { @"myuser\..\",                   @"" },
+            { @"myuser",                       @"myuser" },
+            { @".\myuser",                     @"myuser" },
+            { @".\myuser\",                    @"myuser\" },
+            { @".\.\myuser",                   @"myuser" },
+            { @".\.\myuser\",                  @"myuser\" },
+            { @"..\myuser",                    @"..\myuser" },
+            { @"..\myuser\",                   @"..\myuser\" },
+            { @"..\\myuser\",                  @"..\myuser\" },
+            { @"..\myuser\..",                 @".." },
+            { @"..\first\..\second",           @"..\second" },
+            { @"..\first\..\..\second\..",     @"..\.." },
+            { @"..\first\..\..\second\..\",    @"..\..\" },
+            { @"..\first\..\..\second\..",     @"..\.." },
+            { @"..\first\..\..\second\..\..",  @"..\..\.." },
+            { @"..\first\..\..\second\..\..\", @"..\..\..\" },
         };
 
         public static TheoryData<string, string> ValidEdgecasesData => new TheoryData<string, string>
         {
-            { @"C:\Users\myuser\folder.with\one\dot", @"C:\Users\myuser\folder.with\one\dot" },
+            { @"C:\Users\myuser\folder.with\one\dot",   @"C:\Users\myuser\folder.with\one\dot" },
             { @"C:\Users\myuser\folder..with\two\dots", @"C:\Users\myuser\folder..with\two\dots" },
-            { @"C:\Users\.folder\startswithdot", @"C:\Users\.folder\startswithdot" },
-            { @"C:\Users\folder.\endswithdot", @"C:\Users\folder.\endswithdot" },
-            { @"C:\Users\..folder\startswithtwodots", @"C:\Users\..folder\startswithtwodots" },
-            { @"C:\Users\folder..\endswithtwodots", @"C:\Users\folder..\endswithtwodots" },
+            { @"C:\Users\.folder\startswithdot",        @"C:\Users\.folder\startswithdot" },
+            { @"C:\Users\folder.\endswithdot",          @"C:\Users\folder.\endswithdot" },
+            { @"C:\Users\..folder\startswithtwodots",   @"C:\Users\..folder\startswithtwodots" },
+            { @"C:\Users\folder..\endswithtwodots",     @"C:\Users\folder..\endswithtwodots" },
             { @"C:\Users\myuser\this\is\a\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\long\path\but\it\should\not\matter\extraword\..\", @"C:\Users\myuser\this\is\a\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\really\long\path\but\it\should\not\matter\" },
             { @"C:\Users\myuser\this_is_a_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_long_foldername\but_it_should_not_matter\extraword\..\", @"C:\Users\myuser\this_is_a_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_really_long_foldername\but_it_should_not_matter\" },
         };
 
         [Theory]
         [MemberData(nameof(NullOrEmptyData))]
-        [MemberData(nameof(UnrootedData))]
+        [MemberData(nameof(UnqualifiedPathsData))]
         [MemberData(nameof(ValidEdgecasesData))]
         public static void SpecialCases_String(string path, string expected) => TestRedundantSegments(path, expected);
 
         [Theory]
         [MemberData(nameof(NullOrEmptyData))]
-        [MemberData(nameof(UnrootedData))]
+        [MemberData(nameof(UnqualifiedPathsData))]
         [MemberData(nameof(ValidEdgecasesData))]
         public static void SpecialCases_Span(string path, string expected) => TestRedundantSegments(path.AsSpan(), expected);
 
         [Theory]
-        [MemberData(nameof(UnrootedData))]
+        [MemberData(nameof(UnqualifiedPathsData))]
         [MemberData(nameof(ValidEdgecasesData))]
         public static void SpecialCases_True_Try(string path, string expected) => TestTryRedundantSegments(path, expected, true, expected.Length);
 
@@ -342,11 +387,42 @@ namespace System.IO.Tests
         public static void SpecialCases_False_Try(string path, string expected) => TestTryRedundantSegments(path, expected, false, 0);
 
         [Theory]
+        [MemberData(nameof(DifferentBehaviorCurrentDirectoryData))]
+        [MemberData(nameof(DifferentBehaviorBacktrackingData))]
+        [MemberData(nameof(DifferentBehaviorCombinedRedundantData))]
+        public static void DifferentBehavior_String(string path, string expectedUnix, string expectedWindows)
+        {
+            string expected = (PlatformDetection.IsWindows) ? expectedWindows : expectedUnix;
+            TestRedundantSegments(path, expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(DifferentBehaviorCurrentDirectoryData))]
+        [MemberData(nameof(DifferentBehaviorBacktrackingData))]
+        [MemberData(nameof(DifferentBehaviorCombinedRedundantData))]
+        public static void DifferentBehavior_Span(string path, string expectedUnix, string expectedWindows)
+        {
+            string expected = (PlatformDetection.IsWindows) ? expectedWindows : expectedUnix;
+            TestRedundantSegments(path.AsSpan(), expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(DifferentBehaviorCurrentDirectoryData))]
+        [MemberData(nameof(DifferentBehaviorBacktrackingData))]
+        [MemberData(nameof(DifferentBehaviorCombinedRedundantData))]
+        public static void DifferentBehavior_Try(string path, string expectedUnix, string expectedWindows)
+        {
+            string expected = (PlatformDetection.IsWindows) ? expectedWindows : expectedUnix;
+            TestTryRedundantSegments(path, expected, true, expected.Length);
+        }
+
+        [Theory]
         [MemberData(nameof(WindowsNormalData))]
         [MemberData(nameof(WindowsValidParentBacktrackingData))]
         [MemberData(nameof(WindowsValidCurrentDirectoryData))]
         [MemberData(nameof(WindowsCombinedRedundantData))]
         [MemberData(nameof(WindowsDuplicateSeparatorsData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void WindowsValid_String(string path, string expected)
         {
             foreach (string prefix in s_Prefixes)
@@ -375,6 +451,7 @@ namespace System.IO.Tests
         [MemberData(nameof(WindowsValidCurrentDirectoryData))]
         [MemberData(nameof(WindowsCombinedRedundantData))]
         [MemberData(nameof(WindowsDuplicateSeparatorsData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void WindowsValid_Try(string path, string expected)
         {
             foreach (string prefix in s_Prefixes)
@@ -386,6 +463,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(UncData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void WindowsUnc_String(string path, string expected)
         {
             foreach (string prefix in s_UncPrefixes)
@@ -396,6 +474,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(UncData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void WindowsUnc_Span(string path, string expected)
         {
             foreach (string prefix in s_UncPrefixes)
@@ -406,6 +485,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(UncData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void WindowsUnc_Try(string path, string expected)
         {
             foreach (string prefix in s_UncPrefixes)
@@ -415,7 +495,8 @@ namespace System.IO.Tests
         }
 
 
-        // The expected string is returned in Unix with '/' as separator
+        // The expected string is returned in Unix with '/' as separator.
+        // The trailing '/' is considered the root, hence it's a fully qualified path.
 
         [Theory]
         [MemberData(nameof(UnixNormalData))]
@@ -423,6 +504,7 @@ namespace System.IO.Tests
         [MemberData(nameof(UnixValidCurrentDirectoryData))]
         [MemberData(nameof(UnixCombinedRedundantData))]
         [MemberData(nameof(UnixDuplicateSeparatorsData))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void UnixValid_String(string path, string expected)
         {
             if (!PlatformDetection.IsWindows)
@@ -438,6 +520,7 @@ namespace System.IO.Tests
         [MemberData(nameof(UnixValidCurrentDirectoryData))]
         [MemberData(nameof(UnixCombinedRedundantData))]
         [MemberData(nameof(UnixDuplicateSeparatorsData))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void UnixValid_Span(string path, string expected)
         {
             if (!PlatformDetection.IsWindows)
@@ -453,6 +536,7 @@ namespace System.IO.Tests
         [MemberData(nameof(UnixValidCurrentDirectoryData))]
         [MemberData(nameof(UnixCombinedRedundantData))]
         [MemberData(nameof(UnixDuplicateSeparatorsData))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void UnixValid_Try(string path, string expected)
         {
             if (!PlatformDetection.IsWindows)
