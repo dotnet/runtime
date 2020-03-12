@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            ArrayReaderHelper.VerifyArray(reader, expectedValues);
+            CborReaderHelpers.VerifyArray(reader, expectedValues);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
-            ArrayReaderHelper.VerifyArray(reader, expectedValues);
+            CborReaderHelpers.VerifyArray(reader, expectedValues);
             Assert.Equal(CborReaderState.Finished, reader.Peek());
         }
 
@@ -216,57 +216,6 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
             var reader = new CborReader(data);
 
             Assert.Throws<FormatException>(() => reader.ReadStartArray());
-        }
-    }
-
-    static class ArrayReaderHelper
-    {
-        public static void VerifyArray(CborReader reader, params object[] expectedValues)
-        {
-            Assert.Equal(CborReaderState.StartArray, reader.Peek());
-
-            ulong? length = reader.ReadStartArray();
-
-            Assert.NotNull(length);
-            Assert.Equal(expectedValues.Length, (int)length!.Value);
-
-            foreach (object value in expectedValues)
-            {
-                switch (value)
-                {
-                    case int expected:
-                        if (expected >= 0)
-                        {
-                            Assert.Equal(CborReaderState.UnsignedInteger, reader.Peek());
-                        }
-                        else
-                        {
-                            Assert.Equal(CborReaderState.NegativeInteger, reader.Peek());
-                        }
-
-                        long i = reader.ReadInt64();
-                        Assert.Equal(expected, (int)i);
-                        break;
-                    case string expected:
-                        Assert.Equal(CborReaderState.TextString, reader.Peek());
-                        string s = reader.ReadTextString();
-                        Assert.Equal(expected, s);
-                        break;
-                    case byte[] expected:
-                        Assert.Equal(CborReaderState.ByteString, reader.Peek());
-                        byte[] b = reader.ReadByteString();
-                        Assert.Equal(expected, b);
-                        break;
-                    case object[] nested:
-                        VerifyArray(reader, nested);
-                        break;
-                    default:
-                        throw new ArgumentException($"Unrecognized argument type {value.GetType()}");
-                }
-            }
-
-            Assert.Equal(CborReaderState.EndArray, reader.Peek());
-            reader.ReadEndArray();
         }
     }
 }

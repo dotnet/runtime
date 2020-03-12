@@ -74,26 +74,26 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
 
             switch (header.AdditionalInfo)
             {
-                case CborAdditionalInfo x when (x < CborAdditionalInfo.UnsignedInteger8BitEncoding):
+                case CborAdditionalInfo x when (x < CborAdditionalInfo.Unsigned8BitIntegerEncoding):
                     additionalBytes = 0;
                     return (ulong)x;
 
-                case CborAdditionalInfo.UnsignedInteger8BitEncoding:
+                case CborAdditionalInfo.Unsigned8BitIntegerEncoding:
                     EnsureBuffer(2);
                     additionalBytes = 1;
                     return buffer[1];
 
-                case CborAdditionalInfo.UnsignedInteger16BitEncoding:
+                case CborAdditionalInfo.Unsigned16BitIntegerEncoding:
                     EnsureBuffer(3);
                     additionalBytes = 2;
                     return BinaryPrimitives.ReadUInt16BigEndian(buffer.Slice(1));
 
-                case CborAdditionalInfo.UnsignedInteger32BitEncoding:
+                case CborAdditionalInfo.Unsigned32BitIntegerEncoding:
                     EnsureBuffer(5);
                     additionalBytes = 4;
                     return BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice(1));
 
-                case CborAdditionalInfo.UnsignedInteger64BitEncoding:
+                case CborAdditionalInfo.Unsigned64BitIntegerEncoding:
                     EnsureBuffer(9);
                     additionalBytes = 8;
                     return BinaryPrimitives.ReadUInt64BigEndian(buffer.Slice(1));
