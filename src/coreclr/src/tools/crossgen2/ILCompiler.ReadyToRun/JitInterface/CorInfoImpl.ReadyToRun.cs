@@ -1660,10 +1660,10 @@ namespace Internal.JitInterface
 
             pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(pResult->methodFlags, methodToCall);
 
-            bool _TARGET_X86_ = _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86;
-            bool _TARGET_WINDOWS_ = _compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows;
-
-            if (_TARGET_X86_ && _TARGET_WINDOWS_ && targetMethod.IsNativeCallable)
+            var targetDetails = _compilation.TypeSystemContext.Target;
+            if (targetDetails.Architecture == TargetArchitecture.X86
+                && targetDetails.OperatingSystem == TargetOS.Windows
+                && targetMethod.IsNativeCallable)
             {
                 throw new NotSupportedException("ReadyToRun: References to methods with NativeCallableAttribute not supported");
             }

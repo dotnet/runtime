@@ -2881,10 +2881,16 @@ namespace Internal.JitInterface
 #endif
             }
 
-            if (targetArchitecture == TargetArchitecture.X86
-                && _compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows
-                && this.MethodBeingCompiled.IsNativeCallable)
+            if (this.MethodBeingCompiled.IsNativeCallable)
             {
+#if READYTORUN
+                if (targetArchitecture == TargetArchitecture.X86
+                    && _compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
+                {
+                    throw new NotSupportedException("ReadyToRun: Methods with NativeCallableAttribute not supported");
+                }
+#endif
+
                 flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
             }
 
