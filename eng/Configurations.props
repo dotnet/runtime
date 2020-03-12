@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <__TargetOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">OSX</__TargetOS>
+    <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">OSX</__TargetOS>
     <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</__TargetOS>
     <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</__TargetOS>
     <__TargetOS Condition="'$(__TargetOS)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</__TargetOS>
