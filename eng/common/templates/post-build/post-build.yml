@@ -1,5 +1,5 @@
 parameters:
-  enableSourceLinkValidation: false
+  enableSourceLinkValidation: true
   enableSigningValidation: true
   enableSymbolValidation: false
   enableNugetValidation: true
