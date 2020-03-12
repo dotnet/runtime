@@ -7,17 +7,17 @@
 
   <ItemGroup>
     <Compile Include="**\*.cs" />
-    <Compile Include="$(CommonPath)Extensions\Microsoft.AspNetCore.Testing\src\xunit\OSSkipConditionAttribute.cs">
-      <Link>Common\src\Extensions\Microsoft.AspNetCore.Testing\src\xunit\OSSkipConditionAttribute.cs</Link>
+    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\OSSkipConditionAttribute.cs">
+      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\OSSkipConditionAttribute.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Extensions\Microsoft.AspNetCore.Testing\src\xunit\OperatingSystems.cs">
-      <Link>Common\src\Extensions\Microsoft.AspNetCore.Testing\src\xunit\OperatingSystems.cs</Link>
+    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\OperatingSystems.cs">
+      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\OperatingSystems.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Extensions\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs">
-      <Link>Common\src\Extensions\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs</Link>
+    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs">
+      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\xunit\ITestCondition.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Extensions\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs">
-      <Link>Common\src\Extensions\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs</Link>
+    <Compile Include="$(CommonTestPath)Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs">
+      <Link>Common\tests\Extensions\TestingUtils\Microsoft.AspNetCore.Testing\src\TaskExtensions.cs</Link>
     </Compile>
   </ItemGroup>
 
