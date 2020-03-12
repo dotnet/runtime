@@ -32,7 +32,7 @@ namespace System.Buffers.Text
         FastPath:
             if (standardFormat == default)
             {
-                return TryParseGuidCore(source, out value, out bytesConsumed, ends: default);
+                return TryParseGuidCore(source, out value, out bytesConsumed, ends: 0);
             }
 
             switch (standardFormat)
@@ -41,9 +41,9 @@ namespace System.Buffers.Text
                     standardFormat = default;
                     goto FastPath;
                 case 'B':
-                    return TryParseGuidCore(source, out value, out bytesConsumed, ends: '{' | '}' << 8);
+                    return TryParseGuidCore(source, out value, out bytesConsumed, ends: '{' | ('}' << 8));
                 case 'P':
-                    return TryParseGuidCore(source, out value, out bytesConsumed, ends: '(' | ')' << 8);
+                    return TryParseGuidCore(source, out value, out bytesConsumed, ends: '(' | (')' << 8));
                 case 'N':
                     return TryParseGuidN(source, out value, out bytesConsumed);
                 default:
@@ -105,7 +105,7 @@ namespace System.Buffers.Text
         // {8-4-4-4-12}, where number is the number of hex digits, and {/} are ends.
         private static bool TryParseGuidCore(ReadOnlySpan<byte> source, out Guid value, out int bytesConsumed, int ends)
         {
-            int expectedCodingUnits = 36 + ((ends != default) ? 2 : 0); // 32 hex digits + 4 delimiters + 2 optional ends
+            int expectedCodingUnits = 36 + ((ends != 0) ? 2 : 0); // 32 hex digits + 4 delimiters + 2 optional ends
 
             if (source.Length < expectedCodingUnits)
             {
@@ -121,7 +121,7 @@ namespace System.Buffers.Text
             //  Braces: ends = "}{"
             //  Parens: ends = ")("
 
-            if (ends != default)
+            if (ends != 0)
             {
                 if (source[0] != (byte)ends)
                 {
@@ -240,7 +240,7 @@ namespace System.Buffers.Text
                 return false; // 12 digits
             }
 
-            if (ends != default && source[justConsumed] != (byte)ends)
+            if (ends != 0 && source[justConsumed] != (byte)ends)
             {
                 value = default;
                 bytesConsumed = 0;
