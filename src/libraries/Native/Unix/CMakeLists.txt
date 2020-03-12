@@ -5,6 +5,10 @@ project(CoreFX C)
 
 include(${CLR_ENG_NATIVE_DIR}/configureplatform.cmake)
 
+if(CLR_CMAKE_TARGET_IOS)
+    cmake_minimum_required(VERSION 3.14.5)
+endif()
+
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
     cmake_policy(SET CMP0083 NEW)
 endif(NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -118,7 +122,7 @@ else ()
 endif ()
 
 if(CLR_CMAKE_TARGET_ARCH_WASM)
-elseif (CLR_CMAKE_TARGET_DARWIN)
+elseif (CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_IOS)
     add_definitions(-D__APPLE_USE_RFC_3542)
 
    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
@@ -156,6 +160,8 @@ if(CLR_CMAKE_TARGET_UNIX)
         if (STRIP STREQUAL "STRIP-NOTFOUND")
             message(FATAL_ERROR "strip not found")
         endif()
+    elseif (CLR_CMAKE_TARGET_IOS)
+        # No object stripping for iOS
     elseif (CLR_CMAKE_TARGET_ARCH_WASM)
         # No object stripping for WASM
     else (CLR_CMAKE_TARGET_DARWIN)
@@ -194,7 +200,9 @@ include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 add_subdirectory(System.IO.Compression.Native)
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable
     add_subdirectory(System.IO.Ports.Native)
+endif()
 endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
@@ -204,11 +212,17 @@ endif()
 add_subdirectory(System.Native)
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
+endif()
+if (NOT CLR_CMAKE_TARGET_IOS)
+    # disable System.Security.Cryptography.Native build on iOS,
+    # only used for interacting with OpenSSL which isn't useful there
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
+endif()
 
-if(CLR_CMAKE_TARGET_DARWIN)
+if(CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_IOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
 endif()

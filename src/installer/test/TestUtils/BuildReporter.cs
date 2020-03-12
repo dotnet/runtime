@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         public static void EndSection(string type, string name, bool success)
         {
             var header = $"[{type.PadRight(10)} <]";
-            if(success)
+            if (success)
             {
                 header = header.Green();
             }

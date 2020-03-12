@@ -41,7 +41,11 @@
 #endif
 
 #if HAVE_RT_MSGHDR
+#if HAVE_IOS_NET_ROUTE_H
+#include "ios/net/route.h"
+#else
 #include <net/route.h>
+#endif
 #endif
 
 // Convert mask to prefix length e.g. 255.255.255.0 -> 24

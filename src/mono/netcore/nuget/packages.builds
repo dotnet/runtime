@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal">
-  <ItemGroup Condition="'$(__SkipCoreLibBuild)'==''">
+  <ItemGroup>
+    <ProjectReference Include="Microsoft.NETCore.Tool.MonoAOT\Microsoft.NETCore.Tool.MonoAOT.builds" Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'" />
     <ProjectReference Include="Microsoft.NETCore.Runtime.Mono\Microsoft.NETCore.Runtime.Mono.builds" />
   </ItemGroup>
 

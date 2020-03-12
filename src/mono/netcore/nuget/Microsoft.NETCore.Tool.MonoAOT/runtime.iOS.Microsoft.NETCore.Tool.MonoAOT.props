@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <ItemGroup>
+    <File Include="$(BinDir)/cross/mono-aot-cross">
+      <SkipPackageFileCheck>true</SkipPackageFileCheck>
+      <TargetPath>tools</TargetPath>
+    </File>
+  </ItemGroup>
+</Project>

@@ -1455,7 +1455,7 @@ namespace System.Text.RegularExpressions
                     case Concatenate:
                     case Capture:
                     case Atomic:
-                    case Require:
+                    case Require when (subsequent.Options & RegexOptions.RightToLeft) == 0: // only lookaheads, not lookbehinds (represented as RTL Require nodes)
                     case Loop when subsequent.M > 0:
                     case Lazyloop when subsequent.M > 0:
                         subsequent = subsequent.Child(0);
@@ -1465,10 +1465,8 @@ namespace System.Text.RegularExpressions
                 break;
             }
 
-            // If the two nodes don't agree on case-insensitivity, don't try to optimize.
-            // If they're both case sensitive or both case insensitive, then their tokens
-            // will be comparable.
-            if ((node.Options & RegexOptions.IgnoreCase) != (subsequent.Options & RegexOptions.IgnoreCase))
+            // If the two nodes don't agree on options in any way, don't try to optimize them.
+            if (node.Options != subsequent.Options)
             {
                 return false;
             }

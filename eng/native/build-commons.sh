@@ -168,8 +168,9 @@ usage()
     echo ""
     echo "Common Options:"
     echo ""
-    echo "BuildArch can be: -arm, -armel, -arm64, -armel, x64, x86, -wasm"
+    echo "BuildArch can be: -arm, -armel, -arm64, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
+    echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"
     echo "-ci: indicates if this is a CI build."
     echo "-clang: optional argument to build using clang in PATH (default)."
@@ -353,6 +354,16 @@ while :; do
 
         wasm|-wasm)
             __BuildArch=wasm
+            ;;
+
+        os|-os)
+            if [[ -n "$2" ]]; then
+                __TargetOS="$2"
+                shift
+            else
+                echo "ERROR: 'os' requires a non-empty option argument"
+                exit 1
+            fi
             ;;
 
         *)
