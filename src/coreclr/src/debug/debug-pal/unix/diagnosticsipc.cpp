@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
-#include <sys/select.h>
+#include <sys/poll.h>
 #include <sys/un.h>
 #include <sys/stat.h>
 #include "diagnosticsipc.h"
@@ -20,7 +20,6 @@ IpcStream::DiagnosticsIpc::DiagnosticsIpc(const int serverSocket, sockaddr_un *c
     _isClosed(false)
 {
     _ASSERTE(_pServerAddress != nullptr);
-    _ASSERTE(_serverSocket != -1);
     _ASSERTE(pServerAddress != nullptr);
 
     if (_pServerAddress == nullptr || pServerAddress == nullptr)
@@ -125,7 +124,7 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
     umask(prev_mask);
 #endif // __APPLE__
 
-    return new IpcStream::DiagnosticsIpc(serverSocket, &serverAddress);
+    return new IpcStream::DiagnosticsIpc(serverSocket, &serverAddress, mode);
 }
 
 IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
@@ -156,7 +155,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback cal
 {
     sockaddr_un from;
     socklen_t fromlen = sizeof(from);
-    const int clientSocket = shouldBlock ? -1 : ::accept(_serverSocket, (sockaddr *)&from, &fromlen);
+    const int clientSocket = shouldBlock ? ::accept(_serverSocket, (sockaddr *)&from, &fromlen) : -1;
     if (shouldBlock && clientSocket == -1)
     {
         if (callback != nullptr)
@@ -169,11 +168,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(bool shouldBlock, ErrorCallback cal
 
 IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallback callback)
 {
-    // build FD_SET
-    fd_set readSet;
-    FD_ZERO(&readSet);
-
-    int maxFd = -1;
+    pollfd *pollfds = new pollfd[nStreams];
     for (uint32_t i = 0; i < nStreams; i++)
     {
         int fd = -1;
@@ -186,63 +181,69 @@ IpcStream *IpcStream::Select(IpcStream **pStreams, uint32_t nStreams, ErrorCallb
             fd = pStreams[i]->_clientSocket;
         }
 
-        maxFd = (maxFd > fd) ? maxFd : fd;
-        FD_SET(fd, &readSet);
+        pollfds[i].fd = fd;
+        pollfds[i].events = POLLIN;
     }
-    maxFd++; // needs to be 1 more than max FD
 
-    // call select
-    int retval = select(maxFd, &readSet, NULL, NULL, NULL);
-
-    // check for errors
-    if (retval == -1)
+    int retval = poll(pollfds, nStreams, -1); // -1 = infinite
+    
+    if (retval <= 0)
     {
-        if (callback != nullptr)
-            callback(strerror(errno), errno);
+        for (uint32_t i = 0; i < nStreams; i++)
+        {
+            if ((pollfds[i].revents & POLLERR) && callback != nullptr)
+                callback(strerror(errno), errno);
+        }
+        delete[] pollfds;
         return nullptr;
     }
 
-    // determine which FD signalled
-    // - decide on policy for which gets checked first so we don't starve one connection
     IpcStream *pStream = nullptr;
     for (uint32_t i = 0; i < nStreams; i++)
     {
-        int fd = -1;
-        bool needToAccept = pStreams[i]->_mode == DiagnosticsIpc::ConnectionMode::SERVER && pStreams[i]->_clientSocket == -1;
-        if (needToAccept)
+        if (pollfds[i].revents != 0)
         {
-            fd = pStreams[i]->_serverSocket;
+            bool needToAccept = pStreams[i]->_mode == DiagnosticsIpc::ConnectionMode::SERVER && pStreams[i]->_clientSocket == -1;
+            if (pollfds[i].revents & POLLIN)
+            {
+                if (needToAccept)
+                {
+                    sockaddr_un from;
+                    socklen_t fromlen = sizeof(from);
+                    const int clientSocket = ::accept(pStreams[i]->_serverSocket, (sockaddr *)&from, &fromlen);
+                    if (clientSocket == -1)
+                    {
+                        if (callback != nullptr)
+                            callback(strerror(errno), errno);
+                        delete[] pollfds;
+                        return nullptr;
+                    }
+                    pStream = new IpcStream(clientSocket, pStreams[i]->_serverSocket, pStreams[i]->_mode);
+                }
+                else
+                {
+                    pStream = pStreams[i];
+                }
+                break;
+            }
         }
         else
         {
-            fd = pStreams[i]->_clientSocket;
-        }
+            if ((pollfds[i].revents & POLLERR) && callback != nullptr)
+            {
+                callback("POLLERR", POLLERR);
+            }
+            else if ((pollfds[i].revents & POLLNVAL) && callback != nullptr)
+            {
+                callback("POLLNVAL", POLLNVAL);
+            }
 
-        if (FD_ISSET(fd, &readSet))
-        {
-            if (needToAccept)
-            {
-                sockaddr_un from;
-                socklen_t fromlen = sizeof(from);
-                const int clientSocket = ::accept(pStreams[i]->_serverSocket, (sockaddr *)&from, &fromlen);
-                if (clientSocket == -1)
-                {
-                    if (callback != nullptr)
-                        callback(strerror(errno), errno);
-                    return nullptr;
-                }
-                pStream = new IpcStream(clientSocket, pStreams[i]->_serverSocket, pStreams[i]->_mode);
-            }
-            else
-            {
-                pStream = pStreams[i];
-            }
-            break;
+            delete[] pollfds;
+            return nullptr;
         }
     }
 
-    // return the correct IpcStream
-    _ASSERTE(pStream != nullptr);
+    delete[] pollfds;
     return pStream;
 }
 

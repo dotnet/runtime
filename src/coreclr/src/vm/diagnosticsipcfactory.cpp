@@ -29,7 +29,7 @@ IpcStream *DiagnosticsIpcFactory::GetNextConnectedStream(IpcStream::DiagnosticsI
             pStreams.Push(pIpcs[i]->Connect(callback));
             if (pStreams[i] != nullptr)
             {
-                uint8_t advertiseBuffer[18];
+                uint8_t advertiseBuffer[DiagnosticsIpc::AdvertiseSize];
                 if (!DiagnosticsIpc::PopulateIpcAdvertisePayload_V1(advertiseBuffer))
                 {
                     if (callback != nullptr)

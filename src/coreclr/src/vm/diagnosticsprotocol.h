@@ -68,7 +68,7 @@ bool TryWriteNumberLittleEndian(uint8_t *&bufferCursor, uint32_t &bufferLen, con
     for (int i = 0; i < sizeof(value); i++)
     {
         *bufferCursor++ = (value >> (i * 8)) & 0xFF;
-        bufferLen += 8;
+        bufferLen -= 1;
     }
 
     return true;
@@ -129,13 +129,15 @@ namespace DiagnosticsIpc
      * 
      * The flow for Advertise is a one-way burst of 24 bytes consisting of
      * 6 bytes - "AD_V1\0" (ASCII chars + null byte)
-     * 4 bytes - CLR Instance ID (little-endian)
+     * 2 bytes - CLR Instance ID (little-endian)
      * 8 bytes - PID (little-endian)
      */
 
     const uint8_t AdvertiseMagic_V1[6] = "AD_V1";
 
-    inline bool PopulateIpcAdvertisePayload_V1(uint8_t (&buf)[18])
+    const uint32_t AdvertiseSize = 16;
+
+    inline bool PopulateIpcAdvertisePayload_V1(uint8_t (&buf)[AdvertiseSize])
     {
         uint16_t clrInstanceId = GetClrInstanceId();
         uint64_t pid = GetCurrentProcessId();
