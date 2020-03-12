@@ -1,0 +1,23 @@
+Compat issues with assembly netstandard:
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerReportsProgress' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerSupportsCancellation' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.Process.EnableRaisingEvents' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
+CannotChangeAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' on 'System.Diagnostics.ProcessStartInfo.Verb' changed from '[DefaultValueAttribute(null)]' in the contract to '[DefaultValueAttribute("")]' in the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WindowStyle' in the contract but not the implementation.
+Compat issues with assembly System:
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerReportsProgress' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerSupportsCancellation' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.Process.EnableRaisingEvents' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
+CannotChangeAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' on 'System.Diagnostics.ProcessStartInfo.Verb' changed from '[DefaultValueAttribute(null)]' in the contract to '[DefaultValueAttribute("")]' in the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WindowStyle' in the contract but not the implementation.
+Compat issues with assembly System.ComponentModel.EventBasedAsync:
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerReportsProgress' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerSupportsCancellation' in the contract but not the implementation.
+Compat issues with assembly System.Diagnostics.Process:
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.Process.EnableRaisingEvents' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
+CannotChangeAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' on 'System.Diagnostics.ProcessStartInfo.Verb' changed from '[DefaultValueAttribute(null)]' in the contract to '[DefaultValueAttribute("")]' in the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WindowStyle' in the contract but not the implementation.
+Total Issues: 18

@@ -5,11 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace ReadyToRun.SuperIlc
 {
-
     /// <summary>
     /// Compiles assemblies using the Cross-Platform AOT compiler
     /// </summary>
@@ -23,8 +22,6 @@ namespace ReadyToRun.SuperIlc
         protected override string CompilerFileName => "corerun".AppendOSExeSuffix();
 
         private string Crossgen2Path => Path.Combine(_options.CoreRootDirectory.FullName, "crossgen2", "crossgen2.dll");
-
-        private List<string> _resolvedReferences;
 
         public CpaotRunner(BuildOptions options, IEnumerable<string> referencePaths)
             : base(options, referencePaths)
@@ -87,43 +84,38 @@ namespace ReadyToRun.SuperIlc
                 yield return $"--parallelism={_options.Crossgen2Parallelism}";
             }
 
-            char referenceOption = (_options.Composite ? 'u' : 'r');
-            HashSet<string> uniqueFolders = new HashSet<string>();
+            HashSet<string> uniqueFolders = new HashSet<string>(
+                RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? StringComparer.OrdinalIgnoreCase
+                : StringComparer.Ordinal);
             foreach (string assemblyFileName in assemblyFileNames)
             {
                 uniqueFolders.Add(Path.GetDirectoryName(assemblyFileName));
             }
-            foreach (string folder in uniqueFolders)
-            {
-                foreach (var reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(folder))
-                {
-                    yield return $"-{referenceOption}:{reference}";
-                }
-            }
 
-            if (_resolvedReferences == null)
-            {
-                _resolvedReferences = ResolveReferences();
-            }
+            uniqueFolders.UnionWith(_referenceFolders);
 
-            foreach (string asmRef in _resolvedReferences)
+            foreach (string reference in ResolveReferences(uniqueFolders))
             {
-                yield return asmRef;
+                yield return reference;
             }
         }
 
-        private List<string> ResolveReferences()
+        private IEnumerable<string> ResolveReferences(IEnumerable<string> folders)
         {
             char referenceOption = (_options.Composite ? 'u' : 'r');
-            List<string> references = new List<string>();
-            foreach (var referenceFolder in _referenceFolders)
+
+            foreach (string referenceFolder in folders)
             {
-                foreach (var reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(referenceFolder))
+                foreach (string reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(referenceFolder))
                 {
-                    references.Add($"-{referenceOption}:{reference}");
+                    string simpleName = Path.GetFileNameWithoutExtension(reference);
+                    if (!FrameworkExclusion.Exclude(simpleName, Index, out string reason))
+                    {
+                        yield return $"-{referenceOption}:{reference}";
+                    }
                 }
             }
-            return references;
         }
     }
 }

@@ -2101,6 +2101,13 @@ init_amodule_got (MonoAotModule *amodule, gboolean preinit)
 // Follow branch islands on ARM iOS machines.
 static inline guint8 *
 method_address_resolve (guint8 *code_addr) {
+#if defined(TARGET_ARM)
+	// Skip branches to thumb destinations; the convention used is that the
+	// lowest bit is set if the destination is thumb. See
+	// get_call_table_entry.
+	if (((uintptr_t) code_addr) & 0x1)
+		return code_addr;
+#endif
 	for (;;) {
 		// `mono_arch_get_call_target` takes the IP after the branch
 		// instruction, not before. Add 4 bytes to compensate.

@@ -15,7 +15,6 @@
       https://github.com/dotnet/arcade/issues/388
   -->
 
-  <!-- Import to have access to properties/items used both during the Arcade phase and in the repo. -->
   <Import Project="$(MSBuildThisFileDirectory)Configurations.props" />
   <Import Project="$(MSBuildThisFileDirectory)Subsets.props" />
 
@@ -77,12 +76,8 @@
     </ItemGroup>
 
     <MSBuild Projects="@(RepoTaskProjects)"
-             Properties="Configuration=Debug;Platform=AnyCPU;__BuildPhase=Restore"
-             Targets="Restore" />
-
-    <MSBuild Projects="@(RepoTaskProjects)"
-             Properties="Configuration=Debug;Platform=AnyCPU;__BuildPhase=Build"
-             Targets="Build" />
+             Properties="Configuration=Debug;Platform=AnyCPU"
+             Targets="Restore;Build"/>
 
     <WriteLinesToFile File="$(RepoTasksOutputFile)"
                       Lines="$(RepoTasksOutputFile)"

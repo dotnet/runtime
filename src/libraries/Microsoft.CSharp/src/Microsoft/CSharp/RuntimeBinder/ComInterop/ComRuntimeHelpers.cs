@@ -211,12 +211,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         {
             return new DispCallable(dispatch, method.Name, method.DispId);
         }
-
-        internal static MethodInfo GetGetIDispatchForObjectMethod()
-        {
-            // GetIDispatchForObject always throws a PNSE in .NET Core, so we work around it by using GetComInterfaceForObject with our IDispatch type.
-            return typeof(Marshal).GetMethods().Single(m => m.Name == nameof(Marshal.GetComInterfaceForObject) && m.GetParameters().Length == 1 && m.ContainsGenericParameters).MakeGenericMethod(typeof(object), typeof(IDispatch));
-        }
     }
 
     /// <summary>

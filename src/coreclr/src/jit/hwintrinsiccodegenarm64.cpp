@@ -35,7 +35,7 @@ struct HWIntrinsic final
     bool IsTableDriven() const
     {
         // TODO-Arm64-Cleanup - make more categories to the table-driven framework
-        bool isTableDrivenCategory = (category != HW_Category_Special) && (category != HW_Category_Helper);
+        bool isTableDrivenCategory = category != HW_Category_Helper;
         bool isTableDrivenFlag = !HWIntrinsicInfo::GeneratesMultipleIns(id) && !HWIntrinsicInfo::HasSpecialCodegen(id);
 
         return isTableDrivenCategory && isTableDrivenFlag;

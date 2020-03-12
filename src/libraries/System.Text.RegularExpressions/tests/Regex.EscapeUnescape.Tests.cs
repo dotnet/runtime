@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -17,6 +18,12 @@ namespace System.Text.RegularExpressions.Tests
         public static void Escape(string str, string expected)
         {
             Assert.Equal(expected, Regex.Escape(str));
+
+            if (expected.Length > 0)
+            {
+                const int Count = 100;
+                Assert.Equal(string.Concat(Enumerable.Repeat(expected, Count)), Regex.Escape(string.Concat(Enumerable.Repeat(str, Count))));
+            }
         }
 
         [Fact]
@@ -35,6 +42,12 @@ namespace System.Text.RegularExpressions.Tests
         public void Unescape(string str, string expected)
         {
             Assert.Equal(expected, Regex.Unescape(str));
+
+            if (expected.Length > 0)
+            {
+                const int Count = 100;
+                Assert.Equal(string.Concat(Enumerable.Repeat(expected, Count)), Regex.Unescape(string.Concat(Enumerable.Repeat(str, Count))));
+            }
         }
 
         [Fact]
