@@ -885,52 +885,51 @@ static SimdIntrinsic sse3_methods [] = {
 	{SN_get_IsSupported}
 };
 
-static guint16 ssse3_methods [] = {
-	SN_Shuffle,
-	SN_get_IsSupported
+static SimdIntrinsic ssse3_methods [] = {
+	{SN_Shuffle, OP_SSSE3_SHUFFLE},
+	{SN_get_IsSupported}
 };
 
-static guint16 sse41_methods [] = {
-	SN_Insert,
-	SN_Max,
-	SN_Min,
-	SN_TestZ,
-	SN_get_IsSupported
+static SimdIntrinsic sse41_methods [] = {
+	{SN_Insert},
+	{SN_Max, OP_XBINOP, OP_IMAX},
+	{SN_Min, OP_XBINOP, OP_IMIN},
+	{SN_TestZ, OP_SSE41_PTESTZ},
+	{SN_get_IsSupported}
 };
 
-static guint16 popcnt_methods [] = {
-	SN_PopCount,
-	SN_get_IsSupported
+static SimdIntrinsic popcnt_methods [] = {
+	{SN_PopCount},
+	{SN_get_IsSupported}
 };
 
-static guint16 lzcnt_methods [] = {
-	SN_LeadingZeroCount,
-	SN_get_IsSupported
+static SimdIntrinsic lzcnt_methods [] = {
+	{SN_LeadingZeroCount},
+	{SN_get_IsSupported}
 };
 
-static guint16 bmi1_methods [] = {
-	SN_AndNot,
-	SN_BitFieldExtract,
-	SN_ExtractLowestSetBit,
-	SN_GetMaskUpToLowestSetBit,
-	SN_ResetLowestSetBit,
-	SN_TrailingZeroCount,
-	SN_get_IsSupported,
+static SimdIntrinsic bmi1_methods [] = {
+	{SN_AndNot},
+	{SN_BitFieldExtract},
+	{SN_ExtractLowestSetBit},
+	{SN_GetMaskUpToLowestSetBit},
+	{SN_ResetLowestSetBit},
+	{SN_TrailingZeroCount},
+	{SN_get_IsSupported}
 };
 
-static guint16 bmi2_methods [] = {
-	SN_MultiplyNoFlags,
-	SN_ParallelBitDeposit,
-	SN_ParallelBitExtract,
-	SN_ZeroHighBits,
-	SN_get_IsSupported,
+static SimdIntrinsic bmi2_methods [] = {
+	{SN_MultiplyNoFlags},
+	{SN_ParallelBitDeposit},
+	{SN_ParallelBitExtract},
+	{SN_ZeroHighBits},
+	{SN_get_IsSupported}
 };
 
 static MonoInst*
 emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins;
-	int id;
 	gboolean supported, is_64bit;
 	MonoClass *klass = cmethod->klass;
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
@@ -1285,9 +1284,14 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 	if (is_hw_intrinsics_class (klass, "Ssse3", &is_64bit)) {
 		if (!COMPILE_LLVM (cfg))
 			return NULL;
-		id = lookup_intrins (ssse3_methods, sizeof (ssse3_methods), cmethod);
-		if (id == -1)
+		info = lookup_intrins_info (ssse3_methods, sizeof (ssse3_methods), cmethod);
+		if (!info)
 			return NULL;
+		int id = info->id;
+
+		/* Common case */
+		if (info->op != 0)
+			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSSE3) != 0 && is_corlib; // We only support the subset used by corelib
 
@@ -1296,19 +1300,23 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
 			ins->type = STACK_I4;
 			return ins;
-		case SN_Shuffle:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSSE3_SHUFFLE, -1, arg0_type, fsig, args);
 		default:
-			return NULL;
+			g_assert_not_reached ();
+			break;
 		}
 	}
 
 	if (is_hw_intrinsics_class (klass, "Sse41", &is_64bit)) {
 		if (!COMPILE_LLVM (cfg))
 			return NULL;
-		id = lookup_intrins (sse41_methods, sizeof (sse41_methods), cmethod);
-		if (id == -1)
+		info = lookup_intrins_info (sse41_methods, sizeof (sse41_methods), cmethod);
+		if (!info)
 			return NULL;
+		int id = info->id;
+
+		/* Common case */
+		if (info->op != 0)
+			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
 
 		supported = COMPILE_LLVM (cfg) && (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE41) != 0 && is_corlib; // We only support the subset used by corelib
 
@@ -1325,21 +1333,17 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 				return NULL;
 			}
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_INSERT, -1, arg0_type, fsig, args);
-		case SN_Max:
-			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IMAX, arg0_type, fsig, args);
-		case SN_Min:
-			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IMIN, arg0_type, fsig, args);
-		case SN_TestZ:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE41_PTESTZ, -1, arg0_type, fsig, args);
 		default:
-			return NULL;
+			g_assert_not_reached ();
+			break;
 		}
 	}
 
 	if (is_hw_intrinsics_class (klass, "Popcnt", &is_64bit)) {
-		id = lookup_intrins (popcnt_methods, sizeof (popcnt_methods), cmethod);
-		if (id == -1)
+		info = lookup_intrins_info (popcnt_methods, sizeof (popcnt_methods), cmethod);
+		if (!info)
 			return NULL;
+		int id = info->id;
 
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_POPCNT) != 0;
 
@@ -1362,9 +1366,10 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 		}
 	}
 	if (is_hw_intrinsics_class (klass, "Lzcnt", &is_64bit)) {
-		id = lookup_intrins (lzcnt_methods, sizeof (lzcnt_methods), cmethod);
-		if (id == -1)
+		info = lookup_intrins_info (lzcnt_methods, sizeof (lzcnt_methods), cmethod);
+		if (!info)
 			return NULL;
+		int id = info->id;
 
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_LZCNT) != 0;
 
@@ -1389,7 +1394,10 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 	if (is_hw_intrinsics_class (klass, "Bmi1", &is_64bit)) {
 		if (!COMPILE_LLVM (cfg))
 			return NULL;
-		id = lookup_intrins (bmi1_methods, sizeof (bmi1_methods), cmethod);
+		info = lookup_intrins_info (bmi1_methods, sizeof (bmi1_methods), cmethod);
+		if (!info)
+			return NULL;
+		int id = info->id;
 
 		g_assert (id != -1);
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_BMI1) != 0;
@@ -1462,8 +1470,11 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 	if (is_hw_intrinsics_class (klass, "Bmi2", &is_64bit)) {
 		if (!COMPILE_LLVM (cfg))
 			return NULL;
-		id = lookup_intrins (bmi2_methods, sizeof (bmi2_methods), cmethod);
-		g_assert (id != -1);
+		info = lookup_intrins_info (bmi2_methods, sizeof (bmi2_methods), cmethod);
+		if (!info)
+			return NULL;
+		int id = info->id;
+
 		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_BMI2) != 0;
 
 		switch (id) {

@@ -8151,11 +8151,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_SSSE3_SHUFFLE: {
-			LLVMValueRef args [] = { lhs, rhs };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_PSHUFB, args, dname);
-			break;
-		}
 		case OP_SSE3_MOVDDUP: {
 			int mask [] = { 0, 0 };
 			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs,
@@ -8178,6 +8173,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SSE3_MOVSLDUP: {
 			int mask [] = { 0, 0, 2, 2 };
 			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMConstNull (LLVMTypeOf (lhs)), create_const_vector_i32 (mask, 4), "");
+			break;
+		}
+
+		case OP_SSSE3_SHUFFLE: {
+			LLVMValueRef args [] = { lhs, rhs };
+			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_PSHUFB, args, dname);
 			break;
 		}
 
