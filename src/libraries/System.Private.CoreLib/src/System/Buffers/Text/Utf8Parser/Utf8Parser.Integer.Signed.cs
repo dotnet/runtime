@@ -41,6 +41,9 @@ namespace System.Buffers.Text
                 return TryParseSByteD(source, out value, out bytesConsumed);
             }
 
+            // There's small but measurable overhead when entering the switch block below.
+            // We optimize for the default case by hoisting it above the switch block.
+
             switch (standardFormat | 0x20) // convert to lowercase
             {
                 case 'g':
@@ -88,6 +91,9 @@ namespace System.Buffers.Text
             {
                 return TryParseInt16D(source, out value, out bytesConsumed);
             }
+
+            // There's small but measurable overhead when entering the switch block below.
+            // We optimize for the default case by hoisting it above the switch block.
 
             switch (standardFormat | 0x20) // convert to lowercase
             {
@@ -137,6 +143,9 @@ namespace System.Buffers.Text
                 return TryParseInt32D(source, out value, out bytesConsumed);
             }
 
+            // There's small but measurable overhead when entering the switch block below.
+            // We optimize for the default case by hoisting it above the switch block.
+
             switch (standardFormat | 0x20) // convert to lowercase
             {
                 case 'g':
@@ -184,6 +193,9 @@ namespace System.Buffers.Text
             {
                 return TryParseInt64D(source, out value, out bytesConsumed);
             }
+
+            // There's small but measurable overhead when entering the switch block below.
+            // We optimize for the default case by hoisting it above the switch block.
 
             switch (standardFormat | 0x20) // convert to lowercase
             {
