@@ -1786,14 +1786,7 @@ public:
     //
     PCODE DoBackpatch(MethodTable * pMT, MethodTable * pDispatchingMT, BOOL fFullBackPatch);
 
-    // The GC mode for the thread that initially called Prestub().
-    enum
-    {
-        CallerGCMode_Unknown,
-        CallerGCMode_Coop,
-        CallerGCMode_Preempt    // (e.g. NativeCallableAttribute)
-    };
-    PCODE DoPrestub(MethodTable *pDispatchingMT, DWORD callerGCMode = CallerGCMode_Unknown);
+    PCODE DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode = CallerGCMode::Unknown);
 
     VOID GetMethodInfo(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
     VOID GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
@@ -2049,6 +2042,8 @@ public:
     BOOL ReadyToRunRejectedPrecompiledCode();
     void SetProfilerRejectedPrecompiledCode();
     void SetReadyToRunRejectedPrecompiledCode();
+    CallerGCMode GetCallerGCMode();
+    void SetCallerGCMode(CallerGCMode mode);
 
 #ifdef FEATURE_CODE_VERSIONING
 public:
@@ -2170,6 +2165,7 @@ protected:
     BOOL m_mayUsePrecompiledCode;
     BOOL m_ProfilerRejectedPrecompiledCode;
     BOOL m_ReadyToRunRejectedPrecompiledCode;
+    CallerGCMode m_callerGCMode;
 
 #ifdef FEATURE_CODE_VERSIONING
 private:

@@ -439,9 +439,15 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
 #ifdef FEATURE_TIERED_COMPILATION
             bool shouldTier = pConfig->GetMethodDesc()->IsEligibleForTieredCompilation();
 #if !defined(TARGET_X86) || !defined(TARGET_WINDOWS)
-            // If the method is eligible for tiering and it has already been
-            // update to to be optimized, then update the tier in the code version.
-            if (shouldTier && pConfig->JitSwitchedToOptimized())
+            CallerGCMode callerGcMode = pConfig->GetCallerGCMode();
+            // If the method is eligible for tiering but is being
+            // called from a Preemptive GC Mode thread or the method
+            // has the NativeCallableAttribute then the Tiered Compilation
+            // should be disabled.
+            if (shouldTier
+                && (callerGcMode == CallerGCMode::Preemptive
+                    || (callerGcMode == CallerGCMode::Unknown
+                        && HasNativeCallableAttribute())))
             {
                 NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
                 if (codeVersion.IsDefaultVersion())
@@ -1139,6 +1145,7 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
     m_mayUsePrecompiledCode(mayUsePrecompiledCode),
     m_ProfilerRejectedPrecompiledCode(FALSE),
     m_ReadyToRunRejectedPrecompiledCode(FALSE),
+    m_callerGCMode(CallerGCMode::Unknown),
 #ifdef FEATURE_CODE_VERSIONING
     m_profilerMayHaveActivatedNonDefaultCodeVersion(false),
     m_generatedOrLoadedNewCode(false),
@@ -1193,6 +1200,18 @@ void PrepareCodeConfig::SetReadyToRunRejectedPrecompiledCode()
 {
     LIMITED_METHOD_CONTRACT;
     m_ReadyToRunRejectedPrecompiledCode = TRUE;
+}
+
+CallerGCMode PrepareCodeConfig::GetCallerGCMode()
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_callerGCMode;
+}
+
+void PrepareCodeConfig::SetCallerGCMode(CallerGCMode mode)
+{
+    LIMITED_METHOD_CONTRACT;
+    m_callerGCMode = mode;
 }
 
 NativeCodeVersion PrepareCodeConfig::GetCodeVersion()
@@ -1830,7 +1849,7 @@ static PCODE PreStubWorker_Preemptive(
     pMD->CheckRestore();
     CONSISTENCY_CHECK(GetAppDomain()->CheckCanExecuteManagedCode(pMD));
 
-    pbRetVal = pMD->DoPrestub(NULL, MethodDesc::CallerGCMode_Preempt);
+    pbRetVal = pMD->DoPrestub(NULL, CallerGCMode::Preemptive);
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -1937,7 +1956,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         }
 
         GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
-        pbRetVal = pMD->DoPrestub(pDispatchingMT, MethodDesc::CallerGCMode_Coop);
+        pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -2005,7 +2024,7 @@ static void TestSEHGuardPageRestore()
 // the case of methods that require stubs to be executed first (e.g., remoted methods
 // that require remoting stubs to be executed first), this stable entrypoint would be a
 // pointer to the stub, and not a pointer directly to the JITted code.
-PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, DWORD callerGCMode)
+PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode)
 {
     CONTRACT(PCODE)
     {

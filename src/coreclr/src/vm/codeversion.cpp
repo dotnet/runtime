@@ -1611,7 +1611,7 @@ HRESULT CodeVersionManager::AddNativeCodeVersion(
 
 PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
     MethodDesc* pMethodDesc,
-    DWORD callerGCMode,
+    CallerGCMode callerGCMode,
     bool *doBackpatchRef,
     bool *doFullBackpatchRef)
 {
@@ -1672,13 +1672,8 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
             PrepareCodeConfigBuffer configBuffer(activeVersion);
             PrepareCodeConfig *config = configBuffer.GetConfig();
 
-#ifdef FEATURE_TIERED_COMPILATION
-            // If the caller is in preemptive mode, then
-            // Tiered Compilation isn't supported. (e.g. NativeCallable)
-            if (callerGCMode == MethodDesc::CallerGCMode_Preempt)
-                config->SetJitSwitchedToOptimized();
-#endif // FEATURE_TIERED_COMPILATION
-
+            // Record the caller's GC mode.
+            config->SetCallerGCMode(callerGCMode);
             pCode = pMethodDesc->PrepareCode(config);
 
         #ifdef FEATURE_CODE_VERSIONING
