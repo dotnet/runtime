@@ -1052,6 +1052,38 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(dict.TryUpdate(1, new Struct16(2, -2), new Struct16(1, -1)), "TestTryUpdate:  FAILED.  TryUpdate failed for non atomic values ( > 8 bytes)");
         }
 
+        [OuterLoop("Runs for several seconds")]
+        [Fact]
+        public void ConcurrentWriteRead_NoTornValues()
+        {
+            var cd = new ConcurrentDictionary<int, KeyValuePair<long, long>>();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            Task.WaitAll(
+                Task.Run(() =>
+                {
+                    for (long i = 0; !cts.IsCancellationRequested; i++)
+                    {
+                        cd[0] = new KeyValuePair<long, long>(i, i);
+                    }
+                }),
+                Task.Run(() =>
+                {
+                    while (!cts.IsCancellationRequested)
+                    {
+                        cd.TryGetValue(0, out KeyValuePair<long, long> item);
+                        try
+                        {
+                            Assert.Equal(item.Key, item.Value);
+                        }
+                        catch
+                        {
+                            cts.Cancel();
+                            throw;
+                        }
+                    }
+                }));
+        }
+
         #region Helper Classes and Methods
 
         private class ThreadData

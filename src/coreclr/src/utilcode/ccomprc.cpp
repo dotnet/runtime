@@ -114,10 +114,6 @@ HRESULT CCompRC::AddMapNode(LocaleID langId, HRESOURCEDLL hInst, BOOL fMissing)
 //*****************************************************************************
 LPCWSTR CCompRC::m_pDefaultResource = W("mscorrc.dll");
 
-#ifdef HOST_UNIX
-LPCSTR CCompRC::m_pDefaultResourceDomain = "mscorrc";
-#endif // HOST_UNIX
-
 HRESULT CCompRC::Init(LPCWSTR pResourceFile)
 {
     CONTRACTL
@@ -161,19 +157,6 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile)
     {
         return E_OUTOFMEMORY;
     }
-
-#ifdef HOST_UNIX
-
-    if (m_pResourceFile == m_pDefaultResource)
-    {
-        m_pResourceDomain = m_pDefaultResourceDomain;
-    }
-    else
-    {
-        _ASSERTE(!"Unsupported resource file");
-    }
-
-#endif // HOST_UNIX
 
     if (m_csMap == NULL)
     {

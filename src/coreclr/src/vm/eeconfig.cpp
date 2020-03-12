@@ -219,8 +219,6 @@ HRESULT EEConfig::Init()
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
     fDebuggable = false;
-    fStressOn = false;
-    apiThreadStressCount = 0;
     pPrestubHalt = 0;
     pPrestubGC = 0;
     pszBreakOnClassLoad = 0;
@@ -1005,8 +1003,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
 
 #ifdef _DEBUG
     fDebuggable         = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_JitDebuggable,      fDebuggable)         != 0);
-    fStressOn           = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_StressOn,           fStressOn)           != 0);
-    apiThreadStressCount = GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_APIThreadStress,     apiThreadStressCount);
 
     LPWSTR wszPreStubStuff = NULL;
 

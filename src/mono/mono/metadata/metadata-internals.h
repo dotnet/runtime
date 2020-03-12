@@ -427,6 +427,8 @@ struct _MonoImage {
 	 * references is initialized only by using the mono_assembly_open
 	 * function, and not by using the lowlevel mono_image_open.
 	 *
+	 * Protected by the image lock.
+	 *
 	 * It is NULL terminated.
 	 */
 	MonoAssembly **references;

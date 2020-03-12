@@ -478,6 +478,9 @@ End
 Crst RCWCleanupList
 End
 
+Crst ExternalObjectContextCache
+End
+
 Crst ReDacl
 End
 

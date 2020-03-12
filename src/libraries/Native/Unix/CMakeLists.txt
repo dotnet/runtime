@@ -5,6 +5,10 @@ project(CoreFX C)
 
 include(${CLR_ENG_NATIVE_DIR}/configureplatform.cmake)
 
+if(CLR_CMAKE_TARGET_IOS)
+    cmake_minimum_required(VERSION 3.14.5)
+endif()
+
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
     cmake_policy(SET CMP0083 NEW)
 endif(NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -13,7 +17,6 @@ set(CMAKE_MACOSX_RPATH ON)
 set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-set(CMAKE_SHARED_LIBRARY_PREFIX "")
 set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 
 # We mark the function which needs exporting with PALEXPORT
@@ -119,7 +122,7 @@ else ()
 endif ()
 
 if(CLR_CMAKE_TARGET_ARCH_WASM)
-elseif (CLR_CMAKE_TARGET_DARWIN)
+elseif (CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_IOS)
     add_definitions(-D__APPLE_USE_RFC_3542)
 
    # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
@@ -157,25 +160,13 @@ if(CLR_CMAKE_TARGET_UNIX)
         if (STRIP STREQUAL "STRIP-NOTFOUND")
             message(FATAL_ERROR "strip not found")
         endif()
+    elseif (CLR_CMAKE_TARGET_IOS)
+        # No object stripping for iOS
     elseif (CLR_CMAKE_TARGET_ARCH_WASM)
         # No object stripping for WASM
     else (CLR_CMAKE_TARGET_DARWIN)
         add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
         add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
-
-        # Ensure that objcopy is present
-        if(DEFINED ENV{CROSSCOMPILE})
-            if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_I386)
-                find_program(OBJCOPY ${TOOLCHAIN}-objcopy)
-            else()
-                message(FATAL_ERROR "Only AMD64, X86, ARM64 and ARM are supported")
-            endif()
-        else()
-            find_program(OBJCOPY objcopy)
-        endif()
-        if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND" AND NOT CLR_CMAKE_TARGET_ARCH_I386)
-            message(FATAL_ERROR "objcopy not found")
-        endif()
     endif(CLR_CMAKE_TARGET_DARWIN)
 
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}")
@@ -183,51 +174,8 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
 endif(CLR_CMAKE_TARGET_UNIX)
 
-function(strip_symbols targetName outputFilename)
-    if(CLR_CMAKE_TARGET_UNIX)
-        if(STRIP_SYMBOLS)
-
-            # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
-            # generator expression doesn't work correctly returning the wrong path and on
-            # the newer cmake versions the LOCATION property isn't supported anymore.
-            if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
-                set(strip_source_file $<TARGET_FILE:${targetName}>)
-            else()
-                get_property(strip_source_file TARGET ${targetName} PROPERTY LOCATION)
-            endif()
-
-            if(CLR_CMAKE_TARGET_DARWIN)
-                set(strip_destination_file ${strip_source_file}.dwarf)
-
-                add_custom_command(
-                    TARGET ${targetName}
-                    POST_BUILD
-                    VERBATIM
-                    COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
-                    COMMAND ${STRIP} -u -r ${strip_source_file}
-                    COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
-                )
-            else(CLR_CMAKE_TARGET_DARWIN)
-                set(strip_destination_file ${strip_source_file}.dbg)
-
-                add_custom_command(
-                    TARGET ${targetName}
-                    POST_BUILD
-                    VERBATIM
-                    COMMAND ${OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-                    COMMAND ${OBJCOPY} --strip-unneeded ${strip_source_file}
-                    COMMAND ${OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
-                    COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
-                )
-            endif(CLR_CMAKE_TARGET_DARWIN)
-
-            set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
-        endif(STRIP_SYMBOLS)
-    endif(CLR_CMAKE_TARGET_UNIX)
-endfunction()
-
 function(install_library_and_symbols targetName)
-    strip_symbols(${targetName} strip_destination_file)
+    strip_symbols(${targetName} strip_destination_file NO)
 
     # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
     # generator expression doesn't work correctly returning the wrong path and on
@@ -252,7 +200,9 @@ include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 add_subdirectory(System.IO.Compression.Native)
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable
     add_subdirectory(System.IO.Ports.Native)
+endif()
 endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
@@ -262,11 +212,17 @@ endif()
 add_subdirectory(System.Native)
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+if (NOT CLR_CMAKE_TARGET_IOS)  # TODO: reenable
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
+endif()
+if (NOT CLR_CMAKE_TARGET_IOS)
+    # disable System.Security.Cryptography.Native build on iOS,
+    # only used for interacting with OpenSSL which isn't useful there
     add_subdirectory(System.Security.Cryptography.Native)
 endif()
+endif()
 
-if(CLR_CMAKE_TARGET_DARWIN)
+if(CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_IOS)
     add_subdirectory(System.Security.Cryptography.Native.Apple)
 endif()

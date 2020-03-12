@@ -496,9 +496,6 @@ struct Dbg_TrackSync
     virtual void LeaveSync    (UINT_PTR caller, void *pAwareLock) = 0;
 };
 
-EXTERN_C void EnterSyncHelper    (UINT_PTR caller, void *pAwareLock);
-EXTERN_C void LeaveSyncHelper    (UINT_PTR caller, void *pAwareLock);
-
 #endif  // TRACK_SYNC
 
 //***************************************************************************
@@ -1032,19 +1029,12 @@ public:
         if(STSGuarantee_Force == fScope)
             return TRUE;
 
+#ifdef DEBUG
         // For debug, always enable setting thread stack guarantee so that we can print the stack trace
-#ifndef DEBUG
-        //The runtime must be hosted to have escalation policy
-        //If escalation policy is enabled but StackOverflow is not part of the policy
-        //   then we don't use SetThreadStackGuarantee
-        if(!CLRHosted() ||
-            GetEEPolicy()->GetActionOnFailure(FAIL_StackOverflow) == eRudeExitProcess)
-        {
-            //FAIL_StackOverflow is ProcessExit so don't use SetThreadStackGuarantee
-            return FALSE;
-        }
-#endif // DEBUG
         return TRUE;
+#else
+        return FALSE;
+#endif
     }
 
 public:
@@ -4708,8 +4698,6 @@ private:
 
     // By the time a frame is scanned by the runtime, m_pHijackReturnKind always
     // identifies the gc-ness of the return register(s)
-    // If the ReturnKind information is not available from the GcInfo, the runtime
-    // computes it using the return types's class handle.
 
     ReturnKind m_HijackReturnKind;
 

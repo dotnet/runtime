@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.IO;
-using System.Threading;
-using Xunit;
+using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
-using BundleTests.Helpers;
+using Microsoft.NET.HostModel.Bundle;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
@@ -33,7 +34,7 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             var bundleDir = BundleHelper.GetBundleDir(fixture);
-            var bundler = new Microsoft.NET.HostModel.Bundle.Bundler(hostName, bundleDir.FullName);
+            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
             string singleFile = bundler.GenerateBundle(publishPath);
 
             // Compute bundled files
@@ -75,7 +76,7 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             var bundleDir = BundleHelper.GetBundleDir(fixture);
-            var bundler = new Microsoft.NET.HostModel.Bundle.Bundler(hostName, bundleDir.FullName);
+            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
             string singleFile = bundler.GenerateBundle(publishPath);
 
             // Create a directory for extraction.
@@ -128,7 +129,7 @@ namespace AppHost.Bundle.Tests
 
             // Publish the bundle
             var bundleDir = BundleHelper.GetBundleDir(fixture);
-            var bundler = new Microsoft.NET.HostModel.Bundle.Bundler(hostName, bundleDir.FullName);
+            var bundler = new Bundler(hostName, bundleDir.FullName, BundleOptions.BundleAllContent);
             string singleFile = bundler.GenerateBundle(publishPath);
 
             // Compute bundled files

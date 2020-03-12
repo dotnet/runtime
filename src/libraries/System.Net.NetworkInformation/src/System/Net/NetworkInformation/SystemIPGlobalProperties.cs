@@ -364,7 +364,7 @@ namespace System.Net.NetworkInformation
             return new SystemIcmpV6Statistics();
         }
 
-        public override IAsyncResult BeginGetUnicastAddresses(AsyncCallback callback, object state)
+        public override IAsyncResult BeginGetUnicastAddresses(AsyncCallback? callback, object? state)
         {
             ContextAwareResult asyncResult = new ContextAwareResult(false, false, this, state, callback);
             asyncResult.StartPostingAsyncOp(false);
@@ -385,7 +385,7 @@ namespace System.Net.NetworkInformation
                 throw new ArgumentNullException(nameof(asyncResult));
             }
 
-            ContextAwareResult result = asyncResult as ContextAwareResult;
+            ContextAwareResult? result = asyncResult as ContextAwareResult;
             if (result == null || result.AsyncObject == null || result.AsyncObject.GetType() != typeof(SystemIPGlobalProperties))
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult);
@@ -423,7 +423,7 @@ namespace System.Net.NetworkInformation
 
         private static void StableUnicastAddressTableCallback(object param)
         {
-            EventWaitHandle handle = param as EventWaitHandle;
+            EventWaitHandle? handle = param as EventWaitHandle;
             if (handle != null)
             {
                 handle.Set();

@@ -190,6 +190,7 @@ public:
         const void **ppv,                   // [OUT] put pointer to MD stream here.
         ULONG   *pcb);                      // [OUT] put size of the stream here.
 
+    DAC_ALIGNAS(CLiteWeightStgdb<CMiniMdRW>) // Align the first member to the alignment of the base class
     UINT32      m_cbSaveSize;               // Size of the saved streams.
     int         m_bSaveCompressed;          // If true, save as compressed stream (#-, not #~)
     VOID*       m_pImage;                   // Set in OpenForRead, NULL for anything but PE files

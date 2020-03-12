@@ -11,6 +11,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "K32EnumProcessModules")]
-        internal static extern bool EnumProcessModules(SafeProcessHandle handle, IntPtr modules, int size, ref int needed);
+        internal static extern bool EnumProcessModules(SafeProcessHandle handle, IntPtr[]? modules, int size, out int needed);
     }
 }

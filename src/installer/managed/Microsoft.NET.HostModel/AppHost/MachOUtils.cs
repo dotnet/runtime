@@ -1,5 +1,6 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -123,7 +124,7 @@ namespace Microsoft.NET.HostModel.AppHost
                         {
                             return Encoding.UTF8.GetString(p, len);
                         }
-                        catch(ArgumentException)
+                        catch (ArgumentException)
                         {
                             throw new AppHostMachOFormatException(MachOFormatError.InvalidUTF8);
                         }
@@ -139,6 +140,20 @@ namespace Microsoft.NET.HostModel.AppHost
             if (!condition)
             {
                 throw new AppHostMachOFormatException(error);
+            }
+        }
+
+        public static bool IsMachOImage(string filePath)
+        {
+            using (BinaryReader reader = new BinaryReader(File.OpenRead(filePath)))
+            {
+                if (reader.BaseStream.Length < 256) // Header size
+                {
+                    return false;
+                }
+
+                uint magic = reader.ReadUInt32();
+                return Enum.IsDefined(typeof(Magic), magic);
             }
         }
 
@@ -287,7 +302,7 @@ namespace Microsoft.NET.HostModel.AppHost
                         }
                         finally
                         {
-                            if(file != null)
+                            if (file != null)
                             {
                                 accessor.SafeMemoryMappedViewHandle.ReleasePointer();
                             }

@@ -151,15 +151,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Delegate.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipe.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeController.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventDispatcher.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventProvider.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeMetadataGenerator.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipePayloadDecoder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\RuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingEventHandleTable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipe.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\ICustomDebuggerNotification.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrameHelper.cs" />
@@ -299,28 +291,24 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureUtf8String)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Char8.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Utf8Extensions.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Utf8String.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Utf8String.Comparison.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Utf8String.Construction.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Utf8String.Conversion.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Utf8String.Enumeration.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Utf8String.Manipulation.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Utf8String.Searching.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Utf8StringSplitOptions.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.Comparison.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.Conversion.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.Enumeration.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.Manipulation.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\Utf8Span.Searching.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\Utf8StringComparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Utf8String.CoreCLR.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />
+  <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\IDispatch.cs">
+      <Link>Common\System\Runtime\InteropServices\IDispatch.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsMethod.cs" Condition="'$(FeatureClassicCominterop)' == 'true'">
+      <Link>Common\System\Runtime\InteropServices\ComEventsMethod.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\ComEventsSink.cs" Condition="'$(FeatureClassicCominterop)' == 'true'">
+      <Link>Common\System\Runtime\InteropServices\ComEventsSink.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\Variant.cs" Condition="'$(FeatureClassicCominterop)' == 'true'">
+      <Link>Common\System\Runtime\InteropServices\Variant.cs</Link>
+    </Compile>
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ExceptionSupport.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ActivationFactoryLoader.cs" Condition="'$(FeatureCominteropWinRTManagedActivation)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComActivator.cs" Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'" />
@@ -328,9 +316,6 @@
     <Compile Include="$(BclSourcesRoot)\System\__ComObject.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsHelper.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsInfo.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsMethod.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsSink.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Variant.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\ComDataHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumVariantViewOfEnumerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumerableToDispatchMarshaler.cs" />
@@ -339,7 +324,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\EnumeratorViewOfEnumVariant.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\ExpandoToDispatchExMarshaler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CustomMarshalers\TypeToTypeInfoMarshaler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\IDispatch.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\BindableVectorToCollectionAdapter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\BindableVectorToListAdapter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIKeyValuePairImpl.cs" />
@@ -395,16 +379,16 @@
     <Compile Include="$(BclSourcesRoot)\System\DateTime.Unix.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\RuntimeEventSourceHelper.Unix.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\InMemoryAssemblyLoader.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DateTime.Windows.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs">
+      <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
+    </Compile>
     <Compile Include="$(BclSourcesRoot)\System\ApplicationModel.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Windows.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\RuntimeEventSourceHelper.Windows.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureAppX)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.Uap.cs" />
@@ -416,8 +400,8 @@
     </Compile>
   </ItemGroup>
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
-  <PropertyGroup Condition="'$(BuildOS)' == 'Windows_NT'">
-    <OSGroup>Windows_NT</OSGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'Windows_NT'">
+    <TargetOS>Windows_NT</TargetOS>
   </PropertyGroup>
   <PropertyGroup>
     <FeatureAsyncCausalityTracer Condition="'$(FeatureCominterop)' == 'true'">true</FeatureAsyncCausalityTracer>
@@ -443,8 +427,8 @@
   <ItemGroup>
     <EventingGenerationScript Include="$(CoreClrProjectRoot)/src/scripts/genRuntimeEventSources.py" />
     <EventManifestFile Include="$(CoreClrProjectRoot)/src/vm/ClrEtwAll.man" />
-    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
-      <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.cs</Link>
+    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.CoreCLR.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+      <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.CoreCLR.cs</Link>
     </EventingSourceFile>
     <Compile Include="@(EventingSourceFile)" />
   </ItemGroup>
@@ -455,7 +439,7 @@
           DependsOnTargets="FindPython"
           BeforeTargets="BeforeCompile">
 
-    <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
+    <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.CoreCLR.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
     <PropertyGroup>
       <_PythonWarningParameter>-Wall</_PythonWarningParameter>
       <_PythonWarningParameter Condition="'$(MSBuildTreatWarningsAsErrors)' == 'true'">$(_PythonWarningParameter) -Werror</_PythonWarningParameter>

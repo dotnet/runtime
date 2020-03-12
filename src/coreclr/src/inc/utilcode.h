@@ -701,10 +701,6 @@ public:
         m_nHashSize = 0;
         m_csMap = NULL;
         m_pResourceFile = NULL;
-#ifdef HOST_UNIX
-        m_pResourceDomain = NULL;
-#endif // HOST_UNIX
-
     }// CCompRC
 
     HRESULT Init(LPCWSTR pResourceFile);
@@ -775,11 +771,6 @@ private:
     CRITSEC_COOKIE m_csMap;
 
     LPCWSTR m_pResourceFile;
-#ifdef HOST_UNIX
-    // Resource domain is an ANSI string identifying a native resources file
-    static LPCSTR  m_pDefaultResourceDomain;
-    LPCSTR m_pResourceDomain;
-#endif // HOST_UNIX
 
     // Main accessors for hash
     HRESOURCEDLL LookupNode(LocaleID langId, BOOL &fMissing);
@@ -1036,9 +1027,8 @@ public:
         COR_CONFIG_ENV          = 0x01,
         COR_CONFIG_USER         = 0x02,
         COR_CONFIG_MACHINE      = 0x04,
-        COR_CONFIG_FUSION       = 0x08,
 
-        COR_CONFIG_REGISTRY     = (COR_CONFIG_USER|COR_CONFIG_MACHINE|COR_CONFIG_FUSION),
+        COR_CONFIG_REGISTRY     = (COR_CONFIG_USER|COR_CONFIG_MACHINE),
         COR_CONFIG_ALL          = (COR_CONFIG_ENV|COR_CONFIG_USER|COR_CONFIG_MACHINE),
     };
 
@@ -1092,9 +1082,6 @@ public:
 
 private:
     static LPWSTR EnvGetString(LPCWSTR name, BOOL fPrependCOMPLUS);
-public:
-
-    static BOOL UseRegistry();
 
 private:
 //*****************************************************************************
@@ -1139,8 +1126,6 @@ private:
     static BOOL s_fUseRegCache; // Enable registry cache; if FALSE, CCVNSP
                                  // always returns TRUE.
     static BOOL s_fUseEnvCache; // Enable env cache.
-
-    static BOOL s_fUseRegistry; // Allow lookups in the registry
 
     // Open the .NetFramework keys once and cache the handles
     static HKEY s_hMachineFrameworkKey;

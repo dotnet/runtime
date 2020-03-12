@@ -177,16 +177,16 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new ConverterFactoryThatReturnsNull());
 
-            // A null return value from CreateConverter() will generate a NotSupportedException with the type name.
-            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(0, options));
-            Assert.Contains(typeof(int).ToString(), ex.Message);
+            // A null return value from CreateConverter() will generate a InvalidOperationException with the type name.
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(0, options));
+            Assert.Contains(typeof(ConverterFactoryThatReturnsNull).ToString(), ex.Message);
 
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int>("0", options));
-            Assert.Contains(typeof(int).ToString(), ex.Message);
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<int>("0", options));
+            Assert.Contains(typeof(ConverterFactoryThatReturnsNull).ToString(), ex.Message);
 
             // This will invoke the Nullable converter which should detect a null converter.
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int?>("0", options));
-            Assert.Contains(typeof(int).ToString(), ex.Message);
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<int?>("0", options));
+            Assert.Contains(typeof(ConverterFactoryThatReturnsNull).ToString(), ex.Message);
         }
 
         private class Level1

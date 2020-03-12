@@ -36,11 +36,6 @@
     IMPORT DynamicHelperWorker
 #endif
 
-    IMPORT ObjIsInstanceOfCached
-    IMPORT ArrayStoreCheck
-    SETALIAS g_pObjectClass,  ?g_pObjectClass@@3PEAVMethodTable@@EA
-    IMPORT  $g_pObjectClass
-
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     IMPORT  g_sw_ww_table
 #endif
@@ -1521,100 +1516,19 @@ CallHelper2
     ret lr
     LEAF_END
 
-; ------------------------------------------------------------------
-;__declspec(naked) void F_CALL_CONV JIT_Stelem_Ref(PtrArray* array, unsigned idx, Object* val)
-    LEAF_ENTRY JIT_Stelem_Ref
-    ; We retain arguments as they were passed and use x0 == array x1 == idx x2 == val
-
-    ; check for null array
-    cbz     x0, ThrowNullReferenceException
-
-    ; idx bounds check
-    ldr     x3,[x0,#ArrayBase__m_NumComponents]
-    cmp     x3, x1
-    bls     ThrowIndexOutOfRangeException
-
-    ; fast path to null assignment (doesn't need any write-barriers)
-    cbz     x2, AssigningNull
-
-    ; Verify the array-type and val-type matches before writing
-    ldr     x12, [x0] ; x12 = array MT
-    ldr     x3, [x2] ; x3 = val->GetMethodTable()
-    ldr     x12, [x12, #MethodTable__m_ElementType] ; array->GetArrayElementTypeHandle()
-    cmp     x3, x12
-    beq     JIT_Stelem_DoWrite
-
-    ; Types didnt match but allow writing into an array of objects
-    ldr     x3, =$g_pObjectClass
-    ldr     x3, [x3]  ; x3 = *g_pObjectClass
-    cmp     x3, x12   ; array type matches with Object*
-    beq     JIT_Stelem_DoWrite
-
-    ; array type and val type do not exactly match. Raise frame and do detailed match
-    b       JIT_Stelem_Ref_NotExactMatch
-
-AssigningNull
-    ; Assigning null doesn't need write barrier
-    add     x0, x0, x1, LSL #3           ; x0 = x0 + (x1 x 8) = array->m_array[idx]
-    str     x2, [x0, #PtrArray__m_Array] ; array->m_array[idx] = val
-    ret
-
-ThrowNullReferenceException
-    ; Tail call JIT_InternalThrow(NullReferenceException)
-    ldr     x0, =CORINFO_NullReferenceException_ASM
-    b       JIT_InternalThrow
-
-ThrowIndexOutOfRangeException
-    ; Tail call JIT_InternalThrow(NullReferenceException)
-    ldr     x0, =CORINFO_IndexOutOfRangeException_ASM
-    b       JIT_InternalThrow
-
-   LEAF_END
 
 ; ------------------------------------------------------------------
-; __declspec(naked) void F_CALL_CONV JIT_Stelem_Ref_NotExactMatch(PtrArray* array,
-;                                                       unsigned idx, Object* val)
-;   x12 = array->GetArrayElementTypeHandle()
-;
-    NESTED_ENTRY JIT_Stelem_Ref_NotExactMatch
-    PROLOG_SAVE_REG_PAIR           fp, lr, #-48!
-    stp     x0, x1, [sp, #16]
-    str     x2, [sp, #32]
+; __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
+    LEAF_ENTRY  JIT_WriteBarrier_Callable
 
-    ; allow in case val can be casted to array element type
-    ; call ObjIsInstanceOfCached(val, array->GetArrayElementTypeHandle())
-    mov     x1, x12 ; array->GetArrayElementTypeHandle()
-    mov     x0, x2
-    bl      ObjIsInstanceOfCached
-    cmp     x0, TypeHandle_CanCast
-    beq     DoWrite             ; ObjIsInstance returned TypeHandle::CanCast
-
-    ; check via raising frame
-NeedFrame
-    add     x1, sp, #16             ; x1 = &array
-    add     x0, sp, #32             ; x0 = &val
-
-    bl      ArrayStoreCheck ; ArrayStoreCheck(&val, &array)
-
-DoWrite
-    ldp     x0, x1, [sp, #16]
-    ldr     x2, [sp, #32]
-    EPILOG_RESTORE_REG_PAIR           fp, lr, #48!
-    EPILOG_BRANCH JIT_Stelem_DoWrite
-    NESTED_END
-
-; ------------------------------------------------------------------
-; __declspec(naked) void F_CALL_CONV JIT_Stelem_DoWrite(PtrArray* array, unsigned idx, Object* val)
-    LEAF_ENTRY  JIT_Stelem_DoWrite
-
-    ; Setup args for JIT_WriteBarrier. x14 = &array->m_array[idx] x15 = val
-    add     x14, x0, #PtrArray__m_Array ; x14 = &array->m_array
-    add     x14, x14, x1, LSL #3
-    mov     x15, x2                     ; x15 = val
+    ; Setup args for JIT_WriteBarrier. x14 = dst ; x15 = val
+    mov     x14, x0                     ; x14 = dst
+    mov     x15, x1                     ; x15 = val
 
     ; Branch to the write barrier (which is already correctly overwritten with
     ; single or multi-proc code based on the current CPU
     b       JIT_WriteBarrier
+
     LEAF_END
 
 #ifdef PROFILING_SUPPORTED

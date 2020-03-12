@@ -12399,6 +12399,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_1C;
             break;
 
+        case IF_LARGEJMP: // bcc + b
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
         case IF_BR_1B: // blr, br_tail
             if (ins == INS_blr)
             {
@@ -12519,6 +12524,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_DI_1A: // cmp, cmn
         case IF_DI_1C: // tst
         case IF_DI_1D: // mov reg, imm(N,r,s)
+        case IF_DI_1E: // adr, adrp
         case IF_DI_1F: // ccmp, ccmn
         case IF_DI_2A: // add, adds, suv, subs
         case IF_DI_2C: // and, ands, eor, orr
@@ -12529,12 +12535,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_DR_2D: // cinc, cinv, cneg
         case IF_DR_2E: // mov, neg, mvn, negs
-
-        case IF_DI_1E: // adr, adrp
         case IF_DI_1B: // mov, movk, movn, movz
 
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_LARGEADR: // adrp + add
+        case IF_LARGELDC: // adrp + ldr
+
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
         // ALU, shift by immediate

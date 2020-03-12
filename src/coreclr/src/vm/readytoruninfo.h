@@ -15,6 +15,7 @@
 #include "nativeformatreader.h"
 #include "inlinetracking.h"
 #include "wellknownattributes.h"
+#include "nativeimage.h"
 
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
@@ -32,7 +33,7 @@ public:
     ReadyToRunCoreInfo();
     ReadyToRunCoreInfo(PEImageLayout * pLayout, READYTORUN_CORE_HEADER * pCoreHeader);
 
-    PEImageLayout * GetLayout() const { return m_pLayout; }
+    PTR_PEImageLayout GetLayout() const { return m_pLayout; }
     IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const;
 
     PTR_PEImageLayout GetImage() const
@@ -43,6 +44,9 @@ public:
 };
 
 typedef DPTR(class ReadyToRunInfo) PTR_ReadyToRunInfo;
+typedef DPTR(class ReadyToRunCoreInfo) PTR_ReadyToRunCoreInfo;
+typedef DPTR(class NativeImage) PTR_NativeImage;
+
 class ReadyToRunInfo
 {
     friend class ReadyToRunJitManager;
@@ -50,11 +54,11 @@ class ReadyToRunInfo
     PTR_Module                      m_pModule;
     PTR_READYTORUN_HEADER           m_pHeader;
     bool                            m_isComponentAssembly;
-    NativeImage*                    m_pNativeImage;
-    ReadyToRunInfo*                 m_pCompositeInfo;
+    PTR_NativeImage                 m_pNativeImage;
+    PTR_ReadyToRunInfo              m_pCompositeInfo;
 
     ReadyToRunCoreInfo              m_component;
-    const ReadyToRunCoreInfo*       m_pComposite;
+    PTR_ReadyToRunCoreInfo          m_pComposite;
 
     PTR_RUNTIME_FUNCTION            m_pRuntimeFunctions;
     DWORD                           m_nRuntimeFunctions;
@@ -83,14 +87,17 @@ public:
     static PTR_ReadyToRunInfo Initialize(Module * pModule, AllocMemTracker *pamTracker);
 
     bool IsComponentAssembly() const { return m_isComponentAssembly; }
-    NativeImage * GetNativeImage() const { return m_pNativeImage; }
+
+    PTR_READYTORUN_HEADER GetReadyToRunHeader() const { return m_pHeader; }
+
+    PTR_NativeImage GetNativeImage() const { return m_pNativeImage; }
 
     PTR_PEImageLayout GetImage() const { return m_pComposite->GetImage(); }
     IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const { return m_pComposite->FindSection(type); }
 
     PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups);
 
-    MethodDesc * GetMethodDescForEntryPoint(PCODE entryPoint);
+    PTR_MethodDesc GetMethodDescForEntryPoint(PCODE entryPoint);
 
     BOOL HasHashtableOfTypes();
     BOOL TryLookupTypeTokenFromName(const NameHandle *pName, mdToken * pFoundTypeToken);
@@ -198,10 +205,10 @@ private:
     BOOL CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, mdToken mdToken2, IMDInternalImport * pImport2);
     BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
 
-    MethodDesc *TryGetMethodDescForEntryPoint(TADDR entryPointRVA);
-    void SetMethodDescForEntryPoint(TADDR entryPointRVA, MethodDesc *methodDesc);
+    PTR_MethodDesc GetMethodDescForEntryPointInNativeImage(PCODE entryPoint);
+    void SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, PTR_MethodDesc methodDesc);
     
-    ReadyToRunCoreInfo *GetComponentInfo() { return &m_component; }
+    PTR_ReadyToRunCoreInfo GetComponentInfo() { return dac_cast<PTR_ReadyToRunCoreInfo>(&m_component); }
 };
 
 class DynamicHelpers

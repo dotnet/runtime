@@ -4321,14 +4321,12 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
     }
 #endif
 
-#ifdef TARGET_ARMARCH
     if (jmp->idAddr()->iiaHasInstrCount())
     {
         // Too hard to figure out funclets from just an instruction count
         // You're on your own!
         return;
     }
-#endif // TARGET_ARMARCH
 
 #ifdef TARGET_ARM64
     // No interest if it's not jmp.

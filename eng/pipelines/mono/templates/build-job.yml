@@ -119,7 +119,7 @@ jobs:
     # Publish official build
     - ${{ if and(ne(parameters.llvm, true), eq(parameters.publishToBlobFeed, 'true')) }}:
       - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-        - script: $(Build.SourcesDirectory)/eng/common/build.sh --ci --restore --publish --configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__BuildOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)/artifacts/log/publish-pkgs.binlog" --projects $(Build.SourcesDirectory)/eng/empty.csproj
+        - script: $(Build.SourcesDirectory)/eng/common/build.sh --ci --restore --publish --configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__TargetOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)/artifacts/log/publish-pkgs.binlog" --projects $(Build.SourcesDirectory)/eng/empty.csproj
           displayName: Publish packages to blob feed
           env:
             # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
@@ -129,7 +129,7 @@ jobs:
               DotNetCoreSdkDir: /usr/local/dotnet
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         # TODO: pass publish feed url and access token in from the internal pipeline
-        - powershell: eng\common\build.ps1 -ci -restore -publish -configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__BuildOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)\artifacts\log\publish-pkgs.binlog" -projects $(Build.SourcesDirectory)\eng\empty.csproj
+        - powershell: eng\common\build.ps1 -ci -restore -publish -configuration $(_BuildConfig) /p:DotNetPublishUsingPipelines=true /p:DotNetPublishToBlobFeed=true /p:DotNetPublishBlobFeedUrl=$(dotnetfeedUrl) /p:DotNetPublishBlobFeedKey=$(dotnetfeedPAT) /p:__BuildType=$(_BuildConfig) /p:__BuildArch=$(archType) /p:__TargetOS=$(osGroup) /p:OSIdentifier=$(osGroup)$(osSubgroup) /bl:"$(Build.SourcesDirectory)\artifacts\log\publish-pkgs.binlog" -projects $(Build.SourcesDirectory)\eng\empty.csproj
           displayName: Publish packages to blob feed
           env:
             # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed

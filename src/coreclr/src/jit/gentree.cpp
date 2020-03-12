@@ -9778,18 +9778,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
 
             case GT_INDEX:
             case GT_INDEX_ADDR:
-
-                if ((tree->gtFlags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) == 0) // We prefer printing V or U over R
-                {
-                    if (tree->gtFlags & GTF_INX_REFARR_LAYOUT)
-                    {
-                        printf("R");
-                        --msgLength;
-                        break;
-                    } // R means RefArray
-                }
-                __fallthrough;
-
             case GT_FIELD:
             case GT_CLS_VAR:
                 if (tree->gtFlags & GTF_IND_VOLATILE)
@@ -16229,6 +16217,55 @@ bool GenTree::IsLocalAddrExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree,
     }
     // Otherwise...
     return false;
+}
+
+//------------------------------------------------------------------------
+// IsImplicitByrefParameterValue: determine if this tree is the entire
+//     value of a local implicit byref parameter
+//
+// Arguments:
+//    compiler -- compiler instance
+//
+// Return Value:
+//    GenTreeLclVar node for the local, or nullptr.
+//
+GenTreeLclVar* GenTree::IsImplicitByrefParameterValue(Compiler* compiler)
+{
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+
+    GenTreeLclVar* lcl = nullptr;
+
+    if (OperIs(GT_LCL_VAR))
+    {
+        lcl = AsLclVar();
+    }
+    else if (OperIs(GT_OBJ))
+    {
+        GenTree* addr = AsIndir()->Addr();
+
+        if (addr->OperIs(GT_LCL_VAR))
+        {
+            lcl = addr->AsLclVar();
+        }
+        else if (addr->OperIs(GT_ADDR))
+        {
+            GenTree* base = addr->AsOp()->gtOp1;
+
+            if (base->OperIs(GT_LCL_VAR))
+            {
+                lcl = base->AsLclVar();
+            }
+        }
+    }
+
+    if ((lcl != nullptr) && compiler->lvaIsImplicitByRefLocal(lcl->GetLclNum()))
+    {
+        return lcl;
+    }
+
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+
+    return nullptr;
 }
 
 //------------------------------------------------------------------------

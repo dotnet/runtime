@@ -1335,9 +1335,9 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char
 #elif HAVE_FUTIMES
     struct timeval origTimes[2];
     origTimes[0].tv_sec = sourceStat.st_atime;
-    origTimes[0].tv_usec = ST_ATIME_NSEC(&sourceStat) / 1000;
+    origTimes[0].tv_usec = (int32_t)(ST_ATIME_NSEC(&sourceStat) / 1000);
     origTimes[1].tv_sec = sourceStat.st_mtime;
-    origTimes[1].tv_usec = ST_MTIME_NSEC(&sourceStat) / 1000;
+    origTimes[1].tv_usec = (int32_t)(ST_MTIME_NSEC(&sourceStat) / 1000);
     while ((ret = futimes(outFd, origTimes)) < 0 && errno == EINTR);
 #endif
 
