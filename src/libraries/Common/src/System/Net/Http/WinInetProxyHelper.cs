@@ -124,7 +124,7 @@ namespace System.Net.Http
             {
                 _autoDetectionFailed = false;
                 if (Interop.WinHttp.WinHttpGetProxyForUrl(
-                    sessionHandle,
+                    sessionHandle!,
                     uri.AbsoluteUri,
                     ref autoProxyOptions,
                     out proxyInfo))

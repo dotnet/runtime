@@ -14,9 +14,9 @@ namespace System.Net.Http.Headers
     {
         // Use ObjectCollection<T> since we may have multiple parameters with the same name.
         private ObjectCollection<NameValueHeaderValue>? _parameters;
-        private string? _value;
+        private string _value = null!; // empty constructor only used internally and value set with non null
 
-        public string? Value
+        public string Value
         {
             get { return _value; }
         }
@@ -154,7 +154,7 @@ namespace System.Net.Http.Headers
         public override int GetHashCode()
         {
             // The value string is case-insensitive.
-            return StringComparer.OrdinalIgnoreCase.GetHashCode(_value!) ^ NameValueHeaderValue.GetHashCode(_parameters);
+            return StringComparer.OrdinalIgnoreCase.GetHashCode(_value) ^ NameValueHeaderValue.GetHashCode(_parameters);
         }
 
         // Implement ICloneable explicitly to allow derived types to "override" the implementation.

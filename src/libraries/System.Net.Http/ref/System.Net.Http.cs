@@ -652,7 +652,7 @@ namespace System.Net.Http.Headers
         protected TransferCodingHeaderValue(System.Net.Http.Headers.TransferCodingHeaderValue source) { }
         public TransferCodingHeaderValue(string value) { }
         public System.Collections.Generic.ICollection<System.Net.Http.Headers.NameValueHeaderValue> Parameters { get { throw null; } }
-        public string? Value { get { throw null; } }
+        public string Value { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Net.Http.Headers.TransferCodingHeaderValue Parse(string? input) { throw null; }
