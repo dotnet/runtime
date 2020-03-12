@@ -200,6 +200,11 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.Extensions.Internal.Transport",
+    "Description": "Internal transport package to provide aspnetcore with the assemblies that make up the Microsoft.ASPNetCore.App shared framework.",
+    "CommonTypes": []
+  },
+  {
     "Name": "Microsoft.Extensions.Primitives",
     "Description": "Primitives shared by framework extensions. Commonly used types include:",
     "CommonTypes": [
