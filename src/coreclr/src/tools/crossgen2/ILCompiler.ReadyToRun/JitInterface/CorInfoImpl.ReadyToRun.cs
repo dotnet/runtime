@@ -1660,6 +1660,14 @@ namespace Internal.JitInterface
 
             pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(pResult->methodFlags, methodToCall);
 
+            bool _TARGET_X86_ = _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86;
+            bool _TARGET_WINDOWS_ = _compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows;
+
+            if (_TARGET_X86_ && _TARGET_WINDOWS_ && targetMethod.IsNativeCallable)
+            {
+                throw new NotSupportedException("ReadyToRun: References to methods with NativeCallableAttribute not supported");
+            }
+
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
             {
                 // READYTORUN: FUTURE: Optionally create boxing stub at runtime

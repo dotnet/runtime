@@ -2850,6 +2850,7 @@ namespace Internal.JitInterface
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
 
             TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
+            TargetOS targetOS = _compilation.TypeSystemContext.Target.OperatingSystem;
 
             if (targetArchitecture == TargetArchitecture.ARM && !_compilation.TypeSystemContext.Target.IsWindows)
                 flags.Set(CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS);
@@ -2881,8 +2882,12 @@ namespace Internal.JitInterface
 #endif
             }
 
-            if (this.MethodBeingCompiled.IsNativeCallable)
+            if (targetArchitecture == TargetArchitecture.X86
+                && targetOS == TargetOS.Windows
+                && this.MethodBeingCompiled.IsNativeCallable)
+            {
                 flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
+            }
 
             if (this.MethodBeingCompiled.IsPInvoke)
             {
