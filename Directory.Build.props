@@ -54,7 +54,13 @@
     <ManPagesDir>$([MSBuild]::NormalizeDirectory('$(DocsDir)', 'manpages'))</ManPagesDir>
     <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
   </PropertyGroup>
-
+  
+  <!-- SourceLink -->
+  <PropertyGroup>
+    <!-- This is needed to embed build-time generated sources such as eventing and resource files to sourcelink PDBs. -->
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+  
   <!-- Packaging properties -->
   <PropertyGroup>
     <!--
