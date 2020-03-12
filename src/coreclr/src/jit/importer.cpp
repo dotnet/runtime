@@ -8370,7 +8370,8 @@ DONE:
         const bool isExplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
         const bool isImplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_IMPLICIT) != 0;
 
-        assert(isExplicitTailCall || isImplicitTailCall);
+        // Exactly one of these should be true.
+        assert(isExplicitTailCall != isImplicitTailCall);
 
         // This check cannot be performed for implicit tail calls for the reason
         // that impIsImplicitTailCallCandidate() is not checking whether return
@@ -8417,10 +8418,9 @@ DONE:
 
         // assert(compCurBB is not a catch, finally or filter block);
         // assert(compCurBB is not a try block protected by a finally block);
-
-        // Ask VM for permission to tailcall
         assert(!isExplicitTailCall || compCurBB->bbJumpKind == BBJ_RETURN);
 
+        // Ask VM for permission to tailcall
         if (canTailCall)
         {
             // True virtual or indirect calls, shouldn't pass in a callee handle.
