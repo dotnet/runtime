@@ -17,12 +17,13 @@ public: // Native QCalls for the abstract ComWrappers managed type.
         _Out_ void** fpAddRef,
         _Out_ void** fpRelease);
 
-    static void* QCALLTYPE GetOrCreateComInterfaceForObject(
+    static BOOL QCALLTYPE TryGetOrCreateComInterfaceForObject(
         _In_ QCall::ObjectHandleOnStack comWrappersImpl,
         _In_ QCall::ObjectHandleOnStack instance,
-        _In_ INT32 flags);
+        _In_ INT32 flags,
+        _Outptr_ void** wrapperRaw);
 
-    static void QCALLTYPE GetOrCreateObjectForComInstance(
+    static BOOL QCALLTYPE TryGetOrCreateObjectForComInstance(
         _In_ QCall::ObjectHandleOnStack comWrappersImpl,
         _In_ void* externalComObject,
         _In_ INT32 flags,

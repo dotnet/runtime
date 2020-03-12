@@ -478,16 +478,18 @@ namespace
         CALL_MANAGED_METHOD_NORET(args);
     }
 
-    void* GetOrCreateComInterfaceForObjectInternal(
+    bool TryGetOrCreateComInterfaceForObjectInternal(
         _In_opt_ OBJECTREF impl,
         _In_ OBJECTREF instance,
-        _In_ CreateComInterfaceFlags flags)
+        _In_ CreateComInterfaceFlags flags,
+        _Outptr_ void** wrapperRaw)
     {
-        CONTRACT(void*)
+        CONTRACT(bool)
         {
             THROWS;
             MODE_COOPERATIVE;
             PRECONDITION(instance != NULL);
+            PRECONDITION(wrapperRaw != NULL);
         }
         CONTRACT_END;
 
@@ -586,20 +588,23 @@ namespace
 
         GCPROTECT_END();
 
-        RETURN wrapperRawMaybe;
+        *wrapperRaw = wrapperRawMaybe;
+        RETURN (wrapperRawMaybe != NULL);
     }
 
-    OBJECTREF GetOrCreateObjectForComInstanceInternal(
+    bool TryGetOrCreateObjectForComInstanceInternal(
         _In_opt_ OBJECTREF impl,
         _In_ IUnknown* identity,
         _In_ CreateObjectFlags flags,
-        _In_opt_ OBJECTREF wrapperMaybe)
+        _In_opt_ OBJECTREF wrapperMaybe,
+        _Out_ OBJECTREF* objRef)
     {
-        CONTRACT(OBJECTREF)
+        CONTRACT(bool)
         {
             THROWS;
             MODE_COOPERATIVE;
             PRECONDITION(identity != NULL);
+            PRECONDITION(objRef != NULL);
         }
         CONTRACT_END;
 
@@ -717,7 +722,8 @@ namespace
 
         GCPROTECT_END();
 
-        RETURN gc.objRefMaybe;
+        *objRef = gc.objRefMaybe;
+        RETURN (gc.objRefMaybe != NULL);
     }
 }
 
@@ -952,20 +958,25 @@ namespace InteropLibImports
             gc.wrapperMaybeRef = NULL; // No supplied wrapper here.
 
             // Get wrapper for external object
-            gc.objRef = GetOrCreateObjectForComInstanceInternal(
+            bool success = TryGetOrCreateObjectForComInstanceInternal(
                 gc.implRef,
                 externalComObject,
                 externalObjectFlags,
-                gc.wrapperMaybeRef);
+                gc.wrapperMaybeRef,
+                &gc.objRef);
 
-            if (gc.objRef == NULL)
+            if (!success)
                 COMPlusThrow(kArgumentNullException);
 
             // Get wrapper for managed object
-            *trackerTarget = GetOrCreateComInterfaceForObjectInternal(
+            success = TryGetOrCreateComInterfaceForObjectInternal(
                 gc.implRef,
                 gc.objRef,
-                trackerTargetFlags);
+                trackerTargetFlags,
+                trackerTarget);
+
+            if (!success)
+                COMPlusThrow(kArgumentException);
 
             STRESS_LOG2(LF_INTEROP, LL_INFO100, "Created Target for External: 0x%p => 0x%p\n", OBJECTREFToObject(gc.objRef), *trackerTarget);
             GCPROTECT_END();
@@ -1059,14 +1070,15 @@ namespace InteropLibImports
 
 #ifdef FEATURE_COMWRAPPERS
 
-void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
+BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateComInterfaceForObject(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
     _In_ QCall::ObjectHandleOnStack instance,
-    _In_ INT32 flags)
+    _In_ INT32 flags,
+    _Outptr_ void** wrapper)
 {
     QCALL_CONTRACT;
 
-    void* wrapper = NULL;
+    bool success;
 
     BEGIN_QCALL;
 
@@ -1074,18 +1086,19 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
     // are being manipulated.
     {
         GCX_COOP();
-        wrapper = GetOrCreateComInterfaceForObjectInternal(
+        success = TryGetOrCreateComInterfaceForObjectInternal(
             ObjectToOBJECTREF(*comWrappersImpl.m_ppObject),
             ObjectToOBJECTREF(*instance.m_ppObject),
-            (CreateComInterfaceFlags)flags);
+            (CreateComInterfaceFlags)flags,
+            wrapper);
     }
 
     END_QCALL;
 
-    return wrapper;
+    return success;
 }
 
-void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
+BOOL QCALLTYPE ComWrappersNative::TryGetOrCreateObjectForComInstance(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
     _In_ void* ext,
     _In_ INT32 flags,
@@ -1095,6 +1108,8 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
     QCALL_CONTRACT;
 
     _ASSERTE(ext != NULL);
+
+    bool success;
 
     BEGIN_QCALL;
 
@@ -1110,17 +1125,21 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
     // are being manipulated.
     {
         GCX_COOP();
-        OBJECTREF newObj = GetOrCreateObjectForComInstanceInternal(
+        OBJECTREF newObj;
+        success = TryGetOrCreateObjectForComInstanceInternal(
             ObjectToOBJECTREF(*comWrappersImpl.m_ppObject),
             identity,
             (CreateObjectFlags)flags,
-            ObjectToOBJECTREF(*wrapperMaybe.m_ppObject));
+            ObjectToOBJECTREF(*wrapperMaybe.m_ppObject),
+            &newObj);
 
         // Set the return value
         retValue.Set(newObj);
     }
 
     END_QCALL;
+
+    return success;
 }
 
 void QCALLTYPE ComWrappersNative::GetIUnknownImpl(

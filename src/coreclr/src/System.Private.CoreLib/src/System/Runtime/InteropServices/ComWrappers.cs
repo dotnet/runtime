@@ -119,8 +119,8 @@ namespace System.Runtime.InteropServices
         /// <returns>The generated COM interface that can be passed outside the .NET runtime.</returns>
         public IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
         {
-            IntPtr ptr = GetOrCreateComInterfaceForObjectInternal(this, instance, flags);
-            if (ptr == IntPtr.Zero)
+            IntPtr ptr;
+            if (!TryGetOrCreateComInterfaceForObjectInternal(this, instance, flags, out ptr))
                 throw new ArgumentException();
 
             return ptr;
@@ -132,20 +132,21 @@ namespace System.Runtime.InteropServices
         /// <param name="impl">The <see cref="ComWrappers" /> implemenentation to use when creating the COM representation.</param>
         /// <param name="instance">The managed object to expose outside the .NET runtime.</param>
         /// <param name="flags">Flags used to configure the generated interface.</param>
-        /// <returns>The generated COM interface that can be passed outside the .NET runtime or IntPtr.Zero if it could not be created.</returns>
+        /// <param name="retValue">The generated COM interface that can be passed outside the .NET runtime or IntPtr.Zero if it could not be created.</param>
+        /// <returns>Returns <c>true</c> if a CEM representation could be created, <c>false</c> otherwise</returns>
         /// <remarks>
         /// If <paramref name="impl" /> is <c>null</c>, the global instance (if registered) will be used.
         /// </remarks>
-        internal static IntPtr GetOrCreateComInterfaceForObjectInternal(ComWrappers? impl, object instance, CreateComInterfaceFlags flags)
+        internal static bool TryGetOrCreateComInterfaceForObjectInternal(ComWrappers? impl, object instance, CreateComInterfaceFlags flags, out IntPtr retValue)
         {
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
 
-            return GetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack.Create(ref impl), ObjectHandleOnStack.Create(ref instance), flags);
+            return TryGetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack.Create(ref impl), ObjectHandleOnStack.Create(ref instance), flags, out retValue);
         }
 
         [DllImport(RuntimeHelpers.QCall)]
-        private static extern IntPtr GetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack comWrappersImpl, ObjectHandleOnStack instance, CreateComInterfaceFlags flags);
+        private static extern bool TryGetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack comWrappersImpl, ObjectHandleOnStack instance, CreateComInterfaceFlags flags, out IntPtr retValue);
 
         /// <summary>
         /// Compute the desired Vtable for <paramref name="obj"/> respecting the values of <paramref name="flags"/>.
@@ -184,11 +185,11 @@ namespace System.Runtime.InteropServices
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
         public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {
-            object? obj =  GetOrCreateObjectForComInstanceInternal(this, externalComObject, flags, null);
-            if (obj == null)
+            object? obj;
+            if (!TryGetOrCreateObjectForComInstanceInternal(this, externalComObject, flags, null, out obj))
                 throw new ArgumentNullException();
 
-            return obj;
+            return obj!;
         }
 
         /// <summary>
@@ -227,11 +228,11 @@ namespace System.Runtime.InteropServices
             if (wrapper == null)
                 throw new ArgumentNullException(nameof(externalComObject));
 
-            object? obj = GetOrCreateObjectForComInstanceInternal(this, externalComObject, flags, wrapper);
-            if (obj == null)
+            object? obj;
+            if (!TryGetOrCreateObjectForComInstanceInternal(this, externalComObject, flags, wrapper, out obj))
                 throw new ArgumentNullException();
 
-            return obj;
+            return obj!;
         }
 
         /// <summary>
@@ -241,24 +242,23 @@ namespace System.Runtime.InteropServices
         /// <param name="externalComObject">Object to import for usage into the .NET runtime.</param>
         /// <param name="flags">Flags used to describe the external object.</param>
         /// <param name="wrapperMaybe">The <see cref="object"/> to be used as the wrapper for the external object.</param>
-        /// <returns>Returns a managed object associated with the supplied external COM object or <c>null</c> if it could not be created.</returns>
+        /// <param name="retValue">The managed object associated with the supplied external COM object or <c>null</c> if it could not be created.</param>
+        /// <returns>Returns <c>true</c> if a managed object could be retrieved/created, <c>false</c> otherwise</returns>
         /// <remarks>
         /// If <paramref name="impl" /> is <c>null</c>, the global instance (if registered) will be used.
         /// </remarks>
-        internal static object? GetOrCreateObjectForComInstanceInternal(ComWrappers? impl, IntPtr externalComObject, CreateObjectFlags flags, object? wrapperMaybe)
+        internal static bool TryGetOrCreateObjectForComInstanceInternal(ComWrappers? impl, IntPtr externalComObject, CreateObjectFlags flags, object? wrapperMaybe, out object? retValue)
         {
             if (externalComObject == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(externalComObject));
 
             object? wrapperMaybeLocal = wrapperMaybe;
-            object? retValue = null;
-            GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack.Create(ref impl), externalComObject, flags, ObjectHandleOnStack.Create(ref wrapperMaybeLocal), ObjectHandleOnStack.Create(ref retValue));
-
-            return retValue;
+            retValue = null;
+            return TryGetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack.Create(ref impl), externalComObject, flags, ObjectHandleOnStack.Create(ref wrapperMaybeLocal), ObjectHandleOnStack.Create(ref retValue));
         }
 
         [DllImport(RuntimeHelpers.QCall)]
-        private static extern void GetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack comWrappersImpl, IntPtr externalComObject, CreateObjectFlags flags, ObjectHandleOnStack wrapper, ObjectHandleOnStack retValue);
+        private static extern bool TryGetOrCreateObjectForComInstanceInternal(ObjectHandleOnStack comWrappersImpl, IntPtr externalComObject, CreateObjectFlags flags, ObjectHandleOnStack wrapper, ObjectHandleOnStack retValue);
 
         /// <summary>
         /// Called when a request is made for a collection of objects to be released outside of normal object or COM interface lifetime.
