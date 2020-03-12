@@ -38,6 +38,7 @@
 -nonamespace System.ComponentModel.Composition
 -nonamespace BasicEventSourceTests
 -nonamespace System.ComponentModel.TypeConverterTests
+-nonamespace System.DirectoryServices.Protocols.Tests
 
 -nomethod System.Diagnostics.Tests.CounterSampleTests.*
 -nomethod Tests.Integration.DiscoveryTests.DiscoverAddinsWithCombinedCustomExportAndMetadataAttribute
@@ -45,6 +46,7 @@
 -nomethod System.Diagnostics.Tests.ProcessStartInfoTests.StartInfo_BadVerb
 -nomethod System.Diagnostics.Tests.ProcessStartInfoTests.StartInfo_BadExe
 -nomethod System.Diagnostics.Tests.ProcessTests.ProcessStart_UseShellExecute_Executes
+-nomethod System.Diagnostics.Tests.ProcessTests.ProcessStart_UseShellExecute_ExecuteOrder
 -nomethod System.Diagnostics.Tests.ProcessTests.ProcessStart_UseShellExecute_WorkingDirectory
 -nomethod System.Diagnostics.TraceSourceTests.SwitchClassTests.PruneTest
 -nomethod System.DirectoryServices.AccountManagement.Tests.PrincipalContextTests.Ctor_ContextType
