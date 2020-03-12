@@ -1164,13 +1164,19 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 					break;
 				}
 			} else {
+				// FIXME:
 				return NULL;
 			}
 		case SN_ShiftRightArithmetic:
-			if (arg0_type == MONO_TYPE_I2)
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSRAW_IMM, -1, arg0_type, fsig, args);
-			else if (arg0_type == MONO_TYPE_I4)
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSRAD_IMM, -1, arg0_type, fsig, args);
+			if (fsig->params [1]->type == MONO_TYPE_U1) {
+				if (arg0_type == MONO_TYPE_I2)
+					return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSRAW_IMM, -1, arg0_type, fsig, args);
+				else if (arg0_type == MONO_TYPE_I4)
+					return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSRAD_IMM, -1, arg0_type, fsig, args);
+			} else {
+				// FIXME:
+				return NULL;
+			}
 		case SN_ShiftLeftLogical:
 			if (fsig->params [1]->type == MONO_TYPE_U1) {
 				SimdOp op = (SimdOp)0;
