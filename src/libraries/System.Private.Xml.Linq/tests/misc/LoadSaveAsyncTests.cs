@@ -202,5 +202,60 @@ namespace CoreXml.Test.XLinq
             }
         }
 
+        [Fact]
+        public async Task XDocumentSaveAsync_ShouldCall_FlushAsyncWriteAsyncOnly()
+        {
+            var doc = XDocument.Parse("<root>Test document async save</root>");
+            var element = XElement.Parse("<test> Test element async save</test>");
+            using (TestMemoryStream stream = new TestMemoryStream(true))
+            {
+                await doc.SaveAsync(stream, SaveOptions.None, CancellationToken.None);
+                await element.SaveAsync(stream, SaveOptions.None, CancellationToken.None);
+            }
+        }
+
+        [Fact]
+        public void XDocumentSave_ShouldNotCall_FlushAsyncWriteAsync()
+        {
+            var doc = XDocument.Parse("<root>Test document async save</root>");
+            var element = XElement.Parse("<test> Test element save</test>");
+            using (TestMemoryStream stream = new TestMemoryStream(false))
+            {
+                doc.Save(stream);
+                element.Save(stream);
+            }
+        }
+    }
+    public class TestMemoryStream : MemoryStream
+    {
+        private bool _isAsync;
+
+        public TestMemoryStream(bool async)
+        {
+            _isAsync = async;
+        }
+        public override void Flush()
+        {
+            Assert.False(_isAsync, "Sync operation not allowed");
+            base.Flush();
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            Assert.True(_isAsync, "Not a sync operation");
+            return Task.CompletedTask;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            Assert.False(_isAsync, "Not a sync operation");
+            base.Write(buffer, offset, count);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            Assert.True(_isAsync, "Sync operation not allowed");
+            return Task.CompletedTask;
+        }
     }
 }
