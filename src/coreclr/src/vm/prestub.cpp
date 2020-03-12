@@ -1828,7 +1828,7 @@ static PCODE PreStubWorker_Preemptive(
         // If our attempt to create a thread fails, there is nothing
         // more we can do except fail fast. The reverse P/Invoke isn't
         // going to work.
-        CREATETHREAD_IF_NULL_FAILFAST(currentThread, W("Failed to setup new thread during reverse Platform Invoke"));
+        CREATETHREAD_IF_NULL_FAILFAST(currentThread, W("Failed to setup new thread during reverse P/Invoke"));
     }
 
     MAKE_CURRENT_THREAD_AVAILABLE_EX(currentThread);
