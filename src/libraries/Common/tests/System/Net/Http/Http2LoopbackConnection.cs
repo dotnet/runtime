@@ -69,6 +69,10 @@ namespace System.Net.Test.Common
             {
                 throw new Exception("Connection stream closed while attempting to read connection preface.");
             }
+            else if (Text.Encoding.ASCII.GetString(_prefix).Contains("HTTP/1.1"))
+            {
+                throw new Exception("HTTP 1.1 request received.");
+            }
         }
 
         public async Task SendConnectionPrefaceAsync()

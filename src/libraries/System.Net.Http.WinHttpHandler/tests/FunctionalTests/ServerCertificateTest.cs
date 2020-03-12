@@ -13,12 +13,8 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 {
     public class ServerCertificateTest : BaseCertificateTest
     {
-        private readonly ITestOutputHelper _output;
-
-        public ServerCertificateTest(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        public ServerCertificateTest(ITestOutputHelper output) : base(output)
+        { }
 
         public static bool DowngradeToHTTP1IfClientCertSet => PlatformDetection.WindowsVersion < 2004;
 
@@ -115,14 +111,6 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     client.GetAsync(System.Net.Test.Common.Configuration.Http.SecureRemoteEchoServer));
                 Assert.True(ex.GetBaseException() is CustomException);
             }
-        }
-
-        private void ConfirmValidCertificate(string expectedHostName)
-        {
-                Assert.Equal(SslPolicyErrors.None, _validationCallbackHistory.SslPolicyErrors);
-                Assert.True(_validationCallbackHistory.CertificateChain.Count > 0);
-                _output.WriteLine("Certificate.Subject: {0}", _validationCallbackHistory.CertificateSubject);
-                _output.WriteLine("Expected HostName: {0}", expectedHostName);
         }
     }
 }

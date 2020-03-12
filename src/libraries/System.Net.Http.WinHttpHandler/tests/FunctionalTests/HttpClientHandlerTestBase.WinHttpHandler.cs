@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
         {
             useVersion ??= HttpVersion.Version11;
 
-            WinHttpClientHandler handler = new WinHttpClientHandler();
+            WinHttpClientHandler handler = new WinHttpClientHandler(useVersion);
 
             if (useVersion >= HttpVersion20.Value)
             {

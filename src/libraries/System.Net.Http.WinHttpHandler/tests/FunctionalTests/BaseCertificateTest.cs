@@ -4,16 +4,20 @@
 
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
+using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 {
     public abstract class BaseCertificateTest
     {
+        private readonly ITestOutputHelper _output;
+
         protected readonly ValidationCallbackHistory _validationCallbackHistory;
 
-        public BaseCertificateTest()
+        public BaseCertificateTest(ITestOutputHelper output)
         {
+            _output = output;
             _validationCallbackHistory = new ValidationCallbackHistory();
         }
 
@@ -65,6 +69,14 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
 
             return true;
+        }
+
+        protected void ConfirmValidCertificate(string expectedHostName)
+        {
+            Assert.Equal(SslPolicyErrors.None, _validationCallbackHistory.SslPolicyErrors);
+            Assert.True(_validationCallbackHistory.CertificateChain.Count > 0);
+            _output.WriteLine("Certificate.Subject: {0}", _validationCallbackHistory.CertificateSubject);
+            _output.WriteLine("Expected HostName: {0}", expectedHostName);
         }
 
         public class CustomException : Exception
