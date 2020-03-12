@@ -31,14 +31,25 @@
 -nonamespace System.IO.Tests
 -nonamespace System.Net
 -nonamespace System.Threading.Tasks.Dataflow.Tests
+-nonamespace System.Threading.Tasks.Tests
 -nonamespace System.Security.Cryptography.Pkcs
 -nonamespace System.Runtime.InteropServices.WindowsRuntime
+-nonamespace System.Runtime.InteropServices.Tests
 -nonamespace System.Management.Tests
 -nonamespace System.Threading.Overlapped.Tests
 -nonamespace System.ComponentModel.Composition
 -nonamespace BasicEventSourceTests
 -nonamespace System.ComponentModel.TypeConverterTests
 -nonamespace System.DirectoryServices.Protocols.Tests
+-nonamespace System.Runtime.Serialization.Formatters.Tests
+
+-nonamespace System.Drawing.Printing.Tests
+-nonamespace System.Drawing.Imaging.Tests
+-nonamespace System.Drawing.Drawing2D.Tests
+-nonamespace System.Drawing.Design.Tests
+-nonamespace System.Drawing.Tests
+-nonamespace System.Drawing.Text.Tests
+-nonamespace MonoTests.System.Drawing
 
 -nomethod System.Diagnostics.Tests.CounterSampleTests.*
 -nomethod Tests.Integration.DiscoveryTests.DiscoverAddinsWithCombinedCustomExportAndMetadataAttribute
@@ -70,12 +81,15 @@
 -nomethod System.Threading.Tests.EventWaitHandleTests.*
 -nomethod System.Threading.Tests.MutexTests.*
 -nomethod System.Threading.Tests.SemaphoreTests.*
+-nomethod System.Threading.Tests.SemaphoreAclTests.Semaphore_Create_BeyondMaxPathLength
+-nomethod System.Threading.Tests.EventWaitHandleAclTests.EventWaitHandle_Create_BeyondMaxPathLength
 -nomethod System.Threading.Threads.Tests.ThreadTests.*
 -nomethod System.ComponentModel.TypeConverterTests
 -nomethod System.Xml.Tests.CTransformResolverTest.TC_AbsolutePath_Transform
 -nomethod System.Tests.StringTests.NormalizationTest
 -nomethod System.Globalization.Tests.StringNormalizationAllTests.Normalize
 -nomethod System.Globalization.Tests.StringNormalizationTests.IsNormalized
+-nomethod System.IO.Ports.Tests.GetPortNames.OpenEveryPortName
 
 # * Assertion at method-to-ir.c:12425, condition `var->opcode == OP_REGOFFSET' not met
 -nomethod System.Runtime.Tests.NullableMetadataTests.ShimsHaveOnlyTypeForwards
