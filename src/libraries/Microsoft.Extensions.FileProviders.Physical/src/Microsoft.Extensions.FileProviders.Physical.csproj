@@ -13,9 +13,6 @@
     <Compile Include="$(CommonPath)Extensions\NonCapturingTimer\NonCapturingTimer.cs">
       <Link>Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs">
-      <Link>Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs</Link>
-    </Compile>
     <Compile Include="**\*.cs" />
   </ItemGroup>
 
