@@ -996,7 +996,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return NULL;
 		int id = info->id;
 
-		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE2) != 0;
+		// Some intrinsics are missing
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE2) != 0 && is_corlib;
 
 		/* Common case */
 		if (info->op != 0)
