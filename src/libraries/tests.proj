@@ -1,9 +1,9 @@
-<Project InitialTargets="IncludeProjectReferences">
+<Project>
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
   <Import Project="$(RepositoryEngineeringDir)coverage.props" Condition="'$(EnableCoverageSupport)' == 'true'" />
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(BuildTargetFramework)</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'"> 
@@ -18,21 +18,15 @@
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- We currently only test with C# projects. -->
-    <Project Condition="'$(DirectoryToBuild)' != ''" Include="$(DirectoryToBuild)\**\*.Tests.csproj" />
-    <Project Condition="'$(SkipTestRestore)' != 'true' and '$(DirectoryToBuild)' == ''" Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" Exclude="@(ProjectExclusions)" />
-    <Project Condition="'$(SkipTestRestore)' == 'true' and '$(DirectoryToBuild)' == ''" Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
-    <Project Remove="$(CommonTestPath)System\Net\Prerequisites\**\*.csproj" />
+    <ProjectReference Condition="'$(DirectoryToBuild)' != ''" Include="$(DirectoryToBuild)\**\*.Tests.csproj" />
+    <ProjectReference Condition="'$(SkipTestRestore)' != 'true' and '$(DirectoryToBuild)' == ''" Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" Exclude="@(ProjectExclusions)" />
+    <ProjectReference Condition="'$(SkipTestRestore)' == 'true' and '$(DirectoryToBuild)' == ''" Include="$(CommonTestPath)CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
+    <ProjectReference Remove="$(CommonTestPath)System\Net\Prerequisites\**\*.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
-    <Project Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)pkg\test\testPackages.proj" />
   </ItemGroup>
-
-  <Target Name="IncludeProjectReferences">
-    <ItemGroup>
-      <ProjectReference Include="@(Project)" />
-    </ItemGroup>
-  </Target>
 
   <Target Name="GenerateCoverageReport"
           Condition="'$(EnableCoverageSupport)' == 'true' and '$(SkipCoverageReport)' != 'true'"
@@ -50,6 +44,7 @@
     <SetupProjects Include="$(MSBuildThisFileDirectory)\pretest.proj" />
   </ItemGroup>
 
+  <!-- Ordering matters! Overwriting the Build and Test target after the Sdk.targets import. -->
   <Target Name="Build" DependsOnTargets="BuildAllProjects" />
   <Target Name="BuildAllProjects">
     <!-- These projects are required to restore the runtime and setup testhost -->
@@ -59,13 +54,10 @@
              BuildInParallel="false"
              ContinueOnError="ErrorAndStop" />
     <MSBuild Targets="Build"
-             Projects="@(Project)"
-             Properties="BuildAllProjects=true;%(Project.AdditionalProperties)"
+             Projects="@(ProjectReference)"
+             Properties="BuildAllProjects=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
-
-    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
-    <Error Condition="'$(MSBuildLastTaskResult)' == 'false'" />
   </Target>
 
   <Target Name="Test" DependsOnTargets="TestAllProjects" />
@@ -73,13 +65,13 @@
     <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity
          however since the project names are unique it will essentially force each to run in its own batch -->
     <MSBuild Targets="Test"
-             Projects="@(Project)"
+             Projects="@(ProjectReference)"
              Condition="'$(SerializeProjects)' == 'true' and '%(Identity)' != ''"
              Properties="TestAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="Test"
-             Projects="@(Project)"
+             Projects="@(ProjectReference)"
              Condition="'$(SerializeProjects)' != 'true'"
              Properties="TestAllProjects=true"
              BuildInParallel="true"
@@ -88,5 +80,4 @@
     <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
     <Error Condition="'$(MSBuildLastTaskResult)' == 'false'" />
   </Target>
-
 </Project>
