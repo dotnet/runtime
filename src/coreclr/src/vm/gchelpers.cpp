@@ -324,7 +324,7 @@ inline SIZE_T MaxArrayLength(SIZE_T componentSize)
     return (componentSize == 1) ? 0X7FFFFFC7 : 0X7FEFFFFF;
 }
 
-OBJECTREF AllocateSzArray(TypeHandle arrayType, INT32 cElements, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap)
+OBJECTREF AllocateSzArray(TypeHandle arrayType, INT32 cElements, GC_ALLOC_FLAGS flags)
 {
     CONTRACTL{
         THROWS;
@@ -334,10 +334,10 @@ OBJECTREF AllocateSzArray(TypeHandle arrayType, INT32 cElements, GC_ALLOC_FLAGS 
 
     MethodTable* pArrayMT = arrayType.AsMethodTable();
 
-    return AllocateSzArray(pArrayMT, cElements, flags, bAllocateInLargeHeap);
+    return AllocateSzArray(pArrayMT, cElements, flags);
 }
 
-OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap)
+OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS flags)
 {
     CONTRACTL{
         THROWS;
@@ -385,21 +385,24 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
         ((DWORD)cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
     {
         STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
-        bAllocateInLargeHeap = TRUE;
+        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
     }
 #endif
 
     if (totalSize >= g_pConfig->GetGCLOHThreshold())
     {
-        bAllocateInLargeHeap = TRUE;
+        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
     }
 
-    flags |= (pArrayMT->ContainsPointers() ? GC_ALLOC_CONTAINS_REF : GC_ALLOC_NO_FLAGS);
+    if (pArrayMT->ContainsPointers())
+    {
+        flags |= GC_ALLOC_CONTAINS_REF;
+    }
 
     ArrayBase* orArray = NULL;
-    if (bAllocateInLargeHeap)
+    if (flags & (GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP))
     {
-        orArray = (ArrayBase*)Alloc(totalSize, flags | GC_ALLOC_LARGE_OBJECT_HEAP);
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
         orArray->SetArrayMethodTableForLargeObject(pArrayMT);
     }
     else
@@ -465,7 +468,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
 
     bool bProfilerNotifyLargeAllocation = false;
 
-    if (bAllocateInLargeHeap)
+    if (flags & GC_ALLOC_LARGE_OBJECT_HEAP)
     {
         GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orArray);
         bProfilerNotifyLargeAllocation = TrackLargeAllocations();
@@ -511,7 +514,7 @@ void ThrowOutOfMemoryDimensionsExceeded()
 //
 // This is wrapper overload to handle TypeHandle arrayType
 //
-OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap)
+OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags)
 {
     CONTRACTL
     {
@@ -520,7 +523,7 @@ OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, G
 
     MethodTable* pArrayMT = arrayType.AsMethodTable();
 
-    return AllocateArrayEx(pArrayMT, pArgs, dwNumArgs, flags, bAllocateInLargeHeap);
+    return AllocateArrayEx(pArrayMT, pArgs, dwNumArgs, flags);
 }
 
 //
@@ -530,7 +533,7 @@ OBJECTREF AllocateArrayEx(TypeHandle arrayType, INT32 *pArgs, DWORD dwNumArgs, G
 // allocate sub-arrays and fill them in.
 //
 // For arrays with lower bounds, pBounds is <lower bound 1>, <count 1>, <lower bound 2>, ...
-OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap)
+OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags)
 {
     CONTRACTL {
         THROWS;
@@ -540,8 +543,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         PRECONDITION(dwNumArgs > 0);
     } CONTRACTL_END;
 
-    ArrayBase * orArray = NULL;
-
 #ifdef _DEBUG
     if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
     {
@@ -549,6 +550,11 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         delete a;
     }
 #endif
+
+    // keep original flags in case the call is recursive (jugged array case)
+    // the aditional flags that we infer here, such as GC_ALLOC_CONTAINS_REF
+    // may not be applicable to inner arrays
+    GC_ALLOC_FLAGS flags_orig = flags;
 
    _ASSERTE(pArrayMT->CheckInstanceActivated());
     PREFIX_ASSUME(pArrayMT != NULL);
@@ -580,7 +586,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         if (rank == 1 && (dwNumArgs == 1 || pArgs[0] == 0))
         {
             TypeHandle szArrayType = ClassLoader::LoadArrayTypeThrowing(pArrayMT->GetArrayElementTypeHandle(), ELEMENT_TYPE_SZARRAY, 1);
-            return AllocateSzArray(szArrayType, pArgs[dwNumArgs - 1], flags, bAllocateInLargeHeap);
+            return AllocateSzArray(szArrayType, pArgs[dwNumArgs - 1], flags);
         }
 
         providedLowerBounds = (dwNumArgs == 2*rank);
@@ -642,18 +648,22 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         (cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
     {
         STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
-        bAllocateInLargeHeap = TRUE;
+        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
     }
 #endif
 
     if (totalSize >= g_pConfig->GetGCLOHThreshold())
     {
-        bAllocateInLargeHeap = TRUE;
+        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
     }
 
-    flags |= (pArrayMT->ContainsPointers() ? GC_ALLOC_CONTAINS_REF : GC_ALLOC_NO_FLAGS);
+    if (pArrayMT->ContainsPointers())
+    {
+        flags |= GC_ALLOC_CONTAINS_REF;
+    }
 
-    if (bAllocateInLargeHeap)
+    ArrayBase * orArray = NULL;
+    if (flags & (GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP))
     {
         orArray = (ArrayBase *) Alloc(totalSize, flags | GC_ALLOC_LARGE_OBJECT_HEAP);
         orArray->SetArrayMethodTableForLargeObject(pArrayMT);
@@ -682,7 +692,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
 
     bool bProfilerNotifyLargeAllocation = false;
 
-    if (bAllocateInLargeHeap)
+    if (flags & GC_ALLOC_LARGE_OBJECT_HEAP)
     {
         GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orArray);
         bProfilerNotifyLargeAllocation = TrackLargeAllocations();
@@ -741,7 +751,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
                     TypeHandle subArrayType = pArrayMT->GetArrayElementTypeHandle();
                     for (UINT32 i = 0; i < cElements; i++)
                     {
-                        OBJECTREF obj = AllocateArrayEx(subArrayType, &pArgs[1], dwNumArgs-1, flags, bAllocateInLargeHeap);
+                        OBJECTREF obj = AllocateArrayEx(subArrayType, &pArgs[1], dwNumArgs-1, flags_orig);
                         outerArray->SetAt(i, obj);
                     }
 
@@ -848,7 +858,8 @@ OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle elementType, BOOL bAll
     _ASSERTE(arrayType.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
 #endif //_DEBUG
 
-    return AllocateSzArray(arrayType, (INT32) cElements, GC_ALLOC_NO_FLAGS, bAllocateInLargeHeap);
+    GC_ALLOC_FLAGS flags = bAllocateInLargeHeap ? GC_ALLOC_LARGE_OBJECT_HEAP : GC_ALLOC_NO_FLAGS;
+    return AllocateSzArray(arrayType, (INT32) cElements, flags);
 }
 
 STRINGREF AllocateString( DWORD cchStringLength )

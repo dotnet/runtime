@@ -84,8 +84,16 @@ namespace System
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern int _EndNoGCRegion();
 
+        // keep in sync with GC_ALLOC_FLAGS in gcinterface.h
+        internal enum GC_ALLOC_FLAGS
+        {
+            GC_ALLOC_NO_FLAGS = 0,
+            GC_ALLOC_ZEROING_OPTIONAL = 16,
+            GC_ALLOC_PINNED_OBJECT_HEAP = 64,
+        };
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Array AllocateNewArray(IntPtr typeHandle, int length, bool zeroingOptional);
+        internal static extern Array AllocateNewArray(IntPtr typeHandle, int length, GC_ALLOC_FLAGS flags);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetGenerationWR(IntPtr handle);
@@ -653,29 +661,61 @@ namespace System
         /// <summary>
         /// Skips zero-initialization of the array if possible.
         /// If T contains object references, the array is always zero-initialized.
+        /// When pinned is true, the object's location in memory will not change.
+        /// pinned also requires that T does not contain object references.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
-        internal static T[] AllocateUninitializedArray<T>(int length)
+        internal static T[] AllocateUninitializedArray<T>(int length, bool pinned = false)
         {
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            if (!pinned)
             {
-                return new T[length];
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                {
+                    return new T[length];
+                }
+
+                // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
+#if !DEBUG
+                // small arrays are allocated using `new[]` as that is generally faster.
+                if (length < 2048 / Unsafe.SizeOf<T>())
+                {
+                    return new T[length];
+                }
+#endif
+            }
+            else if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             }
 
-            // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
-#if !DEBUG
-            // small arrays are allocated using `new[]` as that is generally faster.
-            if (length < 2048 / Unsafe.SizeOf<T>())
-            {
-                return new T[length];
-            }
-#endif
             // kept outside of the small arrays hot path to have inlining without big size growth
-            return AllocateNewUninitializedArray(length);
+            return AllocateNewUninitializedArray(length, pinned);
 
             // remove the local function when https://github.com/dotnet/coreclr/issues/5329 is implemented
-            static T[] AllocateNewUninitializedArray(int length)
-                => Unsafe.As<T[]>(AllocateNewArray(typeof(T[]).TypeHandle.Value, length, zeroingOptional: true));
+            static T[] AllocateNewUninitializedArray(int length, bool pinned)
+            {
+                GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
+                if (pinned)
+                    flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
+
+                return Unsafe.As<T[]>(AllocateNewArray(typeof(T[]).TypeHandle.Value, length, flags));
+            }
+        }
+
+        /// <summary>
+        /// When pinned is true, the object's location in memory will not change.
+        /// pinned also requires that T does not contain object references.
+        /// </summary>
+        internal static T[] AllocateArray<T>(int length, bool pinned = false)
+        {
+            if (pinned && RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+
+            GC_ALLOC_FLAGS flags = pinned ?
+                GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP :
+                GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS;
+
+            return Unsafe.As<T[]>(AllocateNewArray(typeof(T[]).TypeHandle.Value, length, flags));
         }
     }
 }

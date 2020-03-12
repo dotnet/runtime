@@ -184,6 +184,7 @@ inline void ArrayBase::SetArrayMethodTable(MethodTable *pArrayMT)
                    DEBUG_ARG(TRUE));
 }
 
+// TODO: WIP rename
 inline void ArrayBase::SetArrayMethodTableForLargeObject(MethodTable *pArrayMT)
 {
     LIMITED_METHOD_CONTRACT;

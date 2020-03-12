@@ -132,20 +132,22 @@ public class Test {
     //TODO: This should be removed once the API is public.
     static class AllocUninitialized<T>
     {
-        public static Func<int, T[]> Call = (i) =>
+        public static T[] Call(int i) => Callimpl(i, false);
+
+        public static Func<int, bool, T[]> Callimpl = (i, b) =>
         {
             // replace the stub with actual impl.
-            Call = (Func<int, T[]>)typeof(System.GC).
+            Callimpl = (Func<int, bool, T[]>)typeof(System.GC).
             GetMethod("AllocateUninitializedArray",
                 bindingAttr: System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
                 binder: null,
-                new Type[] { typeof(int) },
+                new Type[] { typeof(int), typeof(bool) },
                 modifiers: new System.Reflection.ParameterModifier[0]).
             MakeGenericMethod(new Type[] { typeof(T) }).
-            CreateDelegate(typeof(Func<int, T[]>));
+            CreateDelegate(typeof(Func<int, bool, T[]>));
 
             // call the impl.
-            return Call(i);
+            return Callimpl(i, b);
         };
     }
 }
