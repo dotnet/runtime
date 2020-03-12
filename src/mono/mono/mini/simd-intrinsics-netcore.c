@@ -873,13 +873,20 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_get_IsSupported}
 };
 
-static guint16 ssse3_methods [] = {
-	SN_Shuffle,
-	SN_get_IsSupported
+static SimdIntrinsic sse3_methods [] = {
+	{SN_AddSubtract},
+	{SN_HorizontalAdd},
+	{SN_HorizontalSubtract},
+	{SN_LoadAndDuplicateToVector128, OP_SSE3_MOVDDUP_MEM},
+	{SN_LoadDquVector128, OP_XOP_X_I, SIMD_OP_SSE_LDDQU},
+	{SN_MoveAndDuplicate, OP_SSE3_MOVDDUP},
+	{SN_MoveHighAndDuplicate, OP_SSE3_MOVSHDUP},
+	{SN_MoveLowAndDuplicate, OP_SSE3_MOVSLDUP},
+	{SN_get_IsSupported}
 };
 
-static guint16 sse3_methods [] = {
-	SN_MoveAndDuplicate,
+static guint16 ssse3_methods [] = {
+	SN_Shuffle,
 	SN_get_IsSupported
 };
 
@@ -1229,21 +1236,49 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 	if (is_hw_intrinsics_class (klass, "Sse3", &is_64bit)) {
 		if (!COMPILE_LLVM (cfg))
 			return NULL;
-		id = lookup_intrins (sse3_methods, sizeof (sse3_methods), cmethod);
-		if (id == -1)
+		info = lookup_intrins_info (sse3_methods, sizeof (sse3_methods), cmethod);
+		if (!info)
 			return NULL;
+		int id = info->id;
 
-		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE3) != 0 && is_corlib; // We only support the subset used by corelib
+		/* Common case */
+		if (info->op != 0)
+			return emit_simd_ins_for_sig (cfg, klass, info->op, info->instc0, arg0_type, fsig, args);
+
+		supported = (mini_get_cpu_features (cfg) & MONO_CPU_X86_SSE3);
 
 		switch (id) {
 		case SN_get_IsSupported:
 			EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
 			ins->type = STACK_I4;
 			return ins;
-		case SN_MoveAndDuplicate:
-			return emit_simd_ins_for_sig (cfg, klass, OP_SSE3_MOVDDUP, -1, arg0_type, fsig, args);
+		case SN_AddSubtract:
+			if (arg0_type == MONO_TYPE_R4)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_ADDSUBPS, arg0_type, fsig, args);
+			else if (arg0_type == MONO_TYPE_R8)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_ADDSUBPD, arg0_type, fsig, args);
+			else
+				g_assert_not_reached ();
+			break;
+		case SN_HorizontalAdd:
+			if (arg0_type == MONO_TYPE_R4)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_HADDPS, arg0_type, fsig, args);
+			else if (arg0_type == MONO_TYPE_R8)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_HADDPD, arg0_type, fsig, args);
+			else
+				g_assert_not_reached ();
+			break;
+		case SN_HorizontalSubtract:
+			if (arg0_type == MONO_TYPE_R4)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_HSUBPS, arg0_type, fsig, args);
+			else if (arg0_type == MONO_TYPE_R8)
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, SIMD_OP_SSE_HSUBPD, arg0_type, fsig, args);
+			else
+				g_assert_not_reached ();
+			break;
 		default:
-			return NULL;
+			g_assert_not_reached ();
+			break;
 		}
 	}
 

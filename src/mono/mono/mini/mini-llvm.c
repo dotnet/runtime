@@ -7846,6 +7846,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			call_intrins (ctx, id, NULL, "");
 			break;
 		}
+		case OP_XOP_X_I:
 		case OP_XOP_X_X: {
 			IntrinsicId id = (IntrinsicId)0;
 			switch (ins->inst_c0) {
@@ -7857,6 +7858,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_SSE_RSQRTSS: id = INTRINS_SSE_RSQRT_SS; break;
 			case SIMD_OP_SSE_SQRTPD: id = INTRINS_SSE_SQRT_PD; break;
 			case SIMD_OP_SSE_SQRTSD: id = INTRINS_SSE_SQRT_SD; break;
+			case SIMD_OP_SSE_LDDQU: id = INTRINS_SSE_LDU_DQ; break;
 			default: g_assert_not_reached (); break;
 			}
 			values [ins->dreg] = call_intrins (ctx, id, &lhs, "");
@@ -7911,6 +7913,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case SIMD_OP_SSE_PSUBUSB: id = INTRINS_SSE_PSUBUSB; break;
 			case SIMD_OP_SSE_PSUBUSW: id = INTRINS_SSE_PSUBUSW; break;
 			case SIMD_OP_SSE_PSADBW: id = INTRINS_SSE_PSADBW; break;
+			case SIMD_OP_SSE_ADDSUBPS: id = INTRINS_SSE_ADDSUBPS; break;
+			case SIMD_OP_SSE_ADDSUBPD: id = INTRINS_SSE_ADDSUBPD; break;
+			case SIMD_OP_SSE_HADDPS: id = INTRINS_SSE_HADDPS; break;
+			case SIMD_OP_SSE_HADDPD: id = INTRINS_SSE_HADDPD; break;
+			case SIMD_OP_SSE_HSUBPS: id = INTRINS_SSE_HSUBPS; break;
+			case SIMD_OP_SSE_HSUBPD: id = INTRINS_SSE_HSUBPD; break;
 			default: g_assert_not_reached (); break;
 			}
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
@@ -8148,11 +8156,28 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = call_intrins (ctx, INTRINS_SSE_PSHUFB, args, dname);
 			break;
 		}
-
 		case OP_SSE3_MOVDDUP: {
+			int mask [] = { 0, 0 };
 			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs,
-				LLVMGetUndef (LLVMVectorType (LLVMDoubleType (), 2)), 
-				LLVMConstNull (LLVMVectorType (LLVMInt32Type (), 2)), "");
+				LLVMGetUndef (LLVMTypeOf (lhs)),
+				create_const_vector_i32 (mask, 2), "");
+			break;
+		}
+		case OP_SSE3_MOVDDUP_MEM: {
+			int mask [] = { 0, 0 };
+			LLVMTypeRef t = type_to_sse_type (ins->inst_c1);
+			LLVMValueRef value = mono_llvm_build_load (builder, convert (ctx, lhs, LLVMPointerType (t, 0)), "", FALSE);
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, value, LLVMGetUndef (LLVMTypeOf (value)), create_const_vector_i32 (mask, 2), "");
+			break;
+		}
+		case OP_SSE3_MOVSHDUP: {
+			int mask [] = { 1, 1, 3, 3 };
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMConstNull (LLVMTypeOf (lhs)), create_const_vector_i32 (mask, 4), "");
+			break;
+		}
+		case OP_SSE3_MOVSLDUP: {
+			int mask [] = { 0, 0, 2, 2 };
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMConstNull (LLVMTypeOf (lhs)), create_const_vector_i32 (mask, 4), "");
 			break;
 		}
 

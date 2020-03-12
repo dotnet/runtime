@@ -183,6 +183,7 @@ INTRINS(SSE_INSERTPS, x86_sse41_insertps)
 INTRINS(SSE_SFENCE, x86_sse_sfence)
 INTRINS(SSE_MFENCE, x86_sse2_mfence)
 INTRINS(SSE_LFENCE, x86_sse2_lfence)
+INTRINS(SSE_LDU_DQ, x86_sse3_ldu_dq)
 #if LLVM_API_VERSION >= 800
 	// these intrinsics were renamed in LLVM 8
 INTRINS_OVR(SSE_SADD_SATI8, sadd_sat)
