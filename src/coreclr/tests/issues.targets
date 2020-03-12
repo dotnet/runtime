@@ -987,7 +987,7 @@
     </ItemGroup>
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems -->
-    <ItemGroup Condition="'$(RuntimeName)' == 'mono'" >
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
 	<ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/AddMemoryPressureTest/AddMemoryPressureTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
