@@ -21,6 +21,6 @@ class LiveLocalAddress
             result += &a - &b;
         }
 
-        return (int)(result / 1000 * distance);
+        return (int)(result / (1000 * distance));
     }
 }
