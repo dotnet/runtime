@@ -57,8 +57,9 @@ There are no easy workarounds for the scenarios this feature enables:
 
 - Support for immutable classes and structs (https://github.com/dotnet/runtime/issues/29895)
 - Choosing which constructor to use
-- Enabling deserialization with non-`public` contructors
 - Support for `Tuple<...>` types
+
+Only public constructors are supported.
 
 ## New API Proposal
 
@@ -68,6 +69,7 @@ namespace System.Text.Json.Serialization
   /// <summary>
   /// When placed on a constructor, indicates that the constructor should be used to create
   /// instances of the type on deserialization.
+  /// <remarks>The construtor must be public. The attribute cannot be placed on multiple constructors.</remarks>
   /// </summary>
   [AttributeUsage(AttributeTargets.Constructor, AllowMultiple = false)]
   public sealed partial class JsonConstructorAttribute : JsonAttribute
@@ -266,85 +268,6 @@ This rule does not apply to `struct`s as there's always a public parameterless c
 
 #### Using [JsonConstructor]
 
-##### Non-`public` constructors will not be used unless specified with a `[JsonConstructor]` attribute
-
-The serializer doesn't offer non-`public` support by default. An attribute should be placed on any non-`public` constructor
-that is desired to be used during deserialization, even if they are parameterless.
-Ideally, people should not be able to deserialize instances of types they don't own using non-`public` constructors.
-This restriction of an attribute based opt-in, rather than a globally applied opt-in, dissuades the violation of constructor access modifiers.
-
-Given `Point`:
-
-```C#
-public class Point
-{
-    public int X { get; }
-
-    public int Y { get; }
-
-    public int Z { get; }
-
-    [JsonConstructor]
-    private Point(int x, int y) => (X, Y) = (x, y);
-}
-```
-
-Deserialization works fine:
-
-```C#
-Point point = JsonSerializer.Deserialize<Point>(@"{""X"":1,""Y"":2}");
-Console.WriteLine(point.X); // 1
-Console.WriteLine(point.Y); // 2
-```
-
-Given another definition for `Point`:
-
-```C#
-public class Point
-{
-    public int X { get; }
-
-    public int Y { get; }
-
-    public int Z { get; }
-
-    private Point(int x, int y) => (X, Y) = (x, y);
-}
-```
-
-A `NotSupportedException` is thrown because the serializer doesn't recognize non-`public` constructors without
-`[JsonConstructor]`.
-
-```C#
-Point point = JsonSerializer.Deserialize<Point>(@"{""X"":1,""Y"":2}"); // Throws `NotSupportedException`
-```
-
-Given another definition for `Point`:
-
-```C#
-public class Point
-{
-    public int X { get; }
-
-    public int Y { get; }
-
-    public int Z { get; }
-
-    private Point(int x, int y) => (X, Y) = (x, y);
-
-    public Point(int x, int y, int z) => (X, Y, Y) = (x, y, z);
-}
-```
-
-The public parameterized constructor is used because the serializer doesn't recognize non-`public` constructors without `[JsonConstructor]`.
-
-```C#
-Point point = JsonSerializer.Deserialize<Point>(@"{""X"":1,""Y"":2,""Z"":3}");
-Console.WriteLine(point.X); // 1
-Console.WriteLine(point.Y); // 2
-Console.WriteLine(point.Z); // 3
-```
-
 ##### `[JsonConstructor]` can only be used on one constructor
 
 Given `Point`,
@@ -352,19 +275,17 @@ Given `Point`,
 ```C#
 public class Point
 {
-    public int X { get; }
+  public int X { get; }
 
-    public int Y { get; }
+  public int Y { get; }
 
-    public int Z { get; }
+  public int Z { get; }
 
-    [JsonConstructor]
-    public Point() {}
+  [JsonConstructor]
+  public Point() {}
 
-    public Point(int x, int y) => (X, Y) = (x, y);
-
-    [JsonConstructor]
-    private Point(int x, int y, int z = 3) => (X, Y, Z) = (x, y, z);
+  [JsonConstructor]
+  public Point(int x, int y) => (X, Y) = (x, y);
 }
 ```
 
@@ -439,86 +360,11 @@ Console.WriteLine(point.X); // 1
 Console.WriteLine(point.Y); // 2
 ```
 
-**If a constructor parameter does not match with a property, then the `JsonNamingPolicy` specified in `options.PropertyNamingPolicy` will be used to assign a JSON property name**. The default value for `options.PropertyNamingPolicy` is `null`, so no naming policy is applied by default.
+**If a constructor parameter does not match with a property, `InvalidOperationException` will be thrown if deserialization is attempted.**
 
 **Parameter naming matching is case sensitive by default**. This can be toggled by users with the `options.PropertyNameCaseInsensitive` option.
 
-Consider a scenario where constructor parameters do not have matching properties:
-
-```C#
-public struct Point
-{
-  private readonly int _x;
-  private readonly int _y;
-
-  [JsonConstructor]
-  public Point(int x, int y) => (_x, _y) = (x, y);
-
-  public void Deconstruct(out int x, out int y) => (x, y) => (_x, _y);
-}
-```
-
-Parameter name matching is case sensitive by default:
-
-```C#
-Point point = JsonSerializer.Deserialize<Point>(@"{""X"":1,""Y"":2}");
-var (x, y) = point;
-Console.WriteLine(x); // 0
-Console.WriteLine(y; // 0
-
-point = JsonSerializer.Deserialize<Point>(@"{""x"":1,""y"":2}");
-(x, y) = point;
-Console.WriteLine(x); // 1
-Console.WriteLine(y; // 2
-```
-
-Case sensitivity can be controlled with `options.PropertyNameCaseInsensitive`:
-
-```C#
-var options = new JsonSerializerOptions
-{
-  PropertyNameCaseInsensitive = true
-};
-
-Point point = JsonSerializer.Deserialize<Point>(@"{""X"":1,""Y"":2}", options);
-var (x, y) = point;
-Console.WriteLine(x); // 1
-Console.WriteLine(y; // 2
-
-point = JsonSerializer.Deserialize<Point>(@"{""x"":1,""y"":2}");
-(x, y) = point;
-Console.WriteLine(x); // 1
-Console.WriteLine(y; // 2
-```
-
-**`options.PropertyNamingPolicy` will be used to determine the JSON name for a constructor parameter if there's no matching property**.
-
-Given another definition for `Point`:
-
-```C#
-public struct Point
-{
-  private readonly int _x;
-  private readonly int _y;
-
-  [JsonConstructor]
-  public Point(int xValue, int yValue) => (_x, _y) = (xValue, yValue);
-
-  public void Deconstruct(out int x, out int y) => (x, y) => (_x, _y);
-}
-```
-
-```C#
-var options = new JsonSerializerOptions
-{
-  PropertyNamingPolicy = new SnakeCaseNamingPolicy();
-};
-
-Point point = JsonSerializer.Deserialize<Point>(@"{""x_value"":1,""y_value"":2", options);
-var (x, y) = point;
-Console.WriteLine(x); // 1
-Console.WriteLine(y; // 2
-```
+**Constructor argument deserialization will honor the `[JsonPropertyName]`, `[JsonIgnore]`, and `[JsonConverter]` attributes placed on the matching object property.**
 
 #### If no JSON maps to a constructor parameter, then default values are used.
 
@@ -595,14 +441,13 @@ to naming policy.
 
 This is in keeping with the established serializer handling of extension data.
 
-#### Serializer uses "first one wins" semantics for constructor parameter names
+#### Serializer uses "last one wins" semantics for constructor parameter names
 
-For performance, the serializer constructs objects with paramaterized constructors using the first arguments
-parsed from a given JSON payload.
+This is consistent with how object properties are deserialized.
 
 ```C#
 Point point = JsonSerializer.Deserialize<Point>(@"{""X"":1,""Y"":2,""X"":4}");
-Assert.Equal(1, point.X); // Note, the value isn't 4.
+Assert.Equal(4, point.X); // Note, the value isn't 1.
 Assert.Equal(2, point.Y);
 ```
 
@@ -641,68 +486,12 @@ string json = @"{
 Person person = JsonSerializer.Deserialize<Person>(json);
 Console.WriteLine(person.FirstName); // Jet
 Console.WriteLine(person.LastName); // Doe
-Console.WriteLine(person.Id); // 270bb22b-4816-4bd9-9acd-8ec5b1a896d3 (note that the first matching JSON property "won")
+Console.WriteLine(person.Id); // 63cf821d-fd47-4782-8345-576d9228a534 (note that the first matching JSON property "won")
 Console.WriteLine(person.ExtensionData["EmailAddress"].GetString()); // jetdoe@outlook.com
 Console.WriteLine(person.ExtensionData.ContainsKey("Id")); // False
 ```
 
-In contrast, `Newtonsoft.Json` has last-one-wins behavior, but will also not store extra constructor
-arguments in extension data. We can expect the following behavior with `Newtonsoft.Json`'s `JsonConvert`:
-
-```C#
-string json = @"{
-    ""FirstName"":""Jet"",
-    ""Id"":""270bb22b-4816-4bd9-9acd-8ec5b1a896d3"",
-    ""EmailAddress"":""jetdoe@outlook.com"",
-    ""Id"":""0b3aa420-2e98-47f7-8a49-fea233b89416"",
-    ""LastName"":""Doe"",
-    ""Id"":""63cf821d-fd47-4782-8345-576d9228a534""
-}";
-
-Person person = JsonConvert.DeserializeObject<Person>(json);
-Console.WriteLine(person.FirstName); // Jet
-Console.WriteLine(person.LastName); // Doe
-Console.WriteLine(person.Id); // 63cf821d-fd47-4782-8345-576d9228a534 (note that the last matching JSON property "won")
-Console.WriteLine(person.ExtensionData["EmailAddress"]); // jetdoe@outlook.com
-Console.WriteLine(person.ExtensionData.ContainsKey("Id")); // False
-```
-
-Having duplicate properties in JSON seems to be an edge case scenario. User feedback can be taken into
-account to provide opt-in last-one-wins extension point in the futre.
-
-### JSON property name collisions (JSON properties mapping to multiple constructor parameters) are not allowed
-
-With this design, the only way for there to be collisions between constructor parameters is if
-a `PropertyNamingPolicy` causes duplicates.
-
-Given `Point` and a dubious naming policy:
-
-```C#
-public struct Point
-{
-  [JsonConstructor]
-  public Point(int x, int y) { }
-}
-
-public class ManyToOneNamingPolicy : JsonNamingPolicy
-{
-  public override string ConvertName(string name)
-  {
-    return "JsonName";
-  }
-}
-```
-
-Deserialization scenarios which would lead to collisions will throw an `InvalidOperationException`:
-
-```C#
-var options = new JsonSerializerOptions
-{
-  PropertyNamingPolicy: new ManyToOneNamingPolicy()
-};
-
-Point point = JsonSerializer.Deserialize<Point>(@"{}", options); // throws `InvalidOperationException`
-```
+This is consistent with `Newtonsoft.Json` behavior.
 
 #### `options.IgnoreNullValues` is honored when deserializing constructor arguments
 
@@ -796,64 +585,6 @@ Console.WriteLine(json); // {"$id":"1","Manager":{"$ref":"1"},"FullName":"Jet Do
 ```
 
 It might be non-trivial work to resolve such scenarios on deserialization and handle error cases.
-
-### For performance, properties that may be deserialized through constructor arguments will be written first on deserialization.
-
-Given `ClassWithPrimitives`:
-
-```C#
-public class ClassWithPrimitives
-{
-    public int FirstInt { get; set; }
-    public int SecondInt { get; set; }
-    public string FirstString { get; set; }
-    public string SecondString { get; set; }
-    public DateTime FirstDateTime { get; set; }
-    public DateTime SecondDateTime { get; set; }
-    public int X { get; }
-    public int Y { get; }
-    public int Z { get; }
-    public int ThirdInt { get; set; }
-    public int FourthInt { get; set; }
-    public string ThirdString { get; set; }
-    public string FourthString { get; set; }
-    public DateTime ThirdDateTime { get; set; }
-    public DateTime FourthDateTime { get; set; }
-
-    public ClassWithPrimitives(int x, int y, int z) => (X, Y, Z) = (x, y, z);
-}
-```
-
-On serialization, the `X`, `Y`, and `Z` properties will be written first. For example:
-
-```C#
-ClassWithPrimitives @class = new ClassWithPrimitives(1, 2, 3);
-
-JsonSerializerOptions options = new JsonSerializerOptions
-{
-    WriteIndented = true
-};
-
-string json = JsonSerializer.Serialize(@class, options);
-Console.WriteLine(json);
-// {
-// "X": 1,
-// "Y": 2,
-// "Z": 3,
-// "FirstInt": 0,
-// "SecondInt": 0,
-// "FirstString": null,
-// "SecondString": null,
-// "FirstDateTime": "0001-01-01T00:00:00",
-// "SecondDateTime": "0001-01-01T00:00:00",
-// "ThirdInt": 0,
-// "FourthInt": 0,
-// "ThirdString": null,
-// "FourthString": null,
-// "ThirdDateTime": "0001-01-01T00:00:00",
-// "FourthDateTime": "0001-01-01T00:00:00"
-// }
-```
 
 ### Deserialization with parameterized constructor does not apply to enumerables
 
