@@ -128,15 +128,27 @@ jobs:
             crossgen_framework
             --crossgen   $(productDirectory)/$(targetFlavor)/$(hostArchType)/crossgen
             --il_corelib $(productDirectory)/$(targetFlavor)/IL/System.Private.CoreLib.dll
-            --core_root  $(artifactsDirectory)/tests/coreclr/$(targetFlavor)/Tests/Core_Root
+            --core_root  $(workItemDirectory)
             --result_dir $(workItemDirectory)/log/$(crossFlavor)
         ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
           arguments:
             crossgen_framework
             --crossgen   $(productDirectory)\$(targetFlavor)\$(hostArchType)\crossgen
             --il_corelib $(productDirectory)\$(targetFlavor)\IL\System.Private.CoreLib.dll
-            --core_root  $(artifactsDirectory)\tests\coreclr\$(targetFlavor)\Tests\Core_Root
+            --core_root  $(workItemDirectory)
             --result_dir $(workItemDirectory)\log\$(crossFlavor)
+
+
+    # Dump contents and payload information
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: |
+          ls $(workItemDirectory)
+          du -sh $(workItemDirectory)
+        displayName: Dump contents and payload information
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: |
+          dir $(workItemDirectory)
+        displayName: Dump contents and payload information
 
 
     # Send payload to Helix where the native output is generated and compared to the baseline
@@ -160,7 +172,7 @@ jobs:
             python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py crossgen_framework
             --crossgen   $HELIX_WORKITEM_PAYLOAD/crossgen
             --il_corelib $HELIX_WORKITEM_PAYLOAD/IL/System.Private.CoreLib.dll
-            --core_root  $HELIX_WORKITEM_PAYLOAD/Core_Root
+            --core_root  $HELIX_WORKITEM_PAYLOAD
             --result_dir $HELIX_WORKITEM_PAYLOAD/log/$(targetFlavor);
             python -u $HELIX_CORRELATION_PAYLOAD/crossgen_comparison.py compare
             --base_dir   $HELIX_WORKITEM_PAYLOAD/log/$(crossFlavor)
@@ -171,7 +183,7 @@ jobs:
             python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py crossgen_framework
             --crossgen   %HELIX_WORKITEM_PAYLOAD%\crossgen
             --il_corelib %HELIX_WORKITEM_PAYLOAD%\IL\System.Private.CoreLib.dll
-            --core_root  %HELIX_WORKITEM_PAYLOAD%\Core_Root
+            --core_root  %HELIX_WORKITEM_PAYLOAD%
             --result_dir %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor);
             python -u %HELIX_CORRELATION_PAYLOAD%\crossgen_comparison.py compare
             --base_dir   %HELIX_WORKITEM_PAYLOAD%\log\$(crossFlavor)
