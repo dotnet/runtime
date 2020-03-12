@@ -4,7 +4,6 @@
 
 using System;
 using System.Diagnostics;
-
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -27,7 +26,7 @@ namespace System.Security.Cryptography
             Reset(asnEncodedData._oid, asnEncodedData._rawData);
         }
 
-        public AsnEncodedData(Oid oid, byte[] rawData)
+        public AsnEncodedData(Oid? oid, byte[] rawData)
         {
             Reset(oid, rawData);
         }
@@ -37,7 +36,7 @@ namespace System.Security.Cryptography
             Reset(new Oid(oid), rawData);
         }
 
-        public Oid Oid
+        public Oid? Oid
         {
             get
             {
@@ -54,7 +53,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                // Desktop compat demands we return the array without copying.
+                // .NET Framework compat demands we return the array without copying.
                 return _rawData;
             }
 
@@ -82,13 +81,13 @@ namespace System.Security.Cryptography
             return AsnFormatter.Instance.Format(_oid, _rawData, multiLine);
         }
 
-        private void Reset(Oid oid, byte[] rawData)
+        private void Reset(Oid? oid, byte[] rawData)
         {
             this.Oid = oid;
             this.RawData = rawData;
         }
 
-        private Oid _oid = null;
-        private byte[] _rawData = null;
+        private Oid? _oid = null;
+        private byte[] _rawData = null!; // initialized in helper method Reset for all public constuctors
     }
 }

@@ -186,7 +186,7 @@ namespace System.Data.Tests
                     </DocumentElement>"));
         }
 
-        // Test for Bug#377146
+        // Test for Bug #377146
         [Fact]
         public void XmlLoadCustomTypesTest()
         {

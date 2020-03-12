@@ -34,7 +34,7 @@ namespace System.DirectoryServices
                 if (propertyName == null)
                     throw new ArgumentNullException(nameof(propertyName));
 
-                string name = propertyName.ToLower(CultureInfo.InvariantCulture);
+                string name = propertyName.ToLowerInvariant();
                 if (valueTable.Contains(name))
                     return (PropertyValueCollection)valueTable[name];
                 else

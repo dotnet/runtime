@@ -13,10 +13,10 @@ namespace System.Net
         internal static SslPolicyErrors VerifyCertificateProperties(
             SafeDeleteContext securityContext,
             X509Chain chain,
-            X509Certificate2 remoteCertificate,
+            X509Certificate2? remoteCertificate,
             bool checkCertName,
             bool isServer,
-            string hostName)
+            string? hostName)
         {
             SslPolicyErrors errors = SslPolicyErrors.None;
 
@@ -35,9 +35,12 @@ namespace System.Net
                 {
                     SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
 
-                    if (!Interop.AppleCrypto.SslCheckHostnameMatch(sslContext.SslContext, hostName, remoteCertificate.NotBefore))
+                    if (!Interop.AppleCrypto.SslCheckHostnameMatch(sslContext.SslContext, hostName!, remoteCertificate.NotBefore, out int osStatus))
                     {
                         errors |= SslPolicyErrors.RemoteCertificateNameMismatch;
+
+                        if (NetEventSource.IsEnabled)
+                            NetEventSource.Error(sslContext, $"Cert name validation for '{hostName}' failed with status '{osStatus}'");
                     }
                 }
             }
@@ -48,14 +51,14 @@ namespace System.Net
         //
         // Extracts a remote certificate upon request.
         //
-        internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext)
+        internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext securityContext)
         {
             return GetRemoteCertificate(securityContext, null);
         }
 
-        internal static X509Certificate2 GetRemoteCertificate(
-            SafeDeleteContext securityContext,
-            out X509Certificate2Collection remoteCertificateStore)
+        internal static X509Certificate2? GetRemoteCertificate(
+            SafeDeleteContext? securityContext,
+            out X509Certificate2Collection? remoteCertificateStore)
         {
             if (securityContext == null)
             {
@@ -67,9 +70,9 @@ namespace System.Net
             return GetRemoteCertificate(securityContext, remoteCertificateStore);
         }
 
-        private static X509Certificate2 GetRemoteCertificate(
+        private static X509Certificate2? GetRemoteCertificate(
             SafeDeleteContext securityContext,
-            X509Certificate2Collection remoteCertificateStore)
+            X509Certificate2Collection? remoteCertificateStore)
         {
             if (securityContext == null)
             {
@@ -85,7 +88,7 @@ namespace System.Net
                 return null;
             }
 
-            X509Certificate2 result = null;
+            X509Certificate2? result = null;
 
             using (SafeX509ChainHandle chainHandle = Interop.AppleCrypto.SslCopyCertChain(sslContext))
             {

@@ -26,13 +26,13 @@ namespace System
             hasValue = true;
         }
 
-        public bool HasValue
+        public readonly bool HasValue
         {
             [NonVersionable]
             get => hasValue;
         }
 
-        public T Value
+        public readonly T Value
         {
             get
             {
@@ -45,10 +45,10 @@ namespace System
         }
 
         [NonVersionable]
-        public T GetValueOrDefault() => value;
+        public readonly T GetValueOrDefault() => value;
 
         [NonVersionable]
-        public T GetValueOrDefault(T defaultValue) =>
+        public readonly T GetValueOrDefault(T defaultValue) =>
             hasValue ? value : defaultValue;
 
         public override bool Equals(object? other)

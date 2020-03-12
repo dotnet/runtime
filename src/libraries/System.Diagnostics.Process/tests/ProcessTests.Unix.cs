@@ -145,7 +145,7 @@ namespace System.Diagnostics.Tests
                 using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }))
                 {
                     Assert.NotNull(px);
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) // on OSX, process name is dotnet for some reason. Refer to #23972
+                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) // on OSX, process name is dotnet for some reason. Refer to https://github.com/dotnet/runtime/issues/23525
                     {
                         Assert.Equal(programToOpen, px.ProcessName);
                     }
@@ -156,8 +156,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        // Active issue https://github.com/dotnet/corefx/issues/37739
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotRedHatFamily6))]
+        [Fact]
         [PlatformSpecific(~TestPlatforms.OSX)] // On OSX, ProcessName returns the script interpreter.
         public void ProcessNameMatchesScriptName()
         {
@@ -356,7 +355,7 @@ namespace System.Diagnostics.Tests
             File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_OpenFileOnOsx_UsesSpecifiedProgram)}");
             using (var px = Process.Start(programToOpenWith, fileToOpen))
             {
-                // Assert.Equal(programToOpenWith, px.ProcessName); // on OSX, process name is dotnet for some reason. Refer to #23972
+                // Assert.Equal(programToOpenWith, px.ProcessName); // on OSX, process name is dotnet for some reason. Refer to https://github.com/dotnet/runtime/issues/23525
                 Console.WriteLine($"in OSX, {nameof(programToOpenWith)} is {programToOpenWith}, while {nameof(px.ProcessName)} is {px.ProcessName}.");
                 px.Kill();
                 px.WaitForExit();
@@ -457,7 +456,7 @@ namespace System.Diagnostics.Tests
             ProcessPriorityClass originalPriority = _process.PriorityClass;
             Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
 
-            // https://github.com/dotnet/corefx/issues/25861 -- returns "-19" and not "19"
+            // https://github.com/dotnet/runtime/issues/24426 -- returns "-19" and not "19"
             if (!PlatformDetection.IsWindowsSubsystemForLinux)
             {
                 SetAndCheckBasePriority(ProcessPriorityClass.Idle, 19);
@@ -466,7 +465,7 @@ namespace System.Diagnostics.Tests
             try
             {
                 SetAndCheckBasePriority(ProcessPriorityClass.Normal, 0);
-                // https://github.com/dotnet/corefx/issues/25861 -- returns "11" and not "-11"
+                // https://github.com/dotnet/runtime/issues/24426 -- returns "11" and not "-11"
                 if (!PlatformDetection.IsWindowsSubsystemForLinux)
                 {
                     SetAndCheckBasePriority(ProcessPriorityClass.High, -11);
@@ -550,7 +549,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue(35933, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28922", TestPlatforms.AnyUnix)]
         public unsafe void TestCheckChildProcessUserAndGroupIds()
         {
             string userName = GetCurrentRealUserName();
@@ -579,7 +578,7 @@ namespace System.Diagnostics.Tests
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue(38833, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/30003", TestPlatforms.AnyUnix)]
         public unsafe void TestCheckChildProcessUserAndGroupIdsElevated(bool useRootGroups)
         {
             Func<string, string, int> runsAsRoot = (string username, string useRootGroupsArg) =>

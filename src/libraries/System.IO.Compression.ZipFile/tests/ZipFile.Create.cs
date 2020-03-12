@@ -83,6 +83,28 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        public void CreatedEmptyUtf32DirectoriesRoundtrip()
+        {
+            using (var tempFolder = new TempDirectory(GetTestFilePath()))
+            {
+                Encoding entryEncoding = Encoding.UTF32;
+                DirectoryInfo rootDir = new DirectoryInfo(tempFolder.Path);
+                rootDir.CreateSubdirectory("empty1");
+
+                string archivePath = GetTestFilePath();
+                ZipFile.CreateFromDirectory(
+                    rootDir.FullName, archivePath,
+                    CompressionLevel.Optimal, false, entryEncoding);
+
+                using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Read, entryEncoding))
+                {
+                    Assert.Equal(1, archive.Entries.Count);
+                    Assert.StartsWith("empty1", archive.Entries[0].FullName);
+                }
+            }
+        }
+
+        [Fact]
         public void CreatedEmptyRootDirectoryRoundtrips()
         {
             using (var tempFolder = new TempDirectory(GetTestFilePath()))

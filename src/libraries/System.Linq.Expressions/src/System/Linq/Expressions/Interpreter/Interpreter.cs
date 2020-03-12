@@ -22,11 +22,11 @@ namespace System.Linq.Expressions.Interpreter
         internal const int RethrowOnReturn = int.MaxValue;
 
         private readonly InstructionArray _instructions;
-        internal readonly object[] _objects;
+        internal readonly object[]? _objects;
         internal readonly RuntimeLabel[] _labels;
         internal readonly DebugInfo[] _debugInfos;
 
-        internal Interpreter(string name, LocalVariables locals, InstructionArray instructions, DebugInfo[] debugInfos)
+        internal Interpreter(string? name, LocalVariables locals, InstructionArray instructions, DebugInfo[] debugInfos)
         {
             Name = name;
             LocalCount = locals.LocalCount;
@@ -38,11 +38,11 @@ namespace System.Linq.Expressions.Interpreter
             _debugInfos = debugInfos;
         }
 
-        internal string Name { get; }
+        internal string? Name { get; }
         internal int LocalCount { get; }
         internal int ClosureSize => ClosureVariables?.Count ?? 0;
         internal InstructionArray Instructions => _instructions;
-        internal Dictionary<ParameterExpression, LocalVariable> ClosureVariables { get; }
+        internal Dictionary<ParameterExpression, LocalVariable>? ClosureVariables { get; }
 
         /// <summary>
         /// Runs instructions within the given frame.

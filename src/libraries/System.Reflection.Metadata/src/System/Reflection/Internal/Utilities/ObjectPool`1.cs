@@ -27,7 +27,7 @@ namespace System.Reflection.Internal
     {
         private struct Element
         {
-            internal T Value;
+            internal T? Value;
         }
 
         // storage for the pool objects.
@@ -66,7 +66,7 @@ namespace System.Reflection.Internal
         internal T Allocate()
         {
             var items = _items;
-            T inst;
+            T? inst;
 
             for (int i = 0; i < items.Length; i++)
             {

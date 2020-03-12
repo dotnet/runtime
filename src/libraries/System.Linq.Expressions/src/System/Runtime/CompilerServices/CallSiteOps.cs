@@ -98,7 +98,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <returns>An array of dynamic binding rules.</returns>
         [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static T[] GetRules<T>(CallSite<T> site) where T : class
+        public static T[]? GetRules<T>(CallSite<T> site) where T : class
         {
             return site.Rules;
         }
@@ -112,7 +112,7 @@ namespace System.Runtime.CompilerServices
         [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static RuleCache<T> GetRuleCache<T>(CallSite<T> site) where T : class
         {
-            return site.Binder.GetRuleCache<T>();
+            return site.Binder!.GetRuleCache<T>();
         }
 
         /// <summary>

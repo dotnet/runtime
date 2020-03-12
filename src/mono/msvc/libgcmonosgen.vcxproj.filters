@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="libgcmonosgen.targets.filters" />
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{62eb1a19-26dd-4c17-8bd0-0a734673637d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{0de15c24-0de8-4592-88fc-d16d0ad05d21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{ede39adb-354b-436b-9fc1-0e7667901ab6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

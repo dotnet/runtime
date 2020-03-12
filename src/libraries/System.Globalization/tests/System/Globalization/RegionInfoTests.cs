@@ -65,7 +65,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [InlineData("en-US", "United States")]
-        [OuterLoop("May fail on machines with multiple language packs installed")] // https://github.com/dotnet/corefx/issues/39177
+        [OuterLoop("May fail on machines with multiple language packs installed")] // see https://github.com/dotnet/runtime/issues/30132
         public void DisplayName(string name, string expected)
         {
             using (new ThreadCultureChange(null, new CultureInfo(name)))

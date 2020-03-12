@@ -53,7 +53,7 @@ namespace System.Configuration.Tests
             Assert.True(ElementOne.Equals(ElementTwo));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have the fix for #27875")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have the fix for https://github.com/dotnet/runtime/issues/25369")]
         [Fact]
         public void DefaultConstructorEqualHashCodes()
         {

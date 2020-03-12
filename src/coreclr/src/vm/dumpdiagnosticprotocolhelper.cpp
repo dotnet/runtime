@@ -10,7 +10,7 @@
 
 #ifdef FEATURE_PERFTRACING
 
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
 
 void DumpDiagnosticProtocolHelper::HandleIpcMessage(DiagnosticsIpc::IpcMessage& message, IpcStream* pStream)
 {
@@ -115,6 +115,6 @@ void DumpDiagnosticProtocolHelper::GenerateCoreDump(DiagnosticsIpc::IpcMessage& 
     delete pStream;
 }
 
-#endif // FEATURE_PAL
+#endif // HOST_UNIX
 
 #endif // FEATURE_PERFTRACING

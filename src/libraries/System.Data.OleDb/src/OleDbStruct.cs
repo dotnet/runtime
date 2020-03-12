@@ -33,11 +33,36 @@ namespace System.Data.OleDb
     }
 #endif
 
-#if (WIN32 && !ARCH_arm)
-    [StructLayoutAttribute(LayoutKind.Sequential, Pack = 2)]
-#else
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
+
+    [StructLayout(LayoutKind.Sequential, Pack = 2)]
+    internal struct tagDBPARAMBINDINFO_x86
+    {
+        internal IntPtr pwszDataSourceType;
+        internal IntPtr pwszName;
+        internal IntPtr ulParamSize;
+        internal int dwFlags;
+        internal byte bPrecision;
+        internal byte bScale;
+
+#if DEBUG
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append("tagDBPARAMBINDINFO_x86").Append(Environment.NewLine);
+            if (IntPtr.Zero != pwszDataSourceType)
+            {
+                builder.Append("pwszDataSourceType =").Append(Marshal.PtrToStringUni(pwszDataSourceType)).Append(Environment.NewLine);
+            }
+            builder.Append("\tulParamSize  =" + ulParamSize.ToInt64().ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
+            builder.Append("\tdwFlags     =0x" + dwFlags.ToString("X4", CultureInfo.InvariantCulture)).Append(Environment.NewLine);
+            builder.Append("\tPrecision   =" + bPrecision.ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
+            builder.Append("\tScale       =" + bScale.ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
+            return builder.ToString();
+        }
 #endif
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 8)]
     internal struct tagDBPARAMBINDINFO
     {
         internal IntPtr pwszDataSourceType;

@@ -471,8 +471,6 @@ namespace System.Runtime.Serialization.Json
             throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, "WriteComment"));
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "2#sysid", Justification = "This method is derived from the base")]
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "1#pubid", Justification = "This method is derived from the base")]
         public override void WriteDocType(string name, string pubid, string sysid, string subset)
         {
             throw new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, "WriteDocType"));
@@ -773,7 +771,6 @@ namespace System.Runtime.Serialization.Json
             WriteString(new string(buffer, index, count));
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase")] // Microsoft, ToLowerInvariant is just used in Json error message
         public override void WriteStartAttribute(string prefix, string localName, string ns)
         {
             if (IsClosed)
@@ -1136,7 +1133,6 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Whitespace", Justification = "This method is derived from the base")]
         public override void WriteWhitespace(string ws)
         {
             if (IsClosed)
@@ -1327,7 +1323,6 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase")] // Microsoft, ToLowerInvariant is just used in Json error message
         private void ThrowInvalidAttributeContent()
         {
             if (HasOpenAttribute)

@@ -40,8 +40,7 @@ BOOL ParamTypeDesc::Verify() {
 
     _ASSERTE(m_TemplateMT.IsNull() || GetTemplateMethodTableInternal()->SanityCheck());
     _ASSERTE(!GetTypeParam().IsNull());
-    BAD_FORMAT_NOTHROW_ASSERT(GetTypeParam().IsTypeDesc() || !GetTypeParam().AsMethodTable()->IsArray());
-    BAD_FORMAT_NOTHROW_ASSERT(CorTypeInfo::IsModifier_NoThrow(GetInternalCorElementType()) ||
+    _ASSERTE(CorTypeInfo::IsModifier_NoThrow(GetInternalCorElementType()) ||
                               GetInternalCorElementType() == ELEMENT_TYPE_VALUETYPE);
     GetTypeParam().Verify();
     return(true);
@@ -387,18 +386,8 @@ BOOL TypeDesc::CanCastTo(TypeHandle toTypeHnd, TypeHandlePairList *pVisited)
             case ELEMENT_TYPE_PTR:
                 fCast = TypeDesc::CanCastParam(dac_cast<PTR_ParamTypeDesc>(this)->GetTypeParam(), dac_cast<PTR_ParamTypeDesc>(toTypeDesc)->GetTypeParam(), pVisited);
                 break;
-            case ELEMENT_TYPE_VAR:
-            case ELEMENT_TYPE_MVAR:
-            case ELEMENT_TYPE_FNPTR:
-                fCast = FALSE;
-                break;
             default:
-                BAD_FORMAT_NOTHROW_ASSERT(toKind == ELEMENT_TYPE_TYPEDBYREF || CorTypeInfo::IsPrimitiveType(toKind));
-                // array cast should have been handled above
-                _ASSERTE(toKind != ELEMENT_TYPE_ARRAY);
-                _ASSERTE(toKind != ELEMENT_TYPE_SZARRAY);
-
-                fCast = TRUE;
+                break;
             }
         }
     }

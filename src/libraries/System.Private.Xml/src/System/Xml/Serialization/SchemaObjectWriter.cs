@@ -159,19 +159,19 @@ namespace System.Xml.Serialization
         {
             for (int i = 0; i < _indentLevel; i++)
             {
-                _w.Append(" ");
+                _w.Append(' ');
             }
         }
         protected void WriteAttribute(string localName, string ns, string value)
         {
             if (value == null || value.Length == 0)
                 return;
-            _w.Append(",");
+            _w.Append(',');
             _w.Append(ns);
             if (ns != null && ns.Length != 0)
-                _w.Append(":");
+                _w.Append(':');
             _w.Append(localName);
-            _w.Append("=");
+            _w.Append('=');
             _w.Append(value);
         }
         protected void WriteAttribute(string localName, string ns, XmlQualifiedName value)
@@ -190,7 +190,7 @@ namespace System.Xml.Serialization
         }
         protected void WriteEndElement()
         {
-            _w.Append("]");
+            _w.Append(']');
             _indentLevel--;
         }
         protected void NewLine()
@@ -256,7 +256,7 @@ namespace System.Xml.Serialization
                         }
                         else
                         {
-                            sb.Append(" ");
+                            sb.Append(' ');
                         }
                         if (s.Length == 0)
                         {
@@ -602,14 +602,14 @@ namespace System.Xml.Serialization
                 }
                 list.Sort(new QNameComparer());
 
-                _w.Append(",");
+                _w.Append(',');
                 _w.Append("memberTypes=");
 
                 for (int i = 0; i < list.Count; i++)
                 {
                     XmlQualifiedName q = (XmlQualifiedName)list[i];
                     _w.Append(q.ToString());
-                    _w.Append(",");
+                    _w.Append(',');
                 }
             }
             Write5_XmlSchemaAnnotation((XmlSchemaAnnotation)o.@Annotation);

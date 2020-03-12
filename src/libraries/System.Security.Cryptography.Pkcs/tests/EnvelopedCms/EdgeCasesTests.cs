@@ -107,14 +107,14 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             EnvelopedCms ecms = new EnvelopedCms();
             ecms.Decode(content);
 
-            int expected = PlatformDetection.IsFullFramework ? 6 : 0; // Desktop bug gives 6
+            int expected = PlatformDetection.IsNetFramework ? 6 : 0; // Desktop bug gives 6
             Assert.Equal(expected, ecms.ContentInfo.Content.Length);
             Assert.Equal(Oids.Pkcs7Data, ecms.ContentInfo.ContentType.Value);
         }
 
         [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop rejects zero length content: corefx#18724")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework rejects zero length content: https://github.com/dotnet/runtime/issues/21257")]
         public static void ZeroLengthContent_RoundTrip()
         {
             ContentInfo contentInfo = new ContentInfo(Array.Empty<byte>());
@@ -192,7 +192,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 ContentInfo contentInfo = ecms.ContentInfo;
                 byte[] content = contentInfo.Content;
 
-                int expected = PlatformDetection.IsFullFramework ? 6 : 0; // Desktop bug gives 6
+                int expected = PlatformDetection.IsNetFramework ? 6 : 0; // Desktop bug gives 6
                 Assert.Equal(expected, content.Length);
             }
         }

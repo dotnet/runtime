@@ -56,12 +56,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return ReflectionItemType.Field; }
         }
 
-        public override object GetValue(object instance)
+        public override object? GetValue(object? instance)
         {
             return UndelyingField.SafeGetValue(instance);
         }
 
-        public override void SetValue(object instance, object value)
+        public override void SetValue(object? instance, object? value)
         {
             UndelyingField.SafeSetValue(instance, value);
         }

@@ -505,7 +505,7 @@ namespace System.Net.Mail
                 {
                     if (oneSet)
                     {
-                        s.Append(",");
+                        s.Append(',');
                     }
                     s.Append("FAILURE");
                     oneSet = true;
@@ -514,7 +514,7 @@ namespace System.Net.Mail
                 {
                     if (oneSet)
                     {
-                        s.Append(",");
+                        s.Append(',');
                     }
                     s.Append("DELAY");
                 }

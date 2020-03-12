@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.X509Certificates
         internal const string DisallowedStoreName = "Disallowed";
         internal const string MyStoreName = "My";
 
-        private IStorePal _storePal;
+        private IStorePal? _storePal;
 
         public X509Store()
             : this("MY", StoreLocation.CurrentUser)
@@ -102,13 +102,13 @@ namespace System.Security.Cryptography.X509Certificates
 
         public StoreLocation Location { get; private set; }
 
-        public string Name { get; private set; }
+        public string? Name { get; private set; }
 
 
         public void Open(OpenFlags flags)
         {
             Close();
-            _storePal = StorePal.FromSystemStore(Name, Location, flags);
+            _storePal = StorePal.FromSystemStore(Name!, Location, flags);
         }
 
         public X509Certificate2Collection Certificates
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
             catch
             {
-                // For desktop compat, we keep the exception semantics even though they are not ideal
+                // For .NET Framework compat, we keep the exception semantics even though they are not ideal
                 // because an exception may cause certs to be removed even if they weren't there before.
                 for (int j = 0; j < i; j++)
                 {
@@ -199,7 +199,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
             catch
             {
-                // For desktop compat, we keep the exception semantics even though they are not ideal
+                // For .NET Framework compat, we keep the exception semantics even though they are not ideal
                 // because an exception above may cause certs to be added even if they weren't there before
                 // and an exception here may cause certs not to be re-added.
                 for (int j = 0; j < i; j++)
@@ -217,7 +217,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Close()
         {
-            IStorePal storePal = _storePal;
+            IStorePal? storePal = _storePal;
             _storePal = null;
             if (storePal != null)
             {

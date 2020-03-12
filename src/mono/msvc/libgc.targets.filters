@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="libmonogc_sources">
+    <ClCompile Include="$(MonoSourceLocation)\external\bdwgc\extra\gc.c">
+      <Filter>Source Files$(GCboehmFilterSubFolder)</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(MonoSourceLocation)\external\bdwgc\include\gc.h">
+      <Filter>Header Files$(GCboehmFilterSubFolder)</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MonoSourceLocation)\external\bdwgc\Makefile.am">
+      <Filter>Resource Files$(GCboehmFilterSubFolder)</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup Condition="'$(GCboehmFilterSubFolder)'!=''">
+    <Filter Include="Header Files$(GCboehmFilterSubFolder)">
+      <UniqueIdentifier>{9671D54B-CA64-4CFA-89BD-D90D90D38F6B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files$(GCboehmFilterSubFolder)">
+      <UniqueIdentifier>{AA2FEF48-1466-481B-AA60-BF0DA57967BC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(GCboehmFilterSubFolder)">
+      <UniqueIdentifier>{67EC6108-4A9F-4B19-B019-734A71CDFE30}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

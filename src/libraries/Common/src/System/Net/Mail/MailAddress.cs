@@ -2,16 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
+
 namespace System.Net.Mail
 {
     internal class MailAddress
     {
         public MailAddress(string address)
         {
-            MailAddressParser.ParseAddress(address);
+            MailAddressParser.TryParseAddress(address, out ParseAddressInfo _, throwExceptionIfFail: true);
         }
 
-        internal MailAddress(string displayName, string localPart, string domain)
+        internal MailAddress(string displayName, string localPart, string domain, Encoding displayNameEncoding)
         {
         }
     }

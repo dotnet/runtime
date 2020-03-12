@@ -49,7 +49,7 @@ namespace System.Reflection.Metadata.Ecma335
             MetadataBuilder tablesAndHeaps,
             ImmutableArray<int> typeSystemRowCounts,
             MethodDefinitionHandle entryPoint,
-            Func<IEnumerable<Blob>, BlobContentId> idProvider = null)
+            Func<IEnumerable<Blob>, BlobContentId>? idProvider = null)
         {
             if (tablesAndHeaps == null)
             {

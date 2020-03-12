@@ -52,7 +52,7 @@ namespace System.Net.WebSockets
                 throw new ArgumentException(SR.net_WebSockets_InvalidEmptySubProtocol, nameof(subProtocol));
             }
 
-            string invalidChar = null;
+            string? invalidChar = null;
             int i = 0;
             while (i < subProtocol.Length)
             {
@@ -79,7 +79,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        internal static void ValidateCloseStatus(WebSocketCloseStatus closeStatus, string statusDescription)
+        internal static void ValidateCloseStatus(WebSocketCloseStatus closeStatus, string? statusDescription)
         {
             if (closeStatus == WebSocketCloseStatus.Empty && !string.IsNullOrEmpty(statusDescription))
             {

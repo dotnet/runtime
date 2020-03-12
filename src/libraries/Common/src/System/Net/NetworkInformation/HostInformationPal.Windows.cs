@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
-
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.NetworkInformation
 {
@@ -20,40 +19,36 @@ namespace System.Net.NetworkInformation
 
         public static string GetHostName()
         {
-            EnsureFixedInfo();
-            return s_fixedInfo.hostName;
+            return FixedInfo.hostName;
         }
 
         public static string GetDomainName()
         {
-            EnsureFixedInfo();
-            return s_fixedInfo.domainName;
+            return FixedInfo.domainName;
         }
 
-        public static Interop.IpHlpApi.FIXED_INFO GetFixedInfo()
+        private static Interop.IpHlpApi.FIXED_INFO GetFixedInfo()
         {
             uint size = 0;
-            SafeLocalAllocHandle buffer = null;
             Interop.IpHlpApi.FIXED_INFO fixedInfo = default;
 
             // First we need to get the size of the buffer
-            uint result = Interop.IpHlpApi.GetNetworkParams(SafeLocalAllocHandle.InvalidHandle, ref size);
+            uint result = Interop.IpHlpApi.GetNetworkParams(IntPtr.Zero, ref size);
 
             while (result == Interop.IpHlpApi.ERROR_BUFFER_OVERFLOW)
             {
-                // Now we allocate the buffer and read the network parameters.
-                using (buffer = Interop.Kernel32.LocalAlloc(0, (UIntPtr)size))
+                IntPtr buffer = Marshal.AllocHGlobal((int)size);
+                try
                 {
-                    if (buffer.IsInvalid)
-                    {
-                        throw new OutOfMemoryException();
-                    }
-
                     result = Interop.IpHlpApi.GetNetworkParams(buffer, ref size);
                     if (result == Interop.IpHlpApi.ERROR_SUCCESS)
                     {
-                        fixedInfo = Marshal.PtrToStructure<Interop.IpHlpApi.FIXED_INFO>(buffer.DangerousGetHandle());
+                        fixedInfo = Marshal.PtrToStructure<Interop.IpHlpApi.FIXED_INFO>(buffer);
                     }
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(buffer);
                 }
             }
 
@@ -66,9 +61,13 @@ namespace System.Net.NetworkInformation
             return fixedInfo;
         }
 
-        private static void EnsureFixedInfo()
+        public static ref readonly Interop.IpHlpApi.FIXED_INFO FixedInfo
         {
-            LazyInitializer.EnsureInitialized(ref s_fixedInfo, ref s_fixedInfoInitialized, ref s_syncObject, () => GetFixedInfo());
+            get
+            {
+                LazyInitializer.EnsureInitialized(ref s_fixedInfo, ref s_fixedInfoInitialized, ref s_syncObject, () => GetFixedInfo());
+                return ref s_fixedInfo;
+            }
         }
     }
 }

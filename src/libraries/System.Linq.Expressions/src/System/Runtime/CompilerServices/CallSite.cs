@@ -49,17 +49,17 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Cache of CallSite constructors for a given delegate type.
         /// </summary>
-        private static volatile CacheDict<Type, Func<CallSiteBinder, CallSite>> s_siteCtors;
+        private static volatile CacheDict<Type, Func<CallSiteBinder, CallSite>>? s_siteCtors;
 
         /// <summary>
         /// The Binder responsible for binding operations at this call site.
         /// This binder is invoked by the UpdateAndExecute below if all Level 0,
         /// Level 1 and Level 2 caches experience cache miss.
         /// </summary>
-        internal readonly CallSiteBinder _binder;
+        internal readonly CallSiteBinder? _binder;
 
         // only CallSite<T> derives from this
-        internal CallSite(CallSiteBinder binder)
+        internal CallSite(CallSiteBinder? binder)
         {
             _binder = binder;
         }
@@ -72,7 +72,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Class responsible for binding dynamic operations on the dynamic site.
         /// </summary>
-        public CallSiteBinder Binder => _binder;
+        public CallSiteBinder? Binder => _binder;
 
         /// <summary>
         /// Creates a CallSite with the given delegate type and binder.
@@ -86,21 +86,21 @@ namespace System.Runtime.CompilerServices
             ContractUtils.RequiresNotNull(binder, nameof(binder));
             if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw System.Linq.Expressions.Error.TypeMustBeDerivedFromSystemDelegate();
 
-            CacheDict<Type, Func<CallSiteBinder, CallSite>> ctors = s_siteCtors;
+            CacheDict<Type, Func<CallSiteBinder, CallSite>>? ctors = s_siteCtors;
             if (ctors == null)
             {
                 // It's okay to just set this, worst case we're just throwing away some data
                 s_siteCtors = ctors = new CacheDict<Type, Func<CallSiteBinder, CallSite>>(100);
             }
 
-            if (!ctors.TryGetValue(delegateType, out Func<CallSiteBinder, CallSite> ctor))
+            if (!ctors.TryGetValue(delegateType, out Func<CallSiteBinder, CallSite>? ctor))
             {
-                MethodInfo method = typeof(CallSite<>).MakeGenericType(delegateType).GetMethod(nameof(Create));
+                MethodInfo method = typeof(CallSite<>).MakeGenericType(delegateType).GetMethod(nameof(Create))!;
 
                 if (delegateType.IsCollectible)
                 {
                     // slow path
-                    return (CallSite)method.Invoke(null, new object[] { binder });
+                    return (CallSite)method.Invoke(null, new object[] { binder })!;
                 }
 
                 ctor = (Func<CallSiteBinder, CallSite>)method.CreateDelegate(typeof(Func<CallSiteBinder, CallSite>));
@@ -142,24 +142,23 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// The Level 0 cache - a delegate specialized based on the site history.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
-        public T Target;
+        public T Target = default!;
 
         /// <summary>
         /// The Level 1 cache - a history of the dynamic site.
         /// </summary>
-        internal T[] Rules;
+        internal T[]? Rules;
 
         /// <summary>
         /// an instance of matchmaker site to opportunistically reuse when site is polymorphic
         /// </summary>
-        internal CallSite _cachedMatchmaker;
+        internal CallSite? _cachedMatchmaker;
 
         // Cached update delegate for all sites with a given T
-        private static T s_cachedUpdate;
+        private static T? s_cachedUpdate;
 
         // Cached noMatch delegate for all sites with a given T
-        private static volatile T s_cachedNoMatch;
+        private static volatile T? s_cachedNoMatch;
 
         private CallSite(CallSiteBinder binder)
             : base(binder)
@@ -172,7 +171,6 @@ namespace System.Runtime.CompilerServices
         {
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         internal CallSite<T> CreateMatchMaker()
         {
             return new CallSite<T>();
@@ -208,7 +206,6 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="binder">The binder responsible for the runtime binding of the dynamic operations at this call site.</param>
         /// <returns>The new instance of dynamic call site.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
         public static CallSite<T> Create(CallSiteBinder binder)
         {
             if (!typeof(T).IsSubclassOf(typeof(MulticastDelegate))) throw System.Linq.Expressions.Error.TypeMustBeDerivedFromSystemDelegate();
@@ -224,7 +221,7 @@ namespace System.Runtime.CompilerServices
             return GetUpdateDelegate(ref s_cachedUpdate);
         }
 
-        private T GetUpdateDelegate(ref T addr)
+        private T GetUpdateDelegate(ref T? addr)
         {
             if (addr == null)
             {
@@ -241,7 +238,7 @@ namespace System.Runtime.CompilerServices
 
         internal void AddRule(T newRule)
         {
-            T[] rules = Rules;
+            T[]? rules = Rules;
             if (rules == null)
             {
                 Rules = new[] { newRule };
@@ -268,7 +265,7 @@ namespace System.Runtime.CompilerServices
         {
             if (i > 1)
             {
-                T[] rules = Rules;
+                T[] rules = Rules!;
                 T rule = rules[i];
 
                 rules[i] = rules[i - 1];
@@ -335,8 +332,8 @@ namespace System.Runtime.CompilerServices
 
             if (target.IsGenericType && IsSimpleSignature(invoke, out args))
             {
-                MethodInfo method = null;
-                MethodInfo noMatchMethod = null;
+                MethodInfo? method = null;
+                MethodInfo? noMatchMethod = null;
 
                 if (invoke.ReturnType == typeof(void))
                 {
@@ -356,7 +353,7 @@ namespace System.Runtime.CompilerServices
                 }
                 if (method != null)
                 {
-                    s_cachedNoMatch = (T)(object)noMatchMethod.MakeGenericMethod(args).CreateDelegate(target);
+                    s_cachedNoMatch = (T)(object)noMatchMethod!.MakeGenericMethod(args).CreateDelegate(target);
                     return (T)(object)method.MakeGenericMethod(args).CreateDelegate(target);
                 }
             }
@@ -393,7 +390,6 @@ namespace System.Runtime.CompilerServices
         }
 #endif
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         private T CreateCustomUpdateDelegate(MethodInfo invoke)
         {
             Type returnType = invoke.GetReturnType();
@@ -425,7 +421,7 @@ namespace System.Runtime.CompilerServices
             Expression target = Expression.Field(@this, nameof(Target));
             body.UncheckedAdd(Expression.Assign(originalRule, target));
 
-            ParameterExpression result = null;
+            ParameterExpression? result = null;
             if (!isVoid)
             {
                 vars.UncheckedAdd(result = Expression.Variable(@return.Type, "result"));
@@ -473,7 +469,7 @@ namespace System.Runtime.CompilerServices
             else
             {
                 processRule = Expression.Block(
-                    Expression.Assign(result, invokeRule),
+                    Expression.Assign(result!, invokeRule),
                     Expression.IfThen(
                         getMatch,
                         Expression.Block(onMatch, Expression.Return(@return, result))
@@ -573,7 +569,7 @@ namespace System.Runtime.CompilerServices
             else
             {
                 processRule = Expression.Block(
-                    Expression.Assign(result, invokeRule),
+                    Expression.Assign(result!, invokeRule),
                     Expression.IfThen(
                         getMatch,
                         Expression.Return(@return, result)
@@ -686,14 +682,13 @@ namespace System.Runtime.CompilerServices
             return lambda.Compile();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         private T CreateCustomNoMatchDelegate(MethodInfo invoke)
         {
             ParameterExpression[] @params = Array.ConvertAll(invoke.GetParametersCached(), p => Expression.Parameter(p.ParameterType, p.Name));
             return Expression.Lambda<T>(
                 Expression.Block(
                     Expression.Call(
-                        typeof(CallSiteOps).GetMethod(nameof(CallSiteOps.SetNotMatched)),
+                        typeof(CallSiteOps).GetMethod(nameof(CallSiteOps.SetNotMatched))!,
                         @params[0]
                     ),
                     Expression.Default(invoke.GetReturnType())

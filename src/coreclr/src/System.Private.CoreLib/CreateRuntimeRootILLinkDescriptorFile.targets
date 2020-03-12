@@ -13,7 +13,7 @@
     <_ILLinkTrimXmlFilePath Condition=" '$(_ILLinkTrimXmlFilePath)' == '' ">$(MSBuildThisFileDirectory)ILLinkTrim.xml</_ILLinkTrimXmlFilePath>
     <_ILLinkTasksToolsDir>$(PkgILLink_Tasks)/tools</_ILLinkTasksToolsDir>
     <_ILLinkTasksDir>$(_ILLinkTasksToolsDir)/$(NetFrameworkCurrent)/</_ILLinkTasksDir>
-    <_ILLinkTasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_ILLinkTasksToolsDir)/netcoreapp2.0/</_ILLinkTasksDir>
+    <_ILLinkTasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(_ILLinkTasksToolsDir)/netcoreapp3.0/</_ILLinkTasksDir>
   </PropertyGroup>
 
   <!--

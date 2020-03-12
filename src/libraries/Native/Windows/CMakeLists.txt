@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.14.2)
 
 # C Compiler flags
 SET (CMAKE_C_FLAGS_INIT                     "/W0 /FC")
@@ -113,7 +113,7 @@ else()
 endif()
 
 if ($ENV{__BuildArch} STREQUAL "x86_64" OR $ENV{__BuildArch} STREQUAL "amd64")
-    add_definitions(-DBIT64=1)
+    add_definitions(-DTARGET_64BIT=1)
 endif ()
 
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL "DEBUG")

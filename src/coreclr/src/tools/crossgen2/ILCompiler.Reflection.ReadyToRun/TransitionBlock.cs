@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -12,9 +12,9 @@ namespace ILCompiler.Reflection.ReadyToRun
 {
     public abstract class TransitionBlock
     {
-        public R2RReader _reader;
+        public ReadyToRunReader _reader;
 
-        public static TransitionBlock FromReader(R2RReader reader)
+        public static TransitionBlock FromReader(ReadyToRunReader reader)
         {
             switch (reader.Architecture)
             {
@@ -22,7 +22,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     return X86TransitionBlock.Instance;
 
                 case Architecture.X64:
-                    return reader.OS == OperatingSystem.Windows ? X64WindowsTransitionBlock.Instance : X64UnixTransitionBlock.Instance;
+                    return reader.OperatingSystem == OperatingSystem.Windows ? X64WindowsTransitionBlock.Instance : X64UnixTransitionBlock.Instance;
 
                 case Architecture.Arm:
                     return ArmTransitionBlock.Instance;

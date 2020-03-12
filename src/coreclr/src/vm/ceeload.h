@@ -98,13 +98,13 @@ extern VerboseLevel g_CorCompileVerboseLevel;
 #define GUID_TO_TYPE_HASH_BUCKETS 16
 
 // The native symbol reader dll name
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.amd64.dll")
-#elif defined(_X86_)
+#elif defined(HOST_X86)
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.x86.dll")
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm.dll")
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 // Use diasymreader until the package has an arm64 version - issue #7360
 //#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
 #define NATIVE_SYMBOL_READER_DLL W("diasymreader.dll")
@@ -206,12 +206,12 @@ enum {
     kLookupMapIndexStride   = 0x10,                         // The range of table entries covered by one index entry (power of two for faster hash lookup)
     kBitsPerRVA             = sizeof(DWORD) * 8,            // Bits in an (uncompressed) table value RVA (RVAs
                                                             // currently still 32-bit even on 64-bit platforms)
-#ifdef BIT64
+#ifdef HOST_64BIT
     kFlagBits               = 3,                            // Number of bits at the bottom of a value
                                                             // pointer that may be used for flags
-#else // BIT64
+#else // HOST_64BIT
     kFlagBits               = 2,
-#endif // BIT64
+#endif // HOST_64BIT
 
 };
 
@@ -2758,6 +2758,7 @@ public:
                            PTR_CORCOMPILE_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
                            PEDecoder * pNativeImage);
     void RunEagerFixups();
+    void RunEagerFixupsUnlocked();
 
     Module *GetModuleFromIndex(DWORD ix);
     Module *GetModuleFromIndexIfLoaded(DWORD ix);
@@ -2912,7 +2913,7 @@ public:
 
 #endif  // FEATURE_PREJIT
 
-    BOOL IsReadyToRun()
+    BOOL IsReadyToRun() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
@@ -2923,8 +2924,14 @@ public:
 #endif
     }
 
+    NativeImage *GetCompositeNativeImage() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (m_pReadyToRunInfo != NULL ? m_pReadyToRunInfo->GetNativeImage() : NULL);
+    }
+
 #ifdef FEATURE_READYTORUN
-    PTR_ReadyToRunInfo GetReadyToRunInfo()
+    PTR_ReadyToRunInfo GetReadyToRunInfo() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pReadyToRunInfo;
@@ -3059,8 +3066,6 @@ public:
     LoaderHeap              *GetThunkHeap();
     // Self-initializing accessor for domain-independent IJW thunk heap
     LoaderHeap              *GetDllThunkHeap();
-
-    void            EnumRegularStaticGCRefs        (promote_func* fn, ScanContext* sc);
 
 protected:
 
@@ -3228,12 +3233,17 @@ public:
         if (NativeMetadataAssemblyRefMap == NULL)
             return NULL;
 
-        _ASSERTE(rid <= GetNativeAssemblyImport()->GetCountWithTokenKind(mdtAssemblyRef));
+        _ASSERTE(rid <= GetNativeMetadataAssemblyCount());
         return NativeMetadataAssemblyRefMap[rid - 1];
     }
 
     void SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssembly);
+
+    uint32_t GetNativeMetadataAssemblyCount();
 #endif // !defined(DACCESS_COMPILE)
+
+    // For protecting dictionary layout slot expansions
+    CrstExplicitInit        m_DictionaryCrst;
 };
 
 //

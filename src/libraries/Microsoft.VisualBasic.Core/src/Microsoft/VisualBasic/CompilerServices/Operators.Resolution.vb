@@ -212,7 +212,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                             errorMessage &= vbCrLf & "    " & errorString
                         Next
 
-                        errorMessage = GetResourceString(SR.MatchArgumentFailure2, operatorMethod.ToString, errorMessage)
+                        errorMessage = SR.Format(SR.MatchArgumentFailure2, operatorMethod.ToString, errorMessage)
                         'We are missing a member which can match the arguments, so throw a missing member exception.
                         Throw New InvalidCastException(errorMessage)
                     End If

@@ -23,12 +23,12 @@ namespace System.Security.Cryptography
             get { return "ECDiffieHellman"; }
         }
 
-        public override string SignatureAlgorithm
+        public override string? SignatureAlgorithm
         {
             get { return null; }
         }
 
-        public static new ECDiffieHellman Create(string algorithm)
+        public static new ECDiffieHellman? Create(string algorithm)
         {
             if (algorithm == null)
             {
@@ -71,8 +71,8 @@ namespace System.Security.Cryptography
         public virtual byte[] DeriveKeyFromHash(
             ECDiffieHellmanPublicKey otherPartyPublicKey,
             HashAlgorithmName hashAlgorithm,
-            byte[] secretPrepend,
-            byte[] secretAppend)
+            byte[]? secretPrepend,
+            byte[]? secretAppend)
         {
             throw DerivedClassMustOverride();
         }
@@ -89,7 +89,7 @@ namespace System.Security.Cryptography
         public byte[] DeriveKeyFromHmac(
             ECDiffieHellmanPublicKey otherPartyPublicKey,
             HashAlgorithmName hashAlgorithm,
-            byte[] hmacKey)
+            byte[]? hmacKey)
         {
             return DeriveKeyFromHmac(otherPartyPublicKey, hashAlgorithm, hmacKey, null, null);
         }
@@ -108,9 +108,9 @@ namespace System.Security.Cryptography
         public virtual byte[] DeriveKeyFromHmac(
             ECDiffieHellmanPublicKey otherPartyPublicKey,
             HashAlgorithmName hashAlgorithm,
-            byte[] hmacKey,
-            byte[] secretPrepend,
-            byte[] secretAppend)
+            byte[]? hmacKey,
+            byte[]? secretPrepend,
+            byte[]? secretAppend)
         {
             throw DerivedClassMustOverride();
         }

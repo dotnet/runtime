@@ -169,7 +169,7 @@ namespace System
         private static unsafe void InitializeProbabilisticMap(uint* charMap, ReadOnlySpan<char> anyOf)
         {
             bool hasAscii = false;
-            uint* charMapLocal = charMap; // https://github.com/dotnet/coreclr/issues/14264
+            uint* charMapLocal = charMap; // https://github.com/dotnet/runtime/issues/9040
 
             for (int i = 0; i < anyOf.Length; ++i)
             {

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Reflection;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -143,7 +142,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "a\u0300", 1, "\u0300" };
 
             // Lone combining character
-            yield return new object[] { "\u0300\u0300", 0, "\u0300" };
+            yield return new object[] { "\u0300\u0300", 0, "\u0300\u0300" }; // second U+0300 extends first U+0300
             yield return new object[] { "\u0300\u0300", 1, "\u0300" };
         }
 
@@ -185,8 +184,8 @@ namespace System.Globalization.Tests
             yield return new object[] { "a\u0300", 0, new string[] { "a\u0300" } };
             yield return new object[] { "a\u0300", 1, new string[] { "\u0300" } };
 
-            // Lone combining character
-            yield return new object[] { "\u0300\u0300", 0, new string[] { "\u0300", "\u0300" } };
+            // Extending chars can extend other extending chars
+            yield return new object[] { "\u0300\u0300", 0, new string[] { "\u0300\u0300" } };
         }
 
         [Theory]
@@ -226,28 +225,71 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> ParseCombiningCharacters_TestData()
         {
+            // When "rules" are mentioned in this function, they refer to:
+            // https://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundary_Rules
+
+            //                           ,-- Other (U+4F00 CJK UNIFIED IDEOGRAPH-4F00)
+            //                           |     ,-- Extend (U+302A IDEOGRAPHIC LEVEL TONE MARK)
+            //                           |     |     ,-- Other (U+10000 LINEAR B SYLLABLE B008 A)
+            //                           |     |     |           ,-- Other (U+4F01 CJK UNIFIED IDEOGRAPH-4F01)
             yield return new object[] { "\u4f00\u302a\ud800\udc00\u4f01", new int[] { 0, 2, 4 } };
+
             yield return new object[] { "abcdefgh", new int[] { 0, 1, 2, 3, 4, 5, 6, 7 } };
             yield return new object[] { "!@#$%^&", new int[] { 0, 1, 2, 3, 4, 5, 6 } };
+
+            //                            ,-- Extend (U+20D1 COMBINING RIGHT HARPOON ABOVE)
+            //                            |       ,-- Extend (U+FE22 COMBINING DOUBLE TILDE LEFT HALF)
+            //                            |       |     ,-- Extend (U+20D1 COMBINING RIGHT HARPOON ABOVE)
+            //                            |       |     |     ,-- Extend (U+20EB COMBINING LONG DOUBLE SOLIDUS OVERLAY) 
             yield return new object[] { "!\u20D1bo\uFE22\u20D1\u20EB|", new int[] { 0, 2, 3, 7 } };
+
+            //                            ,-- Other (U+10FFFF <Unassigned>)
             yield return new object[] { "1\uDBFF\uDFFF@\uFE22\u20D1\u20EB9", new int[] { 0, 1, 3, 7 } };
+
+            //                            ,-- Extend (U+0300 COMBINING GRAVE ACCENT)
             yield return new object[] { "a\u0300", new int[] { 0 } };
-            yield return new object[] { "\u0300\u0300", new int[] { 0, 1 } };
+            yield return new object[] { "\u0300\u0300", new int[] { 0 } }; // second U+0300 extends first U+0300
+
             yield return new object[] { "   ", new int[] { 0, 1, 2 } };
             yield return new object[] { "", new int[0] };
 
-            // Invalid Unicode
-            yield return new object[] { "\u0000\uFFFFa", new int[] { 0, 1, 2 } }; // Control chars
-            yield return new object[] { "\uD800a", new int[] { 0, 1 } }; // Unmatched high surrogate
-            yield return new object[] { "\uDC00a", new int[] { 0, 1 } }; // Unmatched low surrogate
-            yield return new object[] { "\u00ADa", new int[] { 0, 1 } }; // Format character
+            // Control characters (such as U+0000) should never be followable by another character (rule GB4).
+            // (CR and LF are treated specially and will be handled later.)
 
-            yield return new object[] { "\u0000\u0300\uFFFF\u0300", new int[] { 0, 1, 2, 3 } }; // Control chars + combining char
-            yield return new object[] { "\uD800\u0300", new int[] { 0, 1 } }; // Unmatched high surrogate + combining char
-            yield return new object[] { "\uDC00\u0300", new int[] { 0, 1 } }; // Unmatched low surrogate + combing char
-            yield return new object[] { "\u00AD\u0300", new int[] { 0, 1 } }; // Format character + combining char
+            yield return new object[] { "\u0000\u0000\u0000", new int[] { 0, 1, 2 } };
+            yield return new object[] { "\u0000\u0300\u0300", new int[] { 0, 1 } }; // first U+0300 does not extend the U+0000, but second U+0300 extends first U+0300
 
-            yield return new object[] { "\u0300\u0300", new int[] { 0, 1 } }; // Two combining chars
+            // Prepend characters (like U+0600 ARABIC NUMBER SIGN) may combine with non-control characters,
+            // but never with control characters (rule GB5).
+
+            yield return new object[] { "\u0600a", new int[] { 0 } };
+            yield return new object[] { "\u0600\r", new int[] { 0, 1 } };
+            yield return new object[] { "\u0600\u0000", new int[] { 0, 1 } };
+
+            // Nothing can come after CR (except LF), and nothing can come after LF (rules GB3, GB4).
+
+            yield return new object[] { "\t\r\n", new int[] { 0, 1 } };
+            yield return new object[] { "\t\r\r\n", new int[] { 0, 1, 2 } };
+            yield return new object[] { "\r\u0300\r\n\u0300", new int[] { 0, 1, 2, 4 } };
+
+            // Now test complex emoji and symbols
+
+            // (woman dancing; medium skin tone)
+            //                           ,-- Extended_Pictographic (U+1F483 DANCER)
+            //                           |         ,-- Extend (U+1F3FD EMOJI MODIFIER FITZPATRICK TYPE-4)
+            yield return new object[] { "\U0001F483\U0001F3FD", new int[] { 0 } };
+
+            // (flag: Antarctica)
+            //                           ,-- Regional_Indicator (U+1F1E6 REGIONAL INDICATOR SYMBOL LETTER A)
+            //                           |         ,-- Regional_Indicator (U+1F1F6 REGIONAL INDICATOR SYMBOL LETTER Q)
+            yield return new object[] { "\U0001F1E6\U0001F1F6", new int[] { 0 } };
+
+            // (man golfing)
+            //                           ,-- Extended_Pictographic (U+1F3CC GOLFER)
+            //                           |         ,-- Extend (U+FE0F VARIATION SELECTOR-16)
+            //                           |         |     ,-- ZWJ (U+200D ZERO WIDTH JOINER)
+            //                           |         |     |     ,-- Extended_Pictographic (U+2642 MALE SIGN)
+            yield return new object[] { "\U0001F3CC\uFE0F\u200D\u2642\uFE0F", new int[] { 0 } };
         }
 
         [Theory]
@@ -255,6 +297,27 @@ namespace System.Globalization.Tests
         public void ParseCombiningCharacters(string str, int[] expected)
         {
             Assert.Equal(expected, StringInfo.ParseCombiningCharacters(str));
+        }
+
+        [Fact]
+        public void ParseCombiningChars_UnpairedSurrogates()
+        {
+            // Unpaired surrogates should be treated as U+FFFD REPLACEMENT CHAR ("Other"),
+            // so prepend and extend can affect them. We can't use [Theory] because the
+            // unit test runner may corrupt malformed UTF-16 constant data.
+
+            ParseCombiningCharacters("\u0600\uD800", new int[] { 0 }); // prepend + unpaired surrogate
+            ParseCombiningCharacters("\udfff\ud800\u0300", new int[] { 0, 1 }); // unpaired | unpaired + extender
+            ParseCombiningCharacters("\udfff\ud800", new int[] { 0, 1 }); // unpaired | unpaired
+        }
+
+        [Fact]
+        public void ParseCombiningChars_LargeStrings()
+        {
+            string s = "\u0600x" /* prepend + 'x' */ + new string('\u0300' /* extend */, 9_999_998);
+            s = string.Concat(s, s, s, s); // 40 million characters
+
+            ParseCombiningCharacters(s, new int[] { 0, 10_000_000, 20_000_000, 30_000_000 });
         }
 
         [Fact]

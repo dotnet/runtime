@@ -4,7 +4,7 @@
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(PointerSize)' == '32' ">
-    <DefineConstants>BIT32;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_32BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>

@@ -100,7 +100,7 @@ namespace System.Reflection.Tests
             // Is this "true" because T is always assignable to T?
             // Or is this "false" because it's nonsensical to assign to a generic typedef?
             //
-            // (Spoiler: The "trues" wins on the desktop so they win here too.)
+            // (Spoiler: The "trues" wins on the .NET Framework so they win here too.)
             dst = typeof(GenericClass1<>).Project();
             src = typeof(GenericClass1<>).Project();
             b = dst.IsAssignableFrom(src);
@@ -481,6 +481,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15340", TestRuntimes.Mono)]
         public static void TestExplicitOffsetPseudoCustomAttribute()
         {
             Type t = typeof(ExplicitFieldOffsets).Project();

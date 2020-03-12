@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="win32_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\os-event-win32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-os-wait-win32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-os-semaphore-win32.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-windows-thread-name.c" />
+  </ItemGroup>
+</Project>

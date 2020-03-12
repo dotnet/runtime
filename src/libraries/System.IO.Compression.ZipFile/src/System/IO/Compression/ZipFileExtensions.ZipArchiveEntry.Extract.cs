@@ -119,7 +119,7 @@ namespace System.IO.Compression
             {
                 // If it is a file:
                 // Create containing directory:
-                Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath));
+                Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
                 source.ExtractToFile(fileDestinationPath, overwrite: overwrite);
             }
         }

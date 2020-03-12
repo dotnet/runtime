@@ -14,10 +14,17 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
         [Fact]
         public void NETCoreTargetingPackIsValid()
         {
-            using (var tester = NuGetArtifactTester.Open(
+            using (var tester = NuGetArtifactTester.OpenOrNull(
                 dirs,
                 "Microsoft.NETCore.App.Ref"))
             {
+                // Allow no targeting pack in case this is a servicing build.
+                // This condition should be tightened: https://github.com/dotnet/core-setup/issues/8830
+                if (tester == null)
+                {
+                    return;
+                }
+
                 tester.IsTargetingPackForPlatform();
                 tester.HasOnlyTheseDataFiles(
                     "data/FrameworkList.xml",

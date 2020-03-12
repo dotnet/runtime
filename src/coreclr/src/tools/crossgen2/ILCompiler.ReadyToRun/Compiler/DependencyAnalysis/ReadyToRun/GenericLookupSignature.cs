@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -27,16 +27,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly GenericContext _methodContext;
 
-        private readonly SignatureContext _signatureContext;
-
         public GenericLookupSignature(
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             TypeDesc typeArgument,
             MethodWithToken methodArgument,
             FieldDesc fieldArgument,
-            GenericContext methodContext,
-            SignatureContext signatureContext)
+            GenericContext methodContext)
         {
             Debug.Assert(typeArgument != null || methodArgument != null || fieldArgument != null);
             _runtimeLookupKind = runtimeLookupKind;
@@ -45,23 +42,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _methodArgument = methodArgument;
             _fieldArgument = fieldArgument;
             _methodContext = methodContext;
-            _signatureContext = signatureContext;
-
-            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
-            if (typeArgument != null)
-            {
-                signatureContext.Resolver.CompilerContext.EnsureLoadableType(typeArgument);
-            }
-            if (fieldArgument != null)
-            {
-                signatureContext.Resolver.CompilerContext.EnsureLoadableType(fieldArgument.OwningType);
-            }
-            if (methodArgument != null)
-            {
-                signatureContext.Resolver.CompilerContext.EnsureLoadableMethod(methodArgument.Method);
-                if (methodArgument.ConstrainedType != null)
-                    signatureContext.Resolver.CompilerContext.EnsureLoadableType(methodArgument.ConstrainedType);
-            }
         }
 
         public override int ClassCode => 258608008;
@@ -73,8 +53,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ObjectData(Array.Empty<byte>(), null, 1, null);
             }
 
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
-
             // Determine the need for module override
             EcmaModule targetModule;
             if (_methodArgument != null)
@@ -83,11 +61,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             else if (_typeArgument != null)
             {
-                targetModule = _signatureContext.GetTargetModule(_typeArgument);
+                targetModule = factory.SignatureContext.GetTargetModule(_typeArgument);
             }
             else if (_fieldArgument != null)
             {
-                targetModule = _signatureContext.GetTargetModule(_fieldArgument);
+                targetModule = factory.SignatureContext.GetTargetModule(_fieldArgument);
             }
             else
             {
@@ -119,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
 
-            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, fixupToEmit, targetModule, _signatureContext);
+            SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupToEmit, targetModule, factory.SignatureContext);
             if (contextTypeToEmit != null)
             {
                 dataBuilder.EmitTypeSignature(contextTypeToEmit, innerContext);
@@ -232,21 +210,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     return result;
             }
 
-            result = comparer.Compare(_methodContext.ContextMethod, otherNode._methodContext.ContextMethod);
-            if (result != 0)
-                return result;
-
-            return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
-        }
-
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            DependencyList dependencies = new DependencyList();
-            if (_typeArgument != null && !_typeArgument.IsRuntimeDeterminedSubtype)
-            {
-                dependencies.Add(factory.NecessaryTypeSymbol(_typeArgument), "Type referenced in a generic lookup signature");
-            }
-            return dependencies;
+            return comparer.Compare(_methodContext.ContextMethod, otherNode._methodContext.ContextMethod);
         }
     }
 }

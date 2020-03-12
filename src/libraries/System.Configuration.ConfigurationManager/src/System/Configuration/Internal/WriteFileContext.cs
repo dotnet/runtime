@@ -5,9 +5,9 @@
 using System.IO;
 using System.Threading;
 
-// The CODEDOM check is here to support frameworks that may not have fully
-// incorporated all of corefx, but want to use System.Configuration.ConfigurationManager.
-// TempFileCollection was moved in corefx.
+// The CODEDOM check is here to support versions of the framework that may not have fully
+// incorporated all of .NET Core, but want to use System.Configuration.ConfigurationManager.
+// TempFileCollection was moved around in .NET Core.
 #if CODEDOM
 using System.CodeDom.Compiler;
 #else

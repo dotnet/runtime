@@ -39,18 +39,11 @@
 #include "runtimecallablewrapper.h"
 #endif
 
-// Flags used to store some runtime information for Event Tracing
-BOOL g_fEEOtherStartup=FALSE;
-BOOL g_fEEComActivatedStartup=FALSE;
-GUID g_EEComObjectGuid=GUID_NULL;
-
-BOOL g_fEEHostedStartup = FALSE;
-
 #endif // FEATURE_REDHAWK
 
 #include "eventtracepriv.h"
 
-#ifndef FEATURE_PAL
+#ifndef HOST_UNIX
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context };
@@ -60,7 +53,7 @@ DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = {
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_LTTNG_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_LTTNG_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_LTTNG_Context };
-#endif // FEATURE_PAL
+#endif // HOST_UNIX
 
 #ifdef FEATURE_REDHAWK
 volatile LONGLONG ETW::GCLog::s_l64LastClientSequenceNumber = 0;
@@ -228,7 +221,7 @@ BOOL IsRundownNgenKeywordEnabledAndNotSuppressed()
 /*******************************************************/
 /* Fast assembly function to get the topmost EBP frame */
 /*******************************************************/
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 extern "C"
 {
     CallStackFrame* GetEbp()
@@ -241,12 +234,12 @@ extern "C"
         return frame;
     }
 }
-#endif //_TARGET_X86_
+#endif //TARGET_X86
 
 /*************************************/
 /* Function to append a frame to an existing stack */
 /*************************************/
-#if  !defined(FEATURE_PAL)
+#if  !defined(HOST_UNIX)
 void ETW::SamplingLog::Append(SIZE_T currentFrame)
 {
     LIMITED_METHOD_CONTRACT;
@@ -319,14 +312,14 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
         return ETW::SamplingLog::UnInitialized;
     }
 #ifndef DACCESS_COMPILE
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (RtlVirtualUnwind_Unsafe == NULL)
     {
         // We haven't even set up the RtlVirtualUnwind function pointer yet,
         // so it's too early to try stack walking.
         return ETW::SamplingLog::UnInitialized;
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     Thread *pThread = GetThread();
     if (pThread == NULL)
     {
@@ -343,7 +336,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
     pThread->MarkEtwStackWalkInProgress();
     EX_TRY
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         CallStackFrame *currentEBP = GetEbp();
         CallStackFrame *lastEBP = NULL;
 
@@ -416,7 +409,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
 
             PrevSP = CurrentSP;
         }
-#endif //_TARGET_X86_
+#endif //TARGET_X86
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
     pThread->MarkEtwStackWalkCompleted();
 #endif //!DACCESS_COMPILE
@@ -424,7 +417,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
     return ETW::SamplingLog::Completed;
 }
 
-#endif // !defined(FEATURE_PAL)
+#endif // !defined(HOST_UNIX)
 #endif // !FEATURE_REDHAWK
 
 /****************************************************************************/
@@ -1137,7 +1130,7 @@ void BulkComLogger::FlushRcw()
 
     unsigned short instance = GetClrInstanceId();
 
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
     EVENT_DATA_DESCRIPTOR eventData[3];
     EventDataDescCreate(&eventData[0], &m_currRcw, sizeof(const unsigned int));
     EventDataDescCreate(&eventData[1], &instance, sizeof(const unsigned short));
@@ -1146,7 +1139,7 @@ void BulkComLogger::FlushRcw()
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRCW, _countof(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRCW(m_currRcw, instance, sizeof(EventRCWEntry) * m_currRcw, m_etwRcwData);
-#endif // !defined(FEATURE_PAL)
+#endif // !defined(HOST_UNIX)
     result |= EventPipeWriteEventGCBulkRCW(m_currRcw, instance, sizeof(EventRCWEntry) * m_currRcw, m_etwRcwData);
 
     _ASSERTE(result == ERROR_SUCCESS);
@@ -1227,7 +1220,7 @@ void BulkComLogger::FlushCcw()
 
     unsigned short instance = GetClrInstanceId();
 
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
     EVENT_DATA_DESCRIPTOR eventData[3];
     EventDataDescCreate(&eventData[0], &m_currCcw, sizeof(const unsigned int));
     EventDataDescCreate(&eventData[1], &instance, sizeof(const unsigned short));
@@ -1236,7 +1229,7 @@ void BulkComLogger::FlushCcw()
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootCCW, _countof(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRootCCW(m_currCcw, instance, sizeof(EventCCWEntry) * m_currCcw, m_etwCcwData);
-#endif //!defined(FEATURE_PAL)
+#endif //!defined(HOST_UNIX)
     result |= EventPipeWriteEventGCBulkRootCCW(m_currCcw, instance, sizeof(EventCCWEntry) * m_currCcw, m_etwCcwData);
 
     _ASSERTE(result == ERROR_SUCCESS);
@@ -1431,7 +1424,7 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
     unsigned short instance = GetClrInstanceId();
     unsigned __int64 appDomain = (unsigned __int64)m_domain;
 
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
     EVENT_DATA_DESCRIPTOR eventData[4];
     EventDataDescCreate(&eventData[0], &m_count, sizeof(const unsigned int)  );
     EventDataDescCreate(&eventData[1], &appDomain, sizeof(unsigned __int64)  );
@@ -1441,7 +1434,7 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootStaticVar, _countof(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRootStaticVar(m_count, appDomain, instance, m_used, m_buffer);
-#endif //!defined(FEATURE_PAL)
+#endif //!defined(HOST_UNIX)
     result |= EventPipeWriteEventGCBulkRootStaticVar(m_count, appDomain, instance, m_used, m_buffer);
 
     _ASSERTE(result == ERROR_SUCCESS);
@@ -4176,7 +4169,7 @@ void InitializeEventTracing()
     if (FAILED(hr))
         return;
 
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
     // Register CLR providers with the OS
     if (g_pEtwTracer == NULL)
     {
@@ -4192,9 +4185,9 @@ void InitializeEventTracing()
     // providers can do so now
     ETW::TypeSystemLog::PostRegistrationInit();
 
-#if defined(FEATURE_PAL) && defined (FEATURE_PERFTRACING)
+#if defined(HOST_UNIX) && defined (FEATURE_PERFTRACING)
     XplatEventLogger::InitializeLogger();
-#endif // FEATURE_PAL && FEATURE_PERFTRACING
+#endif // HOST_UNIX && FEATURE_PERFTRACING
 }
 
 // Plumbing to funnel event pipe callbacks and ETW callbacks together into a single common
@@ -4207,12 +4200,12 @@ void InitializeEventTracing()
 // a suitable token, this implementation has a different callback for every EventPipe provider
 // that ultimately funnels them all into a common handler.
 
-#if defined(FEATURE_PAL)
+#if defined(HOST_UNIX)
 // CLR_GCHEAPCOLLECT_KEYWORD is defined by the generated ETW manifest on Windows.
 // On non-Windows, we need to make sure that this is defined.  Given that we can't change
 // the value due to compatibility, we specify it here rather than generating defines based on the manifest.
 #define CLR_GCHEAPCOLLECT_KEYWORD 0x800000
-#endif // defined(FEATURE_PAL)
+#endif // defined(HOST_UNIX)
 
 // CallbackProviderIndex provides a quick identification of which provider triggered the
 // ETW callback.
@@ -4238,13 +4231,13 @@ VOID EtwCallbackCommon(
     LIMITED_METHOD_CONTRACT;
 
     bool bIsPublicTraceHandle = ProviderIndex == DotNETRuntime;
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
     static_assert(GCEventLevel_Fatal == TRACE_LEVEL_FATAL, "GCEventLevel_Fatal value mismatch");
     static_assert(GCEventLevel_Error == TRACE_LEVEL_ERROR, "GCEventLevel_Error value mismatch");
     static_assert(GCEventLevel_Warning == TRACE_LEVEL_WARNING, "GCEventLevel_Warning mismatch");
     static_assert(GCEventLevel_Information == TRACE_LEVEL_INFORMATION, "GCEventLevel_Information mismatch");
     static_assert(GCEventLevel_Verbose == TRACE_LEVEL_VERBOSE, "GCEventLevel_Verbose mismatch");
-#endif // !defined(FEATURE_PAL)
+#endif // !defined(HOST_UNIX)
     GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
     GCEventLevel level = static_cast<GCEventLevel>(Level);
     GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
@@ -4286,7 +4279,7 @@ VOID EtwCallbackCommon(
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
         LONGLONG l64ClientSequenceNumber = 0;
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
         PEVENT_FILTER_DESCRIPTOR FilterData = (PEVENT_FILTER_DESCRIPTOR)pFilterData;
         if ((FilterData != NULL) &&
            (FilterData->Type == 1) &&
@@ -4294,7 +4287,7 @@ VOID EtwCallbackCommon(
         {
             l64ClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
         }
-#endif // !defined(FEATURE_PAL)
+#endif // !defined(HOST_UNIX)
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
     // TypeSystemLog needs a notification when certain keywords are modified, so
@@ -4364,7 +4357,7 @@ VOID EventPipeEtwCallbackDotNETRuntimePrivate(
 }
 
 
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
 HRESULT ETW::CEtwTracer::Register()
 {
     WRAPPER_NO_CONTRACT;
@@ -4540,7 +4533,7 @@ extern "C"
                 }
             }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // We only do this on amd64  (NOT ARM, because ARM uses frame based stack crawling)
             // If we have turned on the JIT keyword to the INFORMATION setting (needed to get JIT names) then
             // we assume that we also want good stack traces so we need to publish unwind information so
@@ -4580,7 +4573,7 @@ extern "C"
 }
 #endif // FEATURE_REDHAWK
 
-#endif // FEATURE_PAL
+#endif // HOST_UNIX
 #ifndef FEATURE_REDHAWK
 
 /****************************************************************************/
@@ -4654,11 +4647,11 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
 
         if (pCf->IsFrameless())
         {
-#ifndef BIT64
+#ifndef HOST_64BIT
             exceptionEIP = (PVOID)pCf->GetRegisterSet()->ControlPC;
 #else
             exceptionEIP = (PVOID)GetIP(pCf->GetRegisterSet()->pContext);
-#endif //!BIT64
+#endif //!HOST_64BIT
         }
         else
         {
@@ -4939,13 +4932,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
             UINT8 startupMode = 0;
             UINT startupFlags = 0;
             PathString dllPath;
-            UINT8 Sku = 0;
-            _ASSERTE(CLRHosted() || g_fEEHostedStartup || // CLR started through one of the Hosting API CLRHosted() returns true if CLR started through the V2 Interface while
-                                                          // g_fEEHostedStartup is true if CLR is hosted through the V1 API.
-                     g_fEEComActivatedStartup ||          //CLR started as a COM object
-                     g_fEEOtherStartup  );                //In case none of the 4 above mentioned cases are true for example ngen, ildasm then we asssume its a "other" startup
-
-            Sku = ETW::InfoLog::InfoStructs::CoreCLR;
+            UINT8 Sku = ETW::InfoLog::InfoStructs::CoreCLR;
 
             //version info for clr.dll
             USHORT vmMajorVersion = CLR_MAJOR_VERSION;
@@ -4959,28 +4946,9 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
             USHORT bclBuildVersion = VER_ASSEMBLYBUILD;
             USHORT bclQfeVersion = VER_ASSEMBLYBUILD_QFE;
 
-            LPCGUID comGUID=&g_EEComObjectGuid;
+            LPCGUID comGUID=&IID_NULL;
 
             PCWSTR lpwszCommandLine = W("");
-
-
-
-            // Determine the startupmode
-            if (CLRHosted() || g_fEEHostedStartup)
-            {
-                //Hosted CLR
-                startupMode = ETW::InfoLog::InfoStructs::HostedCLR;
-            }
-            else if(g_fEEComActivatedStartup)
-            {
-                //com activated
-                startupMode = ETW::InfoLog::InfoStructs::COMActivated;
-            }
-            else if(g_fEEOtherStartup)
-            {
-                //startup type is other
-                startupMode = ETW::InfoLog::InfoStructs::Other;
-            }
 
 
             // if WszGetModuleFileName fails, we return an empty string
@@ -5041,7 +5009,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
 
 VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
 {
-#if  !defined(FEATURE_PAL) //UNIXTODO: Enable EmitCodeSymbols
+#if  !defined(HOST_UNIX) //UNIXTODO: Enable EmitCodeSymbols
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -5098,7 +5066,7 @@ VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
             }
         }
     } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
-#endif//  !defined(FEATURE_PAL)
+#endif//  !defined(HOST_UNIX)
 }
 
 /* Returns the length of an in-memory symbol stream
@@ -5707,7 +5675,7 @@ VOID ETW::EnumerationLog::ProcessShutdown()
 
 /****************************************************************************/
 /****************************************************************************/
-/* Begining of helper functions */
+/* beginning of helper functions */
 /****************************************************************************/
 /****************************************************************************/
 
@@ -6164,8 +6132,6 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     if(bFireDomainModuleEvents)
     {
-        if(pModule->GetDomain()->IsSharedDomain()) // for shared domains, we do not fire domainmodule event
-            return;
         ullAppDomainId = (ULONGLONG)pModule->GetDomainAssembly()->GetAppDomain();
     }
 
@@ -7005,9 +6971,8 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
 #ifdef FEATURE_CODE_VERSIONING
         if (fGetCodeIds && pMD->IsVersionable())
         {
-            CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
-            _ASSERTE(pCodeVersionManager->LockOwnedByCurrentThread());
-            nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, codeStart);
+            _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+            nativeCodeVersion = pMD->GetCodeVersionManager()->GetNativeCodeVersion(pMD, codeStart);
             if (nativeCodeVersion.IsNull())
             {
                 // The code version manager hasn't been updated with the jitted code
@@ -7144,7 +7109,7 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAl
 #ifdef FEATURE_CODE_VERSIONING
         if (pDomainFilter)
         {
-            CodeVersionManager::TableLockHolder lkRejitMgrModule(pDomainFilter->GetCodeVersionManager());
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
             SendEventsForJitMethodsHelper(
                 pLoaderAllocatorFilter,
                 dwEventOptions,
@@ -7644,10 +7609,10 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
 }
 #endif // FEATURE_PERFTRACING
 
-#if defined(FEATURE_PAL)  && defined(FEATURE_PERFTRACING)
+#if defined(HOST_UNIX)  && defined(FEATURE_PERFTRACING)
 // This is a wrapper method for LTTng. See https://github.com/dotnet/coreclr/pull/27273 for details.
 extern "C" bool XplatEventLoggerIsEnabled()
 {
     return XplatEventLogger::IsEventLoggingEnabled();
 }
-#endif // FEATURE_PAL && FEATURE_PERFTRACING
+#endif // HOST_UNIX && FEATURE_PERFTRACING

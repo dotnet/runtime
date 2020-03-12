@@ -18,12 +18,76 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public class DebugInfo
     {
-        private List<DebugInfoBoundsEntry> _boundsList = new List<DebugInfoBoundsEntry>();
-        private List<NativeVarInfo> _variablesList = new List<NativeVarInfo>();
+        private readonly ReadyToRunReader _readyToRunReader;
+        private readonly int _offset;
+        private List<DebugInfoBoundsEntry> _boundsList;
+        private List<NativeVarInfo> _variablesList;
         private Machine _machine;
 
-        public DebugInfo(byte[] image, int offset, Machine machine)
+        public DebugInfo(ReadyToRunReader readyToRunReader, int offset)
         {
+            this._readyToRunReader = readyToRunReader;
+            this._offset = offset;
+        }
+
+        public List<DebugInfoBoundsEntry> BoundsList
+        {
+            get
+            {
+                EnsureInitialized();
+                return _boundsList;
+            }
+        }
+
+        public List<NativeVarInfo> VariablesList
+        {
+            get
+            {
+                EnsureInitialized();
+                return _variablesList;
+            }
+        }
+
+        public Machine Machine
+        {
+            get
+            {
+                EnsureInitialized();
+                return _machine;
+            }
+        }
+
+        /// <summary>
+        /// Convert a register number in debug info into a machine-specific register
+        /// </summary>
+        public static string GetPlatformSpecificRegister(Machine machine, int regnum)
+        {
+            switch (machine)
+            {
+                case Machine.I386:
+                    return ((x86.Registers)regnum).ToString();
+                case Machine.Amd64:
+                    return ((Amd64.Registers)regnum).ToString();
+                case Machine.Arm:
+                    return ((Arm.Registers)regnum).ToString();
+                case Machine.Arm64:
+                    return ((Arm64.Registers)regnum).ToString();
+                default:
+                    throw new NotImplementedException($"No implementation for machine type {machine}.");
+            }
+        }
+
+        private void EnsureInitialized()
+        {
+            if (_boundsList != null)
+            {
+                return;
+            }
+            int offset = _offset;
+            _boundsList = new List<DebugInfoBoundsEntry>();
+            _variablesList = new List<NativeVarInfo>();
+            Machine machine = _readyToRunReader.Machine;
+            byte[] image = _readyToRunReader.Image;
             _machine = machine;
 
             // Get the id of the runtime function from the NativeArray
@@ -50,30 +114,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             if (variablesByteCount > 0)
             {
                 ParseNativeVarInfo(image, variablesOffset);
-            }
-        }
-
-        public List<DebugInfoBoundsEntry> BoundsList => _boundsList;
-        public List<NativeVarInfo> VariablesList => _variablesList;
-        public Machine Machine => _machine;
-
-        /// <summary>
-        /// Convert a register number in debug info into a machine-specific register
-        /// </summary>
-        public static string GetPlatformSpecificRegister(Machine machine, int regnum)
-        {
-            switch (machine)
-            {
-                case Machine.I386:
-                    return ((x86.Registers)regnum).ToString();
-                case Machine.Amd64:
-                    return ((Amd64.Registers)regnum).ToString();
-                case Machine.Arm:
-                    return ((Arm.Registers)regnum).ToString();
-                case Machine.Arm64:
-                    return ((Arm64.Registers)regnum).ToString();
-                default:
-                    throw new NotImplementedException($"No implementation for machine type {machine}.");
             }
         }
 

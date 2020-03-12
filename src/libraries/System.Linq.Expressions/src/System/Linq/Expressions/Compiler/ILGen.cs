@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(methodBase is MethodInfo || methodBase is ConstructorInfo);
 
             var ctor = methodBase as ConstructorInfo;
-            if ((object)ctor != null)
+            if ((object?)ctor != null)
             {
                 il.Emit(opcode, ctor);
             }
@@ -323,11 +323,10 @@ namespace System.Linq.Expressions.Compiler
             il.Emit(fi.IsStatic ? OpCodes.Stsfld : OpCodes.Stfld, fi);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
         internal static void EmitNew(this ILGenerator il, ConstructorInfo ci)
         {
             Debug.Assert(ci != null);
-            Debug.Assert(!ci.DeclaringType.ContainsGenericParameters);
+            Debug.Assert(!ci.DeclaringType!.ContainsGenericParameters);
 
             il.Emit(OpCodes.Newobj, ci);
         }
@@ -440,21 +439,19 @@ namespace System.Linq.Expressions.Compiler
         }
 
         // matches TryEmitConstant
-        internal static bool CanEmitConstant(object value, Type type)
+        internal static bool CanEmitConstant(object? value, Type type)
         {
             if (value == null || CanEmitILConstant(type))
             {
                 return true;
             }
 
-            Type t = value as Type;
-            if (t != null)
+            if (value is Type t)
             {
                 return ShouldLdtoken(t);
             }
 
-            MethodBase mb = value as MethodBase;
-            return mb != null && ShouldLdtoken(mb);
+            return value is MethodBase mb && ShouldLdtoken(mb);
         }
 
         // matches TryEmitILConstant
@@ -485,7 +482,7 @@ namespace System.Linq.Expressions.Compiler
         //
         // Note: we support emitting more things as IL constants than
         // Linq does
-        internal static bool TryEmitConstant(this ILGenerator il, object value, Type type, ILocalCache locals)
+        internal static bool TryEmitConstant(this ILGenerator il, object? value, Type type, ILocalCache locals)
         {
             if (value == null)
             {
@@ -503,8 +500,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             // Check for a few more types that we support emitting as constants
-            Type t = value as Type;
-            if (t != null)
+            if (value is Type t)
             {
                 if (ShouldLdtoken(t))
                 {
@@ -520,11 +516,10 @@ namespace System.Linq.Expressions.Compiler
                 return false;
             }
 
-            MethodBase mb = value as MethodBase;
-            if (mb != null && ShouldLdtoken(mb))
+            if (value is MethodBase mb && ShouldLdtoken(mb))
             {
                 il.Emit(OpCodes.Ldtoken, mb);
-                Type dt = mb.DeclaringType;
+                Type? dt = mb.DeclaringType;
                 if (dt != null && dt.IsGenericType)
                 {
                     il.Emit(OpCodes.Ldtoken, dt);
@@ -561,7 +556,7 @@ namespace System.Linq.Expressions.Compiler
                 return false;
             }
 
-            Type dt = mb.DeclaringType;
+            Type? dt = mb.DeclaringType;
             return dt == null || ShouldLdtoken(dt);
         }
 
@@ -575,7 +570,7 @@ namespace System.Linq.Expressions.Compiler
 
                 if (TryEmitILConstant(il, value, nonNullType))
                 {
-                    il.Emit(OpCodes.Newobj, type.GetConstructor(new[] { nonNullType }));
+                    il.Emit(OpCodes.Newobj, type.GetConstructor(new[] { nonNullType })!);
                     return true;
                 }
 
@@ -700,7 +695,6 @@ namespace System.Linq.Expressions.Compiler
         }
 
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static void EmitNumericConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked)
         {
             TypeCode tc = typeTo.GetTypeCode();
@@ -917,7 +911,7 @@ namespace System.Linq.Expressions.Compiler
             Type nnTypeTo = typeTo.GetNonNullableType();
             il.EmitConvertToType(nnTypeFrom, nnTypeTo, isChecked, locals);
             // construct result type
-            ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo });
+            ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo })!;
             il.Emit(OpCodes.Newobj, ci);
             labEnd = il.DefineLabel();
             il.Emit(OpCodes.Br_S, labEnd);
@@ -938,7 +932,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(typeTo.IsNullableType());
             Type nnTypeTo = typeTo.GetNonNullableType();
             il.EmitConvertToType(typeFrom, nnTypeTo, isChecked, locals);
-            ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo });
+            ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo })!;
             il.Emit(OpCodes.Newobj, ci);
         }
 
@@ -994,7 +988,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitHasValue(this ILGenerator il, Type nullableType)
         {
-            MethodInfo mi = nullableType.GetMethod("get_HasValue", BindingFlags.Instance | BindingFlags.Public);
+            MethodInfo mi = nullableType.GetMethod("get_HasValue", BindingFlags.Instance | BindingFlags.Public)!;
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
@@ -1002,7 +996,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitGetValue(this ILGenerator il, Type nullableType)
         {
-            MethodInfo mi = nullableType.GetMethod("get_Value", BindingFlags.Instance | BindingFlags.Public);
+            MethodInfo mi = nullableType.GetMethod("get_Value", BindingFlags.Instance | BindingFlags.Public)!;
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
@@ -1010,7 +1004,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitGetValueOrDefault(this ILGenerator il, Type nullableType)
         {
-            MethodInfo mi = nullableType.GetMethod("GetValueOrDefault", System.Type.EmptyTypes);
+            MethodInfo mi = nullableType.GetMethod("GetValueOrDefault", System.Type.EmptyTypes)!;
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
@@ -1064,7 +1058,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (arrayType.IsSZArray)
             {
-                il.Emit(OpCodes.Newarr, arrayType.GetElementType());
+                il.Emit(OpCodes.Newarr, arrayType.GetElementType()!);
             }
             else
             {
@@ -1073,7 +1067,7 @@ namespace System.Linq.Expressions.Compiler
                 {
                     types[i] = typeof(int);
                 }
-                ConstructorInfo ci = arrayType.GetConstructor(types);
+                ConstructorInfo? ci = arrayType.GetConstructor(types);
                 Debug.Assert(ci != null);
                 il.EmitNew(ci);
             }
@@ -1085,7 +1079,9 @@ namespace System.Linq.Expressions.Compiler
 
         private static void EmitDecimal(this ILGenerator il, decimal value)
         {
-            int[] bits = decimal.GetBits(value);
+            Span<int> bits = stackalloc int[4];
+            decimal.GetBits(value, bits);
+
             int scale = (bits[3] & int.MaxValue) >> 16;
             if (scale == 0)
             {
@@ -1161,7 +1157,7 @@ namespace System.Linq.Expressions.Compiler
         /// Emits default(T)
         /// Semantics match C# compiler behavior
         /// </summary>
-        internal static void EmitDefault(this ILGenerator il, Type type, ILocalCache locals)
+        internal static void EmitDefault(this ILGenerator il, Type type, ILocalCache? locals)
         {
             switch (type.GetTypeCode())
             {
@@ -1179,7 +1175,7 @@ namespace System.Linq.Expressions.Compiler
                         // This is the IL for default(T) if T is a generic type
                         // parameter, so it should work for any type. It's also
                         // the standard pattern for structs.
-                        LocalBuilder lb = locals.GetLocal(type);
+                        LocalBuilder lb = locals!.GetLocal(type);
                         il.Emit(OpCodes.Ldloca, lb);
                         il.Emit(OpCodes.Initobj, type);
                         il.Emit(OpCodes.Ldloc, lb);

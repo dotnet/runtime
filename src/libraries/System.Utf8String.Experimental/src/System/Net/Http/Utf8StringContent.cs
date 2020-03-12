@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Net.Http.Headers;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
@@ -19,7 +20,7 @@ namespace System.Net.Http
         {
         }
 
-        public Utf8StringContent(Utf8String content, string mediaType)
+        public Utf8StringContent(Utf8String content, string? mediaType)
         {
             if (content is null)
             {
@@ -36,15 +37,14 @@ namespace System.Net.Http
             };
         }
 
-        protected override Task<Stream> CreateContentReadStreamAsync()
-        {
-            return Task.FromResult<Stream>(new Utf8StringStream(_content));
-        }
+        protected override Task<Stream> CreateContentReadStreamAsync() =>
+            Task.FromResult<Stream>(new Utf8StringStream(_content));
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
-        {
-            return stream.WriteAsync(_content.AsMemoryBytes()).AsTask();
-        }
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+            SerializeToStreamAsync(stream, context, default);
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
+            stream.WriteAsync(_content.AsMemoryBytes(), cancellationToken).AsTask();
 
         protected override bool TryComputeLength(out long length)
         {

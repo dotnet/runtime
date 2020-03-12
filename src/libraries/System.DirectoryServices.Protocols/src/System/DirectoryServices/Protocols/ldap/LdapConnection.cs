@@ -205,7 +205,7 @@ namespace System.DirectoryServices.Protocols
                         temp.Append(servers[i]);
                         if (i < servers.Length - 1)
                         {
-                            temp.Append(" ");
+                            temp.Append(' ');
                         }
                     }
                 }
@@ -1298,7 +1298,7 @@ namespace System.DirectoryServices.Protocols
                             managedControls[i].ldctl_value = new berval
                             {
                                 bv_len = byteControlValue.Length,
-                                bv_val = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(byte)) * byteControlValue.Length)
+                                bv_val = Marshal.AllocHGlobal(sizeof(byte) * byteControlValue.Length)
                             };
                             Marshal.Copy(byteControlValue, 0, managedControls[i].ldctl_value.bv_val, managedControls[i].ldctl_value.bv_len);
                         }

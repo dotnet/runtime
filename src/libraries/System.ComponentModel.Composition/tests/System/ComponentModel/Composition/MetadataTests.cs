@@ -169,7 +169,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ValidMetadataDiscoveredByComponentCatalogTest()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
@@ -273,6 +273,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void InvalidDuplicateMetadataOnMember_ShouldThrow()
         {
             var part = AttributedModelServices.CreatePart(new ClassWithInvalidDuplicateMetadataOnMember());
@@ -319,6 +320,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ValidDuplicateMetadataOnMember_ShouldDiscoverAllMetadata()
         {
             var container = ContainerFactory.Create();
@@ -359,111 +361,6 @@ namespace System.ComponentModel.Composition
         #endregion
 
         #region Tests for weakly supported metadata as part of contract
-
-        [Fact]
-        [ActiveIssue(468388)]
-        public void FailureImportForNoRequiredMetadatForExportCollection()
-        {
-            CompositionContainer container = ContainerFactory.Create();
-
-            MyImporterWithExportCollection importer;
-            CompositionBatch batch = new CompositionBatch();
-            batch.AddPart(new MyExporterWithNoMetadata());
-            batch.AddPart(importer = new MyImporterWithExportCollection());
-
-            throw new NotImplementedException();
-
-            //var result = container.TryCompose();
-
-            //Assert.True(result.Succeeded, "Composition should be successful because collection import is not required");
-            //Assert.Equal(1, result.Issues.Count);
-            //Assert.True(result.Issues[0].Description.Contains("Foo"), "The missing required metadata is 'Foo'");
-        }
-
-        [Fact]
-        [ActiveIssue(472538)]
-        public void FailureImportForNoRequiredMetadataThroughComponentCatalogTest()
-        {
-            var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
-            FailureImportForNoRequiredMetadataThroughCatalog(container);
-        }
-
-        private void FailureImportForNoRequiredMetadataThroughCatalog(CompositionContainer container)
-        {
-            throw new NotImplementedException();
-
-            //var export1 = container.GetExport<MyImporterWithExport>();
-
-            //export1.TryGetExportedValue().VerifyFailure(CompositionIssueId.RequiredMetadataNotFound, CompositionIssueId.CardinalityMismatch);
-
-            //var export2 = container.GetExport<MyImporterWithExportCollection>();
-            //export2.TryGetExportedValue().VerifySuccess(CompositionIssueId.RequiredMetadataNotFound);
-
-            //container.TryGetExportedValue<MyImporterWithValue>().VerifyFailure(CompositionIssueId.RequiredMetadataNotFound, CompositionIssueId.CardinalityMismatch);
-        }
-
-        [Fact]
-        [ActiveIssue(468388)]
-        public void SelectiveImportBasedOnMetadataForExport()
-        {
-            CompositionContainer container = ContainerFactory.Create();
-
-            MyImporterWithExportForSelectiveImport importer;
-            CompositionBatch batch = new CompositionBatch();
-            batch.AddPart(new MyExporterWithNoMetadata());
-            batch.AddPart(new MyExporterWithMetadata());
-            batch.AddPart(importer = new MyImporterWithExportForSelectiveImport());
-
-            throw new NotImplementedException();
-            //var result = container.TryCompose();
-
-            //Assert.True(result.Succeeded, "Composition should be successfull because one of two exports meets both the contract name and metadata requirement");
-            //Assert.Equal(1, result.Issues.Count);
-            //Assert.True(result.Issues[0].Description.Contains("Foo"), "The missing required metadata is 'Foo'");
-            //Assert.NotNull(importer.ValueInfo, "The import should really get bound");
-        }
-
-        [Fact]
-        [ActiveIssue(468388)]
-        public void SelectiveImportBasedOnMetadataForExportCollection()
-        {
-            CompositionContainer container = ContainerFactory.Create();
-
-            MyImporterWithExportCollectionForSelectiveImport importer;
-            CompositionBatch batch = new CompositionBatch();
-            batch.AddPart(new MyExporterWithNoMetadata());
-            batch.AddPart(new MyExporterWithMetadata());
-            batch.AddPart(importer = new MyImporterWithExportCollectionForSelectiveImport());
-
-            throw new NotImplementedException();
-
-            //var result = container.TryCompose();
-
-            //Assert.True(result.Succeeded, "Composition should be successfull in anyway for collection import");
-            //Assert.Equal(1, result.Issues.Count);
-            //Assert.True(result.Issues[0].Description.Contains("Foo"), "The missing required metadata is 'Foo'");
-            //Assert.Equal(1, importer.ValueInfoCol.Count);
-            //Assert.NotNull(importer.ValueInfoCol[0], "The import should really get bound");
-        }
-
-        [Fact]
-        [ActiveIssue(472538)]
-        public void SelectiveImportBasedOnMetadataThruoughComponentCatalogTest()
-        {
-            var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
-            SelectiveImportBasedOnMetadataThruoughCatalog(container);
-        }
-
-        private void SelectiveImportBasedOnMetadataThruoughCatalog(CompositionContainer container)
-        {
-            throw new NotImplementedException();
-
-            //var export1 = container.GetExport<MyImporterWithExportForSelectiveImport>();
-            //export1.TryGetExportedValue().VerifySuccess(CompositionIssueId.RequiredMetadataNotFound);
-
-            //var export2 = container.GetExport<MyImporterWithExportCollectionForSelectiveImport>();
-            //export2.TryGetExportedValue().VerifySuccess(CompositionIssueId.RequiredMetadataNotFound);
-        }
 
         [Fact]
         public void ChildParentContainerTest1()
@@ -529,52 +426,7 @@ namespace System.ComponentModel.Composition
         #region Tests for strongly typed metadata as part of contract
 
         [Fact]
-        [ActiveIssue(468388)]
-        public void SelectiveImportBySTM_Export()
-        {
-            CompositionContainer container = ContainerFactory.Create();
-            CompositionBatch batch = new CompositionBatch();
-
-            MyImporterWithExportStronglyTypedMetadata importer;
-            batch.AddPart(new MyExporterWithNoMetadata());
-            batch.AddPart(new MyExporterWithMetadata());
-            batch.AddPart(importer = new MyImporterWithExportStronglyTypedMetadata());
-
-            throw new NotImplementedException();
-
-            //var result = container.TryCompose();
-
-            //Assert.True(result.Succeeded, "Composition should be successful becasue one of two exports does not have required metadata");
-            //Assert.Equal(1, result.Issues.Count);
-            //Assert.NotNull(importer.ValueInfo, "The valid export should really get bound");
-            //Assert.Equal("Bar", importer.ValueInfo.Metadata.Foo);
-        }
-
-        [Fact]
-        [ActiveIssue(468388)]
-        public void SelectiveImportBySTM_ExportCollection()
-        {
-            CompositionContainer container = ContainerFactory.Create();
-
-            MyImporterWithExportCollectionStronglyTypedMetadata importer;
-            CompositionBatch batch = new CompositionBatch();
-
-            batch.AddPart(new MyExporterWithNoMetadata());
-            batch.AddPart(new MyExporterWithMetadata());
-            batch.AddPart(importer = new MyImporterWithExportCollectionStronglyTypedMetadata());
-
-            throw new NotImplementedException();
-
-            //var result = container.TryCompose();
-
-            //Assert.True(result.Succeeded, "Collection import should be successful in anyway");
-            //Assert.Equal(1, result.Issues.Count);
-            //Assert.Equal(1, importer.ValueInfoCol.Count);
-            //Assert.Equal("Bar", importer.ValueInfoCol.First().Metadata.Foo);
-        }
-
-        [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void SelectiveImportBySTMThroughComponentCatalog1()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
@@ -585,14 +437,6 @@ namespace System.ComponentModel.Composition
         {
             Assert.NotNull(container.GetExport<IMyExporter, IMetadataView>());
             var result2 = container.GetExports<IMyExporter, IMetadataView>();
-        }
-
-        [Fact]
-        [ActiveIssue(468388)]
-        public void SelectiveImportBySTMThroughComponentCatalog2()
-        {
-            var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
-            SelectiveImportBySTMThroughCatalog2(container);
         }
 
         private static void SelectiveImportBySTMThroughCatalog2(CompositionContainer container)
@@ -611,7 +455,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void TestMultipleStronglyTypedAttributes()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
@@ -622,7 +466,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void TestMultipleStronglyTypedAttributesAsIEnumerable()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
@@ -633,7 +477,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void TestMultipleStronglyTypedAttributesAsArray()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();
@@ -644,7 +488,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void TestMultipleStronglyTypedAttributesWithInvalidType()
         {
             var container = ContainerFactory.CreateWithDefaultAttributedCatalog();

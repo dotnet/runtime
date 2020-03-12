@@ -20,16 +20,6 @@ namespace Internal.IL.Stubs
             Debug.Assert(((MetadataType)method.OwningType).Name == "RuntimeHelpers");
             string methodName = method.Name;
 
-            if (methodName == "GetRawSzArrayData")
-            {
-                ILEmitter emit = new ILEmitter();
-                ILCodeStream codeStream = emit.NewCodeStream();
-                codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(method.Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawArrayData").GetField("Data")));
-                codeStream.Emit(ILOpcode.ret);
-                return emit.Link(method);
-            }
-
             if (methodName == "GetMethodTable")
             {
                 ILEmitter emit = new ILEmitter();

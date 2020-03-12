@@ -54,6 +54,7 @@ public:
     static PEImageLayout* LoadFromFlat(PEImageLayout* pflatimage);
     static PEImageLayout* Load(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bThrowOnError = TRUE);
     static PEImageLayout* LoadFlat(PEImage* pOwner);
+    static PEImageLayout* LoadNative(LPCWSTR fullPath);
     static PEImageLayout* Map(PEImage* pOwner);
 #endif
     PEImageLayout();
@@ -90,9 +91,9 @@ class RawImageLayout: public PEImageLayout
     VPTR_VTABLE_CLASS(RawImageLayout,PEImageLayout)
 protected:
     CLRMapViewHolder m_DataCopy;
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     HModuleHolder m_LibraryHolder;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 public:
     RawImageLayout(const void *flat, COUNT_T size,PEImage* pOwner);
@@ -117,7 +118,7 @@ class MappedImageLayout: public PEImageLayout
     VPTR_VTABLE_CLASS(MappedImageLayout,PEImageLayout)
     VPTR_UNIQUE(0x15)
 protected:
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     HandleHolder m_FileMap;
     CLRMapViewHolder m_FileView;
 #else
@@ -129,7 +130,7 @@ public:
 #endif
 };
 
-#if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_PAL)
+#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
 class LoadedImageLayout: public PEImageLayout
 {
     VPTR_VTABLE_CLASS(LoadedImageLayout,PEImageLayout)
@@ -152,7 +153,7 @@ public:
     }
 #endif // !DACCESS_COMPILE
 };
-#endif // !CROSSGEN_COMPILE && !FEATURE_PAL
+#endif // !CROSSGEN_COMPILE && !TARGET_UNIX
 
 class FlatImageLayout: public PEImageLayout
 {
@@ -168,7 +169,15 @@ public:
 
 };
 
+#ifndef DACCESS_COMPILE
+class NativeImageLayout : public PEImageLayout
+{
+    VPTR_VTABLE_CLASS(NativeImageLayout, PEImageLayout)
 
+public:
+    NativeImageLayout(LPCWSTR fullPath);
+};
+#endif
 
 #endif  // PEIMAGELAYOUT_H_
 

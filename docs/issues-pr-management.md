@@ -25,7 +25,6 @@ Here are a few of the most salient components of working well together, and the 
 ## Scenarios where area owners will be asked to manage their issues and pull requests:
 - All issues with the `untriaged` label are considered untriaged and close to product release, teams will be asked to triage them.
 - During a release endgame and for servicing, issues and pull requests targeting a particular release will be asked to have a milestone set.
-- All pull requests should be 'squash on merge', except for merges across branches and other extraneous circumstances
 # FAQ
 ## What designates a 'triaged' issue?
 By default, all incoming issues will be labeled with an `untriaged` label.  All issues with this label require action from the area owner to triage.  At certain times in the release, area owners may be asked to triage their issues.  Triaging an issue may be as simple as removing the `untriaged` label, but for most communities/teams this means assigning an appropriate milestone where the issue is intended to be addressed.
@@ -53,8 +52,6 @@ One team manager (M2) (perhaps rotating) will have accountability to ensuring th
 - Release issue burn down
 
 Area level owners will then manage their own pull requests and issues as they see fit.
-## Is this a squash on merge repo?
-Yes, except for merges across branches and other extraneous circumstances.  Initially rebase merge will be disabled, and can be reassessed in time.
 ## How will labels be managed?
 There are few access controls, so in general everyone will have access - be a good global citizen.  When in doubt ask the team manager that is responsible.
 ## What will be dotnet/runtime's branch policy?

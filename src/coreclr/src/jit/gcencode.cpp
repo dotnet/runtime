@@ -63,9 +63,9 @@ ReturnKind GCInfo::getReturnKind()
                 case TYP_STRUCT:
                     if (compiler->IsHfa(structType))
                     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                         _ASSERTE(false && "HFAs not expected for X86");
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
                         return RT_Scalar;
                     }
@@ -81,21 +81,21 @@ ReturnKind GCInfo::getReturnKind()
                         return GetStructReturnKind(first, second);
                     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                 case TYP_FLOAT:
                 case TYP_DOUBLE:
                     return RT_Float;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
                 default:
                     return RT_Scalar;
             }
         }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return RT_Float;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
         default:
             return RT_Scalar;
@@ -924,7 +924,7 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         goto DO_RETURN;
     }
 
-    if (GCInfoEncodesReturnKind() && (state->returnKind != header.returnKind))
+    if (state->returnKind != header.returnKind)
     {
         state->returnKind = header.returnKind;
         codeSet           = 2; // Two byte encoding
@@ -973,7 +973,7 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         }
     }
 
-    if (GCInfoEncodesRevPInvokeFrame() && (state->revPInvokeOffset != header.revPInvokeOffset))
+    if (state->revPInvokeOffset != header.revPInvokeOffset)
     {
         assert(state->revPInvokeOffset == INVALID_REV_PINVOKE_OFFSET ||
                state->revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET);
@@ -1575,7 +1575,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->doubleAlign = compiler->genDoubleAlign();
 #endif
 
-    header->security = compiler->opts.compNeedSecurityCheck;
+    header->security = false;
 
     header->handlers = compiler->ehHasCallableHandlers();
     header->localloc = compiler->compLocallocUsed;
@@ -1587,14 +1587,11 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->genericsContextIsMethodDesc =
         header->genericsContext && (compiler->info.compMethodInfo->options & (CORINFO_GENERICS_CTXT_FROM_METHODDESC));
 
-    if (GCInfoEncodesReturnKind())
-    {
-        ReturnKind returnKind = getReturnKind();
-        _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
-        _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
-        _ASSERTE(((int)returnKind < (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
-        header->returnKind = returnKind;
-    }
+    ReturnKind returnKind = getReturnKind();
+    _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
+    _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
+    _ASSERTE(((int)returnKind < (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
+    header->returnKind = returnKind;
 
     header->gsCookieOffset = INVALID_GS_COOKIE_OFFSET;
     if (compiler->getNeedsGSSecurityCookie())
@@ -2452,7 +2449,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
     if (compiler->codeGen->GetInterruptible())
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         assert(compiler->IsFullPtrRegMapRequired());
 
         unsigned ptrRegs = 0;
@@ -2776,7 +2773,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
             if (!mask)
                 dest = base;
         }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
         /* Terminate the table with 0xFF */
 
@@ -2786,7 +2783,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
     }
     else if (compiler->isFramePointerUsed()) // GetInterruptible() is false
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         /*
             Encoding table for methods with an EBP frame and
                                that are not fully interruptible
@@ -3063,7 +3060,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
             if (!mask)
                 dest = base;
         }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
         /* Terminate the table with 0xFF */
 
@@ -3075,7 +3072,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
     {
         assert(compiler->IsFullPtrRegMapRequired());
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
         regPtrDsc*       genRegPtrTemp;
         regNumber        thisRegNum = regNumber(0);
@@ -3540,7 +3537,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
         assert(pasStk.pasCurDepth() == 0);
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
         /* Terminate the table with 0xFF */
 
@@ -3799,7 +3796,7 @@ public:
         }
     }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     void SetWantsReportOnlyLeaf()
     {
         m_gcInfoEncoder->SetWantsReportOnlyLeaf();
@@ -3808,7 +3805,7 @@ public:
             printf("Set WantsReportOnlyLeaf.\n");
         }
     }
-#elif defined(_TARGET_ARMARCH_)
+#elif defined(TARGET_ARMARCH)
     void SetHasTailCalls()
     {
         m_gcInfoEncoder->SetHasTailCalls();
@@ -3817,7 +3814,7 @@ public:
             printf("Set HasTailCalls.\n");
         }
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     void SetSizeOfStackOutgoingAndScratchArea(UINT32 size)
     {
@@ -3919,55 +3916,38 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
                                                        compiler->lvaGSSecurityCookie),
                                                    prologSize, methodSize);
     }
-    else if (compiler->opts.compNeedSecurityCheck || compiler->lvaReportParamTypeArg() ||
-             compiler->lvaKeepAliveAndReportThis())
+    else if (compiler->lvaReportParamTypeArg() || compiler->lvaKeepAliveAndReportThis())
     {
         gcInfoEncoderWithLog->SetPrologSize(prologSize);
-    }
-
-    if (compiler->opts.compNeedSecurityCheck)
-    {
-        assert(compiler->lvaSecurityObject != BAD_VAR_NUM);
-
-        // A VM requirement due to how the decoder works (it ignores partially interruptible frames when
-        // an exception has escaped, but the VM requires the security object to live on).
-        assert(compiler->codeGen->GetInterruptible());
-
-        // The lv offset is FP-relative, and the using code expects caller-sp relative, so translate.
-        // The normal GC lifetime reporting mechanisms will report a proper lifetime to the GC.
-        // The security subsystem can safely assume that anywhere it might walk the stack, it will be
-        // valid (null or a live GC ref).
-        gcInfoEncoderWithLog->SetSecurityObjectStackSlot(
-            compiler->lvaGetCallerSPRelativeOffset(compiler->lvaSecurityObject));
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // The PSPSym is relative to InitialSP on X64 and CallerSP on other platforms.
         gcInfoEncoderWithLog->SetPSPSymStackSlot(compiler->lvaGetInitialSPRelativeOffset(compiler->lvaPSPSym));
-#else  // !_TARGET_AMD64_
+#else  // !TARGET_AMD64
         gcInfoEncoderWithLog->SetPSPSymStackSlot(compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym));
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
     }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (compiler->ehAnyFunclets())
     {
         // Set this to avoid double-reporting the parent frame (unlike JIT64)
         gcInfoEncoderWithLog->SetWantsReportOnlyLeaf();
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 #endif // FEATURE_EH_FUNCLETS
 
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
     if (compiler->codeGen->GetHasTailCalls())
     {
         gcInfoEncoderWithLog->SetHasTailCalls();
     }
-#endif // _TARGET_ARMARCH_
+#endif // TARGET_ARMARCH
 
 #if FEATURE_FIXED_OUT_ARGS
     // outgoing stack area size

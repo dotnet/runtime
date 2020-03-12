@@ -7,7 +7,7 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Converts an object or value to or from JSON.
     /// </summary>
-    public abstract class JsonConverter
+    public abstract partial class JsonConverter
     {
         internal JsonConverter() { }
 
@@ -18,7 +18,57 @@ namespace System.Text.Json.Serialization
         /// <returns>True if the type can be converted, false otherwise.</returns>
         public abstract bool CanConvert(Type typeToConvert);
 
+        internal abstract ClassType ClassType { get; }
+
+        /// <summary>
+        /// Can direct Read or Write methods be called (for performance).
+        /// </summary>
+        internal bool CanUseDirectReadOrWrite { get; set; }
+
+        /// <summary>
+        /// Can the converter have $id metadata.
+        /// </summary>
+        internal virtual bool CanHaveIdMetadata => true;
+
+        internal bool CanBePolymorphic { get; set; }
+
+        internal abstract JsonPropertyInfo CreateJsonPropertyInfo();
+
+        internal abstract Type? ElementType { get; }
+
+        /// <summary>
+        /// Cached value of ShouldHandleNullValue. It is cached since the converter should never
+        /// change the value depending on state and because it may contain non-trival logic.
+        /// </summary>
+        internal bool HandleNullValue { get; set; }
+
+        /// <summary>
+        /// Cached value of TypeToConvert.IsValueType, which is an expensive call.
+        /// </summary>
+        internal bool IsValueType { get; set; }
+
+        /// <summary>
+        /// Loosely-typed ReadCore() that forwards to strongly-typed ReadCore().
+        /// </summary>
+        internal abstract object? ReadCoreAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state);
+
+        // For polymorphic cases, the concrete type to create.
+        internal virtual Type RuntimeType => TypeToConvert;
+
+        internal bool ShouldFlush(Utf8JsonWriter writer, ref WriteStack state)
+        {
+            // If surpassed flush threshold then return false which will flush stream.
+            return (state.FlushThreshold > 0 && writer.BytesPending > state.FlushThreshold);
+        }
+
         // This is used internally to quickly determine the type being converted for JsonConverter<T>.
-        internal virtual Type? TypeToConvert => null;
+        internal abstract Type TypeToConvert { get; }
+
+        internal abstract bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
+
+        /// <summary>
+        /// Loosely-typed WriteCore() that forwards to strongly-typed WriteCore().
+        /// </summary>
+        internal abstract bool WriteCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
     }
 }

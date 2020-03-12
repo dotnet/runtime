@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,6 +21,9 @@ namespace System.Text.Json
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
         public static Task SerializeAsync<TValue>(Stream utf8Json, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
+            if (utf8Json == null)
+                throw new ArgumentNullException(nameof(utf8Json));
+
             return WriteAsyncCore(utf8Json, value, typeof(TValue), options, cancellationToken);
         }
 
@@ -35,14 +39,24 @@ namespace System.Text.Json
         public static Task SerializeAsync(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
+            {
                 throw new ArgumentNullException(nameof(utf8Json));
+            }
 
-            VerifyValueAndType(value, inputType);
+            if (inputType == null)
+            {
+                throw new ArgumentNullException(nameof(inputType));
+            }
 
-            return WriteAsyncCore(utf8Json, value, inputType, options, cancellationToken);
+            if (value != null && !inputType.IsAssignableFrom(value.GetType()))
+            {
+                ThrowHelper.ThrowArgumentException_DeserializeWrongType(inputType, value);
+            }
+
+            return WriteAsyncCore<object>(utf8Json, value!, inputType, options, cancellationToken);
         }
 
-        private static async Task WriteAsyncCore(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options, CancellationToken cancellationToken)
+        private static async Task WriteAsyncCore<TValue>(Stream utf8Json, TValue value, Type inputType, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
             if (options == null)
             {
@@ -54,34 +68,26 @@ namespace System.Text.Json
             using (var bufferWriter = new PooledByteBufferWriter(options.DefaultBufferSize))
             using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
             {
-                if (value == null)
+                //  We treat typeof(object) special and allow polymorphic behavior.
+                if (inputType == typeof(object) && value != null)
                 {
-                    writer.WriteNullValue();
-                    writer.Flush();
-
-                    await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-
-                    return;
-                }
-
-                if (inputType == null)
-                {
-                    inputType = value.GetType();
+                    inputType = value!.GetType();
                 }
 
                 WriteStack state = default;
-                state.Current.Initialize(inputType, options);
-                state.Current.CurrentValue = value;
+                state.Initialize(inputType, options, supportContinuation: true);
+
+                JsonConverter converterBase = state.Current.JsonClassInfo!.PolicyProperty!.ConverterBase;
 
                 bool isFinalBlock;
-                int flushThreshold;
 
                 do
                 {
-                    flushThreshold = (int)(bufferWriter.Capacity * .9); //todo: determine best value here
+                    // todo: determine best value here
+                    // https://github.com/dotnet/runtime/issues/32356
+                    state.FlushThreshold = (int)(bufferWriter.Capacity * .9);
 
-                    isFinalBlock = Write(writer, originalWriterDepth: 0, flushThreshold, options, ref state);
-                    writer.Flush();
+                    isFinalBlock = WriteCore(converterBase, writer, value, options, ref state);
 
                     await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
 

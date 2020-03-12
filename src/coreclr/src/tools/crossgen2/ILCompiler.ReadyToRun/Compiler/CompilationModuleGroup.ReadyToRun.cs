@@ -1,8 +1,13 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
+using Internal.ReadyToRunConstants;
+using Internal.TypeSystem.Ecma;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ILCompiler
 {
@@ -36,6 +41,45 @@ namespace ILCompiler
         /// <returns>True if the given module versions with the current compilation module group</returns>
         public abstract bool VersionsWithModule(ModuleDesc module);
 
+        /// <summary>
+        /// Checks if the given PInvoke method can produce a PInvoke stub in the current compilation, depending on the method's
+        /// signature and the compilation policy.
+        /// </summary>
+        /// <param name="method">PInvoke method to check</param>
+        /// <returns>Returns true if the given PInvoke method can produce a PInvoke stub in the current compilation</returns>
         public abstract bool GeneratesPInvoke(MethodDesc method);
+
+        /// <summary>
+        /// Retrieve the module-based token for a type that is not part of the version bubble of the current compilation.
+        /// </summary>
+        /// <param name="type">Type to get a module token for</param>
+        /// <param name="token">Module-based token for the type</param>
+        /// <returns>Returns true the type was referenced by any of the input modules in the current compliation</returns>
+        public abstract bool TryGetModuleTokenForExternalType(TypeDesc type, out ModuleToken token);
+
+        /// <summary>
+        /// Gets the flags to be stored in the generated ReadyToRun module header.
+        /// </summary>
+        public abstract ReadyToRunFlags GetReadyToRunFlags();
+
+        /// <summary>
+        /// When set to true, unconditionally add module overrides to all signatures. This is needed in composite
+        /// build mode so that import cells and instance entry point table are caller module-agnostic.
+        /// </summary>
+        public bool EnforceOwningType(EcmaModule module)
+        {
+            return IsCompositeBuildMode || module != CompilationModuleSet.Single();
+        }
+
+        /// <summary>
+        /// Returns true when the compiler is running in composite build mode i.e. building an arbitrary number of
+        /// input MSIL assemblies into a single output R2R binary.
+        /// </summary>
+        public abstract bool IsCompositeBuildMode { get; }
+
+        /// <summary>
+        /// List of input modules to use for the compilation.
+        /// </summary>
+        public abstract IEnumerable<EcmaModule> CompilationModuleSet { get; }
     }
 }

@@ -31,7 +31,7 @@
 #include "array.h"
 #include "eepolicy.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 typedef void(WINAPI *pfnGetSystemTimeAsFileTime)(LPFILETIME lpSystemTimeAsFileTime);
 extern pfnGetSystemTimeAsFileTime g_pfnGetSystemTimeAsFileTime;
 
@@ -82,14 +82,14 @@ void WINAPI InitializeGetSystemTimeAsFileTime(LPFILETIME lpSystemTimeAsFileTime)
 }
 
 pfnGetSystemTimeAsFileTime g_pfnGetSystemTimeAsFileTime = &InitializeGetSystemTimeAsFileTime;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 FCIMPL0(INT64, SystemNative::__GetSystemTimeAsFileTime)
 {
     FCALL_CONTRACT;
 
     INT64 timestamp;
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     g_pfnGetSystemTimeAsFileTime((FILETIME*)&timestamp);
 #else
     GetSystemTimeAsFileTime((FILETIME*)&timestamp);
@@ -104,7 +104,7 @@ FCIMPL0(INT64, SystemNative::__GetSystemTimeAsFileTime)
 FCIMPLEND;
 
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 FCIMPL1(VOID, SystemNative::GetSystemTimeWithLeapSecondsHandling, FullSystemTime *time)
 {
@@ -181,7 +181,7 @@ FCIMPL2(FC_BOOL_RET, SystemNative::SystemTimeToFileTime, SYSTEMTIME *time, INT64
     FC_RETURN_BOOL(ret);
 }
 FCIMPLEND;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 
 FCIMPL0(UINT32, SystemNative::GetTickCount)
@@ -333,14 +333,14 @@ INT32 QCALLTYPE SystemNative::GetProcessorCount()
 
     BEGIN_QCALL;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     CPUGroupInfo::EnsureInitialized();
 
     if(CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
     {
         processorCount = CPUGroupInfo::GetNumActiveProcessors();
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     // Processor count will be 0 if CPU groups are disabled/not supported
     if(processorCount == 0)
     {
@@ -351,6 +351,13 @@ INT32 QCALLTYPE SystemNative::GetProcessorCount()
 
         processorCount = systemInfo.dwNumberOfProcessors;
     }
+
+#ifdef TARGET_UNIX
+    uint32_t cpuLimit;
+
+    if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < (uint32_t)processorCount)
+        processorCount = cpuLimit;
+#endif
 
     END_QCALL;
 
@@ -468,7 +475,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
 
     Thread *pThread = GetThread();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // If we have the exception object, then try to setup
     // the watson bucket if it has any details.
     // On CoreCLR, Watson may not be enabled. Thus, we should
@@ -487,7 +494,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
             }
         }
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     // stash the user-provided exception object. this will be used as
     // the inner exception object to the FatalExecutionEngineException.

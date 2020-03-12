@@ -86,8 +86,8 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.Throws<BadImageFormatException>(() => new PEReader(new MemoryStream(), PEStreamOptions.PrefetchMetadata | PEStreamOptions.PrefetchEntireImage));
         }
 
-        [Fact(Skip = "https://github.com/dotnet/corefx/issues/7996")]
-        [ActiveIssue(7996)]
+        [Fact(Skip = "https://github.com/dotnet/runtime/issues/17088")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/17088")]
         public void SubStream()
         {
             var stream = new MemoryStream();

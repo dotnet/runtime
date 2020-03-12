@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using System.Text.Unicode.Tests;
+using System.Text.Unicode;
 using Xunit;
 using Xunit.Sdk;
 
@@ -1116,7 +1116,7 @@ namespace System.Tests
             // This tests calls char.GetUnicodeCategory for every possible input, ensuring that
             // the runtime agrees with the data in the core Unicode files.
 
-            for (uint i = 0; i <= char.MaxValue; i++)
+            for (int i = 0; i <= char.MaxValue; i++)
             {
                 UnicodeCategory expected;
 
@@ -1250,7 +1250,7 @@ namespace System.Tests
             // This tests calls char.IsWhiteSpace for every possible input, ensuring that
             // the runtime agrees with the data in the core Unicode files.
 
-            for (uint i = 0; i <= char.MaxValue; i++)
+            for (int i = 0; i <= char.MaxValue; i++)
             {
                 if (UnicodeData.IsWhiteSpace(i) != char.IsWhiteSpace((char)i))
                 {

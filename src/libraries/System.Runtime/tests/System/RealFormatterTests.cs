@@ -9,7 +9,7 @@ namespace System.Tests
 {
     public class RealFormatterTests : RealFormatterTestsBase
     {
-        // The actual tests are defined in: src\Common\tests\System\RealFormatterTestsBase.netcoreapp.cs
+        // The actual tests are defined in: src\Common\tests\System\RealFormatterTestsBase.cs
 
         protected override string InvariantToStringDouble(double d, string format)
         {

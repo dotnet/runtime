@@ -807,13 +807,22 @@ namespace System.Diagnostics
 
             int largestNumber = 0;
 
+            StringBuilder sb = null;
             for (int i = 0; i < formatString.Length; i++)
             {
                 if (formatString[i] == '%')
                 {
                     if (formatString.Length > i + 1)
                     {
-                        StringBuilder sb = new StringBuilder();
+                        if (sb is null)
+                        {
+                            sb = new StringBuilder();
+                        }
+                        else
+                        {
+                            sb.Clear();
+                        }
+
                         while (i + 1 < formatString.Length && char.IsDigit(formatString[i + 1]))
                         {
                             sb.Append(formatString[i + 1]);
@@ -833,6 +842,7 @@ namespace System.Diagnostics
                     }
                 }
             }
+
             // Replacement strings are 1 indexed.
             if (largestNumber > insertionStrings.Length)
             {
@@ -848,6 +858,7 @@ namespace System.Diagnostics
 
             return UnsafeTryFormatMessage(hModule, messageNum, insertionStrings);
         }
+
         // FormatMessageW will AV if you don't pass in enough format strings.  If you call TryFormatMessage we ensure insertionStrings
         // is long enough.  You don't want to call this directly unless you're sure insertionStrings is long enough!
         internal static string UnsafeTryFormatMessage(SafeLibraryHandle hModule, uint messageNum, string[] insertionStrings)

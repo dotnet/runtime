@@ -1,0 +1,12 @@
+/Makefile
+/Makefile.in
+/.deps
+/.libs
+/*.o
+/*.la
+/*.lo
+/*.lib
+/*.obj
+/*.exe
+/*.dll
+/fixeol.sh

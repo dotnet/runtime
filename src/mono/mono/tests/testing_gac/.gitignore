@@ -1,0 +1,12 @@
+/Makefile
+/Makefile.in
+/lib/mono/
+/signed_v1
+/signed_v2
+/unsigned_v1
+/unsigned_v2
+/*.dylib
+/*.dylib.dSYM
+/*.so
+/*.mdb
+/*.pdb

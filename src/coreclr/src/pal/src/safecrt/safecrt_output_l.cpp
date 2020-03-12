@@ -118,7 +118,7 @@ Buffer size required to be passed to _gcvt, fcvt and other fp conversion routine
 #define LONGLONG_IS_INT64 1     /* 1 means long long is same as int64 */
     CASSERT(sizeof(long long) == sizeof(int64_t));
 
-#if defined (BIT64)
+#if defined (HOST_64BIT)
     #define PTR_IS_INT       0      /* 1 means ptr is same size as int */
     CASSERT(sizeof(void *) != sizeof(int));
     #if __LP64__
@@ -130,14 +130,14 @@ Buffer size required to be passed to _gcvt, fcvt and other fp conversion routine
     #endif
     #define PTR_IS_INT64     1      /* 1 means ptr is same size as int64 */
     CASSERT(sizeof(void *) == sizeof(int64_t));
-#else  /* defined (BIT64) */
+#else  /* defined (HOST_64BIT) */
     #define PTR_IS_INT       1      /* 1 means ptr is same size as int */
     CASSERT(sizeof(void *) == sizeof(int));
     #define PTR_IS_LONG      1      /* 1 means ptr is same size as long */
     CASSERT(sizeof(void *) == sizeof(long));
     #define PTR_IS_INT64     0      /* 1 means ptr is same size as int64 */
     CASSERT(sizeof(void *) != sizeof(int64_t));
-#endif  /* defined (BIT64) */
+#endif  /* defined (HOST_64BIT) */
 
 /* CONSTANTS */
 

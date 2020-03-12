@@ -14,7 +14,7 @@
 #include "corhlpr.h"
 #include "fstring.h"
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("y", on)		// If routines don't get inlined, don't pay the EBP frame penalty
 #endif
 
@@ -642,7 +642,7 @@ HRESULT _GetFixedSigOfVarArg(           // S_OK or error.
 
 #endif //!SOS_INCLUDE
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("", on)		// restore command line default optimizations
 #endif
 

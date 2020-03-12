@@ -105,7 +105,7 @@ namespace System.Net.Test.Common
             return bytesGenerated;
         }
 
-        private static int EncodeString(string value, Span<byte> headerBlock, bool huffmanEncode)
+        public static int EncodeString(string value, Span<byte> headerBlock, bool huffmanEncode)
         {
             byte[] data = Encoding.ASCII.GetBytes(value);
             byte prefix;

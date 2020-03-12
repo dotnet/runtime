@@ -1,8 +1,0 @@
-﻿<Project>
-  <PropertyGroup>
-    <BuildConfigurations>
-      $(NetCoreAppCurrent);
-      $(NetCoreAppCurrent)-Windows_NT;
-    </BuildConfigurations>
-  </PropertyGroup>
-</Project>

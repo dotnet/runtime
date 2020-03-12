@@ -190,7 +190,6 @@ namespace System.Threading.Tasks.Dataflow
             IDisposable ISourceBlock<T>.LinkTo(ITargetBlock<T> target, DataflowLinkOptions linkOptions) { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); }
 
             /// <summary>The data to display in the debugger display attribute.</summary>
-            [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
             private object DebuggerDisplayContent
             {
                 get
@@ -291,7 +290,6 @@ namespace System.Threading.Tasks.Dataflow
         /// </para>
         /// </returns>
         /// <exception cref="System.ArgumentNullException">The <paramref name="target"/> is null (Nothing in Visual Basic).</exception>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public static Task<bool> SendAsync<TInput>(this ITargetBlock<TInput> target, TInput item, CancellationToken cancellationToken)
         {
             // Validate arguments.  No validation necessary for item.
@@ -495,7 +493,6 @@ namespace System.Threading.Tasks.Dataflow
             /// the target is calling to ConsumeMessage.  We don't want to block the target indefinitely
             /// with any synchronous continuations off of the returned send async task.
             /// </remarks>
-            [SuppressMessage("Microsoft.Usage", "CA1816:CallGCSuppressFinalizeCorrectly")]
             private void RunCompletionAction(Action<object> completionAction, object completionActionState, bool runAsync)
             {
                 Debug.Assert(completionAction != null, "Completion action to run is required.");
@@ -563,7 +560,6 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <summary>Offers the message to the target synchronously.</summary>
-            [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
             internal void OfferToTarget()
             {
                 try
@@ -724,7 +720,6 @@ namespace System.Threading.Tasks.Dataflow
             void IDataflowBlock.Fault(Exception exception) { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); }
 
             /// <summary>The data to display in the debugger display attribute.</summary>
-            [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
             private object DebuggerDisplayContent
             {
                 get
@@ -934,7 +929,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <remarks>
         /// If the source successfully offered an item that was received by this operation, it will be returned, even if a concurrent timeout or cancellation request occurs.
         /// </remarks>
-        [SuppressMessage("Microsoft.Usage", "CA2200:RethrowToPreserveStackDetails")]
         public static TOutput Receive<TOutput>(
             this ISourceBlock<TOutput> source, TimeSpan timeout, CancellationToken cancellationToken)
         {
@@ -981,7 +975,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="timeout">A <see cref="System.TimeSpan"/> that represents the number of milliseconds to wait, or a TimeSpan that represents -1 milliseconds to wait indefinitely.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the receive operation.</param>
         /// <returns>A Task for the receive operation.</returns>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static Task<TOutput> ReceiveCore<TOutput>(
             this ISourceBlock<TOutput> source, bool attemptTryReceive, TimeSpan timeout, CancellationToken cancellationToken)
         {
@@ -1048,7 +1041,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="source">The source from which to receive.</param>
         /// <param name="millisecondsTimeout">The number of milliseconds to wait, or -1 to wait indefinitely.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the receive operation.</param>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static Task<TOutput> ReceiveCoreByLinking<TOutput>(ISourceBlock<TOutput> source, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             // Create a target to link from the source
@@ -1114,7 +1106,6 @@ namespace System.Threading.Tasks.Dataflow
 
         /// <summary>Provides a TaskCompletionSource that is also a dataflow target for use in ReceiveCore.</summary>
         /// <typeparam name="T">Specifies the type of data offered to the target.</typeparam>
-        [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
         [DebuggerDisplay("{DebuggerDisplayContent,nq}")]
         private sealed class ReceiveTarget<T> : TaskCompletionSource<T>, ITargetBlock<T>, IDebuggerDisplay
         {
@@ -1159,7 +1150,6 @@ namespace System.Threading.Tasks.Dataflow
             internal ReceiveTarget() { }
 
             /// <summary>Offers a message to be used to complete the TaskCompletionSource.</summary>
-            [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
             DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, bool consumeToAccept)
             {
                 // Validate arguments
@@ -1239,8 +1229,6 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Cleans up the target for completion.</summary>
             /// <param name="reason">The reason we're completing and cleaning up.</param>
             /// <remarks>This method must only be called once on this instance.</remarks>
-            [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-            [SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
             private void CleanupAndComplete(ReceiveCoreByLinkingCleanupReason reason)
             {
                 Common.ContractAssertMonitorStatus(IncomingLock, held: false);
@@ -1376,7 +1364,6 @@ namespace System.Threading.Tasks.Dataflow
             Task IDataflowBlock.Completion { get { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); } }
 
             /// <summary>The data to display in the debugger display attribute.</summary>
-            [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
             private object DebuggerDisplayContent
             {
                 get
@@ -1424,9 +1411,6 @@ namespace System.Threading.Tasks.Dataflow
         /// If it returns false, more output is not and will never be available, due to the source
         /// completing prior to output being available.
         /// </returns>
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope")]
         public static Task<bool> OutputAvailableAsync<TOutput>(
             this ISourceBlock<TOutput> source, CancellationToken cancellationToken)
         {
@@ -1574,7 +1558,6 @@ namespace System.Threading.Tasks.Dataflow
             Task IDataflowBlock.Completion { get { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); } }
 
             /// <summary>The data to display in the debugger display attribute.</summary>
-            [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
             private object DebuggerDisplayContent
             {
                 get
@@ -1695,7 +1678,6 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <summary>The data to display in the debugger display attribute.</summary>
-            [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
             private object DebuggerDisplayContent
             {
                 get
@@ -1798,7 +1780,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="source2"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="action2"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope")]
         public static Task<int> Choose<T1, T2>(
             ISourceBlock<T1> source1, Action<T1> action1,
             ISourceBlock<T2> source2, Action<T2> action2,
@@ -1889,7 +1870,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="source3"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="action3"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope")]
         public static Task<int> Choose<T1, T2, T3>(
             ISourceBlock<T1> source1, Action<T1> action1,
             ISourceBlock<T2> source2, Action<T2> action2,
@@ -1922,8 +1902,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="source3">The third source.</param>
         /// <param name="action3">The handler to execute on data from the third source.</param>
         /// <param name="dataflowBlockOptions">The options with which to configure this choice.</param>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope")]
         private static Task<int> ChooseCore<T1, T2, T3>(
             ISourceBlock<T1> source1, Action<T1> action1,
             ISourceBlock<T2> source2, Action<T2> action2,
@@ -2009,8 +1987,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="source3">The third source.</param>
         /// <param name="action3">The handler to execute on data from the third source.</param>
         /// <param name="dataflowBlockOptions">The options with which to configure this choice.</param>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope")]
         private static Task<int> ChooseCoreByLinking<T1, T2, T3>(
             ISourceBlock<T1> source1, Action<T1> action1,
             ISourceBlock<T2> source2, Action<T2> action2,
@@ -2106,7 +2082,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="source">The source with which this branch is associated.</param>
         /// <param name="action">The action to run for a single element received from the source.</param>
         /// <returns>A task representing the branch.</returns>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static Task<int> CreateChooseBranch<T>(
             StrongBox<Task> boxedCompleted, CancellationTokenSource cts,
             TaskScheduler scheduler,
@@ -2246,7 +2221,6 @@ namespace System.Threading.Tasks.Dataflow
             Task IDataflowBlock.Completion { get { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); } }
 
             /// <summary>The data to display in the debugger display attribute.</summary>
-            [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
             private object DebuggerDisplayContent
             {
                 get
@@ -2331,7 +2305,6 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Subscribes the observer to the source.</summary>
             /// <param name="observer">the observer to subscribe.</param>
             /// <returns>An IDisposable that may be used to unsubscribe the source.</returns>
-            [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope")]
             IDisposable IObservable<TOutput>.Subscribe(IObserver<TOutput> observer)
             {
                 // Validate arguments
@@ -2432,7 +2405,6 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <summary>The data to display in the debugger display attribute.</summary>
-            [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
             private object DebuggerDisplayContent
             {
                 get
@@ -2466,7 +2438,6 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <summary>State associated with the current target for propagating data to observers.</summary>
-            [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
             private sealed class ObserversState
             {
                 /// <summary>The owning SourceObservable.</summary>
@@ -2526,7 +2497,6 @@ namespace System.Threading.Tasks.Dataflow
 
                 /// <summary>Forwards an item to all currently subscribed observers.</summary>
                 /// <param name="item">The item to forward.</param>
-                [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
                 private Task ProcessItemAsync(TOutput item)
                 {
                     Common.ContractAssertMonitorStatus(Observable._SubscriptionLock, held: false);
@@ -2588,7 +2558,6 @@ namespace System.Threading.Tasks.Dataflow
                 /// Non-null when an unexpected exception occurs during processing.  Faults
                 /// all subscribed observers and resets the observable back to its original condition.
                 /// </param>
-                [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
                 private void NotifyObserversOfCompletion(Exception targetException = null)
                 {
                     Debug.Assert(Target.Completion.IsCompleted, "The target must have already completed in order to notify of completion.");
@@ -2696,7 +2665,6 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <summary>The data to display in the debugger display attribute.</summary>
-            [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
             private object DebuggerDisplayContent
             {
                 get

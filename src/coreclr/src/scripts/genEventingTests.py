@@ -110,9 +110,9 @@ Description = This is a sanity test to check that there are no crashes in Xplat 
 **
 **
 **===================================================================*/
-#if FEATURE_PAL
+#if TARGET_UNIX
 #include <palsuite.h>
-#endif //FEATURE_PAL
+#endif //TARGET_UNIX
 #include <clrxplatevents.h>
 
 typedef struct _Struct1 {
@@ -139,7 +139,7 @@ int win_Int32 = 12;
 BYTE* win_Binary =(BYTE*)var21 ;
 int __cdecl main(int argc, char **argv)
 {
-#if defined(FEATURE_PAL)
+#if defined(TARGET_UNIX)
             /* Initialize the PAL.
             */
 
@@ -164,7 +164,7 @@ int __cdecl main(int argc, char **argv)
         }
         Trace("\\n All eventing APIs were fired succesfully \\n");
 #endif //defined(FEATURE_EVENT_TRACE)
-#if defined(FEATURE_PAL)
+#if defined(TARGET_UNIX)
 
 /* Shutdown the PAL.
 */

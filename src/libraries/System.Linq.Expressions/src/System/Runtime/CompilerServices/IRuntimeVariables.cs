@@ -19,6 +19,6 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="index">An index of the runtime variable.</param>
         /// <returns>The value of the runtime variable.</returns>
-        object this[int index] { get; set; }
+        object? this[int index] { get; set; }
     }
 }

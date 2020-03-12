@@ -27,8 +27,6 @@ namespace System.Net.Http.Headers
         // Validator
         internal static readonly Action<HttpHeaderValueCollection<string>, string> TokenValidator = ValidateToken;
 
-        private static readonly char[] s_hexUpperChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
         internal static void SetQuality(ObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
             Debug.Assert(parameters != null);
@@ -125,8 +123,8 @@ namespace System.Net.Http.Headers
             Debug.Assert(destination != null);
 
             destination.Append('%');
-            destination.Append(s_hexUpperChars[(c & 0xf0) >> 4]);
-            destination.Append(s_hexUpperChars[c & 0xf]);
+            destination.Append(HexConverter.ToCharUpper(c >> 4));
+            destination.Append(HexConverter.ToCharUpper(c));
         }
 
         internal static double? GetQuality(ObjectCollection<NameValueHeaderValue> parameters)
@@ -321,9 +319,9 @@ namespace System.Net.Http.Headers
         }
 
         internal static bool TryParseInt32(string value, out int result) =>
-            TryParseInt32(value, 0, value.Length, out result);
+            int.TryParse(value, NumberStyles.None, provider: null, out result);
 
-        internal static bool TryParseInt32(string value, int offset, int length, out int result) // TODO #21281: Replace with int.TryParse(Span<char>) once it's available
+        internal static bool TryParseInt32(string value, int offset, int length, out int result)
         {
             if (offset < 0 || length < 0 || offset > value.Length - length)
             {
@@ -331,27 +329,10 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            int tmpResult = 0;
-            int pos = offset, endPos = offset + length;
-            while (pos < endPos)
-            {
-                char c = value[pos++];
-                int digit = c - '0';
-                if ((uint)digit > 9 || // invalid digit
-                    tmpResult > int.MaxValue / 10 || // will overflow when shifting digits
-                    (tmpResult == int.MaxValue / 10 && digit > 7)) // will overflow when adding in digit
-                {
-                    result = 0;
-                    return false;
-                }
-                tmpResult = (tmpResult * 10) + digit;
-            }
-
-            result = tmpResult;
-            return true;
+            return int.TryParse(value.AsSpan(offset, length), NumberStyles.None, provider: null, out result);
         }
 
-        internal static bool TryParseInt64(string value, int offset, int length, out long result) // TODO #21281: Replace with int.TryParse(Span<char>) once it's available
+        internal static bool TryParseInt64(string value, int offset, int length, out long result)
         {
             if (offset < 0 || length < 0 || offset > value.Length - length)
             {
@@ -359,24 +340,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            long tmpResult = 0;
-            int pos = offset, endPos = offset + length;
-            while (pos < endPos)
-            {
-                char c = value[pos++];
-                int digit = c - '0';
-                if ((uint)digit > 9 || // invalid digit
-                    tmpResult > long.MaxValue / 10 || // will overflow when shifting digits
-                    (tmpResult == long.MaxValue / 10 && digit > 7)) // will overflow when adding in digit
-                {
-                    result = 0;
-                    return false;
-                }
-                tmpResult = (tmpResult * 10) + digit;
-            }
-
-            result = tmpResult;
-            return true;
+            return long.TryParse(value.AsSpan(offset, length), NumberStyles.None, provider: null, out result);
         }
 
         internal static void DumpHeaders(StringBuilder sb, params HttpHeaders[] headers)
@@ -412,16 +376,15 @@ namespace System.Net.Http.Headers
 
         internal static bool IsValidEmailAddress(string value)
         {
-            try
+            if (MailAddressParser.TryParseAddress(value, out ParseAddressInfo _, throwExceptionIfFail: false))
             {
-                MailAddressParser.ParseAddress(value);
                 return true;
             }
-            catch (FormatException e)
+            else
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_wrong_email_format, value, e.Message));
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_wrong_email_format, value));
+                return false;
             }
-            return false;
         }
 
         private static void ValidateToken(HttpHeaderValueCollection<string> collection, string value)

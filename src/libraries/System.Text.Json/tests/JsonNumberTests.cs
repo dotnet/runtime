@@ -489,9 +489,9 @@ namespace System.Text.Json.Tests
 
             jsonNumber = new JsonNumber(double.MaxValue);
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
-                // Full framework throws for overflow rather than returning Infinity 
+                // .NET Framework throws for overflow rather than returning Infinity 
                 // This was fixed for .NET Core 3.0 in order to be IEEE 754 compliant 
                 Assert.Throws<OverflowException>(() => jsonNumber.GetSingle());
                 // Getting double fails as well
@@ -505,7 +505,7 @@ namespace System.Text.Json.Tests
 
             jsonNumber = new JsonNumber("5e500");
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Throws<OverflowException>(() => jsonNumber.GetSingle());
                 Assert.Throws<OverflowException>(() => jsonNumber.GetDouble());

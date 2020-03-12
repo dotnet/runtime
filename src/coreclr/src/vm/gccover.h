@@ -66,7 +66,7 @@ typedef DPTR(GCCoverageInfo) PTR_GCCoverageInfo; // see code:GCCoverageInfo::sav
 #pragma warning(pop)
 #endif // _MSC_VER
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #define INTERRUPT_INSTR                        0xF4    // X86 HLT instruction (any 1 byte illegal instruction will do)
 #define INTERRUPT_INSTR_CALL                   0xFA    // X86 CLI instruction
@@ -74,7 +74,7 @@ typedef DPTR(GCCoverageInfo) PTR_GCCoverageInfo; // see code:GCCoverageInfo::sav
 #define INTERRUPT_INSTR_PROTECT_SECOND_RET     0xEC    // X86 IN instruction, protect the second return register
 #define INTERRUPT_INSTR_PROTECT_BOTH_RET       0xED    // X86 IN instruction, protect both return registers
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
 // 16-bit illegal instructions which will cause exception and cause
 // control to go to GcStress codepath
@@ -97,7 +97,7 @@ typedef DPTR(GCCoverageInfo) PTR_GCCoverageInfo; // see code:GCCoverageInfo::sav
 #define INTERRUPT_INSTR_CALL_32         0xa002f7f0 // 0xf7f0a002
 #define INTERRUPT_INSTR_PROTECT_RET_32  0xa003f7f0 // 0xf7f0a003
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
 // The following encodings are undefined. They fall into section C4.5.8 - Data processing (2 source) of
 // "Arm Architecture Reference Manual ARMv8"
@@ -113,7 +113,7 @@ typedef DPTR(GCCoverageInfo) PTR_GCCoverageInfo; // see code:GCCoverageInfo::sav
 //
 inline bool IsGcCoverageInterruptInstructionVal(UINT32 instrVal)
 {
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 
     switch (instrVal)
     {
@@ -125,7 +125,7 @@ inline bool IsGcCoverageInterruptInstructionVal(UINT32 instrVal)
         return false;
     }
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
     UINT16 instrVal16 = static_cast<UINT16>(instrVal);
     size_t instrLen = GetARMInstructionLength(instrVal16);

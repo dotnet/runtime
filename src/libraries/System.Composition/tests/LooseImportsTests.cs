@@ -24,7 +24,7 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void SatisfyImportsSetsLooseImportsOnAttributedPart()
         {
             var container = CreateContainer(typeof(Transaction));

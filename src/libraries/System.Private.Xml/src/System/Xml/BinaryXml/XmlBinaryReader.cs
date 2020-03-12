@@ -20,7 +20,7 @@ namespace System.Xml
 
         private static volatile Type[] s_tokenTypeMap = null;
 
-        private static readonly byte[] s_xsdKatmaiTimeScaleToValueLengthMap = new byte[8] {
+        private static ReadOnlySpan<byte> XsdKatmaiTimeScaleToValueLengthMap => new byte[8] { // rely on C# compiler optimization to eliminate allocation
         // length scale
             3, // 0
             3, // 1
@@ -98,9 +98,9 @@ namespace System.Xml
                 return this.prefix.GetHashCode() ^ this.localname.GetHashCode();
             }
 
-            public int GetNSHashCode(SecureStringHasher hasher)
+            public int GetNSHashCode()
             {
-                return hasher.GetHashCode(this.namespaceUri) ^ hasher.GetHashCode(this.localname);
+                return HashCode.Combine(this.namespaceUri, this.localname);
             }
 
 
@@ -189,11 +189,11 @@ namespace System.Xml
                 namespaceUri = this.name.namespaceUri;
             }
 
-            public int GetLocalnameAndNamespaceUriAndHash(SecureStringHasher hasher, out string localname, out string namespaceUri)
+            public int GetLocalnameAndNamespaceUriAndHash(out string localname, out string namespaceUri)
             {
                 localname = this.name.localname;
                 namespaceUri = this.name.namespaceUri;
-                return this.hashCode = this.name.GetNSHashCode(hasher);
+                return this.hashCode = this.name.GetNSHashCode();
             }
 
             public bool MatchNS(string localname, string namespaceUri)
@@ -332,7 +332,6 @@ namespace System.Xml
         private readonly bool _ignoreComments;
         private readonly DtdProcessing _dtdProcessing;
 
-        private readonly SecureStringHasher _hasher;
         private XmlCharType _xmlCharType;
         private readonly Encoding _unicode;
 
@@ -368,8 +367,7 @@ namespace System.Xml
             _qnameOther.Clear();
             _qnameElement.Clear();
             _xmlspacePreserve = false;
-            _hasher = new SecureStringHasher();
-            _namespaces = new Dictionary<string, NamespaceDecl>(_hasher);
+            _namespaces = new Dictionary<string, NamespaceDecl>();
             AddInitNamespace(string.Empty, string.Empty);
             AddInitNamespace(_xml, _xnt.Add(XmlReservedNs.NsXml));
             AddInitNamespace(_xmlns, _nsxmlns);
@@ -2721,7 +2719,7 @@ namespace System.Xml
             for (int i = 0; i < _attrCount; i++)
             {
                 string localname, namespaceUri;
-                int hash = _attributes[i].GetLocalnameAndNamespaceUriAndHash(_hasher, out localname, out namespaceUri);
+                int hash = _attributes[i].GetLocalnameAndNamespaceUriAndHash(out localname, out namespaceUri);
                 int index = hash & (tblSize - 1);
                 int next = _attrHashTbl[index];
                 _attrHashTbl[index] = i + 1;
@@ -3615,7 +3613,7 @@ namespace System.Xml
             {
                 throw new XmlException(SR.SqlTypes_ArithOverflow, (string)null);
             }
-            return s_xsdKatmaiTimeScaleToValueLengthMap[scale];
+            return XsdKatmaiTimeScaleToValueLengthMap[scale];
         }
 
         private long ValueAsLong()

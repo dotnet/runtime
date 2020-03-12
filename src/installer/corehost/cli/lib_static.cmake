@@ -15,4 +15,4 @@ add_library(lib${DOTNET_PROJECT_NAME} STATIC ${SOURCES} ${RESOURCES})
 set_target_properties(lib${DOTNET_PROJECT_NAME} PROPERTIES MACOSX_RPATH TRUE)
 set_target_properties(lib${DOTNET_PROJECT_NAME} PROPERTIES PREFIX "")
 
-set_common_libs("lib")
+set_common_libs("lib-static")

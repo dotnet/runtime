@@ -4,7 +4,7 @@
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
-#if BIT64
+#if TARGET_64BIT
     [StructLayout(LayoutKind.Explicit, Size = 24)]
 #else
     [StructLayout(LayoutKind.Explicit, Size = 20)]

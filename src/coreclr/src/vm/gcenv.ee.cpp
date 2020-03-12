@@ -158,15 +158,6 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
 {
     STRESS_LOG1(LF_GCROOTS, LL_INFO10, "GCScan: Promotion Phase = %d\n", sc->promotion);
 
-    // In server GC, we should be competing for marking the statics
-    if (GCHeapUtilities::MarkShouldCompeteForStatics())
-    {
-        if (condemned == max_gen && sc->promotion)
-        {
-            SystemDomain::EnumAllStaticGCRefs(fn, sc);
-        }
-    }
-
     Thread* pThread = NULL;
     while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
     {
@@ -185,6 +176,20 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
         }
         STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "Ending scan of Thread %p ID = 0x%x }\n", pThread, pThread->GetThreadId());
+    }
+
+    // In server GC, we should be competing for marking the statics
+    // It's better to do this *after* stack scanning, because this way
+    // we can make up for imbalances in stack scanning
+    // This would not apply to the initial mark phase in background GC,
+    // but it would apply to blocking Gen 2 collections and the final
+    // marking stage in background GC where we catch up to the user program
+    if (GCHeapUtilities::MarkShouldCompeteForStatics())
+    {
+        if (condemned == max_gen && sc->promotion)
+        {
+            SystemDomain::EnumAllStaticGCRefs(fn, sc);
+        }
     }
 }
 
@@ -209,17 +214,7 @@ void GCToEEInterface::GcStartWork (int condemned, int max_gen)
 #endif
 
 #ifdef FEATURE_COMINTEROP
-    //
-    // Let GC detect managed/native cycles with input from jupiter
-    // Jupiter will
-    // 1. Report reference from RCW to CCW based on native reference in Jupiter
-    // 2. Identify the subset of CCWs that needs to be rooted
-    //
-    // We'll build the references from RCW to CCW using
-    // 1. Preallocated arrays
-    // 2. Dependent handles
-    //
-    RCWWalker::OnGCStarted(condemned);
+    Interop::OnGCStarted(condemned);
 #endif // FEATURE_COMINTEROP
 
     if (condemned == max_gen)
@@ -238,10 +233,7 @@ void GCToEEInterface::GcDone(int condemned)
     CONTRACTL_END;
 
 #ifdef FEATURE_COMINTEROP
-    //
-    // Tell Jupiter GC has finished
-    //
-    RCWWalker::OnGCFinished(condemned);
+    Interop::OnGCFinished(condemned);
 #endif // FEATURE_COMINTEROP
 }
 
@@ -850,7 +842,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         //     On architectures with strong ordering, we only need to prevent compiler reordering.
         //     Otherwise we put a process-wide fence here (so that we could use an ordinary read in the barrier)
 
-#if defined(_ARM64_) || defined(_ARM_)
+#if defined(HOST_ARM64) || defined(HOST_ARM)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
@@ -862,11 +854,11 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_lowest_address = args->lowest_address;
         g_highest_address = args->highest_address;
 
-#if defined(_ARM64_) || defined(_ARM_)
+#if defined(HOST_ARM64) || defined(HOST_ARM)
         // Need to reupdate for changes to g_highest_address g_lowest_address
         stompWBCompleteActions |= ::StompWriteBarrierResize(is_runtime_suspended, args->requires_upper_bounds_check);
 
-#ifdef _ARM_
+#ifdef HOST_ARM
         if (stompWBCompleteActions & SWB_ICACHE_FLUSH)
         {
             // flushing/invalidating the write barrier's body for the current process
@@ -902,7 +894,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         //       (we care only about managed threads and suspend/resume will do full fences - good enough for us).
         //
 
-#if defined(_ARM64_) || defined(_ARM_)
+#if defined(HOST_ARM64) || defined(HOST_ARM)
         is_runtime_suspended = (stompWBCompleteActions & SWB_EE_RESTART) || is_runtime_suspended;
         if (!is_runtime_suspended)
         {
@@ -914,7 +906,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         if (stompWBCompleteActions & SWB_EE_RESTART)
         {
             assert(!args->is_runtime_suspended &&
-                "if runtime was suspended in patching routines then it was in running state at begining");
+                "if runtime was suspended in patching routines then it was in running state at beginning");
             ThreadSuspend::RestartEE(FALSE, TRUE);
         }
         return; // unlike other branches we have already done cleanup so bailing out here
@@ -990,7 +982,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     if (stompWBCompleteActions & SWB_EE_RESTART)
     {
         assert(!args->is_runtime_suspended &&
-            "if runtime was suspended in patching routines then it was in running state at begining");
+            "if runtime was suspended in patching routines then it was in running state at beginning");
         ThreadSuspend::RestartEE(FALSE, TRUE);
     }
 }

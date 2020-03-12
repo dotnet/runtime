@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -56,6 +56,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             ModuleToken token;
             if (_typeToRefTokens.TryGetValue(type, out token))
+            {
+                return token;
+            }
+
+            // If the token was not lazily mapped, search the input compilation set for a type reference token
+            if (_compilationModuleGroup.TryGetModuleTokenForExternalType(type, out token))
             {
                 return token;
             }
@@ -163,7 +169,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 canonField = CompilerContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
             }
 
-            _fieldToRefTokens[canonField] = token;
+            SetModuleTokenForTypeSystemEntity(_fieldToRefTokens, canonField, token);
 
             switch (token.TokenType)
             {
@@ -173,6 +179,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 default:
                     throw new NotImplementedException();
+            }
+        }
+
+        // Add TypeSystemEntity -> ModuleToken mapping to a ConcurrentDictionary. Using CompareTo sort the token used, so it will
+        // be consistent in all runs of the compiler
+        void SetModuleTokenForTypeSystemEntity<T>(ConcurrentDictionary<T, ModuleToken> dictionary, T tse, ModuleToken token)
+        {
+            if (!dictionary.TryAdd(tse, token))
+            {
+                ModuleToken oldToken;
+                do
+                {
+                    // We will reach here, if the field already has a token
+                    if (!dictionary.TryGetValue(tse, out oldToken))
+                        throw new InternalCompilerErrorException("TypeSystemEntity both present and not present in emission dictionary.");
+
+                    if (oldToken.CompareTo(token) <= 0)
+                        break;
+                } while (dictionary.TryUpdate(tse, token, oldToken));
             }
         }
 
@@ -199,7 +224,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Don't store typespec tokens where a generic parameter resolves to the type in question
                 if (token.TokenType == CorTokenType.mdtTypeDef || token.TokenType == CorTokenType.mdtTypeRef)
                 {
-                    _typeToRefTokens[ecmaType] = token;
+                    SetModuleTokenForTypeSystemEntity(_typeToRefTokens, ecmaType, token);
                 }
             }
             else if (!specialTypeFound)

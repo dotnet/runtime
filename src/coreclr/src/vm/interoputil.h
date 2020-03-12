@@ -45,7 +45,7 @@ enum DefaultInterfaceType
 
 struct SYSTEMCOLOR
 {
-#ifdef BIT64
+#ifdef HOST_64BIT
     STRINGREF name;
     INT64     value;
 #else

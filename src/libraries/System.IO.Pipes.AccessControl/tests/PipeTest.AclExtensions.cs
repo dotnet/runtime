@@ -84,7 +84,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        // This test matches NetFX behavior
+        // This test matches .NET Framework behavior
         [Fact]
         public void PipeSecurity_VerifySynchronizeMasks()
         {

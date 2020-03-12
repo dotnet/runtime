@@ -121,7 +121,7 @@ namespace System.Linq.Parallel
                 while (_leftSource.MoveNext(ref leftPair, ref leftKey))
                 {
                     if ((mutables._outputLoopCount++ & CancellationState.POLL_INTERVAL) == 0)
-                        CancellationState.ThrowIfCanceled(_cancellationToken);
+                        _cancellationToken.ThrowIfCancellationRequested();;
 
                     // Find the match in the hash table.
                     HashLookupValueList<TRightInput, TRightKey> matchValue = default(HashLookupValueList<TRightInput, TRightKey>);
@@ -252,7 +252,7 @@ namespace System.Linq.Parallel
             while (dataSource.MoveNext(ref currentPair, ref orderKey))
             {
                 if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                    CancellationState.ThrowIfCanceled(cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
 
                 TBaseElement element = currentPair.First;
                 THashKey hashKey = currentPair.Second;

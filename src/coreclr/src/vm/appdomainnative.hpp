@@ -20,7 +20,7 @@
 class AppDomainNative
 {
 public:
-    static FCDECL3(Object*, CreateDynamicAssembly, AssemblyNameBaseObject* assemblyNameUNSAFE, StackCrawlMark* stackMark, INT32 access);
+    static void QCALLTYPE CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyName, QCall::StackCrawlMarkHandle stackMark, INT32 access, QCall::ObjectHandleOnStack retAssembly);
     static FCDECL0(Object*, GetLoadedAssemblies);
     static FCDECL1(Object*, GetOrInternString, StringObject* pStringUNSAFE);
     static FCDECL1(Object*, IsStringInterned, StringObject* pString);

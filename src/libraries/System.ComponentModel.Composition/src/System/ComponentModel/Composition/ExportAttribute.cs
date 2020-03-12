@@ -9,7 +9,6 @@ namespace System.ComponentModel.Composition
     /// <summary>
     ///     Specifies that a type, property, field, or method provides a particular export.
     /// </summary>
-    [SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method,
                     AllowMultiple = true, Inherited = false)]
     public class ExportAttribute : Attribute
@@ -30,7 +29,7 @@ namespace System.ComponentModel.Composition
         ///     </para>
         /// </remarks>
         public ExportAttribute()
-            : this((string)null, (Type)null)
+            : this((string?)null, (Type?)null)
         {
         }
 
@@ -60,8 +59,8 @@ namespace System.ComponentModel.Composition
         ///         using <see cref="StringComparer.Ordinal"/>.
         ///     </para>
         /// </remarks>
-        public ExportAttribute(Type contractType)
-            : this((string)null, contractType)
+        public ExportAttribute(Type? contractType)
+            : this((string?)null, contractType)
         {
         }
 
@@ -85,8 +84,8 @@ namespace System.ComponentModel.Composition
         ///         using <see cref="StringComparer.Ordinal"/>.
         ///     </para>
         /// </remarks>
-        public ExportAttribute(string contractName)
-            : this(contractName, (Type)null)
+        public ExportAttribute(string? contractName)
+            : this(contractName, (Type?)null)
         {
         }
 
@@ -115,7 +114,7 @@ namespace System.ComponentModel.Composition
         ///         using <see cref="StringComparer.Ordinal"/>.
         ///     </para>
         /// </remarks>
-        public ExportAttribute(string contractName, Type contractType)
+        public ExportAttribute(string? contractName, Type? contractType)
         {
             ContractName = contractName;
             ContractType = contractType;
@@ -128,7 +127,7 @@ namespace System.ComponentModel.Composition
         ///      A <see cref="string"/> containing the contract name to export the type or member
         ///      marked with this attribute, under. The default value is an empty string ("").
         /// </value>
-        public string ContractName { get; private set; }
+        public string? ContractName { get; private set; }
 
         /// <summary>
         ///     Get the contract type that is exported by the member that this attribute is attached to.
@@ -138,6 +137,6 @@ namespace System.ComponentModel.Composition
         ///     <see langword="null"/> which means that the type will be obtained by looking at the type on
         ///     the member that this export is attached to.
         /// </value>
-        public Type ContractType { get; private set; }
+        public Type? ContractType { get; private set; }
     }
 }

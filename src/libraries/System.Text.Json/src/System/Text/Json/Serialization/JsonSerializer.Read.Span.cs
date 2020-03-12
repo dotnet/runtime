@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -23,7 +24,15 @@ namespace System.Text.Json
         [return: MaybeNull]
         public static TValue Deserialize<TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
         {
-            return (TValue)ParseCore(utf8Json, typeof(TValue), options)!;
+            if (options == null)
+            {
+                options = JsonSerializerOptions.s_defaultOptions;
+            }
+
+            var readerState = new JsonReaderState(options.GetReaderOptions());
+            var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
+
+            return ReadCore<TValue>(ref reader, typeof(TValue), options);
         }
 
         /// <summary>
@@ -44,13 +53,10 @@ namespace System.Text.Json
         public static object? Deserialize(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType == null)
+            {
                 throw new ArgumentNullException(nameof(returnType));
+            }
 
-            return ParseCore(utf8Json, returnType, options);
-        }
-
-        private static object? ParseCore(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options)
-        {
             if (options == null)
             {
                 options = JsonSerializerOptions.s_defaultOptions;
@@ -58,12 +64,8 @@ namespace System.Text.Json
 
             var readerState = new JsonReaderState(options.GetReaderOptions());
             var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
-            object? result = ReadCore(returnType, options, ref reader);
 
-            // The reader should have thrown if we have remaining bytes.
-            Debug.Assert(reader.BytesConsumed == utf8Json.Length);
-
-            return result;
+            return ReadCore<object>(ref reader, returnType, options);
         }
     }
 }

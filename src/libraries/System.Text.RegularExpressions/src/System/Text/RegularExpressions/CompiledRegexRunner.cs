@@ -8,19 +8,18 @@ namespace System.Text.RegularExpressions
     {
         private readonly Action<RegexRunner> _goMethod;
         private readonly Func<RegexRunner, bool> _findFirstCharMethod;
-        private readonly Action<RegexRunner> _initTrackCountMethod;
 
-        public CompiledRegexRunner(Action<RegexRunner> go, Func<RegexRunner, bool> firstChar, Action<RegexRunner> trackCount)
+        public CompiledRegexRunner(Action<RegexRunner> go, Func<RegexRunner, bool> findFirstChar, int trackCount)
         {
             _goMethod = go;
-            _findFirstCharMethod = firstChar;
-            _initTrackCountMethod = trackCount;
+            _findFirstCharMethod = findFirstChar;
+            runtrackcount = trackCount;
         }
 
         protected override void Go() => _goMethod(this);
 
         protected override bool FindFirstChar() => _findFirstCharMethod(this);
 
-        protected override void InitTrackCount() => _initTrackCountMethod(this);
+        protected override void InitTrackCount() { }
     }
 }

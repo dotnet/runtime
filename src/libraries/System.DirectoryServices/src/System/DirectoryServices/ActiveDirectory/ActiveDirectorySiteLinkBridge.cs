@@ -360,7 +360,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             propertyList.Add(propertyName);
             Hashtable values = Utils.GetValuesWithRangeRetrieval(cachedEntry, "(objectClass=*)", propertyList, SearchScope.Base);
-            ArrayList siteLinkLists = (ArrayList)values[propertyName.ToLower(CultureInfo.InvariantCulture)];
+            ArrayList siteLinkLists = (ArrayList)values[propertyName.ToLowerInvariant()];
 
             // somehow no site link list
             if (siteLinkLists == null)

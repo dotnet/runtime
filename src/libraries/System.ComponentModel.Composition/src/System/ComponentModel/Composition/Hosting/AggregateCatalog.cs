@@ -19,14 +19,14 @@ namespace System.ComponentModel.Composition.Hosting
     /// </remarks>
     public class AggregateCatalog : ComposablePartCatalog, INotifyComposablePartCatalogChanged
     {
-        private readonly ComposablePartCatalogCollection _catalogs = null;
+        private readonly ComposablePartCatalogCollection _catalogs;
         private volatile int _isDisposed = 0;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="AggregateCatalog"/> class.
         /// </summary>
         public AggregateCatalog()
-            : this((IEnumerable<ComposablePartCatalog>)null)
+            : this((IEnumerable<ComposablePartCatalog>?)null)
         {
         }
 
@@ -44,8 +44,8 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentException">
         ///     <paramref name="catalogs"/> contains an element that is <see langword="null"/>.
         /// </exception>
-        public AggregateCatalog(params ComposablePartCatalog[] catalogs)
-            : this((IEnumerable<ComposablePartCatalog>)catalogs)
+        public AggregateCatalog(params ComposablePartCatalog[]? catalogs)
+            : this((IEnumerable<ComposablePartCatalog>?)catalogs)
         {
         }
 
@@ -61,7 +61,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentException">
         ///     <paramref name="catalogs"/> contains an element that is <see langword="null"/>.
         /// </exception>
-        public AggregateCatalog(IEnumerable<ComposablePartCatalog> catalogs)
+        public AggregateCatalog(IEnumerable<ComposablePartCatalog>? catalogs)
         {
             Requires.NullOrNotNullElements(catalogs, nameof(catalogs));
 
@@ -71,7 +71,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <summary>
         /// Notify when the contents of the Catalog has changed.
         /// </summary>
-        public event EventHandler<ComposablePartCatalogChangeEventArgs> Changed
+        public event EventHandler<ComposablePartCatalogChangeEventArgs>? Changed
         {
             add
             {
@@ -86,7 +86,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <summary>
         /// Notify when the contents of the Catalog has changing.
         /// </summary>
-        public event EventHandler<ComposablePartCatalogChangeEventArgs> Changing
+        public event EventHandler<ComposablePartCatalogChangeEventArgs>? Changing
         {
             add
             {
@@ -125,8 +125,8 @@ namespace System.ComponentModel.Composition.Hosting
 
             // We optimize for the case where the result is comparible with the requested cardinality, though we do remain correct in all cases.
             // We do so to avoid any unnecessary allocations
-            IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> result = null;
-            List<Tuple<ComposablePartDefinition, ExportDefinition>> aggregateResult = null;
+            IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>>? result = null;
+            List<Tuple<ComposablePartDefinition, ExportDefinition>>? aggregateResult = null;
 
             foreach (var catalog in _catalogs)
             {

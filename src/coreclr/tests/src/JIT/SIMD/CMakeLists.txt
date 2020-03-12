@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 2.6)
 project (Vector3TestNative)
 include_directories(${INC_PLATFORM_DIR})
 set(SOURCES Vector3TestNative.cpp )

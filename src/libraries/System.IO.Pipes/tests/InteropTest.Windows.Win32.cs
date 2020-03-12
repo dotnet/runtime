@@ -15,7 +15,7 @@ namespace System.IO.Pipes.Tests
         {
             if ((error == Interop.Errors.ERROR_SUCCESS || error == Interop.Errors.ERROR_CANNOT_IMPERSONATE) && Environment.Is64BitProcess)
             {
-                Interop.Kernel32.LoadLibraryEx("sspicli.dll", IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32).SetHandleAsInvalid();
+                Interop.Kernel32.LoadLibraryEx("sspicli.dll", IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
 
                 if (Interop.Kernel32.GetNamedPipeHandleStateW(handle, null, null, null, null, userName, userNameMaxLength))
                 {

@@ -165,15 +165,15 @@ namespace System.Dynamic.Utils
         // Checks if the type is a valid target for an instance call
         public static bool IsValidInstanceType(MemberInfo member, Type instanceType)
         {
-            Type targetType = member.DeclaringType;
-            if (AreReferenceAssignable(targetType, instanceType))
-            {
-                return true;
-            }
-
+            Type? targetType = member.DeclaringType;
             if (targetType == null)
             {
                 return false;
+            }
+
+            if (AreReferenceAssignable(targetType, instanceType))
+            {
+                return true;
             }
 
             if (instanceType.IsValueType)
@@ -336,8 +336,8 @@ namespace System.Dynamic.Utils
                             return false;
                         }
 
-                        source = source.GetElementType();
-                        dest = dest.GetElementType();
+                        source = source.GetElementType()!;
+                        dest = dest.GetElementType()!;
                         skipNonArray = false;
                     }
                     else
@@ -381,7 +381,7 @@ namespace System.Dynamic.Utils
             {
                 if (AreEquivalent(destGen, iface))
                 {
-                    return StrictHasReferenceConversionTo(source.GetElementType(), destParams[0], false);
+                    return StrictHasReferenceConversionTo(source.GetElementType()!, destParams[0], false);
                 }
             }
 
@@ -408,7 +408,7 @@ namespace System.Dynamic.Utils
             {
                 if (AreEquivalent(sourceGen, iface))
                 {
-                    return StrictHasReferenceConversionTo(sourceParams[0], dest.GetElementType(), false);
+                    return StrictHasReferenceConversionTo(sourceParams[0], dest.GetElementType()!, false);
                 }
             }
 
@@ -607,7 +607,7 @@ namespace System.Dynamic.Utils
             || IsImplicitBoxingConversion(source, destination)
             || IsImplicitNullableConversion(source, destination);
 
-        public static MethodInfo GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType)
+        public static MethodInfo? GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType)
         {
             Type nnExprType = GetNonNullableType(convertFrom);
             Type nnConvType = GetNonNullableType(convertToType);
@@ -615,7 +615,7 @@ namespace System.Dynamic.Utils
             // try exact match on types
             MethodInfo[] eMethods = nnExprType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
-            MethodInfo method = FindConversionOperator(eMethods, convertFrom, convertToType);
+            MethodInfo? method = FindConversionOperator(eMethods, convertFrom, convertToType);
             if (method != null)
             {
                 return method;
@@ -641,7 +641,7 @@ namespace System.Dynamic.Utils
                    ?? FindConversionOperator(cMethods, nnExprType, convertToType);
         }
 
-        private static MethodInfo FindConversionOperator(MethodInfo[] methods, Type typeFrom, Type typeTo)
+        private static MethodInfo? FindConversionOperator(MethodInfo[] methods, Type? typeFrom, Type? typeTo)
         {
             foreach (MethodInfo mi in methods)
             {
@@ -658,7 +658,6 @@ namespace System.Dynamic.Utils
             return null;
         }
 
-        [Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static bool IsImplicitNumericConversion(Type source, Type destination)
         {
             TypeCode tcSource = source.GetTypeCode();
@@ -786,9 +785,9 @@ namespace System.Dynamic.Utils
         private static bool IsImplicitNullableConversion(Type source, Type destination) =>
             IsNullableType(destination) && IsImplicitlyConvertibleTo(GetNonNullableType(source), GetNonNullableType(destination));
 
-        public static Type FindGenericType(Type definition, Type type)
+        public static Type? FindGenericType(Type definition, Type? type)
         {
-            while ((object)type != null && type != typeof(object))
+            while ((object?)type != null && type != typeof(object))
             {
                 if (type.IsConstructedGenericType && AreEquivalent(type.GetGenericTypeDefinition(), definition))
                 {
@@ -799,7 +798,7 @@ namespace System.Dynamic.Utils
                 {
                     foreach (Type itype in type.GetTypeInfo().ImplementedInterfaces)
                     {
-                        Type found = FindGenericType(definition, itype);
+                        Type? found = FindGenericType(definition, itype);
                         if (found != null)
                         {
                             return found;
@@ -822,25 +821,25 @@ namespace System.Dynamic.Utils
         /// op_False, because we have to do runtime lookup for those. It may
         /// not work right for unary operators in general.
         /// </summary>
-        public static MethodInfo GetBooleanOperator(Type type, string name)
+        public static MethodInfo? GetBooleanOperator(Type type, string name)
         {
             do
             {
-                MethodInfo result = type.GetAnyStaticMethodValidated(name, new[] { type });
+                MethodInfo? result = type.GetAnyStaticMethodValidated(name, new[] { type });
                 if (result != null && result.IsSpecialName && !result.ContainsGenericParameters)
                 {
                     return result;
                 }
 
-                type = type.BaseType;
+                type = type.BaseType!;
             } while (type != null);
 
             return null;
         }
 
-        public static Type GetNonRefType(this Type type) => type.IsByRef ? type.GetElementType() : type;
+        public static Type GetNonRefType(this Type type) => type.IsByRef ? type.GetElementType()! : type;
 
-        public static bool AreEquivalent(Type t1, Type t2) => t1 != null && t1.IsEquivalentTo(t2);
+        public static bool AreEquivalent(Type? t1, Type? t2) => t1 != null && t1.IsEquivalentTo(t2);
 
         public static bool AreReferenceAssignable(Type dest, Type src)
         {
@@ -856,9 +855,9 @@ namespace System.Dynamic.Utils
         public static bool IsSameOrSubclass(Type type, Type subType) =>
             AreEquivalent(type, subType) || subType.IsSubclassOf(type);
 
-        public static void ValidateType(Type type, string paramName) => ValidateType(type, paramName, false, false);
+        public static void ValidateType(Type type, string? paramName) => ValidateType(type, paramName, false, false);
 
-        public static void ValidateType(Type type, string paramName, bool allowByRef, bool allowPointer)
+        public static void ValidateType(Type type, string? paramName, bool allowByRef, bool allowPointer)
         {
             if (ValidateType(type, paramName, -1))
             {
@@ -874,7 +873,7 @@ namespace System.Dynamic.Utils
             }
         }
 
-        public static bool ValidateType(Type type, string paramName, int index)
+        public static bool ValidateType(Type type, string? paramName, int index)
         {
             if (type == typeof(void))
             {
@@ -894,7 +893,7 @@ namespace System.Dynamic.Utils
         public static MethodInfo GetInvokeMethod(this Type delegateType)
         {
             Debug.Assert(typeof(Delegate).IsAssignableFrom(delegateType));
-            return delegateType.GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            return delegateType.GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!;
         }
 
 #if FEATURE_COMPILE

@@ -3,7 +3,8 @@
     <!-- We are no longer shipping this assembly and it is only used in desktop facades.
         The reference assembly version needs to be frozen so that our desktop compat facades point to the version from the package. -->
     <AssemblyVersion>4.0.3.0</AssemblyVersion>
-    <Configurations>netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Pipes.AccessControl.cs" />

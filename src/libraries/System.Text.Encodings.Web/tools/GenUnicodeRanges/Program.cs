@@ -30,8 +30,8 @@ namespace GenDefinedCharList
 
             // The input file should be Blocks.txt from the UCD corresponding to the
             // version of the Unicode spec we're consuming.
-            // More info: http://www.unicode.org/reports/tr44/
-            // Latest Blocks.txt: http://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt
+            // More info: https://www.unicode.org/reports/tr44/
+            // Latest Blocks.txt: https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt
 
             StringBuilder runtimeCodeBuilder = new StringBuilder();
             WriteCopyrightAndHeader(runtimeCodeBuilder);
@@ -101,7 +101,7 @@ namespace GenDefinedCharList
                 runtimeCodeBuilder.AppendLine(Invariant($"        /// A <see cref=\"UnicodeRange\"/> corresponding to the '{blockName}' Unicode block (U+{startCode}..U+{endCode})."));
                 runtimeCodeBuilder.AppendLine(Invariant($"        /// </summary>"));
                 runtimeCodeBuilder.AppendLine(Invariant($"        /// <remarks>"));
-                runtimeCodeBuilder.AppendLine(Invariant($"        /// See http://www.unicode.org/charts/PDF/U{startCode}.pdf for the full set of characters in this block."));
+                runtimeCodeBuilder.AppendLine(Invariant($"        /// See https://www.unicode.org/charts/PDF/U{startCode}.pdf for the full set of characters in this block."));
                 runtimeCodeBuilder.AppendLine(Invariant($"        /// </remarks>"));
                 runtimeCodeBuilder.AppendLine(Invariant($"        public static UnicodeRange {blockNameAsProperty} => {blockNameAsField} ?? CreateRange(ref {blockNameAsField}, first: '\\u{startCode}', last: '\\u{endCode}');"));
                 runtimeCodeBuilder.AppendLine(Invariant($"        private static UnicodeRange? {blockNameAsField};"));

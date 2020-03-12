@@ -275,7 +275,7 @@ namespace System.Data.OleDb
                                 value = dataRow[backendtype, DataRowVersion.Default];
                                 if (value is string)
                                 {
-                                    string backendtypename = ((string)value).ToLower(CultureInfo.InvariantCulture);
+                                    string backendtypename = ((string)value).ToLowerInvariant();
                                     switch (backendtypename)
                                     {
                                         case "binary":

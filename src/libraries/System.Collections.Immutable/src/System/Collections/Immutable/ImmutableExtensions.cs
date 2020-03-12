@@ -17,7 +17,10 @@ namespace System.Collections.Immutable
     {
         internal static bool IsValueType<T>()
         {
-            if (default(T)! != null)
+#if NETCOREAPP
+            return typeof(T).IsValueType;
+#else
+            if (default(T) != null)
             {
                 return true;
             }
@@ -29,6 +32,7 @@ namespace System.Collections.Immutable
             }
 
             return false;
+#endif
         }
 
 #if EqualsStructurally

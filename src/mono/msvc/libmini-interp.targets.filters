@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="interp_sources">
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\hacks.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\interp</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\interp.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\interp</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\interp-internals.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\interp</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\interp.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\interp</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\interp\mintops.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\interp</Filter>
+    </ClInclude>
+    <None Include="$(MonoSourceLocation)\mono\mini\interp\mintops.def">
+      <Filter>Resource Files$(MonoMiniFilterSubFolder)\interp</Filter>
+    </None>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\mintops.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\interp</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp\transform.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\interp</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoMiniFilterSubFolder)\interp">
+      <UniqueIdentifier>{9E07C63F-9DE3-45EC-AEF6-D55AE5E7B644}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files$(MonoMiniFilterSubFolder)\interp">
+      <UniqueIdentifier>{1064DAD3-1B4C-4803-BD5F-D046F98052E4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\interp">
+      <UniqueIdentifier>{5D14595A-15DA-44C8-AC7D-3B296DBC324D}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

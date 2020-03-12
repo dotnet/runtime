@@ -369,10 +369,6 @@ HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* 
         }
 
         asmInfo.szLocale = 0;
-        asmInfo.ulOS = 0;
-        asmInfo.rOS = 0;
-        asmInfo.ulProcessor = 0;
-        asmInfo.rProcessor = 0;
 
         if ((*pName)->GetCultureInfo() != NULL)
         {
@@ -622,32 +618,6 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
     }
 
     GCPROTECT_END();
-}
-
-// This uses thread storage to allocate space. Please use Checkpoint and release it.
-void AssemblySpec::SetCodeBase(StackingAllocator* alloc, STRINGREF *pCodeBase)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pCodeBase));
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // Codebase
-    if (pCodeBase != NULL && *pCodeBase != NULL) {
-        WCHAR* pString;
-        int    iString;
-        (*pCodeBase)->RefInterpretGetStringValuesDangerousForGC(&pString, &iString);
-
-        DWORD dwCodeBase = (DWORD) iString+1;
-        m_wszCodeBase = new (alloc) WCHAR[dwCodeBase];
-        memcpy((void*)m_wszCodeBase, pString, dwCodeBase * sizeof(WCHAR));
-    }
 }
 
 #endif // CROSSGEN_COMPILE

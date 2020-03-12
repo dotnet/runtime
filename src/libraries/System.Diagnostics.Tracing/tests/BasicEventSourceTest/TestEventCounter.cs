@@ -40,9 +40,9 @@ namespace BasicEventSourceTests
 
         [Fact]
 #if !USE_MDT_EVENTSOURCE
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, reason: "https://github.com/dotnet/corefx/issues/23661")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, reason: "https://github.com/dotnet/runtime/issues/23380")]
 #endif
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25029")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24036")]
         public void Test_Write_Metric_EventListener()
         {
             using (var listener = new EventListenerListener())
@@ -215,7 +215,7 @@ namespace BasicEventSourceTests
 
                         // We shoudl always get the unconditional callback at the start and end of the trace.
                         Assert.True(4 <= evts.Count, $"FAILURE EventCounter Multi-event: 4 <= {evts.Count} ticks: {num100msecTimerTicks} thread: {Thread.CurrentThread.ManagedThreadId}");
-                        // We expect the timer to have gone off at least twice, plus the explicit poll at the begining and end.
+                        // We expect the timer to have gone off at least twice, plus the explicit poll at the beginning and end.
                         // Each one fires two events (one for requests, one for errors). so that is (2 + 2)*2 = 8
                         // We expect about 7 timer requests, but we don't get picky about the exact count
                         // Putting in a generous buffer, we double 7 to say we don't expect more than 14 timer fires

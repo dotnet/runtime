@@ -11,7 +11,7 @@ using System.Runtime.Intrinsics.X86;
 using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 using nint = System.Int64;
 #else
@@ -107,7 +107,7 @@ namespace System
                 }
             }
 
-#if BIT64
+#if TARGET_64BIT
             if ((byte*)minLength >= (byte*)(i + sizeof(int) / sizeof(char)))
             {
                 if (Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, i))) ==

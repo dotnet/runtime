@@ -918,11 +918,13 @@ namespace System.Collections.Concurrent
         // as these are uncommonly needed and when inlined are observed to prevent the inlining
         // of important methods like TryGetValue and ContainsKey.
 
+        [DoesNotReturn]
         private static void ThrowKeyNotFoundException(object key)
         {
             throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
         }
 
+        [DoesNotReturn]
         private static void ThrowKeyNullException()
         {
             throw new ArgumentNullException("key");
@@ -939,7 +941,7 @@ namespace System.Collections.Concurrent
                     ThrowValueNullException();
                 }
             }
-            else if (default(TValue)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            else if (default(TValue) != null)
             {
                 ThrowValueNullException();
             }

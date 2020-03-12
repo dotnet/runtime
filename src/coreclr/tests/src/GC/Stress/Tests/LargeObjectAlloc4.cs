@@ -9,7 +9,7 @@
 using System;
 public class Test
 {
-    public static int Main()
+    public static int Main(string[] args)
     {
         Int32 basesize;
         Int32[] largeobjarr;

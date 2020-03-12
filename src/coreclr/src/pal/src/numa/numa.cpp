@@ -46,11 +46,56 @@ bool g_numaAvailable = false;
 void* numaHandle = nullptr;
 
 #if HAVE_NUMA_H
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #define PER_FUNCTION_BLOCK(fn) decltype(fn)* fn##_ptr;
 FOR_ALL_NUMA_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
-#endif // HAVE_NUMA_H
 
+#if defined(__linux__)
+static bool ShouldOpenLibNuma()
+{
+    // This is a simple heuristic to determine if libnuma.so should be opened.  There's
+    // no point in linking and resolving everything in this library if we're running on
+    // a system that's not NUMA-capable.
+    int fd = open("/sys/devices/system/node/possible", O_RDONLY | O_CLOEXEC);
+
+    if (fd == -1)
+    {
+        // sysfs might not be mounted, not available, or the interface might have
+        // changed.  Return `true' here so NUMASupportInitialize() can try initializing
+        // NUMA support with libnuma.
+        return true;
+    }
+
+    while (true)
+    {
+        char buffer[32];
+        ssize_t bytesRead = read(fd, buffer, 32);
+
+        if (bytesRead == -1 && errno == EINTR)
+        {
+            continue;
+        }
+
+        close(fd);
+
+        // If an unknown error happened (bytesRead < 0), or the file was empty
+        // (bytesRead = 0), let libnuma handle this.  Otherwise, if there's just
+        // one NUMA node, don't bother linking in libnuma.
+        return (bytesRead <= 0) ? true : strncmp(buffer, "0\n", bytesRead) != 0;
+    }
+}
+#else
+static bool ShouldOpenLibNuma()
+{
+    return true;
+}
+#endif // __linux__
+
+#endif // HAVE_NUMA_H
 
 /*++
 Function:
@@ -65,6 +110,13 @@ BOOL
 NUMASupportInitialize()
 {
 #if HAVE_NUMA_H
+    if (!ShouldOpenLibNuma())
+    {
+        g_numaAvailable = false;
+        g_highestNumaNode = 0;
+        return TRUE;
+    }
+
     numaHandle = dlopen("libnuma.so", RTLD_LAZY);
     if (numaHandle == 0)
     {
@@ -72,7 +124,6 @@ NUMASupportInitialize()
     }
     if (numaHandle != 0)
     {
-        dlsym(numaHandle, "numa_allocate_cpumask");
 #define PER_FUNCTION_BLOCK(fn) \
     fn##_ptr = (decltype(fn)*)dlsym(numaHandle, #fn); \
     if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from libnuma\n"); abort(); }

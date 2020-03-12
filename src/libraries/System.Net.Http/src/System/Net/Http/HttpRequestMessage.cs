@@ -136,8 +136,6 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1057:StringUriOverloadsCallSystemUriOverloads",
-            Justification = "It is OK to provide 'null' values. A Uri instance is created from 'requestUri' if it is != null.")]
         public HttpRequestMessage(HttpMethod method, string requestUri)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, method, requestUri);

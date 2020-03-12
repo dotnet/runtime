@@ -90,7 +90,7 @@ namespace System.Threading
         [Intrinsic]
         [NonVersionable]
         public static long Read(ref long location) =>
-#if BIT64
+#if TARGET_64BIT
             (long)Unsafe.As<long, VolatileIntPtr>(ref location).Value;
 #else
             // On 32-bit machines, we use Interlocked, since an ordinary volatile read would not be atomic.
@@ -100,7 +100,7 @@ namespace System.Threading
         [Intrinsic]
         [NonVersionable]
         public static void Write(ref long location, long value) =>
-#if BIT64
+#if TARGET_64BIT
             Unsafe.As<long, VolatileIntPtr>(ref location).Value = (IntPtr)value;
 #else
             // On 32-bit, we use Interlocked, since an ordinary volatile write would not be atomic.

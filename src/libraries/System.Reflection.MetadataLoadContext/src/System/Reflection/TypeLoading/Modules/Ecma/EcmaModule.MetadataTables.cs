@@ -22,7 +22,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     _lazyTypeDefTable;
             }
         }
-        private volatile MetadataTable<EcmaDefinitionType, EcmaModule> _lazyTypeDefTable;
+        private volatile MetadataTable<EcmaDefinitionType, EcmaModule>? _lazyTypeDefTable;
 
         private void EnsureTypeDefTableFullyFilled()
         {
@@ -46,7 +46,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     _lazyTypeRefTable;
             }
         }
-        private volatile MetadataTable<RoDefinitionType, EcmaModule> _lazyTypeRefTable;
+        private volatile MetadataTable<RoDefinitionType, EcmaModule>? _lazyTypeRefTable;
 
         internal MetadataTable<EcmaGenericParameterType, EcmaModule> GenericParamTable
         {
@@ -57,7 +57,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     _lazyGenericParamTable;
             }
         }
-        private volatile MetadataTable<EcmaGenericParameterType, EcmaModule> _lazyGenericParamTable;
+        private volatile MetadataTable<EcmaGenericParameterType, EcmaModule>? _lazyGenericParamTable;
 
         internal MetadataTable<RoAssembly, EcmaModule> AssemblyRefTable
         {
@@ -68,7 +68,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     _lazyAssemblyRefTable;
             }
         }
-        private volatile MetadataTable<RoAssembly, EcmaModule> _lazyAssemblyRefTable;
+        private volatile MetadataTable<RoAssembly, EcmaModule>? _lazyAssemblyRefTable;
 
         private MetadataTable<T, EcmaModule> CreateTable<T>(TableIndex tableIndex) where T : class
         {

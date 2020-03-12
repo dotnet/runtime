@@ -8,7 +8,7 @@ namespace System.Linq.Expressions.Interpreter
 {
     internal abstract class NotInstruction : Instruction
     {
-        public static Instruction s_Boolean, s_Int64, s_Int32, s_Int16, s_UInt64, s_UInt32, s_UInt16, s_Byte, s_SByte;
+        public static Instruction? s_Boolean, s_Int64, s_Int32, s_Int16, s_UInt64, s_UInt32, s_UInt16, s_Byte, s_SByte;
 
         private NotInstruction() { }
 
@@ -20,7 +20,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object value = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null)
                 {
                     frame.Push(null);
@@ -37,7 +37,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object value = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null)
                 {
                     frame.Push(null);
@@ -54,7 +54,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object value = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null)
                 {
                     frame.Push(null);
@@ -71,7 +71,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object value = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null)
                 {
                     frame.Push(null);
@@ -88,7 +88,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object value = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null)
                 {
                     frame.Push(null);
@@ -105,7 +105,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object value = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null)
                 {
                     frame.Push(null);
@@ -122,7 +122,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object value = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null)
                 {
                     frame.Push(null);
@@ -139,7 +139,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object value = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null)
                 {
                     frame.Push(null);
@@ -156,7 +156,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object value = frame.Pop();
+                object? value = frame.Pop();
                 if (value == null)
                 {
                     frame.Push(null);

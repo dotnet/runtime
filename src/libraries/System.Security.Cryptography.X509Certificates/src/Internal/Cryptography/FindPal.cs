@@ -191,9 +191,7 @@ namespace Internal.Cryptography.Pal
             if (findValue is uint)
                 return (X509KeyUsageFlags)(uint)findValue;
 
-            string findValueString = findValue as string;
-
-            if (findValueString != null)
+            if (findValue is string findValueString)
             {
                 X509KeyUsageFlags usageFlags;
 

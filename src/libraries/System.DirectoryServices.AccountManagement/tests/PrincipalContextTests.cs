@@ -101,7 +101,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ActiveIssue(23800)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23448")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [OuterLoop("Takes too long on domain joined machines")]
         [InlineData(ContextType.Machine, null, "userName", "password")]
@@ -127,7 +127,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
-        [ActiveIssue(23800)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23448")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [OuterLoop("Takes too long on domain joined machines")]
         [InlineData(ContextType.Machine, null, null, "userName", "password")]
@@ -298,7 +298,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             Assert.Equal(expected, context.ValidateCredentials(userName, password, ContextOptions.Negotiate));
         }
 
-        [ActiveIssue(23800)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23448")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [OuterLoop("Takes too long on domain joined machines")]
         public void ValidateCredentials_InvalidUserName_ThrowsException()
@@ -307,7 +307,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             Assert.Throws<Exception>(() => context.ValidateCredentials("\0", "password"));
         }
 
-        [ActiveIssue(23800)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/23448")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [OuterLoop("Takes too long on domain joined machines")]
         public void ValidateCredentials_IncorrectUserNamePassword_ThrowsException()

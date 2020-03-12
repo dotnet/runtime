@@ -3,6 +3,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Needed due to the cmunged files being in the binary folders, the set(CMAKE_INCLUDE_CURRENT_DIR ON) is not enough
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
 
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
@@ -38,13 +39,15 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
     array.cpp
     assembly.cpp
+    assemblyloadcontext.cpp
     baseassemblyspec.cpp
     binder.cpp
     castcache.cpp
-    callcounter.cpp
+    callcounting.cpp
     ceeload.cpp
     class.cpp
     classhash.cpp
+    classlayoutinfo.cpp
     clsload.cpp
     codeman.cpp
     codeversion.cpp
@@ -95,6 +98,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     methodimpl.cpp
     methoditer.cpp
     methodtable.cpp
+    nativeimage.cpp
     object.cpp
     pefile.cpp
     peimage.cpp
@@ -139,10 +143,12 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     appdomain.inl
     array.h
     assembly.hpp
+    assemblyloadcontext.h
     baseassemblyspec.h
     baseassemblyspec.inl
     binder.h
     castcache.h
+    callcounting.h
     ceeload.h
     ceeload.inl
     class.h
@@ -409,7 +415,6 @@ set(VM_HEADERS_WKS
     assemblyspec.hpp
     assemblyspecbase.h
     cachelinealloc.h
-    callcounter.h
     callhelpers.h
     callsiteinspect.h
     ceemain.h
@@ -557,7 +562,7 @@ if(FEATURE_STANDALONE_GC)
         )
 endif(FEATURE_STANDALONE_GC)
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
 
 set(VM_SOURCES_DAC_AND_WKS_WIN32
     amsi.cpp
@@ -589,7 +594,7 @@ list(APPEND VM_SOURCES_WKS
     dispparammarshaler.cpp
     dwreport.cpp
     eventreporter.cpp
-    extensibleclassfactory.cpp
+    interoplibinterface.cpp
     mngstdinterfaces.cpp
     notifyexternals.cpp
     olecontexthelpers.cpp
@@ -618,7 +623,7 @@ list(APPEND VM_HEADERS_WKS
     dispparammarshaler.h
     dwreport.h
     eventreporter.h
-    extensibleclassfactory.h
+    interoplibinterface.h
     mngstdinterfaces.h
     notifyexternals.h
     olecontexthelpers.h
@@ -644,6 +649,10 @@ list(APPEND VM_HEADERS_DAC
     clrprivbinderwinrt.h
     clrprivtypecachewinrt.h
 )
+
+endif(CLR_CMAKE_TARGET_WIN32)
+
+if(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
     set(VM_SOURCES_WKS_ARCH_ASM
@@ -707,7 +716,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     )
 endif()
 
-else(WIN32)
+else(CLR_CMAKE_TARGET_WIN32)
 
     if(CLR_CMAKE_TARGET_ARCH_AMD64)
         set(VM_SOURCES_WKS_ARCH_ASM
@@ -752,7 +761,7 @@ else(WIN32)
         )
     endif()
 
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
@@ -850,18 +859,18 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         ${ARCH_SOURCES_DIR}/profiler.cpp
     )
 
-    if(CLR_CMAKE_PLATFORM_UNIX)
+    if(CLR_CMAKE_HOST_UNIX)
         list(APPEND VM_SOURCES_DAC_AND_WKS_ARCH
             ${ARCH_SOURCES_DIR}/arm64singlestepper.cpp
         )
-    endif(CLR_CMAKE_PLATFORM_UNIX)
+    endif(CLR_CMAKE_HOST_UNIX)
 endif()
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     list(APPEND VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/unixstubs.cpp
     )
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 set(VM_SOURCES_DAC_ARCH
     exceptionhandling.cpp
@@ -909,11 +918,11 @@ list(APPEND VM_HEADERS_DAC
     ${GC_HEADERS_DAC}
 )
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND VM_SOURCES_WKS ${VM_HEADERS_WKS})
     list(APPEND VM_SOURCES_WKS_ARCH_ASM ${VM_HEADERS_WKS_ARCH_ASM})
     list(APPEND VM_SOURCES_DAC ${VM_HEADERS_DAC})
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 convert_to_absolute_path(VM_SOURCES_WKS ${VM_SOURCES_WKS})
 convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})

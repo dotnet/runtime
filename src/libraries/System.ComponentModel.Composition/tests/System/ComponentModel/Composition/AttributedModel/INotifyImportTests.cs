@@ -23,6 +23,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportsSatisfiedOnComponentWithoutImports()
         {
             CompositionContainer container = ContainerFactory.CreateWithAttributedCatalog(typeof(PartWithoutImports));
@@ -35,6 +36,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportCompletedTest()
         {
             var container = ContainerFactory.Create();
@@ -56,6 +58,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportCompletedWithRecomposing()
         {
             var container = ContainerFactory.Create();
@@ -94,87 +97,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(700940)]
-        public void ImportCompletedUsingSatisfyImportsOnce()
-        {
-            var container = ContainerFactory.Create();
-            CompositionBatch batch = new CompositionBatch();
-            var entrypoint = new UpperCaseStringComponent();
-            var entrypointPart = AttributedModelServices.CreatePart(entrypoint);
-
-            batch.AddParts(new LowerCaseString("abc"));
-            container.Compose(batch);
-            container.SatisfyImportsOnce(entrypointPart);
-
-            Assert.Equal(1, entrypoint.LowerCaseStrings.Count);
-            Assert.Equal(1, entrypoint.ImportCompletedCallCount);
-            Assert.Equal(1, entrypoint.UpperCaseStrings.Count);
-            Assert.Equal("abc", entrypoint.LowerCaseStrings[0].Value.String);
-            Assert.Equal("ABC", entrypoint.UpperCaseStrings[0]);
-
-            batch = new CompositionBatch();
-            batch.AddParts(new object());
-            container.Compose(batch);
-            container.SatisfyImportsOnce(entrypointPart);
-
-            Assert.Equal(1, entrypoint.LowerCaseStrings.Count);
-            Assert.Equal(1, entrypoint.ImportCompletedCallCount);
-            Assert.Equal(1, entrypoint.UpperCaseStrings.Count);
-            Assert.Equal("abc", entrypoint.LowerCaseStrings[0].Value.String);
-            Assert.Equal("ABC", entrypoint.UpperCaseStrings[0]);
-
-            batch.AddParts(new LowerCaseString("def"));
-            container.Compose(batch);
-            container.SatisfyImportsOnce(entrypointPart);
-
-            Assert.Equal(2, entrypoint.LowerCaseStrings.Count);
-            Assert.Equal(2, entrypoint.ImportCompletedCallCount);
-            Assert.Equal(2, entrypoint.UpperCaseStrings.Count);
-            Assert.Equal("abc", entrypoint.LowerCaseStrings[0].Value.String);
-            Assert.Equal("ABC", entrypoint.UpperCaseStrings[0]);
-            Assert.Equal("def", entrypoint.LowerCaseStrings[1].Value.String);
-            Assert.Equal("DEF", entrypoint.UpperCaseStrings[1]);
-        }
-
-        [Fact]
-        [ActiveIssue(654513)]
-        public void ImportCompletedCalledAfterAllImportsAreFullyComposed()
-        {
-            int importSatisfationCount = 0;
-            var importer1 = new MyEventDrivenFullComposedNotifyImporter1();
-            var importer2 = new MyEventDrivenFullComposedNotifyImporter2();
-
-            Action<object, EventArgs> verificationAction = (object sender, EventArgs e) =>
-            {
-                Assert.True(importer1.AreAllImportsFullyComposed);
-                Assert.True(importer2.AreAllImportsFullyComposed);
-                ++importSatisfationCount;
-            };
-
-            importer1.ImportsSatisfied += new EventHandler(verificationAction);
-            importer2.ImportsSatisfied += new EventHandler(verificationAction);
-
-            // importer1 added first
-            var batch = new CompositionBatch();
-            batch.AddParts(importer1, importer2);
-
-            var container = ContainerFactory.Create();
-            container.ComposeExportedValue<ICompositionService>(container);
-            container.Compose(batch);
-            Assert.Equal(2, importSatisfationCount);
-
-            // importer2 added first
-            importSatisfationCount = 0;
-            batch = new CompositionBatch();
-            batch.AddParts(importer2, importer1);
-
-            container = ContainerFactory.Create();
-            container.ComposeExportedValue<ICompositionService>(container);
-            container.Compose(batch);
-            Assert.Equal(2, importSatisfationCount);
-        }
-
-        [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportCompletedAddPartAndBindComponent()
         {
             var container = ContainerFactory.Create();
@@ -190,7 +113,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ImportCompletedChildNeedsParentContainer()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -233,7 +156,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ImportCompletedChildDoesnotNeedParentContainer()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -271,7 +194,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ImportCompletedBindChildIndirectlyThroughParentContainerBind()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -305,7 +228,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ImportCompletedGetExportedValueLazy()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -326,7 +249,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ImportCompletedGetExportedValueEager()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();

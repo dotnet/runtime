@@ -628,13 +628,13 @@ namespace System.DirectoryServices.AccountManagement
                                 innerLdapFilter.Append(filterVal);
                     }
 
-                    innerLdapFilter.Append(")");
+                    innerLdapFilter.Append(')');
 
                     ldapFilter.Append(innerLdapFilter.ToString());
                 }
 
                 // Wrap off the filter
-                ldapFilter.Append(")");
+                ldapFilter.Append(')');
 
                 ds.Filter = ldapFilter.ToString();
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "FindPrincipalByIdentRefHelper: using LDAP filter {0}", ds.Filter);
@@ -1244,7 +1244,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Preexisting values that have not been removed.
                 // This also includes inserted values.
                 sb.Append(value);
-                sb.Append(",");
+                sb.Append(',');
             }
 
             // We have an extra comma at the end (assuming we added any values to the string).  Remove it.

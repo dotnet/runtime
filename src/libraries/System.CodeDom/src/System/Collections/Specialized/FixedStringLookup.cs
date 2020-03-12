@@ -44,7 +44,7 @@ namespace System.Collections.Specialized
             {
                 if (ignoreCase)
                 {
-                    searchChar = char.ToLower(value[pos], CultureInfo.InvariantCulture);
+                    searchChar = char.ToLowerInvariant(value[pos]);
                 }
                 else
                 {

@@ -1,0 +1,3 @@
+LIBRARY MixedModeLibrary.dll
+EXPORTS
+WriteStringUnmanaged

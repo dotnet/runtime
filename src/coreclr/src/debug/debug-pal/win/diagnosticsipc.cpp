@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "diagnosticsipc.h"
 
 IpcStream::DiagnosticsIpc::DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength])
@@ -18,17 +19,25 @@ IpcStream::DiagnosticsIpc::~DiagnosticsIpc()
 
 IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const pIpcName, ErrorCallback callback)
 {
-    assert(pIpcName != nullptr);
-    if (pIpcName == nullptr)
-        return nullptr;
-
     char namedPipeName[MaxNamedPipeNameLength]{};
-    const int nCharactersWritten = sprintf_s(
-        namedPipeName,
-        sizeof(namedPipeName),
-        "\\\\.\\pipe\\%s-%d",
-        pIpcName,
-        ::GetCurrentProcessId());
+    int nCharactersWritten = -1;
+
+    if (pIpcName != nullptr)
+    {
+        nCharactersWritten = sprintf_s(
+            namedPipeName,
+            sizeof(namedPipeName),
+            "\\\\.\\pipe\\%s",
+            pIpcName);
+    }
+    else
+    {
+        nCharactersWritten = sprintf_s(
+            namedPipeName,
+            sizeof(namedPipeName),
+            "\\\\.\\pipe\\dotnet-diagnostic-%d",
+            ::GetCurrentProcessId());
+    }
 
     if (nCharactersWritten == -1)
     {

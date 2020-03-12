@@ -8,7 +8,7 @@ namespace System.Tests
 {
     public class RealParserTests : RealParserTestsBase
     {
-        // The actual tests are defined in: src\Common\tests\System\RealParserTestsBase.netcoreapp.cs
+        // The actual tests are defined in: src\Common\tests\System\RealParserTestsBase.cs
 
         protected override string InvariantToStringDouble(double d)
         {

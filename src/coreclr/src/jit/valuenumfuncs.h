@@ -147,7 +147,7 @@ ValueNumFuncDef(LE_UN, 2, false, false, false)
 ValueNumFuncDef(GE_UN, 2, false, false, false)
 ValueNumFuncDef(GT_UN, 2, false, false, false)
 
-// currently we won't constant fold the next six
+// currently we don't constant fold the next six
 
 ValueNumFuncDef(ADD_OVF, 2, true, false, false)     // overflow checking operations
 ValueNumFuncDef(SUB_OVF, 2, false, false, false)
@@ -156,6 +156,33 @@ ValueNumFuncDef(MUL_OVF, 2, true, false, false)
 ValueNumFuncDef(ADD_UN_OVF, 2, true, false, false)  // unsigned overflow checking operations
 ValueNumFuncDef(SUB_UN_OVF, 2, false, false, false)
 ValueNumFuncDef(MUL_UN_OVF, 2, true, false, false)
+
+#ifdef FEATURE_SIMD
+ValueNumFuncDef(SimdType, 2, false, false, false)  // A value number function to compose a SIMD type
+#endif
+
+#define SIMD_INTRINSIC(m, i, id, n, r, argCount, arg1, arg2, arg3, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10) \
+ValueNumFuncDef(SIMD_##id, argCount, false, false, false)   // All of the SIMD intrinsic  (Consider isCommutativeSIMDIntrinsic)
+#include "simdintrinsiclist.h"
+#define VNF_SIMD_FIRST VNF_SIMD_None
+
+#if defined(TARGET_XARCH)
+#define HARDWARE_INTRINSIC(id, name, isa, ival, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+ValueNumFuncDef(HWI_##id, argCount, false, false, false)   // All of the HARDWARE_INTRINSICS for x86/x64
+#include "hwintrinsiclistxarch.h"
+#define VNF_HWI_FIRST VNF_HWI_Vector128_As
+
+#elif defined (TARGET_ARM64)
+#define HARDWARE_INTRINSIC(isa, name, ival, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of the HARDWARE_INTRINSICS for arm64
+#include "hwintrinsiclistarm64.h"
+#define VNF_HWI_FIRST VNF_HWI_Vector64_AsByte
+
+#elif defined (TARGET_ARM)
+// No Hardware Intrinsics on ARM32
+#else
+#error Unsupported platform
+#endif
 
 // clang-format on
 

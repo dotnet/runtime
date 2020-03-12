@@ -8,7 +8,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
@@ -35,7 +35,7 @@ namespace System
         [NonVersionable]
         public unsafe UIntPtr(ulong value)
         {
-#if BIT64
+#if TARGET_64BIT
             _value = (void*)value;
 #else
             _value = (void*)checked((uint)value);
@@ -80,7 +80,7 @@ namespace System
 
         public override unsafe int GetHashCode()
         {
-#if BIT64
+#if TARGET_64BIT
             ulong l = (ulong)_value;
             return unchecked((int)l) ^ (int)(l >> 32);
 #else
@@ -91,7 +91,7 @@ namespace System
         [NonVersionable]
         public unsafe uint ToUInt32()
         {
-#if BIT64
+#if TARGET_64BIT
             return checked((uint)_value);
 #else
             return (uint)_value;
@@ -119,7 +119,7 @@ namespace System
 
         [NonVersionable]
         public static unsafe explicit operator uint(UIntPtr value) =>
-#if BIT64
+#if TARGET_64BIT
             checked((uint)value._value);
 #else
             (uint)value._value;

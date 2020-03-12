@@ -5,6 +5,15 @@
             "executablePath": "$(TestHostRootPath)dotnet.exe",
             "commandLineArgs": "$(RunArguments) -parallel none",
             "workingDirectory": "$(RunWorkingDirectory)"
+        },
+        ".NET Framework xUnit Console": {
+            "commandName": "Executable",
+            "executablePath": "$(RunWorkingDirectory)$(RunCommand)",
+            "commandLineArgs": "$(RunArguments) -parallel none",
+            "workingDirectory": "$(RunWorkingDirectory)",
+            "environmentVariables": {
+                "DEVPATH": "$(TestHostRootPath)"
+            }
         }
     }
 }

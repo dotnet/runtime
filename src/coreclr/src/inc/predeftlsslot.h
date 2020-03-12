@@ -20,16 +20,16 @@
 enum PredefinedTlsSlots
 {
     TlsIdx_OwnedCrstsChain, // slot to store the Crsts owned by this thread
-    TlsIdx_JitPerf,
-    TlsIdx_JitX86Perf,
-    TlsIdx_JitLogEnv,
+    TlsIdx_Unused1,
+    TlsIdx_Unused2,
+    TlsIdx_Unused3,
     TlsIdx_AssertDlgStatus, // Whether the thread is displaying an assert dialog
     TlsIdx_StressLog,
     TlsIdx_CantStopCount, // Can't-stop counter for any thread
     TlsIdx_Check,
     TlsIdx_ForbidGCLoaderUseCount,
     TlsIdx_ClrDebugState,         // Pointer to ClrDebugState* structure
-    TlsIdx_StressThread,
+    TlsIdx_Unused10,
 
     // Add more indices here.
     TlsIdx_ThreadType, // bit flags to indicate special thread's type

@@ -52,9 +52,9 @@ namespace Internal.Cryptography
             ActualKey = ChangeKeyImpl(key);
         }
 
-        private byte[] ChangeKeyImpl(ReadOnlySpan<byte> key)
+        private byte[]? ChangeKeyImpl(ReadOnlySpan<byte> key)
         {
-            byte[] modifiedKey = null;
+            byte[]? modifiedKey = null;
 
             // If _blockSize is -1 the key isn't going to be extractable by the object holder,
             // so there's no point in recalculating it in managed code.
@@ -70,7 +70,7 @@ namespace Internal.Cryptography
             }
 
             HashProvider oldHashProvider = _hMacProvider;
-            _hMacProvider = null;
+            _hMacProvider = null!;
             oldHashProvider?.Dispose(true);
             _hMacProvider = HashProviderDispenser.CreateMacProvider(_hashAlgorithmId, key);
 
@@ -79,7 +79,7 @@ namespace Internal.Cryptography
 
         // The actual key used for hashing. This will not be the same as the original key passed to ChangeKey() if the original key exceeded the
         // hash algorithm's block size. (See RFC 2104, section 2)
-        public byte[] ActualKey { get; private set; }
+        public byte[]? ActualKey { get; private set; }
 
         // Adds new data to be hashed. This can be called repeatedly in order to hash data from noncontiguous sources.
         public void AppendHashData(byte[] data, int offset, int count) =>
@@ -100,13 +100,13 @@ namespace Internal.Cryptography
             if (disposing && _hMacProvider != null)
             {
                 _hMacProvider.Dispose(true);
-                _hMacProvider = null;
+                _hMacProvider = null!;
             }
         }
 
         private readonly string _hashAlgorithmId;
-        private HashProvider _hMacProvider;
-        private volatile HashProvider _lazyHashProvider;
+        private HashProvider _hMacProvider = null!; // Initialized in helper
+        private volatile HashProvider? _lazyHashProvider;
         private readonly int _blockSize;
     }
 }

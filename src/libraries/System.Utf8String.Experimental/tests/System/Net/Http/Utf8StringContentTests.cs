@@ -11,6 +11,7 @@ using static System.Tests.Utf8TestUtilities;
 
 namespace System.Net.Http.Tests
 {
+    [SkipOnMono("The features from System.Utf8String.Experimental namespace are experimental.")]
     public partial class Utf8StringContentTests
     {
         [Fact]

@@ -15,7 +15,7 @@ public class Test
     public static bool fail = false;
 
     [System.Security.SecuritySafeCritical]
-    public static int Main(String[] args)
+    public static int Main(string[] args)
     {
         Thread[] threads = new Thread[Math.Max(Environment.ProcessorCount * 2, 64)];
         for (int i = 0; i < threads.Length; i++)

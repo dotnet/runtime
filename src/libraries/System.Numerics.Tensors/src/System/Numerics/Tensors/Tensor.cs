@@ -1225,7 +1225,6 @@ namespace System.Numerics.Tensors
             var indices = new int[Rank];
             var innerDimension = Rank - 1;
             var innerLength = dimensions[innerDimension];
-            var outerLength = Length / innerLength;
 
             int indent = 0;
             for (int outerIndex = 0; outerIndex < Length; outerIndex += innerLength)

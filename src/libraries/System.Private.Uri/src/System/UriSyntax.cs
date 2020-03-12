@@ -107,26 +107,6 @@ namespace System
         internal const int NoDefaultPort = -1;
         private const int c_InitialTableSize = 25;
 
-        internal static bool DontEnableStrictRFC3986ReservedCharacterSets
-        {
-            // In .NET Framework this would test against an AppContextSwitch. Since this is a potentially
-            // breaking change, we'll leave in the system used to disable it.
-            get
-            {
-                return false;
-            }
-        }
-
-        internal static bool DontKeepUnicodeBidiFormattingCharacters
-        {
-            // In .NET Framework this would test against an AppContextSwitch. Since this is a potentially
-            // breaking change, we'll leave in the system used to disable it.
-            get
-            {
-                return false;
-            }
-        }
-
         private class BuiltInUriParser : UriParser
         {
             //

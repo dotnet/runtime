@@ -9,7 +9,7 @@ namespace System.Linq.Expressions.Interpreter
 {
     internal abstract class NegateInstruction : Instruction
     {
-        private static Instruction s_Int16, s_Int32, s_Int64, s_Single, s_Double;
+        private static Instruction? s_Int16, s_Int32, s_Int64, s_Single, s_Double;
 
         public override int ConsumedStack => 1;
         public override int ProducedStack => 1;
@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object obj = frame.Pop();
+                object? obj = frame.Pop();
                 if (obj == null)
                 {
                     frame.Push(null);
@@ -38,7 +38,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object obj = frame.Pop();
+                object? obj = frame.Pop();
                 if (obj == null)
                 {
                     frame.Push(null);
@@ -55,7 +55,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object obj = frame.Pop();
+                object? obj = frame.Pop();
                 if (obj == null)
                 {
                     frame.Push(null);
@@ -72,7 +72,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object obj = frame.Pop();
+                object? obj = frame.Pop();
                 if (obj == null)
                 {
                     frame.Push(null);
@@ -89,7 +89,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object obj = frame.Pop();
+                object? obj = frame.Pop();
                 if (obj == null)
                 {
                     frame.Push(null);
@@ -119,7 +119,7 @@ namespace System.Linq.Expressions.Interpreter
 
     internal abstract class NegateCheckedInstruction : Instruction
     {
-        private static Instruction s_Int16, s_Int32, s_Int64;
+        private static Instruction? s_Int16, s_Int32, s_Int64;
 
         public override int ConsumedStack => 1;
         public override int ProducedStack => 1;
@@ -131,7 +131,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object obj = frame.Pop();
+                object? obj = frame.Pop();
                 if (obj == null)
                 {
                     frame.Push(null);
@@ -148,7 +148,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object obj = frame.Pop();
+                object? obj = frame.Pop();
                 if (obj == null)
                 {
                     frame.Push(null);
@@ -165,7 +165,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                object obj = frame.Pop();
+                object? obj = frame.Pop();
                 if (obj == null)
                 {
                     frame.Push(null);

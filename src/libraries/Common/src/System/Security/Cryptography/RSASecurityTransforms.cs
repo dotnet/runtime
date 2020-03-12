@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
@@ -27,7 +28,7 @@ namespace System.Security.Cryptography
     {
         public sealed partial class RSASecurityTransforms : RSA
         {
-            private SecKeyPair _keys;
+            private SecKeyPair? _keys;
 
             public RSASecurityTransforms()
                 : this(2048)
@@ -326,7 +327,7 @@ namespace System.Security.Cryptography
                         out bytesWritten);
                 }
 
-                RsaPaddingProcessor processor;
+                RsaPaddingProcessor? processor;
 
                 switch (padding.Mode)
                 {
@@ -558,7 +559,7 @@ namespace System.Security.Cryptography
 
                 ThrowIfDisposed();
 
-                RsaPaddingProcessor processor = null;
+                RsaPaddingProcessor? processor = null;
 
                 if (padding.Mode == RSASignaturePaddingMode.Pss)
                 {
@@ -774,7 +775,7 @@ namespace System.Security.Cryptography
 
             private void ThrowIfDisposed()
             {
-                SecKeyPair current = _keys;
+                SecKeyPair? current = _keys;
 
                 if (current != null && current.PublicKey == null)
                 {
@@ -785,7 +786,7 @@ namespace System.Security.Cryptography
             internal SecKeyPair GetKeys()
             {
                 ThrowIfDisposed();
-                SecKeyPair current = _keys;
+                SecKeyPair? current = _keys;
 
                 if (current != null)
                 {
@@ -806,7 +807,7 @@ namespace System.Security.Cryptography
             {
                 ThrowIfDisposed();
 
-                SecKeyPair current = _keys;
+                SecKeyPair? current = _keys;
                 _keys = newKeyPair;
                 current?.Dispose();
 

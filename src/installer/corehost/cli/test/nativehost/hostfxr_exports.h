@@ -5,6 +5,8 @@
 #include <pal.h>
 #include <hostfxr.h>
 
+typedef int32_t(HOSTFXR_CALLTYPE* hostfxr_get_native_search_directories_fn)(const int argc, const char_t* argv[], char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size);
+
 class hostfxr_exports
 {
 public:
@@ -21,6 +23,10 @@ public:
     hostfxr_close_fn close;
 
     hostfxr_main_startupinfo_fn main_startupinfo;
+
+    hostfxr_set_error_writer_fn set_error_writer;
+
+    hostfxr_get_native_search_directories_fn get_native_search_directories;
 
 public:
     hostfxr_exports(const pal::string_t &hostfxr_path);

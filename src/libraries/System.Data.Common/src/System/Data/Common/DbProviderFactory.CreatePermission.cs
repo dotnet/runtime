@@ -5,7 +5,7 @@ using System.Security;
 using System.Security.Permissions;
 
 // Additional implementation to keep public API in Mono (it has a reference to this file)
-// https://github.com/dotnet/corefx/issues/16184
+// https://github.com/dotnet/runtime/issues/20232
 
 namespace System.Data.Common
 {

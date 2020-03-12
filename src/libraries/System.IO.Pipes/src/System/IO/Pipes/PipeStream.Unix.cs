@@ -109,10 +109,11 @@ namespace System.IO.Pipes
 
         private unsafe int ReadCore(Span<byte> buffer)
         {
+            Debug.Assert(_handle != null);
             DebugAssertHandleValid(_handle);
 
             // For named pipes, receive on the socket.
-            Socket socket = _handle.NamedPipeSocket;
+            Socket? socket = _handle.NamedPipeSocket;
             if (socket != null)
             {
                 // For a blocking socket, we could simply use the same Read syscall as is done
@@ -140,10 +141,11 @@ namespace System.IO.Pipes
 
         private unsafe void WriteCore(ReadOnlySpan<byte> buffer)
         {
+            Debug.Assert(_handle != null);
             DebugAssertHandleValid(_handle);
 
             // For named pipes, send to the socket.
-            Socket socket = _handle.NamedPipeSocket;
+            Socket? socket = _handle.NamedPipeSocket;
             if (socket != null)
             {
                 // For a blocking socket, we could simply use the same Write syscall as is done
@@ -181,7 +183,7 @@ namespace System.IO.Pipes
 
             try
             {
-                return await InternalHandle.NamedPipeSocket.ReceiveAsync(destination, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                return await InternalHandle!.NamedPipeSocket!.ReceiveAsync(destination, SocketFlags.None, cancellationToken).ConfigureAwait(false);
             }
             catch (SocketException e)
             {
@@ -197,7 +199,7 @@ namespace System.IO.Pipes
             {
                 while (source.Length > 0)
                 {
-                    int bytesWritten = await _handle.NamedPipeSocket.SendAsync(source, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                    int bytesWritten = await _handle!.NamedPipeSocket!.SendAsync(source, SocketFlags.None, cancellationToken).ConfigureAwait(false);
                     Debug.Assert(bytesWritten > 0 && bytesWritten <= source.Length);
                     source = source.Slice(bytesWritten);
                 }
@@ -237,7 +239,6 @@ namespace System.IO.Pipes
         // override this in cases where only one mode is legal (such as anonymous pipes)
         public virtual PipeTransmissionMode TransmissionMode
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
                 CheckPipePropertyOperations();
@@ -249,7 +250,6 @@ namespace System.IO.Pipes
         // access. If that passes, call to GetNamedPipeInfo will succeed.
         public virtual int InBufferSize
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
             get
             {
                 CheckPipePropertyOperations();
@@ -267,7 +267,6 @@ namespace System.IO.Pipes
         // the ctor.
         public virtual int OutBufferSize
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
                 CheckPipePropertyOperations();
@@ -286,7 +285,6 @@ namespace System.IO.Pipes
                 CheckPipePropertyOperations();
                 return PipeTransmissionMode.Byte; // Unix pipes are only byte-based, not message-based
             }
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             set
             {
                 CheckPipePropertyOperations();
@@ -314,7 +312,7 @@ namespace System.IO.Pipes
         /// semaphore.  Since we don't delegate to the base stream for Read/WriteAsync due
         /// to having specialized support for cancellation, we do the same serialization here.
         /// </summary>
-        private SemaphoreSlim _asyncActiveSemaphore;
+        private SemaphoreSlim? _asyncActiveSemaphore;
 
         private SemaphoreSlim EnsureAsyncActiveSemaphoreInitialized()
         {
@@ -420,7 +418,7 @@ namespace System.IO.Pipes
             }
         }
 
-        internal static Exception CreateExceptionForLastError(string pipeName = null)
+        internal static Exception CreateExceptionForLastError(string? pipeName = null)
         {
             Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
             return error.Error == Interop.Error.ENOTSUP ?

@@ -263,35 +263,6 @@ BOOL MyICJI::isCompatibleDelegate(CORINFO_CLASS_HANDLE  objCls,          /* type
     return jitInstance->mc->repIsCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
 }
 
-// Indicates if the method is an instance of the generic
-// method that passes (or has passed) verification
-CorInfoInstantiationVerification MyICJI::isInstantiationOfVerifiedGeneric(CORINFO_METHOD_HANDLE method /* IN  */
-                                                                          )
-{
-    jitInstance->mc->cr->AddCall("isInstantiationOfVerifiedGeneric");
-    return jitInstance->mc->repIsInstantiationOfVerifiedGeneric(method);
-}
-
-// Loads the constraints on a typical method definition, detecting cycles;
-// for use in verification.
-void MyICJI::initConstraintsForVerification(CORINFO_METHOD_HANDLE method,                        /* IN */
-                                            BOOL*                 pfHasCircularClassConstraints, /* OUT */
-                                            BOOL*                 pfHasCircularMethodConstraint  /* OUT */
-                                            )
-{
-    jitInstance->mc->cr->AddCall("initConstraintsForVerification");
-    jitInstance->mc->repInitConstraintsForVerification(method, pfHasCircularClassConstraints,
-                                                       pfHasCircularMethodConstraint);
-}
-
-// Returns enum whether the method does not require verification
-// Also see ICorModuleInfo::canSkipVerification
-CorInfoCanSkipVerificationResult MyICJI::canSkipMethodVerification(CORINFO_METHOD_HANDLE ftnHandle)
-{
-    jitInstance->mc->cr->AddCall("canSkipMethodVerification");
-    return jitInstance->mc->repCanSkipMethodVerification(ftnHandle, FALSE);
-}
-
 // load and restore the method
 void MyICJI::methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method)
 {
@@ -370,26 +341,6 @@ CORINFO_CLASS_HANDLE MyICJI::getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResol
     return jitInstance->mc->repGetTokenTypeAsHandle(pResolvedToken);
 }
 
-// Returns true if the module does not require verification
-//
-// If fQuickCheckOnlyWithoutCommit=TRUE, the function only checks that the
-// module does not currently require verification in the current AppDomain.
-// This decision could change in the future, and so should not be cached.
-// If it is cached, it should only be used as a hint.
-// This is only used by ngen for calculating certain hints.
-//
-
-// Returns enum whether the module does not require verification
-// Also see ICorMethodInfo::canSkipMethodVerification();
-CorInfoCanSkipVerificationResult MyICJI::canSkipVerification(CORINFO_MODULE_HANDLE module /* IN  */
-                                                             )
-{
-    jitInstance->mc->cr->AddCall("canSkipVerification");
-    LogError("Hit unimplemented canSkipVerification");
-    DebugBreakorAV(22);
-    return CORINFO_VERIFICATION_CANNOT_SKIP;
-}
-
 // Checks if the given metadata token is valid
 BOOL MyICJI::isValidToken(CORINFO_MODULE_HANDLE module, /* IN  */
                           unsigned              metaTOK /* IN  */
@@ -408,10 +359,13 @@ BOOL MyICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
     return jitInstance->mc->repIsValidStringRef(module, metaTOK);
 }
 
-BOOL MyICJI::shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope)
+LPCWSTR MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,  /* IN  */
+                                 unsigned              metaTOK, /* IN  */
+                                 int*                  length   /* OUT */
+                                 )
 {
-    jitInstance->mc->cr->AddCall("shouldEnforceCallvirtRestriction");
-    return jitInstance->mc->repShouldEnforceCallvirtRestriction(scope);
+    jitInstance->mc->cr->AddCall("getStringLiteral");
+    return jitInstance->mc->repGetStringLiteral(module, metaTOK, length);
 }
 
 /**********************************************************************************/
@@ -493,14 +447,6 @@ CorInfoInlineTypeCheck MyICJI::canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorI
 {
     jitInstance->mc->cr->AddCall("canInlineTypeCheck");
     return jitInstance->mc->repCanInlineTypeCheck(cls, source);
-}
-
-// If this method returns true, JIT will do optimization to inline the check for
-//     GetTypeFromHandle(handle) == obj.GetType()
-BOOL MyICJI::canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("canInlineTypeCheckWithObjectVTable");
-    return jitInstance->mc->repCanInlineTypeCheckWithObjectVTable(cls);
 }
 
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
@@ -669,12 +615,6 @@ CorInfoHelpFunc MyICJI::getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd)
 {
     jitInstance->mc->cr->AddCall("getSharedCCtorHelper");
     return jitInstance->mc->repGetSharedCCtorHelper(clsHnd);
-}
-
-CorInfoHelpFunc MyICJI::getSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn)
-{
-    jitInstance->mc->cr->AddCall("getSecurityPrologHelper");
-    return jitInstance->mc->repGetSecurityPrologHelper(ftn);
 }
 
 // This is not pretty.  Boxing nullable<T> actually returns
@@ -946,16 +886,6 @@ unsigned MyICJI::getFieldOffset(CORINFO_FIELD_HANDLE field)
     return jitInstance->mc->repGetFieldOffset(field);
 }
 
-// TODO: jit64 should be switched to the same plan as the i386 jits - use
-// getClassGClayout to figure out the need for writebarrier helper, and inline the copying.
-// The interpretted value class copy is slow. Once this happens, USE_WRITE_BARRIER_HELPERS
-bool MyICJI::isWriteBarrierHelperRequired(CORINFO_FIELD_HANDLE field)
-{
-    jitInstance->mc->cr->AddCall("isWriteBarrierHelperRequired");
-    bool result = jitInstance->mc->repIsWriteBarrierHelperRequired(field);
-    return result;
-}
-
 void MyICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                           CORINFO_METHOD_HANDLE   callerHandle,
                           CORINFO_ACCESS_FLAGS    flags,
@@ -1078,7 +1008,7 @@ void MyICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of inte
 // Used to allocate memory that needs to handed to the EE.
 // For eg, use this to allocated memory for reporting debug info,
 // which will be handed to the EE by setVars() and setBoundaries()
-void* MyICJI::allocateArray(ULONG cBytes)
+void* MyICJI::allocateArray(size_t cBytes)
 {
     return jitInstance->allocateArray(cBytes);
 }
@@ -1416,25 +1346,10 @@ void MyICJI::embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 //      CORINFO_LOOKUP_THISOBJ     use vtable pointer of 'this' param
 //      CORINFO_LOOKUP_CLASSPARAM  use vtable hidden param
 //      CORINFO_LOOKUP_METHODPARAM use enclosing type of method-desc hidden param
-CORINFO_LOOKUP_KIND MyICJI::getLocationOfThisType(CORINFO_METHOD_HANDLE context)
+void MyICJI::getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind)
 {
     jitInstance->mc->cr->AddCall("getLocationOfThisType");
-    return jitInstance->mc->repGetLocationOfThisType(context);
-}
-
-// return the unmanaged target *if method has already been prelinked.*
-void* MyICJI::getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("getPInvokeUnmanagedTarget");
-    void* result = jitInstance->mc->repGetPInvokeUnmanagedTarget(method, ppIndirection);
-    return result;
-}
-
-// return address of fixup area for late-bound PInvoke calls.
-void* MyICJI::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("getAddressOfPInvokeFixup");
-    return jitInstance->mc->repGetAddressOfPInvokeFixup(method, ppIndirection);
+    jitInstance->mc->repGetLocationOfThisType(context, pLookupKind);
 }
 
 // return address of fixup area for late-bound PInvoke calls.
@@ -1569,7 +1484,7 @@ InfoAccessType MyICJI::emptyStringLiteral(void** ppValue)
 }
 
 // (static fields only) given that 'field' refers to thread local store,
-// return the ID (TLS index), which is used to find the begining of the
+// return the ID (TLS index), which is used to find the beginning of the
 // TLS data area for the particular DLL 'field' is associated with.
 DWORD MyICJI::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection)
 {
@@ -1638,12 +1553,6 @@ DWORD MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
 bool MyICJI::runWithErrorTrap(void (*function)(void*), void* param)
 {
     return RunWithErrorTrap(function, param);
-}
-
-// return memory manager that the JIT can use to allocate a regular memory
-IEEMemoryManager* MyICJI::getMemoryManager()
-{
-    return InitIEEMemoryManager(jitInstance);
 }
 
 // get a block of memory for the code, readonly data, and read-write data
@@ -1732,12 +1641,6 @@ void* MyICJI::allocGCInfo(size_t size /* IN */
     jitInstance->mc->cr->recAllocGCInfo(size, temp);
 
     return temp;
-}
-
-// Only used on x64.
-void MyICJI::yieldExecution()
-{
-    jitInstance->mc->cr->AddCall("yieldExecution");
 }
 
 // Indicate how many exception handler blocks are to be returned.
@@ -1861,18 +1764,6 @@ WORD MyICJI::getRelocTypeHint(void* target)
     return result;
 }
 
-// A callback to identify the range of address known to point to
-// compiler-generated native entry points that call back into
-// MSIL.
-void MyICJI::getModuleNativeEntryPointRange(void** pStart, /* OUT */
-                                            void** pEnd    /* OUT */
-                                            )
-{
-    jitInstance->mc->cr->AddCall("getModuleNativeEntryPointRange");
-    LogError("Hit unimplemented getModuleNativeEntryPointRange");
-    DebugBreakorAV(128);
-}
-
 // For what machine does the VM expect the JIT to generate code? The VM
 // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM
 // is cross-compiling (such as the case for crossgen), it will return a
@@ -1880,13 +1771,13 @@ void MyICJI::getModuleNativeEntryPointRange(void** pStart, /* OUT */
 //
 DWORD MyICJI::getExpectedTargetArchitecture()
 {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     return IMAGE_FILE_MACHINE_I386;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     return IMAGE_FILE_MACHINE_AMD64;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     return IMAGE_FILE_MACHINE_ARMNT;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     return IMAGE_FILE_MACHINE_ARM64;
 #else
     return IMAGE_FILE_MACHINE_UNKNOWN;

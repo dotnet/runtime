@@ -257,7 +257,7 @@ namespace System.Runtime.InteropServices
             // though I couldn't reproduce that.  In either case, that means we should continue
             // throwing an OOM instead of an ArgumentOutOfRangeException for "negative" amounts of memory.
             UIntPtr numBytes;
-#if BIT64
+#if TARGET_64BIT
             numBytes = new UIntPtr(unchecked((ulong)cb.ToInt64()));
 #else // 32
             numBytes = new UIntPtr(unchecked((uint)cb.ToInt32()));
@@ -338,6 +338,17 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr /* IUnknown* */ GetRawIUnknownForComObjectNoAddRef(object o);
+
+        /// <summary>
+        /// Return the IDispatch* for an Object.
+        /// </summary>
+        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o)
+        {
+            return GetIDispatchForObjectNative(o, false);
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern IntPtr /* IDispatch* */ GetIDispatchForObjectNative(object o, bool onlyInContext);
 
         /// <summary>
         /// Return the IUnknown* representing the interface for the Object.

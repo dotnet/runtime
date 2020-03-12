@@ -187,7 +187,7 @@ public:
 
 };
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 class ZapCodeBlob : public ZapBlobWithRelocs
 {
 protected:

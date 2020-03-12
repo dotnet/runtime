@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,6 +17,11 @@ public class ProcessParameters
     public const int DefaultIlcTimeout = 10 * 60 * 1000;
 
     /// <summary>
+    /// Increase compilation timeout for composite builds.
+    /// </summary>
+    public const int DefaultIlcCompositeTimeout = 30 * 60 * 1000;
+
+    /// <summary>
     /// Test execution timeout.
     /// </summary>
     public const int DefaultExeTimeout = 5 * 60 * 1000;
@@ -32,7 +37,7 @@ public class ProcessParameters
     public string LogPath;
     public int TimeoutMilliseconds;
     public int ExpectedExitCode;
-    public string InputFileName;
+    public IEnumerable<string> InputFileNames;
     public string OutputFileName;
     public long CompilationCostHeuristic;
     public bool CollectJittedMethods;
@@ -101,7 +106,7 @@ public class ProcessRunner : IDisposable
     /// </summary>
     private int _state;
 
-    private TextWriter _logWriter;
+    private volatile TextWriter _logWriter;
 
     private CancellationTokenSource _cancellationTokenSource;
 
@@ -252,37 +257,38 @@ public class ProcessRunner : IDisposable
         }
     }
 
-    private void StandardOutputEventHandler(object sender, DataReceivedEventArgs eventArgs)
+    private void WriteLog(string message)
     {
-        string data = eventArgs?.Data;
         TextWriter logWriter = _logWriter;
-        if (!string.IsNullOrEmpty(data) && logWriter != null)
+
+        if (logWriter != null)
         {
             lock (logWriter)
             {
                 if (_logWriter != null)
                 {
-                    // The logWriter was not disposed yet
-                    logWriter.WriteLine(data);
+                    // The logWriter was not destroyed yet
+                    _logWriter.WriteLine(message);
                 }
             }
+        }
+    }
+
+    private void StandardOutputEventHandler(object sender, DataReceivedEventArgs eventArgs)
+    {
+        string data = eventArgs?.Data;
+        if (!string.IsNullOrEmpty(data))
+        {
+            WriteLog(data);
         }
     }
 
     private void StandardErrorEventHandler(object sender, DataReceivedEventArgs eventArgs)
     {
         string data = eventArgs?.Data;
-        TextWriter logWriter = _logWriter;
-        if (!string.IsNullOrEmpty(data) && logWriter != null)
+        if (!string.IsNullOrEmpty(data))
         {
-            lock (logWriter)
-            {
-                if (_logWriter != null)
-                {
-                    // The logWriter was not disposed yet
-                    logWriter.WriteLine(data);
-                }
-            }
+            WriteLog(data);
         }
     }
 
@@ -310,7 +316,7 @@ public class ProcessRunner : IDisposable
         }
         _processInfo.ExitCode = (_processInfo.TimedOut ? TimeoutExitCode : _process.ExitCode);
         _processInfo.Succeeded = (!_processInfo.TimedOut && _processInfo.ExitCode == _processInfo.Parameters.ExpectedExitCode);
-        _logWriter.WriteLine(">>>>");
+        WriteLog(">>>>");
 
         if (!_processInfo.Succeeded)
         {
@@ -323,7 +329,8 @@ public class ProcessRunner : IDisposable
         {
             string successMessage = linePrefix + $"succeeded in {_processInfo.DurationMilliseconds} msecs";
 
-            _logWriter.WriteLine(successMessage);
+            WriteLog(successMessage);
+
             Console.WriteLine(successMessage + $": {processSpec}");
             _processInfo.Succeeded = true;
         }
@@ -343,7 +350,9 @@ public class ProcessRunner : IDisposable
                 }
                 failureMessage += $", expected {_processInfo.Parameters.ExpectedExitCode}";
             }
-            _logWriter.WriteLine(failureMessage);
+
+            WriteLog(failureMessage);
+
             Console.Error.WriteLine(failureMessage + $": {processSpec}");
         }
 
@@ -351,7 +360,10 @@ public class ProcessRunner : IDisposable
 
         _processInfo.Finished = true;
 
-        _logWriter.Flush();
+        lock (_logWriter)
+        {
+            _logWriter.Flush();
+        }
 
         CleanupLogWriter();
 

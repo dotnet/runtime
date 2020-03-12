@@ -14,7 +14,7 @@ namespace System.Collections.Immutable.Tests
     public partial class ImmutableSortedSetTest : ImmutableSetTest
     {
         [Fact]
-        [ActiveIssue("Sporadic failure, needs a port of https://github.com/dotnet/coreclr/pull/4340", TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Sporadic failure, needs a port of https://github.com/dotnet/coreclr/pull/4340")]
         public void EmptyTest()
         {
             this.EmptyTestHelper(Empty<int>(), 5, null);

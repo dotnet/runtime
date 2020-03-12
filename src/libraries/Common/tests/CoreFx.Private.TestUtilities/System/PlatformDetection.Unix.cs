@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
 
@@ -48,8 +49,6 @@ namespace System
         // RedHat family covers RedHat and CentOS
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
         public static bool IsNotRedHatFamily => !IsRedHatFamily;
-        public static bool IsRedHatFamily6 => IsRedHatFamilyAndVersion(6);
-        public static bool IsNotRedHatFamily6 => !IsRedHatFamily6;
         public static bool IsRedHatFamily7 => IsRedHatFamilyAndVersion(7);
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
@@ -115,18 +114,21 @@ namespace System
 
         private static Version GetICUVersion()
         {
-            if (IsWindows)
+            int version = 0;
+            Type interopGlobalization = Type.GetType("Interop+Globalization");
+            if (interopGlobalization != null)
             {
-                return new Version(0, 0, 0, 0);
+                MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
+                if (methodInfo != null)
+                {
+                    version = (int)methodInfo.Invoke(null, null);
+                }
             }
-            else
-            {
-                int ver = libc.GlobalizationNative_GetICUVersion();
-                return new Version( ver & 0xFF,
-                                (ver >> 8)  & 0xFF,
-                                (ver >> 16) & 0xFF,
-                                    ver >> 24);
-            }
+
+            return new Version( version & 0xFF,
+                            (version >> 8)  & 0xFF,
+                            (version >> 16) & 0xFF,
+                                version >> 24);
         }
 
         private static Version GetOSXProductVersion()
@@ -329,9 +331,6 @@ namespace System
 
             [DllImport("libc", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr gnu_get_libc_version();
-
-            [DllImport("System.Globalization.Native", SetLastError = true)]
-            public static extern int GlobalizationNative_GetICUVersion();
         }
     }
 }

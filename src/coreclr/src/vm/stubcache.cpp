@@ -35,7 +35,7 @@ StubCacheBase::StubCacheBase(LoaderHeap *pHeap) :
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     if (m_heap == NULL)
         m_heap = SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap();
 #endif

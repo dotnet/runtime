@@ -16,12 +16,12 @@ namespace System.Diagnostics
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TraceSwitch'/> class.</para>
         /// </devdoc>
-        public TraceSwitch(string displayName, string description)
+        public TraceSwitch(string displayName, string? description)
             : base(displayName, description)
         {
         }
 
-        public TraceSwitch(string displayName, string description, string defaultSwitchValue)
+        public TraceSwitch(string displayName, string? description, string defaultSwitchValue)
             : base(displayName, description, defaultSwitchValue)
         { }
 

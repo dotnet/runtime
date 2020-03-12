@@ -6,7 +6,7 @@ namespace System.ComponentModel.Composition.Primitives
 {
     internal static class CompositionElementExtensions
     {
-        public static ICompositionElement ToSerializableElement(this ICompositionElement element)
+        public static ICompositionElement? ToSerializableElement(this ICompositionElement? element)
         {
             return SerializableCompositionElement.FromICompositionElement(element);
         }
@@ -14,8 +14,7 @@ namespace System.ComponentModel.Composition.Primitives
         public static ICompositionElement ToElement(this Export export)
         {
             // First try the export
-            ICompositionElement element = export as ICompositionElement;
-            if (element != null)
+            if (export is ICompositionElement element)
             {
                 return element;
             }
@@ -56,19 +55,17 @@ namespace System.ComponentModel.Composition.Primitives
 
         private static string GetDisplayNameCore(object value)
         {
-            ICompositionElement element = value as ICompositionElement;
-            if (element != null)
+            if (value is ICompositionElement element)
             {
                 return element.DisplayName;
             }
 
-            return value.ToString();
+            return value.ToString()!;
         }
 
         private static ICompositionElement ToElementCore(object value)
         {
-            ICompositionElement element = value as ICompositionElement;
-            if (element != null)
+            if (value is ICompositionElement element)
             {
                 return element;
             }

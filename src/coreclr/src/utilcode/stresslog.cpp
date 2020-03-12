@@ -22,7 +22,7 @@ HANDLE StressLogChunk::s_LogChunkHeap = NULL;
 #endif // !STRESS_LOG_READONLY
 
 /*********************************************************************************/
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
 /* This is like QueryPerformanceCounter but a lot faster.  On machines with
    variable-speed CPUs (for power management), this is not accurate, but may
@@ -37,7 +37,7 @@ __forceinline __declspec(naked) unsigned __int64 getTimeStamp() {
     };
 }
 
-#else // _TARGET_X86_
+#else // TARGET_X86
 unsigned __int64 getTimeStamp() {
     STATIC_CONTRACT_LEAF;
 
@@ -49,9 +49,9 @@ unsigned __int64 getTimeStamp() {
     return ret.QuadPart;
 }
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if defined(TARGET_X86) && !defined(HOST_UNIX)
 
 /*********************************************************************************/
 /* Get the the frequency cooresponding to 'getTimeStamp'.  For x86, this is the
@@ -98,7 +98,7 @@ unsigned __int64 getTickFrequency()
     return hz;
 }
 
-#else // _TARGET_X86_
+#else // TARGET_X86
 
 
 /*********************************************************************************/
@@ -113,7 +113,7 @@ unsigned __int64 getTickFrequency()
     return ret.QuadPart;
 }
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #ifdef STRESS_LOG
 
@@ -174,7 +174,7 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
     GetSystemTimeAsFileTime (&theLog.startTime);
     theLog.startTimeStamp = getTimeStamp();
 
-#ifndef FEATURE_PAL
+#ifndef HOST_UNIX
     theLog.moduleOffset = (SIZE_T)hMod; // HMODULES are base addresses.
 
 #ifdef _DEBUG
@@ -183,9 +183,9 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
             GetProcAddress(hModNtdll, "RtlCaptureStackBackTrace"));
 #endif // _DEBUG
 
-#else // !FEATURE_PAL
+#else // !HOST_UNIX
     theLog.moduleOffset = (SIZE_T)PAL_GetSymbolModuleBase((void *)StressLog::Initialize);
-#endif // !FEATURE_PAL
+#endif // !HOST_UNIX
 
 #if !defined (STRESS_LOG_READONLY)
     StressLogChunk::s_LogChunkHeap = ClrHeapCreate (0, STRESSLOG_CHUNK_SIZE * 128, 0);

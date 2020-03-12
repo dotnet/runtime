@@ -45,7 +45,7 @@ namespace System.IO.Ports.Tests
         {
             if (PlatformDetection.IsWindows && PlatformDetection.IsArmOrArm64Process)
             {
-                // ActiveIssue: 35722
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/28851")]
                 throw new SkipTestException("Port detection broken on Windows IoT");
             }
 
@@ -59,7 +59,8 @@ namespace System.IO.Ports.Tests
 
         /// <summary>
         /// Test that the test helpers have found every port that SerialPort.GetPortNames has found
-        /// This catches regressions in the test helpers, eg GH #18928 / #20668
+        /// This catches regressions in the test helpers,
+        /// eg https://github.com/dotnet/corefx/pull/18928 / https://github.com/dotnet/corefx/pull/20668
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void AllGetPortNamesAreInHelperPorts()

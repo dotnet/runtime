@@ -8,3 +8,6 @@ coreclr_shutdown_2
 ; Functions exported by the coreclr
 DllMain
 GetCLRRuntimeHost
+; DAC table export
+g_dacTable
+

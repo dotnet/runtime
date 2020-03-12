@@ -60,7 +60,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Disposes of the resources (other than memory) used by the component.
         /// </summary>
-        [SuppressMessage("Microsoft.Usage", "CA2213:DisposableFieldsShouldBeDisposed")]
         public void Dispose()
         {
             Dispose(true);

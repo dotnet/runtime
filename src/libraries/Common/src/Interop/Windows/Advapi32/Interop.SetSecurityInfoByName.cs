@@ -12,6 +12,6 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.Advapi32, EntryPoint = "SetNamedSecurityInfoW", CallingConvention = CallingConvention.Winapi,
             SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
         internal static extern /*DWORD*/ uint SetSecurityInfoByName(string name, /*DWORD*/ uint objectType, /*DWORD*/ uint securityInformation,
-            byte[] owner, byte[] group, byte[] dacl, byte[] sacl);
+            byte[]? owner, byte[]? group, byte[]? dacl, byte[]? sacl);
     }
 }

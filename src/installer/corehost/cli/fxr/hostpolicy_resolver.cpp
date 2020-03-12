@@ -299,17 +299,23 @@ bool hostpolicy_resolver::try_get_dir(
     // If it still couldn't be found, somebody upstack messed up. Flag an error for the "expected" location.
     trace::error(_X("A fatal error was encountered. The library '%s' required to execute the application was not found in '%s'."),
         LIBHOSTPOLICY_NAME, expected.c_str());
-    if (mode == host_mode_t::muxer && !is_framework_dependent)
+    if ((mode == host_mode_t::muxer || mode == host_mode_t::apphost) && !is_framework_dependent)
     {
-        if (!pal::file_exists(get_app(fx_definitions).get_runtime_config().get_path()))
+        trace::error(_X("Failed to run as a self-contained app."));
+        const pal::string_t config_file_name = get_app(fx_definitions).get_runtime_config().get_path();
+        if (!pal::file_exists(config_file_name))
         {
-            trace::error(_X("Failed to run as a self-contained app. If this should be a framework-dependent app, add the %s file specifying the appropriate framework."),
-                get_app(fx_definitions).get_runtime_config().get_path().c_str());
+            trace::error(_X("  - The application was run as a self-contained app because '%s' was not found."),
+                config_file_name.c_str());
+            trace::error(_X("  - If this should be a framework-dependent app, add the '%s' file and specify the appropriate framework."),
+                config_file_name.c_str());
         }
         else if (get_app(fx_definitions).get_name().empty())
         {
-            trace::error(_X("Failed to run as a self-contained app. If this should be a framework-dependent app, specify the appropriate framework in %s."),
-                get_app(fx_definitions).get_runtime_config().get_path().c_str());
+            trace::error(_X("  - The application was run as a self-contained app because '%s' did not specify a framework."),
+                config_file_name.c_str());
+            trace::error(_X("  - If this should be a framework-dependent app, specify the appropriate framework in '%s'."),
+                config_file_name.c_str());
         }
     }
     return false;

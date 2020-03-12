@@ -23,9 +23,10 @@ namespace System
 
         // Gets the character at a specified position.
         //
-        [System.Runtime.CompilerServices.IndexerName("Chars")]
+        [IndexerName("Chars")]
         public extern char this[int index]
         {
+            [Intrinsic]
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }
@@ -39,6 +40,7 @@ namespace System
         //
         public extern int Length
         {
+            [Intrinsic]
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }

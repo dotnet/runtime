@@ -1105,6 +1105,7 @@ private:
 
 
 private:
+    DAC_ALIGNAS(StgPool) // Align first member to alignment of base class
     CGuidPoolHash m_Hash;                    // Hash table for lookups.
     int            m_bHash;                    // true to keep hash table.
 };  // class StgGuidPool
@@ -1257,6 +1258,7 @@ private:
     __checkReturn
     HRESULT RehashBlobs();
 
+    DAC_ALIGNAS(StgPool) // Align first member to alignment of base class
     CBlobPoolHash m_Hash;                    // Hash table for lookups.
 };  // class StgBlobPool
 

@@ -7,7 +7,6 @@ using System.IO;
 
 namespace System.Net.Http
 {
-    [SuppressMessage("Microsoft.Serialization", "CA2229")]
     public class HttpRequestException : Exception
     {
         internal RequestRetryType AllowRetry { get; } = RequestRetryType.NoRetry;
@@ -28,6 +27,26 @@ namespace System.Net.Http
                 HResult = inner.HResult;
             }
         }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HttpRequestException" /> class with a specific message that describes the current exception, an inner exception, and an HTTP status code.
+        /// </summary>
+        /// <param name="message">A message that describes the current exception.</param>
+        /// <param name="inner">The inner exception.</param>
+        /// <param name="statusCode">The HTTP status code.</param>
+        public HttpRequestException(string message, Exception inner, HttpStatusCode? statusCode)
+            : this(message, inner)
+        {
+            StatusCode = statusCode;
+        }
+
+        /// <summary>
+        /// Gets the HTTP status code to be returned with the exception.
+        /// </summary>
+        /// <value>
+        /// An HTTP status code if the exception represents a non-successful result, otherwise <c>null</c>.
+        /// </value>
+        public HttpStatusCode? StatusCode { get; }
 
         // This constructor is used internally to indicate that a request was not successfully sent due to an IOException,
         // and the exception occurred early enough so that the request may be retried on another connection.

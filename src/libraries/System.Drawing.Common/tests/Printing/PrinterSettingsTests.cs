@@ -43,7 +43,7 @@ namespace System.Drawing.Printing.Tests
             Assert.NotNull(printerSettings.DefaultPageSettings);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
         public void CanDuplex_ReturnsExpected()
         {
@@ -119,7 +119,7 @@ namespace System.Drawing.Printing.Tests
             Assert.Equal(duplex, printerSettings.Duplex);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(Duplex.Default - 1)]
         [InlineData(Duplex.Horizontal + 1)]
@@ -174,7 +174,7 @@ namespace System.Drawing.Printing.Tests
             Assert.True(printerSettings.IsDefaultPrinter);
         }
 
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/runtime/issues/26247
         public void IsPlotter_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
@@ -182,7 +182,7 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         public void IsValid_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings()
@@ -279,7 +279,7 @@ namespace System.Drawing.Printing.Tests
             Assert.Equal(printFileName, printerSettings.PrintFileName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [Fact]
         public void PrintFileName_Null_ThrowsArgumentNullException()
         {
@@ -287,7 +287,7 @@ namespace System.Drawing.Printing.Tests
             AssertExtensions.Throws<ArgumentNullException>(null, () => printerSettings.PrintFileName = null);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [Fact]
         public void PrintFileName_Empty_ThrowsArgumentNullException()
         {
@@ -295,7 +295,7 @@ namespace System.Drawing.Printing.Tests
             AssertExtensions.Throws<ArgumentNullException>(string.Empty, () => printerSettings.PrintFileName = string.Empty);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
         public void PaperSizes_ReturnsExpected()
         {
@@ -303,7 +303,7 @@ namespace System.Drawing.Printing.Tests
             Assert.NotNull(printerSettings.PaperSizes);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
         public void PaperSources_ReturnsExpected()
         {
@@ -311,7 +311,7 @@ namespace System.Drawing.Printing.Tests
             Assert.NotNull(printerSettings.PaperSources);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(PrintRange.AllPages)]
         [InlineData(PrintRange.CurrentPage)]
@@ -350,7 +350,7 @@ namespace System.Drawing.Printing.Tests
             Assert.Equal(printToFile, printerSettings.PrintToFile);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData("")]
         [InlineData("My printer")]
@@ -364,7 +364,7 @@ namespace System.Drawing.Printing.Tests
             Assert.Equal(printerName, printerSettings.PrinterName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
         public void PrinterName_Null_ReturnsExpected()
         {
@@ -376,7 +376,7 @@ namespace System.Drawing.Printing.Tests
             Assert.NotNull(printerSettings.PrinterName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
         public void PrinterResolutions_ReturnsExpected()
         {
@@ -390,7 +390,7 @@ namespace System.Drawing.Printing.Tests
             yield return new object[] { ImageFormat.Png };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
         [MemberData(nameof(IsDirectPrintingSupported_ImageFormatSupported_TestData))]
         public void IsDirectPrintingSupported_ImageFormatSupported_ReturnsExpected(ImageFormat imageFormat)
@@ -411,7 +411,7 @@ namespace System.Drawing.Printing.Tests
             yield return new object[] { ImageFormat.Bmp };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [Theory]
         [MemberData(nameof(IsDirectPrintingSupported_ImageFormatNotSupported_TestData))]
         public void IsDirectPrintingSupported_ImageFormatNotSupported_ReturnsExpected(ImageFormat imageFormat)
@@ -420,7 +420,7 @@ namespace System.Drawing.Printing.Tests
             Assert.False(printerSettings.IsDirectPrintingSupported(imageFormat));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsDirectPrintingSupported_ImageNotSupported_ReturnsExpected()
         {
@@ -431,7 +431,7 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
         public void SupportsColor_ReturnsExpected()
         {
@@ -461,7 +461,7 @@ namespace System.Drawing.Printing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => printerSettings.ToPage = toPage);
         }
 
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/runtime/issues/26247
         public void Clone_Success()
         {
             var printerSettings = new PrinterSettings();
@@ -469,8 +469,8 @@ namespace System.Drawing.Printing.Tests
             Assert.False(ReferenceEquals(clone, printerSettings));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/runtime/issues/26247
         public void CreateMeasurementGraphics_Default_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
@@ -484,8 +484,8 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/runtime/issues/26247
         public void CreateMeasurementGraphics_Bool_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
@@ -497,8 +497,8 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/runtime/issues/26247
         public void CreateMeasurementGraphics_PageSettings_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
@@ -513,8 +513,8 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/runtime/issues/26247
         public void CreateMeasurementGraphics_PageSettingsBool_ReturnsExpected()
         {
             var printerSettings = new PrinterSettings();
@@ -527,8 +527,8 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/corefx/issues/29858
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.IsDrawingSupported, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/runtime/issues/26247
         public void CreateMeasurementGraphics_Null_ThrowsNullReferenceException()
         {
             var printerSettings = new PrinterSettings();
@@ -536,7 +536,7 @@ namespace System.Drawing.Printing.Tests
             Assert.Throws<NullReferenceException>(() => printerSettings.CreateMeasurementGraphics(null, true));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHdevmode_ReturnsExpected()
         {
@@ -547,7 +547,7 @@ namespace System.Drawing.Printing.Tests
             Assert.NotEqual(IntPtr.Zero, handle);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHdevmode_PageSettings_ReturnsExpected()
         {
@@ -559,7 +559,7 @@ namespace System.Drawing.Printing.Tests
             Assert.NotEqual(IntPtr.Zero, handle);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHdevmode_Null_ThrowsNullReferenceException()
         {
@@ -567,7 +567,7 @@ namespace System.Drawing.Printing.Tests
             Assert.Throws<NullReferenceException>(() => printerSettings.GetHdevmode(null));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHdevnames_ReturnsExpected()
         {
@@ -578,7 +578,7 @@ namespace System.Drawing.Printing.Tests
             Assert.NotEqual(IntPtr.Zero, handle);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(typeof(PrinterSettingsTests), nameof(CanTestSetHdevmode_IntPtr_Success))]
         public void SetHdevmode_IntPtr_Success()
         {
@@ -615,7 +615,7 @@ namespace System.Drawing.Printing.Tests
             "Microsoft XPS Document Writer", // Backup for older Windows
         };
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHdevmode_Zero_ThrowsArgumentException()
         {
@@ -623,7 +623,7 @@ namespace System.Drawing.Printing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => printerSettings.SetHdevmode(IntPtr.Zero));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetHdevnames_IntPtr_Success()
         {
@@ -634,7 +634,7 @@ namespace System.Drawing.Printing.Tests
             Assert.Equal(newPrinterSettings.PrinterName, printerSettings.PrinterName);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ToString_ReturnsExpected()
         {

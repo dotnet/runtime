@@ -1,3 +1,10 @@
 variables:
 - name: isOfficialBuild
-  value: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+  value: ${{ and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
+- name: isFullMatrix
+  value: ${{ and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
+- name: debugOnPrReleaseOnRolling
+  ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
+    value: Release
+  ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+    value: Debug

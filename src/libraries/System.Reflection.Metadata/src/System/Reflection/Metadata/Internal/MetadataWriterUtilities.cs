@@ -9,7 +9,7 @@ namespace System.Reflection.Metadata.Ecma335
 {
     internal static class MetadataWriterUtilities
     {
-        public static SignatureTypeCode GetConstantTypeCode(object value)
+        public static SignatureTypeCode GetConstantTypeCode(object? value)
         {
             if (value == null)
             {

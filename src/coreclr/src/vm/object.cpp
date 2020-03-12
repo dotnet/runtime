@@ -427,7 +427,7 @@ void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, Meth
         return;
     }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
     if (argDest->IsHFA())
     {
@@ -590,7 +590,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
         // we skip checking noRangeChecks since if skipping
         // is enabled bSmallObjectHeapPtr will always be false.
         if (bSmallObjectHeapPtr) {
-            CHECK_AND_TEAR_DOWN(!GCHeapUtilities::GetGCHeap()->IsObjectInFixedHeap(this));
+            CHECK_AND_TEAR_DOWN(!GCHeapUtilities::GetGCHeap()->IsLargeObject(this));
         }
 
         lastTest = 6;
@@ -753,7 +753,7 @@ STRINGREF StringObject::NewString(const WCHAR *pwsz)
     }
 }
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("y", on)        // Small critical routines, don't put in EBP frame
 #endif
 
@@ -791,7 +791,7 @@ STRINGREF StringObject::NewString(const WCHAR *pwsz, int length) {
     }
 }
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("", on)        // Go back to command line default optimizations
 #endif
 

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>

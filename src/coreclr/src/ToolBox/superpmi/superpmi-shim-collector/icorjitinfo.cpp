@@ -6,7 +6,6 @@
 #include "standardpch.h"
 #include "icorjitinfo.h"
 #include "superpmi-shim-collector.h"
-#include "ieememorymanager.h"
 #include "icorjitcompiler.h"
 #include "methodcontext.h"
 #include "errorhandling.h"
@@ -341,41 +340,6 @@ BOOL interceptor_ICJI::isCompatibleDelegate(
     return temp;
 }
 
-// Indicates if the method is an instance of the generic
-// method that passes (or has passed) verification
-CorInfoInstantiationVerification interceptor_ICJI::isInstantiationOfVerifiedGeneric(CORINFO_METHOD_HANDLE method /* IN
-                                                                                                                  */
-                                                                                    )
-{
-    mc->cr->AddCall("isInstantiationOfVerifiedGeneric");
-    CorInfoInstantiationVerification temp = original_ICorJitInfo->isInstantiationOfVerifiedGeneric(method);
-    mc->recIsInstantiationOfVerifiedGeneric(method, temp);
-    return temp;
-}
-
-// Loads the constraints on a typical method definition, detecting cycles;
-// for use in verification.
-void interceptor_ICJI::initConstraintsForVerification(CORINFO_METHOD_HANDLE method,                        /* IN */
-                                                      BOOL*                 pfHasCircularClassConstraints, /* OUT */
-                                                      BOOL*                 pfHasCircularMethodConstraint  /* OUT */
-                                                      )
-{
-    mc->cr->AddCall("initConstraintsForVerification");
-    original_ICorJitInfo->initConstraintsForVerification(method, pfHasCircularClassConstraints,
-                                                         pfHasCircularMethodConstraint);
-    mc->recInitConstraintsForVerification(method, pfHasCircularClassConstraints, pfHasCircularMethodConstraint);
-}
-
-// Returns enum whether the method does not require verification
-// Also see ICorModuleInfo::canSkipVerification
-CorInfoCanSkipVerificationResult interceptor_ICJI::canSkipMethodVerification(CORINFO_METHOD_HANDLE ftnHandle)
-{
-    mc->cr->AddCall("canSkipMethodVerification");
-    CorInfoCanSkipVerificationResult temp = original_ICorJitInfo->canSkipMethodVerification(ftnHandle);
-    mc->recCanSkipMethodVerification(ftnHandle, FALSE, temp);
-    return temp;
-}
-
 // load and restore the method
 void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method)
 {
@@ -478,23 +442,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTokenTypeAsHandle(CORINFO_RESOLVED_TOK
     return temp;
 }
 
-// Returns true if the module does not require verification
-//
-// If fQuickCheckOnlyWithoutCommit=TRUE, the function only checks that the
-// module does not currently require verification in the current AppDomain.
-// This decision could change in the future, and so should not be cached.
-// If it is cached, it should only be used as a hint.
-// This is only used by ngen for calculating certain hints.
-//
-// Returns enum whether the module does not require verification
-// Also see ICorMethodInfo::canSkipMethodVerification();
-CorInfoCanSkipVerificationResult interceptor_ICJI::canSkipVerification(CORINFO_MODULE_HANDLE module /* IN  */
-                                                                       )
-{
-    mc->cr->AddCall("canSkipVerification");
-    return original_ICorJitInfo->canSkipVerification(module);
-}
-
 // Checks if the given metadata token is valid
 BOOL interceptor_ICJI::isValidToken(CORINFO_MODULE_HANDLE module, /* IN  */
                                     unsigned              metaTOK /* IN  */
@@ -517,11 +464,14 @@ BOOL interceptor_ICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
     return temp;
 }
 
-BOOL interceptor_ICJI::shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope)
+LPCWSTR interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,  /* IN  */
+                                           unsigned              metaTOK, /* IN  */
+                                           int*                  length   /* OUT */
+                                           )
 {
-    mc->cr->AddCall("shouldEnforceCallvirtRestriction");
-    BOOL temp = original_ICorJitInfo->shouldEnforceCallvirtRestriction(scope);
-    mc->recShouldEnforceCallvirtRestriction(scope, temp);
+    mc->cr->AddCall("getStringLiteral");
+    LPCWSTR temp = original_ICorJitInfo->getStringLiteral(module, metaTOK, length);
+    mc->recGetStringLiteral(module, metaTOK, *length, temp);
     return temp;
 }
 
@@ -604,16 +554,6 @@ CorInfoInlineTypeCheck interceptor_ICJI::canInlineTypeCheck(CORINFO_CLASS_HANDLE
     mc->cr->AddCall("canInlineTypeCheck");
     CorInfoInlineTypeCheck temp = original_ICorJitInfo->canInlineTypeCheck(cls, source);
     mc->recCanInlineTypeCheck(cls, source, temp);
-    return temp;
-}
-
-// If this method returns true, JIT will do optimization to inline the check for
-//     GetTypeFromHandle(handle) == obj.GetType()
-BOOL interceptor_ICJI::canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls)
-{
-    mc->cr->AddCall("canInlineTypeCheckWithObjectVTable");
-    BOOL temp = original_ICorJitInfo->canInlineTypeCheckWithObjectVTable(cls);
-    mc->recCanInlineTypeCheckWithObjectVTable(cls, temp);
     return temp;
 }
 
@@ -801,14 +741,6 @@ CorInfoHelpFunc interceptor_ICJI::getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsH
     mc->cr->AddCall("getSharedCCtorHelper");
     CorInfoHelpFunc temp = original_ICorJitInfo->getSharedCCtorHelper(clsHnd);
     mc->recGetSharedCCtorHelper(clsHnd, temp);
-    return temp;
-}
-
-CorInfoHelpFunc interceptor_ICJI::getSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn)
-{
-    mc->cr->AddCall("getSecurityPrologHelper");
-    CorInfoHelpFunc temp = original_ICorJitInfo->getSecurityPrologHelper(ftn);
-    mc->recGetSecurityPrologHelper(ftn, temp);
     return temp;
 }
 
@@ -1132,17 +1064,6 @@ unsigned interceptor_ICJI::getFieldOffset(CORINFO_FIELD_HANDLE field)
     return temp;
 }
 
-// TODO: jit64 should be switched to the same plan as the i386 jits - use
-// getClassGClayout to figure out the need for writebarrier helper, and inline the copying.
-// The interpretted value class copy is slow. Once this happens, USE_WRITE_BARRIER_HELPERS
-bool interceptor_ICJI::isWriteBarrierHelperRequired(CORINFO_FIELD_HANDLE field)
-{
-    mc->cr->AddCall("isWriteBarrierHelperRequired");
-    bool result = original_ICorJitInfo->isWriteBarrierHelperRequired(field);
-    mc->recIsWriteBarrierHelperRequired(field, result);
-    return result;
-}
-
 void interceptor_ICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     CORINFO_METHOD_HANDLE   callerHandle,
                                     CORINFO_ACCESS_FLAGS    flags,
@@ -1248,7 +1169,7 @@ void interceptor_ICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] meth
 // Used to allocate memory that needs to handed to the EE.
 // For eg, use this to allocated memory for reporting debug info,
 // which will be handed to the EE by setVars() and setBoundaries()
-void* interceptor_ICJI::allocateArray(ULONG cBytes)
+void* interceptor_ICJI::allocateArray(size_t cBytes)
 {
     mc->cr->AddCall("allocateArray");
     return original_ICorJitInfo->allocateArray(cBytes);
@@ -1674,30 +1595,11 @@ void interceptor_ICJI::embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken
 //      CORINFO_LOOKUP_THISOBJ     use vtable pointer of 'this' param
 //      CORINFO_LOOKUP_CLASSPARAM  use vtable hidden param
 //      CORINFO_LOOKUP_METHODPARAM use enclosing type of method-desc hidden param
-CORINFO_LOOKUP_KIND interceptor_ICJI::getLocationOfThisType(CORINFO_METHOD_HANDLE context)
+void interceptor_ICJI::getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind)
 {
     mc->cr->AddCall("getLocationOfThisType");
-    CORINFO_LOOKUP_KIND temp = original_ICorJitInfo->getLocationOfThisType(context);
-    mc->recGetLocationOfThisType(context, &temp);
-    return temp;
-}
-
-// return the unmanaged target *if method has already been prelinked.*
-void* interceptor_ICJI::getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method, void** ppIndirection)
-{
-    mc->cr->AddCall("getPInvokeUnmanagedTarget");
-    void* result = original_ICorJitInfo->getPInvokeUnmanagedTarget(method, ppIndirection);
-    mc->recGetPInvokeUnmanagedTarget(method, ppIndirection, result);
-    return result;
-}
-
-// return address of fixup area for late-bound PInvoke calls.
-void* interceptor_ICJI::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void** ppIndirection)
-{
-    mc->cr->AddCall("getAddressOfPInvokeFixup");
-    void* temp = original_ICorJitInfo->getAddressOfPInvokeFixup(method, ppIndirection);
-    mc->recGetAddressOfPInvokeFixup(method, ppIndirection, temp);
-    return temp;
+    original_ICorJitInfo->getLocationOfThisType(context, pLookupKind);
+    mc->recGetLocationOfThisType(context, pLookupKind);
 }
 
 // return address of fixup area for late-bound PInvoke calls.
@@ -1896,7 +1798,7 @@ InfoAccessType interceptor_ICJI::emptyStringLiteral(void** ppValue)
 }
 
 // (static fields only) given that 'field' refers to thread local store,
-// return the ID (TLS index), which is used to find the begining of the
+// return the ID (TLS index), which is used to find the beginning of the
 // TLS data area for the particular DLL 'field' is associated with.
 DWORD interceptor_ICJI::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection)
 {
@@ -1967,15 +1869,6 @@ bool interceptor_ICJI::runWithErrorTrap(void (*function)(void*), void* param)
 {
     mc->cr->AddCall("runWithErrorTrap");
     return original_ICorJitInfo->runWithErrorTrap(function, param);
-}
-
-// return memory manager that the JIT can use to allocate a regular memory
-IEEMemoryManager* interceptor_ICJI::getMemoryManager()
-{
-    mc->cr->AddCall("getMemoryManager");
-    if (current_IEEMM->original_IEEMM == nullptr)
-        current_IEEMM->original_IEEMM = original_ICorJitInfo->getMemoryManager();
-    return current_IEEMM;
 }
 
 // get a block of memory for the code, readonly data, and read-write data
@@ -2059,13 +1952,6 @@ void* interceptor_ICJI::allocGCInfo(size_t size /* IN */)
     void* temp = original_ICorJitInfo->allocGCInfo(size);
     mc->cr->recAllocGCInfo(size, temp);
     return temp;
-}
-
-// only used on x64
-void interceptor_ICJI::yieldExecution()
-{
-    mc->cr->AddCall("yieldExecution"); // Nothing to record
-    original_ICorJitInfo->yieldExecution();
 }
 
 // Indicate how many exception handler blocks are to be returned.
@@ -2173,17 +2059,6 @@ WORD interceptor_ICJI::getRelocTypeHint(void* target)
     WORD result = original_ICorJitInfo->getRelocTypeHint(target);
     mc->recGetRelocTypeHint(target, result);
     return result;
-}
-
-// A callback to identify the range of address known to point to
-// compiler-generated native entry points that call back into
-// MSIL.
-void interceptor_ICJI::getModuleNativeEntryPointRange(void** pStart, /* OUT */
-                                                      void** pEnd    /* OUT */
-                                                      )
-{
-    mc->cr->AddCall("getModuleNativeEntryPointRange");
-    original_ICorJitInfo->getModuleNativeEntryPointRange(pStart, pEnd);
 }
 
 // For what machine does the VM expect the JIT to generate code? The VM

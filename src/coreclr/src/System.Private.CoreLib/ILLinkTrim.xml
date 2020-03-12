@@ -1,5 +1,9 @@
 <linker>
   <assembly fullname="System.Private.CoreLib">
+    <type fullname="Interop/Globalization">
+      <!-- Internal API used by tests only. -->
+      <method name="GetICUVersion" />
+    </type>
     <type fullname="System.GC">
       <!-- Methods are used to register and unregister frozen segments. They are private and experimental. -->
       <method name="_RegisterFrozenSegment" />
@@ -67,6 +71,7 @@
     <!-- Workaround for https://github.com/mono/linker/issues/378 -->
     <type fullname="System.Runtime.InteropServices.IDispatch" />
     <type fullname="Internal.Runtime.InteropServices.IClassFactory2" />
+    <type fullname="Windows.Foundation.Diagnostics.TracingStatusChangedEventArgs" />
     <type fullname="System.Threading.ThreadPoolBoundHandle">
         <!-- Workaround to keep .interfaceimpl even though this type
              is not instantiated on unix:

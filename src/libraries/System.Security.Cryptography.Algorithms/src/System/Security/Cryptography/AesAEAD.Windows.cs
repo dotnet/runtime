@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
                 authInfo.pbAuthData = associatedDataBytes;
                 authInfo.cbAuthData = associatedData.Length;
 
-                NTSTATUS ntStatus = Cng.Interop.BCryptEncrypt(
+                NTSTATUS ntStatus = BCryptEncrypt(
                     keyHandle,
                     plaintextBytes,
                     plaintext.Length,
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography
                 authInfo.pbAuthData = associatedDataBytes;
                 authInfo.cbAuthData = associatedData.Length;
 
-                NTSTATUS ntStatus = Cng.Interop.BCryptDecrypt(
+                NTSTATUS ntStatus = BCryptDecrypt(
                     keyHandle,
                     ciphertextBytes,
                     ciphertext.Length,

@@ -6,7 +6,6 @@ using System.Diagnostics.Tracing;
 
 namespace System.Net
 {
-    //TODO: If localization resources are not found, logging does not work. Issue #5126.
     [EventSource(Name = "Microsoft-System-Net-HttpListener", LocalizationResources = "FxResources.System.Net.HttpListener.SR")]
     internal sealed partial class NetEventSource
     {

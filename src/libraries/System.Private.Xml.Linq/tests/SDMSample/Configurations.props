@@ -1,7 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <BuildConfigurations>
-      $(NetCoreAppCurrent);
-    </BuildConfigurations>
-  </PropertyGroup>
-</Project>

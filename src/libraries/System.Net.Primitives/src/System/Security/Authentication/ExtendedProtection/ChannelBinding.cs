@@ -7,9 +7,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Authentication.ExtendedProtection
 {
-    // NOTE: this does not inherit from the definition of SafeHandleZeroOrMinusOneIsInvalid
-    // from $(CommonPath)/Microsoft/Win32/SafeHandles/SafeHandleZeroOrMinusOneIsInvalid because
-    // that type is internal.
     public abstract class ChannelBinding : SafeHandleZeroOrMinusOneIsInvalid
     {
         protected ChannelBinding()

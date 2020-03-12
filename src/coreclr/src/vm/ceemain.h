@@ -20,10 +20,7 @@
 class EEDbgInterfaceImpl;
 
 // Ensure the EE is started up.
-HRESULT EnsureEEStarted(COINITIEE flags);
-
-// Wrapper around EnsureEEStarted which also sets startup mode.
-HRESULT InitializeEE(COINITIEE flags);
+HRESULT EnsureEEStarted();
 
 // Enum to control what happens at the end of EE shutdown. There are two options:
 // 1. Call ::ExitProcess to cause the process to terminate gracefully. This is how
@@ -42,7 +39,6 @@ enum ShutdownCompleteAction
 
 // Force shutdown of the EE
 void ForceEEShutdown(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete);
-void InnerCoEEShutDownCOM();
 
 // We have an internal class that can be used to expose EE functionality to other CLR
 // DLLs, via the deliberately obscure IEE DLL exports from the shim and the EE

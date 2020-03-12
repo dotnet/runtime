@@ -45,13 +45,13 @@ int32_t SystemNative_GetUnixVersion(char* version, int* capacity)
  3 - ARM64 */
 int32_t SystemNative_GetOSArchitecture()
 {
-#if defined(_ARM_)
+#if defined(TARGET_ARM)
     return ARCH_ARM;
-#elif defined(_ARM64_)
+#elif defined(TARGET_ARM64)
     return ARCH_ARM64;
-#elif defined(_AMD64_)
+#elif defined(TARGET_AMD64)
     return ARCH_X64;
-#elif defined(_X86_)
+#elif defined(TARGET_X86)
     return ARCH_X86;
 #else
 #error Unidentified Architecture
@@ -65,13 +65,13 @@ int32_t SystemNative_GetOSArchitecture()
 3 - ARM64 */
 int32_t SystemNative_GetProcessArchitecture()
 {
-#if defined(_ARM_)
+#if defined(TARGET_ARM)
     return ARCH_ARM;
-#elif defined(_ARM64_)
+#elif defined(TARGET_ARM64)
     return ARCH_ARM64;
-#elif defined(_AMD64_)
+#elif defined(TARGET_AMD64)
     return ARCH_X64;
-#elif defined(_X86_)
+#elif defined(TARGET_X86)
     return ARCH_X86;
 #else
 #error Unidentified Architecture

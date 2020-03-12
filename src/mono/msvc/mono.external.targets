@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <UsingTask TaskName="_CheckConfigurationProperty" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+        <ParameterGroup>
+            <ConfFile ParameterType="System.String" Required="true" />
+            <ConfRegEx ParameterType="System.String" Required="true" />
+            <ConfPropertyName ParameterType="System.String" Output="true" />
+            <ConfPropertyValue ParameterType="System.String" Output="true" />
+            <ConfPropertyFoundMatch ParameterType="System.String" Output="true" />
+        </ParameterGroup>
+        <Task>
+            <Using Namespace="System" />
+            <Using Namespace="System.Text.RegularExpressions" />
+            <Using Namespace="System.IO" />
+            <Code Type="Fragment" Language="cs">
+            <![CDATA[
+
+                ConfPropertyName = "";
+                ConfPropertyValue = "";
+                ConfPropertyFoundMatch = "false";
+
+                if (File.Exists (ConfFile))
+                {
+                    var regex = new Regex (ConfRegEx);
+                    using (StreamReader reader = new StreamReader (ConfFile))
+                    {
+                        string line;
+                        while ((line = reader.ReadLine ()) != null)
+                        {
+                            var match = regex.Match (line);
+                            if (match != null && match.Success)
+                            {
+                                if (match.Groups != null && match.Groups.Count == 1)
+                                {
+                                    var propertyLine = match.Groups[0].ToString ();
+                                    if (!String.IsNullOrEmpty (propertyLine))
+                                    {
+                                        var propertyLineItems = propertyLine.Split ('=');
+                                        if (propertyLineItems != null && propertyLineItems.Length == 2)
+                                        {
+                                            ConfPropertyName = propertyLineItems[0].Trim ();
+                                            ConfPropertyValue = propertyLineItems[1].Trim ();
+                                        }
+                                    }
+                                }
+                                ConfPropertyFoundMatch = "true";
+                                break;
+                            }
+                        }
+                    }
+                }
+            ]]>
+            </Code>
+        </Task>
+    </UsingTask>
+
+    <UsingTask TaskName="_GetLLVMConfiguration" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+        <ParameterGroup>
+            <LLVMConfTool ParameterType="System.String" Required="true" />
+            <LLVMConfToolArg ParameterType="System.String" Required="true" />
+            <LLVMConfToolOut ParameterType="System.String" Output="true" />
+        </ParameterGroup>
+        <Task>
+            <Using Namespace="System" />
+            <Using Namespace="System.Text" />
+            <Using Namespace="System.Diagnostics" />
+            <Code Type="Fragment" Language="cs">
+            <![CDATA[
+                var process = new Process ();
+
+                process.StartInfo.FileName = LLVMConfTool;
+                process.StartInfo.Arguments = LLVMConfToolArg;
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.Start ();
+
+                LLVMConfToolOut = process.StandardOutput.ReadToEnd ().Trim ();
+                process.WaitForExit ();
+
+                if (LLVMConfToolArg.StartsWith ("--libnames"))
+                {
+                    var libs = LLVMConfToolOut.Split (' ');
+                    StringBuilder libNames = new StringBuilder ();
+                    foreach (var lib in libs)
+                    {
+                        var libPrefixEnd = lib.StartsWith ("lib") ? 3 : 0;
+                        var libExtensionStart = lib.LastIndexOf (".");
+
+                        if (libNames.Length != 0)
+                            libNames.Append (" ");
+
+                        libNames.Append (lib.Substring (libPrefixEnd, libExtensionStart - libPrefixEnd) + ".lib");
+                    }
+
+                    LLVMConfToolOut = libNames.ToString ();
+                }
+
+                if (process.ExitCode != 0)
+                    LLVMConfToolOut = "";
+            ]]>
+            </Code>
+        </Task>
+    </UsingTask>
+
+    <PropertyGroup>
+        <_MonoSourceDir>$([System.IO.Path]::GetFullPath('$(MONO_DIR)').TrimEnd('\'))</_MonoSourceDir>
+        <_MonoOutputDir>$([System.IO.Path]::GetFullPath('$(OutDir)'))</_MonoOutputDir>
+        <_MonoExternalBuildForceMSBuild Condition="'$(MONO_EXTERNAL_BUILD_FORCE_MSBUILD)' == 'true'">true</_MonoExternalBuildForceMSBuild>
+        <_MonoExternalBuildForceMSBuild Condition="'$(MONO_EXTERNAL_BUILD_FORCE_MSBUILD)' != 'true'">false</_MonoExternalBuildForceMSBuild>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <_LLVMSourceDir Condition="'$(_LLVMSourceDir)' == ''">$(MONO_INTERNAL_LLVM_SOURCE_DIR)</_LLVMSourceDir>
+        <_LLVMSourceDir Condition="'$(_LLVMSourceDir)' == ''">$(_MonoSourceDir)\external\llvm-project</_LLVMSourceDir>
+        <_LLVMBuildDir Condition="'$(_LLVMBuildDir)' == ''">$([System.IO.Path]::GetFullPath('$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\external\llvm-build\$(Configuration)'))</_LLVMBuildDir>
+        <_LLVMInstallDir Condition="'$(_LLVMInstallDir)' == ''">$(_LLVMBuildDir)\install</_LLVMInstallDir>
+        <_MonoLLVMConfig>$(_LLVMInstallDir)\bin\llvm-config.exe</_MonoLLVMConfig>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <_BtlsSourceDir Condition="'$(_BtlsSourceDir)' == ''">$(_MonoSourceDir)\external\boringssl</_BtlsSourceDir>
+        <_MonoBtlsSourceDir>$(_MonoSourceDir)\mono\btls</_MonoBtlsSourceDir>
+        <_BtlsBuildDir>$([System.IO.Path]::GetFullPath('$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\external\btls-build-shared\$(Configuration)'))</_BtlsBuildDir>
+    </PropertyGroup>
+
+    <Target Name="_CheckEnableBtls" Condition="'$(MONO_ENABLE_BTLS)' != 'true'">
+        <_CheckConfigurationProperty ConfFile="$(MONO_DIR)/cygconfig.h" ConfRegEx=".*#define.*HAVE_BTLS.*1">
+            <Output TaskParameter="ConfPropertyFoundMatch" PropertyName="MONO_ENABLE_BTLS" />
+        </_CheckConfigurationProperty>
+    </Target>
+
+    <Target Name="_CheckEnableLLVM" Condition="'$(MONO_ENABLE_LLVM)' != 'true'">
+        <_CheckConfigurationProperty ConfFile="$(MONO_DIR)/cygconfig.h" ConfRegEx=".*#define.*ENABLE_LLVM.*1">
+            <Output TaskParameter="ConfPropertyFoundMatch" PropertyName="MONO_ENABLE_LLVM" />
+        </_CheckConfigurationProperty>
+    </Target>
+
+    <Target Name="_CheckInternalLLVM" Condition="'$(_MonoEnableInternalLLVM)' != 'true' and '$(_MonoEnableExternalLLVM)' != 'true' and '$(MONO_ENABLE_LLVM)' == 'true'" DependsOnTargets="_CheckEnableLLVM">
+        <_CheckConfigurationProperty ConfFile="$(MONO_DIR)/cygconfig.h" ConfRegEx=".*#define.*INTERNAL_LLVM.*1">
+            <Output TaskParameter="ConfPropertyFoundMatch" PropertyName="_MonoEnableInternalLLVM" />
+        </_CheckConfigurationProperty>
+    </Target>
+
+    <Target Name="_CheckExternalLLVM" Condition="'$(_MonoEnableExternalLLVM)' != 'true' and '$(_MonoEnableInternalLLVM)' != 'true' and '$(MONO_ENABLE_LLVM)' == 'true'" DependsOnTargets="_CheckEnableLLVM">
+        <_CheckConfigurationProperty ConfFile="$(MONO_DIR)\Makefile" ConfRegEx=".*EXTERNAL_LLVM_CONFIG_WIN32.*llvm-config.exe">
+            <Output TaskParameter="ConfPropertyFoundMatch" PropertyName="_MonoEnableExternalLLVM" />
+            <Output TaskParameter="ConfPropertyValue" PropertyName="_CheckExternalLLVMOutput" />
+        </_CheckConfigurationProperty>
+        <PropertyGroup>
+            <_MonoLLVMConfig Condition="'$(_MonoEnableExternalLLVM)' == 'true'">$(_CheckExternalLLVMOutput)</_MonoLLVMConfig>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="_SetDefaultLLVMProperties" Condition="'$(MONO_ENABLE_LLVM)' == 'true'">
+        <PropertyGroup Condition="'$(MONO_EXTERNAL_LLVM_CONFIG)' != ''">
+            <_MonoEnableExternalLLVM>true</_MonoEnableExternalLLVM>
+            <_MonoEnableInternalLLVM>false</_MonoEnableInternalLLVM>
+            <_MonoLLVMConfig>$(MONO_EXTERNAL_LLVM_CONFIG)</_MonoLLVMConfig>
+        </PropertyGroup>
+
+        <PropertyGroup Condition="'$(MONO_EXTERNAL_LLVM_CONFIG)' == ''">
+            <_MonoEnableExternalLLVM>false</_MonoEnableExternalLLVM>
+            <_MonoEnableInternalLLVM>true</_MonoEnableInternalLLVM>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="_CheckLLVMPlatformSupport" Condition="'$(MONO_ENABLE_LLVM)' == 'true'">
+        <Message Importance="high" Text="LLVM only supported on x64 builds, disabling LLVM support." Condition="'$(Platform)' != 'x64'" />
+        <PropertyGroup Condition="'$(Platform)' != 'x64'">
+            <MONO_ENABLE_LLVM>false</MONO_ENABLE_LLVM>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="_SetupMonoLLVMBuildProperties" Condition="$(MONO_ENABLE_LLVM) == 'true'">
+
+        <_CheckConfigurationProperty ConfFile="$(MONO_DIR)/cygconfig.h" ConfRegEx=".*#define.*INTERNAL_LLVM_ASSERTS.*1" Condition="'$(MONO_ENABLE_LLVM_ASSERTS)' != 'true'">
+            <Output TaskParameter="ConfPropertyFoundMatch" PropertyName="MONO_ENABLE_LLVM_ASSERTS" />
+        </_CheckConfigurationProperty>
+
+        <Error Text="LLVM config executable $(_MonoLLVMConfig) not found." Condition="!Exists($(_MonoLLVMConfig))" />
+
+        <_GetLLVMConfiguration LLVMConfTool="$(_MonoLLVMConfig)" LLVMConfToolArg="--version">
+            <Output TaskParameter="LLVMConfToolOut" PropertyName="MONO_LLVM_VERSION" />
+        </_GetLLVMConfiguration>
+
+        <_GetLLVMConfiguration LLVMConfTool="$(_MonoLLVMConfig)" LLVMConfToolArg="--build-mode">
+            <Output TaskParameter="LLVMConfToolOut" PropertyName="MONO_LLVM_BUILD_MODE" />
+        </_GetLLVMConfiguration>
+
+        <Error Text="Compiling with stock LLVM is not supported, please use the Mono LLVM repo at https://github.com/mono/llvm." Condition="!$(MONO_LLVM_VERSION.Contains('mono'))" />
+        <Error Text="Expected llvm version 3.6 or 6.0, but llvm-config --version returned $(MONO_LLVM_VERSION)." Condition="!$(MONO_LLVM_VERSION.StartsWith('3.6')) and !$(MONO_LLVM_VERSION.StartsWith('6.0'))" />
+        <Error Text="LLVM build Configuration=$(MONO_LLVM_BUILD_MODE) doesn't match current build Configuration=$(Configuration)." Condition="'$(Configuration.ToUpper())'!='$(MONO_LLVM_BUILD_MODE.ToUpper())'" />
+
+        <_GetLLVMConfiguration LLVMConfTool="$(_MonoLLVMConfig)" LLVMConfToolArg="--mono-api-version">
+            <Output TaskParameter="LLVMConfToolOut" PropertyName="MONO_LLVM_API_VERSION" />
+        </_GetLLVMConfiguration>
+
+        <PropertyGroup>
+            <_MonoLLVMConfigComponents>analysis core bitwriter x86codegen</_MonoLLVMConfigComponents>
+            <!-- Currently LLVM JIT is only supported on OSX and including the libraries will get some duplicated symbols during linking.
+            <_MonoLLVMConfigComponents Condition="$(MONO_LLVM_API_VERSION) &lt; 600">$(_MonoLLVMConfigComponents)mcjit jit</_MonoLLVMConfigComponents>
+            <_MonoLLVMConfigComponents Condition="$(MONO_LLVM_API_VERSION) &gt;= 600">$(_MonoLLVMConfigComponents)mcjit orcjit</_MonoLLVMConfigComponents>
+            -->
+        </PropertyGroup>
+
+        <_GetLLVMConfiguration LLVMConfTool="$(_MonoLLVMConfig)" LLVMConfToolArg="--libnames $(_MonoLLVMConfigComponents)">
+            <Output TaskParameter="LLVMConfToolOut" PropertyName="MONO_LLVM_LIBS" />
+        </_GetLLVMConfiguration>
+
+        <PropertyGroup>
+            <MONO_LLVM_LIBS>$(MONO_LLVM_LIBS.Split(' '))</MONO_LLVM_LIBS>
+        </PropertyGroup>
+
+        <_GetLLVMConfiguration LLVMConfTool="$(_MonoLLVMConfig)" LLVMConfToolArg="--includedir">
+            <Output TaskParameter="LLVMConfToolOut" PropertyName="MONO_LLVM_INCLUDE_DIR" />
+        </_GetLLVMConfiguration>
+
+        <_GetLLVMConfiguration LLVMConfTool="$(_MonoLLVMConfig)" LLVMConfToolArg="--bindir">
+            <Output TaskParameter="LLVMConfToolOut" PropertyName="MONO_LLVM_BIN_DIR" />
+        </_GetLLVMConfiguration>
+
+        <_GetLLVMConfiguration LLVMConfTool="$(_MonoLLVMConfig)" LLVMConfToolArg="--libdir">
+            <Output TaskParameter="LLVMConfToolOut" PropertyName="MONO_LLVM_LIB_DIR" />
+        </_GetLLVMConfiguration>
+
+        <Message Importance="normal" Text="LLVM build properties:" />
+        <Message Importance="normal" Text="MONO_LLVM_VERSION = $(MONO_LLVM_VERSION)" />
+        <Message Importance="normal" Text="MONO_LLVM_API_VERSION = $(MONO_LLVM_API_VERSION)" />
+        <Message Importance="normal" Text="MONO_LLVM_LIBS = $(MONO_LLVM_LIBS)" />
+        <Message Importance="normal" Text="MONO_LLVM_INCLUDE_DIR = $(MONO_LLVM_INCLUDE_DIR)" />
+        <Message Importance="normal" Text="MONO_LLVM_BIN_DIR = $(MONO_LLVM_BIN_DIR)" />
+        <Message Importance="normal" Text="MONO_LLVM_LIB_DIR = $(MONO_LLVM_LIB_DIR)" />
+
+    </Target>
+
+    <Target Name="_ConfigureExternalMonoLLVMBuildEnvironment" DependsOnTargets="_SetDefaultLLVMProperties;_CheckEnableLLVM;_CheckInternalLLVM;_CheckExternalLLVM;_CheckLLVMPlatformSupport" />
+    <Target Name="_ConfigureExternalMonoBTLSBuildEnvironment" DependsOnTargets="_CheckEnableBtls" />
+    <Target Name="_ConfigureExternalMonoBuildEnvironment" DependsOnTargets="_ConfigureExternalMonoLLVMBuildEnvironment;_ConfigureExternalMonoBTLSBuildEnvironment" />
+
+    <PropertyGroup>
+        <PrepareForBuildDependsOn>
+        _ConfigureExternalMonoBuildEnvironment;
+        $(PrepareForBuildDependsOn);
+        </PrepareForBuildDependsOn>
+    </PropertyGroup>
+
+</Project>

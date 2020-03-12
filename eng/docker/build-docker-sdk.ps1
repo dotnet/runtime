@@ -19,7 +19,7 @@ if ($buildWindowsContainers)
   # Build on the host machine, then simply copy artifacts to the target docker image.
   # This should result in significantly lower build times, for now.
   & "$REPO_ROOT_DIR/coreclr.cmd" -c Release
-  & "$REPO_ROOT_DIR/libraries.cmd" -ci -c $configuration /p:CoreCLRConfiguration=Release
+  & "$REPO_ROOT_DIR/libraries.cmd" -ci -c $configuration -runtimeConfiguration release
   
   # Dockerize the build artifacts
   docker build --tag $imageName `

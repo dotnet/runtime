@@ -2,24 +2,31 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// This is the only concrete implementation of RegexRunnerFactory,
-// but we cannot combine them due to RegexRunnerFactory having shipped public.
+using System.Reflection.Emit;
 
 namespace System.Text.RegularExpressions
 {
     internal sealed class CompiledRegexRunnerFactory : RegexRunnerFactory
     {
-        private readonly Action<RegexRunner> _go;
-        private readonly Func<RegexRunner, bool> _findFirstChar;
-        private readonly Action<RegexRunner> _initTrackCount;
+        private readonly DynamicMethod _goMethod;
+        private readonly DynamicMethod _findFirstCharMethod;
+        private readonly int _trackcount;
 
-        public CompiledRegexRunnerFactory(Action<RegexRunner> go, Func<RegexRunner, bool> findFirstChar, Action<RegexRunner> initTrackCount)
+        // Delegates are lazily created to avoid forcing JIT'ing until the regex is actually executed.
+        private Action<RegexRunner>? _go;
+        private Func<RegexRunner, bool>? _findFirstChar;
+
+        public CompiledRegexRunnerFactory(DynamicMethod goMethod, DynamicMethod findFirstCharMethod, int trackcount)
         {
-            _go = go;
-            _findFirstChar = findFirstChar;
-            _initTrackCount = initTrackCount;
+            _goMethod = goMethod;
+            _findFirstCharMethod = findFirstCharMethod;
+            _trackcount = trackcount;
         }
 
-        protected internal override RegexRunner CreateInstance() => new CompiledRegexRunner(_go, _findFirstChar, _initTrackCount);
+        protected internal override RegexRunner CreateInstance() =>
+            new CompiledRegexRunner(
+                _go ??= (Action<RegexRunner>)_goMethod.CreateDelegate(typeof(Action<RegexRunner>)),
+                _findFirstChar ??= (Func<RegexRunner, bool>)_findFirstCharMethod.CreateDelegate(typeof(Func<RegexRunner, bool>)),
+                _trackcount);
     }
 }

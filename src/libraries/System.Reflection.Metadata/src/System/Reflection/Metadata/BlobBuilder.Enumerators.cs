@@ -16,7 +16,7 @@ namespace System.Reflection.Metadata
         {
             private readonly BlobBuilder _head;
             private BlobBuilder _next;
-            private BlobBuilder _currentOpt;
+            private BlobBuilder? _currentOpt;
 
             internal Chunks(BlobBuilder builder)
             {
@@ -28,7 +28,7 @@ namespace System.Reflection.Metadata
             }
 
             object IEnumerator.Current => Current;
-            public BlobBuilder Current => _currentOpt;
+            public BlobBuilder Current => _currentOpt!;
 
             public bool MoveNext()
             {

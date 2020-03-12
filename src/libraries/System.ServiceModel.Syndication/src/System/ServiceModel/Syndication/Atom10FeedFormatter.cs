@@ -81,10 +81,8 @@ namespace System.ServiceModel.Syndication
             return reader.IsStartElement(Atom10Constants.FeedTag, Atom10Constants.Atom10Namespace);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
         XmlSchema IXmlSerializable.GetSchema() => null;
 
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
             if (reader == null)
@@ -95,7 +93,6 @@ namespace System.ServiceModel.Syndication
             ReadFeed(reader);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
             if (writer == null)
@@ -513,7 +510,6 @@ namespace System.ServiceModel.Syndication
             return item;
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "2#", Justification = "The out parameter is needed to enable implementations that read in items from the stream on demand")]
         protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
         {
             if (feed == null)
@@ -595,8 +591,6 @@ namespace System.ServiceModel.Syndication
                 }
             }
             reader.MoveToElement();
-            string localName = reader.LocalName;
-            string nameSpace = reader.NamespaceURI;
             string val = (kind == TextSyndicationContentKind.XHtml) ? reader.ReadInnerXml() : reader.ReadElementString();
             TextSyndicationContent result = new TextSyndicationContent(val, kind);
             if (attrs != null)

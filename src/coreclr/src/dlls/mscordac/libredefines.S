@@ -1,10 +1,10 @@
-#if defined(_X86_) || defined(_AMD64_)
+#if defined(HOST_X86) || defined(HOST_AMD64)
 .intel_syntax noprefix
 #endif
 
 #include "unixasmmacros.inc"
 
-#if defined(_ARM_)
+#if defined(HOST_ARM)
 .syntax unified
 .thumb
 #endif

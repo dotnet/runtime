@@ -2,6 +2,7 @@ parameters:
   dependsOn: []
   PublishRidAgnosticPackagesFromPlatform: ''
   isOfficialBuild: false
+  logArtifactName: 'Logs-PrepareSignedArtifacts'
 
 jobs:
 - job: PrepareSignedArtifacts
@@ -62,9 +63,9 @@ jobs:
     continueOnError: true
     condition: succeededOrFailed()
 
-  - task: PublishBuildArtifacts@1
-    displayName: Publish Artifact BuildLogs
+  - task: PublishPipelineArtifact@1
+    displayName: Publish BuildLogs
     inputs:
-      PathtoPublish: '$(Build.StagingDirectory)\BuildLogs'
-      ArtifactName: Logs-PrepareSignedArtifacts
+      targetPath: '$(Build.StagingDirectory)\BuildLogs'
+      artifactName: ${{ parameters.logArtifactName }}
     condition: succeededOrFailed()

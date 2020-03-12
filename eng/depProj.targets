@@ -56,6 +56,9 @@ See the LICENSE file in the project root for more information.
     <CopyNuGetImplementations>true</CopyNuGetImplementations>
   </PropertyGroup>
 
+  <!-- This file results in importing the Build Target. -->
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+
   <Target Name="RemoveImplicitPackageReferences">
     <ItemGroup>
       <!-- Remove all implicit framework packages, depprojs are meant to be wholly explicit -->

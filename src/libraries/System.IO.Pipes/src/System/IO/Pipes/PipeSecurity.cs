@@ -55,7 +55,7 @@ namespace System.IO.Pipes
 
             for (int i = 0; i < rules.Count; i++)
             {
-                PipeAccessRule fsrule = rules[i] as PipeAccessRule;
+                PipeAccessRule? fsrule = rules[i] as PipeAccessRule;
 
                 if ((fsrule != null) && (fsrule.PipeAccessRights == rule.PipeAccessRights)
                         && (fsrule.IdentityReference == rule.IdentityReference)
@@ -97,7 +97,7 @@ namespace System.IO.Pipes
 
             for (int i = 0; i < rules.Count; i++)
             {
-                PipeAccessRule fsrule = rules[i] as PipeAccessRule;
+                PipeAccessRule? fsrule = rules[i] as PipeAccessRule;
 
                 if ((fsrule != null) && (fsrule.PipeAccessRights == rule.PipeAccessRights)
                     && (fsrule.IdentityReference == rule.IdentityReference)

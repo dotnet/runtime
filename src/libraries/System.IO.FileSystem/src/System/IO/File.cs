@@ -960,8 +960,6 @@ namespace System.IO
                 foreach (string line in contents)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    // Note that this working depends on the fix to #14563, and cannot be ported without
-                    // either also porting that fix, or explicitly checking for line being null.
                     await writer.WriteLineAsync(line).ConfigureAwait(false);
                 }
 

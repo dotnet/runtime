@@ -8,7 +8,7 @@
 //
 
 // clang-format off
-#if !defined(_TARGET_XARCH_)
+#if !defined(TARGET_XARCH)
   #error Unexpected target type
 #endif
 

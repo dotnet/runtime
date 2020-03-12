@@ -5,15 +5,5 @@
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
 
-  <!-- Override build and GetTargetPath to return all items deployed -->
-  <Target Name="Build"
-          Condition=" '$(_InvalidConfigurationWarning)' != 'true' "
-          DependsOnTargets="$(BuildDependsOn)"
-          Returns="@(BinPlaceItem)" />
-
-  <!-- Depprojs need to run Compile in order to populate items that will be copied to output -->
-  <Target Name="GetTargetPath"
-          DependsOnTargets="Compile;GetBinPlaceItems"
-          Returns="@(BinPlaceItem)" />
-
+  <Import Project="$(MSBuildThisFileDirectory)\runtime\referenceFromRuntime.targets" Condition="'$(TargetFramework)' == 'netcoreapp3.0' and '$(TargetFrameworkSuffix)' == 'Windows_NT'"/>
 </Project>

@@ -225,7 +225,7 @@ HRESULT StgIO::Open(                    // Return code.
         {
             dwFileSharingFlags |= FILE_SHARE_READ;
 
-#if !defined(DACCESS_COMPILE) && !defined(FEATURE_PAL)
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_UNIX)
             // PEDecoder is not defined in DAC
 
             // We prefer to use LoadLibrary if we can because it will share already loaded images (used for execution)
@@ -265,7 +265,7 @@ HRESULT StgIO::Open(                    // Return code.
                     }
                 }
             }
-#endif //!DACCESS_COMPILE && !FEATURE_PAL
+#endif //!DACCESS_COMPILE && !TARGET_UNIX
         }
 
         if (m_hModule == NULL)

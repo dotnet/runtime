@@ -71,7 +71,7 @@ namespace System.Globalization.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("source", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode(null, CompareOptions.None));
 
-            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.StringSort));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreCase));
             AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.Ordinal | CompareOptions.IgnoreSymbols));
             AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", (CompareOptions)(-1)));
         }
@@ -182,8 +182,14 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u30FC", "\u2010", ignoreKanaIgnoreWidthIgnoreCase, 1 };
 
             yield return new object[] { s_invariantCompare, "/", "\uFF0F", ignoreKanaIgnoreWidthIgnoreCase, 0 };
-            yield return new object[] { s_invariantCompare, "'", "\uFF07", ignoreKanaIgnoreWidthIgnoreCase, PlatformDetection.IsWindows7 ? -1 : 0};
             yield return new object[] { s_invariantCompare, "\"", "\uFF02", ignoreKanaIgnoreWidthIgnoreCase, 0 };
+
+            if (!PlatformDetection.IsWindows7)
+            {
+                // For the below string, LCMapStringEx and CompareStringEx on Windows 7 return inconsistent results.
+                // We'll only run this test case on Win8+ or on non-Windows machines.
+                yield return new object[] { s_invariantCompare, "'", "\uFF07", ignoreKanaIgnoreWidthIgnoreCase, 0 };
+            }
 
             yield return new object[] { s_invariantCompare, "\u3042", "\u30A1", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "\u3042", "\u30A2", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
@@ -349,12 +355,18 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(SortKey_TestData))]
-        public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
+        public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expectedSign)
         {
             SortKey sk1 = compareInfo.GetSortKey(string1, options);
             SortKey sk2 = compareInfo.GetSortKey(string2, options);
 
-            Assert.Equal(expected, SortKey.Compare(sk1, sk2));
+            Assert.Equal(expectedSign, Math.Sign(SortKey.Compare(sk1, sk2)));
+            Assert.Equal(expectedSign == 0, sk1.Equals(sk2));
+            Assert.Equal(Math.Sign(compareInfo.Compare(string1, string2, options)), Math.Sign(SortKey.Compare(sk1, sk2)));
+
+            Assert.Equal(compareInfo.GetHashCode(string1, options), sk1.GetHashCode());
+            Assert.Equal(compareInfo.GetHashCode(string2, options), sk2.GetHashCode());
+
             Assert.Equal(string1, sk1.OriginalString);
             Assert.Equal(string2, sk2.OriginalString);
         }
@@ -388,6 +400,9 @@ namespace System.Globalization.Tests
             Assert.Equal(sk4, sk5);
             Assert.Equal(sk4.GetHashCode(), sk5.GetHashCode());
             Assert.Equal(sk4.KeyData, sk5.KeyData);
+
+            Assert.False(sk1.Equals(null));
+            Assert.True(sk1.Equals(sk1));
 
             AssertExtensions.Throws<ArgumentNullException>("source", () => ci.GetSortKey(null));
             AssertExtensions.Throws<ArgumentException>("options", () => ci.GetSortKey(s1, CompareOptions.Ordinal));
@@ -462,7 +477,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetHashCode_Span_Invalid()
         {
-            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), CompareOptions.StringSort));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreCase));
             AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), CompareOptions.Ordinal | CompareOptions.IgnoreSymbols));
             AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), (CompareOptions)(-1)));
         }

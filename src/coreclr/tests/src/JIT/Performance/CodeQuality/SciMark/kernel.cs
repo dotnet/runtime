@@ -205,7 +205,7 @@ namespace SciMark2
             // initialize square sparse matrix
             //
             // for this test, we create a sparse matrix wit M/nz nonzeros
-            // per row, with spaced-out evenly between the begining of the
+            // per row, with spaced-out evenly between the beginning of the
             // row to the main diagonal.  Thus, the resulting pattern looks
             // like
             //             +-----------------+

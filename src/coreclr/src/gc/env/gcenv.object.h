@@ -21,9 +21,9 @@
 class ObjHeader
 {
 private:
-#if defined(BIT64)
+#if defined(HOST_64BIT)
     uint32_t m_uAlignpad;
-#endif // BIT64
+#endif // HOST_64BIT
     uint32_t m_uSyncBlockValue;
 
 public:

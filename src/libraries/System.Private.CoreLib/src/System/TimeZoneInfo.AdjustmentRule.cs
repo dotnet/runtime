@@ -119,8 +119,8 @@ namespace System
             //
             internal bool IsStartDateMarkerForBeginningOfYear() =>
                 !NoDaylightTransitions &&
-                DaylightTransitionStart.Month == 1 && DaylightTransitionStart.Day == 1 && DaylightTransitionStart.TimeOfDay.Hour == 0 &&
-                DaylightTransitionStart.TimeOfDay.Minute == 0 && DaylightTransitionStart.TimeOfDay.Second == 0 &&
+                DaylightTransitionStart.Month == 1 && DaylightTransitionStart.Day == 1 &&
+                DaylightTransitionStart.TimeOfDay.TimeOfDay.Ticks < TimeSpan.TicksPerSecond && // < 12:00:01 AM
                 _dateStart.Year == _dateEnd.Year;
 
             //
@@ -129,8 +129,8 @@ namespace System
             //
             internal bool IsEndDateMarkerForEndOfYear() =>
                 !NoDaylightTransitions &&
-                DaylightTransitionEnd.Month == 1 && DaylightTransitionEnd.Day == 1 && DaylightTransitionEnd.TimeOfDay.Hour == 0 &&
-                DaylightTransitionEnd.TimeOfDay.Minute == 0 && DaylightTransitionEnd.TimeOfDay.Second == 0 &&
+                DaylightTransitionEnd.Month == 1 && DaylightTransitionEnd.Day == 1 &&
+                DaylightTransitionEnd.TimeOfDay.TimeOfDay.Ticks < TimeSpan.TicksPerSecond && // < 12:00:01 AM
                 _dateStart.Year == _dateEnd.Year;
 
             /// <summary>

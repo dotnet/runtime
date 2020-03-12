@@ -14,10 +14,6 @@ namespace
     class resolve_component_dependencies_result
     {
     public:
-        thread_local static pal::string_t assembly_paths;
-        thread_local static pal::string_t native_search_paths;
-        thread_local static pal::string_t resource_search_paths;
-
         resolve_component_dependencies_result()
         {
         }
@@ -27,15 +23,29 @@ namespace
             const pal::char_t* local_native_search_paths,
             const pal::char_t* local_resource_search_paths)
         {
-            assembly_paths = local_assembly_paths;
-            native_search_paths = local_native_search_paths;
-            resource_search_paths = local_resource_search_paths;
+            assembly_paths() = local_assembly_paths;
+            native_search_paths() = local_native_search_paths;
+            resource_search_paths() = local_resource_search_paths;
+        }
+
+        static pal::string_t& assembly_paths()
+        {
+            thread_local static pal::string_t assembly_paths;
+            return assembly_paths;
+        }
+
+        static pal::string_t& native_search_paths()
+        {
+            thread_local static pal::string_t native_search_paths;
+            return native_search_paths;
+        }
+
+        static pal::string_t& resource_search_paths()
+        {
+            thread_local static pal::string_t resource_search_paths;
+            return resource_search_paths;
         }
     };
-
-    thread_local pal::string_t resolve_component_dependencies_result::assembly_paths;
-    thread_local pal::string_t resolve_component_dependencies_result::native_search_paths;
-    thread_local pal::string_t resolve_component_dependencies_result::resource_search_paths;
 
     template<typename Act>
     bool run_app_and_hostpolicy_action(
@@ -94,7 +104,7 @@ namespace
         if (rc == StatusCode::Success)
         {
             // Split order and merge again the assembly_paths - the result returned by the hostpolicy is not stable (and not guaranteed to be either)
-            pal::stringstream_t assembly_paths_stream(result.assembly_paths);
+            pal::stringstream_t assembly_paths_stream(result.assembly_paths());
             std::vector<pal::string_t> resolved_assemblies;
             pal::string_t assembly_path;
             while (std::getline(assembly_paths_stream, assembly_path, PATH_SEPARATOR))
@@ -115,8 +125,8 @@ namespace
 
             test_output << prefix << _X("corehost_resolve_component_dependencies:Success") << std::endl;
             test_output << prefix << _X("corehost_resolve_component_dependencies assemblies:[") << assembly_paths_stream.str().c_str() << _X("]") << std::endl;
-            test_output << prefix << _X("corehost_resolve_component_dependencies native_search_paths:[") << result.native_search_paths.c_str() << _X("]") << std::endl;
-            test_output << prefix << _X("corehost_resolve_component_dependencies resource_search_paths:[") << result.resource_search_paths.c_str() << _X("]") << std::endl;
+            test_output << prefix << _X("corehost_resolve_component_dependencies native_search_paths:[") << result.native_search_paths().c_str() << _X("]") << std::endl;
+            test_output << prefix << _X("corehost_resolve_component_dependencies resource_search_paths:[") << result.resource_search_paths().c_str() << _X("]") << std::endl;
         }
         else
         {

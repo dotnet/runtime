@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 2.6)
 project (ExactSpellingNative)
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake") 
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")  

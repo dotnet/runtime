@@ -4,23 +4,25 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Http.QPack;
 
 namespace System.Net.Http
 {
     public class HttpMethod : IEquatable<HttpMethod>
     {
         private readonly string _method;
+        private readonly byte[] _http3EncodedBytes;
         private int _hashcode;
 
-        private static readonly HttpMethod s_getMethod = new HttpMethod("GET");
-        private static readonly HttpMethod s_putMethod = new HttpMethod("PUT");
-        private static readonly HttpMethod s_postMethod = new HttpMethod("POST");
-        private static readonly HttpMethod s_deleteMethod = new HttpMethod("DELETE");
-        private static readonly HttpMethod s_headMethod = new HttpMethod("HEAD");
-        private static readonly HttpMethod s_optionsMethod = new HttpMethod("OPTIONS");
+        private static readonly HttpMethod s_getMethod = new HttpMethod("GET", http3StaticTableIndex: H3StaticTable.MethodGet);
+        private static readonly HttpMethod s_putMethod = new HttpMethod("PUT", http3StaticTableIndex: H3StaticTable.MethodPut);
+        private static readonly HttpMethod s_postMethod = new HttpMethod("POST", http3StaticTableIndex: H3StaticTable.MethodPost);
+        private static readonly HttpMethod s_deleteMethod = new HttpMethod("DELETE", http3StaticTableIndex: H3StaticTable.MethodDelete);
+        private static readonly HttpMethod s_headMethod = new HttpMethod("HEAD", http3StaticTableIndex: H3StaticTable.MethodHead);
+        private static readonly HttpMethod s_optionsMethod = new HttpMethod("OPTIONS", http3StaticTableIndex: H3StaticTable.MethodOptions);
         private static readonly HttpMethod s_traceMethod = new HttpMethod("TRACE");
         private static readonly HttpMethod s_patchMethod = new HttpMethod("PATCH");
-        private static readonly HttpMethod s_connectMethod = new HttpMethod("CONNECT");
+        private static readonly HttpMethod s_connectMethod = new HttpMethod("CONNECT", http3StaticTableIndex: H3StaticTable.MethodConnect);
 
         private static readonly Dictionary<HttpMethod, HttpMethod> s_knownMethods = new Dictionary<HttpMethod, HttpMethod>(9)
         {
@@ -88,6 +90,11 @@ namespace System.Net.Http
             get { return _method; }
         }
 
+        internal byte[] Http3EncodedBytes
+        {
+            get { return _http3EncodedBytes; }
+        }
+
         public HttpMethod(string method)
         {
             if (string.IsNullOrEmpty(method))
@@ -100,6 +107,14 @@ namespace System.Net.Http
             }
 
             _method = method;
+        }
+
+        private HttpMethod(string method, int? http3StaticTableIndex)
+            : this(method)
+        {
+            _http3EncodedBytes = http3StaticTableIndex != null ?
+                QPackEncoder.EncodeStaticIndexedHeaderFieldToArray(http3StaticTableIndex.GetValueOrDefault()) :
+                QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.MethodGet, method);
         }
 
         #region IEquatable<HttpMethod> Members

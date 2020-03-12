@@ -11,6 +11,9 @@
 #include "common.h"
 #include "inlinetracking.h"
 #include "ceeload.h"
+#include "versionresilienthashcode.h"
+
+using namespace NativeFormat;
 
 #ifndef DACCESS_COMPILE
 
@@ -597,6 +600,141 @@ COUNT_T PersistentInlineTrackingMapR2R::GetInliners(PTR_Module inlineeOwnerMod, 
 
     return result;
 }
+
+#ifndef DACCESS_COMPILE
+BOOL PersistentInlineTrackingMapR2R2::TryLoad(Module* pModule, const BYTE* pBuffer, DWORD cbBuffer,
+    AllocMemTracker* pamTracker, PersistentInlineTrackingMapR2R2** ppLoadedMap)
+{
+    LoaderHeap* pHeap = pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
+    void* pMemory = pamTracker->Track(pHeap->AllocMem((S_SIZE_T)sizeof(PersistentInlineTrackingMapR2R2)));
+    PersistentInlineTrackingMapR2R2* pMap = new (pMemory) PersistentInlineTrackingMapR2R2();
+
+    pMap->m_module = pModule;
+
+    pMap->m_reader = NativeReader(pBuffer, cbBuffer);
+    NativeParser parser = NativeParser(&pMap->m_reader, 0);
+    pMap->m_hashtable = NativeHashtable(parser);
+    *ppLoadedMap = pMap;
+    return TRUE;
+}
+
+COUNT_T PersistentInlineTrackingMapR2R2::GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL* incompleteData)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(inlineeOwnerMod);
+    _ASSERTE(inliners);
+
+    if (incompleteData)
+    {
+        *incompleteData = FALSE;
+    }
+    DWORD result = 0;
+
+    int hashCode = GetVersionResilientModuleHashCode(inlineeOwnerMod);
+    hashCode ^= inlineeTkn;
+
+    NativeHashtable::Enumerator lookup = m_hashtable.Lookup(hashCode);
+    NativeParser entryParser;
+    while (lookup.GetNext(entryParser))
+    {
+        DWORD streamSize = entryParser.GetUnsigned();
+        _ASSERTE(streamSize > 1);
+
+        // First make sure this is the right inlinee and not just a hash collision
+
+        DWORD inlineeRidAndFlag = entryParser.GetUnsigned();
+        streamSize--;
+        mdMethodDef inlineeToken = TokenFromRid(inlineeRidAndFlag >> 1, mdtMethodDef);
+        if (inlineeToken != inlineeTkn)
+        {
+            continue;
+        }
+
+        Module* inlineeModule;
+        if ((inlineeRidAndFlag & 1) != 0)
+        {
+            inlineeModule = GetModuleByIndex(entryParser.GetUnsigned());
+            streamSize--;
+            _ASSERTE(streamSize > 0);
+        }
+        else
+        {
+            inlineeModule = m_module;
+        }
+
+        if (inlineeModule != inlineeOwnerMod)
+        {
+            continue;
+        }
+
+        // We have the right inlinee, let's look at the inliners
+
+        DWORD currentInlinerRid = 0;
+        do
+        {
+            DWORD inlinerRidDeltaAndFlag = entryParser.GetUnsigned();
+            streamSize--;
+
+            currentInlinerRid += inlinerRidDeltaAndFlag >> 1;
+
+            Module* inlinerModule;
+            if ((inlinerRidDeltaAndFlag & 1) != 0)
+            {
+                _ASSERTE(streamSize > 0);
+                inlinerModule = GetModuleByIndex(entryParser.GetUnsigned());
+                streamSize--;
+                if (inlinerModule == nullptr && incompleteData)
+                {
+                    // We can't find module for this inlineeModuleZapIndex, it means it hasn't been loaded yet 
+                    // (maybe it never will be), we just report it to the profiler. 
+                    // Profiler might want to try later when more modules are loaded.
+                    *incompleteData = TRUE;
+                    continue;
+                }
+            }
+            else
+            {
+                inlinerModule = m_module;
+            }
+
+            if (result < inlinersSize)
+            {
+                inliners[result].m_methodDef = TokenFromRid(currentInlinerRid, mdtMethodDef);
+                inliners[result].m_module = inlinerModule;
+            }
+
+            result++;
+        } while (streamSize > 0);
+    }
+
+    return result;
+}
+
+Module* PersistentInlineTrackingMapR2R2::GetModuleByIndex(DWORD index)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // This "black magic spell" has in fact nothing to do with GenericInstantiationCompare per se, but just sets a thread flag
+    // that later activates more thorough search inside Module::GetAssemblyIfLoaded, which is indirectly called from GetModuleFromIndexIfLoaded.
+    // This is useful when ngen image was compiler against a different assembly version than the one loaded now.
+    ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
+
+    return m_module->GetModuleFromIndexIfLoaded(index);
+}
+#endif //!DACCESS_COMPILE
 
 #endif //FEATURE_READYTORUN
 

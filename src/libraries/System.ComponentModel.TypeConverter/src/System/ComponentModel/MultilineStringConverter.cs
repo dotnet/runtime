@@ -9,7 +9,6 @@ namespace System.ComponentModel
     /// <summary>
     /// Provides a type converter to convert multiline strings to a simple string.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
     public class MultilineStringConverter : TypeConverter
     {
         /// <summary>

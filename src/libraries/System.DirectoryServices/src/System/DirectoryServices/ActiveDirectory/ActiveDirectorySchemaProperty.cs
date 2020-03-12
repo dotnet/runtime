@@ -1217,7 +1217,7 @@ namespace System.DirectoryServices.ActiveDirectory
             str.Append("(&(");
             str.Append(PropertyManager.ObjectCategory);
             str.Append("=attributeSchema)");
-            str.Append("(");
+            str.Append('(');
             if (!isDefunctOnServer)
             {
                 str.Append(PropertyManager.LdapDisplayName);
@@ -1226,16 +1226,16 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 str.Append(PropertyManager.Cn);
             }
-            str.Append("=");
+            str.Append('=');
             str.Append(Utils.GetEscapedFilterValue(name));
-            str.Append(")");
+            str.Append(')');
             if (!isDefunctOnServer)
             {
                 str.Append("(!(");
             }
             else
             {
-                str.Append("(");
+                str.Append('(');
             }
             str.Append(PropertyManager.IsDefunct);
             if (!isDefunctOnServer)

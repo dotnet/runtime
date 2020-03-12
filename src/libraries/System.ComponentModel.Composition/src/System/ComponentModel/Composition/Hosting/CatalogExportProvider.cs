@@ -32,7 +32,7 @@ namespace System.ComponentModel.Composition.Hosting
                 _outerExportProvider = outerExportProvider;
             }
 
-            protected override IEnumerable<Export> GetExportsCore(ImportDefinition definition, AtomicComposition atomicComposition)
+            protected override IEnumerable<Export> GetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition)
             {
                 return _outerExportProvider.InternalGetExportsCore(definition, atomicComposition);
             }
@@ -41,16 +41,16 @@ namespace System.ComponentModel.Composition.Hosting
         private readonly CompositionLock _lock;
         private readonly Dictionary<ComposablePartDefinition, CatalogPart> _activatedParts = new Dictionary<ComposablePartDefinition, CatalogPart>();
         private readonly HashSet<ComposablePartDefinition> _rejectedParts = new HashSet<ComposablePartDefinition>();
-        private ConditionalWeakTable<object, List<ComposablePart>> _gcRoots;
+        private ConditionalWeakTable<object, List<ComposablePart>>? _gcRoots;
         private readonly HashSet<IDisposable> _partsToDispose = new HashSet<IDisposable>();
         private ComposablePartCatalog _catalog;
         private volatile bool _isDisposed = false;
         private volatile bool _isRunning = false;
         private readonly bool _disableSilentRejection = false;
-        private ExportProvider _sourceProvider;
-        private ImportEngine _importEngine;
+        private ExportProvider? _sourceProvider;
+        private ImportEngine? _importEngine;
         private readonly CompositionOptions _compositionOptions;
-        private ExportProvider _innerExportProvider;
+        private ExportProvider? _innerExportProvider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CatalogExportProvider"/> class.
@@ -82,14 +82,12 @@ namespace System.ComponentModel.Composition.Hosting
 
             _catalog = catalog;
             _compositionOptions = compositionOptions;
-            var notifyCatalogChanged = _catalog as INotifyComposablePartCatalogChanged;
-            if (notifyCatalogChanged != null)
+            if (_catalog is INotifyComposablePartCatalogChanged notifyCatalogChanged)
             {
                 notifyCatalogChanged.Changing += OnCatalogChanging;
             }
 
-            CompositionScopeDefinition scopeDefinition = _catalog as CompositionScopeDefinition;
-            if (scopeDefinition != null)
+            if (_catalog is CompositionScopeDefinition scopeDefinition)
             {
                 _innerExportProvider = new AggregateExportProvider(new ScopeManager(this, scopeDefinition), new InnerCatalogExportProvider(this));
             }
@@ -151,8 +149,8 @@ namespace System.ComponentModel.Composition.Hosting
         ///     This property must be set before accessing any methods on the
         ///     <see cref="CatalogExportProvider"/>.
         /// </remarks>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "EnsureCanSet ensures that the property is set only once, Dispose is not required")]
-        public ExportProvider SourceProvider
+        [DisallowNull]
+        public ExportProvider? SourceProvider
         {
             get
             {
@@ -166,11 +164,11 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 ThrowIfDisposed();
 
-                Requires.NotNull(value, nameof(value));
+                Requires.NotNull(value!, nameof(value));
 
-                ImportEngine newImportEngine = null;
-                AggregateExportProvider aggregateExportProvider = null;
-                ExportProvider sourceProvider = value;
+                ImportEngine? newImportEngine = null;
+                AggregateExportProvider? aggregateExportProvider = null;
+                ExportProvider sourceProvider = value!;
 
                 bool isThrowing = true;
                 try
@@ -194,7 +192,7 @@ namespace System.ComponentModel.Composition.Hosting
                     if (isThrowing)
                     {
                         sourceProvider.ExportsChanging -= OnExportsChangingInternal;
-                        newImportEngine.Dispose();
+                        newImportEngine!.Dispose();
                         if (aggregateExportProvider != null)
                         {
                             aggregateExportProvider.Dispose();
@@ -225,11 +223,11 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     //Note:  We do not dispose _lock on dispose because DisposePart needs it to check isDisposed state
                     //          to eliminate race conditions between it and Dispose
-                    INotifyComposablePartCatalogChanged catalogToUnsubscribeFrom = null;
-                    HashSet<IDisposable> partsToDispose = null;
-                    ImportEngine importEngine = null;
-                    ExportProvider sourceProvider = null;
-                    AggregateExportProvider aggregateExportProvider = null;
+                    INotifyComposablePartCatalogChanged? catalogToUnsubscribeFrom = null;
+                    HashSet<IDisposable>? partsToDispose = null;
+                    ImportEngine? importEngine = null;
+                    ExportProvider? sourceProvider = null;
+                    AggregateExportProvider? aggregateExportProvider = null;
                     try
                     {
                         using (_lock.LockStateForWrite())
@@ -237,7 +235,7 @@ namespace System.ComponentModel.Composition.Hosting
                             if (!_isDisposed)
                             {
                                 catalogToUnsubscribeFrom = _catalog as INotifyComposablePartCatalogChanged;
-                                _catalog = null;
+                                _catalog = null!;
 
                                 aggregateExportProvider = _innerExportProvider as AggregateExportProvider;
                                 _innerExportProvider = null;
@@ -307,7 +305,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// it should return an empty <see cref="IEnumerable{T}"/> of <see cref="Export"/>.
         /// </note>
         /// </remarks>
-        protected override IEnumerable<Export> GetExportsCore(ImportDefinition definition, AtomicComposition atomicComposition)
+        protected override IEnumerable<Export> GetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition)
         {
             ThrowIfDisposed();
             EnsureRunning();
@@ -317,12 +315,11 @@ namespace System.ComponentModel.Composition.Hosting
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
 
-            IEnumerable<Export> exports;
-            _innerExportProvider.TryGetExports(definition, atomicComposition, out exports);
-            return exports;
+            _innerExportProvider.TryGetExports(definition, atomicComposition, out IEnumerable<Export>? exports);
+            return exports!;
         }
 
-        private IEnumerable<Export> InternalGetExportsCore(ImportDefinition definition, AtomicComposition atomicComposition)
+        private IEnumerable<Export> InternalGetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition)
         {
             ThrowIfDisposed();
             EnsureRunning();
@@ -330,10 +327,9 @@ namespace System.ComponentModel.Composition.Hosting
             // Use the version of the catalog appropriate to this atomicComposition
             ComposablePartCatalog currentCatalog = atomicComposition.GetValueAllowNull(_catalog);
 
-            IPartCreatorImportDefinition partCreatorDefinition = definition as IPartCreatorImportDefinition;
             bool isExportFactory = false;
 
-            if (partCreatorDefinition != null)
+            if (definition is IPartCreatorImportDefinition partCreatorDefinition)
             {
                 definition = partCreatorDefinition.ProductImportDefinition;
                 isExportFactory = true;
@@ -372,7 +368,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private void OnExportsChangingInternal(object sender, ExportsChangeEventArgs e)
+        private void OnExportsChangingInternal(object? sender, ExportsChangeEventArgs e)
         {
             UpdateRejections(e.AddedExports.Concat(e.RemovedExports), e.AtomicComposition);
         }
@@ -400,8 +396,7 @@ namespace System.ComponentModel.Composition.Hosting
             return exports.ToArray();
         }
 
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        private void OnCatalogChanging(object sender, ComposablePartCatalogChangeEventArgs e)
+        private void OnCatalogChanging(object? sender, ComposablePartCatalogChangeEventArgs e)
         {
             using (var atomicComposition = new AtomicComposition(e.AtomicComposition))
             {
@@ -417,7 +412,7 @@ namespace System.ComponentModel.Composition.Hosting
                 // fashion)
                 foreach (var definition in e.RemovedDefinitions)
                 {
-                    CatalogPart removedPart = null;
+                    CatalogPart? removedPart = null;
                     bool removed = false;
 
                     using (_lock.LockStateForRead())
@@ -428,7 +423,7 @@ namespace System.ComponentModel.Composition.Hosting
                     if (removed)
                     {
                         var capturedDefinition = definition;
-                        DisposePart(null, removedPart, atomicComposition);
+                        DisposePart(null, removedPart!, atomicComposition);
                         atomicComposition.AddCompleteActionAllowNull(() =>
                         {
                             using (_lock.LockStateForWrite())
@@ -439,7 +434,7 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                 }
 
-                UpdateRejections(addedExports.ConcatAllowingNull(removedExports), atomicComposition);
+                UpdateRejections(addedExports.ConcatAllowingNull(removedExports)!, atomicComposition);
 
                 OnExportsChanging(
                     new ExportsChangeEventArgs(addedExports, removedExports, atomicComposition));
@@ -456,7 +451,7 @@ namespace System.ComponentModel.Composition.Hosting
             ThrowIfDisposed();
             EnsureRunning();
 
-            CatalogPart catalogPart = null;
+            CatalogPart catalogPart;
 
             if (isSharedPart)
             {
@@ -467,8 +462,7 @@ namespace System.ComponentModel.Composition.Hosting
                 ComposablePart part = partDefinition.CreatePart();
                 catalogPart = new CatalogPart(part);
 
-                IDisposable disposablePart = part as IDisposable;
-                if (disposablePart != null)
+                if (part is IDisposable disposablePart)
                 {
                     using (_lock.LockStateForWrite())
                     {
@@ -482,7 +476,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private CatalogPart GetSharedPart(ComposablePartDefinition partDefinition)
         {
-            CatalogPart catalogPart = null;
+            CatalogPart? catalogPart = null;
 
             // look up the part
             using (_lock.LockStateForRead())
@@ -494,8 +488,8 @@ namespace System.ComponentModel.Composition.Hosting
             }
 
             // create a part outside of the lock
-            ComposablePart newPart = partDefinition.CreatePart();
-            IDisposable disposableNewPart = newPart as IDisposable;
+            ComposablePart? newPart = partDefinition.CreatePart();
+            IDisposable? disposableNewPart = newPart as IDisposable;
 
             using (_lock.LockStateForWrite())
             {
@@ -525,7 +519,7 @@ namespace System.ComponentModel.Composition.Hosting
             return catalogPart;
         }
 
-        private object GetExportedValue(CatalogPart part, ExportDefinition export, bool isSharedPart)
+        private object? GetExportedValue(CatalogPart part, ExportDefinition export, bool isSharedPart)
         {
             ThrowIfDisposed();
             EnsureRunning();
@@ -543,9 +537,9 @@ namespace System.ComponentModel.Composition.Hosting
             // if two threads satisfy imports twice, the results is the same, just the perf hit is heavier.
 
             bool importsSatisfied = part.ImportsSatisfied;
-            ImportEngine importEngine = importsSatisfied ? null : _importEngine;
+            ImportEngine? importEngine = importsSatisfied ? null : _importEngine;
 
-            object exportedValue = CompositionServices.GetExportedValueFromComposedPart(
+            object? exportedValue = CompositionServices.GetExportedValueFromComposedPart(
                 importEngine, part.Part, export);
 
             if (!importsSatisfied)
@@ -572,7 +566,7 @@ namespace System.ComponentModel.Composition.Hosting
             DisposePart(exportedValue, catalogPart, atomicComposition);
         }
 
-        private void DisposePart(object exportedValue, CatalogPart catalogPart, AtomicComposition atomicComposition)
+        private void DisposePart(object? exportedValue, CatalogPart catalogPart, AtomicComposition? atomicComposition)
         {
             if (catalogPart == null)
             {
@@ -582,7 +576,7 @@ namespace System.ComponentModel.Composition.Hosting
             if (_isDisposed)
                 return;
 
-            ImportEngine importEngine = null;
+            ImportEngine? importEngine = null;
             using (_lock.LockStateForWrite())
             {
                 if (_isDisposed)
@@ -602,8 +596,7 @@ namespace System.ComponentModel.Composition.Hosting
                 });
             }
 
-            IDisposable diposablePart = catalogPart.Part as IDisposable;
-            if (diposablePart != null)
+            if (catalogPart.Part is IDisposable diposablePart)
             {
                 atomicComposition.AddCompleteActionAllowNull(() =>
                 {
@@ -641,9 +634,9 @@ namespace System.ComponentModel.Composition.Hosting
 
             using (_lock.LockStateForWrite())
             {
-                List<ComposablePart> partList;
+                List<ComposablePart>? partList;
 
-                ConditionalWeakTable<object, List<ComposablePart>> gcRoots = _gcRoots;
+                ConditionalWeakTable<object, List<ComposablePart>>? gcRoots = _gcRoots;
                 if (gcRoots == null)
                 {
                     gcRoots = new ConditionalWeakTable<object, List<ComposablePart>>();
@@ -676,7 +669,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private bool IsRejected(ComposablePartDefinition definition, AtomicComposition atomicComposition)
+        private bool IsRejected(ComposablePartDefinition definition, AtomicComposition? atomicComposition)
         {
             // Check to see if we're currently working on the definition in question.
             // Recursive queries always answer optimistically, as if the definition hasn't
@@ -727,14 +720,14 @@ namespace System.ComponentModel.Composition.Hosting
             return DetermineRejection(definition, atomicComposition);
         }
 
-        private bool EnsureRejection(AtomicComposition atomicComposition)
+        private bool EnsureRejection(AtomicComposition? atomicComposition)
         {
             return !(_disableSilentRejection && (atomicComposition == null));
         }
 
-        private bool DetermineRejection(ComposablePartDefinition definition, AtomicComposition parentAtomicComposition)
+        private bool DetermineRejection(ComposablePartDefinition definition, AtomicComposition? parentAtomicComposition)
         {
-            ChangeRejectedException exception = null;
+            ChangeRejectedException? exception = null;
 
             // if there is no active atomic composition and rejection is disabled, there's no need to do any of the below
             if (!EnsureRejection(parentAtomicComposition))
@@ -761,6 +754,7 @@ namespace System.ComponentModel.Composition.Hosting
                 var newPart = definition.CreatePart();
                 try
                 {
+                    Debug.Assert(_importEngine != null);
                     _importEngine.PreviewImports(newPart, localAtomicComposition);
 
                     // Reuse the partially-fleshed out part the next time we need a shared
@@ -776,8 +770,7 @@ namespace System.ComponentModel.Composition.Hosting
                             if (!_activatedParts.ContainsKey(definition))
                             {
                                 _activatedParts.Add(definition, new CatalogPart(newPart));
-                                IDisposable newDisposablePart = newPart as IDisposable;
-                                if (newDisposablePart != null)
+                                if (newPart is IDisposable newDisposablePart)
                                 {
                                     _partsToDispose.Add(newDisposablePart);
                                 }
@@ -818,7 +811,7 @@ namespace System.ComponentModel.Composition.Hosting
             return true;
         }
 
-        private void UpdateRejections(IEnumerable<ExportDefinition> changedExports, AtomicComposition atomicComposition)
+        private void UpdateRejections(IEnumerable<ExportDefinition> changedExports, AtomicComposition? atomicComposition)
         {
             using (var localAtomicComposition = new AtomicComposition(atomicComposition))
             {
@@ -934,7 +927,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <typeparam name="T"></typeparam>
         /// <param name="currentValue"></param>
         [DebuggerStepThrough]
-        private void EnsureCanSet<T>(T currentValue)
+        private void EnsureCanSet<T>(T? currentValue)
             where T : class
         {
             if ((_isRunning) || (currentValue != null))
@@ -945,7 +938,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private AtomicCompositionQueryState QueryPartState(AtomicComposition atomicComposition, ComposablePartDefinition definition)
         {
-            PartQueryStateNode node = GetPartQueryStateNode(atomicComposition);
+            PartQueryStateNode? node = GetPartQueryStateNode(atomicComposition);
             if (node == null)
             {
                 return AtomicCompositionQueryState.Unknown;
@@ -956,10 +949,9 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private PartQueryStateNode GetPartQueryStateNode(AtomicComposition atomicComposition)
+        private PartQueryStateNode? GetPartQueryStateNode(AtomicComposition atomicComposition)
         {
-            PartQueryStateNode node;
-            atomicComposition.TryGetValue(this, out node);
+            atomicComposition.TryGetValue(this, out PartQueryStateNode? node);
             return node;
         }
 
@@ -968,7 +960,7 @@ namespace System.ComponentModel.Composition.Hosting
             ComposablePartDefinition part,
             AtomicCompositionQueryState state)
         {
-            PartQueryStateNode previousNode = GetPartQueryStateNode(atomicComposition);
+            PartQueryStateNode? previousNode = GetPartQueryStateNode(atomicComposition);
             atomicComposition.SetValue(this, new PartEqualsQueryStateNode(part, previousNode, state));
         }
 
@@ -977,7 +969,7 @@ namespace System.ComponentModel.Composition.Hosting
             HashSet<ComposablePartDefinition> hashset,
             AtomicCompositionQueryState state)
         {
-            PartQueryStateNode previousNode = GetPartQueryStateNode(atomicComposition);
+            PartQueryStateNode? previousNode = GetPartQueryStateNode(atomicComposition);
             atomicComposition.SetValue(this, new PartInHashSetQueryStateNode(hashset, previousNode, state));
         }
 
@@ -991,10 +983,10 @@ namespace System.ComponentModel.Composition.Hosting
 
         private abstract class PartQueryStateNode
         {
-            private readonly PartQueryStateNode _previousNode;
+            private readonly PartQueryStateNode? _previousNode;
             private readonly AtomicCompositionQueryState _state;
 
-            protected PartQueryStateNode(PartQueryStateNode previousNode, AtomicCompositionQueryState state)
+            protected PartQueryStateNode(PartQueryStateNode? previousNode, AtomicCompositionQueryState state)
             {
                 _previousNode = previousNode;
                 _state = state;
@@ -1005,7 +997,7 @@ namespace System.ComponentModel.Composition.Hosting
             public AtomicCompositionQueryState GetQueryState(ComposablePartDefinition definition)
             {
                 int hashCode = definition.GetHashCode();
-                PartQueryStateNode node = this;
+                PartQueryStateNode? node = this;
                 do
                 {
                     if (node.IsMatchingDefinition(definition, hashCode))
@@ -1024,7 +1016,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             private readonly ComposablePartDefinition _part;
             private readonly int _hashCode;
-            public PartEqualsQueryStateNode(ComposablePartDefinition part, PartQueryStateNode previousNode, AtomicCompositionQueryState state) :
+            public PartEqualsQueryStateNode(ComposablePartDefinition part, PartQueryStateNode? previousNode, AtomicCompositionQueryState state) :
                 base(previousNode, state)
             {
                 _part = part;
@@ -1044,7 +1036,7 @@ namespace System.ComponentModel.Composition.Hosting
         private class PartInHashSetQueryStateNode : PartQueryStateNode
         {
             private readonly HashSet<ComposablePartDefinition> _parts;
-            public PartInHashSetQueryStateNode(HashSet<ComposablePartDefinition> parts, PartQueryStateNode previousNode, AtomicCompositionQueryState state) :
+            public PartInHashSetQueryStateNode(HashSet<ComposablePartDefinition> parts, PartQueryStateNode? previousNode, AtomicCompositionQueryState state) :
                 base(previousNode, state)
             {
                 _parts = parts;

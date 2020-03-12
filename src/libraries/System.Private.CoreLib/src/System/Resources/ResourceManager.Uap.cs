@@ -6,6 +6,7 @@ using System.IO;
 using System.Globalization;
 using System.Reflection;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Internal.Resources;
 
 namespace System.Resources
@@ -57,6 +58,10 @@ namespace System.Resources
         // Since we can't directly reference System.Runtime.WindowsRuntime from System.Private.CoreLib, we have to get the type via reflection.
         // It would be better if we could just implement WindowsRuntimeResourceManager in System.Private.CoreLib, but we can't, because
         // we can do very little with WinRT in System.Private.CoreLib.
+        // The attribute is necessary because linker can't add new assemblies to the closure when recognizing Type.GetType
+        // so even though the GetType call below is analyzable, the PreserveDependency is still necessary to actually include
+        // the assembly in the trimmed closure.
+        [PreserveDependency(".ctor()", "System.Resources.WindowsRuntimeResourceManager", "System.Runtime.WindowsRuntime")]
         internal static WindowsRuntimeResourceManagerBase GetWinRTResourceManager()
         {
             Type WinRTResourceManagerType = Type.GetType("System.Resources.WindowsRuntimeResourceManager, System.Runtime.WindowsRuntime", throwOnError: true)!;

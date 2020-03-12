@@ -27,11 +27,11 @@ namespace System.Reflection
         {
             Debug.Assert(refName != null);
 
-            RoAssembly assembly = TryResolveAssembly(refName, out Exception e);
-            return assembly ?? throw e;
+            RoAssembly? assembly = TryResolveAssembly(refName, out Exception? e);
+            return assembly ?? throw e!;
         }
 
-        internal RoAssembly TryResolveAssembly(RoAssemblyName refName, out Exception e)
+        internal RoAssembly? TryResolveAssembly(RoAssemblyName refName, out Exception? e)
         {
             e = null;
 
@@ -48,7 +48,7 @@ namespace System.Reflection
         {
             Debug.Assert(refName != null);
 
-            if (_binds.TryGetValue(refName, out RoAssembly prior))
+            if (_binds.TryGetValue(refName, out RoAssembly? prior))
                 return prior;
 
             RoAssembly assembly = TryFindAssemblyByCallingResolveHandler(refName);
@@ -59,7 +59,7 @@ namespace System.Reflection
         {
             Debug.Assert(refName != null);
 
-            Assembly assembly = resolver?.Resolve(this, refName.ToAssemblyName());
+            Assembly? assembly = resolver?.Resolve(this, refName.ToAssemblyName());
 
             if (assembly == null)
                 return new RoExceptionAssembly(new FileNotFoundException(SR.Format(SR.FileNotFoundAssembly, refName.FullName)));

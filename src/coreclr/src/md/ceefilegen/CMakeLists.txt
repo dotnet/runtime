@@ -21,9 +21,9 @@ set(CEEFILEGEN_HEADERS
     ../../inc/utilcode.h
 )
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND CEEFILEGEN_SOURCES ${CEEFILEGEN_HEADERS})
-endif (WIN32)
+endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library_clr(ceefgen
     STATIC

@@ -9,14 +9,14 @@ namespace System.Linq
 {
     public abstract class EnumerableExecutor
     {
-        internal abstract object ExecuteBoxed();
+        internal abstract object? ExecuteBoxed();
 
         internal EnumerableExecutor() { }
 
         internal static EnumerableExecutor Create(Expression expression)
         {
             Type execType = typeof(EnumerableExecutor<>).MakeGenericType(expression.Type);
-            return (EnumerableExecutor)Activator.CreateInstance(execType, expression);
+            return (EnumerableExecutor)Activator.CreateInstance(execType, expression)!;
         }
     }
 
@@ -29,13 +29,13 @@ namespace System.Linq
             _expression = expression;
         }
 
-        internal override object ExecuteBoxed() => Execute();
+        internal override object? ExecuteBoxed() => Execute();
 
         internal T Execute()
         {
             EnumerableRewriter rewriter = new EnumerableRewriter();
             Expression body = rewriter.Visit(_expression);
-            Expression<Func<T>> f = Expression.Lambda<Func<T>>(body, (IEnumerable<ParameterExpression>)null);
+            Expression<Func<T>> f = Expression.Lambda<Func<T>>(body, (IEnumerable<ParameterExpression>?)null);
             Func<T> func = f.Compile();
             return func();
         }

@@ -62,7 +62,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        internal static Type AdjustSpecifiedTypeIdentityType(this Type specifiedContractType, Type memberType)
+        internal static Type AdjustSpecifiedTypeIdentityType(this Type specifiedContractType, Type? memberType)
         {
             if (specifiedContractType == null)
             {
@@ -102,7 +102,7 @@ namespace System.ComponentModel.Composition.Hosting
             return GenericServices.GetGenericName(originalTypeIdentity, GenericServices.GetGenericParametersOrder(typeIdentityType), GenericServices.GetPureGenericArity(typeIdentityType));
         }
 
-        internal static void GetContractInfoFromExport(this MemberInfo member, ExportAttribute export, out Type typeIdentityType, out string contractName)
+        internal static void GetContractInfoFromExport(this MemberInfo member, ExportAttribute export, out Type? typeIdentityType, out string contractName)
         {
             typeIdentityType = member.GetTypeIdentityTypeFromExport(export);
             if (!string.IsNullOrEmpty(export.ContractName))
@@ -115,7 +115,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        internal static string GetTypeIdentityFromExport(this MemberInfo member, Type typeIdentityType)
+        internal static string GetTypeIdentityFromExport(this MemberInfo member, Type? typeIdentityType)
         {
             if (typeIdentityType != null)
             {
@@ -128,7 +128,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
             else
             {
-                MethodInfo method = member as MethodInfo;
+                MethodInfo? method = member as MethodInfo;
                 if (method == null)
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
@@ -137,7 +137,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private static Type GetTypeIdentityTypeFromExport(this MemberInfo member, ExportAttribute export)
+        private static Type? GetTypeIdentityTypeFromExport(this MemberInfo member, ExportAttribute export)
         {
             if (export.ContractType != null)
             {
@@ -176,7 +176,7 @@ namespace System.ComponentModel.Composition.Hosting
             return AttributedModelServices.GetContractName(contractType);
         }
 
-        internal static string GetTypeIdentityFromImport(this IAttributedImport import, ImportType importType)
+        internal static string? GetTypeIdentityFromImport(this IAttributedImport import, ImportType importType)
         {
             Type contractType = import.GetContractTypeFromImport(importType);
 
@@ -189,9 +189,9 @@ namespace System.ComponentModel.Composition.Hosting
             return AttributedModelServices.GetTypeIdentity(contractType);
         }
 
-        internal static IDictionary<string, object> GetPartMetadataForType(this Type type, CreationPolicy creationPolicy)
+        internal static IDictionary<string, object?> GetPartMetadataForType(this Type type, CreationPolicy creationPolicy)
         {
-            IDictionary<string, object> dictionary = new Dictionary<string, object>(StringComparers.MetadataKeyNames);
+            IDictionary<string, object?> dictionary = new Dictionary<string, object?>(StringComparers.MetadataKeyNames);
 
             if (creationPolicy != CreationPolicy.Any)
             {
@@ -222,13 +222,13 @@ namespace System.ComponentModel.Composition.Hosting
 
                 // add constraints
                 bool hasConstraints = false;
-                object[] genericParameterConstraints = new object[genericArguments.Length];
+                object?[] genericParameterConstraints = new object?[genericArguments.Length];
                 GenericParameterAttributes[] genericParameterAttributes = new GenericParameterAttributes[genericArguments.Length];
                 for (int i = 0; i < genericArguments.Length; i++)
                 {
                     Type genericArgument = genericArguments[i];
 
-                    Type[] constraints = genericArgument.GetGenericParameterConstraints();
+                    Type[]? constraints = genericArgument.GetGenericParameterConstraints();
                     if (constraints.Length == 0)
                     {
                         constraints = null;
@@ -261,9 +261,9 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        internal static void TryExportMetadataForMember(this MemberInfo member, out IDictionary<string, object> dictionary)
+        internal static void TryExportMetadataForMember(this MemberInfo member, out IDictionary<string, object?> dictionary)
         {
-            dictionary = new Dictionary<string, object>();
+            dictionary = new Dictionary<string, object?>();
 
             foreach (var attr in member.GetAttributes<Attribute>())
             {
@@ -290,7 +290,7 @@ namespace System.ComponentModel.Composition.Hosting
                     if ((attrType != CompositionServices.ExportAttributeType) && attrType.IsAttributeDefined<MetadataAttributeAttribute>(true))
                     {
                         bool allowsMultiple = false;
-                        AttributeUsageAttribute usage = attrType.GetFirstAttribute<AttributeUsageAttribute>(true);
+                        AttributeUsageAttribute? usage = attrType.GetFirstAttribute<AttributeUsageAttribute>(true);
 
                         if (usage != null)
                         {
@@ -307,10 +307,10 @@ namespace System.ComponentModel.Composition.Hosting
 
                             if (reservedMetadataNames.Contains(pi.Name, StringComparers.MetadataKeyNames))
                             {
-                                throw ExceptionBuilder.CreateDiscoveryException(SR.Discovery_ReservedMetadataNameUsed, member.GetDisplayName(), provider.Name);
+                                throw ExceptionBuilder.CreateDiscoveryException(SR.Discovery_ReservedMetadataNameUsed, pi.GetDisplayName(), pi.Name);
                             }
 
-                            object value = pi.GetValue(attr, null);
+                            object? value = pi.GetValue(attr, null);
 
                             if (value != null && !IsValidAttributeType(value.GetType()))
                             {
@@ -339,10 +339,9 @@ namespace System.ComponentModel.Composition.Hosting
             return;
         }
 
-        private static bool TryContributeMetadataValue(this IDictionary<string, object> dictionary, string name, object value, Type valueType, bool allowsMultiple)
+        private static bool TryContributeMetadataValue(this IDictionary<string, object?> dictionary, string name, object? value, Type? valueType, bool allowsMultiple)
         {
-            object metadataValue;
-            if (!dictionary.TryGetValue(name, out metadataValue))
+            if (!dictionary.TryGetValue(name, out object? metadataValue))
             {
                 if (allowsMultiple)
                 {
@@ -371,13 +370,13 @@ namespace System.ComponentModel.Composition.Hosting
 
         private class MetadataList
         {
-            private Type _arrayType = null;
+            private Type? _arrayType = null;
             private bool _containsNulls = false;
             private static readonly Type ObjectType = typeof(object);
             private static readonly Type TypeType = typeof(Type);
-            private readonly Collection<object> _innerList = new Collection<object>();
+            private readonly Collection<object?> _innerList = new Collection<object?>();
 
-            public void Add(object item, Type itemType)
+            public void Add(object? item, Type? itemType)
             {
                 _containsNulls |= (item == null);
 
@@ -477,7 +476,7 @@ namespace System.ComponentModel.Composition.Hosting
         //    return result;
         //}
 
-        internal static IEnumerable<KeyValuePair<string, Type>> GetRequiredMetadata(Type metadataViewType)
+        internal static IEnumerable<KeyValuePair<string, Type>> GetRequiredMetadata(Type? metadataViewType)
         {
             if ((metadataViewType == null) ||
                 ExportServices.IsDefaultMetadataViewType(metadataViewType) ||
@@ -498,19 +497,19 @@ namespace System.ComponentModel.Composition.Hosting
             return properties.Select(property => new KeyValuePair<string, Type>(property.Name, property.PropertyType));
         }
 
-        internal static IDictionary<string, object> GetImportMetadata(ImportType importType, IAttributedImport attributedImport)
+        internal static IDictionary<string, object?> GetImportMetadata(ImportType importType, IAttributedImport attributedImport)
         {
             return GetImportMetadata(importType.ContractType, attributedImport);
         }
 
-        internal static IDictionary<string, object> GetImportMetadata(Type type, IAttributedImport attributedImport)
+        internal static IDictionary<string, object?> GetImportMetadata(Type type, IAttributedImport? attributedImport)
         {
-            Dictionary<string, object> metadata = null;
+            Dictionary<string, object?>? metadata = null;
 
             //Prior to V4.5 MEF did not support ImportMetadata
             if (type.IsGenericType)
             {
-                metadata = new Dictionary<string, object>();
+                metadata = new Dictionary<string, object?>();
 
                 if (type.ContainsGenericParameters)
                 {
@@ -528,7 +527,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 if (metadata == null)
                 {
-                    metadata = new Dictionary<string, object>();
+                    metadata = new Dictionary<string, object?>();
                 }
                 metadata[CompositionConstants.ImportSourceMetadataName] = attributedImport.Source;
             }
@@ -543,7 +542,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        internal static object GetExportedValueFromComposedPart(ImportEngine engine, ComposablePart part, ExportDefinition definition)
+        internal static object? GetExportedValueFromComposedPart(ImportEngine? engine, ComposablePart part, ExportDefinition definition)
         {
             if (engine != null)
             {
@@ -585,7 +584,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        internal static CompositionResult TryFire<TEventArgs>(EventHandler<TEventArgs> _delegate, object sender, TEventArgs e)
+        internal static CompositionResult TryFire<TEventArgs>(EventHandler<TEventArgs> _delegate, object? sender, TEventArgs e)
             where TEventArgs : EventArgs
         {
             CompositionResult result = CompositionResult.SucceededResult;
@@ -606,9 +605,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static CreationPolicy GetRequiredCreationPolicy(this ImportDefinition definition)
         {
-            ContractBasedImportDefinition contractDefinition = definition as ContractBasedImportDefinition;
-
-            if (contractDefinition != null)
+            if (definition is ContractBasedImportDefinition contractDefinition)
             {
                 return contractDefinition.RequiredCreationPolicy;
             }
@@ -665,7 +662,7 @@ namespace System.ComponentModel.Composition.Hosting
             // Single-dimensional arrays of the above types.
             if (arrayAllowed && type.IsArray &&
                 type.GetArrayRank() == 1 &&
-                IsValidAttributeType(type.GetElementType(), false))
+                IsValidAttributeType(type.GetElementType()!, false))
             {
                 return true;
             }

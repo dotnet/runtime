@@ -125,8 +125,7 @@ namespace System
                 else
                 {
                     // Classic managed type
-                    assembly = RuntimeAssembly.InternalLoadAssemblyName(
-                        assemblyName, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
+                    assembly = RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
                 }
             }
 

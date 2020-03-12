@@ -180,7 +180,7 @@ inline CHECK CheckAligned(UINT value, UINT alignment)
     CHECK_OK;
 }
 
-#ifndef PLATFORM_UNIX
+#ifndef HOST_UNIX
 // For Unix this and the previous function get the same types.
 // So, exclude this one.
 inline CHECK CheckAligned(ULONG value, UINT alignment)
@@ -189,7 +189,7 @@ inline CHECK CheckAligned(ULONG value, UINT alignment)
     CHECK(AlignmentTrim(value, alignment) == 0);
     CHECK_OK;
 }
-#endif // PLATFORM_UNIX
+#endif // HOST_UNIX
 
 inline CHECK CheckAligned(UINT64 value, UINT alignment)
 {
@@ -270,7 +270,7 @@ inline CHECK CheckUnderflow(UINT value1, UINT value2)
     CHECK_OK;
 }
 
-#ifndef PLATFORM_UNIX
+#ifndef HOST_UNIX
 // For Unix this and the previous function get the same types.
 // So, exclude this one.
 inline CHECK CheckUnderflow(ULONG value1, ULONG value2)
@@ -279,7 +279,7 @@ inline CHECK CheckUnderflow(ULONG value1, ULONG value2)
 
     CHECK_OK;
 }
-#endif // PLATFORM_UNIX
+#endif // HOST_UNIX
 
 inline CHECK CheckUnderflow(UINT64 value1, UINT64 value2)
 {

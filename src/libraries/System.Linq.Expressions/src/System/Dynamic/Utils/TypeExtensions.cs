@@ -16,10 +16,10 @@ namespace System.Dynamic.Utils
         /// Returns the matching method if the parameter types are reference
         /// assignable from the provided type arguments, otherwise null.
         /// </summary>
-        public static MethodInfo GetAnyStaticMethodValidated(this Type type, string name, Type[] types)
+        public static MethodInfo? GetAnyStaticMethodValidated(this Type type, string name, Type[] types)
         {
             Debug.Assert(types != null);
-            MethodInfo method = type.GetMethod(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly, null, types, null);
+            MethodInfo? method = type.GetMethod(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly, null, types, null);
             return method.MatchesArgumentTypes(types) ? method : null;
         }
 
@@ -32,7 +32,7 @@ namespace System.Dynamic.Utils
         /// returns a method with two double parameters, which doesn't match the provided
         /// argument types.
         /// </summary>
-        private static bool MatchesArgumentTypes(this MethodInfo mi, Type[] argTypes)
+        private static bool MatchesArgumentTypes(this MethodInfo? mi, Type[] argTypes)
         {
             Debug.Assert(argTypes != null);
 
@@ -59,13 +59,13 @@ namespace System.Dynamic.Utils
             return true;
         }
 
-        public static Type GetReturnType(this MethodBase mi) => mi.IsConstructor ? mi.DeclaringType : ((MethodInfo)mi).ReturnType;
+        public static Type GetReturnType(this MethodBase mi) => mi.IsConstructor ? mi.DeclaringType! : ((MethodInfo)mi).ReturnType;
 
         public static TypeCode GetTypeCode(this Type type) => Type.GetTypeCode(type);
         internal static ParameterInfo[] GetParametersCached(this MethodBase method)
         {
             CacheDict<MethodBase, ParameterInfo[]> pic = s_paramInfoCache;
-            if (!pic.TryGetValue(method, out ParameterInfo[] pis))
+            if (!pic.TryGetValue(method, out ParameterInfo[]? pis))
             {
                 pis = method.GetParameters();
                 if (method.DeclaringType?.IsCollectible == false)

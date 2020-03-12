@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs.Asn1;
@@ -13,7 +14,7 @@ namespace System.Security.Cryptography.Pkcs
 {
     public sealed class Rfc3161TimestampRequest
     {
-        private byte[] _encodedBytes;
+        private byte[] _encodedBytes = null!; // Initided using object initializer
         private Rfc3161TimeStampReq _parsedData;
 
         private Rfc3161TimestampRequest()
@@ -23,7 +24,7 @@ namespace System.Security.Cryptography.Pkcs
         public int Version => _parsedData.Version;
         public ReadOnlyMemory<byte> GetMessageHash() => _parsedData.MessageImprint.HashedMessage;
         public Oid HashAlgorithmId => _parsedData.MessageImprint.HashAlgorithm.Algorithm;
-        public Oid RequestedPolicyId => _parsedData.ReqPolicy;
+        public Oid? RequestedPolicyId => _parsedData.ReqPolicy;
         public bool RequestSignerCertificate => _parsedData.CertReq;
         public ReadOnlyMemory<byte>? GetNonce() => _parsedData.Nonce;
         public bool HasExtensions => _parsedData.Extensions?.Length > 0;
@@ -57,10 +58,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Rfc3161TimestampToken ProcessResponse(ReadOnlyMemory<byte> source, out int bytesConsumed)
         {
-            Rfc3161RequestResponseStatus status;
-            Rfc3161TimestampToken token;
-
-            if (ProcessResponse(source, out token, out status, out int localBytesRead, shouldThrow: true))
+            if (ProcessResponse(source, out Rfc3161TimestampToken? token, out Rfc3161RequestResponseStatus status, out int localBytesRead, shouldThrow: true))
             {
                 Debug.Assert(status == Rfc3161RequestResponseStatus.Accepted);
                 bytesConsumed = localBytesRead;
@@ -73,7 +71,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private bool ProcessResponse(
             ReadOnlyMemory<byte> source,
-            out Rfc3161TimestampToken token,
+            [NotNullWhen(true)] out Rfc3161TimestampToken? token,
             out Rfc3161RequestResponseStatus status,
             out int bytesConsumed,
             bool shouldThrow)
@@ -85,10 +83,10 @@ namespace System.Security.Cryptography.Pkcs
 
             try
             {
-                AsnReader reader = new AsnReader(source, AsnEncodingRules.DER);
+                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.DER);
                 int localBytesRead = reader.PeekEncodedValue().Length;
 
-                Rfc3161TimeStampResp.Decode(reader, out resp);
+                Rfc3161TimeStampResp.Decode(ref reader, source, out resp);
                 bytesConsumed = localBytesRead;
             }
             catch (CryptographicException) when (!shouldThrow)
@@ -155,10 +153,10 @@ namespace System.Security.Cryptography.Pkcs
         public static Rfc3161TimestampRequest CreateFromSignerInfo(
             SignerInfo signerInfo,
             HashAlgorithmName hashAlgorithm,
-            Oid requestedPolicyId = null,
+            Oid? requestedPolicyId = null,
             ReadOnlyMemory<byte>? nonce = null,
             bool requestSignerCertificates = false,
-            X509ExtensionCollection extensions = null)
+            X509ExtensionCollection? extensions = null)
         {
             if (signerInfo == null)
             {
@@ -182,10 +180,10 @@ namespace System.Security.Cryptography.Pkcs
         public static Rfc3161TimestampRequest CreateFromData(
             ReadOnlySpan<byte> data,
             HashAlgorithmName hashAlgorithm,
-            Oid requestedPolicyId = null,
+            Oid? requestedPolicyId = null,
             ReadOnlyMemory<byte>? nonce = null,
             bool requestSignerCertificates = false,
-            X509ExtensionCollection extensions = null)
+            X509ExtensionCollection? extensions = null)
         {
             using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
             {
@@ -205,10 +203,10 @@ namespace System.Security.Cryptography.Pkcs
         public static Rfc3161TimestampRequest CreateFromHash(
             ReadOnlyMemory<byte> hash,
             HashAlgorithmName hashAlgorithm,
-            Oid requestedPolicyId = null,
+            Oid? requestedPolicyId = null,
             ReadOnlyMemory<byte>? nonce = null,
             bool requestSignerCertificates = false,
-            X509ExtensionCollection extensions = null)
+            X509ExtensionCollection? extensions = null)
         {
             string oidStr = PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithm);
 
@@ -249,10 +247,10 @@ namespace System.Security.Cryptography.Pkcs
         public static Rfc3161TimestampRequest CreateFromHash(
             ReadOnlyMemory<byte> hash,
             Oid hashAlgorithmId,
-            Oid requestedPolicyId = null,
+            Oid? requestedPolicyId = null,
             ReadOnlyMemory<byte>? nonce = null,
             bool requestSignerCertificates = false,
-            X509ExtensionCollection extensions = null)
+            X509ExtensionCollection? extensions = null)
         {
             // Normalize the nonce:
             if (nonce.HasValue)
@@ -333,7 +331,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public static bool TryDecode(
             ReadOnlyMemory<byte> encodedBytes,
-            out Rfc3161TimestampRequest request,
+            [NotNullWhen(true)] out Rfc3161TimestampRequest? request,
             out int bytesConsumed)
         {
             try
@@ -346,10 +344,10 @@ namespace System.Security.Cryptography.Pkcs
                 // Since nothing says BER, assume DER only.
                 const AsnEncodingRules RuleSet = AsnEncodingRules.DER;
 
-                AsnReader reader = new AsnReader(encodedBytes, RuleSet);
-                ReadOnlyMemory<byte> firstElement = reader.PeekEncodedValue();
+                AsnValueReader reader = new AsnValueReader(encodedBytes.Span, RuleSet);
+                ReadOnlySpan<byte> firstElement = reader.PeekEncodedValue();
 
-                Rfc3161TimeStampReq.Decode(reader, out Rfc3161TimeStampReq req);
+                Rfc3161TimeStampReq.Decode(ref reader, encodedBytes, out Rfc3161TimeStampReq req);
 
                 request = new Rfc3161TimestampRequest
                 {

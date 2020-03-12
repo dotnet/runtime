@@ -15,7 +15,7 @@ namespace System
     {
         private const int StackallocIntBufferSizeLimit = 128;
 
-        private static unsafe void FillStringChecked(string dest, int destPos, string src)
+        private static void FillStringChecked(string dest, int destPos, string src)
         {
             Debug.Assert(dest != null);
             Debug.Assert(src != null);
@@ -24,11 +24,10 @@ namespace System
                 throw new IndexOutOfRangeException();
             }
 
-            fixed (char* pDest = &dest._firstChar)
-            fixed (char* pSrc = &src._firstChar)
-            {
-                wstrcpy(pDest + destPos, pSrc, src.Length);
-            }
+            Buffer.Memmove(
+                destination: ref Unsafe.Add(ref dest._firstChar, destPos),
+                source: ref src._firstChar,
+                elementCount: (uint)src.Length);
         }
 
         public static string Concat(object? arg0) => arg0?.ToString() ?? string.Empty;
@@ -1021,7 +1020,11 @@ namespace System
             do
             {
                 index = ci.IndexOf(this, oldValue, startIndex, this.Length - startIndex, options, &matchLength);
-                if (index >= 0)
+
+                // There's the possibility that 'oldValue' has zero collation weight (empty string equivalent).
+                // If this is the case, we behave as if there are no more substitutions to be made.
+
+                if (index >= 0 && matchLength > 0)
                 {
                     // append the unmodified portion of string
                     result.Append(this.AsSpan(startIndex, index - startIndex));
@@ -1661,18 +1664,17 @@ namespace System
             return InternalSubString(startIndex, length);
         }
 
-        private unsafe string InternalSubString(int startIndex, int length)
+        private string InternalSubString(int startIndex, int length)
         {
             Debug.Assert(startIndex >= 0 && startIndex <= this.Length, "StartIndex is out of range!");
             Debug.Assert(length >= 0 && startIndex <= this.Length - length, "length is out of range!");
 
             string result = FastAllocateString(length);
 
-            fixed (char* dest = &result._firstChar)
-            fixed (char* src = &_firstChar)
-            {
-                wstrcpy(dest, src + startIndex, length);
-            }
+            Buffer.Memmove(
+                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                destination: ref result._firstChar,
+                source: ref Unsafe.Add(ref _firstChar, startIndex));
 
             return result;
         }
@@ -1690,7 +1692,7 @@ namespace System
         // Creates a copy of this string in lower case based on invariant culture.
         public string ToLowerInvariant()
         {
-            return CultureInfo.InvariantCulture.TextInfo.ToLower(this);
+            return TextInfo.Invariant.ToLower(this);
         }
 
         public string ToUpper() => ToUpper(null);
@@ -1705,7 +1707,7 @@ namespace System
         // Creates a copy of this string in upper case based on invariant culture.
         public string ToUpperInvariant()
         {
-            return CultureInfo.InvariantCulture.TextInfo.ToUpper(this);
+            return TextInfo.Invariant.ToUpper(this);
         }
 
         // Trims the whitespace from both ends of the string.  Whitespace is defined by

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace Microsoft.Win32.SafeHandles
@@ -10,7 +10,6 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeProcessHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
         public SafeProcessHandle(System.IntPtr existingHandle, bool ownsHandle) : base (default(bool)) { }
-        public override bool IsInvalid { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
     }
 }
@@ -19,7 +18,7 @@ namespace System.Diagnostics
     public partial class DataReceivedEventArgs : System.EventArgs
     {
         internal DataReceivedEventArgs() { }
-        public string Data { get { throw null; } }
+        public string? Data { get { throw null; } }
     }
     public delegate void DataReceivedEventHandler(object sender, System.Diagnostics.DataReceivedEventArgs e);
     [System.AttributeUsageAttribute(System.AttributeTargets.All)]
@@ -28,7 +27,7 @@ namespace System.Diagnostics
         public MonitoringDescriptionAttribute(string description) { }
         public override string Description { get { throw null; } }
     }
-    public partial class Process : System.ComponentModel.Component
+    public partial class Process : System.ComponentModel.Component, System.IDisposable
     {
         public Process() { }
         public int BasePriority { get { throw null; } }
@@ -40,7 +39,7 @@ namespace System.Diagnostics
         public bool HasExited { get { throw null; } }
         public int Id { get { throw null; } }
         public string MachineName { get { throw null; } }
-        public System.Diagnostics.ProcessModule MainModule { get { throw null; } }
+        public System.Diagnostics.ProcessModule? MainModule { get { throw null; } }
         public System.IntPtr MainWindowHandle { get { throw null; } }
         public string MainWindowTitle { get { throw null; } }
         public System.IntPtr MaxWorkingSet { get { throw null; } set { } }
@@ -80,7 +79,7 @@ namespace System.Diagnostics
         public System.IO.StreamReader StandardOutput { get { throw null; } }
         public System.Diagnostics.ProcessStartInfo StartInfo { get { throw null; } set { } }
         public System.DateTime StartTime { get { throw null; } }
-        public System.ComponentModel.ISynchronizeInvoke SynchronizingObject { get { throw null; } set { } }
+        public System.ComponentModel.ISynchronizeInvoke? SynchronizingObject { get { throw null; } set { } }
         public System.Diagnostics.ProcessThreadCollection Threads { get { throw null; } }
         public System.TimeSpan TotalProcessorTime { get { throw null; } }
         public System.TimeSpan UserProcessorTime { get { throw null; } }
@@ -90,9 +89,9 @@ namespace System.Diagnostics
         [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.WorkingSet64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int WorkingSet { get { throw null; } }
         public long WorkingSet64 { get { throw null; } }
-        public event System.Diagnostics.DataReceivedEventHandler ErrorDataReceived { add { } remove { } }
+        public event System.Diagnostics.DataReceivedEventHandler? ErrorDataReceived { add { } remove { } }
         public event System.EventHandler Exited { add { } remove { } }
-        public event System.Diagnostics.DataReceivedEventHandler OutputDataReceived { add { } remove { } }
+        public event System.Diagnostics.DataReceivedEventHandler? OutputDataReceived { add { } remove { } }
         public void BeginErrorReadLine() { }
         public void BeginOutputReadLine() { }
         public void CancelErrorRead() { }
@@ -106,15 +105,15 @@ namespace System.Diagnostics
         public static System.Diagnostics.Process GetProcessById(int processId, string machineName) { throw null; }
         public static System.Diagnostics.Process[] GetProcesses() { throw null; }
         public static System.Diagnostics.Process[] GetProcesses(string machineName) { throw null; }
-        public static System.Diagnostics.Process[] GetProcessesByName(string processName) { throw null; }
-        public static System.Diagnostics.Process[] GetProcessesByName(string processName, string machineName) { throw null; }
+        public static System.Diagnostics.Process[] GetProcessesByName(string? processName) { throw null; }
+        public static System.Diagnostics.Process[] GetProcessesByName(string? processName, string machineName) { throw null; }
         public void Kill() { }
         public void Kill(bool entireProcessTree) { }
         public static void LeaveDebugMode() { }
         protected void OnExited() { }
         public void Refresh() { }
         public bool Start() { throw null; }
-        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo) { throw null; }
+        public static System.Diagnostics.Process? Start(System.Diagnostics.ProcessStartInfo startInfo) { throw null; }
         public static System.Diagnostics.Process Start(string fileName) { throw null; }
         public static System.Diagnostics.Process Start(string fileName, string arguments) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -124,6 +123,7 @@ namespace System.Diagnostics
         public override string ToString() { throw null; }
         public void WaitForExit() { }
         public bool WaitForExit(int milliseconds) { throw null; }
+        public System.Threading.Tasks.Task WaitForExitAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public bool WaitForInputIdle() { throw null; }
         public bool WaitForInputIdle(int milliseconds) { throw null; }
     }
@@ -132,10 +132,10 @@ namespace System.Diagnostics
         internal ProcessModule() { }
         public System.IntPtr BaseAddress { get { throw null; } }
         public System.IntPtr EntryPointAddress { get { throw null; } }
-        public string FileName { get { throw null; } }
+        public string? FileName { get { throw null; } }
         public System.Diagnostics.FileVersionInfo FileVersionInfo { get { throw null; } }
         public int ModuleMemorySize { get { throw null; } }
-        public string ModuleName { get { throw null; } }
+        public string? ModuleName { get { throw null; } }
         public override string ToString() { throw null; }
     }
     public partial class ProcessModuleCollection : System.Collections.ReadOnlyCollectionBase
@@ -165,21 +165,21 @@ namespace System.Diagnostics
         public string Arguments { get { throw null; } set { } }
         public bool CreateNoWindow { get { throw null; } set { } }
         public string Domain { get { throw null; } set { } }
-        public System.Collections.Generic.IDictionary<string, string> Environment { get { throw null; } }
+        public System.Collections.Generic.IDictionary<string, string?> Environment { get { throw null; } }
         public System.Collections.Specialized.StringDictionary EnvironmentVariables { get { throw null; } }
         public bool ErrorDialog { get { throw null; } set { } }
         public System.IntPtr ErrorDialogParentHandle { get { throw null; } set { } }
         public string FileName { get { throw null; } set { } }
         public bool LoadUserProfile { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
-        public System.Security.SecureString Password { get { throw null; } set { } }
-        public string PasswordInClearText { get { throw null; } set { } }
+        public System.Security.SecureString? Password { get { throw null; } set { } }
+        public string? PasswordInClearText { get { throw null; } set { } }
         public bool RedirectStandardError { get { throw null; } set { } }
         public bool RedirectStandardInput { get { throw null; } set { } }
         public bool RedirectStandardOutput { get { throw null; } set { } }
-        public System.Text.Encoding StandardErrorEncoding { get { throw null; } set { } }
-        public System.Text.Encoding StandardInputEncoding { get { throw null; } set { } }
-        public System.Text.Encoding StandardOutputEncoding { get { throw null; } set { } }
+        public System.Text.Encoding? StandardErrorEncoding { get { throw null; } set { } }
+        public System.Text.Encoding? StandardInputEncoding { get { throw null; } set { } }
+        public System.Text.Encoding? StandardOutputEncoding { get { throw null; } set { } }
         public string UserName { get { throw null; } set { } }
         public bool UseShellExecute { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]

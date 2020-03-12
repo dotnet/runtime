@@ -41,6 +41,7 @@
 #include "corcompile.h"
 
 #include "readytorun.h"
+typedef DPTR(struct READYTORUN_CORE_HEADER) PTR_READYTORUN_CORE_HEADER;
 typedef DPTR(struct READYTORUN_HEADER) PTR_READYTORUN_HEADER;
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
@@ -73,13 +74,13 @@ inline CHECK CheckOverflow(RVA value1, COUNT_T value2)
 // IMAGE_FILE_MACHINE_NATIVE
 // --------------------------------------------------------------------------------
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 #define IMAGE_FILE_MACHINE_NATIVE   IMAGE_FILE_MACHINE_I386
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
 #define IMAGE_FILE_MACHINE_NATIVE   IMAGE_FILE_MACHINE_AMD64
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 #define IMAGE_FILE_MACHINE_NATIVE   IMAGE_FILE_MACHINE_ARMNT
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 #define IMAGE_FILE_MACHINE_NATIVE   IMAGE_FILE_MACHINE_ARM64
 #else
 #error "port me"
@@ -338,6 +339,7 @@ class PEDecoder
     TADDR GetVirtualSectionsTable(COUNT_T *pSize = NULL) const;
 #endif // FEATURE_PREJIT
 
+    BOOL IsComponentAssembly() const;
     BOOL HasReadyToRunHeader() const;
     READYTORUN_HEADER *GetReadyToRunHeader() const;
 
@@ -348,6 +350,9 @@ class PEDecoder
     // Native DLLMain Entrypoint
     BOOL HasNativeEntryPoint() const;
     void *GetNativeEntryPoint() const;
+
+    // Look up a named symbol in the export directory
+    void *GetExport(LPCSTR exportName) const;
 
 #ifdef _DEBUG
     // Stress mode for relocations

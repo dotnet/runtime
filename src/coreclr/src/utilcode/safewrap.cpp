@@ -180,7 +180,7 @@ DWORD ClrReportEvent(
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     HANDLE h = ::RegisterEventSourceW(
         NULL, // uses local computer
         pEventSource);
@@ -215,10 +215,10 @@ DWORD ClrReportEvent(
     ::DeregisterEventSource(h);
 
     return (ret == TRUE)?ERROR_SUCCESS:dwRetStatus;
-#else // FEATURE_PAL
+#else // TARGET_UNIX
     // UNIXTODO: Report the event somewhere?
     return ERROR_SUCCESS;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 }
 
 // Returns ERROR_SUCCESS if succeessful in reporting to event log, or
@@ -234,7 +234,7 @@ DWORD ClrReportEvent(
     return ClrReportEvent(pEventSource, wType, wCategory, dwEventID, lpUserSid, 1, &pMessage);
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // Read a REG_SZ (null-terminated string) value from the registry.  Throws.
 //
 // Arguments:
@@ -334,4 +334,4 @@ void ClrRegReadString(HKEY hKey, const SString & szValueName, SString & value)
     COUNT_T numCharsNoNull = numCharsIncludingNull - 1;
     value.CloseBuffer(numCharsNoNull);
 }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX

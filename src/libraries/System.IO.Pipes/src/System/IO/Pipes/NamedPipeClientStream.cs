@@ -20,7 +20,7 @@ namespace System.IO.Pipes
         // Maximum interval in milliseconds between which cancellation is checked.
         // Used by ConnectInternal. 50ms is fairly responsive time but really long time for processor.
         private const int CancellationCheckInterval = 50;
-        private readonly string _normalizedPipePath;
+        private readonly string? _normalizedPipePath;
         private readonly TokenImpersonationLevel _impersonationLevel;
         private readonly PipeOptions _pipeOptions;
         private readonly HandleInheritability _inheritability;

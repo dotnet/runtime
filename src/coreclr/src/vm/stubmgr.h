@@ -227,7 +227,7 @@ class StubManager
     static BOOL TraceStub(PCODE stubAddress, TraceDestination *trace);
 
     // if 'trace' indicates TRACE_STUB, keep calling TraceStub on 'trace', until you get out of all stubs
-    // returns true if successfull
+    // returns true if successful
     static BOOL FollowTrace(TraceDestination *trace);
 
 #ifdef DACCESS_COMPILE
@@ -887,13 +887,13 @@ class StubManagerHelpers
 public:
     static PCODE GetReturnAddress(T_CONTEXT * pContext)
     {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         return *dac_cast<PTR_PCODE>(pContext->Esp);
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
         return *dac_cast<PTR_PCODE>(pContext->Rsp);
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
         return pContext->Lr;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         return pContext->Lr;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetReturnAddress");
@@ -903,17 +903,17 @@ public:
 
     static PTR_Object GetThisPtr(T_CONTEXT * pContext)
     {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         return dac_cast<PTR_Object>(pContext->Ecx);
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
         return dac_cast<PTR_Object>(pContext->Rdi);
 #else
         return dac_cast<PTR_Object>(pContext->Rcx);
 #endif
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
         return dac_cast<PTR_Object>((TADDR)pContext->R0);
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         return dac_cast<PTR_Object>(pContext->X0);
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetThisPtr");
@@ -923,13 +923,13 @@ public:
 
     static PCODE GetTailCallTarget(T_CONTEXT * pContext)
     {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         return pContext->Eax;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
         return pContext->Rax;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
         return pContext->R12;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         return pContext->X12;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetTailCallTarget");
@@ -939,13 +939,13 @@ public:
 
     static TADDR GetHiddenArg(T_CONTEXT * pContext)
     {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         return pContext->Eax;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
         return pContext->R10;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
         return pContext->R12;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         return pContext->X12;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetHiddenArg");
@@ -966,17 +966,17 @@ public:
                 UserCode which invokes multicast delegate <---
               */
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         return *((PCODE *)pContext->Ebp + 1);
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
         T_CONTEXT context(*pContext);
         Thread::VirtualUnwindCallFrame(&context);
         Thread::VirtualUnwindCallFrame(&context);
 
         return context.Rip;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
         return *((PCODE *)((TADDR)pContext->R11) + 1);
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         return *((PCODE *)pContext->Fp + 1);
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetRetAddrFromMulticastILStubFrame");
@@ -987,17 +987,17 @@ public:
 
     static TADDR GetSecondArg(T_CONTEXT * pContext)
     {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         return pContext->Edx;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
         return pContext->Rsi;
 #else
         return pContext->Rdx;
 #endif
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
         return pContext->R1;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         return pContext->X1;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetSecondArg");

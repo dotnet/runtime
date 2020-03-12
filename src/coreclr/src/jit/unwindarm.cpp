@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#if defined(_TARGET_ARM_) && defined(_TARGET_UNIX_)
+#if defined(TARGET_ARM) && defined(TARGET_UNIX)
 short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
     short dwarfReg = DWARF_REG_ILLEGAL;
@@ -173,9 +173,9 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 
     return dwarfReg;
 }
-#endif // _TARGET_ARM_ && _TARGET_UNIX_
+#endif // TARGET_ARM && TARGET_UNIX
 
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -190,13 +190,13 @@ void Compiler::unwindBegProlog()
 {
     assert(compGeneratingProlog);
 
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
     if (generateCFIUnwindCodes())
     {
         unwindBegPrologCFI();
         return;
     }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
     FuncInfoDsc* func = funCurrentFunc();
 
@@ -222,12 +222,12 @@ void Compiler::unwindBegEpilog()
 {
     assert(compGeneratingEpilog);
 
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
     funCurrentFunc()->uwi.AddEpilog();
 }
@@ -237,7 +237,7 @@ void Compiler::unwindEndEpilog()
     assert(compGeneratingEpilog);
 }
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 
 void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
 {
@@ -368,7 +368,7 @@ void Compiler::unwindPushMaskInt(regMaskTP maskInt)
             ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 |
               RBM_R11 | RBM_R12 | RBM_LR)) == 0);
 
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
     if (generateCFIUnwindCodes())
     {
         // If we are pushing LR, we should give unwind codes in terms of caller's PC
@@ -379,7 +379,7 @@ void Compiler::unwindPushMaskInt(regMaskTP maskInt)
         unwindPushPopMaskCFI(maskInt, false);
         return;
     }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
     bool useOpsize16 = ((maskInt & (RBM_LOW_REGS | RBM_LR)) == maskInt); // Can PUSH use the 16-bit encoding?
     unwindPushPopMaskInt(maskInt, useOpsize16);
@@ -390,25 +390,25 @@ void Compiler::unwindPushMaskFloat(regMaskTP maskFloat)
     // Only floating point registers should be in maskFloat
     assert((maskFloat & RBM_ALLFLOAT) == maskFloat);
 
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
     if (generateCFIUnwindCodes())
     {
         unwindPushPopMaskCFI(maskFloat, true);
         return;
     }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
     unwindPushPopMaskFloat(maskFloat);
 }
 
 void Compiler::unwindPopMaskInt(regMaskTP maskInt)
 {
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
     // Only r0-r12 and lr and pc are supported (pc is mapped to lr when encoding)
     assert((maskInt &
@@ -431,12 +431,12 @@ void Compiler::unwindPopMaskInt(regMaskTP maskInt)
 
 void Compiler::unwindPopMaskFloat(regMaskTP maskFloat)
 {
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
     // Only floating point registers should be in maskFloat
     assert((maskFloat & RBM_ALLFLOAT) == maskFloat);
@@ -445,7 +445,7 @@ void Compiler::unwindPopMaskFloat(regMaskTP maskFloat)
 
 void Compiler::unwindAllocStack(unsigned size)
 {
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -454,7 +454,7 @@ void Compiler::unwindAllocStack(unsigned size)
         }
         return;
     }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -499,7 +499,7 @@ void Compiler::unwindAllocStack(unsigned size)
 
 void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 {
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -508,7 +508,7 @@ void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
         }
         return;
     }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -527,12 +527,12 @@ void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
 
 void Compiler::unwindBranch16()
 {
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -543,12 +543,12 @@ void Compiler::unwindBranch16()
 
 void Compiler::unwindNop(unsigned codeSizeInBytes) // codeSizeInBytes is 2 or 4 bytes for Thumb2 instruction
 {
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -577,19 +577,19 @@ void Compiler::unwindNop(unsigned codeSizeInBytes) // codeSizeInBytes is 2 or 4 
     INDEBUG(pu->uwiAddingNOP = false);
 }
 
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)
 
 // The instructions between the last captured "current state" and the current instruction
 // are in the prolog but have no effect for unwinding. Emit the appropriate NOP unwind codes
 // for them.
 void Compiler::unwindPadding()
 {
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
     GetEmitter()->emitUnwindNopPadding(pu->GetCurrentEmitterLocation(), this);
@@ -614,7 +614,7 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     BOOL isFunclet          = (func->funKind == FUNC_ROOT) ? FALSE : TRUE;
     bool funcHasColdSection = false;
 
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
     if (generateCFIUnwindCodes())
     {
         DWORD unwindCodeBytes = 0;
@@ -627,7 +627,7 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 
         return;
     }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
     // If there is cold code, split the unwind data between the hot section and the
     // cold section. This needs to be done before we split into fragments, as each
@@ -687,13 +687,13 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
     static_assert_no_msg(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
     static_assert_no_msg(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
 
-#if defined(_TARGET_UNIX_)
+#if defined(TARGET_UNIX)
     if (generateCFIUnwindCodes())
     {
         unwindEmitFuncCFI(func, pHotCode, pColdCode);
         return;
     }
-#endif // _TARGET_UNIX_
+#endif // TARGET_UNIX
 
     func->uwi.Allocate((CorJitFuncKind)func->funKind, pHotCode, pColdCode, true);
 
@@ -703,7 +703,7 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
     }
 }
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -828,7 +828,7 @@ unsigned UnwindCodesBase::GetCodeSizeFromUnwindCodes(bool isProlog)
 
 #endif // DEBUG
 
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -937,10 +937,10 @@ void UnwindPrologCodes::GetFinalInfo(/* OUT */ BYTE** ppUnwindBlock, /* OUT */ U
 //
 // This is similar to UnwindEpilogInfo::Match().
 //
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 // Note that if we wanted to handle 0xFD and 0xFE codes, by converting
 // an existing 0xFF code to one of those, we might do that here.
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)
 
 int UnwindPrologCodes::Match(UnwindEpilogInfo* pEpi)
 {
@@ -1266,7 +1266,7 @@ void UnwindFragmentInfo::AddEpilog()
 void UnwindFragmentInfo::CopyPrologCodes(UnwindFragmentInfo* pCopyFrom)
 {
     ufiPrologCodes.CopyFrom(&pCopyFrom->ufiPrologCodes);
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     ufiPrologCodes.AddCode(UWC_END_C);
 #endif
 }
@@ -1478,22 +1478,22 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
 
 // Compute the header
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     noway_assert((functionLength & 1) == 0);
     DWORD headerFunctionLength = functionLength / 2;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     noway_assert((functionLength & 3) == 0);
     DWORD headerFunctionLength = functionLength / 4;
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
 
     DWORD headerVers = 0; // Version of the unwind info is zero. No other version number is currently defined.
     DWORD headerXBit = 0; // We never generate "exception data", but the VM might add some.
     DWORD headerEBit;
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     DWORD headerFBit = ufiHasPhantomProlog ? 1 : 0; // Is this data a fragment in the sense of the unwind data
                                                     // specification? That is, do the prolog codes represent a real
                                                     // prolog or not?
-#endif                                              // defined(_TARGET_ARM_)
+#endif                                              // defined(TARGET_ARM)
     DWORD headerEpilogCount;                        // This depends on how we set headerEBit.
     DWORD headerCodeWords;
     DWORD headerExtendedEpilogCount = 0; // This depends on how we set headerEBit.
@@ -1533,13 +1533,13 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
         IMPL_LIMITATION("unwind data too large");
     }
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     DWORD header = headerFunctionLength | (headerVers << 18) | (headerXBit << 20) | (headerEBit << 21) |
                    (headerFBit << 22) | (headerEpilogCount << 23) | (headerCodeWords << 28);
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     DWORD header               = headerFunctionLength | (headerVers << 18) | (headerXBit << 20) | (headerEBit << 21) |
                    (headerEpilogCount << 22) | (headerCodeWords << 27);
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
 
     ufiPrologCodes.AddHeaderWord(header);
 
@@ -1570,9 +1570,9 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
     {
         for (UnwindEpilogInfo* pEpi = ufiEpilogList; pEpi != NULL; pEpi = pEpi->epiNext)
         {
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
             DWORD headerCondition = 0xE; // The epilog is unconditional. We don't have epilogs under the IT instruction.
-#endif                                   // defined(_TARGET_ARM_)
+#endif                                   // defined(TARGET_ARM)
 
             // The epilog must strictly follow the prolog. The prolog is in the first fragment of
             // the hot section. If this epilog is at the start of a fragment, it can't be the
@@ -1585,15 +1585,15 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
             // NOT the offset from the beginning of the main function.
             DWORD headerEpilogStartOffset = pEpi->GetStartOffset() - GetStartOffset();
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
             noway_assert((headerEpilogStartOffset & 1) == 0);
             headerEpilogStartOffset /= 2; // The unwind data stores the actual offset divided by 2 (since the low bit of
                                           // the actual offset is always zero)
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
             noway_assert((headerEpilogStartOffset & 3) == 0);
             headerEpilogStartOffset /= 4; // The unwind data stores the actual offset divided by 4 (since the low 2 bits
                                           // of the actual offset is always zero)
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
 
             DWORD headerEpilogStartIndex = pEpi->GetStartIndex();
 
@@ -1603,11 +1603,11 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
                 IMPL_LIMITATION("unwind data too large");
             }
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
             DWORD epilogScopeWord = headerEpilogStartOffset | (headerCondition << 20) | (headerEpilogStartIndex << 24);
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
             DWORD epilogScopeWord = headerEpilogStartOffset | (headerEpilogStartIndex << 22);
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
 
             ufiPrologCodes.AddHeaderWord(epilogScopeWord);
         }
@@ -2012,7 +2012,7 @@ void UnwindInfo::AddEpilog()
     CaptureLocation();
 }
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 
 unsigned UnwindInfo::GetInstructionSize()
 {
@@ -2020,7 +2020,7 @@ unsigned UnwindInfo::GetInstructionSize()
     return uwiComp->GetEmitter()->emitGetInstructionSize(uwiCurLoc);
 }
 
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)
 
 void UnwindInfo::CaptureLocation()
 {
@@ -2050,7 +2050,7 @@ void UnwindInfo::AddFragment(emitLocation* emitLoc)
 
 #ifdef DEBUG
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 
 // Given the first byte of the unwind code, check that its opsize matches
 // the last instruction added in the emitter.
@@ -2068,7 +2068,7 @@ void UnwindInfo::CheckOpsize(BYTE b1)
     assert(opsizeInBytes == instrSizeInBytes);
 }
 
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)
 
 void UnwindInfo::Dump(bool isHotCode, int indent)
 {
@@ -2096,7 +2096,7 @@ void UnwindInfo::Dump(bool isHotCode, int indent)
 
 #endif // DEBUG
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -2595,6 +2595,6 @@ void DumpUnwindInfo(Compiler*         comp,
 
 #endif // DEBUG
 
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)
 
-#endif // _TARGET_ARMARCH_
+#endif // TARGET_ARMARCH

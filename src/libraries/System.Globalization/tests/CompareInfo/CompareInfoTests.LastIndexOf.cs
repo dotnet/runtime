@@ -166,7 +166,7 @@ namespace System.Globalization.Tests
 
                 // Use int MemoryExtensions.LastIndexOf(this ReadOnlySpan<char>, ReadOnlySpan<char>, StringComparison)
                 // Filter differences betweeen string-based and Span-based LastIndexOf
-                // - Empty value handling - https://github.com/dotnet/coreclr/issues/26608
+                // - Empty value handling - https://github.com/dotnet/runtime/issues/13382
                 // - Negative count
                 if (value.Length == 0 || count < 0)
                     return;

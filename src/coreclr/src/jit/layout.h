@@ -32,7 +32,7 @@ class ClassLayout
         BYTE  m_gcPtrsArray[sizeof(BYTE*)];
     };
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // A layout that has its size artificially inflated to avoid stack corruption due to
     // bugs in user code - see Compiler::compQuirkForPPP for details.
     ClassLayout* m_pppQuirkLayout;
@@ -53,7 +53,7 @@ class ClassLayout
 #endif
         , m_gcPtrCount(0)
         , m_gcPtrs(nullptr)
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         , m_pppQuirkLayout(nullptr)
 #endif
 #ifdef DEBUG
@@ -73,7 +73,7 @@ class ClassLayout
 #endif
         , m_gcPtrCount(0)
         , m_gcPtrs(nullptr)
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         , m_pppQuirkLayout(nullptr)
 #endif
 #ifdef DEBUG
@@ -86,7 +86,7 @@ class ClassLayout
     void InitializeGCPtrs(Compiler* compiler);
 
 public:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Get the layout for the PPP quirk - see Compiler::compQuirkForPPP for details.
     ClassLayout* GetPPPQuirkLayout(CompAllocator alloc);
 #endif
@@ -118,6 +118,42 @@ public:
     unsigned GetSize() const
     {
         return m_size;
+    }
+
+    //------------------------------------------------------------------------
+    // GetRegisterType: Determine register type for the layout.
+    //
+    // Return Value:
+    //    TYP_UNDEF if the layout is enregistrable, register type otherwise.
+    //
+    var_types GetRegisterType() const
+    {
+        if (HasGCPtr())
+        {
+            return (GetSlotCount() == 1) ? GetGCPtrType(0) : TYP_UNDEF;
+        }
+
+        switch (m_size)
+        {
+            case 1:
+                return TYP_UBYTE;
+            case 2:
+                return TYP_USHORT;
+            case 4:
+                return TYP_INT;
+#ifdef TARGET_64BIT
+            case 8:
+                return TYP_LONG;
+#endif
+#ifdef FEATURE_SIMD
+            // TODO: check TYP_SIMD12 profitability,
+            // it will need additional support in `BuildStoreLoc`.
+            case 16:
+                return TYP_SIMD16;
+#endif
+            default:
+                return TYP_UNDEF;
+        }
     }
 
     unsigned GetSlotCount() const

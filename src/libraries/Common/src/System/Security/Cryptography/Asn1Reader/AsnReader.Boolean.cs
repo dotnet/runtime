@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
-    internal partial class AsnReader
+    internal ref partial struct AsnValueReader
     {
         /// <summary>
         ///   Reads the next value as a Boolean with tag UNIVERSAL 1.
@@ -44,8 +47,9 @@ namespace System.Security.Cryptography.Asn1
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
+            Debug.Assert(length.HasValue);
             bool value = ReadBooleanValue(
-                Slice(_data, headerLength, length.Value).Span,
+                Slice(_data, headerLength, length.Value),
                 RuleSet);
 
             _data = _data.Slice(headerLength + length.Value);
@@ -77,6 +81,44 @@ namespace System.Security.Cryptography.Asn1
             }
 
             return true;
+        }
+    }
+
+    internal partial class AsnReader
+    {
+        /// <summary>
+        ///   Reads the next value as a Boolean with tag UNIVERSAL 1.
+        /// </summary>
+        /// <returns>The next value as a Boolean.</returns>
+        /// <exception cref="CryptographicException">
+        ///   the next value does not have the correct tag --OR--
+        ///   the length encoding is not valid under the current encoding rules --OR--
+        ///   the contents are not valid under the current encoding rules
+        /// </exception>
+        public bool ReadBoolean() => ReadBoolean(Asn1Tag.Boolean);
+
+        /// <summary>
+        ///   Reads the next value as a Boolean with a specified tag.
+        /// </summary>
+        /// <param name="expectedTag">The tag to check for before reading.</param>
+        /// <returns>The next value as a Boolean.</returns>
+        /// <exception cref="CryptographicException">
+        ///   the next value does not have the correct tag --OR--
+        ///   the length encoding is not valid under the current encoding rules --OR--
+        ///   the contents are not valid under the current encoding rules
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method
+        /// </exception>
+        public bool ReadBoolean(Asn1Tag expectedTag)
+        {
+            AsnValueReader valueReader = OpenValueReader();
+            bool ret = valueReader.ReadBoolean(expectedTag);
+            valueReader.MatchSlice(ref _data);
+            return ret;
         }
     }
 }

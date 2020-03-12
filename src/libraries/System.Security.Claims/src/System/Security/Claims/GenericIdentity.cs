@@ -36,11 +36,6 @@ namespace System.Security.Principal
             AddNameClaim();
         }
 
-        private GenericIdentity()
-            : base()
-        { }
-
-
         protected GenericIdentity(GenericIdentity identity)
             : base(identity)
         {

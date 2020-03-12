@@ -5,9 +5,9 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
 #define FEATURE_MANAGED_ETW
-#endif // PLATFORM_WINDOWS
+#endif // TARGET_WINDOWS
 
 #if ES_BUILD_STANDALONE
 #define FEATURE_MANAGED_ETW_CHANNELS
@@ -523,8 +523,7 @@ namespace System.Diagnostics.Tracing
 
             fixed (EventSourceOptions* pOptions = &options)
             {
-                EventDescriptor descriptor;
-                NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out descriptor);
+                NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out EventDescriptor descriptor);
                 if (nameInfo == null)
                 {
                     return;
@@ -591,9 +590,8 @@ namespace System.Diagnostics.Tracing
             {
                 fixed (EventSourceOptions* pOptions = &options)
                 {
-                    EventDescriptor descriptor;
                     options.Opcode = options.IsOpcodeSet ? options.Opcode : GetOpcodeWithDefault(options.Opcode, eventName);
-                    NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out descriptor);
+                    NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out EventDescriptor descriptor);
                     if (nameInfo == null)
                     {
                         return;
@@ -764,8 +762,7 @@ namespace System.Diagnostics.Tracing
                     if (m_traits[i].StartsWith("ETW_", StringComparison.Ordinal))
                     {
                         string etwTrait = m_traits[i].Substring(4);
-                        byte traitNum;
-                        if (!byte.TryParse(etwTrait, out traitNum))
+                        if (!byte.TryParse(etwTrait, out byte traitNum))
                         {
                             if (etwTrait == "GROUP")
                             {

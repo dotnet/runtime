@@ -132,14 +132,14 @@ typedef enum
  * Error above. If the value is not recognized, returns
  * Error_ENONSTANDARD.
  */
-DLLEXPORT int32_t SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno);
+PALEXPORT int32_t SystemNative_ConvertErrorPlatformToPal(int32_t platformErrno);
 
 /**
  * Converts the given PAL Error value to a platform-specific errno
  * value. This is to be used when we want to synthesize a given error
  * and obtain the appropriate error message via StrErrorR.
  */
-DLLEXPORT int32_t SystemNative_ConvertErrorPalToPlatform(int32_t error);
+PALEXPORT int32_t SystemNative_ConvertErrorPalToPlatform(int32_t error);
 
 /**
  * Obtains the system error message for the given raw numeric value
@@ -162,4 +162,4 @@ DLLEXPORT int32_t SystemNative_ConvertErrorPalToPlatform(int32_t error);
  * returned and the buffer is filled with as much of the message
  * as possible and null-terminated.
  */
-DLLEXPORT const char* SystemNative_StrErrorR(int32_t platformErrno, char* buffer, int32_t bufferSize);
+PALEXPORT const char* SystemNative_StrErrorR(int32_t platformErrno, char* buffer, int32_t bufferSize);

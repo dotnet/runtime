@@ -24,7 +24,7 @@ namespace System.Threading
             Debug.Assert(maximumCount >= 1);
             Debug.Assert(initialCount <= maximumCount);
 
-#if !PLATFORM_WINDOWS
+#if TARGET_UNIX
             if (name != null)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #endif
@@ -45,7 +45,7 @@ namespace System.Threading
 
         private static OpenExistingResult OpenExistingWorker(string name, out Semaphore? result)
         {
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
@@ -78,8 +78,7 @@ namespace System.Threading
 
         private int ReleaseCore(int releaseCount)
         {
-            int previousCount;
-            if (!Interop.Kernel32.ReleaseSemaphore(SafeWaitHandle!, releaseCount, out previousCount))
+            if (!Interop.Kernel32.ReleaseSemaphore(SafeWaitHandle!, releaseCount, out int previousCount))
                 throw new SemaphoreFullException();
 
             return previousCount;

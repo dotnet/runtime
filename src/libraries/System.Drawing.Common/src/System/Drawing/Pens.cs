@@ -313,7 +313,7 @@ namespace System.Drawing
 
         private static Pen GetPen(object key, Color color)
         {
-            Pen Pen = (Pen)Gdip.ThreadData[key];
+            Pen? Pen = (Pen?)Gdip.ThreadData[key];
             if (Pen == null)
             {
                 Pen = new Pen(color, true);

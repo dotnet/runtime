@@ -41,7 +41,7 @@ namespace System.Runtime.CompilerServices
         {
             int IRuntimeVariables.Count => 0;
 
-            object IRuntimeVariables.this[int index]
+            object? IRuntimeVariables.this[int index]
             {
                 get
                 {
@@ -83,7 +83,7 @@ namespace System.Runtime.CompilerServices
 
             public int Count => _indexes.Length;
 
-            public object this[int index]
+            public object? this[int index]
             {
                 get
                 {

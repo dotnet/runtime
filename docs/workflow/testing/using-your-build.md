@@ -27,7 +27,7 @@ After setting up dotnet you can verify you are using the newer version by:
 
 `dotnet --info` -- the version should be greater than 3.0.0-*
 
-For another small walkthrough see [Dogfooding .NET Core SDK](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md).
+For another small walkthrough see [Dogfooding .NET Core SDK](https://github.com/dotnet/runtime/blob/master/docs/project/dogfooding.md).
 
 ## Create sample self-contained application
 
@@ -134,7 +134,7 @@ That should tell you the version and which user and machine build the assembly a
 at the time of building:
 
 ```
-Hello World from Core 4.6.26210.0 @BuiltBy: adsitnik-MININT-O513E3V @SrcCode: https://github.com/dotnet/coreclr/tree/3d6da797d1f7dc47d5934189787a4e8006ab3a04
+Hello World from Core 4.6.26210.0 @BuiltBy: adsitnik-MININT-O513E3V @SrcCode: https://github.com/dotnet/runtime/tree/3d6da797d1f7dc47d5934189787a4e8006ab3a04
 The location is C:\coreclr\helloWorld\bin\Debug\netcoreapp3.0\win-x64\publish\System.Private.CoreLib.dll
 ```
 

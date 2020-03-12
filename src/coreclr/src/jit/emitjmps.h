@@ -7,7 +7,7 @@
 #error Must define JMP_SMALL macro before including this file
 #endif
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 
 //       jump   reverse instruction
 JMP_SMALL(jmp   , jmp   , jmp    )
@@ -28,7 +28,7 @@ JMP_SMALL(jge   , jl    , jge    )
 JMP_SMALL(jle   , jg    , jle    )
 JMP_SMALL(jg    , jle   , jg     )
 
-#elif defined(_TARGET_ARMARCH_)
+#elif defined(TARGET_ARMARCH)
 
 //       jump   reverse instruction condcode
 JMP_SMALL(jmp   , jmp   , b      )  // AL always

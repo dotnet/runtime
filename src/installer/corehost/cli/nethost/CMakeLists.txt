@@ -2,7 +2,6 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 # See the LICENSE file in the project root for more information.
 
-cmake_minimum_required (VERSION 2.6)
 project(nethost)
 
 set(DOTNET_PROJECT_NAME "nethost")
@@ -14,10 +13,9 @@ include_directories(../fxr)
 set(SOURCES
     nethost.cpp
     ../fxr_resolver.cpp
-    ../fxr/fx_ver.cpp
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         Exports.def)
 endif()

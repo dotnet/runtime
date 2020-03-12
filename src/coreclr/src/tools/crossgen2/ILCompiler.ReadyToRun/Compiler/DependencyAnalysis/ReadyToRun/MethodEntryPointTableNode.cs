@@ -18,6 +18,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class MethodEntryPointTableNode : HeaderTableNode
     {
+        private readonly EcmaModule _module;
+
         private struct EntryPoint
         {
             public static EntryPoint Null = new EntryPoint(-1, null);
@@ -34,15 +36,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public MethodEntryPointTableNode(TargetDetails target)
+        public MethodEntryPointTableNode(EcmaModule module, TargetDetails target)
             : base(target)
         {
+            _module = module;
         }
         
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunMethodEntryPointTable");
+            sb.Append("__ReadyToRunMethodEntryPointTable__");
+            sb.Append(_module.Assembly.GetName().Name);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -52,12 +56,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, Array.Empty<ISymbolDefinitionNode>());
             }
 
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             List<EntryPoint> ridToEntryPoint = new List<EntryPoint>();
 
-            foreach (MethodWithGCInfo method in r2rFactory.EnumerateCompiledMethods())
+            foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods())
             {
-                if (method.Method is EcmaMethod ecmaMethod)
+                if (method.Method is EcmaMethod ecmaMethod && ecmaMethod.Module == _module)
                 {
                     // Strip away the token type bits, keep just the low 24 bits RID
                     uint rid = SignatureBuilder.RidFromToken((mdToken)MetadataTokens.GetToken(ecmaMethod.Handle));
@@ -69,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         ridToEntryPoint.Add(EntryPoint.Null);
                     }
 
-                    int methodIndex = r2rFactory.RuntimeFunctionsTable.GetIndex(method);
+                    int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
                     ridToEntryPoint[(int)rid] = new EntryPoint(methodIndex, method);
                 }
             }
@@ -113,6 +116,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 alignment: 8,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
         }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            MethodEntryPointTableNode otherMethodEntryPointTable = (MethodEntryPointTableNode)other;
+            return _module.Assembly.GetName().Name.CompareTo(otherMethodEntryPointTable._module.Assembly.GetName().Name);
+        }
+
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
         public override int ClassCode => (int)ObjectNodeOrder.MethodEntrypointTableNode;
     }

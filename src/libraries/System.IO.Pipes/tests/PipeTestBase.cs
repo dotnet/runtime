@@ -30,7 +30,7 @@ namespace System.IO.Pipes.Tests
 
         protected static void SuppressClientHandleFinalizationIfNetFramework(AnonymousPipeServerStream serverStream)
         {
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 // See https://github.com/dotnet/corefx/pull/1871.  When AnonymousPipeServerStream.GetClientHandleAsString()
                 // is called, the assumption is that this string is going to be passed to another process, rather than wrapped

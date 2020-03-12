@@ -492,7 +492,7 @@ internal class FreeListTest
         }
     }
 
-    public static int Main(String[] args)
+    public static int Main(string[] args)
     {
         if (GCSettings.IsServerGC == true)
         {

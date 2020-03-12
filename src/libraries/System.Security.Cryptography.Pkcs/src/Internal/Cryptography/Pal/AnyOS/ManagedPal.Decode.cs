@@ -25,10 +25,11 @@ namespace Internal.Cryptography.Pal.AnyOS
             out CryptographicAttributeObjectCollection unprotectedAttributes)
         {
             // Read using BER because the CMS specification says the encoding is BER.
-            AsnReader reader = new AsnReader(encodedMessage, AsnEncodingRules.BER);
+            AsnValueReader reader = new AsnValueReader(encodedMessage, AsnEncodingRules.BER);
 
             ContentInfoAsn.Decode(
-                reader,
+                ref reader,
+                encodedMessage,
                 out ContentInfoAsn parsedContentInfo);
 
             if (parsedContentInfo.ContentType != Oids.Pkcs7Enveloped)

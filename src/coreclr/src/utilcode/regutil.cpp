@@ -21,7 +21,7 @@
 #define COMPLUS_PREFIX W("COMPlus_")
 #define LEN_OF_COMPLUS_PREFIX 8
 
-#if (!defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(DEBUG)) && !defined(FEATURE_PAL)
+#if (!defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(DEBUG)) && !defined(TARGET_UNIX)
 #define ALLOW_REGISTRY
 #endif
 
@@ -101,21 +101,6 @@ LPWSTR REGUTIL::EnvGetString(LPCWSTR name, BOOL fPrependCOMPLUS)
 
 
 }
-
-#ifdef ALLOW_REGISTRY
-
-
-#endif // ALLOW_REGISTRY
-
-
-BOOL REGUTIL::UseRegistry()
-{
-#if !defined(ALLOW_REGISTRY)
-    return TRUE;
-#else
-    return s_fUseRegistry;
-#endif
-}// UseRegistry
 
 //*****************************************************************************
 // Reads a DWORD from the COR configuration according to the level specified
@@ -201,8 +186,6 @@ HRESULT REGUTIL::GetConfigInteger(LPCWSTR name, ULONGLONG defValue, __out ULONGL
     ULONGLONG rtn;
     ULONGLONG ret = 0;
     DWORD type = 0;
-    HKEY userKey;
-    HKEY machineKey;
     DWORD size = 4;
 
     FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
@@ -227,7 +210,7 @@ HRESULT REGUTIL::GetConfigInteger(LPCWSTR name, ULONGLONG defValue, __out ULONGL
 
     // Early out if no registry access, simplifies following code.
     //
-    if (!UseRegistry() || !(level & COR_CONFIG_REGISTRY))
+    if (!(level & COR_CONFIG_REGISTRY))
     {
         *result = defValue;
         return (E_FAIL);
@@ -250,7 +233,7 @@ HRESULT REGUTIL::GetConfigInteger(LPCWSTR name, ULONGLONG defValue, __out ULONGL
         {
             LONG retVal = ERROR_SUCCESS;
             BOOL bCloseHandle = FALSE;
-            userKey = s_hUserFrameworkKey;
+            HKEY userKey = s_hUserFrameworkKey;
 
             if (userKey == INVALID_HANDLE_VALUE)
             {
@@ -281,7 +264,7 @@ HRESULT REGUTIL::GetConfigInteger(LPCWSTR name, ULONGLONG defValue, __out ULONGL
         {
             LONG retVal = ERROR_SUCCESS;
             BOOL bCloseHandle = FALSE;
-            machineKey = s_hMachineFrameworkKey;
+            HKEY machineKey = s_hMachineFrameworkKey;
 
             if (machineKey == INVALID_HANDLE_VALUE)
             {
@@ -309,8 +292,6 @@ HRESULT REGUTIL::GetConfigInteger(LPCWSTR name, ULONGLONG defValue, __out ULONGL
     *result = defValue;
     return (E_FAIL);
 }
-
-#define FUSION_REGISTRY_KEY_W W("Software\\Microsoft\\Fusion")
 
 //*****************************************************************************
 // Reads a string from the COR configuration according to the level specified
@@ -355,7 +336,7 @@ LPWSTR REGUTIL::GetConfigString_DontUse_(LPCWSTR name, BOOL fPrependCOMPLUS, COR
 
     // Early out if no registry access, simplifies following code.
     //
-    if (!UseRegistry() || !(level & COR_CONFIG_REGISTRY))
+    if (!(level & COR_CONFIG_REGISTRY))
     {
         return(ret);
     }
@@ -445,27 +426,6 @@ LPWSTR REGUTIL::GetConfigString_DontUse_(LPCWSTR name, BOOL fPrependCOMPLUS, COR
                 return  ret;
         }
 
-#endif // ALLOW_REGISTRY
-    }
-
-    if (level & COR_CONFIG_FUSION)
-    {
-#ifdef ALLOW_REGISTRY
-        if ((WszRegOpenKeyEx(HKEY_LOCAL_MACHINE, FUSION_REGISTRY_KEY_W, 0, KEY_READ, &fusionKey) == ERROR_SUCCESS) &&
-            (WszRegQueryValueEx(fusionKey, name, 0, &type, 0, &size) == ERROR_SUCCESS) &&
-            type == REG_SZ)
-        {
-            ret = (LPWSTR) new (nothrow) BYTE [size];
-            if (!ret)
-            {
-                return NULL;
-            }
-            ret[0] = W('\0');
-            lResult = WszRegQueryValueEx(fusionKey, name, 0, 0, (LPBYTE) ret.GetValue(), &size);
-            _ASSERTE(lResult == ERROR_SUCCESS);
-            ret.SuppressRelease();
-            return(ret);
-        }
 #endif // ALLOW_REGISTRY
     }
 
@@ -598,7 +558,6 @@ BOOL REGUTIL::s_fUseRegCache = FALSE;
 BOOL REGUTIL::s_fUseEnvCache = FALSE;
 HKEY REGUTIL::s_hMachineFrameworkKey = (HKEY) INVALID_HANDLE_VALUE;
 HKEY REGUTIL::s_hUserFrameworkKey = (HKEY) INVALID_HANDLE_VALUE;
-BOOL REGUTIL::s_fUseRegistry = TRUE;
 static ProbabilisticNameSet regNames; // set of registry value names seen; should be
                                    // a static field of REGUTIL but I don't
                                    // want to expose ProbabilisticNameSet.

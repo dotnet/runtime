@@ -491,7 +491,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(NonCanceledTokens))]
         public async Task ReadWriteAsync_NonCanceled_Success(CancellationToken nonCanceledToken)
@@ -560,7 +560,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public async Task ReadWriteAsync_Canceled_ThrowsOperationCanceledException()
         {
@@ -1202,8 +1202,6 @@ namespace System.Net.Sockets.Tests
         private sealed class DerivedNetworkStream : NetworkStream
         {
             public DerivedNetworkStream(Socket socket) : base(socket) { }
-
-            public new Socket Socket => base.Socket;
 
             public new bool Readable
             {

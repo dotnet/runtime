@@ -17,7 +17,7 @@ parameters:
   pool: ''
 
   # arcade-specific parameters
-  condition: ''
+  condition: true
   continueOnError: false
   dependsOn: ''
   displayName: ''
@@ -43,7 +43,7 @@ jobs:
     pool: ${{ parameters.pool }}
 
     # arcade-specific parameters
-    condition: ${{ parameters.condition }}
+    condition: and(succeeded(), ${{ parameters.condition }})
     continueOnError: ${{ parameters.continueOnError }}
     dependsOn: ${{ parameters.dependsOn }}
     displayName: ${{ parameters.displayName }}

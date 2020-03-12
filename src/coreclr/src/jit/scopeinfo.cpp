@@ -292,11 +292,11 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
         case TYP_SIMD16:
         case TYP_SIMD32:
 #endif
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         case TYP_LONG:
         case TYP_DOUBLE:
-#endif // _TARGET_64BIT_
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#endif // TARGET_64BIT
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
             // In the AMD64 ABI we are supposed to pass a struct by reference when its
             // size is not 1, 2, 4 or 8 bytes in size. During fgMorph, the compiler modifies
             // the IR to comply with the ABI and therefore changes the type of the lclVar
@@ -315,7 +315,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
                 this->vlType = VLT_STK_BYREF;
             }
             else
-#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
             {
                 this->vlType = VLT_STK;
             }
@@ -327,7 +327,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
             }
             break;
 
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
         case TYP_LONG:
         case TYP_DOUBLE:
             this->vlType             = VLT_STK2;
@@ -338,7 +338,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
                 this->vlStk2.vls2BaseReg = (regNumber)ICorDebugInfo::REGNUM_AMBIENT_SP;
             }
             break;
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
 
         default:
             noway_assert(!"Invalid type");
@@ -369,14 +369,14 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         case TYP_INT:
         case TYP_REF:
         case TYP_BYREF:
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         case TYP_LONG:
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
             this->vlType       = VLT_REG;
             this->vlReg.vlrReg = varDsc->GetRegNum();
             break;
 
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
         case TYP_LONG:
 #if !CPU_HAS_FP_SUPPORT
         case TYP_DOUBLE:
@@ -399,9 +399,9 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
                 this->vlRegStk.vlrsStk.vlrssOffset = offset + sizeof(int);
             }
             break;
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         case TYP_FLOAT:
         case TYP_DOUBLE:
             // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,
@@ -410,7 +410,7 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
             this->vlReg.vlrReg = varDsc->GetRegNum();
             break;
 
-#else // !_TARGET_64BIT_
+#else // !TARGET_64BIT
 
 #if CPU_HAS_FP_SUPPORT
         case TYP_FLOAT:
@@ -423,7 +423,7 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
             break;
 #endif // CPU_HAS_FP_SUPPORT
 
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
 
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
@@ -537,7 +537,7 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
             }
             break;
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
         case VLT_REG_REG:
             printf("%s-%s", getRegName(varLoc->vlRegReg.vlrrReg1), getRegName(varLoc->vlRegReg.vlrrReg2));
             break;
@@ -576,7 +576,7 @@ void CodeGenInterface::dumpSiVarLoc(const siVarLoc* varLoc) const
         case VLT_FIXED_VA:
             printf("fxd_va[%d]", varLoc->vlFixedVarArg.vlfvOffset);
             break;
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 
         default:
             unreached();
@@ -855,7 +855,7 @@ bool CodeGen::siVerifyLocalVarTab()
 // are what ICodeDebugInfo is expetecting.
 void CodeGen::checkICodeDebugInfo()
 {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     assert((unsigned)ICorDebugInfo::REGNUM_EAX == REG_EAX);
     assert((unsigned)ICorDebugInfo::REGNUM_ECX == REG_ECX);
     assert((unsigned)ICorDebugInfo::REGNUM_EDX == REG_EDX);
@@ -1485,12 +1485,12 @@ NATIVE_OFFSET CodeGen::psiGetVarStackOffset(const LclVarDsc* lclVarDsc) const
 
     NATIVE_OFFSET stackOffset = 0;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // scOffset = offset from caller SP - REGSIZE_BYTES
     // TODO-Cleanup - scOffset needs to be understood.  For now just matching with the existing definition.
     stackOffset =
         compiler->lvaToCallerSPRelativeOffset(lclVarDsc->lvStkOffs, lclVarDsc->lvFramePointerBased) + REGSIZE_BYTES;
-#else  // !_TARGET_AMD64_
+#else  // !TARGET_AMD64
     if (doubleAlignOrFramePointerUsed())
     {
         // REGSIZE_BYTES - for the pushed value of EBP
@@ -1500,7 +1500,7 @@ NATIVE_OFFSET CodeGen::psiGetVarStackOffset(const LclVarDsc* lclVarDsc) const
     {
         stackOffset = lclVarDsc->lvStkOffs - genTotalFrameSize();
     }
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 
     return stackOffset;
 }

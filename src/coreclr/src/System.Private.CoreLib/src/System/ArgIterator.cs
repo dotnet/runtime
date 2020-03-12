@@ -25,7 +25,7 @@ namespace System
         private IntPtr ArgPtr;                  // Pointer to remaining args.
         private int RemainingArgs;           // # of remaining args.
 
-#if PLATFORM_WINDOWS // Native Varargs are not supported on Unix
+#if TARGET_WINDOWS // Native Varargs are not supported on Unix
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern ArgIterator(IntPtr arglist);
 
@@ -178,6 +178,6 @@ namespace System
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }
-#endif // PLATFORM_WINDOWS
+#endif // TARGET_WINDOWS
     }
 }

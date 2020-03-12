@@ -345,7 +345,7 @@ nameof(identity));
 
         #region Public methods
 
-        public void AddRule(AuthorizationRule rule)
+        public void AddRule(AuthorizationRule? rule)
         {
             InnerList.Add(rule);
         }
@@ -363,7 +363,7 @@ nameof(identity));
 
         #region Public properties
 
-        public AuthorizationRule this[int index]
+        public AuthorizationRule? this[int index]
         {
             get { return InnerList[index] as AuthorizationRule; }
         }

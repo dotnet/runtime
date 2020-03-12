@@ -17,8 +17,8 @@ namespace System.Security.Cryptography.Pkcs
 
         private SubjectIdentifierType _signerIdentifierType;
 
-        public X509Certificate2 Certificate { get; set; }
-        public AsymmetricAlgorithm PrivateKey { get; set; }
+        public X509Certificate2? Certificate { get; set; }
+        public AsymmetricAlgorithm? PrivateKey { get; set; }
         public X509Certificate2Collection Certificates { get; private set; } = new X509Certificate2Collection();
         public Oid DigestAlgorithm { get; set; }
         public X509IncludeOption IncludeOption { get; set; }
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
-        public CmsSigner(X509Certificate2 certificate)
+        public CmsSigner(X509Certificate2? certificate)
             : this(SubjectIdentifierType.IssuerAndSerialNumber, certificate)
         {
         }
@@ -55,18 +55,18 @@ namespace System.Security.Cryptography.Pkcs
         // * Open the parameters as RSACSP (RSA PKCS#1 signature was hard-coded in netfx)
         //   * Which will fail on non-Windows
         // * Create a certificate with subject CN=CMS Signer Dummy Certificate
-        //   * Need to check against NetFx to find out what the NotBefore/NotAfter values are
+        //   * Need to check against .NET Framework to find out what the NotBefore/NotAfter values are
         //   * No extensions
         //
         // Since it would only work on Windows, it could also be just done as P/Invokes to
         // CertCreateSelfSignedCertificate on a split Windows/netstandard implementation.
         public CmsSigner(CspParameters parameters) => throw new PlatformNotSupportedException();
 
-        public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2 certificate) : this(signerIdentifierType, certificate, null)
+        public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate) : this(signerIdentifierType, certificate, null)
         {
         }
 
-        public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2 certificate, AsymmetricAlgorithm privateKey)
+        public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate, AsymmetricAlgorithm? privateKey)
         {
             switch (signerIdentifierType)
             {
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.Pkcs
 
         internal SignerInfoAsn Sign(
             ReadOnlyMemory<byte> data,
-            string contentTypeOid,
+            string? contentTypeOid,
             bool silent,
             out X509Certificate2Collection chainCerts)
         {
@@ -183,7 +183,7 @@ namespace System.Security.Cryptography.Pkcs
             switch (SignerIdentifierType)
             {
                 case SubjectIdentifierType.IssuerAndSerialNumber:
-                    byte[] serial = Certificate.GetSerialNumber();
+                    byte[] serial = Certificate!.GetSerialNumber();
                     Array.Reverse(serial);
 
                     newSignerInfo.Sid.IssuerAndSerialNumber = new IssuerAndSerialNumberAsn
@@ -195,7 +195,7 @@ namespace System.Security.Cryptography.Pkcs
                     newSignerInfo.Version = 1;
                     break;
                 case SubjectIdentifierType.SubjectKeyIdentifier:
-                    newSignerInfo.Sid.SubjectKeyIdentifier = PkcsPal.Instance.GetSubjectKeyIdentifier(Certificate);
+                    newSignerInfo.Sid.SubjectKeyIdentifier = PkcsPal.Instance.GetSubjectKeyIdentifier(Certificate!);
                     newSignerInfo.Version = 3;
                     break;
                 case SubjectIdentifierType.NoSignature:
@@ -219,7 +219,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             bool signed;
-            Oid signatureAlgorithm;
+            Oid? signatureAlgorithm;
             ReadOnlyMemory<byte> signatureValue;
 
             if (SignerIdentifierType == SubjectIdentifierType.NoSignature)
@@ -233,7 +233,7 @@ namespace System.Security.Cryptography.Pkcs
                 signed = CmsSignature.Sign(
                     dataHash,
                     hashAlgorithmName,
-                    Certificate,
+                    Certificate!,
                     PrivateKey,
                     silent,
                     out signatureAlgorithm,
@@ -246,7 +246,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             newSignerInfo.SignatureValue = signatureValue;
-            newSignerInfo.SignatureAlgorithm.Algorithm = signatureAlgorithm;
+            newSignerInfo.SignatureAlgorithm.Algorithm = signatureAlgorithm!;
 
             X509Certificate2Collection certs = new X509Certificate2Collection();
             certs.AddRange(Certificates);
@@ -255,7 +255,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 if (IncludeOption == X509IncludeOption.EndCertOnly)
                 {
-                    certs.Add(Certificate);
+                    certs.Add(Certificate!);
                 }
                 else if (IncludeOption != X509IncludeOption.None)
                 {
@@ -263,7 +263,7 @@ namespace System.Security.Cryptography.Pkcs
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                     chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
 
-                    if (!chain.Build(Certificate))
+                    if (!chain.Build(Certificate!))
                     {
                         foreach (X509ChainStatus status in chain.ChainStatus)
                         {
@@ -304,7 +304,7 @@ namespace System.Security.Cryptography.Pkcs
             return newSignerInfo;
         }
 
-        internal static List<AttributeAsn> BuildAttributes(CryptographicAttributeObjectCollection attributes)
+        internal static List<AttributeAsn> BuildAttributes(CryptographicAttributeObjectCollection? attributes)
         {
             List<AttributeAsn> signedAttrs = new List<AttributeAsn>();
 

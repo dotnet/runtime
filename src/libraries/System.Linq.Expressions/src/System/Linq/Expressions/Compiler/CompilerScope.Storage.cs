@@ -112,7 +112,7 @@ namespace System.Linq.Expressions.Compiler
                 _array = array;
                 _index = index;
                 _boxType = typeof(StrongBox<>).MakeGenericType(variable.Type);
-                _boxValueField = _boxType.GetField("Value");
+                _boxValueField = _boxType.GetField("Value")!;
             }
 
             internal override void EmitLoad()
@@ -162,7 +162,7 @@ namespace System.Linq.Expressions.Compiler
                 : base(compiler, variable)
             {
                 Type boxType = typeof(StrongBox<>).MakeGenericType(variable.Type);
-                _boxValueField = boxType.GetField("Value");
+                _boxValueField = boxType.GetField("Value")!;
 
                 // Set name if DebugInfoGenerator support is brought back.
                 _boxLocal = compiler.GetLocal(boxType);

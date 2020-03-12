@@ -134,7 +134,7 @@ namespace System
                     uint dummy = 0;
                     if (Interop.User32.GetUserObjectInformationW(handle, Interop.User32.UOI_FLAGS, &flags, (uint)sizeof(Interop.User32.USEROBJECTFLAGS), ref dummy))
                     {
-                        return ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0);
+                        return ((flags.dwFlags & Interop.User32.WSF_VISIBLE) != 0);
                     }
                 }
 

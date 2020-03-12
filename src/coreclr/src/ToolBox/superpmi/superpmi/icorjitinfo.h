@@ -7,7 +7,7 @@
 #define _ICorJitInfo
 
 #include "runtimedetails.h"
-#include "ieememorymanager.h"
+#include "jitinstance.h"
 
 extern ICorJitInfo* pICJI;
 

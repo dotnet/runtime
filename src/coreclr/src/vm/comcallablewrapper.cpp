@@ -587,7 +587,7 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
 
             UINT_PTR* ppofs = (UINT_PTR*)  (((BYTE*)pCMD) - COMMETHOD_CALL_PRESTUB_SIZE + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             *ppofs = ((UINT_PTR)pStub - (size_t)pCMD);
 #else
             *ppofs = ((UINT_PTR)pStub);
@@ -617,7 +617,7 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
     else
         _ASSERTE(pCMD->IsNativeVoidRetVal());
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // Number of bytes to pop is upper half of the return value on x86
     *(((INT32 *)pErrorReturn) + 1) = pCMD->GetNumStackBytes();
 #endif
@@ -2221,7 +2221,7 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
     // alloc wrapper, aligned to cache line
     NewCCWHolder pStartWrapper(pWrapperCache);
     pStartWrapper = (ComCallWrapper*)pWrapperCache->GetCacheLineAllocator()->
-#ifdef BIT64
+#ifdef HOST_64BIT
                                     GetCacheLine64();
     _ASSERTE(sizeof(ComCallWrapper) <= 64);
 #else
@@ -2262,7 +2262,7 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
         {
             // alloc wrapper, aligned 32 bytes
             ComCallWrapper* pNewWrapper = (ComCallWrapper*)pWrapperCache->GetCacheLineAllocator()->
-#ifdef BIT64
+#ifdef HOST_64BIT
                                           GetCacheLine64();
             _ASSERTE(sizeof(ComCallWrapper) <= 64);
 #else
@@ -2541,18 +2541,18 @@ void ComCallWrapper::FreeWrapper(ComCallWrapperCache *pWrapperCache)
         while (pWrap2 != NULL)
         {
             ComCallWrapper* pTempWrap = GetNext(pWrap2);
-    #ifdef BIT64
+    #ifdef HOST_64BIT
             pWrapperCache->GetCacheLineAllocator()->FreeCacheLine64(pWrap2);
-    #else //BIT64
+    #else //HOST_64BIT
             pWrapperCache->GetCacheLineAllocator()->FreeCacheLine32(pWrap2);
-    #endif //BIT64
+    #endif //HOST_64BIT
             pWrap2 = pTempWrap;
         }
-    #ifdef BIT64
+    #ifdef HOST_64BIT
         pWrapperCache->GetCacheLineAllocator()->FreeCacheLine64(this);
-    #else //BIT64
+    #else //HOST_64BIT
         pWrapperCache->GetCacheLineAllocator()->FreeCacheLine32(this);
-    #endif //BIT64
+    #endif //HOST_64BIT
     }
 
     // release ccw mgr
