@@ -13,6 +13,10 @@
 
 #include "stublink.h"
 
+struct ILStubEHClause;
+class ILStubLinker;
+
+#ifndef DACCESS_COMPILE
 struct StructMarshalStubs
 {
     static const DWORD MANAGED_STRUCT_ARGIDX = 0;
@@ -205,8 +209,6 @@ public:
 
 };  // class LocalSigBuilder
 
-#ifndef DACCESS_COMPILE
-
 //---------------------------------------------------------------------------------------
 //
 class FunctionSigBuilder : protected StubSigBuilder
@@ -378,6 +380,7 @@ protected:
     CQuickBytesSpecifySize<TOKEN_LOOKUP_MAP_SIZE>   m_qbEntries;
 };
 
+#ifndef DACCESS_COMPILE
 struct ILStubEHClause
 {
     enum Kind { kNone, kTypedCatch, kFinally };
@@ -392,8 +395,6 @@ struct ILStubEHClause
 
 class ILCodeLabel;
 class ILCodeStream;
-class ILStubLinker;
-#ifndef DACCESS_COMPILE
 //---------------------------------------------------------------------------------------
 //
 class ILStubLinker
@@ -556,6 +557,7 @@ protected:
     // SigTypeContext info, if needed.
     MethodDesc * m_pMD;
 };  // class ILStubLinker
+
 
 //---------------------------------------------------------------------------------------
 //

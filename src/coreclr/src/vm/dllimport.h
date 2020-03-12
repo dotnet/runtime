@@ -631,8 +631,10 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags = 0, MethodDesc
 HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, MethodDesc **ppRetStubMD);
 #endif // FEATURE_COMINTEROP
 
+#ifndef DACCESS_COMPILE
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
 void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
+#endif // DACCESS_COMPILE
 
 //
 // Limit length of string field in IL stub ETW events so that the whole
