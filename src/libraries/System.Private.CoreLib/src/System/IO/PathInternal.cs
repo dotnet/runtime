@@ -134,18 +134,16 @@ namespace System.IO
         /// Tries to remove relative segments from the given path, starting the analysis at the specified location.
         /// </summary>
         /// <param name="path">The input path.</param>
+        /// <param name="rootLength">The length of the root prefix, if any.</param>
+        /// <param name="isFullyQualified">Whether the path is fully qualified or not.</param>
         /// <param name="sb">A reference to a value string builder that will store the result.</param>
         /// <returns><see langword="true" /> if the path was modified; <see langword="false" /> otherwise.</returns>
-        internal static bool TryRemoveRedundantSegments(ReadOnlySpan<char> path, ref ValueStringBuilder sb)
+        internal static bool TryRemoveRedundantSegments(ReadOnlySpan<char> path, int rootLength, bool isFullyQualified, ref ValueStringBuilder sb)
         {
             Debug.Assert(path.Length > 0);
 
-            ReadOnlySpan<char> root = Path.GetPathRoot(path);
-            int charsToSkip = root.Length;
-
-            bool isFullyQualified = Path.IsPathFullyQualified(path);
+            int charsToSkip = rootLength;
             bool flippedSeparator = false;
-
             char c;
 
             // Remove "//", "/./", and "/../" from the path by copying each character to the output, except the ones we're removing,
@@ -268,8 +266,8 @@ namespace System.IO
                 // double dot segments (buffer is empty), and has more double dot segments than folders, which would make the double dots
                 // reach the beginning of the buffer:
                 //     e.g. "C:..\System32" => "C:\System32" or "C:System32\..\..\" => "C:..\"
-                if (!isDirectorySeparator || isFullyQualified || sb.Length > root.Length ||
-                    (IsNextSegmentDoubleDot(path, currPos) && (currPos == 0 || sb.Length > root.Length)))
+                if (!isDirectorySeparator || isFullyQualified || sb.Length > rootLength ||
+                    (IsNextSegmentDoubleDot(path, currPos) && (currPos == 0 || sb.Length > rootLength)))
                 {
                     sb.Append(c);
                 }
@@ -284,7 +282,7 @@ namespace System.IO
             // Final adjustments:
             // We may have eaten the trailing separator from the root when we started and not replaced it.
             // Only append the trailing separator if the buffer contained information.
-            if (charsToSkip != root.Length && sb.Length > 0)
+            if (charsToSkip != rootLength && sb.Length > 0)
             {
                 if (sb.Length < charsToSkip)
                 {
