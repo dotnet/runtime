@@ -64,7 +64,7 @@ namespace System.Reflection.Emit {
 			if (type == null)
 				throw new ArgumentNullException ("type");
 
-			attrs = attributes;
+			attrs = attributes & ~FieldAttributes.ReservedMask;
 			name = fieldName;
 			this.type = type;
 			this.modReq = modReq;
