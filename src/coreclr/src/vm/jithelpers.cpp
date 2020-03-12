@@ -5051,7 +5051,7 @@ NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame)
 
     Thread* thread = GetThreadNULLOk();
     if (thread == NULL)
-        thread = CreateThreadBlockThrow();
+        CREATETHREAD_IF_NULL_FAILFAST(thread, W("Failed to setup new thread during reverse Platform Invoke"));
 
     // Verify the current thread isn't in COOP mode.
     if (thread->PreemptiveGCDisabled())

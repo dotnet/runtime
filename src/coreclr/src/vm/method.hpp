@@ -1998,7 +1998,7 @@ public:
 
 #ifndef DACCESS_COMPILE
 public:
-    PCODE PrepareInitialCode();
+    PCODE PrepareInitialCode(CallerGCMode callerGCMode = CallerGCMode::Unknown);
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
 
 private:

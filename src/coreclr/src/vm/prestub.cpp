@@ -314,10 +314,11 @@ void DACNotifyCompilationFinished(MethodDesc *methodDesc, PCODE pCode)
 #endif
 // </TODO>
 
-PCODE MethodDesc::PrepareInitialCode()
+PCODE MethodDesc::PrepareInitialCode(CallerGCMode callerGCMode)
 {
     STANDARD_VM_CONTRACT;
     PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
+    config.SetCallerGCMode(callerGCMode);
     PCODE pCode = PrepareCode(&config);
 
 #if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
@@ -1824,17 +1825,10 @@ static PCODE PreStubWorker_Preemptive(
     // create one.
     if (currentThread == NULL)
     {
-        HRESULT hr;
-        currentThread = SetupThreadNoThrow(&hr);
-
-        // Our attempt to create a thread failed. There is nothing
+        // If our attempt to create a thread fails, there is nothing
         // more we can do except fail fast. The reverse P/Invoke isn't
         // going to work.
-        if (currentThread == NULL)
-        {
-            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(hr, W("Failed to setup new thread during reverse Platform Invoke"));
-            UNREACHABLE();
-        }
+        CREATETHREAD_IF_NULL_FAILFAST(currentThread, W("Failed to setup new thread during reverse Platform Invoke"));
     }
 
     MAKE_CURRENT_THREAD_AVAILABLE_EX(currentThread);
@@ -2170,7 +2164,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         {
             GetOrCreatePrecode();
         }
-        pCode = PrepareInitialCode();
+        pCode = PrepareInitialCode(callerGCMode);
     } // end else if (IsIL() || IsNoMetadata())
     else if (IsNDirect())
     {

@@ -603,6 +603,17 @@ DWORD GetRuntimeId();
 
 EXTERN_C Thread* WINAPI CreateThreadBlockThrow();
 
+#define CREATETHREAD_IF_NULL_FAILFAST(__thread, __msg)                  \
+{                                                                       \
+    HRESULT __ctinffhr;                                                 \
+    __thread = SetupThreadNoThrow(&__ctinffhr);                         \
+    if (__thread == NULL)                                               \
+    {                                                                   \
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(__ctinffhr, __msg);    \
+        UNREACHABLE();                                                  \
+    }                                                                   \
+}
+
 //---------------------------------------------------------------------------
 // One-time initialization. Called during Dll initialization.
 //---------------------------------------------------------------------------

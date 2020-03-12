@@ -1656,7 +1656,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
         _ASSERTE(hr == E_OUTOFMEMORY);
         ReportCodePublishError(pMethodDesc, hr);
         *doBackpatchRef = false;
-        return pCode != NULL ? pCode : pMethodDesc->PrepareInitialCode();
+        return pCode != NULL ? pCode : pMethodDesc->PrepareInitialCode(callerGCMode);
     } while (false);
 
     while (true)
