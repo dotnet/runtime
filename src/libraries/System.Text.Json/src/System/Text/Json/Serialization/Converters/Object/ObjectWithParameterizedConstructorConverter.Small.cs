@@ -22,14 +22,14 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override object CreateObject(ref ReadStack state)
         {
-            var argCache = (ArgumentCache<TArg0, TArg1, TArg2, TArg3>)state.Current.ConstructorArguments!;
+            var argCache = (ArgumentCache<TArg0, TArg1, TArg2, TArg3>)state.Current.CtorArgumentState.Arguments!;
             return _createObject!(argCache.Arg0, argCache.Arg1, argCache.Arg2, argCache.Arg3)!;
         }
 
         protected override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo, JsonSerializerOptions options)
         {
-            Debug.Assert(state.Current.ConstructorArguments != null);
-            var arguments = (ArgumentCache<TArg0, TArg1, TArg2, TArg3>)state.Current.ConstructorArguments;
+            Debug.Assert(state.Current.CtorArgumentState.Arguments != null);
+            var arguments = (ArgumentCache<TArg0, TArg1, TArg2, TArg3>)state.Current.CtorArgumentState.Arguments;
 
             bool success;
 
@@ -73,6 +73,9 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
         {
+            // Clear state from previous deserialization.
+            state.Current.CtorArgumentState.Reset();
+
             Dictionary<string, JsonParameterInfo>.ValueCollection parameterCacheValues = state.Current.JsonClassInfo.ParameterCache!.Values;
 
             if (state.Current.JsonClassInfo.ParameterCount != parameterCacheValues.Count)
@@ -109,7 +112,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            state.Current.ConstructorArguments = arguments;
+            state.Current.CtorArgumentState.Arguments = arguments;
         }
     }
 }

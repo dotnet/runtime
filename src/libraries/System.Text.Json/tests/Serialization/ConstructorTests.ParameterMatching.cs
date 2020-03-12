@@ -916,5 +916,29 @@ namespace System.Text.Json.Serialization.Tests
             yield return new object[] { typeof(Point_With_Dictionary), Point_With_Dictionary.s_json };
             yield return new object[] { typeof(Point_With_Object), Point_With_Object.s_json };
         }
+
+        [Fact]
+        private static void NumerousPropertiesWork()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("{");
+            sb.Append(@"""X"":1,");
+            sb.Append(@"""Y"":2,");
+
+            for (int i = 0; i < 65; i++)
+            {
+                sb.Append($@"""Z"":{i},");
+            }
+
+            sb.Append(@"""Z"":66");
+            sb.Append("}");
+
+            string json = sb.ToString();
+
+            var point = JsonSerializer.Deserialize<Point_With_Property>(json);
+            Assert.Equal(1, point.X);
+            Assert.Equal(2, point.Y);
+            Assert.Equal(66, point.Z);
+        }
     }
 }

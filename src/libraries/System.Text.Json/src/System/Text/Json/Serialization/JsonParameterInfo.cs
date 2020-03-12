@@ -8,6 +8,10 @@ using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
+    /// <summary>
+    /// Holds relevant state about a method parameter, like the default value of
+    /// the parameter, and the position in the method's parameter list.
+    /// </summary>
     [DebuggerDisplay("ParameterInfo={ParameterInfo}")]
     internal abstract class JsonParameterInfo
     {

@@ -2201,5 +2201,18 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public struct Point_With_Property
+    {
+        public int X { get; }
+        public int Y { get; }
+        public int Z { get; set;  }
 
+        [JsonConstructor]
+        public Point_With_Property(int x, int y)
+        {
+            X = x;
+            Y = y;
+            Z = 0;
+        }
+    }
 }

@@ -15,9 +15,6 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal abstract partial class ObjectWithParameterizedConstructorConverter<T> : ObjectDefaultConverter<T> where T : notnull
     {
-        // The limit to how many property names from the JSON are cached in _propertyRefsSorted (in JsonClassInfo) before using PropertyCache.
-        private const int PropertyNameCountCacheThreshold = 64;
-
         /// <summary>
         /// This method does a full first pass of the JSON input; deserializes the ctor args and extension
         /// data; and keeps track of the positions of object members in the JSON in the reader.
@@ -92,7 +89,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         Debug.Assert(jsonPropertyInfo != null);
 
-                        HandleProperty(ref state, ref reader, unescapedPropertyName, jsonPropertyInfo, options);
+                        HandleProperty(ref state, ref reader, unescapedPropertyName, jsonPropertyInfo, options, unescapedPropertyNameAsString);
 
                         // Increment PropertyIndex so GetProperty() starts with the next property the next time this function is called.
                         state.Current.PropertyIndex++;
@@ -221,16 +218,16 @@ namespace System.Text.Json.Serialization.Converters
                             // Increment PropertyIndex so GetProperty() starts with the next property the next time this function is called.
                             state.Current.PropertyIndex++;
 
-                            if (!HandleDataExtensionWithContinuation(ref state, ref reader, unescapedPropertyName, jsonPropertyInfo, options))
+                            if (!HandleDataExtensionWithContinuation(ref state, ref reader, unescapedPropertyName, jsonPropertyInfo, options, unescapedPropertyNameAsString))
                             {
                                 return false;
                             }
                         }
                     }
                 }
-                else if (state.Current.JsonConstructorParameterInfo != null)
+                else if (state.Current.CtorArgumentState.JsonParameterInfo != null)
                 {
-                    jsonParameterInfo = state.Current.JsonConstructorParameterInfo;
+                    jsonParameterInfo = state.Current.CtorArgumentState.JsonParameterInfo;
                 }
                 else
                 {
@@ -305,7 +302,8 @@ namespace System.Text.Json.Serialization.Converters
             ref Utf8JsonReader reader,
             ReadOnlySpan<byte> unescapedPropertyName,
             JsonPropertyInfo jsonPropertyInfo,
-            JsonSerializerOptions options)
+            JsonSerializerOptions options,
+            string? unescapedPropertyNameAsString = null)
         {
             bool useExtensionProperty;
             // Determine if we should use the extension property.
@@ -315,17 +313,17 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (dataExtProperty != null)
                 {
-                    if (state.Current.DataExtension == null)
+                    if (state.Current.CtorArgumentState.DataExtension == null)
                     {
                         if (dataExtProperty.RuntimeClassInfo.CreateObject == null)
                         {
                             ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(dataExtProperty.DeclaredPropertyType);
                         }
 
-                        state.Current.DataExtension = dataExtProperty.RuntimeClassInfo.CreateObject();
+                        state.Current.CtorArgumentState.DataExtension = dataExtProperty.RuntimeClassInfo.CreateObject();
                     }
 
-                    state.Current.JsonPropertyNameAsString = JsonHelpers.Utf8GetString(unescapedPropertyName);
+                    state.Current.JsonPropertyNameAsString = unescapedPropertyNameAsString ?? JsonHelpers.Utf8GetString(unescapedPropertyName);
                     jsonPropertyInfo = dataExtProperty;
                     useExtensionProperty = true;
                 }
@@ -368,7 +366,13 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void HandleProperty(ref ReadStack state, ref Utf8JsonReader reader, ReadOnlySpan<byte> unescapedPropertyName, JsonPropertyInfo jsonPropertyInfo, JsonSerializerOptions options)
+        private void HandleProperty(
+            ref ReadStack state,
+            ref Utf8JsonReader reader,
+            ReadOnlySpan<byte> unescapedPropertyName,
+            JsonPropertyInfo jsonPropertyInfo,
+            JsonSerializerOptions options,
+            string? unescapedPropertyNameAsString = null)
         {
             bool useExtensionProperty;
             // Determine if we should use the extension property.
@@ -377,17 +381,17 @@ namespace System.Text.Json.Serialization.Converters
                 JsonPropertyInfo? dataExtProperty = state.Current.JsonClassInfo.DataExtensionProperty;
                 if (dataExtProperty != null)
                 {
-                    if (state.Current.DataExtension == null)
+                    if (state.Current.CtorArgumentState.DataExtension == null)
                     {
                         if (dataExtProperty.RuntimeClassInfo.CreateObject == null)
                         {
                             ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(dataExtProperty.DeclaredPropertyType);
                         }
 
-                        state.Current.DataExtension = dataExtProperty.RuntimeClassInfo.CreateObject();
+                        state.Current.CtorArgumentState.DataExtension = dataExtProperty.RuntimeClassInfo.CreateObject();
                     }
 
-                    state.Current.JsonPropertyNameAsString = JsonHelpers.Utf8GetString(unescapedPropertyName);
+                    state.Current.JsonPropertyNameAsString = unescapedPropertyNameAsString ?? JsonHelpers.Utf8GetString(unescapedPropertyName);
                     jsonPropertyInfo = dataExtProperty;
                     state.Current.JsonPropertyInfo = jsonPropertyInfo;
                     useExtensionProperty = true;
@@ -418,23 +422,26 @@ namespace System.Text.Json.Serialization.Converters
 
             if (!useExtensionProperty)
             {
-                if (state.Current.FoundProperties == null)
+                if (state.Current.CtorArgumentState.FoundProperties == null)
                 {
-                    state.Current.FoundProperties =
+                    state.Current.CtorArgumentState.FoundProperties =
                         ArrayPool<ValueTuple<
                             JsonPropertyInfo,
                             JsonReaderState,
                             long,
-                            byte[]?>>.Shared.Rent(PropertyNameCountCacheThreshold);
+                            byte[]?>>.Shared.Rent(state.Current.JsonClassInfo.PropertyCache!.Count);
                 }
-                else  if (state.Current.FoundPropertyCount == state.Current.FoundProperties!.Length)
+                else if (state.Current.CtorArgumentState.FoundPropertyCount == state.Current.CtorArgumentState.FoundProperties!.Length)
                 {
-                    // Case where we can't fit all the JSON properties in the rented pool, we have to grow.
-                    var newCache = ArrayPool<ValueTuple<JsonPropertyInfo, JsonReaderState, long, byte[]?>>.Shared.Rent(state.Current.FoundProperties!.Length * 2);
-                    state.Current.FoundProperties!.CopyTo(newCache, 0);
+                    // Rare case where we can't fit all the JSON properties in the rented pool, we have to grow.
+                    // This could happen if there are duplicate properties in the JSON.
+                    var newCache = ArrayPool<ValueTuple<JsonPropertyInfo, JsonReaderState, long, byte[]?>>.Shared.Rent(
+                        state.Current.CtorArgumentState.FoundProperties!.Length * 2);
+                    state.Current.CtorArgumentState.FoundProperties!.CopyTo(newCache, 0);
 
-                    ArrayPool<ValueTuple<JsonPropertyInfo, JsonReaderState, long, byte[]?>>.Shared.Return(state.Current.FoundProperties!, clearArray: true);
-                    state.Current.FoundProperties = newCache!;
+                    ArrayPool<ValueTuple<JsonPropertyInfo, JsonReaderState, long, byte[]?>>.Shared.Return(
+                        state.Current.CtorArgumentState.FoundProperties!, clearArray: true);
+                    state.Current.CtorArgumentState.FoundProperties = newCache!;
                 }
 
                 byte[]? propertyNameArray;
@@ -448,7 +455,7 @@ namespace System.Text.Json.Serialization.Converters
                     propertyNameArray = null;
                 }
 
-                state.Current.FoundProperties![state.Current.FoundPropertyCount++] = (
+                state.Current.CtorArgumentState.FoundProperties![state.Current.CtorArgumentState.FoundPropertyCount++] = (
                     jsonPropertyInfo,
                     reader.CurrentState,
                     reader.BytesConsumed,
@@ -463,12 +470,12 @@ namespace System.Text.Json.Serialization.Converters
                 if (state.Current.JsonClassInfo.DataExtensionIsObject)
                 {
                     jsonPropertyInfo.ReadJsonExtensionDataValue(ref state, ref reader, out object? extDataValue);
-                    ((IDictionary<string, object>)state.Current.DataExtension!)[state.Current.JsonPropertyNameAsString!] = extDataValue!;
+                    ((IDictionary<string, object>)state.Current.CtorArgumentState.DataExtension!)[state.Current.JsonPropertyNameAsString!] = extDataValue!;
                 }
                 else
                 {
                     jsonPropertyInfo.ReadJsonExtensionDataValue(ref state, ref reader, out JsonElement extDataValue);
-                    ((IDictionary<string, JsonElement>)state.Current.DataExtension!)[state.Current.JsonPropertyNameAsString!] = extDataValue!;
+                    ((IDictionary<string, JsonElement>)state.Current.CtorArgumentState.DataExtension!)[state.Current.JsonPropertyNameAsString!] = extDataValue!;
                 }
 
                 // Ensure any exception thrown in the next read does not have a property in its JsonPath.
@@ -499,30 +506,30 @@ namespace System.Text.Json.Serialization.Converters
 
                     state.Current.PropertyState = StackFramePropertyState.ReadValue;
 
-                    if (state.Current.FoundPropertiesAsync == null)
+                    if (state.Current.CtorArgumentState.FoundPropertiesAsync == null)
                     {
-                        state.Current.FoundPropertiesAsync =
+                        state.Current.CtorArgumentState.FoundPropertiesAsync =
                             ArrayPool<ValueTuple<
                                 JsonPropertyInfo,
                                 JsonReaderState,
                                 byte[],
-                                byte[]?>>.Shared.Rent(PropertyNameCountCacheThreshold);
+                                byte[]?>>.Shared.Rent(state.Current.JsonClassInfo.PropertyCache!.Count);
                     }
-                    else if (state.Current.FoundPropertyCount == state.Current.FoundPropertiesAsync!.Length)
+                    else if (state.Current.CtorArgumentState.FoundPropertyCount == state.Current.CtorArgumentState.FoundPropertiesAsync!.Length)
                     {
                         // Case where we can't fit all the JSON properties in the rented pool, we have to grow.
                         var newCache = ArrayPool<ValueTuple<JsonPropertyInfo, JsonReaderState, byte[], byte[]?>>.Shared.Rent(
-                            state.Current.FoundPropertiesAsync!.Length * 2);
-                        state.Current.FoundPropertiesAsync!.CopyTo(newCache, 0);
+                            state.Current.CtorArgumentState.FoundPropertiesAsync!.Length * 2);
+                        state.Current.CtorArgumentState.FoundPropertiesAsync!.CopyTo(newCache, 0);
 
                         ArrayPool<ValueTuple<JsonPropertyInfo, JsonReaderState, byte[], byte[]?>>.Shared.Return(
-                            state.Current.FoundPropertiesAsync!, clearArray: true);
-                        state.Current.FoundPropertiesAsync = newCache!;
+                            state.Current.CtorArgumentState.FoundPropertiesAsync!, clearArray: true);
+                        state.Current.CtorArgumentState.FoundPropertiesAsync = newCache!;
                     }
 
                     Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
-                    state.Current.ReaderState = reader.CurrentState;
+                    state.Current.CtorArgumentState.ReaderState = reader.CurrentState;
 
                     // We want to cache all the bytes needed to create the value, so force a read-ahead.
                     if (!SingleValueReadWithReadAhead(ClassType.Value, ref reader, ref state))
@@ -560,9 +567,9 @@ namespace System.Text.Json.Serialization.Converters
                         propertyNameArray = null;
                     }
 
-                    state.Current.FoundPropertiesAsync![state.Current.FoundPropertyCount++] = (
+                    state.Current.CtorArgumentState.FoundPropertiesAsync![state.Current.CtorArgumentState.FoundPropertyCount++] = (
                             jsonPropertyInfo,
-                            state.Current.ReaderState,
+                            state.Current.CtorArgumentState.ReaderState,
                             reader.OriginalSpan.Slice(checked((int)reader.TokenStartIndex)).ToArray(),
                             propertyNameArray);
 
@@ -591,7 +598,7 @@ namespace System.Text.Json.Serialization.Converters
                         {
                             return false;
                         }
-                        ((IDictionary<string, object>)state.Current.DataExtension!)[state.Current.JsonPropertyNameAsString!] = extDataValue!;
+                        ((IDictionary<string, object>)state.Current.CtorArgumentState.DataExtension!)[state.Current.JsonPropertyNameAsString!] = extDataValue!;
                     }
                     else
                     {
@@ -599,7 +606,7 @@ namespace System.Text.Json.Serialization.Converters
                         {
                             return false;
                         }
-                        ((IDictionary<string, JsonElement>)state.Current.DataExtension!)[state.Current.JsonPropertyNameAsString!] = extDataValue!;
+                        ((IDictionary<string, JsonElement>)state.Current.CtorArgumentState.DataExtension!)[state.Current.JsonPropertyNameAsString!] = extDataValue!;
                     }
                 }
             }
@@ -662,7 +669,7 @@ namespace System.Text.Json.Serialization.Converters
         private void HandleParameterName(ref ReadStackFrame frame, ReadOnlySpan<byte> unescapedPropertyName, JsonParameterInfo jsonParameterInfo, JsonSerializerOptions options)
         {
             // Increment ConstructorParameterIndex so GetProperty() starts with the next parameter the next time this function is called.
-            frame.ConstructorParameterIndex++;
+            frame.CtorArgumentState.ParameterIndex++;
 
             // Support JsonException.Path.
             Debug.Assert(
@@ -670,7 +677,7 @@ namespace System.Text.Json.Serialization.Converters
                 options.PropertyNameCaseInsensitive ||
                 unescapedPropertyName.SequenceEqual(jsonParameterInfo.JsonPropertyName));
 
-            frame.JsonConstructorParameterInfo = jsonParameterInfo;
+            frame.CtorArgumentState.JsonParameterInfo = jsonParameterInfo;
 
             if (jsonParameterInfo.JsonPropertyName == null)
             {
@@ -684,11 +691,11 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     //Prevent future allocs by caching globally on the JsonPropertyInfo which is specific to a Type+PropertyName
                     // so it will match the incoming payload except when case insensitivity is enabled(which is handled above).
-                    frame.JsonConstructorParameterInfo.JsonPropertyName = propertyNameArray;
+                    frame.CtorArgumentState.JsonParameterInfo.JsonPropertyName = propertyNameArray;
                 }
             }
 
-            frame.JsonConstructorParameterInfo = jsonParameterInfo;
+            frame.CtorArgumentState.JsonParameterInfo = jsonParameterInfo;
         }
     }
 }

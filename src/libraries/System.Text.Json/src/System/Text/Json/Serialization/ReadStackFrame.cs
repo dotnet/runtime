@@ -38,33 +38,12 @@ namespace System.Text.Json
         // Add method delegate for Non-generic Stack and Queue; and types that derive from them.
         public object? AddMethodDelegate;
 
-        // Current constructor parameter value.
-        public JsonParameterInfo? JsonConstructorParameterInfo;
-        public int ConstructorParameterIndex;
-        public List<ParameterRef>? ParameterRefCache;
-
-        // Cache for parsed constructor arguments.
-        public object? ConstructorArguments;
-
-        // Data extension for objects with parameterized ctors and an extension data property.
-        public object? DataExtension;
-
-        // When deserializing objects with parameterized ctors, the properties we find on the first pass.
-        public ValueTuple<JsonPropertyInfo, JsonReaderState, long, byte[]?>[]? FoundProperties;
-
-        // When deserializing objects with parameterized ctors asynchronously, the properties we find on the first pass.
-        public ValueTuple<JsonPropertyInfo, JsonReaderState, byte[], byte[]?>[]? FoundPropertiesAsync;
-
-        // When deserializing objects with parameterized ctors, the number of object properties we find on the first pass (excluding extension data).
-        public int FoundPropertyCount;
-
-        // The starting position of an object property when supporting continuation. This is cached for
-        // each property and used to deserialize the property after the object is constructor.
-        public JsonReaderState ReaderState;
+        // Holds relevant state when deserializing objects with parameterized constructors.
+        public ConstructorArgumentState CtorArgumentState;
 
         public void EndConstructorParameter()
         {
-            JsonConstructorParameterInfo = null;
+            CtorArgumentState.JsonParameterInfo = null;
             JsonPropertyName = null;
             PropertyState = StackFramePropertyState.None;
         }
@@ -117,17 +96,10 @@ namespace System.Text.Json
         public void Reset()
         {
             AddMethodDelegate = null;
-            ConstructorParameterIndex = 0;
-            ConstructorArguments = null;
-            DataExtension = null;
-            FoundProperties = null;
-            FoundPropertiesAsync = null;
-            FoundPropertyCount = 0;
             JsonClassInfo = null!;
             ObjectState = StackFrameObjectState.None;
             OriginalDepth = 0;
             OriginalTokenType = JsonTokenType.None;
-            ParameterRefCache = null;
             PropertyIndex = 0;
             PropertyRefCache = null;
             ReturnValue = null;

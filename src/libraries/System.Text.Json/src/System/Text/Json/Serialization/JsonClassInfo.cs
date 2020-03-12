@@ -4,10 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -17,10 +14,9 @@ namespace System.Text.Json
     {
         public delegate object? ConstructorDelegate();
 
-        public delegate TTypeToConvert ParameterizedConstructorDelegate<TTypeToConvert>(object[] arguments);
+        public delegate T ParameterizedConstructorDelegate<T>(object[] arguments);
 
-        public delegate TTypeToConvert ParameterizedConstructorDelegate<TTypeToConvert, TArg0, TArg1, TArg2, TArg3>(
-            TArg0 arg0, TArg1 arg1, TArg2 arg2, TArg3 arg3);
+        public delegate T ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>(TArg0 arg0, TArg1 arg1, TArg2 arg2, TArg3 arg3);
 
         public ConstructorDelegate? CreateObject { get; private set; }
 
@@ -184,6 +180,8 @@ namespace System.Text.Json
             ParameterInfo[] parameters = constructorInfo!.GetParameters();
             Dictionary<string, JsonParameterInfo> parameterCache = CreateParameterCache(parameters.Length, Options);
 
+            Dictionary<string, JsonPropertyInfo> propertyCache = PropertyCache!;
+
             foreach (ParameterInfo parameterInfo in parameters)
             {
                 PropertyInfo? firstMatch = null;
@@ -220,6 +218,9 @@ namespace System.Text.Json
                         // parameters (ConvertName above can't return multiple strings).
                         parameterCache.Add(jsonParameterInfo.NameAsString, jsonParameterInfo);
 
+                        // Remove property from deserialization cache to reduce the number of JsonPropertyInfos considered during JSON matching.
+                        propertyCache.Remove(jsonPropertyInfo.NameAsString!);
+
                         isBound = true;
                         firstMatch = propertyInfo;
                     }
@@ -235,6 +236,8 @@ namespace System.Text.Json
 
             ParameterCache = parameterCache;
             ParameterCount = parameters.Length;
+
+            PropertyCache = propertyCache;
         }
 
         public bool DetermineExtensionDataProperty(Dictionary<string, JsonPropertyInfo> cache)

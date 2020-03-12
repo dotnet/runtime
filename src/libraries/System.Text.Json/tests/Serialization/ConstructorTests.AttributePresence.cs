@@ -15,20 +15,13 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(PrivateParameterizedCtor))]
         [InlineData(typeof(InternalParameterizedCtor))]
         [InlineData(typeof(ProtectedParameterizedCtor))]
-        public static void NonPublicCtors_NotSupported(Type type)
-        {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize("{}", type));
-        }
-
-        [Theory]
         [InlineData(typeof(PrivateParameterizedCtor_WithAttribute))]
         [InlineData(typeof(InternalParameterizedCtor_WithAttribute))]
         [InlineData(typeof(ProtectedParameterizedCtor_WithAttribute))]
-        public static void NonPublicCtors_WithAttribute_Supported(Type type)
+        public static void NonPublicCtors_NotSupported(Type type)
         {
-            string json = @"{""X"":1}";
-            object obj = JsonSerializer.Deserialize(json, type);
-            Assert.Equal(1, (int)type.GetProperty("X").GetValue(obj));
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize("{}", type));
+            Assert.Contains("JsonConstructorAttribute", ex.ToString());
         }
 
         [Fact]

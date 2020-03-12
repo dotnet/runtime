@@ -381,7 +381,7 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowNotSupportedException_DeserializeNoParameterlessConstructor(Type invalidType)
+        public static void ThrowNotSupportedException_DeserializeNoDeserializationConstructor(Type invalidType)
         {
             if (invalidType.IsInterface)
             {
@@ -389,7 +389,7 @@ namespace System.Text.Json
             }
             else
             {
-                throw new NotSupportedException(SR.Format(SR.DeserializeMissingParameterlessConstructor, invalidType));
+                throw new NotSupportedException(SR.Format(SR.DeserializeMissingDeserializationConstructor, nameof(JsonConstructorAttribute), invalidType));
             }
         }
 

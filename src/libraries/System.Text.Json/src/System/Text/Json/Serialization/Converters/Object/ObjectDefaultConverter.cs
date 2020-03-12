@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (state.Current.JsonClassInfo.CreateObject == null)
                 {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoParameterlessConstructor(state.Current.JsonClassInfo.Type);
+                    ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(state.Current.JsonClassInfo.Type);
                 }
 
                 obj = state.Current.JsonClassInfo.CreateObject!()!;
@@ -122,7 +122,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (state.Current.JsonClassInfo.CreateObject == null)
                     {
-                        ThrowHelper.ThrowNotSupportedException_DeserializeNoParameterlessConstructor(state.Current.JsonClassInfo.Type);
+                        ThrowHelper.ThrowNotSupportedException_DeserializeNoDeserializationConstructor(state.Current.JsonClassInfo.Type);
                     }
 
                     obj = state.Current.JsonClassInfo.CreateObject!()!;
@@ -270,7 +270,7 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        internal sealed override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
             // Minimize boxing for structs by only boxing once here
             object objectValue = value!;

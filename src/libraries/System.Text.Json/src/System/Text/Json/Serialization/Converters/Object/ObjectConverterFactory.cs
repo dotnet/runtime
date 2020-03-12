@@ -85,7 +85,6 @@ namespace System.Text.Json.Serialization.Converters
             ConstructorInfo? publicParameterlessCtor = null;
             ConstructorInfo? lonePublicCtor = null;
 
-            // Check public constructors.
             ConstructorInfo[] constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
 
             if (constructors.Length == 1)
@@ -104,27 +103,26 @@ namespace System.Text.Json.Serialization.Converters
 
                     ctorWithAttribute = constructor;
                 }
-                else if (publicParameterlessCtor == null && constructor.GetParameters().Length == 0)
+                else if (constructor.GetParameters().Length == 0)
                 {
-
                     publicParameterlessCtor = constructor;
                 }
             }
 
-            // Now, check non-public ctors.
-            constructors = type.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance);
+            // For correctness, throw if multiple ctors have [JsonConstructor], even if one or more are non-public.
+            ConstructorInfo? dummyCtorWithAttribute = ctorWithAttribute;
 
+            constructors = type.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance);
             foreach (ConstructorInfo constructor in constructors)
             {
-                // Only recognize those with the attribute.
                 if (constructor.GetCustomAttribute<JsonConstructorAttribute>() != null)
                 {
-                    if (ctorWithAttribute != null)
+                    if (dummyCtorWithAttribute != null)
                     {
                         ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute<JsonConstructorAttribute>(type);
                     }
 
-                    ctorWithAttribute = constructor;
+                    dummyCtorWithAttribute = constructor;
                 }
             }
 

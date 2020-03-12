@@ -55,6 +55,7 @@
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.TryGet.cs" />
     <Compile Include="System\Text\Json\Serialization\ArgumentCache.cs" />
     <Compile Include="System\Text\Json\Serialization\ClassType.cs" />
+    <Compile Include="System\Text\Json\Serialization\ConstructorArgumentState.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterList.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ArrayConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ConcurrentQueueOfTConverter.cs" />
@@ -116,7 +117,6 @@
     <Compile Include="System\Text\Json\Serialization\DefaultReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonCamelCaseNamingPolicy.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonClassInfo.AddProperty.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.Cache.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonCollectionConverter.cs" />

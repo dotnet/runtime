@@ -26,7 +26,12 @@ namespace System.Text.Json
         // The limit to how many property names from the JSON are cached in _propertyRefsSorted before using PropertyCache.
         private const int PropertyNameCountCacheThreshold = 64;
 
+        // The number of parameters the deserialization constructor has. If this is not equal to ParameterCache.Count, this means
+        // that not all parameters are bound to object properties, and an exception will be thrown if deserialization is attempted.
+        public int ParameterCount { get; private set; }
+
         // All of the serializable parameters on a POCO constructor keyed on parameter name.
+        // Only paramaters which bind to properties are cached.
         public volatile Dictionary<string, JsonParameterInfo>? ParameterCache;
 
         // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
@@ -43,8 +48,6 @@ namespace System.Text.Json
         // Fast cache of properties by first JSON ordering; may not contain all properties. Accessed before PropertyCache.
         // Use an array (instead of List<T>) for highest performance.
         private volatile PropertyRef[]? _propertyRefsSorted;
-
-        public int ParameterCount { get; private set; }
 
         private Dictionary<string, JsonPropertyInfo> CreatePropertyCache(int capacity)
         {
@@ -72,6 +75,74 @@ namespace System.Text.Json
             {
                 return new Dictionary<string, JsonParameterInfo>(capacity);
             }
+        }
+
+        public static JsonPropertyInfo AddProperty(Type propertyType, PropertyInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
+        {
+            bool hasIgnoreAttribute = (JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(propertyInfo) != null);
+            if (hasIgnoreAttribute)
+            {
+                return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(propertyInfo, options);
+            }
+
+            JsonConverter converter = GetConverter(
+                propertyType,
+                parentClassType,
+                propertyInfo,
+                out Type runtimeType,
+                options);
+
+            return CreateProperty(
+                declaredPropertyType: propertyType,
+                runtimePropertyType: runtimeType,
+                propertyInfo,
+                parentClassType,
+                converter,
+                options);
+        }
+
+        internal static JsonPropertyInfo CreateProperty(
+            Type declaredPropertyType,
+            Type? runtimePropertyType,
+            PropertyInfo? propertyInfo,
+            Type parentClassType,
+            JsonConverter converter,
+            JsonSerializerOptions options)
+        {
+            // Create the JsonPropertyInfo instance.
+            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo();
+
+            jsonPropertyInfo.Initialize(
+                parentClassType,
+                declaredPropertyType,
+                runtimePropertyType,
+                runtimeClassType: converter.ClassType,
+                propertyInfo,
+                converter,
+                options);
+
+            return jsonPropertyInfo;
+        }
+
+        /// <summary>
+        /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
+        /// A policy property is not a real property on a type; instead it leverages the existing converter
+        /// logic and generic support to avoid boxing. It is used with values types, elements from collections and
+        /// dictionaries, and collections themselves. Typically it would represent a CLR type such as System.String.
+        /// </summary>
+        internal static JsonPropertyInfo CreatePolicyProperty(
+            Type declaredPropertyType,
+            Type runtimePropertyType,
+            JsonConverter converter,
+            JsonSerializerOptions options)
+        {
+            return CreateProperty(
+                declaredPropertyType: declaredPropertyType,
+                runtimePropertyType: runtimePropertyType,
+                propertyInfo: null, // Not a real property so this is null.
+                parentClassType: typeof(object), // a dummy value (not used)
+                converter: converter,
+                options);
         }
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
@@ -243,7 +314,7 @@ namespace System.Text.Json
             if (localParameterRefsSorted != null)
             {
                 // Start with the current parameter index, and then go forwards\backwards.
-                int parameterIndex = frame.ConstructorParameterIndex;
+                int parameterIndex = frame.CtorArgumentState.ParameterIndex;
 
                 int count = localParameterRefsSorted.Length;
                 int iForward = Math.Min(parameterIndex, count);
@@ -341,21 +412,21 @@ namespace System.Text.Json
             if (cacheCount < ParameterNameCountCacheThreshold)
             {
                 // Do a slower check for the warm-up case.
-                if (frame.ParameterRefCache != null)
+                if (frame.CtorArgumentState.ParameterRefCache != null)
                 {
-                    cacheCount += frame.ParameterRefCache.Count;
+                    cacheCount += frame.CtorArgumentState.ParameterRefCache.Count;
                 }
 
                 // Check again to append the cache up to the threshold.
                 if (cacheCount < ParameterNameCountCacheThreshold)
                 {
-                    if (frame.ParameterRefCache == null)
+                    if (frame.CtorArgumentState.ParameterRefCache == null)
                     {
-                        frame.ParameterRefCache = new List<ParameterRef>();
+                        frame.CtorArgumentState.ParameterRefCache = new List<ParameterRef>();
                     }
 
                     ParameterRef parameterRef = new ParameterRef(JsonClassInfo.GetKey(propertyName), jsonParameterInfo);
-                    frame.ParameterRefCache.Add(parameterRef);
+                    frame.CtorArgumentState.ParameterRefCache.Add(parameterRef);
                 }
             }
 
@@ -526,12 +597,12 @@ namespace System.Text.Json
 
         public void UpdateSortedParameterCache(ref ReadStackFrame frame)
         {
-            Debug.Assert(frame.ParameterRefCache != null);
+            Debug.Assert(frame.CtorArgumentState.ParameterRefCache != null);
 
             // frame.PropertyRefCache is only read\written by a single thread -- the thread performing
             // the deserialization for a given object instance.
 
-            List<ParameterRef> listToAppend = frame.ParameterRefCache;
+            List<ParameterRef> listToAppend = frame.CtorArgumentState.ParameterRefCache;
 
             // _parameterRefsSorted can be accessed by multiple threads, so replace the reference when
             // appending to it. No lock() is necessary.
@@ -557,7 +628,7 @@ namespace System.Text.Json
                 _parameterRefsSorted = listToAppend.ToArray();
             }
 
-            frame.ParameterRefCache = null;
+            frame.CtorArgumentState.ParameterRefCache = null;
         }
     }
 }

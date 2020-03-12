@@ -108,7 +108,7 @@ namespace System.Text.Json
                         }
                         else
                         {
-                            jsonClassInfo = Current.JsonConstructorParameterInfo!.RuntimeClassInfo;
+                            jsonClassInfo = Current.CtorArgumentState.JsonParameterInfo!.RuntimeClassInfo;
                         }
                     }
                     else if ((Current.JsonClassInfo.ClassType & (ClassType.Value | ClassType.NewValue)) != 0)
@@ -290,7 +290,8 @@ namespace System.Text.Json
                 if (utf8PropertyName == null)
                 {
                     // Attempt to get the JSON property name from the JsonPropertyInfo or JsonParameterInfo.
-                    utf8PropertyName = frame.JsonPropertyInfo?.JsonPropertyName ?? frame.JsonConstructorParameterInfo?.JsonPropertyName;
+                    utf8PropertyName = frame.JsonPropertyInfo?.JsonPropertyName ??
+                        frame.CtorArgumentState.JsonParameterInfo?.JsonPropertyName;
                     if (utf8PropertyName == null)
                     {
                         // Attempt to get the JSON property name set manually for dictionary

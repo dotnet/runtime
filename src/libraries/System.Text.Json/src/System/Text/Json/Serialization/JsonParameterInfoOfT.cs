@@ -7,6 +7,10 @@ using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
+    /// <summary>
+    /// Represents a strongly-typed parameter to prevent boxing where have less than 4 parameters.
+    /// Holds relevant state like the default value of the parameter, and the position in the method's parameter list.
+    /// </summary>
     internal class JsonParameterInfo<T> : JsonParameterInfo
     {
         private JsonConverter<T> _converter = null!;

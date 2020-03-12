@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (success)
             {
-                ((object[])state.Current.ConstructorArguments!)[jsonParameterInfo.Position] = arg0!;
+                ((object[])state.Current.CtorArgumentState.Arguments!)[jsonParameterInfo.Position] = arg0!;
             }
 
             return success;
@@ -40,7 +40,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowNotSupportedException_ConstructorMaxOf64Parameters(ConstructorInfo, TypeToConvert);
             }
 
-            object[] arguments = (object[])state.Current.ConstructorArguments!;
+            object[] arguments = (object[])state.Current.CtorArgumentState.Arguments!;
 
             object obj = _createObject(arguments)!;
 
@@ -50,6 +50,9 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
         {
+            // Clear state from previous deserialization.
+            state.Current.CtorArgumentState.Reset();
+
             int paramCount = state.Current.JsonClassInfo.ParameterCount;
             Dictionary<string, JsonParameterInfo>.ValueCollection parameterCacheValues = state.Current.JsonClassInfo.ParameterCache!.Values;
 
@@ -67,7 +70,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            state.Current.ConstructorArguments = arguments;
+            state.Current.CtorArgumentState.Arguments = arguments;
         }
     }
 }
