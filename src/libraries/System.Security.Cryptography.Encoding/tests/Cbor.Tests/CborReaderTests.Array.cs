@@ -176,7 +176,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         }
 
         [Fact]
-        public static void BeginReadArray_EmptyBuffer_ShouldThrowFormatException()
+        public static void ReadStartArray_EmptyBuffer_ShouldThrowFormatException()
         {
             byte[] encoding = Array.Empty<byte>();
             var reader = new CborReader(encoding);
@@ -193,7 +193,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("a0")] // {}
         [InlineData("f97e00")] // NaN
         [InlineData("fb3ff199999999999a")] // 1.1
-        public static void BeginReadArray_InvalidType_ShouldThrowInvalidOperationException(string hexEncoding)
+        public static void ReadStartArray_InvalidType_ShouldThrowInvalidOperationException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
@@ -210,7 +210,7 @@ namespace System.Security.Cryptography.Encoding.Tests.Cbor
         [InlineData("9912")]
         [InlineData("9a000000")]
         [InlineData("9b00000000000000")]
-        public static void BeginReadArray_InvalidData_ShouldThrowFormatException(string hexEncoding)
+        public static void ReadStartArray_InvalidData_ShouldThrowFormatException(string hexEncoding)
         {
             byte[] data = hexEncoding.HexToByteArray();
             var reader = new CborReader(data);
