@@ -1849,6 +1849,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
+    // TODO-CQ: enable promotion for OSR locals
     if (compiler->lvaIsOSRLocal(lclNum))
     {
         JITDUMP("  struct promotion of V%02u is disabled because it is an OSR local\n", lclNum);
@@ -5666,7 +5667,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
     // If we are an OSR method, we "inherit" the frame of the original method,
     // and the stack is already double aligned on entry (since the return adddress push
-    // and any special alignment push happend "before").
+    // and any special alignment push happened "before").
     if (opts.IsOSR())
     {
         originalFrameSize    = info.compPatchpointInfo->FpToSpDelta();
@@ -6018,39 +6019,20 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // will refer to their memory homes.
             if (lvaIsOSRLocal(lclNum))
             {
-                // Todo: verify it's ok to handle independent fields that are live on entry
-                // to the OSR method and in memory at entry this way...
-                if (varDsc->lvIsStructField)
-                {
-                    const unsigned parentLclNum = varDsc->lvParentLcl;
-                    assert(parentLclNum < info.compLocalsCount);
+                // TODO-CQ: enable struct promotion for OSR locals; when that
+                // happens, figure out how to properly refer to the original
+                // frame slots for the promoted fields.
+                assert(!varDsc->lvIsStructField);
 
-                    LclVarDsc* parentVarDsc         = &lvaTable[parentLclNum];
-                    int        originalParentOffset = info.compPatchpointInfo->Offset(parentLclNum);
-                    int        parentOffset         = originalFrameStkOffs + originalParentOffset;
-                    int        fieldOffset          = parentOffset + varDsc->lvFldOffset;
+                // Add frampointer-relative offset of this OSR live local in the original frame
+                // to the offset of original frame in our new frame.
+                int originalOffset = info.compPatchpointInfo->Offset(lclNum);
+                int offset         = originalFrameStkOffs + originalOffset;
 
-                    JITDUMP("---OSR--- V%02u (on old frame) (promoted field of V%02u) new virt offset %d\n", lclNum,
-                            parentLclNum, fieldOffset);
+                JITDUMP("---OSR--- V%02u (on old frame) old rbp offset %d old frame offset %d new virt offset %d\n",
+                        lclNum, originalOffset, originalFrameStkOffs, offset);
 
-                    lvaTable[lclNum].lvStkOffs = fieldOffset;
-                }
-                else
-                {
-                    assert(lclNum < info.compLocalsCount);
-
-                    // Add frampointer-relative offset of this OSR live local in the original frame
-                    // to the offset of original frame in our new frame.
-                    int originalOffset = info.compPatchpointInfo->Offset(lclNum);
-                    int offset         = originalFrameStkOffs + originalOffset;
-
-                    JITDUMP("---OSR--- V%02u (on old frame) old rbp offset %d old frame offset %d new virt offset %d\n",
-                            lclNum, originalOffset, originalFrameStkOffs, offset);
-
-                    lvaTable[lclNum].lvStkOffs = offset;
-                    continue;
-                }
-
+                lvaTable[lclNum].lvStkOffs = offset;
                 continue;
             }
 
@@ -7358,9 +7340,22 @@ int Compiler::lvaGetCallerSPRelativeOffset(unsigned varNum)
 
 int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased) const
 {
-    // Todo: this should not be called for OSR
-    // methods -- instead we shoud fetch the offsets from the ppInfo
     assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
+
+    // TODO-Cleanup
+    //
+    // This current should not be called for OSR as caller SP relative
+    // offsets computed below do not reflect the extra stack space
+    // taken up by the original method frame.
+    //
+    // We should make it work.
+    //
+    // Instead we record the needed offsets in the patchpoint info
+    // when doing the original method compile(see special offsets
+    // in generatePatchpointInfo) and consume those values in the OSR
+    // compile. If we fix this we may be able to reduce the size
+    // of the patchpoint info and have less special casing for these
+    // frame slots.
 
     if (isFpBased)
     {

@@ -6705,23 +6705,64 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             const emitAttr  size    = emitTypeSize(lclTyp);
             const int       stkOffs = patchpointInfo->Offset(lclNum) + fieldOffset;
 
-            // stkOffs is the original frame RBP-relative offset
-            // to the var.  We want either an RSP or RBP relative
-            // offset for the current frame.
+            // Original frames always use frame pointers, so
+            // stkOffs is the original frame-relative offset
+            // to the variable.
             //
-            // If using RSP, we need to add the SP-to-FP delta of
-            // this frame and the SP-to-FP delta of the original
-            // frame... that translates from this frame's RSP to
-            // the old frame RBP. We then add the original frame's
-            // RBP relative offset.
+            // We need to determine the stack or frame-pointer relative
+            // offset for this variable in the current frame.
             //
-            // If using RBP, we need to add the SP-to-FP delta of
-            // the original frame and then add the original
-            // frame's RBP relative offset.
+            // If current frame does not use a frame pointer, we need to
+            // add the SP-to-FP delta of this frame and the SP-to-FP delta
+            // of the original frame; that translates from this frame's
+            // stack pointer the old frame frame pointer.
+            //
+            // We then add the original frame's frame-pointer relative
+            // offset (note this offset is usually negative -- the stack
+            // grows down, so locals are below the frame pointer).
+            //
+            // /-----original frame-----/
+            // / return address         /
+            // / saved RBP   --+        /  <--- Original frame ptr   --+
+            // / ...           |        /                              |
+            // / ...       (stkOffs)    /                              |
+            // / ...           |        /                              |
+            // / variable    --+        /                              |
+            // / ...                    /                (original frame sp-fp delta)
+            // / ...                    /                              |
+            // /-----OSR frame ---------/                              |
+            // / pseudo return address  /                            --+
+            // / ...                    /                              |
+            // / ...                    /                    (this frame sp-fp delta)
+            // / ...                    /                              |
+            // /------------------------/  <--- Stack ptr            --+
+            //
+            // If the current frame is using a frame pointer, we need to
+            // add the SP-to-FP delta of/ the original frame and then add
+            // the original frame's frame-pointer relative offset.
+            //
+            // /-----original frame-----/
+            // / return address         /
+            // / saved RBP   --+        /  <--- Original frame ptr   --+
+            // / ...           |        /                              |
+            // / ...       (stkOffs)    /                              |
+            // / ...           |        /                              |
+            // / variable    --+        /                              |
+            // / ...                    /                (original frame sp-fp delta)
+            // / ...                    /                              |
+            // /-----OSR frame ---------/                              |
+            // / pseudo return address  /                            --+
+            // / saved RBP              /  <--- Frame ptr            --+
+            // / ...                    /
+            // / ...                    /
+            // / ...                    /
+            // /------------------------/
+
             int offset = originalFrameSize + stkOffs;
 
             if (isFramePointerUsed())
             {
+                // also adjust for saved RPB on this frame
                 offset += TARGET_POINTER_SIZE;
             }
             else
@@ -7612,18 +7653,8 @@ void CodeGen::genFnProlog()
         }
     }
 
-    // With OSR we may have untracked locals that were initialized by the original method.
-    if (hasUntrLcl)
-    {
-        if (compiler->opts.IsOSR())
-        {
-            // todo: suitable assertion here
-        }
-        else
-        {
-            assert(genInitStkLclCnt > 0);
-        }
-    }
+    // TODO-Cleanup: Add suitable assert for the OSR case.
+    assert(compiler->opts.IsOSR() || ((genInitStkLclCnt > 0) == hasUntrLcl));
 
 #ifdef DEBUG
     if (verbose)
