@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Collections.Generic;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -10,15 +11,12 @@ namespace System.Text.Json.Serialization.Converters
     /// Implementation of <cref>JsonObjectConverter{T}</cref> that supports the deserialization
     /// of JSON objects using parameterized constructors.
     /// </summary>
-    internal sealed class LargeObjectWithParameterizedConstructorConverter<T> :
-        ObjectWithParameterizedConstructorConverter<T>
+    internal sealed class LargeObjectWithParameterizedConstructorConverter<T> : ObjectWithParameterizedConstructorConverter<T> where T : notnull
     {
         private JsonClassInfo.ParameterizedConstructorDelegate<T>? _createObject;
 
-        internal override void Initialize(JsonSerializerOptions options)
+        internal override void CreateConstructorDelegate(JsonSerializerOptions options)
         {
-            base.Initialize(options);
-
             _createObject = options.MemberAccessorStrategy.CreateParameterizedConstructor<T>(ConstructorInfo)!;
         }
 
@@ -50,15 +48,18 @@ namespace System.Text.Json.Serialization.Converters
             return obj;
         }
 
-        protected override void InitializeConstructorArgumentCaches(ref ReadStackFrame frame, JsonSerializerOptions options)
+        protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
         {
-            if (ParameterCount != ParameterCache.Count)
+            int paramCount = state.Current.JsonClassInfo.ParameterCount;
+            Dictionary<string, JsonParameterInfo>.ValueCollection parameterCacheValues = state.Current.JsonClassInfo.ParameterCache!.Values;
+
+            if (paramCount != parameterCacheValues.Count)
             {
                 ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(ConstructorInfo, TypeToConvert);
             }
 
-            object[] arguments = ArrayPool<object>.Shared.Rent(ParameterCount);
-            foreach (JsonParameterInfo jsonParameterInfo in ParameterCache.Values)
+            object[] arguments = ArrayPool<object>.Shared.Rent(paramCount);
+            foreach (JsonParameterInfo jsonParameterInfo in parameterCacheValues)
             {
                 if (jsonParameterInfo.ShouldDeserialize)
                 {
@@ -66,7 +67,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            frame.ConstructorArguments = arguments;
+            state.Current.ConstructorArguments = arguments;
         }
     }
 }

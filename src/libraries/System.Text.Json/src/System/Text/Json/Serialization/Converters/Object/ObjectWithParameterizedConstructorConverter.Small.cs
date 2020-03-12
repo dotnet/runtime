@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -11,15 +11,12 @@ namespace System.Text.Json.Serialization.Converters
     /// Implementation of <cref>JsonObjectConverter{T}</cref> that supports the deserialization
     /// of JSON objects using parameterized constructors.
     /// </summary>
-    internal sealed class SmallObjectWithParameterizedConstructorConverter<T, TArg0, TArg1, TArg2, TArg3> :
-        ObjectWithParameterizedConstructorConverter<T>
+    internal sealed class SmallObjectWithParameterizedConstructorConverter<T, TArg0, TArg1, TArg2, TArg3> : ObjectWithParameterizedConstructorConverter<T> where T : notnull
     {
         private JsonClassInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>? _createObject;
 
-        internal override void Initialize(JsonSerializerOptions options)
+        internal override void CreateConstructorDelegate(JsonSerializerOptions options)
         {
-            base.Initialize(options);
-
             _createObject = options.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo)!;
         }
 
@@ -74,16 +71,18 @@ namespace System.Text.Json.Serialization.Converters
             return success;
         }
 
-        protected override void InitializeConstructorArgumentCaches(ref ReadStackFrame frame, JsonSerializerOptions options)
+        protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
         {
-            if (ParameterCount != ParameterCache.Count)
+            Dictionary<string, JsonParameterInfo>.ValueCollection parameterCacheValues = state.Current.JsonClassInfo.ParameterCache!.Values;
+
+            if (state.Current.JsonClassInfo.ParameterCount != parameterCacheValues.Count)
             {
                 ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(ConstructorInfo, TypeToConvert);
             }
 
             var arguments = new ArgumentCache<TArg0, TArg1, TArg2, TArg3>();
 
-            foreach (JsonParameterInfo parameterInfo in ParameterCache.Values)
+            foreach (JsonParameterInfo parameterInfo in parameterCacheValues)
             {
                 if (parameterInfo.ShouldDeserialize)
                 {
@@ -110,7 +109,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            frame.ConstructorArguments = arguments;
+            state.Current.ConstructorArguments = arguments;
         }
     }
 }

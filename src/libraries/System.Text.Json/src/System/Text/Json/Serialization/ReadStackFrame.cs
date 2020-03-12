@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -39,8 +38,8 @@ namespace System.Text.Json
         // Add method delegate for Non-generic Stack and Queue; and types that derive from them.
         public object? AddMethodDelegate;
 
+        // Current constructor parameter value.
         public JsonParameterInfo? JsonConstructorParameterInfo;
-
         public int ConstructorParameterIndex;
         public List<ParameterRef>? ParameterRefCache;
 
@@ -56,8 +55,11 @@ namespace System.Text.Json
         // When deserializing objects with parameterized ctors asynchronously, the properties we find on the first pass.
         public ValueTuple<JsonPropertyInfo, JsonReaderState, byte[], byte[]?>[]? FoundPropertiesAsync;
 
+        // When deserializing objects with parameterized ctors, the number of object properties we find on the first pass (excluding extension data).
         public int FoundPropertyCount;
 
+        // The starting position of an object property when supporting continuation. This is cached for
+        // each property and used to deserialize the property after the object is constructor.
         public JsonReaderState ReaderState;
 
         public void EndConstructorParameter()

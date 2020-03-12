@@ -80,7 +80,6 @@ namespace System.Text.Json.Serialization
 
         internal ConstructorInfo ConstructorInfo { get; set; } = null!;
 
-        // Provides intialization needed by object converters that deserialize types with parameterized constructors.
-        internal virtual void Initialize(JsonSerializerOptions options) { }
+        internal virtual void CreateConstructorDelegate(JsonSerializerOptions options) { }
     }
 }
