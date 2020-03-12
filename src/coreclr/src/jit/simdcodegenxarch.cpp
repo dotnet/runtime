@@ -44,10 +44,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //   * 0b11 - Round toward zero (Truncate)
 // - Bit 2 - Source of rounding control, 0b0 for immediate.
 // - Bit 3 - Precision exception, 0b1 to ignore. (We don't raise FP exceptions)
-#define ROUNDPS_TO_NEAREST_IMM 0b1000;
-#define ROUNDPS_TOWARD_NEGATIVE_INFINITY_IMM 0b1001;
-#define ROUNDPS_TOWARD_POSITIVE_INFINITY_IMM 0b1010;
-#define ROUNDPS_TOWARD_ZERO_IMM 0b1011;
+#define ROUNDPS_TO_NEAREST_IMM 0b1000
+#define ROUNDPS_TOWARD_NEGATIVE_INFINITY_IMM 0b1001
+#define ROUNDPS_TOWARD_POSITIVE_INFINITY_IMM 0b1010
+#define ROUNDPS_TOWARD_ZERO_IMM 0b1011
 
 // getOpForSIMDIntrinsic: return the opcode for the given SIMD Intrinsic
 //
@@ -651,25 +651,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             break;
 
         case SIMDIntrinsicCeil:
-            if (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported)
-            {
-                if (baseType == TYP_FLOAT)
-                {
-                    result = INS_roundps;
-                }
-                else if (baseType == TYP_DOUBLE)
-                {
-                    result = INS_roundpd;
-                }
-                else
-                {
-                    unreached();
-                }
-                assert(ival != nullptr);
-                *ival = ROUNDPS_TOWARD_POSITIVE_INFINITY_IMM;
-            }
-            break;
-
         case SIMDIntrinsicFloor:
             if (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported)
             {
@@ -677,16 +658,15 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
                 {
                     result = INS_roundps;
                 }
-                else if (baseType == TYP_DOUBLE)
-                {
-                    result = INS_roundpd;
-                }
                 else
                 {
-                    unreached();
+                    assert(baseType == TYP_DOUBLE);
+                    result = INS_roundpd;
                 }
+
                 assert(ival != nullptr);
-                *ival = ROUNDPS_TOWARD_NEGATIVE_INFINITY_IMM;
+                *ival = (intrinsicId == SIMDIntrinsicCeil) ? ROUNDPS_TOWARD_POSITIVE_INFINITY_IMM
+                                                           : ROUNDPS_TOWARD_NEGATIVE_INFINITY_IMM;
             }
             break;
 
