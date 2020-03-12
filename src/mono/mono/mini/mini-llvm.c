@@ -8044,7 +8044,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			LLVMTypeRef t = LLVMTypeOf (value);
 			LLVMValueRef index_vect = LLVMBuildInsertElement (builder, LLVMConstNull (t), convert (ctx, index, LLVMGetElementType (t)), const_int32 (0), "");
-			LLVMDumpValue (index_vect);
 			LLVMValueRef args [] = { value, index_vect };
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
