@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Buffers.Text
@@ -69,6 +71,24 @@ namespace System.Buffers.Text
         {
             value = default;
             return TryParseThrowFormatException(out bytesConsumed);
+        }
+
+        //
+        // Enable use of ThrowHelper from TryParse() routines without introducing dozens of non-code-coveraged "value= default; bytesConsumed = 0; return false" boilerplate.
+        //
+        [DoesNotReturn]
+        [StackTraceHidden]
+        public static bool TryParseThrowFormatException<T>(ReadOnlySpan<byte> source, out T value, out int bytesConsumed) where T : struct
+        {
+            // While loop below tells C# compiler to ignore 'out not assigned' errors
+            // and tells JIT that this method never returns. The parameters to this method
+            // are ordered the same as our callers' parameters so as to allow the JIT to
+            // avoid unnecessary register swapping.
+
+            while (true)
+            {
+                ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+            }
         }
     }
 }
