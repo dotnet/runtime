@@ -12682,6 +12682,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     // any tiered compilation.
     if (flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE))
     {
+        _ASSERTE(config->GetCallerGCMode() != CallerGCMode::Coop);
+
         // Clear all possible states.
         flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
         flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
@@ -13327,9 +13329,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-        // ENCODE_METHOD_NATIVECALLABLE_HANDLE is same as ENCODE_METHOD_ENTRY_DEF_TOKEN
-        // except for AddrOfCode
-    case ENCODE_METHOD_NATIVE_ENTRY:
     case ENCODE_METHOD_ENTRY_DEF_TOKEN:
         {
             mdToken MethodDef = TokenFromRid(CorSigUncompressData(pBlob), mdtMethodDef);
@@ -13385,19 +13384,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
         MethodEntry:
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-            if (kind == ENCODE_METHOD_NATIVE_ENTRY)
-            {
-                result = COMDelegate::ConvertToCallback(pMD);
-            }
-            else
-            {
-                result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
-            }
-#else
             result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
-
-#endif // !(TARGET_X86 && TARGET_WINDOWS)
 
         #ifndef TARGET_ARM
             if (CORCOMPILE_IS_PCODE_TAGGED(result))
