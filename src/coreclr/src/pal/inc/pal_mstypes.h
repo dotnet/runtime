@@ -214,14 +214,16 @@ extern "C" {
 #ifndef PAL_IMPLEMENTATION
 
 // OS X already defines these types in 64 bit
-#if !defined(TARGET_OSX)
+#ifndef TARGET_OSX
 typedef __int64 int64_t;
 typedef unsigned __int64 uint64_t;
 typedef __int32 int32_t;
 typedef unsigned __int32 uint32_t;
 typedef __int16 int16_t;
 typedef unsigned __int16 uint16_t;
+#if !defined(TARGET_ANDROID) || defined(FEATURE_NO_HOST)
 typedef __int8 int8_t;
+#endif
 typedef unsigned __int8 uint8_t;
 #endif
 
