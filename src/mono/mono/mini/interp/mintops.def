@@ -693,11 +693,11 @@ OPDEF(MINT_CONV_OVF_U8_R4, "conv.ovf.u8.r4", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_U8_R8, "conv.ovf.u8.r8", 1, Pop1, Push1, MintOpNoArgs)
 
 OPDEF(MINT_CEQ0_I4, "ceq0.i4", 1, Pop1, Push1, MintOpNoArgs)
-/* unops end */
 
 OPDEF(MINT_CONV_I4_I8_SP, "conv.i4.i8.sp", 1, Pop2, Push2, MintOpNoArgs) /* special for narrowing sp[-2] on 64 bits */
 OPDEF(MINT_CONV_I8_I4_SP, "conv.i8.i4.sp", 1, Pop2, Push2, MintOpNoArgs) /* special for widening sp[-2] on 64 bits */
 OPDEF(MINT_CONV_R8_R4_SP, "conv.r8.r4.sp", 1, Pop2, Push2, MintOpNoArgs)
+/* unops end */
 
 OPDEF(MINT_CKFINITE, "ckfinite", 1, Pop1, Push1, MintOpNoArgs)
 OPDEF(MINT_MKREFANY, "mkrefany", 2, Pop1, Push1, MintOpClassToken)
