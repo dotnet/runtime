@@ -1231,7 +1231,7 @@
   },
   {
     "Name": "System.Net.Http.Json",
-    "Description": "Provides extension methods for System.Net.Http.HttpClient and System.Net.Http.HttpContent that focus on ease of use of JSON as the data interchange format for HTTP clients (pending approval).",
+    "Description": "Provides extension methods for System.Net.Http.HttpClient and System.Net.Http.HttpContent that perform automatic serialization and deserialization using System.Text.Json.",
     "CommonTypes": [
       "System.Net.Http.Json.HttpClientJsonExtensions",
       "System.Net.Http.Json.HttpContentJsonExtensions",

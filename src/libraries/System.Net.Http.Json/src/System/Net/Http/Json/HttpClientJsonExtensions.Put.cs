@@ -17,7 +17,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent content = CreateJsonContent(type, value, options);
+            JsonContent content = new JsonContent(type, value, options);
             return client.PutAsync(requestUri, content, cancellationToken);
         }
 
@@ -28,7 +28,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent content = CreateJsonContent(type, value, options);
+            JsonContent content = new JsonContent(type, value, options);
             return client.PutAsync(requestUri, content, cancellationToken);
         }
 
@@ -39,7 +39,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent content = CreateJsonContent<T>(value, options);
+            JsonContent content = JsonContent.Create(value, options);
             return client.PutAsync(requestUri, content, cancellationToken);
         }
 
@@ -50,18 +50,8 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            JsonContent content = CreateJsonContent<T>(value, options);
+            JsonContent content = JsonContent.Create(value, options);
             return client.PutAsync(requestUri, content, cancellationToken);
-        }
-
-        private static JsonContent CreateJsonContent(Type type, object? value, JsonSerializerOptions? options)
-        {
-            return new JsonContent(type, value, options);
-        }
-
-        private static JsonContent CreateJsonContent<T>(T value, JsonSerializerOptions? options)
-        {
-            return JsonContent.Create<T>(value, options);
         }
     }
 }

@@ -45,7 +45,6 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public void JsonContentMediaType()
         {
-            MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse("foo/bar; charset=utf-16");
             Type fooType = typeof(Foo);
             Foo foo = new Foo();
 
@@ -59,6 +58,7 @@ namespace System.Net.Http.Json.Functional.Tests
             Assert.Equal("utf-8", content.Headers.ContentType.CharSet);
 
             // Use the specified MediaTypeHeaderValue if provided.
+            MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse("foo/bar; charset=utf-8");
             content = new JsonContent(fooType, foo, mediaType: mediaType);
             Assert.Same(mediaType, content.Headers.ContentType);
 
@@ -75,15 +75,15 @@ namespace System.Net.Http.Json.Functional.Tests
             Assert.Equal(mediaTypeAsString, content.Headers.ContentType.MediaType);
             Assert.Equal("utf-8", content.Headers.ContentType.CharSet);
 
-            // Use the specifed mediaType and charset.
+            // Specifying a charset is not supported by the string overload.
             string mediaTypeAndCharSetAsString = "foo/bar; charset=utf-16";
-            content = new JsonContent(fooType, foo, mediaType: mediaTypeAndCharSetAsString);
-            Assert.Equal("foo/bar", content.Headers.ContentType.MediaType);
-            Assert.Equal("utf-16", content.Headers.ContentType.CharSet);
+            Assert.Throws<FormatException>(() => new JsonContent(fooType, foo, mediaType: mediaTypeAndCharSetAsString));
+            Assert.Throws<FormatException>(() => JsonContent.Create(foo, mediaType: mediaTypeAndCharSetAsString));
 
-            content = JsonContent.Create(foo, mediaType: mediaTypeAndCharSetAsString);
-            Assert.Equal("foo/bar", content.Headers.ContentType.MediaType);
-            Assert.Equal("utf-16", content.Headers.ContentType.CharSet);
+            // Charsets other than UTF-8 are not supported.
+            mediaType = MediaTypeHeaderValue.Parse("foo/bar; charset=utf-16");
+            Assert.Throws<NotSupportedException>(() => new JsonContent(fooType, foo, mediaType: mediaType));
+            Assert.Throws<NotSupportedException>(() => JsonContent.Create(foo, mediaType: mediaType));
         }
 
         [Fact]
@@ -99,16 +99,7 @@ namespace System.Net.Http.Json.Functional.Tests
                         await client.SendAsync(request);
 
                         request = new HttpRequestMessage(HttpMethod.Post, uri);
-                        request.Content = JsonContent.Create(Person.Create(), mediaType: "foo/bar; charset=utf-16");
-                        await client.SendAsync(request);
-
-                        request = new HttpRequestMessage(HttpMethod.Post, uri);
-                        MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse("foo/bar");
-                        request.Content = JsonContent.Create(Person.Create(), mediaType: mediaType);
-                        await client.SendAsync(request);
-
-                        request = new HttpRequestMessage(HttpMethod.Post, uri);
-                        mediaType = MediaTypeHeaderValue.Parse("foo/bar; charset=baz");
+                        MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse("foo/bar; charset=utf-8");
                         request.Content = JsonContent.Create(Person.Create(), mediaType: mediaType);
                         await client.SendAsync(request);
                     }
@@ -118,13 +109,7 @@ namespace System.Net.Http.Json.Functional.Tests
                     Assert.Equal("foo/bar; charset=utf-8", req.GetSingleHeaderValue("Content-Type"));
 
                     req = await server.HandleRequestAsync();
-                    Assert.Equal("foo/bar; charset=utf-16", req.GetSingleHeaderValue("Content-Type"));
-
-                    req = await server.HandleRequestAsync();
-                    Assert.Equal("foo/bar", req.GetSingleHeaderValue("Content-Type"));
-
-                    req = await server.HandleRequestAsync();
-                    Assert.Equal("foo/bar; charset=baz", req.GetSingleHeaderValue("Content-Type"));
+                    Assert.Equal("foo/bar; charset=utf-8", req.GetSingleHeaderValue("Content-Type"));
                 });
         }
 
@@ -146,18 +131,34 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
-        public void JsonContentTypeIsNull()
+        public async Task JsonContentTypeIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new JsonContent(null, null));
-            Assert.Throws<ArgumentNullException>(() => new JsonContent(null, null, MediaTypeHeaderValue.Parse("foo/bar; charset=utf-16")));
+            HttpClient client = new HttpClient();
+            string foo = "test";
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://example.com");
+            request.Content = new JsonContent(null, foo);
+            await Assert.ThrowsAsync<ArgumentNullException>(() => client.SendAsync(request));
+
+            request = new HttpRequestMessage(HttpMethod.Post, "http://example.com");
+            request.Content = new JsonContent(null, foo, MediaTypeHeaderValue.Parse("application/json; charset=utf-8"));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => client.SendAsync(request));
         }
 
         [Fact]
-        public void JsonContentThrowsOnIncompatibleType()
+        public async Task JsonContentThrowsOnIncompatibleTypeAsync()
         {
+            HttpClient client = new HttpClient();
             var foo = new Foo();
-            Assert.Throws<ArgumentException>(() => new JsonContent(typeof(Bar), foo));
-            Assert.Throws<ArgumentException>(() => new JsonContent(typeof(Bar), foo, MediaTypeHeaderValue.Parse("foo/bar; charset=utf-16")));
+            Type typeOfBar = typeof(Bar);
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://example.com");
+            request.Content = new JsonContent(typeOfBar, foo);
+            await Assert.ThrowsAsync<ArgumentException>(() => client.SendAsync(request));
+
+            request = new HttpRequestMessage(HttpMethod.Post, "http://example.com");
+            request.Content = new JsonContent(typeOfBar, foo, MediaTypeHeaderValue.Parse("application/json; charset=utf-8"));
+            await Assert.ThrowsAsync<ArgumentException>(() => client.SendAsync(request));
         }
     }
 }

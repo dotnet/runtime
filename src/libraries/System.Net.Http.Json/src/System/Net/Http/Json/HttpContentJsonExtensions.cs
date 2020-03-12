@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.IO;
 using System.Net.Mime;
 using System.Text;
 using System.Text.Json;
@@ -24,37 +26,37 @@ namespace System.Net.Http.Json
 
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            byte[] contentBytes = await GetUtf8JsonBytesFromContentAsync(content, cancellationToken).ConfigureAwait(false);
-            return JsonSerializer.Deserialize(contentBytes, type, options);
+            Stream contentStream = await GetJsonStreamFromContentAsync(content, cancellationToken).ConfigureAwait(false);
+            return await JsonSerializer.DeserializeAsync(contentStream, type, options, cancellationToken);
         }
 
         private static async Task<T> ReadFromJsonAsyncCore<T>(HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            byte[] contentBytes = await GetUtf8JsonBytesFromContentAsync(content, cancellationToken).ConfigureAwait(false);
-            return JsonSerializer.Deserialize<T>(contentBytes, options);
+            Stream contentStream = await GetJsonStreamFromContentAsync(content, cancellationToken).ConfigureAwait(false);
+            return await JsonSerializer.DeserializeAsync<T>(contentStream, options, cancellationToken);
         }
 
-        private static async Task<byte[]> GetUtf8JsonBytesFromContentAsync(HttpContent content, CancellationToken cancellationToken)
+        private static async Task<Stream> GetJsonStreamFromContentAsync(HttpContent content, CancellationToken cancellationToken)
         {
             string? mediaType = content.Headers.ContentType?.MediaType;
 
             if (mediaType != JsonContent.JsonMediaType &&
                 mediaType != MediaTypeNames.Text.Plain)
             {
-                throw new NotSupportedException("The provided ContentType is not supported; the supported types are 'application/json' and 'text/plain'.");
+                throw new NotSupportedException(SR.ContentTypeNotSupported);
             }
 
-            // Code taken from https://source.dot.net/#System.Net.Http/System/Net/Http/HttpContent.cs,047409be2a4d70a8
+            Debug.Assert(content.Headers.ContentType != null);
+
             string? charset = content.Headers.ContentType.CharSet;
             Encoding? encoding = null;
+
             if (charset != null)
             {
                 try
                 {
                     // Remove at most a single set of quotes.
-                    if (charset.Length > 2 &&
-                        charset[0] == '\"' &&
-                        charset[charset.Length - 1] == '\"')
+                    if (charset.Length > 2 && charset[0] == '\"' && charset[charset.Length - 1] == '\"')
                     {
                         encoding = Encoding.GetEncoding(charset.Substring(1, charset.Length - 2));
                     }
@@ -62,25 +64,21 @@ namespace System.Net.Http.Json
                     {
                         encoding = Encoding.GetEncoding(charset);
                     }
-
-                    // Byte-order-mark (BOM) characters may be present even if a charset was specified.
-                    // bomLength = GetPreambleLength(buffer, encoding);
                 }
                 catch (ArgumentException e)
                 {
-                    throw new InvalidOperationException("The character set provided in ContentType is invalid.", e);
+                    throw new InvalidOperationException(SR.CharSetInvalid, e);
                 }
             }
 
-            byte[] contentBytes = await content.ReadAsByteArrayAsync().ConfigureAwait(false);
-
-            // Transcode to UTF-8.
+            //TODO: We should allow encodings other than UTF-8 and we should transcode to UTF-8 if we get one.
+            // This would be easier to achieve once https://github.com/dotnet/runtime/issues/30260 is done.
             if (encoding != null && encoding != Encoding.UTF8)
             {
-                contentBytes = Encoding.Convert(encoding, Encoding.UTF8, contentBytes);
+                throw new NotSupportedException(SR.CharSetNotSupported);
             }
 
-            return contentBytes;
+            return await content.ReadAsStreamAsync().ConfigureAwait(false);
         }
     }
 }

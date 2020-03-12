@@ -183,5 +183,34 @@ namespace System.Net.Http.Json.Functional.Tests
             HttpHeaderData contentType = requestData.Headers.Where(x => x.Name == "Content-Type").First();
             Assert.Equal("application/json; charset=utf-8", contentType.Value);
         }
+
+        [Fact]
+        public async Task AllowNullRequesturlAsync()
+        {
+            const int NumRequests = 4;
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        client.BaseAddress = uri;
+
+                        Person per = Assert.IsType<Person>(await client.GetFromJsonAsync((string)null, typeof(Person)));
+                        per = Assert.IsType<Person>(await client.GetFromJsonAsync((Uri)null, typeof(Person)));
+
+                        per = await client.GetFromJsonAsync<Person>((string)null);
+                        per = await client.GetFromJsonAsync<Person>((Uri)null);
+                    }
+                },
+                async server => {
+                    List<HttpHeaderData> headers = new List<HttpHeaderData> { new HttpHeaderData("Content-Type", "application/json") };
+                    string json = Person.Create().Serialize();
+
+                    for (int i = 0; i < NumRequests; i++)
+                    {
+                        await server.HandleRequestAsync(content: json, headers: headers);
+                    }
+                });
+        }
     }
 }

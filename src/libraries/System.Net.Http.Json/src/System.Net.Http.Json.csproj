@@ -11,15 +11,15 @@
     <Compile Include="System\Net\Http\Json\JsonContent.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <!-- Add Compile files that represent API for netcoreapp5.0 only here -->
-
+    <Compile Include="System\Net\Http\Json\JsonContent.netcoreapp.cs" />
     <Reference Include="System.Net.Mail" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Runtime" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Text.Json" />
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="System.Memory" />
+    <Reference Include="System.Text.Json" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 </Project>

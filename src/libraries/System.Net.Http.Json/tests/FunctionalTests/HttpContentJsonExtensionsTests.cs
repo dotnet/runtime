@@ -19,7 +19,7 @@ namespace System.Net.Http.Json.Functional.Tests
         [Fact]
         public async Task HttpContentGetThenReadFromJsonAsync()
         {
-            HttpContent content = null;
+            const int NumRequests = 2;
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -27,27 +27,28 @@ namespace System.Net.Http.Json.Functional.Tests
                     {
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
                         var response = await client.SendAsync(request);
-                        Assert.True(response.StatusCode == HttpStatusCode.OK);
+                        object obj = await response.Content.ReadFromJsonAsync(typeof(Person));
+                        Person per = Assert.IsType<Person>(obj);
+                        per.Validate();
 
-                        content = response.Content;
+                        request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        response = await client.SendAsync(request);
+                        per = await response.Content.ReadFromJsonAsync<Person>();
+                        per.Validate();
                     }
                 },
                 async server => {
-                    HttpRequestData req = await server.HandleRequestAsync(headers: _headers, content: Person.Create().Serialize());
+                    for (int i = 0; i < NumRequests; i++)
+                    {
+                        HttpRequestData req = await server.HandleRequestAsync(headers: _headers, content: Person.Create().Serialize());
+                    }
                 });
-
-            object obj = await content.ReadFromJsonAsync(typeof(Person));
-            Person per = Assert.IsType<Person>(obj);
-            per.Validate();
-
-            per = await content.ReadFromJsonAsync<Person>();
-            per.Validate();
         }
 
         [Fact]
         public async Task HttpContentObjectIsNull()
         {
-            HttpContent content = null;
+            const int NumRequests = 2;
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -55,20 +56,21 @@ namespace System.Net.Http.Json.Functional.Tests
                     {
                         var request = new HttpRequestMessage(HttpMethod.Get, uri);
                         var response = await client.SendAsync(request);
-                        Assert.True(response.StatusCode == HttpStatusCode.OK);
+                        object obj = await response.Content.ReadFromJsonAsync(typeof(Person));
+                        Assert.Null(obj);
 
-                         content = response.Content;
+                        request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        response = await client.SendAsync(request);
+                        Person per = await response.Content.ReadFromJsonAsync<Person>();
+                        Assert.Null(per);
                     }
                 },
                 async server => {
-                    HttpRequestData req = await server.HandleRequestAsync(headers: _headers, content: "null");
+                    for (int i = 0; i < NumRequests; i++)
+                    {
+                        HttpRequestData req = await server.HandleRequestAsync(headers: _headers, content: "null");
+                    }
                 });
-
-            object obj = await content.ReadFromJsonAsync(typeof(Person));
-            Assert.Null(obj);
-
-            Person per = await content.ReadFromJsonAsync<Person>();
-            Assert.Null(per);
         }
 
         [Fact]
@@ -141,7 +143,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 server => server.HandleRequestAsync(headers: customHeaders, content: Person.Create().Serialize()));
         }
 
-        [Fact]
+        [Fact(Skip ="Disable temporarily until transcode support is added.")]
         public async Task TestGetFromJsonAsyncTextPlainUtf16Async()
         {
             const string json = @"{""Name"":""David"",""Age"":24}";

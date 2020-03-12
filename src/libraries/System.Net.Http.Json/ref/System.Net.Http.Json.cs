@@ -38,6 +38,9 @@ namespace System.Net.Http.Json
         public static System.Net.Http.Json.JsonContent Create<T>(T value, string mediaType, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static System.Net.Http.Json.JsonContent Create<T>(T value, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context) { throw null; }
+#if !NETSTANDARD2_0
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context, System.Threading.CancellationToken cancellationToken) { throw null; }
+#endif
         protected override bool TryComputeLength(out long length) { throw null; }
     }
 }

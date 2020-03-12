@@ -2,31 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http.Json
 {
-    public class JsonContent : HttpContent
+    public partial class JsonContent : HttpContent
     {
         internal const string JsonMediaType = "application/json";
+        private readonly JsonSerializerOptions? _jsonSerializerOptions;
 
-        private readonly byte[] _content;
-        private readonly int _offset;
-        private readonly int _count;
-
-        private static MediaTypeHeaderValue CreateMediaType(string mediaTypeAsString)
+        private static MediaTypeHeaderValue CreateMediaTypeFromString(string mediaTypeAsString)
         {
-            MediaTypeHeaderValue mediaType = MediaTypeHeaderValue.Parse(mediaTypeAsString);
-
-            // If the instantiated mediaType does not specify its CharSet, set UTF-8 by default.
-            if (mediaType.CharSet == null)
-            {
-                mediaType.CharSet = Encoding.UTF8.WebName;
-            }
+            MediaTypeHeaderValue mediaType = new MediaTypeHeaderValue(mediaTypeAsString);
+            Debug.Assert(mediaType.CharSet == null);
+            mediaType.CharSet = Encoding.UTF8.WebName;
 
             return mediaType;
         }
@@ -36,46 +31,51 @@ namespace System.Net.Http.Json
         public object? Value { get; }
 
         public JsonContent(Type type, object? value, JsonSerializerOptions? options = null)
-            : this(type, value, CreateMediaType(JsonMediaType), options) { }
+            : this(type, value, CreateMediaTypeFromString(JsonMediaType), options) { }
 
         public JsonContent(Type type, object? value, string mediaType, JsonSerializerOptions? options = null)
-            : this(type, value, CreateMediaType(mediaType?? throw new ArgumentNullException(nameof(mediaType))), options) { }
+            : this(type, value, CreateMediaTypeFromString(mediaType ?? throw new ArgumentNullException(nameof(mediaType))), options) { }
 
         public JsonContent(Type type, object? value, MediaTypeHeaderValue mediaType, JsonSerializerOptions? options = null)
-            : this(JsonSerializer.SerializeToUtf8Bytes(value, type, options), type, value, mediaType) { }
-
-        private JsonContent(byte[] content, Type type, object? value, MediaTypeHeaderValue mediaType)
         {
             if (mediaType == null)
             {
                 throw new ArgumentNullException(nameof(mediaType));
             }
 
-            _content = content;
-            _offset = 0;
-            _count = content.Length;
+            // TODO: Support other charsets once https://github.com/dotnet/runtime/issues/30260 is done.
+            if (mediaType.CharSet != Encoding.UTF8.WebName)
+            {
+                throw new NotSupportedException(SR.CharSetInvalid);
+            }
 
             Value = value;
             ObjectType = type;
             Headers.ContentType = mediaType;
+            // TODO: Set DefaultWebOptions if no options were provided.
+            _jsonSerializerOptions = options;
         }
 
         public static JsonContent Create<T>(T value, JsonSerializerOptions? options = null)
-            => Create(value, CreateMediaType(JsonMediaType), options);
+            => Create(value, CreateMediaTypeFromString(JsonMediaType), options);
 
         public static JsonContent Create<T>(T value, string mediaType, JsonSerializerOptions? options = null)
-            => Create(value, CreateMediaType(mediaType ?? throw new ArgumentNullException(nameof(mediaType))), options);
+            => Create(value, CreateMediaTypeFromString(mediaType ?? throw new ArgumentNullException(nameof(mediaType))), options);
 
         public static JsonContent Create<T>(T value, MediaTypeHeaderValue mediaType, JsonSerializerOptions? options = null)
-            => new JsonContent(JsonSerializer.SerializeToUtf8Bytes(value, options), typeof(T), value, mediaType);
+            => new JsonContent(typeof(T), value, mediaType);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
-            => stream.WriteAsync(_content, _offset, _count);
+#if !NETSTANDARD2_0
+            => SerializeToStreamAsync(stream, context, CancellationToken.None);
+#else
+            => JsonSerializer.SerializeAsync(stream, Value, ObjectType, _jsonSerializerOptions);
+#endif
 
         protected override bool TryComputeLength(out long length)
         {
-            length = _count;
-            return true;
+            length = 0;
+            return false;
         }
     }
 }
