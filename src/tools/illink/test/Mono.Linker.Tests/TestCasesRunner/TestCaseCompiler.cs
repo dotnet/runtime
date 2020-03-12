@@ -194,7 +194,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 #if NETCOREAPP
 			return CompileCSharpAssemblyWithRoslyn (options);
 #else
-			return CompileCSharpAssemblyWithCodeDom (options);
+			return CompileCSharpAssemblyWithCsc (options);
 #endif
 		}
 
@@ -286,43 +286,29 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		}
 #endif
 
-		protected virtual NPath CompileCSharpAssemblyWithCodeDom (CompilerOptions options)
-		{
-			var compilerOptions = CreateCodeDomCompilerOptions (options);
-			var provider = CodeDomProvider.CreateProvider ("C#");
-			var result = provider.CompileAssemblyFromFile (compilerOptions, options.SourceFiles.Select (p => p.ToString ()).ToArray ());
-			if (!result.Errors.HasErrors)
-				return compilerOptions.OutputAssembly.ToNPath ();
-
-			var errors = new StringBuilder ();
-			foreach (var error in result.Errors)
-				errors.AppendLine (error.ToString ());
-			throw new Exception ("Compilation errors: " + errors);
-		}
-
 		protected virtual NPath CompileCSharpAssemblyWithCsc (CompilerOptions options)
 		{
 #if NETCOREAPP
 			return CompileCSharpAssemblyWithRoslyn (options);
 #else
-			return CompileCSharpAssemblyWithExternalCompiler (LocateCscExecutable (), options);
+			return CompileCSharpAssemblyWithExternalCompiler (LocateCscExecutable (), options, "/shared ");
 #endif
 		}
 
 		protected virtual NPath CompileCSharpAssemblyWithMcs(CompilerOptions options)
 		{
 			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-				CompileCSharpAssemblyWithExternalCompiler (LocateMcsExecutable (), options);
+				CompileCSharpAssemblyWithExternalCompiler (LocateMcsExecutable (), options, string.Empty);
 
 			return CompileCSharpAssemblyWithDefaultCompiler (options);
 		}
 
-		protected NPath CompileCSharpAssemblyWithExternalCompiler (string executable, CompilerOptions options)
+		protected NPath CompileCSharpAssemblyWithExternalCompiler (string executable, CompilerOptions options, string compilerSpecificArguments)
 		{
 			var capturedOutput = new List<string> ();
 			var process = new Process ();
 			process.StartInfo.FileName = executable;
-			process.StartInfo.Arguments = OptionsToCompilerCommandLineArguments (options);
+			process.StartInfo.Arguments = OptionsToCompilerCommandLineArguments (options, compilerSpecificArguments);
 			process.StartInfo.UseShellExecute = false;
 			process.StartInfo.CreateNoWindow = true;
 			process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
@@ -397,9 +383,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return "mcs";
 		}
 
-		protected string OptionsToCompilerCommandLineArguments (CompilerOptions options)
+		protected string OptionsToCompilerCommandLineArguments (CompilerOptions options, string compilerSpecificArguments)
 		{
 			var builder = new StringBuilder ();
+			if (!string.IsNullOrEmpty(compilerSpecificArguments))
+				builder.Append (compilerSpecificArguments);
 			builder.Append ($"/out:{options.OutputPath}");
 			var target = options.OutputPath.ExtensionWithDot == ".exe" ? "exe" : "library";
 			builder.Append ($" /target:{target}");
@@ -436,29 +424,6 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		protected NPath CompileIlAssembly (CompilerOptions options)
 		{
 			return _ilCompiler.Compile (options);
-		}
-
-		private CompilerParameters CreateCodeDomCompilerOptions (CompilerOptions options)
-		{
-			var compilerParameters = new CompilerParameters
-			{
-				OutputAssembly = options.OutputPath.ToString (),
-				GenerateExecutable = options.OutputPath.FileName.EndsWith (".exe")
-			};
-
-			compilerParameters.CompilerOptions = options.Defines?.Aggregate (string.Empty, (buff, arg) => $"{buff} /define:{arg}");
-
-			compilerParameters.ReferencedAssemblies.AddRange (options.References.Select (r => r.ToString ()).ToArray ());
-
-			if (options.Resources != null)
-				compilerParameters.EmbeddedResources.AddRange (options.Resources.Select (r => r.ToString ()).ToArray ());
-
-			if (options.AdditionalArguments != null) {
-				var combinedValues = options.AdditionalArguments.Aggregate (string.Empty, (buff, arg) => $"{buff} {arg}");
-				compilerParameters.CompilerOptions = $"{compilerParameters.CompilerOptions} {combinedValues}";
-			}
-
-			return compilerParameters;
 		}
 	}
 }
