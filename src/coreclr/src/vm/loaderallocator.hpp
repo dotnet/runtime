@@ -152,7 +152,7 @@ protected:
     // Objects that are allocated frequently should be allocated into the HighFreq heap for
     // better page management
 
-    DAC_ALIGNAS(8) // Align the first member to an 8 byte boundary.  Windows does this by default, force Linux to match.
+    DAC_ALIGNAS(UINT64) // Align the first member to alignof(m_nLoaderAllocator). Windows does this by default, force Linux to match.
     BYTE *              m_InitialReservedMemForLoaderHeaps;
     BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
