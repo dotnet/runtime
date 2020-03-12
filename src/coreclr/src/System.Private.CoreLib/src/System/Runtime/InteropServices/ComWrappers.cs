@@ -290,6 +290,14 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
+        /// Get whether or not a global <see cref="ComWrappers" /> instance has been registered.
+        /// </summary>
+        internal static bool IsGlobalInstanceRegistered()
+        {
+            return s_globalInstance != null;
+        }
+
+        /// <summary>
         /// Get the runtime provided IUnknown implementation.
         /// </summary>
         /// <param name="fpQueryInterface">Function pointer to QueryInterface.</param>
