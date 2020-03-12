@@ -665,7 +665,7 @@ namespace System
         /// pinned also requires that T does not contain object references.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
-        internal static T[] AllocateUninitializedArray<T>(int length, bool pinned = false)
+        public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false)
         {
             if (!pinned)
             {
@@ -706,7 +706,7 @@ namespace System
         /// When pinned is true, the object's location in memory will not change.
         /// pinned also requires that T does not contain object references.
         /// </summary>
-        internal static T[] AllocateArray<T>(int length, bool pinned = false)
+        public static T[] AllocateArray<T>(int length, bool pinned = false)
         {
             if (pinned && RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));

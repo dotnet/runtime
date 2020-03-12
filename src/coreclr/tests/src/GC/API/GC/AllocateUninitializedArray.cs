@@ -14,7 +14,7 @@ public class Test {
         for (int i = 0; i < 10000; i++)
         {
             int size = r.Next(10000);
-            var arr = AllocUninitialized<byte>.Call(size);
+            var arr = GC.AllocateUninitializedArray<byte>(size);
 
             if (size > 1)
             {
@@ -32,7 +32,7 @@ public class Test {
         for (int i = 0; i < 1000; i++)
         {
             int size = r.Next(100000, 1000000);
-            var arr = AllocUninitialized<int>.Call(size);
+            var arr = GC.AllocateUninitializedArray<int>(size);
 
             arr[0] = 5;
             arr[size - 1] = 17;
@@ -46,7 +46,7 @@ public class Test {
         // allocate a string array
         {
             int i = 100;
-            var arr = AllocUninitialized<string>.Call(i);
+            var arr = GC.AllocateUninitializedArray<string>(i);
 
             arr[0] = "5";
             arr[i - 1] = "17";
@@ -62,7 +62,7 @@ public class Test {
             if (IntPtr.Size == 8)
             {
                 int i = 0x7FFFFFC7;
-                var arr = AllocUninitialized<byte>.Call(i);
+                var arr = GC.AllocateUninitializedArray<byte>(i);
 
                 arr[0] = 5;
                 arr[i - 1] = 17;
@@ -94,7 +94,7 @@ public class Test {
 
             try
             {
-                var arr = AllocUninitialized<byte>.Call(-1);
+                var arr = GC.AllocateUninitializedArray<byte>(-1);
 
                 Console.WriteLine("Scenario 5 Expected exception (GC.AllocateUninitializedArray)!");
                 return 1;
@@ -114,7 +114,7 @@ public class Test {
         {
             try
             {
-                var arr = AllocUninitialized<double>.Call(int.MaxValue);
+                var arr = GC.AllocateUninitializedArray<double>(int.MaxValue);
 
                 Console.WriteLine("Scenario 6 Expected exception!");
                 return 1;
@@ -127,27 +127,5 @@ public class Test {
 
         Console.WriteLine("Test for GC.Collect() passed!");
         return 100;
-    }
-
-    //TODO: This should be removed once the API is public.
-    static class AllocUninitialized<T>
-    {
-        public static T[] Call(int i) => Callimpl(i, false);
-
-        public static Func<int, bool, T[]> Callimpl = (i, b) =>
-        {
-            // replace the stub with actual impl.
-            Callimpl = (Func<int, bool, T[]>)typeof(System.GC).
-            GetMethod("AllocateUninitializedArray",
-                bindingAttr: System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
-                binder: null,
-                new Type[] { typeof(int), typeof(bool) },
-                modifiers: new System.Reflection.ParameterModifier[0]).
-            MakeGenericMethod(new Type[] { typeof(T) }).
-            CreateDelegate(typeof(Func<int, bool, T[]>));
-
-            // call the impl.
-            return Callimpl(i, b);
-        };
     }
 }
