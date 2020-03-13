@@ -67,10 +67,9 @@ namespace System.Globalization
                             bIgnoreCase ? 1 : 0);
 
                 Debug.Assert(ret >= -1 && ret <= source.Length);
-                if (ret < 0 && Marshal.GetLastWin32Error() != Interop.Errors.ERROR_SUCCESS)
-                {
-                    throw new ArgumentException(SR.Arg_ExternalException);
-                }
+
+                // SetLastError is only performed under debug builds.
+                Debug.Assert(ret >= 0 || Marshal.GetLastWin32Error() == Interop.Errors.ERROR_SUCCESS);
 
                 return ret;
             }
@@ -330,10 +329,9 @@ namespace System.Globalization
                                     _sortHandle);
 
                 Debug.Assert(result >= -1 && result <= lpStringSource.Length);
-                if (result < 0 && Marshal.GetLastWin32Error() != Interop.Errors.ERROR_SUCCESS)
-                {
-                    throw new ArgumentException(SR.Arg_ExternalException);
-                }
+
+                // SetLastError is only performed under debug builds.
+                Debug.Assert(result >= 0 || Marshal.GetLastWin32Error() == Interop.Errors.ERROR_SUCCESS);
 
                 return result;
             }
